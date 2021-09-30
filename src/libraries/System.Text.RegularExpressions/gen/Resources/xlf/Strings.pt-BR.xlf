@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="AlternationHasComment">
         <source>Alternation conditions cannot be comments.</source>
-        <target state="new">Alternation conditions cannot be comments.</target>
+        <target state="translated">Condições de alternância não podem ser comentários.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasMalformedCondition">
         <source>Illegal conditional (?(...)) expression.</source>
-        <target state="new">Illegal conditional (?(...)) expression.</target>
+        <target state="translated">Expressão condicional (?(...)) incorreta.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
@@ -24,17 +24,17 @@
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
         <source>Alternation conditions do not capture and cannot be named.</source>
-        <target state="new">Alternation conditions do not capture and cannot be named.</target>
+        <target state="translated">Condições de alternância não fazem captura e não podem ser renomeadas.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasTooManyConditions">
         <source>Too many | in (?()|).</source>
-        <target state="new">Too many | in (?()|).</target>
+        <target state="translated">Número excessivo de | em (?()|).</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>(?({0}) ) reference to undefined group.</source>
-        <target state="new">(?({0}) ) reference to undefined group.</target>
+        <target state="translated">Referência (?({0}) ) a um grupo indefinido.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReferenceNoPlaceholder">
@@ -44,42 +44,42 @@
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
         <source>Destination array is not long enough to copy all the items in the collection. Check array index and length.</source>
-        <target state="new">Destination array is not long enough to copy all the items in the collection. Check array index and length.</target>
+        <target state="translated">A matriz de destino não é longa o suficiente para copiar todos os itens da coleção. Verifique o índice e o tamanho da matriz.</target>
         <note />
       </trans-unit>
       <trans-unit id="ArgumentNull_ArrayWithNullElements">
         <source>The array cannot contain null elements.</source>
-        <target state="new">The array cannot contain null elements.</target>
+        <target state="translated">A matriz não pode conter elementos nulos.</target>
         <note />
       </trans-unit>
       <trans-unit id="BeginIndexNotNegative">
         <source>Start index cannot be less than 0 or greater than input length.</source>
-        <target state="new">Start index cannot be less than 0 or greater than input length.</target>
+        <target state="translated">Índice inicial não pode ser menor que 0 ou maior que o comprimento de entrada.</target>
         <note />
       </trans-unit>
       <trans-unit id="CaptureGroupNameInvalid">
         <source>Invalid group name: Group names must begin with a word character.</source>
-        <target state="new">Invalid group name: Group names must begin with a word character.</target>
+        <target state="translated">Nome de grupo inválido: nomes de grupo deve iniciar por um caractere alfabético.</target>
         <note />
       </trans-unit>
       <trans-unit id="CaptureGroupOfZero">
         <source>Capture number cannot be zero.</source>
-        <target state="new">Capture number cannot be zero.</target>
+        <target state="translated">Número de captura não pode ser zero.</target>
         <note />
       </trans-unit>
       <trans-unit id="CountTooSmall">
         <source>Count cannot be less than -1.</source>
-        <target state="new">Count cannot be less than -1.</target>
+        <target state="translated">Contagem não pode ser menor que -1.</target>
         <note />
       </trans-unit>
       <trans-unit id="EnumNotStarted">
         <source>Enumeration has either not started or has already finished.</source>
-        <target state="new">Enumeration has either not started or has already finished.</target>
+        <target state="translated">A enumeração não foi iniciada ou já foi concluída.</target>
         <note />
       </trans-unit>
       <trans-unit id="ExclusionGroupNotLast">
         <source>A subtraction must be the last element in a character class.</source>
-        <target state="new">A subtraction must be the last element in a character class.</target>
+        <target state="translated">Uma subtração deve ser o último elemento em uma classe de caracteres.</target>
         <note />
       </trans-unit>
       <trans-unit id="Generic">
@@ -109,7 +109,7 @@
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
         <source>Internal error in ScanRegex.</source>
-        <target state="new">Internal error in ScanRegex.</target>
+        <target state="translated">Erro interno em ScanRegex.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
@@ -149,7 +149,7 @@
       </trans-unit>
       <trans-unit id="LengthNotNegative">
         <source>Length cannot be less than 0 or exceed input length.</source>
-        <target state="new">Length cannot be less than 0 or exceed input length.</target>
+        <target state="translated">Comprimento não pode ser menor que 0 ou exceder o comprimento de entrada.</target>
         <note />
       </trans-unit>
       <trans-unit id="MakeException">
@@ -189,17 +189,17 @@
       </trans-unit>
       <trans-unit id="NoResultOnFailed">
         <source>Result cannot be called on a failed Match.</source>
-        <target state="new">Result cannot be called on a failed Match.</target>
+        <target state="translated">Não é possível chamar resultado quando há falha na correspondência.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
-        <target state="new">Collection is read-only.</target>
+        <target state="translated">A coleção é somente leitura.</target>
         <note />
       </trans-unit>
       <trans-unit id="OnlyAllowedOnce">
         <source>This operation is only allowed once per object.</source>
-        <target state="new">This operation is only allowed once per object.</target>
+        <target state="translated">Esta operação só é permitida uma vez por objeto.</target>
         <note />
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
@@ -209,17 +209,17 @@
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
         <source>Quantifier {x,y} following nothing.</source>
-        <target state="new">Quantifier {x,y} following nothing.</target>
+        <target state="translated">Nada precede o quantificador {x,y}.</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="new">Capture group numbers must be less than or equal to Int32.MaxValue.</target>
+        <target state="translated">Os números de grupo de captura devem ser menores que ou iguais a Int32.MaxValue.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
         <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="new">The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</target>
+        <target state="translated">O mecanismo de RegEx esgotou o tempo limite ao tentar combinar um padrão com uma cadeia de caracteres de entrada. Isso pode ocorrer por vários motivos, incluindo entradas muito grandes ou acompanhamento inverso excessivo causado por quantificadores aninhados, referências inversas e outros fatores.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -234,12 +234,12 @@
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
         <source>[x-y] range in reverse order.</source>
-        <target state="new">[x-y] range in reverse order.</target>
+        <target state="translated">Intervalo [x-y] em ordem inversa.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedQuantifierRange">
         <source>Illegal {x,y} with x &gt; y.</source>
-        <target state="new">Illegal {x,y} with x &gt; y.</target>
+        <target state="translated">{x,y} incorreto com x &gt; y.</target>
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
@@ -264,7 +264,7 @@
       </trans-unit>
       <trans-unit id="UndefinedNumberedReference">
         <source>Reference to undefined group number {0}.</source>
-        <target state="new">Reference to undefined group number {0}.</target>
+        <target state="translated">Referência a número de grupo {0} indefinido.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNumberedReferenceNoPlaceholder">
@@ -279,7 +279,7 @@
       </trans-unit>
       <trans-unit id="UnexpectedOpcode">
         <source>Unexpected opcode in regular expression generation: {0}.</source>
-        <target state="new">Unexpected opcode in regular expression generation: {0}.</target>
+        <target state="translated">Opcode inesperado na geração de expressão regular: {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
@@ -309,7 +309,7 @@
       </trans-unit>
       <trans-unit id="UnterminatedComment">
         <source>Unterminated (?#...) comment.</source>
-        <target state="new">Unterminated (?#...) comment.</target>
+        <target state="translated">Comentário (?#...) não finalizado.</target>
         <note />
       </trans-unit>
     </body>

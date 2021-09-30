@@ -1,6 +1,6 @@
+. "$PSScriptRoot/../common/tools.ps1" # for Retry function
 
-function DownloadClangTool
-{
+function DownloadClangTool {
     param (
         [string]
         $toolName,
@@ -10,28 +10,14 @@ function DownloadClangTool
 
     $baseUri = "https://clrjit.blob.core.windows.net/clang-tools/windows"
 
-    if (-not $(ls $downloadOutputPath | Where-Object {$_.Name -eq "$toolName.exe"}))
-    {
-        $baseBackoffSeconds = 2;
+    if (-not $(ls $downloadOutputPath | Where-Object { $_.Name -eq "$toolName.exe" })) {
 
-        $success = $false
-        for ($i = 0; $i -lt 5; $i++) {
-            echo "Attempting download of '$baseUri/$toolName.exe'"
-            $status = Invoke-WebRequest -Uri "$baseUri/$toolName.exe" -OutFile $(Join-Path $downloadOutputPath -ChildPath "$toolName.exe")
-            if ($status.StatusCode -lt 400)
-            {
-                $success = $true
-                break
-            } else {
-                echo "Download attempt $($i+1) failed. Trying again in $($baseBackoffSeconds + $baseBackoffSeconds * $i) seconds"
-                Start-Sleep -Seconds $($baseBackoffSeconds + $baseBackoffSeconds * $i)
-            }
-        }
-        if (-not $success)
-        {
-            Write-Output "Failed to download clang-format"
-            return 1
-        }
+        Retry({
+            Write-Output "Downloading '$baseUri/$toolName.exe'"
+            # Pass -PassThru as otherwise Invoke-WebRequest leaves a corrupted file if the download fails. With -PassThru the download is buffered first.
+            # -UseBasicParsing is necessary for older PowerShells when Internet Explorer might not be installed/configured
+            $null = Invoke-WebRequest -Uri "$baseUri/$toolName.exe" -OutFile $(Join-Path $downloadOutputPath -ChildPath "$toolName.exe") -PassThru -UseBasicParsing
+        })
     }
 }
 

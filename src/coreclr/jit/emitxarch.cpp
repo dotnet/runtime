@@ -2902,13 +2902,13 @@ void emitter::emitIns(instruction ins)
 }
 
 // Add an instruction with no operands, but whose encoding depends on the size
-// (Only CDQ/CQO currently)
+// (Only CDQ/CQO/CWDE/CDQE currently)
 void emitter::emitIns(instruction ins, emitAttr attr)
 {
     UNATIVE_OFFSET sz;
     instrDesc*     id   = emitNewInstr(attr);
     code_t         code = insCodeMR(ins);
-    assert(ins == INS_cdq);
+    assert((ins == INS_cdq) || (ins == INS_cwde));
     assert((code & 0xFFFFFF00) == 0);
     sz = 1;
 
@@ -4533,6 +4533,45 @@ bool emitter::IsRedundantMov(
 }
 
 //------------------------------------------------------------------------
+// EmitMovsxAsCwde: try to emit "movsxd rax, eax" and "movsx eax, ax" as
+//                  "cdqe" and "cwde" as a code size optimization.
+//
+// Arguments:
+//    ins  - The instruction for the original mov
+//    size - The size of the original mov
+//    dst  - The destination register for the original mov
+//    src  - The source register for the original mov
+//
+// Return Value:
+//    "true" if the optimization succeded, in which case the instruction can be
+//    counted as emitted, "false" otherwise.
+//
+bool emitter::EmitMovsxAsCwde(instruction ins, emitAttr size, regNumber dst, regNumber src)
+{
+    if ((src == REG_EAX) && (src == dst))
+    {
+#ifdef TARGET_64BIT
+        // "movsxd rax, eax".
+        if ((ins == INS_movsxd) && (size == EA_4BYTE))
+        {
+            // "cdqe".
+            emitIns(INS_cwde, EA_8BYTE);
+            return true;
+        }
+#endif
+        // "movsx eax, ax".
+        if ((ins == INS_movsx) && (size == EA_2BYTE))
+        {
+            // "cwde".
+            emitIns(INS_cwde, EA_4BYTE);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
 // emitIns_Mov: Emits a move instruction
 //
 // Arguments:
@@ -4603,13 +4642,19 @@ void emitter::emitIns_Mov(instruction ins, emitAttr attr, regNumber dstReg, regN
     assert(size <= EA_32BYTE);
     noway_assert(emitVerifyEncodable(ins, size, dstReg, srcReg));
 
-    UNATIVE_OFFSET sz  = emitInsSizeRR(ins, dstReg, srcReg, attr);
-    insFormat      fmt = emitInsModeFormat(ins, IF_RRD_RRD);
+    insFormat fmt = emitInsModeFormat(ins, IF_RRD_RRD);
 
     if (IsRedundantMov(ins, fmt, attr, dstReg, srcReg, canSkip))
     {
         return;
     }
+
+    if (EmitMovsxAsCwde(ins, size, dstReg, srcReg))
+    {
+        return;
+    }
+
+    UNATIVE_OFFSET sz = emitInsSizeRR(ins, dstReg, srcReg, attr);
 
     instrDesc* id = emitNewInstrSmall(attr);
     id->idIns(ins);
@@ -13215,7 +13260,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // Support only scalar AVX instructions and hence size is hard coded to 4-byte.
             code = AddVexPrefixIfNeeded(ins, code, EA_4BYTE);
 
-            if (ins == INS_cdq && TakesRexWPrefix(ins, id->idOpSize()))
+            if (((ins == INS_cdq) || (ins == INS_cwde)) && TakesRexWPrefix(ins, id->idOpSize()))
             {
                 code = AddRexWPrefix(ins, code);
             }
@@ -14693,6 +14738,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_mov:
         case INS_movsx:
         case INS_movzx:
+        case INS_cwde:
         case INS_cmp:
         case INS_test:
             if (memFmt == IF_NONE)

@@ -770,7 +770,7 @@ regMaskTP GenTree::gtGetRegMask() const
         }
     }
 #if FEATURE_ARG_SPLIT
-    else if (OperIsPutArgSplit())
+    else if (compFeatureArgSplit() && OperIsPutArgSplit())
     {
         const GenTreePutArgSplit* splitArg = AsPutArgSplit();
         const unsigned            regCount = splitArg->gtNumRegs;
@@ -11810,8 +11810,15 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if !defined(DEBUG_ARG_SLOTS)
             printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
 #else
-            printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
-                   putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+            if (compMacOsArm64Abi())
+            {
+                printf(" (%d stackByteSize), (%d byteOffset)", putArg->GetStackByteSize(), putArg->getArgOffset());
+            }
+            else
+            {
+                printf(" (%d slots), (%d stackByteSize), (%d slot), (%d byteOffset)", putArg->gtNumSlots,
+                       putArg->GetStackByteSize(), putArg->gtSlotNum, putArg->getArgOffset());
+            }
 #endif
             if (putArg->gtPutArgStkKind != GenTreePutArgStk::Kind::Invalid)
             {
@@ -11841,8 +11848,15 @@ void Compiler::gtDispTree(GenTree*     tree,
 #if !defined(DEBUG_ARG_SLOTS)
             printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
 #else
-            printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
-                   putArg->gtNumRegs);
+            if (compMacOsArm64Abi())
+            {
+                printf(" (%d stackByteSize), (%d numRegs)", putArg->GetStackByteSize(), putArg->gtNumRegs);
+            }
+            else
+            {
+                printf(" (%d slots), (%d stackByteSize), (%d numRegs)", putArg->gtNumSlots, putArg->GetStackByteSize(),
+                       putArg->gtNumRegs);
+            }
 #endif
         }
 #endif // FEATURE_ARG_SPLIT
@@ -15823,6 +15837,7 @@ GenTree* Compiler::gtBuildCommaList(GenTree* list, GenTree* expr)
         // Set the flags in the comma node
         result->gtFlags |= (list->gtFlags & GTF_ALL_EFFECT);
         result->gtFlags |= (expr->gtFlags & GTF_ALL_EFFECT);
+        DBEXEC(fgGlobalMorph, result->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
         // 'list' and 'expr' should have valuenumbers defined for both or for neither one (unless we are remorphing,
         // in which case a prior transform involving either node may have discarded or otherwise invalidated the value

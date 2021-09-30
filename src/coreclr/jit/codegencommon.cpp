@@ -2181,11 +2181,18 @@ void CodeGen::genGenerateMachineCode()
             printf("unknown architecture");
         }
 
-#if defined(TARGET_WINDOWS)
-        printf(" - Windows");
-#elif defined(TARGET_UNIX)
-        printf(" - Unix");
-#endif
+        if (TargetOS::IsWindows)
+        {
+            printf(" - Windows");
+        }
+        else if (TargetOS::IsMacOS)
+        {
+            printf(" - MacOS");
+        }
+        else if (TargetOS::IsUnix)
+        {
+            printf(" - Unix");
+        }
 
         printf("\n");
 
@@ -3393,11 +3400,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             // Check if this is an HFA register arg and return the HFA type
             if (varDsc.lvIsHfaRegArg())
             {
-#if defined(TARGET_WINDOWS)
                 // Cannot have hfa types on windows arm targets
                 // in vararg methods.
-                assert(!compiler->info.compIsVarArgs);
-#endif // defined(TARGET_WINDOWS)
+                assert(!TargetOS::IsWindows || !compiler->info.compIsVarArgs);
                 return varDsc.GetHfaType();
             }
             return compiler->mangleVarArgsType(varDsc.lvType);
@@ -3464,12 +3469,12 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // Change regType to the HFA type when we have a HFA argument
         if (varDsc->lvIsHfaRegArg())
         {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (compiler->info.compIsVarArgs)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows && compiler->info.compIsVarArgs)
             {
                 assert(!"Illegal incoming HFA arg encountered in Vararg method.");
             }
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#endif // defined(TARGET_ARM64)
             regType = varDsc->GetHfaType();
         }
 
@@ -7469,14 +7474,8 @@ void CodeGen::genFnProlog()
 
     if (compiler->info.compPublishStubParam)
     {
-#if CPU_LOAD_STORE_ARCH
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
                                   compiler->lvaStubArgumentVar, 0);
-#else
-        // mov [lvaStubArgumentVar], EAX
-        GetEmitter()->emitIns_AR_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM, genFramePointerReg(),
-                                   compiler->lvaTable[compiler->lvaStubArgumentVar].GetStackOffset());
-#endif
         assert(intRegState.rsCalleeRegArgMaskLiveIn & RBM_SECRET_STUB_PARAM);
 
         // It's no longer live; clear it out so it can be used after this in the prolog

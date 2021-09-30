@@ -128,23 +128,40 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
     return tree;
 }
 
-/*****************************************************************************
- *
- *  Morph a cast node (we perform some very simple transformations here).
- */
-
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
-#endif
-GenTree* Compiler::fgMorphCast(GenTree* tree)
+//------------------------------------------------------------------------
+// fgMorphExpandCast: Performs the pre-order (required) morphing for a cast.
+//
+// Performs a rich variety of pre-order transformations (and some optimizations).
+//
+// Notably:
+//  1. Splits long -> small type casts into long -> int -> small type
+//     for 32 bit targets. Does the same for float/double -> small type
+//     casts for all targets.
+//  2. Morphs casts not supported by the target directly into helpers.
+//     These mostly have to do with casts from and to floating point
+//     types, especially checked ones. Refer to the implementation for
+//     what specific casts need to be handled - it is a complex matrix.
+//  3. "Casts away" the GC-ness of a tree (for CAST(nint <- byref)) via
+//     assigning the GC tree to an inline - COMMA(ASG, LCL_VAR) - non-GC
+//     temporary.
+//  3. "Pushes down" truncating long -> int casts for some operations:
+//     CAST(int <- MUL(long, long)) => MUL(CAST(int <- long), CAST(int <- long)).
+//     The purpose of this is to allow "optNarrowTree" in the post-order
+//     traversal to fold the tree into a TYP_INT one, which helps 32 bit
+//     targets (and AMD64 too since 32 bit instructions are more compact).
+//     TODO-Arm64-CQ: Re-evaluate the value of this optimization for ARM64.
+//
+// Arguments:
+//    tree - the cast tree to morph
+//
+// Return Value:
+//    The fully morphed tree, or "nullptr" if it needs further morphing,
+//    in which case the cast may be transformed into an unchecked one
+//    and its operand changed (the cast "expanded" into two).
+//
+GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
 {
-    noway_assert(tree->gtOper == GT_CAST);
-    noway_assert(genTypeSize(TYP_I_IMPL) == TARGET_POINTER_SIZE);
-
-    /* The first sub-operand is the thing being cast */
-
-    GenTree* oper = tree->AsCast()->CastOp();
+    GenTree* oper = tree->CastOp();
 
     if (fgGlobalMorph && (oper->gtOper == GT_ADDR))
     {
@@ -154,8 +171,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         fgMorphImplicitByRefArgs(oper);
     }
 
-    var_types srcType = genActualType(oper->TypeGet());
-
+    var_types srcType = genActualType(oper);
     var_types dstType = tree->CastToType();
     unsigned  dstSize = genTypeSize(dstType);
 
@@ -183,13 +199,12 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
             oper = gtNewCastNode(TYP_DOUBLE, oper, false, TYP_DOUBLE);
         }
 
-        // do we need to do it in two steps R -> I, '-> smallType
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
+        // Do we need to do it in two steps R -> I -> smallType?
         if (dstSize < genTypeSize(TYP_INT))
         {
             oper = gtNewCastNodeL(TYP_INT, oper, /* fromUnsigned */ false, TYP_INT);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+            tree->AsCast()->CastOp() = oper;
             // We must not mistreat the original cast, which was from a floating point type,
             // as from an unsigned type, since we now have a TYP_INT node for the source and
             // CAST_OVF(BYTE <- INT) != CAST_OVF(BYTE <- UINT).
@@ -197,20 +212,19 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         }
         else
         {
-            /* Note that if we need to use a helper call then we can not morph oper */
             if (!tree->gtOverflow())
             {
-#ifdef TARGET_ARM64 // On ARM64 All non-overflow checking conversions can be optimized
-                goto OPTIMIZECAST;
+#ifdef TARGET_ARM64 // ARM64 supports all non-overflow checking conversions directly.
+                return nullptr;
 #else
                 switch (dstType)
                 {
                     case TYP_INT:
-                        goto OPTIMIZECAST;
+                        return nullptr;
 
                     case TYP_UINT:
 #if defined(TARGET_ARM) || defined(TARGET_AMD64)
-                        goto OPTIMIZECAST;
+                        return nullptr;
 #else  // TARGET_X86
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2UINT, oper);
 #endif // TARGET_X86
@@ -218,7 +232,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                     case TYP_LONG:
 #ifdef TARGET_AMD64
                         // SSE2 has instructions to convert a float/double directly to a long
-                        goto OPTIMIZECAST;
+                        return nullptr;
 #else  // !TARGET_AMD64
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2LNG, oper);
 #endif // !TARGET_AMD64
@@ -226,7 +240,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                     case TYP_ULONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG, oper);
                     default:
-                        break;
+                        unreached();
                 }
 #endif // TARGET_ARM64
             }
@@ -243,10 +257,9 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                     case TYP_ULONG:
                         return fgMorphCastIntoHelper(tree, CORINFO_HELP_DBL2ULNG_OVF, oper);
                     default:
-                        break;
+                        unreached();
                 }
             }
-            noway_assert(!"Unexpected dstType");
         }
     }
 #ifndef TARGET_64BIT
@@ -257,7 +270,8 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
     {
         oper = gtNewCastNode(TYP_I_IMPL, oper, tree->IsUnsigned(), TYP_I_IMPL);
         oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-        tree->gtFlags &= ~GTF_UNSIGNED;
+        tree->ClearUnsigned();
+        tree->AsCast()->CastOp() = oper;
     }
 #endif //! TARGET_64BIT
 
@@ -328,6 +342,7 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
                 tree->CastToType() = TYP_DOUBLE;
                 tree->gtType       = TYP_DOUBLE;
                 tree               = gtNewCastNode(TYP_FLOAT, tree, false, TYP_FLOAT);
+
                 return fgMorphTree(tree);
             }
         }
@@ -335,7 +350,8 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         {
             oper = gtNewCastNode(TYP_LONG, oper, true, TYP_LONG);
             oper->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
-            tree->gtFlags &= ~GTF_UNSIGNED;
+            tree->ClearUnsigned();
+            tree->CastOp() = oper;
         }
     }
 #endif // TARGET_AMD64
@@ -429,23 +445,14 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         {
             GenTree* andOp2 = oper->AsOp()->gtOp2;
 
-            // Special case to the special case: AND with a casted int.
-            if ((andOp2->OperGet() == GT_CAST) && (andOp2->AsCast()->CastOp()->OperGet() == GT_CNS_INT))
-            {
-                // gtFoldExprConst will deal with whether the cast is signed or
-                // unsigned, or overflow-sensitive.
-                andOp2              = gtFoldExprConst(andOp2);
-                oper->AsOp()->gtOp2 = andOp2;
-            }
-
             // Look for a constant less than 2^{32} for a cast to uint, or less
             // than 2^{31} for a cast to int.
             int maxWidth = (dstType == TYP_UINT) ? 32 : 31;
 
             if ((andOp2->OperGet() == GT_CNS_NATIVELONG) && ((andOp2->AsIntConCommon()->LngValue() >> maxWidth) == 0))
             {
-                // This cast can't overflow.
-                tree->gtFlags &= ~(GTF_OVERFLOW | GTF_EXCEPT);
+                tree->ClearOverflow();
+                tree->SetAllEffectsFlags(oper);
             }
         }
 
@@ -555,297 +562,8 @@ GenTree* Compiler::fgMorphCast(GenTree* tree)
         }
     }
 
-OPTIMIZECAST:
-    noway_assert(tree->gtOper == GT_CAST);
-
-    /* Morph the operand */
-    tree->AsCast()->CastOp() = oper = fgMorphTree(oper);
-
-    /* Reset the call flag */
-    tree->gtFlags &= ~GTF_CALL;
-
-    /* Reset the assignment flag */
-    tree->gtFlags &= ~GTF_ASG;
-
-    /* unless we have an overflow cast, reset the except flag */
-    if (!tree->gtOverflow())
-    {
-        tree->gtFlags &= ~GTF_EXCEPT;
-    }
-
-    /* Just in case new side effects were introduced */
-    tree->gtFlags |= (oper->gtFlags & GTF_ALL_EFFECT);
-
-    if (!gtIsActiveCSE_Candidate(tree) && !gtIsActiveCSE_Candidate(oper))
-    {
-        srcType = oper->TypeGet();
-
-        /* See if we can discard the cast */
-        if (varTypeIsIntegral(srcType) && varTypeIsIntegral(dstType))
-        {
-            if (tree->IsUnsigned() && !varTypeIsUnsigned(srcType))
-            {
-                if (varTypeIsSmall(srcType))
-                {
-                    // Small signed values are automatically sign extended to TYP_INT. If the cast is interpreting the
-                    // resulting TYP_INT value as unsigned then the "sign" bits end up being "value" bits and srcType
-                    // must be TYP_UINT, not the original small signed type. Otherwise "conv.ovf.i2.un(i1(-1))" is
-                    // wrongly treated as a widening conversion from i1 to i2 when in fact it is a narrowing conversion
-                    // from u4 to i2.
-                    srcType = genActualType(srcType);
-                }
-
-                srcType = varTypeToUnsigned(srcType);
-            }
-
-            if (srcType == dstType)
-            { // Certainly if they are identical it is pointless
-                goto REMOVE_CAST;
-            }
-
-            if (oper->OperGet() == GT_LCL_VAR && varTypeIsSmall(dstType))
-            {
-                unsigned   varNum = oper->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* varDsc = &lvaTable[varNum];
-                if (varDsc->TypeGet() == dstType && varDsc->lvNormalizeOnStore())
-                {
-                    goto REMOVE_CAST;
-                }
-            }
-
-            bool     unsignedSrc = varTypeIsUnsigned(srcType);
-            bool     unsignedDst = varTypeIsUnsigned(dstType);
-            bool     signsDiffer = (unsignedSrc != unsignedDst);
-            unsigned srcSize     = genTypeSize(srcType);
-
-            // For same sized casts with
-            //    the same signs or non-overflow cast we discard them as well
-            if (srcSize == dstSize)
-            {
-                /* This should have been handled above */
-                noway_assert(varTypeIsGC(srcType) == varTypeIsGC(dstType));
-
-                if (!signsDiffer)
-                {
-                    goto REMOVE_CAST;
-                }
-
-                if (!tree->gtOverflow())
-                {
-                    /* For small type casts, when necessary we force
-                       the src operand to the dstType and allow the
-                       implied load from memory to perform the casting */
-                    if (varTypeIsSmall(srcType))
-                    {
-                        switch (oper->gtOper)
-                        {
-                            case GT_IND:
-                            case GT_CLS_VAR:
-                            case GT_LCL_FLD:
-                                oper->gtType = dstType;
-                                // We're changing the type here so we need to update the VN;
-                                // in other cases we discard the cast without modifying oper
-                                // so the VN doesn't change.
-                                oper->SetVNsFromNode(tree);
-                                goto REMOVE_CAST;
-                            default:
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        goto REMOVE_CAST;
-                    }
-                }
-            }
-            else if (srcSize < dstSize) // widening cast
-            {
-                // Keep any long casts
-                if (dstSize == sizeof(int))
-                {
-                    // Only keep signed to unsigned widening cast with overflow check
-                    if (!tree->gtOverflow() || !unsignedDst || unsignedSrc)
-                    {
-                        goto REMOVE_CAST;
-                    }
-                }
-
-                // Widening casts from unsigned or to signed can never overflow
-
-                if (unsignedSrc || !unsignedDst)
-                {
-                    tree->gtFlags &= ~GTF_OVERFLOW;
-                    if (!(oper->gtFlags & GTF_EXCEPT))
-                    {
-                        tree->gtFlags &= ~GTF_EXCEPT;
-                    }
-                }
-            }
-            else // if (srcSize > dstSize)
-            {
-                // Try to narrow the operand of the cast and discard the cast
-                // Note: Do not narrow a cast that is marked as a CSE
-                // And do not narrow if the oper is marked as a CSE either
-                //
-                if (!tree->gtOverflow() && !gtIsActiveCSE_Candidate(oper) && (opts.compFlags & CLFLG_TREETRANS) &&
-                    optNarrowTree(oper, srcType, dstType, tree->gtVNPair, false))
-                {
-                    optNarrowTree(oper, srcType, dstType, tree->gtVNPair, true);
-
-                    /* If oper is changed into a cast to TYP_INT, or to a GT_NOP, we may need to discard it */
-                    if (oper->gtOper == GT_CAST && oper->CastToType() == genActualType(oper->CastFromType()))
-                    {
-                        oper = oper->AsCast()->CastOp();
-                    }
-                    goto REMOVE_CAST;
-                }
-            }
-        }
-
-        switch (oper->gtOper)
-        {
-            /* If the operand is a constant, we'll fold it */
-            case GT_CNS_INT:
-            case GT_CNS_LNG:
-            case GT_CNS_DBL:
-            case GT_CNS_STR:
-            {
-                GenTree* oldTree = tree;
-
-                tree = gtFoldExprConst(tree); // This may not fold the constant (NaN ...)
-
-                // Did we get a comma throw as a result of gtFoldExprConst?
-                if ((oldTree != tree) && (oldTree->gtOper != GT_COMMA))
-                {
-                    noway_assert(fgIsCommaThrow(tree));
-                    tree->AsOp()->gtOp1 = fgMorphTree(tree->AsOp()->gtOp1);
-                    fgMorphTreeDone(tree);
-                    return tree;
-                }
-                else if (tree->gtOper != GT_CAST)
-                {
-                    return tree;
-                }
-
-                noway_assert(tree->AsCast()->CastOp() == oper); // unchanged
-            }
-            break;
-
-            case GT_CAST:
-                // Check for two consecutive casts into the same dstType.
-                // Also check for consecutive casts to small types.
-                if (!tree->gtOverflow())
-                {
-                    var_types dstCastToType = dstType;
-                    var_types srcCastToType = oper->CastToType();
-                    if (dstCastToType == srcCastToType)
-                    {
-                        goto REMOVE_CAST;
-                    }
-                    // We can take advantage of the implicit zero/sign-extension for
-                    // small integer types and eliminate some casts.
-                    if (opts.OptimizationEnabled() && !oper->gtOverflow() && !gtIsActiveCSE_Candidate(oper) &&
-                        varTypeIsSmall(dstCastToType) && varTypeIsSmall(srcCastToType))
-                    {
-                        // Gather some facts about our casts.
-                        bool     srcZeroExtends = varTypeIsUnsigned(srcCastToType);
-                        bool     dstZeroExtends = varTypeIsUnsigned(dstCastToType);
-                        unsigned srcCastToSize  = genTypeSize(srcCastToType);
-                        unsigned dstCastToSize  = genTypeSize(dstCastToType);
-
-                        // If the previous cast to a smaller type was zero-extending,
-                        // this cast will also always be zero-extending. Example:
-                        // CAST(ubyte): 000X => CAST(short): Sign-extend(0X) => 000X.
-                        if (srcZeroExtends && (dstCastToSize > srcCastToSize))
-                        {
-                            dstZeroExtends = true;
-                        }
-
-                        // Case #1: cast to a smaller or equal in size type.
-                        // We can discard the intermediate cast. Examples:
-                        // CAST(short): --XX => CAST(ubyte): 000X.
-                        // CAST(ushort): 00XX => CAST(short): --XX.
-                        if (dstCastToSize <= srcCastToSize)
-                        {
-                            tree->AsCast()->CastOp() = oper->AsCast()->CastOp();
-                            DEBUG_DESTROY_NODE(oper);
-                        }
-                        // Case #2: cast to a larger type with the same effect.
-                        // Here we can eliminate the outer cast. Example:
-                        // CAST(byte): ---X => CAST(short): Sign-extend(-X) => ---X.
-                        // Example of a sequence where this does not hold:
-                        // CAST(byte): ---X => CAST(ushort): Zero-extend(-X) => 00-X.
-                        else if (srcZeroExtends == dstZeroExtends)
-                        {
-                            goto REMOVE_CAST;
-                        }
-                    }
-                }
-                break;
-
-            case GT_COMMA:
-                // Check for cast of a GT_COMMA with a throw overflow
-                // Bug 110829: Since this optimization will bash the types
-                // neither oper or commaOp2 can be CSE candidates
-                if (fgIsCommaThrow(oper) && !gtIsActiveCSE_Candidate(oper)) // oper can not be a CSE candidate
-                {
-                    GenTree* commaOp2 = oper->AsOp()->gtOp2;
-
-                    if (!gtIsActiveCSE_Candidate(commaOp2)) // commaOp2 can not be a CSE candidate
-                    {
-                        // need type of oper to be same as tree
-                        if (tree->gtType == TYP_LONG)
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_LONG */
-                            commaOp2->BashToConst(0LL);
-                            oper->gtType = TYP_LONG;
-                        }
-                        else if (varTypeIsFloating(tree->gtType))
-                        {
-                            // Change the types of oper and commaOp2
-                            commaOp2->BashToConst(0.0, tree->TypeGet());
-                            oper->gtType = tree->gtType;
-                        }
-                        else
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_INT */
-                            commaOp2->BashToConst(0);
-                            oper->gtType = TYP_INT;
-                        }
-                    }
-
-                    if (vnStore != nullptr)
-                    {
-                        fgValueNumberTreeConst(commaOp2);
-                    }
-
-                    /* Return the GT_COMMA node as the new tree */
-                    return oper;
-                }
-                break;
-
-            default:
-                break;
-        } /* end switch (oper->gtOper) */
-    }
-
-    if (tree->gtOverflow())
-    {
-        fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-    }
-
-    return tree;
-
-REMOVE_CAST:
-    /* Here we've eliminated the cast, so just return it's operand */
-    assert(!gtIsActiveCSE_Candidate(tree)); // tree cannot be a CSE candidate
-
-    DEBUG_DESTROY_NODE(tree);
-    return oper;
+    return nullptr;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 #ifdef DEBUG
 const char* getNonStandardArgKindName(NonStandardArgKind kind)
@@ -1198,7 +916,10 @@ fgArgTabEntry* fgArgInfo::AddStkArg(unsigned          argNum,
     fgArgTabEntry* curArgTabEntry = new (compiler, CMK_fgArgInfo) fgArgTabEntry;
 
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, byteAlignment / TARGET_POINTER_SIZE);
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, byteAlignment);
@@ -1297,9 +1018,12 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert((curArgTabEntry->GetRegNum() == REG_STK) || curArgTabEntry->IsSplit());
     assert(curArgTabEntry->use->GetNode() == node);
 #if defined(DEBUG_ARG_SLOTS)
-    nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
-    assert(curArgTabEntry->slotNum == nextSlotNum);
-    nextSlotNum += curArgTabEntry->numSlots;
+    if (!compMacOsArm64Abi())
+    {
+        nextSlotNum = roundUp(nextSlotNum, curArgTabEntry->GetByteAlignment() / TARGET_POINTER_SIZE);
+        assert(curArgTabEntry->slotNum == nextSlotNum);
+        nextSlotNum += curArgTabEntry->numSlots;
+    }
 #endif
 
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->GetByteAlignment());
@@ -1520,7 +1244,7 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
-#endif // TARGET_ARM
+#endif // FEATURE_ARG_SPLIT
 #endif
             }
         }
@@ -2098,7 +1822,8 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
         {
             var_types addrType = TYP_BYREF;
             arg                = gtNewOperNode(GT_ADDR, addrType, arg);
-            addrNode           = arg;
+            lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+            addrNode = arg;
 
 #if FEATURE_MULTIREG_ARGS
 #ifdef TARGET_ARM64
@@ -2137,10 +1862,6 @@ GenTree* Compiler::fgMakeTmpArgNode(fgArgTabEntry* curArgTabEntry)
     if (addrNode != nullptr)
     {
         assert(addrNode->gtOper == GT_ADDR);
-
-        // This will prevent this LclVar from being optimized away
-        lvaSetVarAddrExposed(tmpVarNum DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
-
         // the child of a GT_ADDR is required to have this flag set
         addrNode->AsOp()->gtOp1->gtFlags |= GTF_DONT_CSE;
     }
@@ -2545,8 +2266,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // At this point, we should never have gtCallLateArgs, as this needs to be done before those are determined.
     assert(call->gtCallLateArgs == nullptr);
 
-#ifdef TARGET_UNIX
-    if (callIsVararg)
+    if (TargetOS::IsUnix && callIsVararg)
     {
         // Currently native varargs is not implemented on non windows targets.
         //
@@ -2555,7 +2275,6 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         // such as amd64 Unix, which just expects RAX to pass numFPArguments.
         NYI("Morphing Vararg call not yet implemented on non Windows targets.");
     }
-#endif // TARGET_UNIX
 
     // Data structure for keeping track of non-standard args. Non-standard args are those that are not passed
     // following the normal calling convention or in the normal argument registers. We either mark existing
@@ -3052,22 +2771,23 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         var_types hfaType  = TYP_UNDEF;
         unsigned  hfaSlots = 0;
 
-        bool passUsingFloatRegs;
-#if !defined(OSX_ARM64_ABI)
+        bool     passUsingFloatRegs;
         unsigned argAlignBytes = TARGET_POINTER_SIZE;
-#endif
-        unsigned size     = 0;
-        unsigned byteSize = 0;
+        unsigned size          = 0;
+        unsigned byteSize      = 0;
 
         if (GlobalJitOptions::compFeatureHfa)
         {
             hfaType  = GetHfaType(argx);
             isHfaArg = varTypeIsValidHfaType(hfaType);
 
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            // Make sure for vararg methods isHfaArg is not true.
-            isHfaArg = callIsVararg ? false : isHfaArg;
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
+            if (TargetOS::IsWindows)
+            {
+                // Make sure for vararg methods isHfaArg is not true.
+                isHfaArg = callIsVararg ? false : isHfaArg;
+            }
+#endif // defined(TARGET_ARM64)
 
             if (isHfaArg)
             {
@@ -3302,12 +3022,13 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         assert(size != 0);
         assert(byteSize != 0);
 
-#if defined(OSX_ARM64_ABI)
-        // Arm64 Apple has a special ABI for passing small size arguments on stack,
-        // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
-        // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-        unsigned argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
-#endif
+        if (compMacOsArm64Abi())
+        {
+            // Arm64 Apple has a special ABI for passing small size arguments on stack,
+            // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
+            // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
+            argAlignBytes = eeGetArgAlignment(argType, isFloatHfa);
+        }
 
         //
         // Figure out if the argument will be passed in a register.
@@ -3387,16 +3108,14 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                 //
                 if (!isRegArg && (size > 1))
                 {
-#if defined(TARGET_WINDOWS)
                     // Arm64 windows native varargs allows splitting a 16 byte struct between stack
                     // and the last general purpose register.
-                    if (callIsVararg)
+                    if (TargetOS::IsWindows && callIsVararg)
                     {
                         // Override the decision and force a split.
                         isRegArg = (intArgRegNum + (size - 1)) <= maxRegArgs;
                     }
                     else
-#endif // defined(TARGET_WINDOWS)
                     {
                         // We also must update intArgRegNum so that we no longer try to
                         // allocate any new general purpose registers for args
@@ -3405,7 +3124,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     }
                 }
             }
-#else  // not TARGET_ARM or TARGET_ARM64
+#else // not TARGET_ARM or TARGET_ARM64
 
 #if defined(UNIX_AMD64_ABI)
 
@@ -3580,7 +3299,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
                     {
 #if FEATURE_ARG_SPLIT
                         // Check for a split (partially enregistered) struct
-                        if (!passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
+                        if (compFeatureArgSplit() && !passUsingFloatRegs && ((intArgRegNum + size) > MAX_REG_ARG))
                         {
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIs(GT_FIELD_LIST) || argx->OperIsCopyBlkOp() ||
@@ -3784,11 +3503,14 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         CORINFO_CLASS_HANDLE copyBlkClass = NO_CLASS_HANDLE;
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
+        if (!compMacOsArm64Abi())
         {
-            if (argSlots % 2 == 1)
+            if (argEntry->GetByteAlignment() == 2 * TARGET_POINTER_SIZE)
             {
-                argSlots++;
+                if (argSlots % 2 == 1)
+                {
+                    argSlots++;
+                }
             }
         }
 #endif // DEBUG
@@ -4240,8 +3962,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         const unsigned outgoingArgSpaceSize = GetOutgoingArgByteSize(call->fgArgInfo->GetNextSlotByteOffset());
 
 #if defined(DEBUG_ARG_SLOTS)
-        unsigned preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
-        assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        unsigned preallocatedArgCount = 0;
+        if (!compMacOsArm64Abi())
+        {
+            preallocatedArgCount = call->fgArgInfo->GetNextSlotNum();
+            assert(outgoingArgSpaceSize == preallocatedArgCount * REGSIZE_BYTES);
+        }
 #endif
         call->fgArgInfo->SetOutArgSize(max(outgoingArgSpaceSize, MIN_ARG_AREA_FOR_CALL));
 
@@ -4250,10 +3976,18 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         {
             const fgArgInfo* argInfo = call->fgArgInfo;
 #if defined(DEBUG_ARG_SLOTS)
-            printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
-                   "outgoingArgSpaceSize=%d\n",
-                   argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
-                   outgoingArgSpaceSize);
+            if (!compMacOsArm64Abi())
+            {
+                printf("argSlots=%d, preallocatedArgCount=%d, nextSlotNum=%d, nextSlotByteOffset=%d, "
+                       "outgoingArgSpaceSize=%d\n",
+                       argSlots, preallocatedArgCount, argInfo->GetNextSlotNum(), argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
+            }
+            else
+            {
+                printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
+                       outgoingArgSpaceSize);
+            }
 #else
             printf("nextSlotByteOffset=%d, outgoingArgSpaceSize=%d\n", argInfo->GetNextSlotByteOffset(),
                    outgoingArgSpaceSize);
@@ -6987,13 +6721,11 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
     // work required to shuffle arguments to the correct locations.
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || (defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
-    if (info.compIsVarArgs || callee->IsVarargs())
+    if (TargetOS::IsWindows && TargetArchitecture::IsArmArch && (info.compIsVarArgs || callee->IsVarargs()))
     {
         reportFastTailCallDecision("Fast tail calls with varargs not supported on Windows ARM/ARM64");
         return false;
     }
-#endif // (defined(TARGET_WINDOWS) && defined(TARGET_ARM)) || defined(TARGET_WINDOWS) && defined(TARGET_ARM64))
 
     if (compLocallocUsed)
     {
@@ -7743,14 +7475,19 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             //
             if (nextBlock->bbJumpKind != BBJ_RETURN)
             {
-                BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
+                BasicBlock* retBlock = nextBlock->GetUniqueSucc();
 
                 // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
                 // to temp locals over and over.
-                //
                 // Also allow casts on the RHSs of the assignments, and blocks with GT_NOPs.
                 //
-                if (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                // { GT_ASG(t_0, GT_CALL(...)) }
+                // { GT_ASG(t_1, t0) } (with casts on rhs potentially)
+                // ...
+                // { GT_ASG(t_n, t_(n - 1)) }
+                // { GT_RET t_n }
+                //
+                if (retBlock->bbJumpKind != BBJ_RETURN)
                 {
                     // Make sure the block has a single statement
                     assert(nextBlock->firstStmt() == nextBlock->lastStmt());
@@ -7760,10 +7497,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
                     unsigned lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
 
-                    while (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                    while (retBlock->bbJumpKind != BBJ_RETURN)
                     {
-                        assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
-                        asgNode = nextNextBlock->firstStmt()->GetRootNode();
+#ifdef DEBUG
+                        assert(retBlock->firstStmt() == retBlock->lastStmt());
+                        asgNode = retBlock->firstStmt()->GetRootNode();
                         if (!asgNode->OperIs(GT_NOP))
                         {
                             assert(asgNode->OperIs(GT_ASG));
@@ -7776,19 +7514,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                             }
 
                             assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
-                            lcl = rhs->AsLclVarCommon()->GetLclNum();
+                            lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
                         }
-                        nextNextBlock = nextNextBlock->GetUniqueSucc();
+#endif
+                        retBlock = retBlock->GetUniqueSucc();
                     }
                 }
 
-                assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
+                assert(retBlock->bbJumpKind == BBJ_RETURN);
 
-                if (nextNextBlock->hasProfileWeight())
+                if (retBlock->hasProfileWeight())
                 {
                     // Do similar updates here.
                     //
-                    weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    weight_t const nextNextWeight    = retBlock->bbWeight;
                     weight_t const newNextNextWeight = nextNextWeight - blockWeight;
 
                     // If the math would result in an negative weight then there's
@@ -7797,15 +7536,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     if (newNextNextWeight >= 0)
                     {
                         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
-                                nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
+                                retBlock->bbNum, nextNextWeight, newNextNextWeight);
 
-                        nextNextBlock->setBBProfileWeight(newNextNextWeight);
+                        retBlock->setBBProfileWeight(newNextNextWeight);
                     }
                     else
                     {
                         JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
                                 " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
-                                nextNextBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
+                                retBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
                     }
                 }
             }
@@ -11160,7 +10899,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             return fgMorphArrayIndex(tree);
 
         case GT_CAST:
-            return fgMorphCast(tree);
+        {
+            GenTree* morphedCast = fgMorphExpandCast(tree->AsCast());
+            if (morphedCast != nullptr)
+            {
+                return morphedCast;
+            }
+
+            op1 = tree->AsCast()->CastOp();
+        }
+        break;
 
         case GT_MUL:
             noway_assert(op2 != nullptr);
@@ -12144,6 +11892,23 @@ DONE_MORPHING_CHILDREN:
             {
                 op1->gtFlags |= GTF_DONT_CSE;
             }
+            break;
+
+        case GT_CAST:
+            tree = fgOptimizeCast(tree);
+            if (!tree->OperIsSimple())
+            {
+                return tree;
+            }
+            if (tree->OperIs(GT_CAST) && tree->gtOverflow())
+            {
+                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+            }
+
+            typ  = tree->TypeGet();
+            oper = tree->OperGet();
+            op1  = tree->AsOp()->gtGetOp1();
+            op2  = tree->gtGetOp2IfPresent();
             break;
 
         case GT_EQ:
@@ -13263,6 +13028,7 @@ DONE_MORPHING_CHILDREN:
                 if (op1SideEffects)
                 {
                     // Replace the left hand side with the side effect list.
+                    op1                 = op1SideEffects;
                     tree->AsOp()->gtOp1 = op1SideEffects;
                     gtUpdateNodeSideEffects(tree);
                 }
@@ -13274,8 +13040,9 @@ DONE_MORPHING_CHILDREN:
                     return op2;
                 }
 
-                /* If the right operand is just a void nop node, throw it away */
-                if (op2->IsNothingNode() && op1->gtType == TYP_VOID)
+                // If the right operand is just a void nop node, throw it away. Unless this is a
+                // comma throw, in which case we want the top-level morphing loop to recognize it.
+                if (op2->IsNothingNode() && op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
                 {
                     op1->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
                     DEBUG_DESTROY_NODE(tree);
@@ -13331,154 +13098,26 @@ DONE_MORPHING_CHILDREN:
 
     assert(oper == tree->gtOper);
 
+    // Propagate comma throws.
     // If we are in the Valuenum CSE phase then don't morph away anything as these
     // nodes may have CSE defs/uses in them.
-    //
-    if (!optValnumCSE_phase && (oper != GT_ASG) && (oper != GT_COLON) && !tree->OperIsAnyList())
+    if (fgGlobalMorph && (oper != GT_ASG) && (oper != GT_COLON) && !tree->OperIsAnyList())
     {
-        /* Check for op1 as a GT_COMMA with a unconditional throw node */
-        if (op1 && fgIsCommaThrow(op1, true))
+        if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
         {
-            if ((op1->gtFlags & GTF_COLON_COND) == 0)
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
+            if (propagatedThrow != nullptr)
             {
-                /* We can safely throw out the rest of the statements */
-                fgRemoveRestOfBlock = true;
-            }
-
-            GenTree* throwNode = op1->AsOp()->gtOp1;
-
-            if (oper == GT_COMMA)
-            {
-                /* Both tree and op1 are GT_COMMA nodes */
-                /* Change the tree's op1 to the throw node: op1->AsOp()->gtOp1 */
-                tree->AsOp()->gtOp1 = throwNode;
-
-                // Possibly reset the assignment flag
-                if (((throwNode->gtFlags & GTF_ASG) == 0) && ((op2 == nullptr) || ((op2->gtFlags & GTF_ASG) == 0)))
-                {
-                    tree->gtFlags &= ~GTF_ASG;
-                }
-
-                return tree;
-            }
-            else if (oper != GT_NOP)
-            {
-                if (genActualType(typ) == genActualType(op1->gtType))
-                {
-                    /* The types match so, return the comma throw node as the new tree */
-                    return op1;
-                }
-                else
-                {
-                    if (typ == TYP_VOID)
-                    {
-                        // Return the throw node
-                        return throwNode;
-                    }
-                    else
-                    {
-                        GenTree* commaOp2 = op1->AsOp()->gtOp2;
-
-                        // need type of oper to be same as tree
-                        if (typ == TYP_LONG)
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_LONG */
-                            commaOp2->BashToConst(0LL);
-                            op1->gtType = TYP_LONG;
-                        }
-                        else if (varTypeIsFloating(typ))
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_DOUBLE */
-                            commaOp2->BashToConst(0.0);
-                            op1->gtType = TYP_DOUBLE;
-                        }
-                        else
-                        {
-                            /* Change the types of oper and commaOp2 to TYP_INT */
-                            commaOp2->BashToConst(0);
-                            op1->gtType = TYP_INT;
-                        }
-
-                        /* Return the GT_COMMA node as the new tree */
-                        return op1;
-                    }
-                }
+                return propagatedThrow;
             }
         }
 
-        /* Check for op2 as a GT_COMMA with a unconditional throw */
-
-        if (op2 && fgIsCommaThrow(op2, true))
+        if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
         {
-            if ((op2->gtFlags & GTF_COLON_COND) == 0)
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
+            if (propagatedThrow != nullptr)
             {
-                /* We can safely throw out the rest of the statements */
-                fgRemoveRestOfBlock = true;
-            }
-
-            // If op1 has no side-effects
-            if ((op1->gtFlags & GTF_ALL_EFFECT) == 0)
-            {
-                // If tree is an asg node
-                if (tree->OperIs(GT_ASG))
-                {
-                    /* Return the throw node as the new tree */
-                    return op2->AsOp()->gtOp1;
-                }
-
-                if (tree->OperGet() == GT_ARR_BOUNDS_CHECK)
-                {
-                    /* Return the throw node as the new tree */
-                    return op2->AsOp()->gtOp1;
-                }
-
-                // If tree is a comma node
-                if (tree->OperGet() == GT_COMMA)
-                {
-                    /* Return the throw node as the new tree */
-                    return op2->AsOp()->gtOp1;
-                }
-
-                /* for the shift nodes the type of op2 can differ from the tree type */
-                if ((typ == TYP_LONG) && (genActualType(op2->gtType) == TYP_INT))
-                {
-                    noway_assert(GenTree::OperIsShiftOrRotate(oper));
-
-                    GenTree* commaOp2 = op2->AsOp()->gtOp2;
-
-                    /* Change the types of oper and commaOp2 to TYP_LONG */
-                    commaOp2->BashToConst(0LL);
-                    op2->gtType = TYP_LONG;
-                }
-
-                if ((genActualType(typ) == TYP_INT) &&
-                    (genActualType(op2->gtType) == TYP_LONG || varTypeIsFloating(op2->TypeGet())))
-                {
-                    // An example case is comparison (say GT_GT) of two longs or floating point values.
-
-                    GenTree* commaOp2 = op2->AsOp()->gtOp2;
-
-                    /* Change the types of oper and commaOp2 to TYP_INT */
-                    commaOp2->BashToConst(0);
-                    op2->gtType = TYP_INT;
-                }
-
-                if ((typ == TYP_BYREF) && (genActualType(op2->gtType) == TYP_I_IMPL))
-                {
-                    noway_assert(tree->OperGet() == GT_ADD);
-
-                    GenTree* commaOp2 = op2->AsOp()->gtOp2;
-
-                    /* Change the types of oper and commaOp2 to TYP_BYREF */
-                    commaOp2->BashToConst(0, TYP_BYREF);
-                    op2->gtType = commaOp2->gtType = TYP_BYREF;
-                }
-
-                /* types should now match */
-                noway_assert((genActualType(typ) == genActualType(op2->gtType)));
-
-                /* Return the GT_COMMA node as the new tree */
-                return op2;
+                return propagatedThrow;
             }
         }
     }
@@ -13495,6 +13134,209 @@ DONE_MORPHING_CHILDREN:
     tree = fgMorphSmpOpOptional(tree->AsOp());
 
     return tree;
+}
+
+//------------------------------------------------------------------------
+// fgOptimizeCast: Optimizes the supplied GT_CAST tree.
+//
+// Tries to get rid of the cast, its operand, the GTF_OVERFLOW flag, calls
+// calls "optNarrowTree". Called in post-order by "fgMorphSmpOp".
+//
+// Arguments:
+//    tree - the cast tree to optimize
+//
+// Return Value:
+//    The optimized tree (that can have any shape).
+//
+GenTree* Compiler::fgOptimizeCast(GenTree* tree)
+{
+    GenTree*  oper    = tree->AsCast()->CastOp();
+    var_types srcType = oper->TypeGet();
+    var_types dstType = tree->CastToType();
+    unsigned  dstSize = genTypeSize(dstType);
+
+    if (gtIsActiveCSE_Candidate(tree) || gtIsActiveCSE_Candidate(oper))
+    {
+        return tree;
+    }
+
+    /* See if we can discard the cast */
+    if (varTypeIsIntegral(srcType) && varTypeIsIntegral(dstType))
+    {
+        if (tree->IsUnsigned() && !varTypeIsUnsigned(srcType))
+        {
+            if (varTypeIsSmall(srcType))
+            {
+                // Small signed values are automatically sign extended to TYP_INT. If the cast is interpreting the
+                // resulting TYP_INT value as unsigned then the "sign" bits end up being "value" bits and srcType
+                // must be TYP_UINT, not the original small signed type. Otherwise "conv.ovf.i2.un(i1(-1))" is
+                // wrongly treated as a widening conversion from i1 to i2 when in fact it is a narrowing conversion
+                // from u4 to i2.
+                srcType = genActualType(srcType);
+            }
+
+            srcType = varTypeToUnsigned(srcType);
+        }
+
+        if (srcType == dstType)
+        { // Certainly if they are identical it is pointless
+            goto REMOVE_CAST;
+        }
+
+        if (oper->OperGet() == GT_LCL_VAR && varTypeIsSmall(dstType))
+        {
+            unsigned   varNum = oper->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* varDsc = &lvaTable[varNum];
+            if (varDsc->TypeGet() == dstType && varDsc->lvNormalizeOnStore())
+            {
+                goto REMOVE_CAST;
+            }
+        }
+
+        bool     unsignedSrc = varTypeIsUnsigned(srcType);
+        bool     unsignedDst = varTypeIsUnsigned(dstType);
+        bool     signsDiffer = (unsignedSrc != unsignedDst);
+        unsigned srcSize     = genTypeSize(srcType);
+
+        // For same sized casts with
+        //    the same signs or non-overflow cast we discard them as well
+        if (srcSize == dstSize)
+        {
+            // This should have been handled by "fgMorphExpandCast".
+            noway_assert(varTypeIsGC(srcType) == varTypeIsGC(dstType));
+
+            if (!signsDiffer)
+            {
+                goto REMOVE_CAST;
+            }
+
+            if (!tree->gtOverflow())
+            {
+                /* For small type casts, when necessary we force
+                the src operand to the dstType and allow the
+                implied load from memory to perform the casting */
+                if (varTypeIsSmall(srcType))
+                {
+                    switch (oper->gtOper)
+                    {
+                        case GT_IND:
+                        case GT_CLS_VAR:
+                        case GT_LCL_FLD:
+                            oper->gtType = dstType;
+                            // We're changing the type here so we need to update the VN;
+                            // in other cases we discard the cast without modifying oper
+                            // so the VN doesn't change.
+                            oper->SetVNsFromNode(tree);
+                            goto REMOVE_CAST;
+                        default:
+                            break;
+                    }
+                }
+                else
+                {
+                    goto REMOVE_CAST;
+                }
+            }
+        }
+        else if (srcSize < dstSize) // widening cast
+        {
+            // Keep any long casts
+            if (dstSize == sizeof(int))
+            {
+                // Only keep signed to unsigned widening cast with overflow check
+                if (!tree->gtOverflow() || !unsignedDst || unsignedSrc)
+                {
+                    goto REMOVE_CAST;
+                }
+            }
+
+            // Widening casts from unsigned or to signed can never overflow
+
+            if (unsignedSrc || !unsignedDst)
+            {
+                tree->ClearOverflow();
+                if ((oper->gtFlags & GTF_EXCEPT) == GTF_EMPTY)
+                {
+                    tree->gtFlags &= ~GTF_EXCEPT;
+                }
+            }
+        }
+        else // if (srcSize > dstSize)
+        {
+            // Try to narrow the operand of the cast and discard the cast
+            // Note: Do not narrow a cast that is marked as a CSE
+            // And do not narrow if the oper is marked as a CSE either
+            //
+            if (!tree->gtOverflow() && opts.OptEnabled(CLFLG_TREETRANS) &&
+                optNarrowTree(oper, srcType, dstType, tree->gtVNPair, false))
+            {
+                optNarrowTree(oper, srcType, dstType, tree->gtVNPair, true);
+
+                /* If oper is changed into a cast to TYP_INT, or to a GT_NOP, we may need to discard it */
+                if (oper->gtOper == GT_CAST && oper->CastToType() == genActualType(oper->CastFromType()))
+                {
+                    oper = oper->AsCast()->CastOp();
+                }
+                goto REMOVE_CAST;
+            }
+        }
+    }
+
+    // Check for two consecutive casts into the same dstType.
+    // Also check for consecutive casts to small types.
+    if (oper->OperIs(GT_CAST) && !tree->gtOverflow())
+    {
+        var_types dstCastToType = dstType;
+        var_types srcCastToType = oper->CastToType();
+        if (dstCastToType == srcCastToType)
+        {
+            goto REMOVE_CAST;
+        }
+        // We can take advantage of the implicit zero/sign-extension for
+        // small integer types and eliminate some casts.
+        if (opts.OptimizationEnabled() && !oper->gtOverflow() && varTypeIsSmall(dstCastToType) &&
+            varTypeIsSmall(srcCastToType))
+        {
+            // Gather some facts about our casts.
+            bool     srcZeroExtends = varTypeIsUnsigned(srcCastToType);
+            bool     dstZeroExtends = varTypeIsUnsigned(dstCastToType);
+            unsigned srcCastToSize  = genTypeSize(srcCastToType);
+            unsigned dstCastToSize  = genTypeSize(dstCastToType);
+
+            // If the previous cast to a smaller type was zero-extending,
+            // this cast will also always be zero-extending. Example:
+            // CAST(ubyte): 000X => CAST(short): Sign-extend(0X) => 000X.
+            if (srcZeroExtends && (dstCastToSize > srcCastToSize))
+            {
+                dstZeroExtends = true;
+            }
+
+            // Case #1: cast to a smaller or equal in size type.
+            // We can discard the intermediate cast. Examples:
+            // CAST(short): --XX => CAST(ubyte): 000X.
+            // CAST(ushort): 00XX => CAST(short): --XX.
+            if (dstCastToSize <= srcCastToSize)
+            {
+                tree->AsCast()->CastOp() = oper->AsCast()->CastOp();
+                DEBUG_DESTROY_NODE(oper);
+            }
+            // Case #2: cast to a larger type with the same effect.
+            // Here we can eliminate the outer cast. Example:
+            // CAST(byte): ---X => CAST(short): Sign-extend(-X) => ---X.
+            // Example of a sequence where this does not hold:
+            // CAST(byte): ---X => CAST(ushort): Zero-extend(-X) => 00-X.
+            else if (srcZeroExtends == dstZeroExtends)
+            {
+                goto REMOVE_CAST;
+            }
+        }
+    }
+
+    return tree;
+
+REMOVE_CAST:
+    DEBUG_DESTROY_NODE(tree);
+    return oper;
 }
 
 //------------------------------------------------------------------------
@@ -13853,6 +13695,66 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
     }
 
     return cmp;
+}
+
+//------------------------------------------------------------------------
+// fgPropagateCommaThrow: propagate a "comma throw" up the tree.
+//
+// "Comma throws" in the compiler represent the canonical form of an always
+// throwing expression. They have the shape of COMMA(THROW, ZERO), to satsify
+// the semantic that the original expression produced some value and are
+// generated by "gtFoldExprConst" when it encounters checked arithmetic that
+// will determinably overflow.
+//
+// In the global morphing phase, "comma throws" are "propagated" up the tree,
+// in post-order, to eliminate nodes that will never execute. This method,
+// called by "fgMorphSmpOp", encapsulates this optimization.
+//
+// Arguments:
+//   parent               - the node currently being processed.
+//   commaThrow           - the comma throw in question, "parent"'s operand.
+//   precedingSideEffects - side effects of nodes preceding "comma" in execution order.
+//
+// Return Value:
+//   If "parent" is to be replaced with a comma throw, i. e. the propagation was successful,
+//   the new "parent", otherwise "nullptr", guaranteeing no state change, with one exception:
+//   the "fgRemoveRestOfBlock" "global" may be set. Note that the new returned tree does not
+//   have to be a "comma throw", it can be "bare" throw call if the "parent" node did not
+//   produce any value.
+//
+// Notes:
+//   "Comma throws" are very rare.
+//
+GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects)
+{
+    // Comma throw propagation does not preserve VNs, and deletes nodes.
+    assert(fgGlobalMorph);
+    assert(fgIsCommaThrow(commaThrow));
+
+    if ((commaThrow->gtFlags & GTF_COLON_COND) == 0)
+    {
+        fgRemoveRestOfBlock = true;
+    }
+
+    if ((precedingSideEffects & GTF_ALL_EFFECT) == 0)
+    {
+        if (parent->TypeIs(TYP_VOID))
+        {
+            // Return the throw node as the new tree.
+            return commaThrow->gtGetOp1();
+        }
+
+        // Fix up the COMMA's type if needed.
+        if (genActualType(parent) != genActualType(commaThrow))
+        {
+            commaThrow->gtGetOp2()->BashToZeroConst(genActualType(parent));
+            commaThrow->ChangeType(genActualType(parent));
+        }
+
+        return commaThrow;
+    }
+
+    return nullptr;
 }
 
 //----------------------------------------------------------------------------------------------

@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using Microsoft.CodeAnalysis.Text;
 
 namespace System.Text.Json.SourceGeneration
@@ -644,6 +645,7 @@ namespace System.Text.Json.SourceGeneration
                 bool hasInitOnlyProperties = false;
                 bool hasTypeFactoryConverter = false;
                 bool hasPropertyFactoryConverters = false;
+                bool canContainNullableReferenceAnnotations = type.CanContainNullableReferenceTypeAnnotations();
 
                 IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(type);
                 foreach (CustomAttributeData attributeData in attributeDataList)
@@ -1010,6 +1012,7 @@ namespace System.Text.Json.SourceGeneration
                     converterInstatiationLogic,
                     implementsIJsonOnSerialized : implementsIJsonOnSerialized,
                     implementsIJsonOnSerializing : implementsIJsonOnSerializing,
+                    canContainNullableReferenceAnnotations: canContainNullableReferenceAnnotations,
                     hasTypeFactoryConverter : hasTypeFactoryConverter,
                     hasPropertyFactoryConverters : hasPropertyFactoryConverters);
 
