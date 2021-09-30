@@ -27,27 +27,26 @@
 
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
-          AfterTargets="ResolveFrameworkReferences"
-          Condition="'false' == 'true'">
+          AfterTargets="ResolveFrameworkReferences">
     <ItemGroup>
       <ResolvedTargetingPack Path="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
                              NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
                              PackageDirectory="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
                              Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == 'Microsoft.NETCore.App'" />
       <ResolvedRuntimePack
-                            Update="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                            Update="Microsoft.NETCore.App.Runtime.Mono.android-arm64"
                             FrameworkName="Microsoft.NETCore.App"
-                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.android-arm64"
                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
-                            RuntimeIdentifier="browser-wasm" />
+                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.android-arm64\$(RuntimePackInWorkloadVersion)"
+                            RuntimeIdentifier="android-arm64" />
 
        <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
                                    TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.browser-wasm"
+                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.android-arm64"
                                    RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
-                                   RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.browser-wasm\$(RuntimePackInWorkloadVersion)"
-                                   RuntimeIdentifier="browser-wasm" />
+                                   RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.android-arm64\$(RuntimePackInWorkloadVersion)"
+                                   RuntimeIdentifier="android-arm64" />
     </ItemGroup>
   </Target>
 

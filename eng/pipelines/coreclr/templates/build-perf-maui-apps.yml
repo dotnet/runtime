@@ -32,6 +32,7 @@ steps:
       ./dotnet.sh workload install maui --skip-manifest-update
     displayName: Install MAUI
     workingDirectory: $(Build.SourcesDirectory)
+    condition: succeededOrFailed()
   - script: |
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
