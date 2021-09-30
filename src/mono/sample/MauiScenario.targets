@@ -1,0 +1,5 @@
+<Project>
+  <Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+</Project>
