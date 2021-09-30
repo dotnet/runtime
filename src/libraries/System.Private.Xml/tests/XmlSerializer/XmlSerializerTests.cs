@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
@@ -1964,36 +1965,38 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [Fact]
     public static void Xml_TypeInCollectibleALC()
     {
-        WeakReference weakRef;
-
-//#if !XMLSERIALIZERGENERATORTESTS
-//        ExecuteAndUnload("System.Collections.Specialized", "System.Collections.Specialized.StringCollection", out weakRef);
-//#else
-        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out weakRef);
-//#endif
+        ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
 
         for (int i = 0; weakRef.IsAlive && i < 10; i++)
         {
             GC.Collect();
+            GC.WaitForFullGCComplete();
             GC.WaitForPendingFinalizers();
         }
         Assert.True(!weakRef.IsAlive);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExecuteAndUnload(string assemblyfile, string typename, out WeakReference wref)
     {
-        var alc = new AssemblyLoadContext("XmlSerializerTests", true);
+        var fullPath = Path.GetFullPath(assemblyfile);
+        var alc = new TestAssemblyLoadContext("XmlSerializerTests", true, fullPath);
         wref = new WeakReference(alc);
-        var asm = alc.LoadFromAssemblyPath(Path.GetFullPath(assemblyfile));
+
+        // Load assembly by path. By name, and it gets loaded in the default ALC.
+        var asm = alc.LoadFromAssemblyPath(fullPath);
+
+        // Ensure the type loaded in the intended non-Default ALC
         var type = asm.GetType(typename);
-        var obj = Activator.CreateInstance(type);
+        Assert.Equal(AssemblyLoadContext.GetLoadContext(type.Assembly), alc);
+        Assert.NotEqual(alc, AssemblyLoadContext.Default);
 
-        Assert.NotEqual(AssemblyLoadContext.GetLoadContext(type.Assembly), AssemblyLoadContext.Default);
-
+        // Round-Trip the instance
         XmlSerializer serializer = new XmlSerializer(type);
-        var rto = SerializeAndDeserialize(obj, null, () => serializer, true);
-
-        Assert.NotNull(rto);
+        var obj = Activator.CreateInstance(type);
+        var rtobj = SerializeAndDeserialize(obj, null, () => serializer, true);
+        Assert.NotNull(rtobj);
+        Assert.True(rtobj.Equals(obj));
 
         alc.Unload();
     }
