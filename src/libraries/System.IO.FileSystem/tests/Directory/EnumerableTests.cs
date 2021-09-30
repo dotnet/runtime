@@ -13,7 +13,7 @@ namespace System.IO.Tests
         [Fact]
         // we don't guarantee thread safety of enumerators in general, but on Windows we
         // currently are thread safe, and this test will help ensure that if we change that
-        // it's a conscious decision. Discussed in #24295.
+        // it's a conscious decision. Discussed in https://github.com/dotnet/runtime/issues/24295.
         [PlatformSpecific(TestPlatforms.Windows)]
         public void FileEnumeratorIsThreadSafe()
         {

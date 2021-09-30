@@ -148,7 +148,7 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
-        // Linux kernels no longer have long max date time support. Discussed in #43166.
+        // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
         [PlatformSpecific(~TestPlatforms.Linux)]
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax()
