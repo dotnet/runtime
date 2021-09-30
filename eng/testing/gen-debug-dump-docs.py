@@ -17,23 +17,23 @@ while idx < args_len:
         if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -buildid")
             exit(1)
-        
+
         build_id = sys.argv[idx]
         idx += 1
-    
+
     if arg == '-jobid':
         if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -jobid")
             exit(1)
-        
+
         job_id = sys.argv[idx]
         idx += 1
-    
+
     if arg == '-workitem':
         if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -workitem")
             exit(1)
-        
+
         workitem = sys.argv[idx]
         idx += 1
 
@@ -41,7 +41,7 @@ while idx < args_len:
         if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -templatedir")
             exit(1)
-        
+
         template_dir = sys.argv[idx]
         idx += 1
 
@@ -49,7 +49,7 @@ while idx < args_len:
         if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -outdir")
             exit(1)
-        
+
         out_dir = sys.argv[idx]
         idx += 1
 
@@ -57,7 +57,7 @@ while idx < args_len:
         if idx >= args_len or sys.argv[idx].startswith('-'):
             print("Must specify a value for -dumpdir")
             exit(1)
-        
+
         dump_dir = sys.argv[idx]
         idx += 1
 
@@ -85,7 +85,7 @@ if job_id == '':
 
 replace_string = ''
 dir_separator = '/' if platform.system() != 'Windows' else '\\'
-unix_user_folder = '~/helix_payload/'
+unix_user_folder = '$HOME/helix_payload/'
 windows_user_folder = 'c:\\helix_payload\\'
 source_file = template_dir + dir_separator + 'debug-dump-template.md'
 with open(source_file, 'r') as f:
