@@ -1462,7 +1462,7 @@ int MethodTable::GetVectorSize()
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
             vectorSize = GetNumInstanceFieldBytes();
         }
-        if (strcmp(className, "Vector128`1") == 0)
+        else if (strcmp(className, "Vector128`1") == 0)
         {
             _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 16;
