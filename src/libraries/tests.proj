@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-    <!-- Issue: https://github.com/dotnet/runtime/issues/59766 -->
+    <!-- Issue: https://github.com/dotnet/runtime/issues/59815 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
   </ItemGroup>
 
