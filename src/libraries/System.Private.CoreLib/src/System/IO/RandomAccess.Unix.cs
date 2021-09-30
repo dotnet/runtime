@@ -33,9 +33,15 @@ namespace System.IO
                 // The Windows implementation uses ReadFile, which ignores the offset if the handle
                 // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
                 // the function to be used by FileStream for all the same situations.
-                int result = handle.CanSeek ?
-                    Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset) :
-                    Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                int result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
+
+                // Fallback to read if pread fails.
+                if (result == -1)
+                {
+                    Debug.Assert(Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ENXIO || !handle.CanSeek); // We want to catch other errors and add unit tests for them.
+                    result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                }
+
                 FileStreamHelpers.CheckFileCall(result, handle.Path);
                 return result;
             }
@@ -90,9 +96,15 @@ namespace System.IO
                     // The Windows implementation uses WriteFile, which ignores the offset if the handle
                     // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
                     // the function to be used by FileStream for all the same situations.
-                    int bytesWritten = handle.CanSeek ?
-                        Interop.Sys.PWrite(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length), fileOffset) :
-                        Interop.Sys.Write(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length));
+                    int bytesToWrite = GetNumberOfBytesToWrite(buffer.Length);
+                    int bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
+
+                    // Fallback to write if pwrite fails.
+                    if (bytesWritten == -1)
+                    {
+                        Debug.Assert(Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ENXIO || !handle.CanSeek); // We want to catch other errors and add unit tests for them.
+                        bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
+                    }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
                     if (bytesWritten == buffer.Length)
