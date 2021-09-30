@@ -36,6 +36,7 @@ steps:
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.targets
       ../dotnet.sh build -f net6.0-android -bl:MauiTestingBin.binlog /p:RestoreUseStaticGraphEvaluation=false
     displayName: Build MAUI
     workingDirectory: $(Build.SourcesDirectory)
