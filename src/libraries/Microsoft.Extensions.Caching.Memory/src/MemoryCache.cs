@@ -496,7 +496,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void CheckDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                Throw();
+            }
+
+            static void Throw() => throw new ObjectDisposedException(typeof(MemoryCache).FullName);
         }
 
         private static void ValidateCacheKey(object key)

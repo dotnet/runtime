@@ -49,7 +49,10 @@ namespace System
         [StackTraceHidden]
         public static void ThrowIf([DoesNotReturnIf(true)] bool condition, object instance)
         {
-            ThrowIf(condition, instance?.GetType());
+            if (condition)
+            {
+                throw new ObjectDisposedException(instance?.GetType().FullName);
+            }
         }
 
         [StackTraceHidden]
