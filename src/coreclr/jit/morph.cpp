@@ -7757,14 +7757,19 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             //
             if (nextBlock->bbJumpKind != BBJ_RETURN)
             {
-                BasicBlock* nextNextBlock = nextBlock->GetUniqueSucc();
+                BasicBlock* retBlock = nextBlock->GetUniqueSucc();
 
                 // Check if we have a sequence of GT_ASG blocks where the same variable is assigned
                 // to temp locals over and over.
-                //
                 // Also allow casts on the RHSs of the assignments, and blocks with GT_NOPs.
                 //
-                if (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                // { GT_ASG(t_0, GT_CALL(...)) }
+                // { GT_ASG(t_1, t0) } (with casts on rhs potentially)
+                // ...
+                // { GT_ASG(t_n, t_(n - 1)) }
+                // { GT_RET t_n }
+                //
+                if (retBlock->bbJumpKind != BBJ_RETURN)
                 {
                     // Make sure the block has a single statement
                     assert(nextBlock->firstStmt() == nextBlock->lastStmt());
@@ -7774,10 +7779,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 
                     unsigned lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
 
-                    while (nextNextBlock->bbJumpKind != BBJ_RETURN)
+                    while (retBlock->bbJumpKind != BBJ_RETURN)
                     {
-                        assert(nextNextBlock->firstStmt() == nextNextBlock->lastStmt());
-                        asgNode = nextNextBlock->firstStmt()->GetRootNode();
+#ifdef DEBUG
+                        assert(retBlock->firstStmt() == retBlock->lastStmt());
+                        asgNode = retBlock->firstStmt()->GetRootNode();
                         if (!asgNode->OperIs(GT_NOP))
                         {
                             assert(asgNode->OperIs(GT_ASG));
@@ -7790,19 +7796,20 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                             }
 
                             assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
-                            lcl = rhs->AsLclVarCommon()->GetLclNum();
+                            lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
                         }
-                        nextNextBlock = nextNextBlock->GetUniqueSucc();
+#endif
+                        retBlock = retBlock->GetUniqueSucc();
                     }
                 }
 
-                assert(nextNextBlock->bbJumpKind == BBJ_RETURN);
+                assert(retBlock->bbJumpKind == BBJ_RETURN);
 
-                if (nextNextBlock->hasProfileWeight())
+                if (retBlock->hasProfileWeight())
                 {
                     // Do similar updates here.
                     //
-                    weight_t const nextNextWeight    = nextNextBlock->bbWeight;
+                    weight_t const nextNextWeight    = retBlock->bbWeight;
                     weight_t const newNextNextWeight = nextNextWeight - blockWeight;
 
                     // If the math would result in an negative weight then there's
@@ -7811,15 +7818,15 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     if (newNextNextWeight >= 0)
                     {
                         JITDUMP("Reducing profile weight of " FMT_BB " from " FMT_WT " to " FMT_WT "\n",
-                                nextNextBlock->bbNum, nextNextWeight, newNextNextWeight);
+                                retBlock->bbNum, nextNextWeight, newNextNextWeight);
 
-                        nextNextBlock->setBBProfileWeight(newNextNextWeight);
+                        retBlock->setBBProfileWeight(newNextNextWeight);
                     }
                     else
                     {
                         JITDUMP("Not reducing profile weight of " FMT_BB " as its weight " FMT_WT
                                 " is less than direct flow pred " FMT_BB " weight " FMT_WT "\n",
-                                nextNextBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
+                                retBlock->bbNum, nextNextWeight, compCurBB->bbNum, blockWeight);
                     }
                 }
             }
