@@ -110,10 +110,4 @@ public:
 
 };
 
-class COMPunkSafeHandle
-{
-  public:
-    static FCDECL0(void*, nGetDReleaseTarget);
-};
-
 #endif

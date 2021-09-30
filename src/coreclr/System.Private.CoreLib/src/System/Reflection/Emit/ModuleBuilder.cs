@@ -1464,12 +1464,12 @@ namespace System.Reflection.Emit
                 {
                     byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType).InternalGetSignature(out int length);
                     tr = GetTokenFromTypeSpec(sig, length);
-                    mr = GetMemberRefOfFieldInfo(tr, field.DeclaringType.GetTypeHandleInternal(), rtField);
+                    mr = GetMemberRefOfFieldInfo(tr, field.DeclaringType.TypeHandle, rtField);
                 }
                 else
                 {
                     tr = GetTypeTokenInternal(field.DeclaringType!);
-                    mr = GetMemberRefOfFieldInfo(tr, field.DeclaringType!.GetTypeHandleInternal(), rtField);
+                    mr = GetMemberRefOfFieldInfo(tr, field.DeclaringType!.TypeHandle, rtField);
                 }
             }
             else if (field is FieldOnTypeBuilderInstantiation fOnTB)

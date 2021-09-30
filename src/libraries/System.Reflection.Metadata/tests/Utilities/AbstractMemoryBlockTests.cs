@@ -73,9 +73,7 @@ namespace System.Reflection.Internal.Tests
             var array = new byte[] { 1, 2, 3, 4 };
             using (var stream = new MemoryStream(array))
             {
-                Assert.False(FileStreamReadLightUp.IsFileStream(stream));
-
-                using (var provider = new StreamMemoryBlockProvider(stream, 0, array.Length, isFileStream: false, leaveOpen: true))
+                using (var provider = new StreamMemoryBlockProvider(stream, 0, array.Length, leaveOpen: true))
                 {
                     using (var block = provider.GetMemoryBlock())
                     {
@@ -100,7 +98,7 @@ namespace System.Reflection.Internal.Tests
                     Assert.Equal(3, stream.Position);
                 }
 
-                using (var provider = new StreamMemoryBlockProvider(stream, 0, array.Length, isFileStream: false, leaveOpen: false))
+                using (var provider = new StreamMemoryBlockProvider(stream, 0, array.Length, leaveOpen: false))
                 {
                     using (var block = provider.GetMemoryBlock())
                     {
@@ -137,9 +135,7 @@ namespace System.Reflection.Internal.Tests
                 {
                     using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, useAsync))
                     {
-                        Assert.True(FileStreamReadLightUp.IsFileStream(stream));
-
-                        using (var provider = new StreamMemoryBlockProvider(stream, imageStart: 0, imageSize: array.Length, isFileStream: true, leaveOpen: false))
+                        using (var provider = new StreamMemoryBlockProvider(stream, imageStart: 0, imageSize: array.Length, leaveOpen: false))
                         {
                             // large:
                             using (var block = provider.GetMemoryBlock())

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -905,7 +906,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Groups_CustomCulture_TestData_AzeriLatin))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/56407", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36900", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public void Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups)
+        public async Task Groups(string cultureName, string pattern, string input, RegexOptions options, string[] expectedGroups)
         {
             if (cultureName is null)
             {
@@ -915,13 +916,16 @@ namespace System.Text.RegularExpressions.Tests
 
             using (new ThreadCultureChange(cultureName))
             {
-                Groups(pattern, input, options, expectedGroups);
-                Groups(pattern, input, RegexOptions.Compiled | options, expectedGroups);
+                foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+                {
+                    await GroupsAsync(engine, pattern, input, options, expectedGroups);
+                }
             }
 
-            static void Groups(string pattern, string input, RegexOptions options, string[] expectedGroups)
+            static async Task GroupsAsync(RegexEngine engine, string pattern, string input, RegexOptions options, string[] expectedGroups)
             {
-                Regex regex = new Regex(pattern, options);
+                Regex regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+
                 Match match = regex.Match(input);
                 Assert.True(match.Success);
 

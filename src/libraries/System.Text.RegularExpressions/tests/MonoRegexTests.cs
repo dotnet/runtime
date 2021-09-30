@@ -9,6 +9,7 @@
 //         (c) 2002
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -20,12 +21,12 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(RegexTestCasesWithOptions))]
-        public void ValidateRegex(string pattern, RegexOptions options, string input, string expected)
+        public async Task ValidateRegex(RegexEngine engine, string pattern, RegexOptions options, string input, string expected)
         {
             string result = "Fail.";
             try
             {
-                var re = new Regex(pattern, options);
+                Regex re = await RegexHelpers.GetRegexAsync(engine, pattern, options);
                 Match m = re.Match(input);
 
                 if (m.Success)
@@ -55,12 +56,13 @@ namespace System.Text.RegularExpressions.Tests
 
         public static IEnumerable<object[]> RegexTestCasesWithOptions()
         {
-            foreach (object[] obj in RegexTestCases())
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { obj[0], obj[1], obj[2], obj[3] };
-                yield return new object[] { obj[0], RegexOptions.CultureInvariant | (RegexOptions)obj[1], obj[2], obj[3] };
-                yield return new object[] { obj[0], RegexOptions.Compiled | (RegexOptions)obj[1], obj[2], obj[3] };
-                yield return new object[] { obj[0], RegexOptions.Compiled | RegexOptions.CultureInvariant | (RegexOptions)obj[1], obj[2], obj[3] };
+                foreach (object[] obj in RegexTestCases())
+                {
+                    yield return new object[] { engine, obj[0], obj[1], obj[2], obj[3] };
+                    yield return new object[] { engine, obj[0], RegexOptions.CultureInvariant | (RegexOptions)obj[1], obj[2], obj[3] };
+                }
             }
         }
 

@@ -78,7 +78,7 @@ IDacDbiInterface::IAllocator * g_pAllocator = NULL;
 //            return; // DBI will then free this memory.
 //        }
 //        ...
-//        DeleteDbiMemory(p);
+//        DeleteDbiMemory(p); // DeleteDbiMemory(p, len); if it was an array allocation.
 //     }
 //
 //     Be very careful when using this on classes since Dbi and DAC may be in
@@ -155,6 +155,25 @@ template<class T> void DeleteDbiMemory(T *p)
     g_pAllocator->Free((BYTE*) p);
 }
 
+// Delete memory and invoke dtor for memory allocated with 'operator (forDbi) new[]'
+// There's an inherent risk here - where each element's destructor will get called within
+// the context of the DAC. If the destructor tries to use the CRT allocator logic expecting
+// to hit the DBI's, we could be in trouble. Those objects need to use an export allocator like this.
+template<class T> void DeleteDbiArrayMemory(T *p, int count)
+{
+    if (p == NULL)
+    {
+        return;
+    }
+
+    for (T *cur = p; cur < p + count; cur++)
+    {
+        cur->~T();
+    }
+
+    _ASSERTE(g_pAllocator != NULL);
+    g_pAllocator->Free((BYTE*) p);
+}
 
 //---------------------------------------------------------------------------------------
 // Creates the DacDbiInterface object, used by Dbi.
@@ -705,12 +724,6 @@ HRESULT DacDbiInterfaceImpl::SetCompilerFlags(VMPTR_DomainFile vmDomainFile,
     HRESULT      hr          = S_OK;
 
 
-#ifdef FEATURE_PREJIT
-    if (pModule->HasNativeImage())
-    {
-        ThrowHR(CORDBG_E_CANT_CHANGE_JIT_SETTING_FOR_ZAP_MODULE);
-    }
-#endif
     _ASSERTE(pModule != NULL);
 
     // Initialize dwBits.
@@ -823,12 +836,6 @@ SIZE_T DacDbiInterfaceImpl::GetArgCount(MethodDesc * pMD)
 */
     return NumArguments;
 } //GetArgCount
-
-// Allocator to pass to DebugInfoStores, allocating forDBI
-BYTE* InfoStoreForDbiNew(void * pData, size_t cBytes)
-{
-    return new(forDbi) BYTE[cBytes];
-}
 
 // Allocator to pass to the debug-info-stores...
 BYTE* InfoStoreNew(void * pData, size_t cBytes)
@@ -1256,32 +1263,9 @@ bool DacDbiInterfaceImpl::GetILImageInfoFromNgenPEFile(VMPTR_PEFile vmPEFile,
                                                        DWORD &dwSize,
                                                        IStringHolder* pStrFilename)
 {
-#if !defined(FEATURE_PREJIT)
 
     return false;
 
-#else // defined(FEATURE_PREJIT)
-
-    DD_ENTER_MAY_THROW;
-
-    PEFile * pPEFile = vmPEFile.GetDacPtr();
-    _ASSERTE(pPEFile != NULL);
-    if (pPEFile == NULL)
-    {
-        return false;
-    }
-
-    WCHAR wszFilePath[MAX_LONGPATH] = {0};
-    DWORD cchFilePath = MAX_LONGPATH;
-    bool ret = ClrDataAccess::GetILImageInfoFromNgenPEFile(pPEFile,
-                                                           dwTimeStamp,
-                                                           dwSize,
-                                                           wszFilePath,
-                                                           cchFilePath);
-
-    pStrFilename->AssignCopy(wszFilePath);
-    return ret;
-#endif // !defined(FEATURE_PREJIT)
 }
 
 // Get start addresses and sizes for hot and cold regions for a native code blob.
@@ -1636,7 +1620,7 @@ void DacDbiInterfaceImpl::ComputeFieldData(PTR_FieldDesc pFD,
             {
                 // RVA statics are relative to a base module address
                 DWORD offset = pFD->GetOffset();
-                PTR_VOID addr = pFD->GetModule()->GetRvaField(offset, pFD->IsZapped());
+                PTR_VOID addr = pFD->GetModule()->GetRvaField(offset);
                 if (pCurrentFieldData->OkToGetOrSetStaticAddress())
                 {
                     pCurrentFieldData->SetStaticAddress(PTR_TO_TADDR(addr));
@@ -4184,31 +4168,6 @@ BOOL DacDbiInterfaceImpl::GetModuleNGenPath(VMPTR_Module vmModule,
                                             IStringHolder *  pStrFilename)
 {
     DD_ENTER_MAY_THROW;
-#ifdef FEATURE_PREJIT
-    Module * pModule = vmModule.GetDacPtr();
-    PEFile * pFile = pModule->GetFile();
-    if (pFile != NULL && pFile->HasNativeImage())
-    {
-        PEImage * pImage = pFile->GetPersistentNativeImage();
-        if (pImage != NULL && pImage->IsFile())
-        {
-            // We have an on-disk ngen image.  Return the path.
-            // since we no longer support Win9x, we assume all paths will be in unicode format already
-            const WCHAR * szPath = pImage->GetPath().DacGetRawUnicode();
-            if (szPath == NULL)
-            {
-                szPath = pFile->GetModuleFileNameHint().DacGetRawUnicode();
-                if (szPath == NULL)
-                {
-                    goto NoFileName;
-                }
-            }
-            IfFailThrow(pStrFilename->AssignCopy(szPath));
-            return TRUE;
-        }
-    }
-NoFileName:
-#endif // FEATURE_PREJIT
 
     // no ngen filename
     IfFailThrow(pStrFilename->AssignCopy(W("")));
@@ -4771,15 +4730,15 @@ VMPTR_OBJECTHANDLE DacDbiInterfaceImpl::GetThreadObject(VMPTR_Thread vmThread)
     }
 }
 
-void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread, 
+void DacDbiInterfaceImpl::GetThreadAllocInfo(VMPTR_Thread        vmThread,
                                              DacThreadAllocInfo* threadAllocInfo)
 {
     DD_ENTER_MAY_THROW;
 
     Thread * pThread = vmThread.GetDacPtr();
     gc_alloc_context* allocContext = pThread->GetAllocContext();
-    threadAllocInfo->m_allocBytesSOH = (ULONG)(allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr));
-    threadAllocInfo->m_allocBytesUOH = (ULONG)allocContext->alloc_bytes_uoh;
+    threadAllocInfo->m_allocBytesSOH = allocContext->alloc_bytes - (allocContext->alloc_limit - allocContext->alloc_ptr);
+    threadAllocInfo->m_allocBytesUOH = allocContext->alloc_bytes_uoh;
 }
 
 // Set and reset the TSNC_DebuggerUserSuspend bit on the state of the specified thread
@@ -5796,42 +5755,14 @@ HRESULT DacDbiInterfaceImpl::SetNGENCompilerFlags(DWORD dwFlags)
 {
     DD_ENTER_MAY_THROW;
 
-#ifndef FEATURE_PREJIT
     return CORDBG_E_NGEN_NOT_SUPPORTED;
-#else
-    // verify that we are still early enough in runtime lifecycle to mutate these
-    // flags. Typically this is done in the CreateProcess event though it is possible
-    // to do it even earlier
-    if(!Debugger::s_fCanChangeNgenFlags)
-        return CORDBG_E_MUST_BE_IN_CREATE_PROCESS;
-
-    BOOL fAllowOpt =
-        ((dwFlags & CORDEBUG_JIT_DISABLE_OPTIMIZATION) != CORDEBUG_JIT_DISABLE_OPTIMIZATION);
-    PEFile::SetNGENDebugFlags(fAllowOpt);
-    return S_OK;
-#endif
 }
 
 HRESULT DacDbiInterfaceImpl::GetNGENCompilerFlags(DWORD *pdwFlags)
 {
     DD_ENTER_MAY_THROW;
 
-#ifndef FEATURE_PREJIT
     return CORDBG_E_NGEN_NOT_SUPPORTED;
-#else
-    BOOL fAllowOpt = TRUE;
-    PEFile::GetNGENDebugFlags(&fAllowOpt);
-    if(!fAllowOpt)
-    {
-        *pdwFlags = CORDEBUG_JIT_DISABLE_OPTIMIZATION;
-    }
-    else
-    {
-        *pdwFlags = CORDEBUG_JIT_DEFAULT;
-    }
-
-    return S_OK;
-#endif
 }
 
 typedef DPTR(OBJECTREF) PTR_ObjectRef;

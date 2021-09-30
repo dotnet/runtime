@@ -86,19 +86,11 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                 ulSize = 0;
                 file = modDef->GetFile();
 
-                // We want to save all native images
-                if (file->HasNativeImage())
-                {
-                    // We should only skip if signed by Microsoft!
-                    pStartAddr = PTR_TO_TADDR(file->GetLoadedNative()->GetBase());
-                    ulSize = file->GetLoadedNative()->GetSize();
-                }
-                // We also want to save any in-memory images.  These show up like mapped files
+                // We want to save any in-memory images.  These show up like mapped files
                 // and so would not be in a heap dump by default.  Technically it's not clear we
                 // should include them in the dump - you can often have the files available
                 // after-the-fact. But in-memory modules may be harder to track down at debug time
                 // and people may have come to rely on this - so we'll include them for now.
-                else
                 if (
                     file->GetPath().IsEmpty() && // is in-memory
                     file->HasMetadata() &&       // skip resource assemblies
@@ -619,9 +611,6 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
     ULONG32         length;
     PEFile          *file;
     TSIZE_T         cbMemoryReported = m_cbMemoryReported;
-#ifdef FEATURE_PREJIT
-    COUNT_T         count;
-#endif // FEATURE_PREJIT
 
     //
     // Iterating through module list
@@ -648,16 +637,11 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
                 // We expose no API today to find this out.
                 PTR_PEFile pPEFile = modDef->GetFile();
                 PEImage * pILImage = pPEFile->GetILimage();
-                PEImage * pNIImage = pPEFile->GetNativeImage();
 
                 // Implicitly gets the COR header.
                 if ((pILImage) && (pILImage->HasLoadedLayout()))
                 {
                     pILImage->GetCorHeaderFlags();
-                }
-                if ((pNIImage) && (pNIImage->HasLoadedLayout()))
-                {
-                    pNIImage->GetCorHeaderFlags();
                 }
             }
             EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED
@@ -668,15 +652,6 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
                 file = modDef->GetFile();
                 base = PTR_TO_TADDR(file->GetLoadedImageContents(&length));
                 file->EnumMemoryRegions(flags);
-#ifdef FEATURE_PREJIT
-
-                // If module has native image and it has debug map, we need to get the debug map.
-                //
-                if (modDef->HasNativeImage() && modDef->GetNativeImage()->HasNativeDebugMap())
-                {
-                    modDef->GetNativeImage()->GetNativeDebugMap(&count);
-                }
-#endif // FEATURE_PREJIT
             }
             EX_CATCH
             {

@@ -63,9 +63,6 @@ extern char*                    g_pszObjFileName;
 extern FILE*                    g_pFile;
 
 extern BOOL                 g_fLimitedVisibility;
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-extern BOOL                 g_fNGenNativeMetadata;
-#endif
 extern BOOL                 g_fHidePub;
 extern BOOL                 g_fHidePriv;
 extern BOOL                 g_fHideFam;
@@ -248,12 +245,6 @@ int ProcessOneArg(__in __nullterminated char* szArg, __out char** ppszObjFileNam
             g_fLimitedVisibility = TRUE;
             g_fHidePub = FALSE;
         }
-#if defined(_DEBUG) && defined(FEATURE_PREJIT)
-        else if (_stricmp(szOpt, "nat") == 0)
-        {
-            g_fNGenNativeMetadata = TRUE;
-        }
-#endif
         else if (_stricmp(szOpt, "pre") == 0)
         {
             //g_fPrettyPrint = TRUE;

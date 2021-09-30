@@ -1672,7 +1672,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
 #if REGEN_SHORTCUTS
             regenLog(headerEncoding, header, &state);
 #endif
-            _ASSERTE(codeSet == 1 || codeSet == 2 && "Encoding must correspond to InfoHdrAdjust or InfoHdrAdjust2");
+            _ASSERTE((codeSet == 1 || codeSet == 2) && "Encoding must correspond to InfoHdrAdjust or InfoHdrAdjust2");
             if (codeSet == 2)
             {
                 *dest++ = NEXT_OPCODE | MORE_BYTES_TO_FOLLOW;

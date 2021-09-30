@@ -845,6 +845,21 @@ namespace DebuggerTests
                     }, "t_props", num_fields: 53);
             });
 
+
+        [Fact]
+        public async Task InspectLocalsWithIndexAndPositionWithDifferentValues() //https://github.com/xamarin/xamarin-android/issues/6161
+        {
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] MainPage:CallSetValue'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 758, 16,
+                "set_SomeValue",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "view", 150);
+                }
+            );
+        }
+
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

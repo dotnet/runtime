@@ -107,6 +107,10 @@ namespace System.Runtime.Serialization.Json
                     }
                 }
                 InitArgs(collectionContract.UnderlyingType);
+                if (collectionContract.IsReadOnlyContract)
+                {
+                    ThrowIfCannotSerializeReadOnlyTypes(collectionContract);
+                }
                 WriteCollection(collectionContract);
                 return (JsonFormatCollectionWriterDelegate)_ilg.EndMethod();
             }
@@ -160,6 +164,23 @@ namespace System.Runtime.Serialization.Json
                     _ilg.ConvertValue(objectArg.ArgType, objType);
                 }
                 _ilg.Stloc(_objectLocal);
+            }
+
+            private void ThrowIfCannotSerializeReadOnlyTypes(CollectionDataContract classContract)
+            {
+                ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.CollectionSerializationExceptionMessageProperty);
+            }
+
+            private void ThrowIfCannotSerializeReadOnlyTypes(PropertyInfo serializationExceptionMessageProperty)
+            {
+                _ilg.Load(_contextArg);
+                _ilg.LoadMember(XmlFormatGeneratorStatics.SerializeReadOnlyTypesProperty);
+                _ilg.IfNot();
+                _ilg.Load(_dataContractArg);
+                _ilg.LoadMember(serializationExceptionMessageProperty);
+                _ilg.Load(null);
+                _ilg.Call(XmlFormatGeneratorStatics.ThrowInvalidDataContractExceptionMethod);
+                _ilg.EndIf();
             }
 
             private void InvokeOnSerializing(ClassDataContract classContract)
@@ -243,7 +264,7 @@ namespace System.Runtime.Serialization.Json
                         _ilg.IfNotDefaultValue(memberValue);
                     }
 
-                    bool requiresNameAttribute = DataContractJsonSerializerImpl.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
+                    bool requiresNameAttribute = DataContractJsonSerializer.CheckIfXmlNameRequiresMapping(classContract.MemberNames![i]);
                     if (requiresNameAttribute || !TryWritePrimitive(memberType, memberValue, member.MemberInfo, arrayItemIndex: null, name: null, nameIndex: i + _childElementIndex))
                     {
                         // Note: DataContractSerializer has member-conflict logic here to deal with the schema export
@@ -554,7 +575,7 @@ namespace System.Runtime.Serialization.Json
                     return false;
 
                 string? writeArrayMethod = null;
-                switch (itemType.GetTypeCode())
+                switch (Type.GetTypeCode(itemType))
                 {
                     case TypeCode.Boolean:
                         writeArrayMethod = "WriteJsonBooleanArray";
@@ -616,6 +637,15 @@ namespace System.Runtime.Serialization.Json
             private void WriteValue(LocalBuilder memberValue)
             {
                 Type memberType = memberValue.LocalType;
+                if (memberType.IsPointer)
+                {
+                    _ilg.Load(memberValue);
+                    _ilg.Load(memberType);
+                    _ilg.Call(JsonFormatGeneratorStatics.BoxPointer);
+                    memberType = typeof(System.Reflection.Pointer);
+                    memberValue = _ilg.DeclareLocal(memberType, "memberValueRefPointer");
+                    _ilg.Store(memberValue);
+                }
                 bool isNullableOfT = (memberType.IsGenericType &&
                                       memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
                 if (memberType.IsValueType && !isNullableOfT)
@@ -739,7 +769,7 @@ namespace System.Runtime.Serialization.Json
                 // namespace
                 _ilg.Load(null);
 
-                if (nameLocal != null && nameLocal.LocalType == Globals.TypeOfString)
+                if (nameLocal != null && nameLocal.LocalType == typeof(string))
                 {
                     _ilg.Call(JsonFormatGeneratorStatics.WriteStartElementStringMethod);
                 }

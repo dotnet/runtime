@@ -39,7 +39,7 @@ namespace System.Net.Security
         public static SafeFreeCredentials AcquireCredentialsHandle(SslStreamCertificateContext? certificateContext,
             SslProtocols protocols, EncryptionPolicy policy, bool isServer)
         {
-            return new SafeFreeSslCredentials(certificateContext?.Certificate, protocols, policy);
+            return new SafeFreeSslCredentials(certificateContext, protocols, policy, isServer);
         }
 
         public static SecurityStatusPal EncryptMessage(SafeDeleteSslContext securityContext, ReadOnlyMemory<byte> input, int headerSize, int trailerSize, ref byte[] output, out int resultSize)

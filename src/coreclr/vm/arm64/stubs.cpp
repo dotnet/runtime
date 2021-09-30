@@ -274,7 +274,6 @@ void ClearRegDisplayArgumentAndScratchRegisters(REGDISPLAY * pRD)
         pRD->volatileCurrContextPointers.X[i] = NULL;
 }
 
-#ifndef CROSSGEN_COMPILE
 void LazyMachState::unwindLazyState(LazyMachState* baseState,
                                     MachState* unwoundstate,
                                     DWORD threadId,
@@ -543,7 +542,6 @@ void HelperMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     ClearRegDisplayArgumentAndScratchRegisters(pRD);
 }
-#endif // CROSSGEN_COMPILE
 
 TADDR FixupPrecode::GetMethodDesc()
 {
@@ -654,7 +652,6 @@ void ThisPtrRetBufPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocat
     m_pMethodDesc = (TADDR)pMD;
 }
 
-#ifndef CROSSGEN_COMPILE
 BOOL DoesSlotCallPrestub(PCODE pCode)
 {
     PTR_DWORD pInstr = dac_cast<PTR_DWORD>(PCODEToPINSTR(pCode));
@@ -693,7 +690,6 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
 
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // !DACCESS_COMPILE
 
@@ -729,7 +725,6 @@ void UpdateRegDisplayFromCalleeSavedRegisters(REGDISPLAY * pRD, CalleeSavedRegis
     pContextPointers->Lr  = (PDWORD64)&pCalleeSaved->x30;
 }
 
-#ifndef CROSSGEN_COMPILE
 
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -755,7 +750,6 @@ void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 
 
-#endif
 
 void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
@@ -979,7 +973,7 @@ void JIT_TailCall()
     _ASSERTE(!"ARM64:NYI");
 }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 EXTERN_C void JIT_UpdateWriteBarrierState(bool skipEphemeralCheck, size_t writeableOffset);
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
@@ -1029,7 +1023,7 @@ void InitJITHelpers1()
 
 #else
 void UpdateWriteBarrierState(bool) {}
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
 {
@@ -1055,7 +1049,7 @@ void RedirectForThreadAbort()
     throw "NYI";
 }
 
-#if !defined(DACCESS_COMPILE) && !defined (CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (DISPATCHER_CONTEXT *pDispatcherContext)
 {
     LIMITED_METHOD_CONTRACT;
@@ -1120,7 +1114,7 @@ AdjustContextForVirtualStub(
 
     return TRUE;
 }
-#endif // !(DACCESS_COMPILE && CROSSGEN_COMPILE)
+#endif // !DACCESS_COMPILE
 
 UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
@@ -1195,7 +1189,6 @@ void FlushWriteBarrierInstructionCache()
     // this wouldn't be called in arm64, just to comply with gchelpers.h
 }
 
-#ifndef CROSSGEN_COMPILE
 int StompWriteBarrierEphemeral(bool isRuntimeSuspended)
 {
     UpdateWriteBarrierState(GCHeapUtilities::IsServerHeap());
@@ -1221,7 +1214,6 @@ int SwitchToNonWriteWatchBarrier(bool isRuntimeSuspended)
     return SWB_PASS;
 }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#endif // CROSSGEN_COMPILE
 
 #ifdef DACCESS_COMPILE
 BOOL GetAnyThunkTarget (T_CONTEXT *pctx, TADDR *pTarget, TADDR *pTargetMethodDesc)
@@ -1767,7 +1759,6 @@ void StubLinkerCPU::EmitCallManagedMethod(MethodDesc *pMD, BOOL fTailCall)
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_READYTORUN
 
@@ -2067,8 +2058,6 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
-
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :
         GetEEFuncEntryPoint(JIT_GenericHandleClassWithSlotAndModule));
@@ -2251,6 +2240,5 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
 }
 #endif // FEATURE_READYTORUN
 
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE

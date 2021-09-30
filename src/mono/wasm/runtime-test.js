@@ -1,7 +1,10 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 // -*- mode: js; js-indent-level: 4; -*-
 //
 // Run runtime tests under a JS shell or a browser
 //
+"use strict";
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
@@ -13,8 +16,35 @@ if (typeof (console) === "undefined") {
 		clear: function () { }
 	};
 }
-
 globalThis.testConsole = console;
+
+//define arguments for later
+var allRuntimeArguments = null;
+try {
+	if (is_browser) {
+		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+		const url = new URL(decodeURI(window.location));
+		allRuntimeArguments = [];
+		for (let param of url.searchParams) {
+			if (param[0] == "arg") {
+				allRuntimeArguments.push(param[1]);
+			}
+		}
+
+	} else if (typeof arguments !== "undefined" && typeof arguments !== "null") {
+		allRuntimeArguments = arguments;
+	} else if (typeof process !== 'undefined' && typeof process.argv !== "undefined") {
+		allRuntimeArguments = process.argv.slice(2);
+	} else if (typeof scriptArgs !== "undefined") {
+		allRuntimeArguments = scriptArgs;
+	} else if (typeof WScript !== "undefined" && WScript.Arguments) {
+		allRuntimeArguments = WScript.Arguments;
+	} else {
+		allRuntimeArguments = [];
+	}
+} catch (e) {
+	console.log(e);
+}
 
 function proxyMethod (prefix, func, asJson) {
 	return function() {
@@ -66,15 +96,6 @@ if (is_browser) {
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
 	};
-
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	var url = new URL (decodeURI (window.location));
-	arguments = [];
-	for (var v of url.searchParams) {
-		if (v [0] == "arg") {
-			arguments.push (v [1]);
-		}
-	}
 }
 //proxyJson(console.log);
 
@@ -103,29 +124,7 @@ if (typeof performance == 'undefined') {
 	}
 }
 
-try {
-	if (typeof arguments == "undefined")
-		arguments = WScript.Arguments;
-	load = WScript.LoadScriptFile;
-	read = WScript.LoadBinaryFile;
-} catch (e) {
-}
-
-try {
-	if (typeof arguments == "undefined") {
-		if (typeof scriptArgs !== "undefined")
-			arguments = scriptArgs;
-	}
-} catch (e) {
-}
-
-if (arguments === undefined)
-	arguments = [];
-
 //end of all the nice shell glue code.
-
-// set up a global variable to be accessed in App.init
-var testArguments = arguments;
 
 function test_exit (exit_code) {
 	if (is_browser) {
@@ -156,44 +155,42 @@ function inspect_object (o) {
 }
 
 // Preprocess arguments
-var args = testArguments;
-console.info("Arguments: " + testArguments);
-profilers = [];
-setenv = {};
-runtime_args = [];
-enable_gc = true;
-enable_zoneinfo = false;
-working_dir='/';
-while (args !== undefined && args.length > 0) {
-	if (args [0].startsWith ("--profile=")) {
-		var arg = args [0].substring ("--profile=".length);
+console.info("Arguments: " + allRuntimeArguments);
+var profilers = [];
+var setenv = {};
+var runtime_args = [];
+var enable_gc = true;
+var enable_zoneinfo = false;
+var working_dir='/';
+while (allRuntimeArguments !== undefined && allRuntimeArguments.length > 0) {
+	if (allRuntimeArguments [0].startsWith ("--profile=")) {
+		var arg = allRuntimeArguments [0].substring ("--profile=".length);
 
 		profilers.push (arg);
 
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--setenv=")) {
-		var arg = args [0].substring ("--setenv=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--setenv=")) {
+		var arg = allRuntimeArguments [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
-		if (parts.length < 2)
-			fail_exec ("Error: malformed argument: '" + args [0]);
-		setenv [parts [0]] = arg.substring (parts [0].length + 1);
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--runtime-arg=")) {
-		var arg = args [0].substring ("--runtime-arg=".length);
-		runtime_args.push (arg);
-		args = args.slice (1);
-	} else if (args [0] == "--disable-on-demand-gc") {
+		if (parts.length != 2)
+			fail_exec ("Error: malformed argument: '" + allRuntimeArguments [0]);
+		setenv [parts [0]] = parts [1];
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--runtime-arg=")) {
+		var arg = allRuntimeArguments [0].substring ("--runtime-arg=".length);
+		runtime_args = allRuntimeArguments.push (arg);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--working-dir=")) {
-		var arg = args [0].substring ("--working-dir=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--working-dir=")) {
+		var arg = allRuntimeArguments [0].substring ("--working-dir=".length);
 		working_dir = arg;
-		args = args.slice (1);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
 	} else {
 		break;
 	}
 }
-testArguments = args;
 
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
@@ -277,6 +274,7 @@ var Module = {
 					try {
 						bytes = read (asset, 'binary');
 					} catch (exc) {
+						console.log('v8 file read failed ' + asset + ' ' + exc)
 						error = exc;
 					}
 					var response = { ok: (bytes && !error), url: asset,
@@ -316,17 +314,17 @@ var App = {
 			init ("");
 		}
 
-		if (args.length == 0) {
+		if (allRuntimeArguments.length == 0) {
 			fail_exec ("Missing required --run argument");
 			return;
 		}
 
-		if (args[0] == "--regression") {
+		if (allRuntimeArguments[0] == "--regression") {
 			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
 			var res = 0;
 				try {
-					res = exec_regression (10, args[1]);
+					res = exec_regression (10, allRuntimeArguments[1]);
 					Module.print ("REGRESSION RESULT: " + res);
 				} catch (e) {
 					Module.print ("ABORT: " + e);
@@ -343,23 +341,23 @@ var App = {
 		if (runtime_args.length > 0)
 			MONO.mono_wasm_set_runtime_options (runtime_args);
 
-		if (args[0] == "--run") {
+		if (allRuntimeArguments[0] == "--run") {
 			// Run an exe
-			if (args.length == 1) {
+			if (allRuntimeArguments.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
 
-			main_assembly_name = args[1];
-			var app_args = args.slice (2);
+			var main_assembly_name = allRuntimeArguments[1];
+			var app_args = allRuntimeArguments.slice (2);
 
-			var main_argc = args.length - 2 + 1;
+			var main_argc = allRuntimeArguments.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
-			aindex = 0;
-			Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [1]), "i32")
+			var aindex = 0;
+			Module.setValue (main_argv + (aindex * 4), wasm_strdup (allRuntimeArguments [1]), "i32")
 			aindex += 1;
-			for (var i = 2; i < args.length; ++i) {
-				Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [i]), "i32");
+			for (var i = 2; i < allRuntimeArguments.length; ++i) {
+				Module.setValue (main_argv + (aindex * 4), wasm_strdup (allRuntimeArguments [i]), "i32");
 				aindex += 1;
 			}
 			wasm_set_main_args (main_argc, main_argv);
@@ -381,7 +379,7 @@ var App = {
 			}
 
 		} else {
-			fail_exec ("Unhandled argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + allRuntimeArguments [0]);
 		}
 	},
 	call_test_method: function (method_name, args, signature) {

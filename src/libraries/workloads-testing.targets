@@ -6,7 +6,7 @@
     <Error Text="%24(SdkWithWorkloadForTestingPath) is not set" Condition="'$(SdkWithWorkloadForTestingPath)' == ''" />
     <Error Text="%24(SdkVersionForWorkloadTesting) is not set" Condition="'$(SdkVersionForWorkloadTesting)' == ''" />
 
-    <Message Text="** Installing sdk $(SdkWithWorkloadForTestingPath) for workload based tests into $(SdkWithWorkloadForTestingPath)" Importance="High" />
+    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(SdkWithWorkloadForTestingPath)" Importance="High" />
 
     <RemoveDir Directories="$(SdkWithWorkloadForTestingPath)" />
     <MakeDir Directories="$(SdkWithWorkloadForTestingPath)" />
@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_SourceFiles)" DestinationFolder="$(SdkWithWorkloadForTestingPath)\%(_SourceFiles.RecursiveDir)" />
+
     <WriteLinesToFile File="$(SdkWithWorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
 
@@ -23,7 +24,7 @@
     <Error Text="%24(SdkWithNoWorkloadForTestingPath) is not set" Condition="'$(SdkWithNoWorkloadForTestingPath)' == ''" />
     <Error Text="%24(SdkVersionForWorkloadTesting) is not set" Condition="'$(SdkVersionForWorkloadTesting)' == ''" />
 
-    <Message Text="** Installing sdk $(SdkWithNoWorkloadForTestingPath) for workload based tests into $(SdkWithNoWorkloadForTestingPath)" Importance="High" />
+    <Message Text="** Installing sdk $(SdkVersionForWorkloadTesting) for workload based tests into $(SdkWithNoWorkloadForTestingPath)" Importance="High" />
 
     <RemoveDir Directories="$(SdkWithNoWorkloadForTestingPath)" />
     <MakeDir Directories="$(SdkWithNoWorkloadForTestingPath)" />

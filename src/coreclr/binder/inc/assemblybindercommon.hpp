@@ -30,23 +30,14 @@ namespace BINDER_SPACE
     class AssemblyBinderCommon
     {
     public:
-        // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
-        // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-        // for an example of how they're used.
         static HRESULT BindAssembly(/* in */  AssemblyBinder      *pBinder, 
                                     /* in */  AssemblyName        *pAssemblyName,
                                     /* in */  LPCWSTR              szCodeBase,
-                                    /* in */  PEAssembly          *pParentAssembly,
-                                    /* in */  BOOL                 fNgenExplicitBind,
-                                    /* in */  BOOL                 fExplicitBindToNativeImage,
                                     /* in */  bool                 excludeAppPaths,
                                     /* out */ Assembly           **ppAssembly);
 
-        static HRESULT BindToSystem(BINDER_SPACE::Assembly** ppSystemAssembly, bool fBindToNativeImage);
-
         static HRESULT BindToSystem(/* in */ SString    &systemDirectory,
-                                    /* out */ Assembly **ppSystemAssembly,
-                                    /* in */ bool fBindToNativeImage);
+                                    /* out */ Assembly **ppSystemAssembly);
 
         static HRESULT BindToSystemSatellite(/* in */ SString   &systemDirectory,
                                              /* in */ SString   &simpleName,
@@ -55,35 +46,26 @@ namespace BINDER_SPACE
 
         static HRESULT GetAssembly(/* in */  SString     &assemblyPath,
                                    /* in */  BOOL         fIsInTPA,
-                                   /* in */  BOOL         fExplicitBindToNativeImage,
                                    /* out */ Assembly   **ppAssembly,
-                                   /* in */  LPCTSTR      szMDAssemblyPath = NULL,
                                    /* in */  BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
-                                                      /* in */ DefaultAssemblyBinder *pTPABinder,
+                                                      /* in */ DefaultAssemblyBinder *pDefaultBinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  AssemblyBinder     *pBinder,
                                         /* in */  BINDER_SPACE::AssemblyName *pAssemblyName,
                                         /* in */  PEImage            *pPEImage,
-                                        /* in */  PEKIND              peKind,
-                                        /* in */  IMDInternalImport  *pIMetaDataAssemblyImport,
                                         /* [retval] [out] */  Assembly **ppAssembly);
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
         static HRESULT TranslatePEToArchitectureType(DWORD  *pdwPAFlags, PEKIND *PeKind);
 
-        static HRESULT DefaultBinderSetupContext(DefaultAssemblyBinder** ppTPABinder);
+        static HRESULT CreateDefaultBinder(DefaultAssemblyBinder** ppDefaultBinder);
 
-        // TODO: The call indicates that this can come from a case where
-        // pDomain->GetFusionContext() is null, hence this is static function
-        // which handles a null binder. See if this actually happens
-        static HRESULT GetAssemblyIdentity(LPCSTR     szTextualIdentity,
-            BINDER_SPACE::ApplicationContext* pApplicationContext,
-            NewHolder<BINDER_SPACE::AssemblyIdentityUTF8>& assemblyIdentityHolder);
+        static BOOL IsValidArchitecture(PEKIND kArchitecture);
 
     private:
         static HRESULT BindByName(/* in */  ApplicationContext *pApplicationContext,
@@ -93,13 +75,8 @@ namespace BINDER_SPACE
                                   /* in */  bool                excludeAppPaths,
                                   /* out */ BindResult         *pBindResult);
 
-        // See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
-        // and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-        // for an example of how they're used.
         static HRESULT BindWhereRef(/* in */  ApplicationContext *pApplicationContext,
                                     /* in */  PathString         &assemblyPath,
-                                    /* in */  BOOL                fNgenExplicitBind,
-                                    /* in */  BOOL                fExplicitBindToNativeImage,
                                     /* in */  bool                excludeAppPaths,
                                     /* out */ BindResult         *pBindResult);
 

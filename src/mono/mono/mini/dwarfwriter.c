@@ -1899,7 +1899,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	g_free (names);
 
 	/* Locals */
-	locals_info = mono_debug_lookup_locals (method, FALSE);
+	locals_info = mono_debug_lookup_locals (method);
 
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoInst *ins = locals [i];

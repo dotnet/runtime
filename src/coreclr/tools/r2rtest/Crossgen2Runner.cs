@@ -96,6 +96,12 @@ namespace R2RTest
                 yield return $"--pdb-path:{Path.GetDirectoryName(outputFileName)}";
             }
 
+            if (_options.Perfmap)
+            {
+                yield return $"--perfmap";
+                yield return $"--perfmap-path:{Path.GetDirectoryName(outputFileName)}";
+            }
+
             if (_options.TargetArch != null)
             {
                 yield return $"--targetarch={_options.TargetArch}";

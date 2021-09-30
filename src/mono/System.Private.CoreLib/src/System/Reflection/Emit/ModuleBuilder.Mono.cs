@@ -952,7 +952,7 @@ namespace System.Reflection.Emit
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return CustomAttribute.GetCustomAttributesData(this);
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]

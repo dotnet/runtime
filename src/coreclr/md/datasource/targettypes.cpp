@@ -223,24 +223,12 @@ HRESULT Target_CGuidPoolHash::ReadFrom(DataTargetReader & reader)
     return S_OK;
 }
 
-Target_HotHeap::Target_HotHeap() :
-m_pHotHeapHeader(0)
-{}
-
-HRESULT Target_HotHeap::ReadFrom(DataTargetReader & reader)
-{
-    HRESULT hr = S_OK;
-    IfFailRet(reader.ReadPointer(&m_pHotHeapHeader));
-    return S_OK;
-}
-
 HRESULT Target_StgPoolReadOnly::ReadFrom(DataTargetReader & reader)
 {
     HRESULT hr = S_OK;
     IfFailRet(reader.SkipPointer()); // __vfptr
     IfFailRet(Target_StgPoolSeg::ReadFrom(reader));
     reader.AlignBase();
-    IfFailRet(reader.Read(&m_HotHeap));
     return S_OK;
 }
 
@@ -402,7 +390,6 @@ HRESULT Target_CMiniMdRW::ReadFrom(DataTargetReader & reader)
     IfFailRet(reader.ReadPointer(&m_pMemberDefHash));
     for (int i = 0; i < TBL_COUNT; i++)
         IfFailRet(reader.ReadPointer(&m_pLookUpHashs[i]));
-    IfFailRet(reader.Read(&m_StringPoolOffsetHash));
     IfFailRet(reader.ReadPointer(&m_pNamedItemHash));
     IfFailRet(reader.Read32(&m_maxRid));
     IfFailRet(reader.Read32(&m_limRid));

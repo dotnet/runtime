@@ -305,22 +305,6 @@ public:
     // to both functions
     CorDebugUserState GetPartialUserState( Thread *pThread );
 
-#ifdef FEATURE_PREJIT
-#ifndef DACCESS_COMPILE
-    virtual void SetNGENDebugFlags(BOOL fAllowOpt)
-    {
-        LIMITED_METHOD_CONTRACT;
-        PEFile::SetNGENDebugFlags(fAllowOpt);
-    }
-
-    virtual void GetNGENDebugFlags(BOOL *fAllowOpt)
-    {
-        LIMITED_METHOD_CONTRACT;
-        PEFile::GetNGENDebugFlags(fAllowOpt);
-    }
-#endif
-#endif // FEATURE_PREJIT
-
 #ifdef DACCESS_COMPILE
     virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif

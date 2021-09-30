@@ -12,8 +12,8 @@
 #include <mono/metadata/class-init-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/security-core-clr.h>
-#include <mono/metadata/security-manager.h>
+#include <mono/metadata/tokentype.h>
+#include <mono/metadata/marshal.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/unlocked.h>
 #ifdef MONO_CLASS_DEF_PRIVATE

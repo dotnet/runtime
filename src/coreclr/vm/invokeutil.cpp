@@ -24,7 +24,6 @@
 #include "runtimehandles.h"
 #include "argdestination.h"
 
-#ifndef CROSSGEN_COMPILE
 
 // The Attributes Table
 //  20 bits for built in types and 12 bits for Properties
@@ -1239,4 +1238,3 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
 }
 
 
-#endif // CROSSGEN_COMPILE

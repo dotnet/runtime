@@ -360,7 +360,7 @@ typedef AutoCleanupGCAssert<FALSE>                  AutoCleanupGCAssertPreemp;
 typedef GCAssert<TRUE>                  GCAssertCoop;
 typedef GCAssert<FALSE>                 GCAssertPreemp;
 
-#if !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_COOP()                      GCCoop __gcHolder("GCX_COOP", __FUNCTION__, __FILE__, __LINE__)
@@ -444,7 +444,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP_NO_THREAD_BROKEN(_cond)      GCCoopHackNoThread __gcHolder(_cond)
 #endif
 
-#else // !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#else // !defined(DACCESS_COMPILE)
 
 #define GCX_COOP()
 #define GCX_COOP_NO_DTOR()
@@ -465,9 +465,9 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 #define GCX_POP()
 
-#endif // !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
-#if defined(_DEBUG_IMPL) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG_IMPL)
 
 #define GCX_ASSERT_PREEMP()                 ::AutoCleanupGCAssertPreemp __gcHolder
 #define GCX_ASSERT_COOP()                   ::AutoCleanupGCAssertCoop __gcHolder

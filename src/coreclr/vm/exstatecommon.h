@@ -483,7 +483,7 @@ public:
    EHWatsonBucketTracker();
    void Init();
    void CopyEHWatsonBucketTracker(const EHWatsonBucketTracker& srcTracker);
-   void CopyBucketsFromThrowable(OBJECTREF oThrowable);
+   void CopyBuckets(U1ARRAYREF oBuckets);
    void SaveIpForWatsonBucket(UINT_PTR ip);
    UINT_PTR RetrieveWatsonBucketIp();
    PTR_VOID RetrieveWatsonBuckets();

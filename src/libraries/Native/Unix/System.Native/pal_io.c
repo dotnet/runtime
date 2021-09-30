@@ -1008,83 +1008,33 @@ int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, i
 #endif
 }
 
-int32_t SystemNative_PosixFAllocate(intptr_t fd, int64_t offset, int64_t length)
+int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
 {
     assert_msg(offset == 0, "Invalid offset value", (int)offset);
 
     int fileDescriptor = ToFileDescriptor(fd);
     int32_t result;
-#if HAVE_POSIX_FALLOCATE64 // 64-bit Linux
-    while ((result = posix_fallocate64(fileDescriptor, (off64_t)offset, (off64_t)length)) == EINTR);
-#elif HAVE_POSIX_FALLOCATE // 32-bit Linux
-    while ((result = posix_fallocate(fileDescriptor, (off_t)offset, (off_t)length)) == EINTR);
+#if HAVE_FALLOCATE // Linux
+    while ((result = fallocate(fileDescriptor, FALLOC_FL_KEEP_SIZE, (off_t)offset, (off_t)length)) == EINTR);
 #elif defined(F_PREALLOCATE) // macOS
     fstore_t fstore;
-    fstore.fst_flags = F_ALLOCATECONTIG; // ensure contiguous space
-    fstore.fst_posmode = F_PEOFPOSMODE;  // allocate from the physical end of file, as offset MUST NOT be 0 for F_VOLPOSMODE
+    fstore.fst_flags = F_ALLOCATEALL; // Allocate all requested space or no space at all.
+    fstore.fst_posmode = F_PEOFPOSMODE; // Allocate from the physical end of file.
     fstore.fst_offset = (off_t)offset;
     fstore.fst_length = (off_t)length;
     fstore.fst_bytesalloc = 0; // output size, can be > length
 
     while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
-
-    if (result == -1)
-    {
-        // we have failed to allocate contiguous space, let's try non-contiguous
-        fstore.fst_flags = F_ALLOCATEALL; // all or nothing
-        while ((result = fcntl(fileDescriptor, F_PREALLOCATE, &fstore)) == -1 && errno == EINTR);
-    }
-#elif defined(F_ALLOCSP) || defined(F_ALLOCSP64) // FreeBSD
-    #if HAVE_FLOCK64
-    struct flock64 lockArgs;
-    int command = F_ALLOCSP64;
-    #else
-    struct flock lockArgs;
-    int command = F_ALLOCSP;
-    #endif
-
-    lockArgs.l_whence = SEEK_SET;
-    lockArgs.l_start = (off_t)offset;
-    lockArgs.l_len = (off_t)length;
-
-    while ((result = fcntl(fileDescriptor, command, &lockArgs)) == -1 && errno == EINTR);
+#else
+    (void)offset; // unused
+    (void)length; // unused
+    result = -1;
+    errno = EOPNOTSUPP;
 #endif
 
-#if defined(F_PREALLOCATE) || defined(F_ALLOCSP) || defined(F_ALLOCSP64)
-    // most of the Unixes implement posix_fallocate which does NOT set the last error
-    // fctnl does, but to mimic the posix_fallocate behaviour we just return error
-    if (result == -1)
-    {
-        result = errno;
-    }
-    else
-    {
-        // align the behaviour with what posix_fallocate does (change reported file size)
-        ftruncate(fileDescriptor, length);
-    }
-#endif
+    assert(result == 0 || errno != EINVAL);
 
-    // error codes can be OS-specific, so this is why this handling is done here rather than in the managed layer
-    switch (result)
-    {
-        case ENOSPC: // there was not enough space
-            return -1;
-        case EFBIG: // the file was too large
-            return -2;
-        case ENODEV: // not a regular file
-        case ESPIPE: // a pipe
-            // We ignore it, as FileStream contract makes it clear that allocationSize is ignored for non-regular files.
-            return 0;
-        case EINVAL:
-            // We control the offset and length so they are correct.
-            assert_msg(length >= 0, "Invalid length value", (int)length);
-            // But if the underlying filesystem does not support the operation, we just ignore it and treat as a hint.
-            return 0;
-        default:
-            assert(result != EINTR); // it can't happen here as we retry the call on EINTR
-            assert(result != EBADF); // it can't happen here as this method is being called after a succesfull call to open (with write permissions) before returning the SafeFileHandle to the user
-            return 0;
-    }
+    return result;
 }
 
 int32_t SystemNative_Read(intptr_t fd, void* buffer, int32_t bufferSize)
@@ -1427,6 +1377,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "befs") == 0) result = 0x42465331;
     else if (strcmp(statfsArgs.f_basetype, "bdevfs") == 0) result = 0x62646576;
     else if (strcmp(statfsArgs.f_basetype, "bfs") == 0) result = 0x1BADFACE;
+    else if (strcmp(statfsArgs.f_basetype, "bpf_fs") == 0) result = 0xCAFE4A11;
     else if (strcmp(statfsArgs.f_basetype, "binfmt_misc") == 0) result = 0x42494E4D;
     else if (strcmp(statfsArgs.f_basetype, "bootfs") == 0) result = 0xA56D3FF9;
     else if (strcmp(statfsArgs.f_basetype, "btrfs") == 0) result = 0x9123683E;
@@ -1452,6 +1403,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "ext2") == 0) result = 0xEF53;
     else if (strcmp(statfsArgs.f_basetype, "ext3") == 0) result = 0xEF53;
     else if (strcmp(statfsArgs.f_basetype, "ext4") == 0) result = 0xEF53;
+    else if (strcmp(statfsArgs.f_basetype, "f2fs") == 0) result = 0xF2F52010;
     else if (strcmp(statfsArgs.f_basetype, "fat") == 0) result = 0x4006;
     else if (strcmp(statfsArgs.f_basetype, "fd") == 0) result = 0xF00D1E;
     else if (strcmp(statfsArgs.f_basetype, "fhgfs") == 0) result = 0x19830326;
@@ -1519,6 +1471,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "sysv2") == 0) result = 0x012FF7B6;
     else if (strcmp(statfsArgs.f_basetype, "sysv4") == 0) result = 0x012FF7B5;
     else if (strcmp(statfsArgs.f_basetype, "tmpfs") == 0) result = 0x01021994;
+    else if (strcmp(statfsArgs.f_basetype, "tracefs") == 0) result = 0x74726163;
     else if (strcmp(statfsArgs.f_basetype, "ubifs") == 0) result = 0x24051905;
     else if (strcmp(statfsArgs.f_basetype, "udf") == 0) result = 0x15013346;
     else if (strcmp(statfsArgs.f_basetype, "ufs") == 0) result = 0x00011954;
@@ -1560,13 +1513,21 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     struct flock lockArgs;
 #endif
 
+#if defined(TARGET_ANDROID) && defined(HAVE_FLOCK64)
+    // On Android, fcntl is always implemented by fcntl64 but before https://github.com/aosp-mirror/platform_bionic/commit/09e77f35ab8d291bf88302bb9673aaa518c6bcb0
+    // there was no remapping of F_SETLK to F_SETLK64 when _FILE_OFFSET_BITS=64 (which we set in eng/native/configurecompiler.cmake) so we need to always pass F_SETLK64
+    int command = F_SETLK64;
+#else
+    int command = F_SETLK;
+#endif
+
     lockArgs.l_type = unixLockType;
     lockArgs.l_whence = SEEK_SET;
     lockArgs.l_start = (off_t)offset;
     lockArgs.l_len = (off_t)length;
 
     int32_t ret;
-    while ((ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)) < 0 && errno == EINTR);
+    while ((ret = fcntl (ToFileDescriptor(fd), command, &lockArgs)) < 0 && errno == EINTR);
     return ret;
 }
 

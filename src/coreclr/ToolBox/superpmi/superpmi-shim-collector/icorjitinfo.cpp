@@ -2010,3 +2010,13 @@ bool interceptor_ICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instruct
 {
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supported);
 }
+
+bool interceptor_ICJI::doesFieldBelongToClass(
+    CORINFO_FIELD_HANDLE fldHnd,
+    CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("doesFieldBelongToClass");
+    bool result = original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
+    mc->recDoesFieldBelongToClass(fldHnd, cls, result);
+    return result;
+}

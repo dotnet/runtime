@@ -879,7 +879,6 @@ void TypeString::AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeIns
         GC_TRIGGERS;
         THROWS;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(s.Check());
     }
     CONTRACTL_END
@@ -896,7 +895,6 @@ void TypeString::AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD f
         SUPPORTS_DAC;
         THROWS;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(s.Check());
     }
     CONTRACTL_END
@@ -913,7 +911,6 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
         SUPPORTS_DAC;
         THROWS;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(ss.Check());
     }
     CONTRACTL_END
@@ -1025,7 +1022,6 @@ void TypeString::AppendMethodDebug(SString& ss, MethodDesc *pMD)
         GC_TRIGGERS;
         NOTHROW;
         PRECONDITION(CheckPointer(pMD));
-        PRECONDITION(pMD->IsRestored_NoLogging());
         PRECONDITION(ss.Check());
     }
     CONTRACTL_END

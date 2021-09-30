@@ -18,7 +18,6 @@
 #include <cor.h>
 #include <corpriv.h>
 
-#include "../hotdata/hotheap.h"
 #include <metamodelro.h>
 #include <liteweightstgdb.h>
 

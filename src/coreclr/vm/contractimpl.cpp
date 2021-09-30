@@ -131,8 +131,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         m_idMap.InsertValue((UPTR)id, (UPTR)pMT >> 1);
         m_mtMap.InsertValue((UPTR)pMT, (UPTR)id);
         m_entryCount++;
-        CONSISTENCY_CHECK(GetThread()->GetDomain()->IsCompilationDomain() ||
-                          (LookupType(id) == pMT));
+        CONSISTENCY_CHECK((LookupType(id) == pMT));
     }
 #else // DACCESS_COMPILE
     if (id == TypeIDProvider::INVALID_TYPE_ID)

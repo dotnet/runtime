@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31625.145
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wasm.Browser.Bench.Sample", "Wasm.Browser.Bench.Sample.csproj", "{3C87C8E2-2D72-495A-8BB5-B9A503603121}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C87C8E2-2D72-495A-8BB5-B9A503603121}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5E01C5D6-F3C2-4AFE-802B-79AC3B1D6C6D}
+	EndGlobalSection
+EndGlobal

@@ -2349,7 +2349,6 @@ static const X86Reg c_argRegs[] = {
 #endif
 
 
-#ifndef CROSSGEN_COMPILE
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
 void StubLinkerCPU::EmitJITHelperLoggingThunk(PCODE pJitHelper, LPVOID helperFuncCount)
@@ -3065,7 +3064,7 @@ VOID StubLinkerCPU::EmitCheckGSCookie(X86Reg frameReg, int gsCookieOffset)
 #ifdef _DEBUG
     // cmp dword ptr[frameReg-gsCookieOffset], gsCookie
     X86EmitCmpRegIndexImm32(frameReg, gsCookieOffset, GetProcessGSCookie());
-    
+
     CodeLabel * pLabel = NewCodeLabel();
     X86EmitCondJump(pLabel, X86CondCode::kJE);
 
@@ -3124,7 +3123,7 @@ VOID StubLinkerCPU::EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, s
         _ASSERTE((pEntry->dstofs & ShuffleEntry::FPREGMASK) == (pEntry->srcofs & ShuffleEntry::FPREGMASK));
         int dstRegIndex = pEntry->dstofs & ShuffleEntry::OFSREGMASK;
 
-        if (pEntry->srcofs & ShuffleEntry::FPREGMASK) 
+        if (pEntry->srcofs & ShuffleEntry::FPREGMASK)
         {
             // movdqa dstReg, srcReg
             X64EmitMovXmmXmm((X86Reg)(kXMM0 + dstRegIndex), (X86Reg)(kXMM0 + srcRegIndex));
@@ -3660,7 +3659,6 @@ VOID StubLinkerCPU::EmitRareDisableHRESULT(CodeLabel *pRejoinPoint, CodeLabel *p
 
 #endif // TARGET_X86
 
-#endif // CROSSGEN_COMPILE
 
 
 VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
@@ -3902,7 +3900,7 @@ VOID StubLinkerCPU::EmitShuffleThunk(ShuffleEntry *pShuffleEntryArray)
 }
 
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_STUBS_AS_IL)
+#if !defined(FEATURE_STUBS_AS_IL)
 
 #if defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 //===========================================================================
@@ -4096,9 +4094,9 @@ VOID StubLinkerCPU::EmitMulticastInvoke(UINT_PTR hash)
 }
 #endif // defined(TARGET_X86) && !defined(FEATURE_MULTICASTSTUB_AS_IL)
 
-#endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
+#endif // !FEATURE_STUBS_AS_IL
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_ARRAYSTUB_AS_IL)
+#if !defined(FEATURE_ARRAYSTUB_AS_IL)
 
 // Little helper to generate code to move nbytes bytes of non Ref memory
 
@@ -4494,7 +4492,7 @@ VOID StubLinkerCPU::EmitArrayOpStub(const ArrayOpScript* pArrayOpScript)
             X86EmitR2ROp(0x85, typeReg, typeReg);
             X86EmitCondJump(Inner_passedTypeCheck, X86CondCode::kJZ);
 
-            // Compare MT against the MT of the array.                     
+            // Compare MT against the MT of the array.
             // cmp typeReg, [kArrayRefReg]
             X86EmitOp(0x3b, typeReg, kArrayRefReg, 0 AMD64_ARG(k64BitOp));
 
@@ -5036,9 +5034,9 @@ COPY_VALUE_CLASS:
 #pragma warning(pop)
 #endif
 
-#endif // !CROSSGEN_COMPILE && !FEATURE_ARRAYSTUB_AS_IL
+#endif // !FEATURE_ARRAYSTUB_AS_IL
 
-#if !defined(CROSSGEN_COMPILE) && !defined(FEATURE_STUBS_AS_IL)
+#if !defined(FEATURE_STUBS_AS_IL)
 //===========================================================================
 // Emits code to break into debugger
 VOID StubLinkerCPU::EmitDebugBreak()
@@ -5112,7 +5110,7 @@ Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 
 #endif // FEATURE_COMINTEROP && TARGET_X86
 
-#endif // !CROSSGEN_COMPILE && !FEATURE_STUBS_AS_IL
+#endif // !FEATURE_STUBS_AS_IL
 
 #endif // !DACCESS_COMPILE
 
@@ -5325,7 +5323,7 @@ void FixupPrecode::ResetTargetInterlocked()
 
     _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
 
-    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode)); 
+    ExecutableWriterHolder<FixupPrecode> precodeWriterHolder(this, sizeof(FixupPrecode));
     FastInterlockExchangeLong((INT64*)precodeWriterHolder.GetRW(), *(INT64*)&newValue);
 }
 
@@ -5380,7 +5378,7 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     {
         dynamicMethodEntryJumpStubWriterHolder = ExecutableWriterHolder<void>((void*)GetDynamicMethodEntryJumpStub(), 12);
     }
-#endif    
+#endif
     *(INT32*)(&pNewValue[offsetof(FixupPrecode, m_rel32)]) =
 #ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
         pMD->IsLCGMethod() ?

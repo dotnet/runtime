@@ -1336,8 +1336,9 @@ namespace System
                     for (int iCopy = 0; iCopy < instantiation.Length; iCopy++)
                         instantiationCopy[iCopy] = instantiation[iCopy];
                     instantiation = instantiationCopy;
-
-                    throw new NotImplementedException();
+                    if (!RuntimeFeature.IsDynamicCodeSupported)
+                        throw new PlatformNotSupportedException();
+                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, instantiation);
                 }
 
                 instantiationRuntimeType[i] = rtInstantiationElem;
@@ -2164,7 +2165,7 @@ namespace System
                 for (int i = 0; i < n; i++)
                 {
                     var th = new RuntimeTypeHandle(h[i]);
-                    a[i] = (RuntimeType)GetTypeFromHandle(th);
+                    a[i] = (RuntimeType)GetTypeFromHandle(th)!;
                 }
                 return a;
             }
