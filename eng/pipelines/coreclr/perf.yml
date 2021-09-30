@@ -41,14 +41,14 @@ jobs:
       - iOS_arm64
       jobParameters:
         buildArgs: -s mono -c $(_BuildConfig)
-        nameSuffix: iOSAndroidMaui
+        nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
         extraStepsParameters:
           rootFolder: '$(Build.SourcesDirectory)/artifacts/'
           includeRootFolder: true
-          displayName: iOS and Android Maui Artifacts
-          artifactName: iOSAndroidMauiArm
+          displayName: MAC, iOS, and Android Maui Artifacts
+          artifactName: MACiOSAndroidMauiArm
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz

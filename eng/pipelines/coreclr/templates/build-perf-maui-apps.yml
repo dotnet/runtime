@@ -38,30 +38,6 @@ steps:
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.targets
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
-  
-  - script: |
-      ../dotnet.sh build -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -o MacCatalystBuildOutput
-    displayName: Build MAUI MacCatalyst
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-  - task: PublishBuildArtifacts@1 #
-    condition: succeededOrFailed() #
-    displayName: 'Publish MacCatalyst binlog' #
-    inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
-      artifactName:  ${{ parameters.artifactName }} #
-  - template: /eng/pipelines/common/upload-artifact-step.yml
-    parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting #
-        includeRootFolder: true #
-        displayName: Maui MacCatalyst App #
-        artifactName: MauiMacatalystApp #
-        archiveExtension: '.tar.gz' #
-        archiveType: tar #
-        tarCompression: gz #
-  - script: rm -r -f ./bin
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-    displayName: Clean bindir
-    condition: succeededOrFailed()
 
   - script: |
       ../dotnet.sh build -bl:MauiAndroid.binlog -f net6.0-android -o AndroidBuildOutput
@@ -72,7 +48,7 @@ steps:
     condition: succeededOrFailed() #
     displayName: 'Publish Android binlog' #
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog #
       artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
@@ -80,6 +56,30 @@ steps:
         includeRootFolder: true #
         displayName: Maui Android App #
         artifactName: MauiAndroidApp #
+        archiveExtension: '.tar.gz' #
+        archiveType: tar #
+        tarCompression: gz #
+  - script: rm -r -f ./bin
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+    displayName: Clean bindir
+    condition: succeededOrFailed()
+  
+  - script: |
+      ../dotnet.sh build -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -o MacCatalystBuildOutput
+    displayName: Build MAUI MacCatalyst
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting
+  - task: PublishBuildArtifacts@1 #
+    condition: succeededOrFailed() #
+    displayName: 'Publish MacCatalyst binlog' #
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog #
+      artifactName:  ${{ parameters.artifactName }} #
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting #
+        includeRootFolder: true #
+        displayName: Maui MacCatalyst App #
+        artifactName: MauiMacatalystApp #
         archiveExtension: '.tar.gz' #
         archiveType: tar #
         tarCompression: gz #
@@ -97,7 +97,7 @@ steps:
     condition: succeededOrFailed() #
     displayName: 'Publish iOS binlog' #
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiTestingBin.binlog #
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog #
       artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
