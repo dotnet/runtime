@@ -12,17 +12,6 @@ using System.Threading.Tasks;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-#if NET472
-namespace System.Diagnostics.CodeAnalysis {
-    [AttributeUsage(AttributeTargets.Parameter, Inherited = false)]
-
-    public class NotNullWhenAttribute : Attribute {
-        public NotNullWhenAttribute(bool returnValue) => ReturnValue = returnValue;
-        public bool ReturnValue { get; }
-    }
-}
-#endif
-
 namespace JsonToItemsTaskFactory
 {
 
