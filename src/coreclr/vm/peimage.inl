@@ -197,7 +197,7 @@ inline BOOL PEImage::HasNTHeaders()
         return GetLoadedLayout()->HasNTHeaders();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->HasNTHeaders();
     }
 }
@@ -209,7 +209,7 @@ inline BOOL PEImage::HasCorHeader()
         return GetLoadedLayout()->HasCorHeader();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->HasCorHeader();
     }
 }
@@ -221,7 +221,7 @@ inline BOOL PEImage::IsComponentAssembly()
         return GetLoadedLayout()->IsComponentAssembly();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->IsComponentAssembly();
     }
 }
@@ -233,7 +233,7 @@ inline BOOL PEImage::HasReadyToRunHeader()
         return GetLoadedLayout()->HasReadyToRunHeader();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->HasReadyToRunHeader();
     }
 }
@@ -245,7 +245,7 @@ inline BOOL PEImage::HasDirectoryEntry(int entry)
         return GetLoadedLayout()->HasDirectoryEntry(entry);
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->HasDirectoryEntry(entry);
     }
 }
@@ -262,7 +262,7 @@ inline mdToken PEImage::GetEntryPointToken()
     }
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         if (!pLayout->HasManagedEntryPoint())
             return mdTokenNil;
         return pLayout->GetEntryPointToken();
@@ -280,7 +280,7 @@ inline DWORD PEImage::GetCorHeaderFlags()
     }
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return VAL32(pLayout->GetCorHeader()->Flags);
     }
 }
@@ -303,7 +303,7 @@ inline BOOL PEImage::IsILOnly()
         return GetLoadedLayout()->IsILOnly();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->IsILOnly();
     }
 }
@@ -317,7 +317,7 @@ inline WORD PEImage::GetSubsystem()
         return GetLoadedLayout()->GetSubsystem();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->GetSubsystem();
     }
 }
@@ -329,7 +329,7 @@ inline BOOL PEImage::IsDll()
         return GetLoadedLayout()->IsDll();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->IsDll();
     }
 }
@@ -341,7 +341,7 @@ inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
         return GetLoadedLayout()->GetNativeManifestMetadata(pSize);
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->GetNativeManifestMetadata(pSize);
     }
 }
@@ -353,7 +353,7 @@ inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize)
         return GetLoadedLayout()->GetMetadata(pSize);
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->GetMetadata(pSize);
     }
 }
@@ -365,7 +365,7 @@ inline BOOL PEImage::HasContents()
         return GetLoadedLayout()->HasContents();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->HasContents();
     }
 }
@@ -378,7 +378,7 @@ inline CHECK PEImage::CheckFormat()
         CHECK(GetLoadedLayout()->CheckFormat());
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         CHECK(pLayout->CheckFormat());
     }
     CHECK_OK;
@@ -424,15 +424,13 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE 
     DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
 #endif
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
-
 }
 
 /* static */
 inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags /* = MDInternalImport_Default */, BundleFileLocation bundleFileLocation)
 {
-    BOOL fUseCache = !((flags & MDInternalImport_NoCache) == MDInternalImport_NoCache);
-
-    if (!fUseCache)
+    BOOL forbidCache = (flags & MDInternalImport_NoCache);
+    if (forbidCache)
     {
         PEImageHolder pImage(new PEImage);
         pImage->Init(pPath, bundleFileLocation);
@@ -442,8 +440,6 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
     CrstHolder holder(&s_hashLock);
 
     PEImage* found = FindByPath(pPath, bundleFileLocation.IsValid());
-
-
     if (found == (PEImage*) INVALIDENTRY)
     {
         // We did not find the entry in the Cache, and we've been asked to only use the cache.
@@ -501,7 +497,7 @@ inline BOOL PEImage::Has32BitNTHeaders()
         return GetLoadedLayout()->Has32BitNTHeaders();
     else
     {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY));
         return pLayout->Has32BitNTHeaders();
     }
 }
@@ -553,8 +549,7 @@ inline void PEImage::CachePEKindAndMachine()
     }
     else
     {
-        pLayout.Assign(GetLayout(PEImageLayout::LAYOUT_MAPPED|PEImageLayout::LAYOUT_FLAT,
-                                 PEImage::LAYOUT_CREATEIFNEEDED));
+        pLayout.Assign(GetLayout(PEImageLayout::LAYOUT_MAPPED|PEImageLayout::LAYOUT_FLAT));
     }
 
     // Compute result into a local variables first

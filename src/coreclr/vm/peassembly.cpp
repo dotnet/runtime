@@ -640,7 +640,7 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
     EnsureImageOpened();
     PEImage* image = GetILimage();
 
-    PEImageLayoutHolder theImage(image->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED));
+    PEImageLayoutHolder theImage(image->GetLayout(PEImageLayout::LAYOUT_ANY));
     if (!theImage->CheckResource(dwOffset))
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
@@ -1288,7 +1288,7 @@ void PEAssembly::EnsureImageOpened()
     if (IsDynamic())
         return;
 
-    GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY,PEImage::LAYOUT_CREATEIFNEEDED)->Release();
+    GetILimage()->GetLayout(PEImageLayout::LAYOUT_ANY)->Release();
 }
 
 #endif // #ifndef DACCESS_COMPILE

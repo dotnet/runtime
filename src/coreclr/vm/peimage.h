@@ -56,18 +56,14 @@ struct CV_INFO_PDB70
 
 typedef DPTR(class PEImage)                PTR_PEImage;
 
-class PEImage
+class PEImage final
 {
 public:
     // ------------------------------------------------------------
     // Public constants
     // ------------------------------------------------------------
 
-    enum
-    {
-        LAYOUT_CREATEIFNEEDED=1
-    };
-    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask,DWORD flags); //with ref
+    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask); //with ref
     PTR_PEImageLayout GetLoadedLayout(); //no ref
     BOOL IsOpened();
     BOOL HasLoadedLayout();
@@ -105,8 +101,8 @@ public:
         BundleFileLocation bundleFileLocation = BundleFileLocation::Invalid());
 
 
-    // clones the image with new flags (this is pretty much about cached / noncached difference)
-    void Clone(MDInternalImportFlags flags, PTR_PEImage* ppImage)
+    // clones the image (this is pretty much about cached / noncached difference)
+    void Clone(PTR_PEImage* ppImage)
     {
         if (GetPath().IsEmpty())
         {
@@ -114,15 +110,11 @@ public:
             *ppImage = this;
         }
         else
-            *ppImage = PEImage::OpenImage(GetPath(), flags);
+            *ppImage = PEImage::OpenImage(GetPath(), MDInternalImport_Default);
 
     };
 
-    static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
-    static PTR_PEImage FindByPath(LPCWSTR pPath,
-                                  BOOL isInBundle = TRUE);
-    static PTR_PEImage FindByShortPath(LPCWSTR pPath);
-    static PTR_PEImage FindByLongPath(LPCWSTR pPath);
+    static PTR_PEImage FindByPath(LPCWSTR pPath, BOOL isInBundle = TRUE);
     void AddToHashMap();
 
     void   Load();
@@ -205,7 +197,7 @@ public:
 private:
 #ifndef DACCESS_COMPILE
     // Get or create the layout corresponding to the mask, with an AddRef
-    PTR_PEImageLayout GetLayoutInternal(DWORD imageLayoutMask, DWORD flags);
+    PTR_PEImageLayout GetLayoutInternal(DWORD imageLayoutMask);
 
     // Create the mapped layout
     PTR_PEImageLayout CreateLayoutMapped();

@@ -90,7 +90,7 @@ CHECK PEImage::CheckILFormat()
     }
     else
     {
-        pLayoutHolder = GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED);
+        pLayoutHolder = GetLayout(PEImageLayout::LAYOUT_ANY);
         pLayoutToCheck = pLayoutHolder;
     }
 
@@ -816,48 +816,41 @@ PEImage::PEImage():
     m_pLayoutLock=new SimpleRWLock(PREEMPTIVE,LOCK_TYPE_DEFAULT);
 }
 
-PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask,DWORD flags)
+PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    PTR_PEImageLayout pRetVal;
-
-#ifndef DACCESS_COMPILE
     // First attempt to find an existing layout matching imageLayoutMask.  If that fails,
     // and the caller has asked us to create layouts if needed, then try again passing
     // the create flag to GetLayoutInternal.  We need this to be synchronized, but the common
     // case is that the layout already exists, so use a reader-writer lock.
-    GCX_PREEMP();
-    {
-        SimpleReadLockHolder lock(m_pLayoutLock);
-        pRetVal=GetLayoutInternal(imageLayoutMask,flags&(~LAYOUT_CREATEIFNEEDED));
-    }
+    PTR_PEImageLayout pRetVal = GetExistingLayoutInternal(imageLayoutMask);
 
-    if (!(pRetVal || (flags&LAYOUT_CREATEIFNEEDED)==0))
+#ifndef DACCESS_COMPILE
+    if (pRetVal != NULL)
     {
+        pRetVal->AddRef();
+    }
+    else
+    {
+        GCX_PREEMP();
         SimpleWriteLockHolder lock(m_pLayoutLock);
-        pRetVal = GetLayoutInternal(imageLayoutMask,flags);
+        pRetVal = GetLayoutInternal(imageLayoutMask);
     }
-
-    return pRetVal;
-
 #else
     // In DAC builds, we can't create any layouts - we must require that they already exist.
     // We also don't take any AddRefs or locks in DAC builds - it's inspection-only.
-    pRetVal = GetExistingLayoutInternal(imageLayoutMask);
-    if ((pRetVal==NULL) && (flags & LAYOUT_CREATEIFNEEDED))
-    {
-        _ASSERTE_MSG(false, "DACization error - caller expects PEImage layout to exist and it doesn't");
-        DacError(E_UNEXPECTED);
-    }
-    return pRetVal;
+    _ASSERTE_MSG(false, "DACization error - caller expects PEImage layout to exist and it doesn't");
+    DacError(E_UNEXPECTED);
 #endif
+
+    return pRetVal;
 }
 
 #ifndef DACCESS_COMPILE
 
-PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
+PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask)
 {
     CONTRACTL
     {
@@ -869,7 +862,7 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
 
     PTR_PEImageLayout pRetVal=GetExistingLayoutInternal(imageLayoutMask);
 
-    if (pRetVal==NULL && (flags&LAYOUT_CREATEIFNEEDED))
+    if (pRetVal==NULL)
     {
         _ASSERTE(HasID());
 
@@ -982,7 +975,7 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     }
     else
     {
-        PEImageLayoutHolder flatPE(GetLayoutInternal(PEImageLayout::LAYOUT_FLAT,LAYOUT_CREATEIFNEEDED));
+        PEImageLayoutHolder flatPE(GetLayout(PEImageLayout::LAYOUT_FLAT));
         if (!flatPE->CheckFormat() || !flatPE->IsILOnly())
             ThrowHR(COR_E_BADIMAGEFORMAT);
         pRetVal=PEImageLayout::LoadFromFlat(flatPE);
@@ -1156,7 +1149,7 @@ void PEImage::LoadFromMapped()
         return;
     }
 
-    PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_MAPPED,LAYOUT_CREATEIFNEEDED));
+    PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_MAPPED));
     SimpleWriteLockHolder lock(m_pLayoutLock);
     if(m_pLayouts[IMAGE_LOADED]==NULL)
         SetLayout(IMAGE_LOADED,pLayout.Extract());
@@ -1173,9 +1166,10 @@ void PEImage::LoadNoFile()
     if (HasLoadedLayout())
         return;
 
-    PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,0));
+    PEImageLayoutHolder pLayout(GetExistingLayoutInternal(PEImageLayout::LAYOUT_ANY));
     if (!pLayout->CheckILOnly())
         ThrowHR(COR_E_BADIMAGEFORMAT);
+
     SimpleWriteLockHolder lock(m_pLayoutLock);
     if(m_pLayouts[IMAGE_LOADED]==NULL)
         SetLayout(IMAGE_LOADED,pLayout.Extract());

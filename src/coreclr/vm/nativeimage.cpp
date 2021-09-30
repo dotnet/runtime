@@ -147,7 +147,7 @@ NativeImage *NativeImage::Open(
     if (bundleFileLocation.IsValid())
     {
         PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
-        peLoadedImage = pImage->GetLayout(PEImageLayout::LAYOUT_MAPPED, PEImage::LAYOUT_CREATEIFNEEDED);
+        peLoadedImage = pImage->GetLayout(PEImageLayout::LAYOUT_MAPPED);
     }
 
     if (peLoadedImage.IsNull())
