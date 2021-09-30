@@ -360,11 +360,17 @@ internal class TestAssemblyLoadContext : AssemblyLoadContext
 
     public TestAssemblyLoadContext(string name, bool isCollectible, string mainAssemblyToLoadPath = null) : base(name, isCollectible)
     {
-        _resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath ?? Assembly.GetExecutingAssembly().Location);
+        if (!PlatformDetection.IsBrowser)
+            _resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath ?? Assembly.GetExecutingAssembly().Location);
     }
 
     protected override Assembly Load(AssemblyName name)
     {
+        if (PlatformDetection.IsBrowser)
+        {
+            return base.Load(name);
+        }
+
         string assemblyPath = _resolver.ResolveAssemblyToPath(name);
         if (assemblyPath != null)
         {
