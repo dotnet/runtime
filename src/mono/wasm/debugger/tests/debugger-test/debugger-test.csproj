@@ -25,6 +25,7 @@
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="RebuildWasmAppBuilder;Build">
     <PropertyGroup>
+      <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(MonoProjectRoot)wasm\runtime-test.js</WasmMainJSPath>
       <!-- like is used on blazor -->
