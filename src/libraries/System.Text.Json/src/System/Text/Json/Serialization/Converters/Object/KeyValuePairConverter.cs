@@ -14,8 +14,6 @@ namespace System.Text.Json.Serialization.Converters
         private const string KeyNameCLR = "Key";
         private const string ValueNameCLR = "Value";
 
-        private const int NumProperties = 2;
-
         // Property name for "Key" and "Value" with Options.PropertyNamingPolicy applied.
         private string _keyName = null!;
         private string _valueName = null!;
@@ -79,7 +77,6 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                ThrowHelper.ThrowJsonException();
                 jsonParameterInfo = null;
                 return false;
             }
@@ -91,28 +88,16 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        protected override void EndRead(ref ReadStack state)
-        {
-            Debug.Assert(state.Current.PropertyIndex == 0);
-
-            if (state.Current.CtorArgumentState!.ParameterIndex != NumProperties)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-        }
-
         private bool FoundKeyProperty(string propertyName, bool caseInsensitiveMatch)
         {
             return propertyName == _keyName ||
-                (caseInsensitiveMatch && string.Equals(propertyName, _keyName, StringComparison.OrdinalIgnoreCase)) ||
-                propertyName == KeyNameCLR;
+                (caseInsensitiveMatch && string.Equals(propertyName, _keyName, StringComparison.OrdinalIgnoreCase));
         }
 
         private bool FoundValueProperty(string propertyName, bool caseInsensitiveMatch)
         {
             return propertyName == _valueName ||
-                (caseInsensitiveMatch && string.Equals(propertyName, _valueName, StringComparison.OrdinalIgnoreCase)) ||
-                propertyName == ValueNameCLR;
+                (caseInsensitiveMatch && string.Equals(propertyName, _valueName, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
