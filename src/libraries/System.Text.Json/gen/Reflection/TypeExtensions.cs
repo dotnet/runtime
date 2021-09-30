@@ -121,7 +121,7 @@ namespace System.Text.Json.Reflection
 
             if (type.IsGenericType)
             {
-                foreach (var genericParam in type.GetGenericArguments())
+                foreach (Type genericParam in type.GetGenericArguments())
                 {
                     if (CanContainNullableReferenceTypeAnnotations(genericParam))
                     {
