@@ -1488,9 +1488,6 @@ namespace System.Text.RegularExpressions.Generator
                 int minIterations = node.M;
                 int maxIterations = node.N;
 
-                string originalDoneLabel = doneLabel;
-                doneLabel = DefineLabel();
-
                 Span<char> setChars = stackalloc char[3]; // 3 is max we can use with IndexOfAny
                 int numSetChars = 0;
 
@@ -1512,14 +1509,12 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine($", {Literal(node.Ch)});");
                     
-                    using (EmitBlock(writer, $"if ({iterationLocal} != -1)"))
+                    using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        writer.WriteLine(textSpanPos > 0 ?
+                            $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
+                            $"{iterationLocal} = {textSpanLocal}.Length;");
                     }
-
-                    writer.WriteLine(textSpanPos > 0 ?
-                        $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
-                        $"{iterationLocal} = {textSpanLocal}.Length;");
                 }
                 else if (node.Type == RegexNode.Setloopatomic &&
                     maxIterations == int.MaxValue &&
@@ -1539,14 +1534,12 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine(numSetChars == 2 ?
                         $", {Literal(setChars[0])}, {Literal(setChars[1])});" :
                         $", {Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])});");
-                    using (EmitBlock(writer, $"if ({iterationLocal} != -1)"))
+                    using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        writer.WriteLine(textSpanPos > 0 ?
+                            $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
+                            $"{iterationLocal} = {textSpanLocal}.Length;");
                     }
-
-                    writer.WriteLine(textSpanPos > 0 ?
-                        $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
-                        $"{iterationLocal} = {textSpanLocal}.Length;");
                 }
                 else if (node.Type == RegexNode.Setloopatomic && maxIterations == int.MaxValue && node.Str == RegexCharClass.AnyClass)
                 {
@@ -1566,15 +1559,15 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         case RegexNode.Oneloopatomic:
                             expr = ToLowerIfNeeded(hasTextInfo, options, expr, IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch));
-                            expr = $"{expr} != {Literal(node.Ch)}";
+                            expr = $"{expr} == {Literal(node.Ch)}";
                             break;
                         case RegexNode.Notoneloopatomic:
                             expr = ToLowerIfNeeded(hasTextInfo, options, expr, IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch));
-                            expr = $"{expr} == {Literal(node.Ch)}";
+                            expr = $"{expr} != {Literal(node.Ch)}";
                             break;
                         case RegexNode.Setloopatomic:
                             expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node));
-                            expr = $"!{expr}";
+                            expr = $"{expr}";
                             break;
                     }
 
@@ -1582,25 +1575,14 @@ namespace System.Text.RegularExpressions.Generator
                     TransferTextSpanPosToRunTextPos();
 
                     writer.WriteLine($"int {iterationLocal} = 0;");
-                    using (EmitBlock(writer, $"while (true)"))
+
+                    string maxClause = maxIterations != int.MaxValue ? $"{iterationLocal} < {maxIterations} && " : "";
+                    using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){textSpanLocal}.Length && {expr})"))
                     {
                         EmitTimeoutCheck(writer, hasTimeout);
-                        string clause = "if (";
-                        if (maxIterations != int.MaxValue)
-                        {
-                            clause += $"{iterationLocal} >= {maxIterations} || ";
-                        }
-                        using (EmitBlock(writer, $"{clause}(uint){iterationLocal} >= (uint){textSpanLocal}.Length || {expr})"))
-                        {
-                            writer.WriteLine($"goto {doneLabel};");
-                        }
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                 }
-
-                // Done:
-                MarkLabel(doneLabel);
-                doneLabel = originalDoneLabel; // Restore the original done label
 
                 // Check to ensure we've found at least min iterations.
                 if (minIterations > 0)
