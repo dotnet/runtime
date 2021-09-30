@@ -504,9 +504,6 @@ namespace System.Text.Json.Serialization.Converters
 
             state.Current.NumberHandling = jsonParameterInfo?.NumberHandling;
 
-            state.Current.CtorArgumentState.FoundKey = false;
-            state.Current.CtorArgumentState.FoundValue = false;
-
             return jsonParameterInfo != null;
         }
     }

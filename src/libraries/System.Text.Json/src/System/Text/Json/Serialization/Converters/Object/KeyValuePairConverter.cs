@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -17,6 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         public KeyValuePairConverter()
         {
             ConstructorInfo = s_constructorInfo;
+            Debug.Assert(ConstructorInfo != null);
         }
     }
 }
