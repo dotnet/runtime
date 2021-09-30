@@ -23,7 +23,7 @@
 
     <ItemGroup>
       <File Include="localize/**/*">
-        <TargetPath>localize</TargetPath>
+        <TargetPath>data/localize</TargetPath>
       </File>
     </ItemGroup>
   </Target>
