@@ -51,8 +51,9 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
             Module._free(_debugger_buffer);
         _debugger_buffer_len = Math.max(command_parameters.length, _debugger_buffer_len, 256);
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
-        _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, _debugger_buffer, _debugger_buffer_len);
     }
+    //reset _debugger_heap_bytes because Module.HEAPU8.buffer can be reallocated 
+    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, _debugger_buffer, _debugger_buffer_len);
     _debugger_heap_bytes.set(_base64_to_uint8(command_parameters));
 }
 
