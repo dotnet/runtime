@@ -631,13 +631,11 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
+                    bool hasCharClassConditions = false;
                     if (charClassIndex < lcc.Length)
                     {
-                        // if (!CharInClass(textSpan[i + charClassIndex], prefix[0], "...") ||
+                        // if (CharInClass(textSpan[i + charClassIndex], prefix[0], "...") &&
                         //     ...)
-                        // {
-                        //     continue;
-                        // }
                         Debug.Assert(needLoop);
                         int start = charClassIndex;
                         for (; charClassIndex < lcc.Length; charClassIndex++)
@@ -647,24 +645,23 @@ namespace System.Text.RegularExpressions.Generator
 
                             if (charClassIndex == start)
                             {
-                                writer.Write($"if (!{charInClassExpr}");
+                                writer.Write($"if ({charInClassExpr}");
                             }
                             else
                             {
-                                writer.WriteLine(" ||");
-                                writer.Write($"    !{charInClassExpr}");
+                                writer.WriteLine(" &&");
+                                writer.Write($"    {charInClassExpr}");
                             }
                         }
                         writer.WriteLine(")");
-                        using (EmitBlock(writer, null))
-                        {
-                            writer.WriteLine("continue;");
-                        }
-                        writer.WriteLine();
+                        hasCharClassConditions = true;
                     }
 
-                    writer.WriteLine("base.runtextpos = runtextpos + i;");
-                    writer.WriteLine("return true;");
+                    using (hasCharClassConditions ? EmitBlock(writer, null) : default)
+                    {
+                        writer.WriteLine("base.runtextpos = runtextpos + i;");
+                        writer.WriteLine("return true;");
+                    }
 
                     loopBlock.Dispose();
                 }
