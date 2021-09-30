@@ -3004,7 +3004,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                                 // We expect the GTF_GLOB_REF flag to be set for this handleKind
                                 // If it is not set then we will assert with "Missing flags on tree"
                                 //
-                                treeFlags |= GTF_GLOB_REF;
+                                chkFlags |= GTF_GLOB_REF;
                             }
                         }
                         else // All the other handle indirections are considered invariant
@@ -3012,12 +3012,12 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                             // We expect the Invariant flag to be set for this handleKind
                             // If it is not set then we will assert with "Missing flags on tree"
                             //
-                            treeFlags |= GTF_IND_INVARIANT;
+                            chkFlags |= GTF_IND_INVARIANT;
                         }
 
                         // We currently expect all handle kinds to be nonFaulting
                         //
-                        treeFlags |= GTF_IND_NONFAULTING;
+                        chkFlags |= GTF_IND_NONFAULTING;
 
                         // Matrix for GTF_IND_INVARIANT (treeFlags and chkFlags)
                         //
@@ -3107,7 +3107,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         {
             /* &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does.
                Similarly for clsVar */
-            treeFlags |= GTF_GLOB_REF;
+            chkFlags |= GTF_GLOB_REF;
         }
     }
 

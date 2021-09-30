@@ -2794,6 +2794,7 @@ void Compiler::fgAddInternal()
         // Test the JustMyCode VM global state variable
         GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
         GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
+        gtNewIndOfIconHandleNode(TYP_INT, reinterpret_cast<size_t>(dbgHandle), GTF_ICON_GLOBAL_PTR);
         GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
 
         // Create the callback which will yield the final answer
