@@ -69,6 +69,7 @@
     <XunitTestBinBase>$([MSBuild]::NormalizeDirectory('$(XunitTestBinBase)/'))</XunitTestBinBase>
     <CORE_ROOT Condition="'$(CORE_ROOT)' == ''">$(XunitTestBinBase)Tests/Core_Root</CORE_ROOT>
 
+    <TestBuildMode Condition="'$(__TestBuildMode)' != ''">$(__TestBuildMode)</TestBuildMode>
     <RuntimeFlavor Condition="'$(__RuntimeFlavor)' != ''">$(__RuntimeFlavor)</RuntimeFlavor>
 
     <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>

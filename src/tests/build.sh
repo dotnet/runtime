@@ -104,6 +104,7 @@ build_Tests()
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
     export __GenerateLayoutOnly
+    export __TestBuildMode
     export __MonoAot
     export __MonoFullAot
     export __MonoBinDir
