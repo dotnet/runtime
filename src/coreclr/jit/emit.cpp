@@ -5657,8 +5657,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-#ifdef TARGET_XARCH
-    // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    // For x64/x86/arm64, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
     if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
