@@ -19,7 +19,7 @@ namespace System.Xml.Serialization
     internal sealed class TempAssembly
     {
         internal const string GeneratedAssemblyNamespace = "Microsoft.Xml.Serialization.GeneratedAssembly";
-        internal readonly Assembly? _assembly;
+        private readonly Assembly? _assembly;
         private XmlSerializerImplementation? _contract;
         private IDictionary? _writerMethods;
         private IDictionary? _readerMethods;
@@ -699,8 +699,8 @@ namespace System.Xml.Serialization
 
     internal sealed class TempAssemblyCache
     {
-        private Dictionary<TempAssemblyCacheKey, TempAssembly> _cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
-        private ConditionalWeakTable<AssemblyLoadContext, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<AssemblyLoadContext, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
+        private Dictionary<TempAssemblyCacheKey, TempAssembly> _fastCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+        private ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
 
         internal TempAssembly? this[string? ns, Type t]
         {
@@ -709,14 +709,11 @@ namespace System.Xml.Serialization
                 TempAssembly? tempAssembly;
                 TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
 
-                if (_cache.TryGetValue(key, out tempAssembly))
+                if (_fastCache.TryGetValue(key, out tempAssembly))
                     return tempAssembly;
 
-                var alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
-                Dictionary<TempAssemblyCacheKey, TempAssembly>? cache;
-
-                if (alc != null && _collectibleCaches.TryGetValue(alc, out cache))
-                    cache.TryGetValue(key, out tempAssembly);
+                if (_collectibleCaches.TryGetValue(t.Assembly, out var cCache))
+                    cCache.TryGetValue(key, out tempAssembly);
 
                 return tempAssembly;
             }
@@ -724,30 +721,29 @@ namespace System.Xml.Serialization
 
         internal void Add(string? ns, Type t, TempAssembly assembly)
         {
-            var alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
-            TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
-
             lock (this)
             {
                 TempAssembly? tempAssembly = this[ns, t];
-
                 if (tempAssembly == assembly)
                     return;
 
+                AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
+                TempAssemblyCacheKey key = new TempAssemblyCacheKey(ns, t);
+                Dictionary<TempAssemblyCacheKey, TempAssembly>? cache;
+
                 if (alc != null && alc.IsCollectible)
                 {
-                    Dictionary<TempAssemblyCacheKey, TempAssembly>? collectibleCache;
-                    if (!_collectibleCaches.TryGetValue(alc, out collectibleCache))
-                    {
-                        collectibleCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
-                        _collectibleCaches.Add(alc, collectibleCache);
-                    }
-
-                    collectibleCache.Add(key, assembly);
+                    cache = _collectibleCaches.TryGetValue(t.Assembly, out var c)   // Clone or create
+                        ? new Dictionary<TempAssemblyCacheKey, TempAssembly>(c)
+                        : new Dictionary<TempAssemblyCacheKey, TempAssembly>();
+                    cache[key] = assembly;
+                    _collectibleCaches.AddOrUpdate(t.Assembly, cache);
                 }
                 else
                 {
-                    _cache.Add(key, assembly);
+                    cache = new Dictionary<TempAssemblyCacheKey, TempAssembly>(_fastCache); // Clone
+                    cache[key] = assembly;
+                    _fastCache = cache;
                 }
             }
         }
