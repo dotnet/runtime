@@ -27,7 +27,7 @@ steps:
 
   - script: |
       ./build.sh -ci -arch arm64 -os Android -s mono+libs+host+packs -c Release /p:CrossBuild=false
-      find . -name "*Microsoft.NETCore.App.Runtime.Mono.android*"
+      find . -name "*Microsoft.NETCore.App.Runtime.Mono.*"
     displayName: Build Dotnet Android
     workingDirectory: $(Build.SourcesDirectory)
     condition: succeededOrFailed()
