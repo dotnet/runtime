@@ -398,11 +398,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genPutArgReg(treeNode->AsOp());
             break;
 
-#if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
             genPutArgSplit(treeNode->AsPutArgSplit());
             break;
-#endif // FEATURE_ARG_SPLIT
 
         case GT_CALL:
             genCall(treeNode->AsCall());
@@ -681,12 +679,17 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
 void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 {
     assert(treeNode->OperIs(GT_PUTARG_STK));
-    GenTree* source = treeNode->gtOp1;
-#if !defined(OSX_ARM64_ABI)
-    var_types targetType = genActualType(source->TypeGet());
-#else
-    var_types targetType = source->TypeGet();
-#endif
+    GenTree*  source = treeNode->gtOp1;
+    var_types targetType;
+
+    if (!compMacOsArm64Abi())
+    {
+        targetType = genActualType(source->TypeGet());
+    }
+    else
+    {
+        targetType = source->TypeGet();
+    }
     emitter* emit = GetEmitter();
 
     // This is the varNum for our store operations,
@@ -741,17 +744,17 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             regNumber srcReg = genConsumeReg(source);
             assert((srcReg != REG_NA) && (genIsValidFloatReg(srcReg)));
 
-#if !defined(OSX_ARM64_ABI)
-            assert(treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
-#else  // OSX_ARM64_ABI
-            if (treeNode->GetStackByteSize() == 12)
+            assert(compMacOsArm64Abi() || treeNode->GetStackByteSize() % TARGET_POINTER_SIZE == 0);
+
+#ifdef TARGET_ARM64
+            if (compMacOsArm64Abi() && (treeNode->GetStackByteSize() == 12))
             {
                 regNumber tmpReg = treeNode->GetSingleTempReg();
                 GetEmitter()->emitStoreSIMD12ToLclOffset(varNumOut, argOffsetOut, srcReg, tmpReg);
                 argOffsetOut += 12;
             }
             else
-#endif // OSX_ARM64_ABI
+#endif // TARGET_ARM64
             {
                 emitAttr storeAttr = emitTypeSize(targetType);
                 emit->emitIns_S_R(INS_str, storeAttr, srcReg, varNumOut, argOffsetOut);
@@ -761,20 +764,21 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             return;
         }
 
-#if defined(OSX_ARM64_ABI)
-        switch (treeNode->GetStackByteSize())
+        if (compMacOsArm64Abi())
         {
-            case 1:
-                targetType = TYP_BYTE;
-                break;
-            case 2:
-                targetType = TYP_SHORT;
-                break;
-            default:
-                assert(treeNode->GetStackByteSize() >= 4);
-                break;
+            switch (treeNode->GetStackByteSize())
+            {
+                case 1:
+                    targetType = TYP_BYTE;
+                    break;
+                case 2:
+                    targetType = TYP_SHORT;
+                    break;
+                default:
+                    assert(treeNode->GetStackByteSize() >= 4);
+                    break;
+            }
         }
-#endif
 
         instruction storeIns  = ins_Store(targetType);
         emitAttr    storeAttr = emitTypeSize(targetType);
@@ -1136,7 +1140,6 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
-#if FEATURE_ARG_SPLIT
 //---------------------------------------------------------------------
 // genPutArgSplit - generate code for a GT_PUTARG_SPLIT node
 //
@@ -1357,7 +1360,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     }
     genProduceReg(treeNode);
 }
-#endif // FEATURE_ARG_SPLIT
 
 #ifdef FEATURE_SIMD
 //----------------------------------------------------------------------------------
@@ -2300,9 +2302,9 @@ void CodeGen::genCall(GenTreeCall* call)
 #endif // TARGET_ARM
             }
         }
-#if FEATURE_ARG_SPLIT
         else if (curArgTabEntry->IsSplit())
         {
+            assert(compFeatureArgSplit());
             assert(curArgTabEntry->numRegs >= 1);
             genConsumeArgSplitStruct(argNode->AsPutArgSplit());
             for (unsigned idx = 0; idx < curArgTabEntry->numRegs; idx++)
@@ -2313,7 +2315,6 @@ void CodeGen::genCall(GenTreeCall* call)
                                 emitActualTypeSize(TYP_I_IMPL));
             }
         }
-#endif // FEATURE_ARG_SPLIT
         else
         {
             regNumber argReg = curArgTabEntry->GetRegNum();

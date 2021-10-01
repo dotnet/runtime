@@ -9911,6 +9911,17 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 #endif // TARGET_ARM
 }
 
+CORINFO_OS getClrVmOs()
+{
+#ifdef TARGET_OSX
+    return CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
+    return CORINFO_UNIX;
+#else
+    return CORINFO_WINNT;
+#endif
+}
+
 /*********************************************************************/
 // Return details about EE internal data structures
 void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
@@ -9956,12 +9967,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
-
-#ifdef TARGET_UNIX
-    pEEInfoOut->osType = CORINFO_UNIX;
-#else
-    pEEInfoOut->osType = CORINFO_WINNT;
-#endif
+    pEEInfoOut->osType = getClrVmOs();
 
     EE_TO_JIT_TRANSITION();
 }

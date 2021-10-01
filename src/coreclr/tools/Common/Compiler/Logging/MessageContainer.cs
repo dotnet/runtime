@@ -4,6 +4,9 @@
 using System;
 using System.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
+
+using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.Logging
 {
@@ -87,10 +90,78 @@ namespace ILCompiler.Logging
             if (context.IsWarningSuppressed(code, origin))
                 return null;
 
+            if (TryLogSingleWarning(context, code, origin, subcategory))
+                return null;
+
             if (context.IsWarningAsError(code))
                 return new MessageContainer(MessageCategory.WarningAsError, text, code, subcategory, origin);
 
             return new MessageContainer(MessageCategory.Warning, text, code, subcategory, origin);
+        }
+
+        private static bool TryLogSingleWarning(Logger context, int code, MessageOrigin origin, string subcategory)
+        {
+            if (subcategory != MessageSubCategory.AotAnalysis && subcategory != MessageSubCategory.TrimAnalysis)
+                return false;
+
+            var declaringType = origin.MemberDefinition switch
+            {
+                TypeDesc type => type,
+                MethodDesc method => method.OwningType,
+                FieldDesc field => field.OwningType,
+#if !READYTORUN
+                PropertyPseudoDesc property => property.OwningType,
+                EventPseudoDesc @event => @event.OwningType,
+#endif
+                _ => null,
+            };
+
+            ModuleDesc declaringAssembly = (declaringType as MetadataType)?.Module;
+            Debug.Assert(declaringAssembly != null);
+            if (declaringAssembly == null)
+                return false;
+
+            // Any IL2026 warnings left in an assembly with an IsTrimmable attribute are considered intentional
+            // and should not be collapsed, so that the user-visible RUC message gets printed.
+            if (code == 2026 && IsTrimmableAssembly(declaringAssembly))
+                return false;
+
+            if (context.IsSingleWarn(declaringAssembly, subcategory))
+                return true;
+
+            return false;
+        }
+
+        private static bool IsTrimmableAssembly(ModuleDesc assembly)
+        {
+            if (assembly is EcmaAssembly ecmaAssembly)
+            {   
+                foreach (var attribute in ecmaAssembly.GetDecodedCustomAttributes("System.Reflection", "AssemblyMetadataAttribute"))
+                {
+                    if (attribute.FixedArguments.Length != 2)
+                        continue;
+
+                    if (!attribute.FixedArguments[0].Type.IsString
+                        || ((string)(attribute.FixedArguments[0].Value)).Equals("IsTrimmable", StringComparison.Ordinal))
+                        continue;
+
+                    if (!attribute.FixedArguments[1].Type.IsString)
+                        continue;
+
+                    string value = (string)attribute.FixedArguments[1].Value;
+
+                    if (value.Equals("True", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        //LogWarning($"Invalid AssemblyMetadata(\"IsTrimmable\", \"{args[1].Value}\") attribute in assembly '{assembly.Name.Name}'. Value must be \"True\"", 2102, GetAssemblyLocation(assembly));
+                    }
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

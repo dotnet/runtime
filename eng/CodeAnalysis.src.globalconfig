@@ -202,7 +202,7 @@ dotnet_diagnostic.CA1417.severity = warning
 # CA1418: Use valid platform string
 dotnet_diagnostic.CA1418.severity = warning
 
-# CA1419: Provide a public parameterless constructor for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
+# CA1419: Provide a parameterless constructor that is as visible as the containing type for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
 dotnet_diagnostic.CA1419.severity = warning
 
 # CA1501: Avoid excessive inheritance
@@ -422,6 +422,9 @@ dotnet_diagnostic.CA2016.severity = warning
 # CA2017: Parameter count mismatch
 dotnet_diagnostic.CA2017.severity = warning
 
+# CA2018: 'Buffer.BlockCopy' expects the number of bytes to be copied for the 'count' argument
+dotnet_diagnostic.CA2018.severity = warning
+
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
 
@@ -542,6 +545,18 @@ dotnet_diagnostic.CA2253.severity = none
 
 # CA2254: Template should be a static expression
 dotnet_diagnostic.CA2254.severity = none
+
+# CA2255: The 'ModuleInitializer' attribute should not be used in libraries
+dotnet_diagnostic.CA2255.severity = warning
+
+# CA2256: All members declared in parent interfaces must have an implementation in a DynamicInterfaceCastableImplementation-attributed interface
+dotnet_diagnostic.CA2256.severity = warning
+
+# CA2257: Members defined on an interface with the 'DynamicInterfaceCastableImplementationAttribute' should be 'static'
+dotnet_diagnostic.CA2257.severity = warning
+
+# CA2258: Providing a 'DynamicInterfaceCastableImplementation' interface in Visual Basic is unsupported
+dotnet_diagnostic.CA2258.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -809,6 +824,12 @@ dotnet_diagnostic.CA5402.severity = none
 
 # CA5403: Do not hard-code certificate
 dotnet_diagnostic.CA5403.severity = none
+
+# CA5404: Do not disable token validation checks
+dotnet_diagnostic.CA5404.severity = none
+
+# CA5405: Do not always skip token validation in delegates
+dotnet_diagnostic.CA5405.severity = none
 
 # IL3000: Avoid using accessing Assembly file path when publishing as a single-file
 dotnet_diagnostic.IL3000.severity = warning
