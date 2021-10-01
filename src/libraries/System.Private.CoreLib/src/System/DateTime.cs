@@ -1403,7 +1403,7 @@ namespace System
 
         public static bool operator ==(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) == 0;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) != 0;
+        public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
