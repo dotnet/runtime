@@ -252,8 +252,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
             }
+        }
 
-
+        // Call before any api other than ResolveModuleID will work
+        public void Init()
+        {
             // Fill in all the types
             foreach (var entry in _types)
             {

@@ -16,6 +16,7 @@ using System.IO.MemoryMappedFiles;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
 using System.Reflection.Metadata;
 using ILCompiler.Reflection.ReadyToRun;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Diagnostics.Tools.Pgo
 {
@@ -226,6 +227,19 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return null;
         }
 
+        private static ConditionalWeakTable<PEReader, string> s_peReaderToPath = new ConditionalWeakTable<PEReader, string>();
+
+        // Get the file path used to load a PEReader or "Memory" if it wasn't loaded from a file
+        public string PEReaderToFilePath(PEReader reader)
+        {
+            if (!s_peReaderToPath.TryGetValue(reader, out string filepath))
+            {
+                filepath = "Memory";
+            }
+
+            return filepath;
+        }
+
         public static unsafe PEReader OpenPEFile(string filePath, byte[] moduleBytes, out MemoryMappedViewAccessor mappedViewAccessor)
         {
             // If moduleBytes is specified create PEReader from the in memory array, not from a file on disk
@@ -253,6 +267,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 var safeBuffer = accessor.SafeMemoryMappedViewHandle;
                 var peReader = new PEReader((byte*)safeBuffer.DangerousGetHandle(), (int)safeBuffer.ByteLength);
+                s_peReaderToPath.Add(peReader, filePath);
 
                 // MemoryMappedFile does not need to be kept around. MemoryMappedViewAccessor is enough.
 
