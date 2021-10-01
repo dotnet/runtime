@@ -535,7 +535,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    PEImageLayout * pLayout = pFile->GetLoadedIL();
+    PEImageLayout * pLayout = pFile->GetLoadedLayout();
     if (!pLayout->HasReadyToRunHeader())
     {
         DoLog("Ready to Run header not found");

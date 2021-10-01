@@ -234,8 +234,8 @@ BOOL PEAssembly::Equals(PEAssembly *pPEAssembly)
     }
 
     // Same image is equal
-    if (m_openedILimage != NULL && pPEAssembly->m_openedILimage != NULL
-        && m_openedILimage->Equals(pPEAssembly->m_openedILimage))
+    if (m_PEImage != NULL && pPEAssembly->m_PEImage != NULL
+        && m_PEImage->Equals(pPEAssembly->m_PEImage))
         return TRUE;
 
     return FALSE;
@@ -254,12 +254,12 @@ BOOL PEAssembly::Equals(PEImage *pImage)
     CONTRACTL_END;
 
     // Same image ==> equal
-    if (pImage == m_openedILimage)
+    if (pImage == m_PEImage)
         return TRUE;
 
     // Equal image ==> equal
-    if (m_openedILimage != NULL
-        && m_openedILimage->Equals(pImage))
+    if (m_PEImage != NULL
+        && m_PEImage->Equals(pImage))
         return TRUE;
 
     return FALSE;
@@ -281,9 +281,9 @@ void PEAssembly::GetPathOrCodeBase(SString &result)
     }
     CONTRACTL_END;
 
-    if (m_openedILimage != NULL && !m_openedILimage->GetPath().IsEmpty())
+    if (m_PEImage != NULL && !m_PEImage->GetPath().IsEmpty())
     {
-        result.Set(m_openedILimage->GetPath());
+        result.Set(m_PEImage->GetPath());
     }
     else
     {
@@ -363,8 +363,8 @@ PTR_CVOID PEAssembly::GetLoadedMetadata(COUNT_T *pSize)
     CONTRACT_END;
 
     if (!HasLoadedIL()
-         || !GetLoadedIL()->HasNTHeaders()
-         || !GetLoadedIL()->HasCorHeader())
+         || !GetLoadedLayout()->HasNTHeaders()
+         || !GetLoadedLayout()->HasCorHeader())
     {
         if (pSize != NULL)
             *pSize = 0;
@@ -372,7 +372,7 @@ PTR_CVOID PEAssembly::GetLoadedMetadata(COUNT_T *pSize)
     }
     else
     {
-        RETURN GetLoadedIL()->GetMetadata(pSize);
+        RETURN GetLoadedLayout()->GetMetadata(pSize);
     }
 }
 
@@ -396,7 +396,7 @@ TADDR PEAssembly::GetIL(RVA il)
 
     PEImageLayout *image = NULL;
 
-    image = GetLoadedIL();
+    image = GetLoadedLayout();
 
 #ifndef DACCESS_COMPILE
     // Verify that the IL blob is valid before giving it out
@@ -670,7 +670,7 @@ PEAssembly::LoadAssembly(
 
     AssemblySpec spec;
 
-    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(GetAssembly()));
+    spec.InitializeSpec(kAssemblyRef, pImport, GetAppDomain()->FindAssembly(this));
 
     RETURN GetAppDomain()->BindAssemblySpec(&spec, TRUE);
 }
@@ -714,7 +714,7 @@ BOOL PEAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
         if (fSkipRaiseResolveEvent || pAppDomain == NULL)
             return FALSE;
 
-        DomainAssembly* pParentAssembly = GetAppDomain()->FindAssembly(GetAssembly());
+        DomainAssembly* pParentAssembly = GetAppDomain()->FindAssembly(this);
         pAssembly = pAppDomain->RaiseResourceResolveEvent(pParentAssembly, szName);
         if (pAssembly == NULL)
             return FALSE;
@@ -821,7 +821,7 @@ ULONG PEAssembly::GetILImageTimeDateStamp()
     }
     CONTRACTL_END;
 
-    return GetLoadedIL()->GetTimeDateStamp();
+    return GetLoadedLayout()->GetTimeDateStamp();
 }
 
 
@@ -859,7 +859,7 @@ PEAssembly::PEAssembly(
 #if _DEBUG
     m_pDebugName = NULL;
 #endif
-    m_openedILimage = NULL;
+    m_PEImage = NULL;
     m_MDImportIsRW_Debugger_Use_Only = FALSE;
     m_bHasPersistentMDImport = FALSE;
     m_pMDImport = NULL;
@@ -879,7 +879,7 @@ PEAssembly::PEAssembly(
 
         // We require a mapping for the file.
         pPEImage->GetLayout(PEImageLayout::LAYOUT_ANY);
-        m_openedILimage = pPEImage;
+        m_PEImage = pPEImage;
     }
 
     // Open metadata eagerly to minimize failure windows
@@ -968,8 +968,8 @@ PEAssembly::~PEAssembly()
 
     ReleaseMetadataInterfaces(TRUE);
 
-    if (m_openedILimage != NULL)
-        m_openedILimage->Release();
+    if (m_PEImage != NULL)
+        m_PEImage->Release();
 
     if (m_pMetadataLock)
         delete m_pMetadataLock;
@@ -1073,16 +1073,16 @@ const SString &PEAssembly::GetEffectivePath()
 
     PEAssembly* pPEAssembly = this;
 
-    while (pPEAssembly->m_openedILimage == NULL
-        || pPEAssembly->m_openedILimage->GetPath().IsEmpty())
+    while (pPEAssembly->m_PEImage == NULL
+        || pPEAssembly->m_PEImage->GetPath().IsEmpty())
     {
         if (pPEAssembly->m_creator)
-            pPEAssembly = pPEAssembly->m_creator->GetAssembly();
+            pPEAssembly = pPEAssembly->m_creator;
         else // Unmanaged exe which loads byte[]/IStream assemblies
             return SString::Empty();
     }
 
-    return pPEAssembly->m_openedILimage->GetPath();
+    return pPEAssembly->m_PEImage->GetPath();
 }
 
 
@@ -1285,9 +1285,9 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     m_debugName.EnumMemoryRegions(flags);
 #endif
 
-    if (m_openedILimage.IsValid())
+    if (m_PEImage.IsValid())
     {
-        m_openedILimage->EnumMemoryRegions(flags);
+        m_PEImage->EnumMemoryRegions(flags);
     }
 
     if (HasILimage())
@@ -1324,7 +1324,7 @@ LPCWSTR PEAssembly::GetPathForErrorMessages()
 
     if (!IsDynamic())
     {
-        return m_openedILimage->GetPathForErrorMessages();
+        return m_PEImage->GetPathForErrorMessages();
     }
     else
     {

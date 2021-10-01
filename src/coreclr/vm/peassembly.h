@@ -159,11 +159,8 @@ public:
     // Classification
     // ------------------------------------------------------------
 
-    PTR_PEAssembly AsAssembly();
     BOOL IsSystem() const;
     BOOL IsDynamic() const;
-    // Returns self 
-    PEAssembly *GetAssembly() const;
 
     // ------------------------------------------------------------
     // Metadata access
@@ -177,9 +174,7 @@ public:
 
 #ifndef DACCESS_COMPILE
     IMetaDataEmit *GetEmitter();
-    IMetaDataAssemblyEmit *GetAssemblyEmitter();
     IMetaDataImport2 *GetRWImporter();
-    IMetaDataAssemblyImport *GetAssemblyImporter();
 #else
     TADDR GetMDInternalRWAddress();
 #endif // DACCESS_COMPILE
@@ -267,15 +262,27 @@ public:
     // Native image access
     // ------------------------------------------------------------
 
-    // Does the loader support using a native image for this file?
-    // Some implementation restrictions prevent native images from being used
-    // in some cases.
-    PTR_PEImageLayout GetLoaded();
-    PTR_PEImageLayout GetLoadedIL();
-    IStream * GetPdbStream();
-    void ClearPdbStream();
-    BOOL IsLoaded() ;
+    BOOL IsLoaded();
+    PTR_PEImageLayout GetLoadedLayout();
     BOOL IsPtrInILImage(PTR_CVOID data);
+
+    PEImage* GetILimage()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_PEImage;
+    }
+
+    BOOL HasILimage()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_PEImage != NULL;
+    }
+
+    BOOL HasLoadedIL()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return HasILimage() && GetILimage()->HasLoadedLayout();
+    }
 
     // ------------------------------------------------------------
     // Resource access
@@ -292,24 +299,6 @@ public:
             IMDInternalImport * pImport = NULL);
 
     void LoadLibrary();
-
-    PEImage* GetILimage()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_openedILimage;
-    }
-
-    BOOL HasILimage()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_openedILimage != NULL;
-    }
-
-    BOOL HasLoadedIL()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return HasILimage() && GetILimage()->HasLoadedLayout();
-    }
 
     LPCWSTR GetPathForErrorMessages();
 
@@ -473,7 +462,7 @@ private:
 #endif
 
     // IL image, NULL if dynamic
-    PTR_PEImage              m_openedILimage;
+    PTR_PEImage              m_PEImage;
 
     PTR_PEAssembly           m_creator;
     // This flag is not updated atomically with m_pMDImport. Its fine for debugger usage

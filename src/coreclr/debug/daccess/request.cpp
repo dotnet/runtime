@@ -2063,9 +2063,8 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, __out_z _
     }
     else if (!pPEAssembly->IsDynamic())
     {
-        PEAssembly *pAssembly = pPEAssembly->GetAssembly();
         StackSString displayName;
-        pAssembly->GetDisplayName(displayName, 0);
+        pPEAssembly->GetDisplayName(displayName, 0);
 
         if (displayName.IsEmpty())
         {

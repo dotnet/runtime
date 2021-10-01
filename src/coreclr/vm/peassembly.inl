@@ -29,14 +29,14 @@ inline CHECK PEAssembly::Invariant()
     if (IsDynamic())
     {
         // dynamic module case
-        CHECK(m_openedILimage == NULL);
+        CHECK(m_PEImage == NULL);
         CHECK(CheckPointer(m_pEmitter));
     }
     else
     {
         // If m_image is null, then we should have a native image. However, this is not valid initially
         // during construction.  We should find a way to assert this.
-        CHECK(CheckPointer((PEImage*) m_openedILimage, NULL_OK));
+        CHECK(CheckPointer((PEImage*) m_PEImage, NULL_OK));
     }
     CHECK_OK;
 }
@@ -88,7 +88,7 @@ inline ULONG PEAssembly::HashIdentity()
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(m_openedILimage));
+        PRECONDITION(CheckPointer(m_PEImage));
         MODE_ANY;
         THROWS;
         GC_TRIGGERS;
@@ -169,12 +169,12 @@ inline const SString& PEAssembly::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsDynamic() || m_openedILimage->IsInBundle ())
+    if (IsDynamic() || m_PEImage->IsInBundle ())
     {
         return SString::Empty();
     }
 
-    return m_openedILimage->GetPath();
+    return m_PEImage->GetPath();
 }
 
 //
@@ -193,12 +193,12 @@ inline const SString& PEAssembly::GetIdentityPath()
     }
     CONTRACTL_END;
 
-    if (m_openedILimage == nullptr)
+    if (m_PEImage == nullptr)
     {
         return SString::Empty();
     }
 
-    return m_openedILimage->GetPath();
+    return m_PEImage->GetPath();
 }
 
 #ifdef DACCESS_COMPILE
@@ -218,7 +218,7 @@ inline const SString &PEAssembly::GetModuleFileNameHint()
         return SString::Empty();
     }
     else
-        return m_openedILimage->GetModuleFileNameHintForDAC();
+        return m_PEImage->GetModuleFileNameHintForDAC();
 }
 #endif // DACCESS_COMPILE
 
@@ -247,13 +247,6 @@ inline LPCWSTR PEAssembly::GetDebugName()
 // Classification
 // ------------------------------------------------------------
 
-inline PTR_PEAssembly PEAssembly::AsAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return dac_cast<PTR_PEAssembly>(this);
-}
-
 inline BOOL PEAssembly::IsSystem() const
 {
     LIMITED_METHOD_CONTRACT;
@@ -267,13 +260,7 @@ inline BOOL PEAssembly::IsDynamic() const
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return m_openedILimage == NULL;
-}
-
-inline PEAssembly *PEAssembly::GetAssembly() const
-{
-    WRAPPER_NO_CONTRACT;
-    return dac_cast<PTR_PEAssembly>(this);
+    return m_PEImage == NULL;
 }
 
 // ------------------------------------------------------------
@@ -443,7 +430,7 @@ inline BOOL PEAssembly::IsReadyToRun()
 
     if (HasILimage())
     {
-        return GetLoadedIL()->HasReadyToRunHeader();
+        return GetLoadedLayout()->HasReadyToRunHeader();
     }
     else
     {
@@ -458,7 +445,7 @@ inline WORD PEAssembly::GetSubsystem()
     if (IsDynamic())
         return 0;
 
-    return GetLoadedIL()->GetSubsystem();
+    return GetLoadedLayout()->GetSubsystem();
 }
 
 inline mdToken PEAssembly::GetEntryPointToken(
@@ -518,7 +505,7 @@ inline PTR_VOID PEAssembly::GetRvaField(RVA field)
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    RETURN dac_cast<PTR_VOID>(GetLoadedIL()->GetRvaData(field,NULL_OK));
+    RETURN dac_cast<PTR_VOID>(GetLoadedLayout()->GetRvaData(field,NULL_OK));
 }
 
 inline CHECK PEAssembly::CheckRvaField(RVA field)
@@ -537,7 +524,7 @@ inline CHECK PEAssembly::CheckRvaField(RVA field)
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    CHECK(GetLoadedIL()->CheckRva(field,NULL_OK));
+    CHECK(GetLoadedLayout()->CheckRva(field,NULL_OK));
     CHECK_OK;
 }
 
@@ -557,7 +544,7 @@ inline CHECK PEAssembly::CheckRvaField(RVA field, COUNT_T size)
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    CHECK(GetLoadedIL()->CheckRva(field, size,0,NULL_OK));
+    CHECK(GetLoadedLayout()->CheckRva(field, size,0,NULL_OK));
     CHECK_OK;
 }
 
@@ -580,7 +567,7 @@ inline BOOL PEAssembly::HasTls()
     else if (IsILOnly())
         return FALSE;
     else
-        return GetLoadedIL()->HasTls();
+        return GetLoadedLayout()->HasTls();
 }
 
 inline BOOL PEAssembly::IsRvaFieldTls(RVA field)
@@ -598,10 +585,10 @@ inline BOOL PEAssembly::IsRvaFieldTls(RVA field)
     if (!HasTls())
         return FALSE;
 
-    PTR_VOID address = PTR_VOID(GetLoadedIL()->GetRvaData(field));
+    PTR_VOID address = PTR_VOID(GetLoadedLayout()->GetRvaData(field));
 
     COUNT_T tlsSize;
-    PTR_VOID tlsRange = GetLoadedIL()->GetTlsRange(&tlsSize);
+    PTR_VOID tlsRange = GetLoadedLayout()->GetTlsRange(&tlsSize);
 
     return (address >= tlsRange
             && address < (dac_cast<PTR_BYTE>(tlsRange)+tlsSize));
@@ -622,7 +609,7 @@ inline UINT32 PEAssembly::GetFieldTlsOffset(RVA field)
     CONTRACTL_END;
 
     return (UINT32)(dac_cast<PTR_BYTE>(GetRvaField(field)) -
-                                dac_cast<PTR_BYTE>(GetLoadedIL()->GetTlsRange()));
+                                dac_cast<PTR_BYTE>(GetLoadedLayout()->GetTlsRange()));
 }
 
 inline UINT32 PEAssembly::GetTlsIndex()
@@ -638,7 +625,7 @@ inline UINT32 PEAssembly::GetTlsIndex()
     }
     CONTRACTL_END;
 
-    return GetLoadedIL()->GetTlsIndex();
+    return GetLoadedLayout()->GetTlsIndex();
 }
 
 inline const void *PEAssembly::GetInternalPInvokeTarget(RVA target)
@@ -656,7 +643,7 @@ inline const void *PEAssembly::GetInternalPInvokeTarget(RVA target)
     }
     CONTRACT_END;
 
-    RETURN (void*)GetLoadedIL()->GetRvaData(target);
+    RETURN (void*)GetLoadedLayout()->GetRvaData(target);
 }
 
 inline CHECK PEAssembly::CheckInternalPInvokeTarget(RVA target)
@@ -673,7 +660,7 @@ inline CHECK PEAssembly::CheckInternalPInvokeTarget(RVA target)
     CONTRACT_CHECK_END;
 
     CHECK(!IsILOnly());
-    CHECK(GetLoadedIL()->CheckRva(target));
+    CHECK(GetLoadedLayout()->CheckRva(target));
 
     CHECK_OK;
 }
@@ -698,7 +685,7 @@ inline IMAGE_COR_VTABLEFIXUP *PEAssembly::GetVTableFixups(COUNT_T *pCount/*=NULL
         RETURN NULL;
     }
     else
-        RETURN GetLoadedIL()->GetVTableFixups(pCount);
+        RETURN GetLoadedLayout()->GetVTableFixups(pCount);
 }
 
 inline void *PEAssembly::GetVTable(RVA rva)
@@ -709,7 +696,7 @@ inline void *PEAssembly::GetVTable(RVA rva)
         PRECONDITION(!IsDynamic());
         PRECONDITION(CheckLoaded());
         PRECONDITION(!IsILOnly());
-        PRECONDITION(GetLoadedIL()->CheckRva(rva));
+        PRECONDITION(GetLoadedLayout()->CheckRva(rva));
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -717,7 +704,7 @@ inline void *PEAssembly::GetVTable(RVA rva)
     }
     CONTRACT_END;
 
-    RETURN (void *)GetLoadedIL()->GetRvaData(rva);
+    RETURN (void *)GetLoadedLayout()->GetRvaData(rva);
 }
 
 // @todo: this is bad to expose. But it is needed to support current IJW thunks
@@ -735,7 +722,7 @@ inline HMODULE PEAssembly::GetIJWBase()
     }
     CONTRACTL_END;
 
-    return (HMODULE) dac_cast<TADDR>(GetLoadedIL()->GetBase());
+    return (HMODULE) dac_cast<TADDR>(GetLoadedLayout()->GetBase());
 }
 
 inline PTR_VOID PEAssembly::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
@@ -758,9 +745,9 @@ inline PTR_VOID PEAssembly::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
     if (IsLoaded())
     {
         if (pSize != NULL)
-            *pSize = GetLoaded()->GetSize();
+            *pSize = GetLoadedLayout()->GetSize();
 
-        RETURN GetLoaded()->GetBase();
+        RETURN GetLoadedLayout()->GetBase();
     }
     else
     {
@@ -787,9 +774,9 @@ inline PTR_CVOID PEAssembly::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
     {
         if (pSize != NULL)
         {
-            *pSize = GetLoaded()->GetSize();
+            *pSize = GetLoadedLayout()->GetSize();
         }
-        return GetLoaded()->GetBase();
+        return GetLoadedLayout()->GetBase();
     }
     else
     {
@@ -811,7 +798,7 @@ inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        POSTCONDITION((!GetLoaded()->GetSize()) || CheckPointer(RETVAL));
+        POSTCONDITION((!GetLoadedLayout()->GetSize()) || CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
@@ -820,10 +807,10 @@ inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
     LoadLibrary();
 
     if (pSize != NULL)
-        *pSize = GetLoadedIL()->GetSize();
+        *pSize = GetLoadedLayout()->GetSize();
 
 
-    RETURN GetLoadedIL()->GetBase();
+    RETURN GetLoadedLayout()->GetBase();
 }
 #endif // DACCESS_COMPILE
 
@@ -850,7 +837,7 @@ inline BOOL PEAssembly::IsPtrInILImage(PTR_CVOID data)
 // Native image access
 // ------------------------------------------------------------
 
-inline PTR_PEImageLayout PEAssembly::GetLoadedIL()
+inline PTR_PEImageLayout PEAssembly::GetLoadedLayout()
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
@@ -869,19 +856,12 @@ inline BOOL PEAssembly::IsLoaded()
         MODE_ANY;
     }
     CONTRACTL_END;
+
     if(IsDynamic())
         return TRUE;
+
     return HasLoadedIL();
 };
-
-
-inline PTR_PEImageLayout PEAssembly::GetLoaded()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return GetLoadedIL();
-};
-
 
 // ------------------------------------------------------------
 // Descriptive strings

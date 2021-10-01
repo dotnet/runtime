@@ -417,7 +417,7 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    PEImageLayout * pLoadedLayout = pModule->GetPEAssembly()->GetLoaded();
+    PEImageLayout * pLoadedLayout = pModule->GetPEAssembly()->GetLoadedLayout();
     _ASSERTE(pLoadedLayout != nullptr);
 
     ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());

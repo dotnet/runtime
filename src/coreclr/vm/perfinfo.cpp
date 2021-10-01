@@ -48,7 +48,7 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
     SIZE_T baseAddr = 0;
     if (pPEAssembly->IsReadyToRun())
     {
-        PEImageLayout *pLoadedLayout = pPEAssembly->GetLoaded();
+        PEImageLayout *pLoadedLayout = pPEAssembly->GetLoadedLayout();
         if (pLoadedLayout)
         {
             baseAddr = (SIZE_T)pLoadedLayout->GetBase();

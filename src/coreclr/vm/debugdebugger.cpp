@@ -731,7 +731,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     {
                         // This flag is only available for non-dynamic assemblies.
                         U1 *pIsFileLayout = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
-                        pIsFileLayout[iNumValidFrames] = (U1) pPEAssembly->GetLoaded()->IsFlat();
+                        pIsFileLayout[iNumValidFrames] = (U1) pPEAssembly->GetLoadedLayout()->IsFlat();
                     }
 
                     // If there is a in memory symbol stream

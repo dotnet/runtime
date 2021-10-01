@@ -4203,7 +4203,7 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
 
         if (pPEAssembly->HasLoadedIL())
         {
-            *isModuleMapped = pPEAssembly->GetLoadedIL()->IsMapped();
+            *isModuleMapped = pPEAssembly->GetLoadedLayout()->IsMapped();
             hr = S_OK;
         }
     }

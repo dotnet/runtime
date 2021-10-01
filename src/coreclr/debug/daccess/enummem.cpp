@@ -95,10 +95,10 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                     assembly->GetPath().IsEmpty() && // is in-memory
                     assembly->HasMetadata() &&       // skip resource assemblies
                     assembly->IsLoaded() &&     // skip files not yet loaded
-                    !assembly->IsDynamic())          // skip dynamic (GetLoadedIL asserts anyway)
+                    !assembly->IsDynamic())          // skip dynamic (GetLoadedLayout asserts anyway)
                 {
-                    pStartAddr = PTR_TO_TADDR(assembly->GetLoadedIL()->GetBase());
-                    ulSize = assembly->GetLoadedIL()->GetSize();
+                    pStartAddr = PTR_TO_TADDR(assembly->GetLoadedLayout()->GetBase());
+                    ulSize = assembly->GetLoadedLayout()->GetSize();
                 }
 
                 // memory are mapped in in GetOsPageSize() size.

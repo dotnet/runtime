@@ -28,8 +28,6 @@ class SimpleRWLock;
 class Crst;
 class Thread;
 
-Thread* GetThreadNULLOk();
-
 // --------------------------------------------------------------------------------
 // PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage
 // can be loaded either FLAT (same layout as on disk) or MAPPED (PE sections
@@ -63,10 +61,10 @@ public:
     // Public constants
     // ------------------------------------------------------------
 
-    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask);
-    PTR_PEImageLayout GetLoadedLayout();
     BOOL IsOpened();
+    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask);
     BOOL HasLoadedLayout();
+    PTR_PEImageLayout GetLoadedLayout();
 
 public:
     // ------------------------------------------------------------

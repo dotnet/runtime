@@ -2736,7 +2736,7 @@ ClrDataModule::RequestGetModuleData(
         // Can not get the assembly layout for a dynamic module
         if (!outGMD->IsDynamic)
         {
-            outGMD->IsFileLayout = pPEAssembly->GetLoaded()->IsFlat();
+            outGMD->IsFileLayout = pPEAssembly->GetLoadedLayout()->IsFlat();
         }
     }
 

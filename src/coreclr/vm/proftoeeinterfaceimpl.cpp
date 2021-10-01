@@ -4004,7 +4004,7 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
         {
             dwRet |= COR_PRF_MODULE_DISK;
         }
-        if (pPEAssembly->GetLoadedIL()->IsFlat())
+        if (pPEAssembly->GetLoadedLayout()->IsFlat())
         {
             dwRet |= COR_PRF_MODULE_FLAT_LAYOUT;
         }

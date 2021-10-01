@@ -453,7 +453,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
     DWORD dwFlags = args->assemblyName->GetFlags();
 
     // Now create a dynamic PE file out of the name & metadata
-    PEAssemblyHolder pFile;
+    PEAssemblyHolder pPEAssembly;
 
     {
         GCX_PREEMP();
@@ -462,7 +462,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
                                                    name, &assemData, dwFlags,
                                                    &ma));
-        pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
+        pPEAssembly = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
         AssemblyBinder* pFallbackBinder = pBinder;
 
@@ -503,7 +503,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         _ASSERTE(pFallbackBinder != nullptr);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
-        pFile->SetFallbackBinder(pFallbackBinder);
+        pPEAssembly->SetFallbackBinder(pFallbackBinder);
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -551,7 +551,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pDomain, pFile, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pDomain, pPEAssembly, pLoaderAllocator);
         if (pDomainAssembly->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -569,7 +569,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         {
             GCX_PREEMP();
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pDomain, pFile, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
+            pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetManifestModule();
             pModule->SetCreatingAssembly( pCallerAssembly );
