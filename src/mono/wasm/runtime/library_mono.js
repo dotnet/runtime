@@ -1301,7 +1301,7 @@ var MonoSupportLib = {
 					try {
 						if (asset.name === attemptUrl) {
 							if (ctx.tracing)
-								console.log ("Attempting to fetch '%s'", + attemptUrl);
+								console.log ("Attempting to fetch '%s'", attemptUrl);
 						} else {
 							if (ctx.tracing)
 								console.log ("Attempting to fetch '%s' for '%s'", attemptUrl, asset.name);
