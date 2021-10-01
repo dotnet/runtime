@@ -26,7 +26,7 @@ steps:
   # Create MAUI Sample app (Do we want this here or lower?)
 
   - script: |
-      ./build.sh -arch arm64 -os Android -s mono+libs -c Release /p:CrossBuild=false
+      ./build.sh -arch arm64 -os Android -s mono+libs+host+packs -c Release /p:CrossBuild=false
       find . -name "*Microsoft.NETCore.App.Runtime.Mono.android*"
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
       ./dotnet.sh workload update --from-rollback-file ./rollback.json
