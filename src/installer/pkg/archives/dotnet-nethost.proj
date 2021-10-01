@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
+    <CreateSymbolsArchive>true</CreateSymbolsArchive>
   </PropertyGroup>
 
   <ItemGroup>
