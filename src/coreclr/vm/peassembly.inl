@@ -247,13 +247,6 @@ inline LPCWSTR PEAssembly::GetDebugName()
 // Classification
 // ------------------------------------------------------------
 
-inline BOOL PEAssembly::IsAssembly() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return true;
-}
-
 inline PTR_PEAssembly PEAssembly::AsAssembly()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -280,7 +273,6 @@ inline BOOL PEAssembly::IsDynamic() const
 inline PEAssembly *PEAssembly::GetAssembly() const
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsAssembly());
     return dac_cast<PTR_PEAssembly>(this);
 }
 
@@ -449,7 +441,7 @@ inline BOOL PEAssembly::IsReadyToRun()
     }
     CONTRACTL_END;
 
-    if (HasOpenedILimage())
+    if (HasILimage())
     {
         return GetLoadedIL()->HasReadyToRunHeader();
     }
@@ -481,7 +473,7 @@ inline mdToken PEAssembly::GetEntryPointToken(
         return mdTokenNil;
 
     _ASSERTE (!bAssumeLoaded || HasLoadedIL ());
-    return GetOpenedILimage()->GetEntryPointToken();
+    return GetILimage()->GetEntryPointToken();
 }
 
 inline BOOL PEAssembly::IsILOnly()
@@ -494,7 +486,7 @@ inline BOOL PEAssembly::IsILOnly()
     if (IsDynamic())
         return FALSE;
 
-    return GetOpenedILimage()->IsILOnly();
+    return GetILimage()->IsILOnly();
 }
 
 inline BOOL PEAssembly::IsDll()
@@ -504,7 +496,7 @@ inline BOOL PEAssembly::IsDll()
     if (IsDynamic())
         return TRUE;
 
-    return GetOpenedILimage()->IsDll();
+    return GetILimage()->IsDll();
 }
 
 inline PTR_VOID PEAssembly::GetRvaField(RVA field)
@@ -847,9 +839,9 @@ inline BOOL PEAssembly::IsPtrInILImage(PTR_CVOID data)
     }
     CONTRACTL_END;
 
-    if (HasOpenedILimage())
+    if (HasILimage())
     {
-        return GetOpenedILimage()->IsPtrInImage(data);
+        return GetILimage()->IsPtrInImage(data);
     }
     else
         return FALSE;
@@ -863,9 +855,9 @@ inline PTR_PEImageLayout PEAssembly::GetLoadedIL()
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    _ASSERTE(HasOpenedILimage());
+    _ASSERTE(HasILimage());
 
-    return GetOpenedILimage()->GetLoadedLayout();
+    return GetILimage()->GetLoadedLayout();
 };
 
 inline BOOL PEAssembly::IsLoaded()
@@ -1013,7 +1005,6 @@ inline DWORD PEAssembly::GetFlags()
 {
     CONTRACTL
     {
-        PRECONDITION(IsAssembly());
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
@@ -1033,7 +1024,6 @@ inline HRESULT PEAssembly::GetFlagsNoTrigger(DWORD * pdwFlags)
 {
     CONTRACTL
     {
-        PRECONDITION(IsAssembly());
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;

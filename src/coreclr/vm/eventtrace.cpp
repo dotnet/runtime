@@ -6139,7 +6139,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
     _ASSERTE(pPEAssembly != NULL);
 
     PTR_PEImageLayout pLayout = NULL;
-    if (pPEAssembly->HasOpenedILimage())
+    if (pPEAssembly->HasILimage())
     {
         pLayout = pPEAssembly->GetLoadedIL();
     }

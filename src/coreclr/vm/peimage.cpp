@@ -895,11 +895,6 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask)
         }
     }
 
-    if (pRetVal != NULL)
-    {
-        pRetVal->AddRef();
-    }
-
     return pRetVal;
 }
 

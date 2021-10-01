@@ -3996,10 +3996,10 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
         dwRet |= (COR_PRF_MODULE_DISK | COR_PRF_MODULE_NGEN);
     }
 #endif
-    // Not NGEN or ReadyToRun.
-    if (pPEAssembly->HasOpenedILimage())
+    // Not Dynamic.
+    if (pPEAssembly->HasILimage())
     {
-        PEImage * pILImage = pPEAssembly->GetOpenedILimage();
+        PEImage * pILImage = pPEAssembly->GetILimage();
         if (pILImage->IsFile())
         {
             dwRet |= COR_PRF_MODULE_DISK;

@@ -494,7 +494,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         {
             // For composite images, manifest metadata gets loaded as part of the native image
             COUNT_T cMeta = 0;
-            if (GetPEAssembly()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
+            if (GetPEAssembly()->GetILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
             {
                 // Load the native assembly import
                 GetNativeAssemblyImport(TRUE /* loadAllowed */);
@@ -742,7 +742,6 @@ Module *Module::Create(Assembly *pAssembly, mdFile moduleRef, PEAssembly *pPEAss
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pAssembly));
         PRECONDITION(CheckPointer(pPEAssembly));
-        PRECONDITION(!IsNilToken(moduleRef) || pPEAssembly->IsAssembly());
         POSTCONDITION(CheckPointer(RETVAL));
         POSTCONDITION(RETVAL->GetPEAssembly() == pPEAssembly);
     }
@@ -2375,7 +2374,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     {
         // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
         COUNT_T cMeta=0;
-        const void* pMeta = GetPEAssembly()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+        const void* pMeta = GetPEAssembly()->GetILimage()->GetNativeManifestMetadata(&cMeta);
         if (pMeta == NULL)
         {
             return FALSE;
@@ -4618,7 +4617,7 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
     }
     CONTRACT_END;
 
-    RETURN GetPEAssembly()->GetOpenedILimage()->GetNativeMDImport(loadAllowed);
+    RETURN GetPEAssembly()->GetILimage()->GetNativeMDImport(loadAllowed);
 }
 
 BYTE* Module::GetNativeFixupBlobData(RVA rva)
@@ -6959,7 +6958,6 @@ ReflectionModule *ReflectionModule::Create(Assembly *pAssembly, PEAssembly *pPEA
     // Hoist CONTRACT into separate routine because of EX incompatibility
 
     mdFile token;
-    _ASSERTE(pPEAssembly->IsAssembly());
     token = mdFileNil;
 
     // Initial memory block for Modules must be zero-initialized (to make it harder

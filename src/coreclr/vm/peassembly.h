@@ -139,7 +139,7 @@ public:
 #endif // DACCESS_COMPILE
 
     // Full name is the most descriptive name available (path, codebase, or name as appropriate)
-    void GetCodeBaseOrName(SString &result);
+    void GetPathOrCodeBase(SString &result);
 
 #ifdef LOGGING
     // This is useful for log messages
@@ -159,7 +159,6 @@ public:
     // Classification
     // ------------------------------------------------------------
 
-    BOOL IsAssembly() const;
     PTR_PEAssembly AsAssembly();
     BOOL IsSystem() const;
     BOOL IsDynamic() const;
@@ -294,38 +293,22 @@ public:
 
     void LoadLibrary();
 
-    PTR_PEImage GetILimage()
-    {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_ANY;
-            GC_TRIGGERS;
-        }
-        CONTRACTL_END;
-
-        return m_openedILimage;
-    }
-
-    PEImage* GetOpenedILimage()
+    PEImage* GetILimage()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        _ASSERTE(HasOpenedILimage());
         return m_openedILimage;
     }
 
-
-    BOOL HasOpenedILimage()
+    BOOL HasILimage()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_openedILimage != NULL;
-
     }
 
     BOOL HasLoadedIL()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return HasOpenedILimage() && GetOpenedILimage()->HasLoadedLayout();
+        return HasILimage() && GetILimage()->HasLoadedLayout();
     }
 
     LPCWSTR GetPathForErrorMessages();

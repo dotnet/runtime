@@ -269,7 +269,7 @@ BOOL PEAssembly::Equals(PEImage *pImage)
 // Descriptive strings
 // ------------------------------------------------------------
 
-void PEAssembly::GetCodeBaseOrName(SString &result)
+void PEAssembly::GetPathOrCodeBase(SString &result)
 {
     CONTRACTL
     {
@@ -285,12 +285,10 @@ void PEAssembly::GetCodeBaseOrName(SString &result)
     {
         result.Set(m_openedILimage->GetPath());
     }
-    else if (IsAssembly())
-    {
-        ((PEAssembly*)this)->GetCodeBase(result);
-    }
     else
-        result.SetUTF8(GetSimpleName());
+    {
+        GetCodeBase(result);
+    }
 }
 
 
@@ -926,7 +924,7 @@ PEAssembly::PEAssembly(
     }
 
 #if _DEBUG
-    GetCodeBaseOrName(m_debugName);
+    GetPathOrCodeBase(m_debugName);
     m_debugName.Normalize();
     m_pDebugName = m_debugName;
 #endif
@@ -1104,13 +1102,14 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     }
     CONTRACTL_END;
 
-    auto ilImage = GetILimage();
-    if (ilImage == nullptr || !ilImage->IsInBundle())
+    PEImage* ilImage = GetILimage();
+    if (ilImage == NULL || !ilImage->IsInBundle())
     {
         // All other cases use the file path.
         result.Set(GetEffectivePath());
         if (!result.IsEmpty())
             PathToUrl(result);
+
         return TRUE;
     }
     else
@@ -1290,7 +1289,8 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         m_openedILimage->EnumMemoryRegions(flags);
     }
-    if (GetILimage().IsValid())
+
+    if (HasILimage())
     {
         GetILimage()->EnumMemoryRegions(flags);
     }
