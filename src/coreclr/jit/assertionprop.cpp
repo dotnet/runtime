@@ -1598,12 +1598,17 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             }
 
             // Try and see if we can make a subrange assertion.
-            if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)))
+            if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)) && varTypeIsIntegral(op2))
             {
-                if (optTryExtractSubrangeAssertion(op2, &assertion.op2.u2))
+                IntegralRange nodeRange = IntegralRange::ForNode(op2, this);
+                IntegralRange typeRange = IntegralRange::ForType(genActualType(op2));
+                assert(typeRange.Contains(nodeRange));
+
+                if (!typeRange.Equals(nodeRange))
                 {
                     assertion.op2.kind      = O2K_SUBRANGE;
                     assertion.assertionKind = OAK_SUBRANGE;
+                    assertion.op2.u2        = nodeRange;
                 }
             }
         }
@@ -1740,73 +1745,6 @@ AssertionIndex Compiler::optFinalizeCreatingAssertion(AssertionDsc* assertion)
     noway_assert((assertion->op1.kind == O1K_ARR_BND) || (assertion->op2.kind != O2K_INVALID));
 
     return optAddAssertion(assertion);
-}
-
-//------------------------------------------------------------------------
-// optTryExtractSubrangeAssertion: Extract the bounds of the value a tree produces.
-//
-// Generates [0..1] ranges for relops, [T_MIN..T_MAX] for small-typed indirections
-// and casts to small types. Generates various ranges for casts to and from "large"
-// types - see "IntegralRange::ForCastOutput".
-//
-// Arguments:
-//    source - tree producing the value
-//    pRange - [out] parameter for the range
-//
-// Return Value:
-//    "true" if the "source" computes a value that could be used for a subrange
-//    assertion, i. e. narrower than the range of the node's type.
-//
-// Notes:
-//   The "pRange" parameter is only written to if the function returns "true".
-//
-bool Compiler::optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange)
-{
-    var_types sourceType = TYP_UNDEF;
-
-    switch (source->OperGet())
-    {
-        case GT_EQ:
-        case GT_NE:
-        case GT_LT:
-        case GT_LE:
-        case GT_GT:
-        case GT_GE:
-            *pRange = {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
-            return true;
-
-        case GT_CLS_VAR:
-        case GT_LCL_FLD:
-        case GT_IND:
-            sourceType = source->TypeGet();
-            break;
-
-        case GT_CAST:
-            if (varTypeIsIntegral(source))
-            {
-                IntegralRange castRange = IntegralRange::ForCastOutput(source->AsCast());
-                IntegralRange nodeRange = IntegralRange::ForType(source->TypeGet());
-                assert(nodeRange.Contains(castRange));
-
-                if (!castRange.Equals(nodeRange))
-                {
-                    *pRange = castRange;
-                    return true;
-                }
-            }
-            return false;
-
-        default:
-            return false;
-    }
-
-    if (varTypeIsSmall(sourceType))
-    {
-        *pRange = IntegralRange::ForType(sourceType);
-        return true;
-    }
-
-    return false;
 }
 
 /*****************************************************************************
