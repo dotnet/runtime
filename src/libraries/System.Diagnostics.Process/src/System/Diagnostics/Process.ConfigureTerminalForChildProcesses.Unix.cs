@@ -21,7 +21,7 @@ namespace System.Diagnostics
                 Debug.Assert(configureConsole);
 
                 // At least one child is using the terminal.
-                Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: 1);
+                Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: true);
             }
             else
             {
@@ -30,7 +30,7 @@ namespace System.Diagnostics
                 if (childrenUsingTerminalRemaining == 0 && configureConsole)
                 {
                     // No more children are using the terminal.
-                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: 0);
+                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
                 }
             }
         }
@@ -50,7 +50,7 @@ namespace System.Diagnostics
                 if (s_childrenUsingTerminalCount == 0)
                 {
                     // No more children are using the terminal.
-                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: 0);
+                    Interop.Sys.ConfigureTerminalForChildProcess(childUsesTerminal: false);
                 }
             }
             finally

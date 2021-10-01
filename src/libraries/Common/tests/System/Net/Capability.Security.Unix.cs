@@ -7,7 +7,7 @@ namespace System.Net.Test.Common
     {
         public static bool IsNtlmInstalled()
         {
-            return Interop.NetSecurityNative.IsNtlmInstalled() != 0;
+            return Interop.NetSecurityNative.IsNtlmInstalled();
         }
     }
 }

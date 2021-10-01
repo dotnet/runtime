@@ -161,10 +161,10 @@ namespace System.Net.NetworkInformation
                         }, (UIntPtr)2))
                 {
                     // Try to register our pattern strings with the dynamic store instance.
-                    if (patterns.IsInvalid || Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(
+                    if (patterns.IsInvalid || !Interop.SystemConfiguration.SCDynamicStoreSetNotificationKeys(
                                                 s_dynamicStoreRef.DangerousGetHandle(),
                                                 IntPtr.Zero,
-                                                patterns.DangerousGetHandle()) == 0)
+                                                patterns.DangerousGetHandle()))
                     {
                         s_dynamicStoreRef.Dispose();
                         s_dynamicStoreRef = null;
@@ -222,7 +222,7 @@ namespace System.Net.NetworkInformation
             Debug.Assert(s_dynamicStoreRef != null);
 
             // Allow RunLoop to finish current processing.
-            SpinWait.SpinUntil(() => Interop.RunLoop.CFRunLoopIsWaiting(s_runLoop) != 0);
+            SpinWait.SpinUntil(() => Interop.RunLoop.CFRunLoopIsWaiting(s_runLoop));
 
             Interop.RunLoop.CFRunLoopStop(s_runLoop);
             s_runLoopEndedEvent.WaitOne();

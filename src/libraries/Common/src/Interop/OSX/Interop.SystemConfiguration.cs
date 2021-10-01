@@ -126,7 +126,7 @@ internal static partial class Interop
         /// <param name="patterns">An array of POSIX regex pattern strings used to match keys to be monitored,
         /// or IntPtr.Zero if no key patterns are to be monitored.</param>
         /// <returns>Non-zero if the set of notification keys and patterns was successfully updated; zero otherwise.</returns>
-        [DllImport(Libraries.SystemConfigurationLibrary)]
-        internal static extern int SCDynamicStoreSetNotificationKeys(SCDynamicStoreRef store, CFArrayRef keys, CFArrayRef patterns);
+        [GeneratedDllImport(Libraries.SystemConfigurationLibrary)]
+        internal static partial bool SCDynamicStoreSetNotificationKeys(SCDynamicStoreRef store, CFArrayRef keys, CFArrayRef patterns);
     }
 }

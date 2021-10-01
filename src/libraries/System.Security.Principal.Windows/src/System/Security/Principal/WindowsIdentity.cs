@@ -130,7 +130,7 @@ namespace System.Security.Principal
                 TOKEN_SOURCE sourceContext;
                 unsafe
                 {
-                    if (Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier) == 0)
+                    if (!Interop.Advapi32.AllocateLocallyUniqueId(&sourceContext.SourceIdentifier))
                         throw new SecurityException(new Win32Exception().Message);
                 }
 
