@@ -7336,9 +7336,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ERROR_DECL (error);
 
 				MonoMethod *new_cmethod = mono_class_get_virtual_method (sp [0]->klass, cmethod, error);
-				mono_error_assert_ok (error);
-				cmethod = new_cmethod;
-				virtual_ = FALSE;
+				if (is_ok (error)) {
+					cmethod = new_cmethod;
+					virtual_ = FALSE;
+				} else {
+					mono_error_cleanup (error);
+				}
 			}
 
 			if (cmethod && method_does_not_return (cmethod)) {
