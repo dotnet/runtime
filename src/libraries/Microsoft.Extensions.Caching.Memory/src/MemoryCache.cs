@@ -131,15 +131,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     RemoveEntry(priorEntry);
                 }
-                StartScanForExpiredItemsIfNeeded(utcNow);
-                return;
             }
-
-            bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry);
-            if (!exceedsCapacity)
+            else if (!UpdateCacheSizeExceedsCapacity(entry))
             {
-                bool entryAdded = false;
-
+                bool entryAdded;
                 if (priorEntry == null)
                 {
                     // Try to add the new entry if no previous entries exist.
@@ -182,10 +177,7 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.InvokeEvictionCallbacks();
                 }
 
-                if (priorEntry != null)
-                {
-                    priorEntry.InvokeEvictionCallbacks();
-                }
+                priorEntry?.InvokeEvictionCallbacks();
             }
             else
             {
