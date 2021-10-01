@@ -70,8 +70,6 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
 
         protected ILGenerator? _ilg;
-        /// <summary>true if the compiled code is saved for later use, potentially on a different machine.</summary>
-        private readonly bool _persistsAssembly;
 
         // tokens representing local variables
         private LocalBuilder? _runtextbegLocal;
@@ -123,11 +121,6 @@ namespace System.Text.RegularExpressions
         private const int Uniquecount = 10;
         private const int LoopTimeoutCheckCount = 2048; // A conservative value to guarantee the correct timeout handling.
 
-        protected RegexCompiler(bool persistsAssembly)
-        {
-            _persistsAssembly = persistsAssembly;
-        }
-
         private static FieldInfo RegexRunnerField(string fieldname) => typeof(RegexRunner).GetField(fieldname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
 
         private static MethodInfo RegexRunnerMethod(string methname) => typeof(RegexRunner).GetMethod(methname, BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)!;
@@ -138,40 +131,6 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             new RegexLWCGCompiler().FactoryInstanceFromCode(pattern, code, options, hasTimeout);
-
-#if DEBUG // until it can be fully implemented
-        /// <summary>
-        /// Entry point to dynamically compile a regular expression.  The expression is compiled to
-        /// an assembly saved to a file.
-        /// </summary>
-        internal static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
-        {
-            var c = new RegexAssemblyCompiler(assemblyname, attributes, resourceFile);
-
-            for (int i = 0; i < regexinfos.Length; i++)
-            {
-                if (regexinfos[i] is null)
-                {
-                    throw new ArgumentNullException(nameof(regexinfos), SR.ArgumentNull_ArrayWithNullElements);
-                }
-
-                string pattern = regexinfos[i].Pattern;
-
-                RegexOptions options = regexinfos[i].Options | RegexOptions.Compiled; // ensure compiled is set; it enables more optimization specific to compilation
-
-                string fullname = regexinfos[i].Namespace.Length == 0 ?
-                    regexinfos[i].Name :
-                    regexinfos[i].Namespace + "." + regexinfos[i].Name;
-
-                RegexTree tree = RegexParser.Parse(pattern, options, (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
-                RegexCode code = RegexWriter.Write(tree);
-
-                c.GenerateRegexType(pattern, options, fullname, regexinfos[i].IsPublic, code, regexinfos[i].MatchTimeout);
-            }
-
-            c.Save();
-        }
-#endif
 
         /// <summary>
         /// Keeps track of an operation that needs to be referenced in the backtrack-jump
@@ -1743,6 +1702,37 @@ namespace System.Text.RegularExpressions
             }
 #endif
 
+            // In some limited cases, FindFirstChar will only return true if it successfully matched the whole thing.
+            // This is the case, in particular, for strings.  We can special case these to do essentially nothing
+            // in Go other than emit the capture.
+            if (!IsCaseInsensitive(node)) // FindFirstChar may not be 100% accurate on casing in all cultures
+            {
+                switch (node.Type)
+                {
+                    case RegexNode.Multi:
+                    case RegexNode.Notone:
+                    case RegexNode.One:
+                    case RegexNode.Set:
+                        // base.Capture(0, base.runtextpos, base.runtextpos + node.Str.Length);
+                        // base.runtextpos = base.runtextpos + node.Str.Length;
+                        // return;
+                        Ldthis();
+                        Dup();
+                        Ldc(0);
+                        Ldthisfld(s_runtextposField);
+                        Dup();
+                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                        Add();
+                        Call(s_captureMethod);
+                        Ldthisfld(s_runtextposField);
+                        Ldc(node.Type == RegexNode.Multi ? node.Str!.Length : 1);
+                        Add();
+                        Stfld(s_runtextposField);
+                        Ret();
+                        return true;
+                }
+            }
+
             // Declare some locals.
             LocalBuilder runtextLocal = DeclareString();
             LocalBuilder originalruntextposLocal = DeclareInt32();
@@ -2140,14 +2130,14 @@ namespace System.Text.RegularExpressions
             }
 
             // Emits the code for the node.
-            void EmitNode(RegexNode node)
+            void EmitNode(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
                 switch (node.Type)
                 {
                     case RegexNode.One:
                     case RegexNode.Notone:
                     case RegexNode.Set:
-                        EmitSingleChar(node);
+                        EmitSingleChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Boundary:
@@ -2167,7 +2157,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case RegexNode.Multi:
-                        EmitMultiChar(node);
+                        EmitMultiChar(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Oneloopatomic:
@@ -2205,13 +2195,25 @@ namespace System.Text.RegularExpressions
                     case RegexNode.Notonelazy:
                     case RegexNode.Setloop:
                     case RegexNode.Setlazy:
-                        EmitSingleCharRepeater(node);
+                        EmitSingleCharRepeater(node, emitLengthChecksIfRequired);
                         break;
 
                     case RegexNode.Concatenate:
                         int childCount = node.ChildCount();
                         for (int i = 0; i < childCount; i++)
                         {
+                            if (emitLengthChecksIfRequired && node.TryGetJoinableLengthCheckChildRange(i, out int requiredLength, out int exclusiveEnd))
+                            {
+                                EmitSpanLengthCheck(requiredLength);
+                                for (; i < exclusiveEnd; i++)
+                                {
+                                    EmitNode(node.Child(i), emitLengthChecksIfRequired: false);
+                                }
+
+                                i--;
+                                continue;
+                            }
+
                             EmitNode(node.Child(i));
                         }
                         break;
@@ -2440,7 +2442,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Emits the code to handle a multiple-character match.
-            void EmitMultiChar(RegexNode node)
+            void EmitMultiChar(RegexNode node, bool emitLengthCheck = true)
             {
                 bool caseInsensitive = IsCaseInsensitive(node);
 
@@ -2472,16 +2474,19 @@ namespace System.Text.RegularExpressions
                 // Emit the length check for the whole string.  If the generated code gets past this point,
                 // we know the span is at least textSpanPos + s.Length long.
                 ReadOnlySpan<char> s = node.Str;
-                EmitSpanLengthCheck(s.Length);
+                if (emitLengthCheck)
+                {
+                    EmitSpanLengthCheck(s.Length);
+                }
 
                 // If we're doing a case-insensitive comparison, we need to lower case each character,
                 // so we just go character-by-character.  But if we're not, we try to process multiple
                 // characters at a time; this is helpful not only for throughput but also in reducing
-                // the amount of IL and asm that results from this unrolling. Also, this optimization
+                // the amount of IL and asm that results from this unrolling. This optimization
                 // is subject to endianness issues if the generated code is used on a machine with a
-                // different endianness; for now, we simply disable the optimization if the generated
-                // code is being saved. TODO https://github.com/dotnet/runtime/issues/30153.
-                if (!caseInsensitive && !_persistsAssembly)
+                // different endianness, but that's not a concern when the code is emitted by the
+                // same process that then uses it.
+                if (!caseInsensitive)
                 {
                     // On 64-bit, process 4 characters at a time until the string isn't at least 4 characters long.
                     if (IntPtr.Size == 8)
@@ -2533,7 +2538,7 @@ namespace System.Text.RegularExpressions
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
             // RegexNode.M is used for the number of iterations; RegexNode.N is ignored.
-            void EmitSingleCharRepeater(RegexNode node)
+            void EmitSingleCharRepeater(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
                 int iterations = node.M;
 
@@ -2544,7 +2549,10 @@ namespace System.Text.RegularExpressions
                 }
 
                 // if ((uint)(textSpanPos + iterations - 1) >= (uint)textSpan.Length) goto doneLabel;
-                EmitSpanLengthCheck(iterations);
+                if (emitLengthChecksIfRequired)
+                {
+                    EmitSpanLengthCheck(iterations);
+                }
 
                 // Arbitrary limit for unrolling vs creating a loop.  We want to balance size in the generated
                 // code with other costs, like the (small) overhead of slicing to create the temp span to iterate.

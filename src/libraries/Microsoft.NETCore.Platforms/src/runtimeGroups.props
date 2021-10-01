@@ -156,13 +156,13 @@
     <RuntimeGroup Include="osx">
       <Parent>unix</Parent>
       <Architectures>x64;arm64</Architectures>
-      <Versions>10.10;10.11;10.12;10.13;10.14;10.15;10.16;11.0</Versions>
+      <Versions>10.10;10.11;10.12;10.13;10.14;10.15;10.16;11.0;12</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64</Architectures>
-      <Versions>11;12;13</Versions>
+      <Versions>12;13</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="solaris">

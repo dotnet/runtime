@@ -1663,6 +1663,63 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>
+        /// Determine whether the specified child node is the beginning of a sequence that can
+        /// trivially have length checks combined in order to avoid bounds checks.
+        /// </summary>
+        /// <param name="childIndex">The starting index of the child to check.</param>
+        /// <param name="requiredLength">The sum of all the fixed lengths for the nodes in the sequence.</param>
+        /// <param name="exclusiveEnd">The index of the node just after the last one in the sequence.</param>
+        /// <returns>true if more than one node can have their length checks combined; otherwise, false.</returns>
+        /// <remarks>
+        /// There are additional node types for which we can prove a fixed length, e.g. examining all branches
+        /// of an alternation and returning true if all their lengths are equal.  However, the primary purpose
+        /// of this method is to avoid bounds checks by consolidating length checks that guard accesses to
+        /// strings/spans for which the JIT can see a fixed index within bounds, and alternations employ
+        /// patterns that defeat that (e.g. reassigning the span in question).  As such, the implementation
+        /// remains focused on only a core subset of nodes that are a) likely to be used in concatenations and
+        /// b) employ simple patterns of checks.
+        /// </remarks>
+        public bool TryGetJoinableLengthCheckChildRange(int childIndex, out int requiredLength, out int exclusiveEnd)
+        {
+            static bool CanJoinLengthCheck(RegexNode node) => node.Type switch
+            {
+                RegexNode.One or RegexNode.Notone or RegexNode.Set => true,
+                RegexNode.Multi => true,
+                RegexNode.Oneloop or RegexNode.Onelazy or RegexNode.Oneloopatomic or
+                    RegexNode.Notoneloop or RegexNode.Notonelazy or RegexNode.Notoneloopatomic or
+                    RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic when node.M == node.N => true,
+                _ => false,
+            };
+
+            RegexNode child = Child(childIndex);
+            if (CanJoinLengthCheck(child))
+            {
+                requiredLength = child.ComputeMinLength();
+
+                int childCount = ChildCount();
+                for (exclusiveEnd = childIndex + 1; exclusiveEnd < childCount; exclusiveEnd++)
+                {
+                    child = Child(exclusiveEnd);
+                    if (!CanJoinLengthCheck(child))
+                    {
+                        break;
+                    }
+
+                    requiredLength += child.ComputeMinLength();
+                }
+
+                if (exclusiveEnd - childIndex > 1)
+                {
+                    return true;
+                }
+            }
+
+            requiredLength = 0;
+            exclusiveEnd = 0;
+            return false;
+        }
+
         public RegexNode MakeQuantifier(bool lazy, int min, int max)
         {
             if (min == 0 && max == 0)
@@ -2032,6 +2089,7 @@ namespace System.Text.RegularExpressions
                         (M == 0 && N == 1) ? "?" :
                         (M == 1 && N == int.MaxValue) ? "+" :
                         (N == int.MaxValue) ? $"{{{M}, *}}" :
+                        (N == M) ? $"{{{M}}}" :
                         $"{{{M}, {N}}}");
                     break;
             }

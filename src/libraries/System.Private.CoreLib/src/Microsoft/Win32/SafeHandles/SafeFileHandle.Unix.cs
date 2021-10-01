@@ -323,20 +323,24 @@ namespace Microsoft.Win32.SafeHandles
                 }
             }
 
-            // If preallocationSize has been provided for a creatable and writeable file
-            if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode, this))
+            if (preallocationSize > 0 && Interop.Sys.FAllocate(this, 0, preallocationSize) < 0)
             {
-                int fallocateResult = Interop.Sys.PosixFAllocate(this, 0, preallocationSize);
-                if (fallocateResult != 0)
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                // Only throw for errors that indicate there is not enough space.
+                if (errorInfo.Error == Interop.Error.EFBIG ||
+                    errorInfo.Error == Interop.Error.ENOSPC)
                 {
                     Dispose();
-                    Interop.Sys.Unlink(path!); // remove the file to mimic Windows behaviour (atomic operation)
 
-                    Debug.Assert(fallocateResult == -1 || fallocateResult == -2);
-                    throw new IOException(SR.Format(
-                        fallocateResult == -1 ? SR.IO_DiskFull_Path_AllocationSize : SR.IO_FileTooLarge_Path_AllocationSize,
-                        path,
-                        preallocationSize));
+                    // Delete the file we've created.
+                    Debug.Assert(mode == FileMode.Create || mode == FileMode.CreateNew);
+                    Interop.Sys.Unlink(path!);
+
+                    throw new IOException(SR.Format(errorInfo.Error == Interop.Error.EFBIG
+                                                        ? SR.IO_FileTooLarge_Path_AllocationSize
+                                                        : SR.IO_DiskFull_Path_AllocationSize,
+                                            path, preallocationSize));
                 }
             }
         }

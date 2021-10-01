@@ -255,7 +255,7 @@ namespace System.Text
                         $"[ISCIIEncoding.GetBytes]Expected indicTwoBytes from 1-3, not {(indicTwoBytes >> 12)}");
 
                     // Already did buffer checking, but...
-                    if (!buffer.AddByte(s_SecondIndicByte[indicTwoBytes >> 12]))
+                    if (!buffer.AddByte(SecondIndicByte[indicTwoBytes >> 12]))
                         break;
                 }
             }
@@ -1936,7 +1936,7 @@ namespace System.Text
         // This is used if the UnicodeToIndic table 4 high bits are set, this is
         // the value of the second Indic byte when applicable.
         ////////////////////////////////////////////////////////////////////////////
-        private static readonly byte[] s_SecondIndicByte =
+        private static ReadOnlySpan<byte> SecondIndicByte => new byte[]
         {
             0x00,
             0xe9,
