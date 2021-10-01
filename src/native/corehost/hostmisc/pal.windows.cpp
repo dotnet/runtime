@@ -276,8 +276,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
+    USHORT pProcessMachine, pNativeMachine;
     const pal::char_t* program_files_dir;
-    if (pal::is_running_in_wow64())
+    auto is_running_in_wow64 = IsWow64Process2(GetCurrentProcess(), &pProcessMachine, &pNativeMachine);
+    if (is_running_in_wow64)
     {
         program_files_dir = _X("ProgramFiles(x86)");
     }
@@ -292,6 +294,14 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
+    if (!is_running_in_wow64 &&
+        pProcessMachine != pNativeMachine &&
+        pNativeMachine == IMAGE_FILE_MACHINE_ARM64)
+    {
+        // We are running an x64 process in a windows arm64 machine.
+        // Install location for x64 should be %ProgramFiles%\dotnet\x64.
+        append_path(recv, _X("x64"));
+    }
 
     return true;
 }
