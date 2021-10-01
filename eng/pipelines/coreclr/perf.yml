@@ -40,8 +40,10 @@ jobs:
       platforms:
       - iOS_arm64
       jobParameters:
-        buildArgs: -s mono+libs+host+packs+mono.mscordbi+mono.workloads -c $(_BuildConfig)
+        buildArgs: -s mono+libs -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
+        archType: arm64
+        osGroup: Android
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
         extraStepsParameters:
