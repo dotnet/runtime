@@ -5278,7 +5278,7 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     {
         return (gtFlags & GTF_SIMDASHW_OP) != 0;
     }
-    unsigned GetOverwrittenOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
+    unsigned GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3);
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()

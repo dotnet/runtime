@@ -2106,7 +2106,9 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
     var_types      baseType    = node->GetSimdBaseType();
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
-    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+    instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
+    instruction    _132form    = (instruction)(ins - 1);
+    instruction    _232form    = (instruction)(ins - 1);
     GenTree*       op1         = node->gtGetOp1();
     regNumber      targetReg   = node->GetRegNum();
 
@@ -2131,21 +2133,21 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
     assert(!copiesUpperBits || !op1->isContained());
 
-    unsigned overwrittenOpNum = 0;
+    unsigned resultOpNum = 0;
     LIR::Use use;
     if (LIR::AsRange(compiler->compCurBB).TryGetUse(node, &use))
     {
-        overwrittenOpNum = node->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
+        resultOpNum = node->GetResultOpNumForFMA(use.User(), op1, op2, op3);
     }
 
     // Intrinsics with CopyUpperBits semantics must have op1 as target
-    if (overwrittenOpNum == 1 || copiesUpperBits)
+    if (resultOpNum == 1 || copiesUpperBits)
     {
         if (op2->isContained() || op2->IsRegOptional())
         {
             // op1 = (op1 * [op2]) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins    = (instruction)(ins - 1);
+            ins    = _132form;
             op1Reg = op1->GetRegNum();
             op2Reg = op3->GetRegNum();
             op3    = op2;
@@ -2159,10 +2161,10 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         }
         isCommutative = copiesUpperBits;
     }
-    else if (overwrittenOpNum == 3)
+    else if (resultOpNum == 3)
     {
         // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-        ins    = (instruction)(ins + 1);
+        ins    = _232form;
         op1Reg = op3->GetRegNum();
         if (op1->isContained())
         {
@@ -2177,13 +2179,13 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             op3    = op2;
         }
     }
-    else if (overwrittenOpNum == 2)
+    else if (resultOpNum == 2)
     {
         if (op1->isContained())
         {
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins    = (instruction)(ins - 1);
+            ins    = _132form;
             op1Reg = op2->GetRegNum();
             op2Reg = op3->GetRegNum();
             op3    = op1;
@@ -2198,12 +2200,12 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else
     {
-        assert(overwrittenOpNum == 0);
+        assert(resultOpNum == 0);
         if (op1->isContained())
         {
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-            ins    = (instruction)(ins - 1);
+            ins    = _132form;
             op1Reg = op2->GetRegNum();
             op2Reg = op3->GetRegNum();
             op3    = op1;
@@ -2214,7 +2216,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             {
                 // op1 = (op1 * [op2]) + op3
                 // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
-                ins    = (instruction)(ins - 1);
+                ins    = _132form;
                 op1Reg = op1->GetRegNum();
                 op2Reg = op3->GetRegNum();
                 op3    = op2;
