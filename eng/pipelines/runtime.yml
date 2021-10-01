@@ -800,7 +800,7 @@ jobs:
 # and those are already built above
 #
 
-- ${{ if eq(variables['isFullMatrix'], true) }}:
+- ${{ if eq(variables['isFullMatrix'], false) }}:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
