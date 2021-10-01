@@ -3,6 +3,7 @@
 
 import { mono_wasm_get_jsobj_from_js_handle } from './gc-handles';
 import { wrap_error } from './method-calls';
+import { JSHandle } from './types';
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 const promise_control_symbol = Symbol.for("wasm promise_control");
@@ -14,7 +15,7 @@ export function isThenable(js_obj: any) {
         ((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
 }
 
-export function mono_wasm_cancel_promise(thenable_js_handle: Promise<any>, is_exception: Int32Ptr) {
+export function mono_wasm_cancel_promise(thenable_js_handle: JSHandle, is_exception: Int32Ptr) {
     try {
         const promise = mono_wasm_get_jsobj_from_js_handle(thenable_js_handle)
         const promise_control = promise[promise_control_symbol];

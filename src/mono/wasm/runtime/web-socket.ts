@@ -10,7 +10,7 @@ import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from './g
 import { _wrap_js_thenable_as_task } from './js-to-cs';
 import { wrap_error } from './method-calls';
 import { conv_string } from './strings';
-import { JSHandle } from './types';
+import { JSHandle, MonoArray, MonoObject, MonoString } from './types';
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -27,7 +27,7 @@ let _text_encoder_utf8: TextEncoder | undefined = undefined;
 let ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
-export function mono_wasm_web_socket_open(uri: CharPtr, subProtocols: VoidPtr, on_close: VoidPtr, web_socket_js_handle: JSHandle, thenable_js_handle: JSHandle, is_exception: Int32Ptr) {
+export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArray, on_close: MonoObject, web_socket_js_handle: Int32Ptr, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr) {
     const uri_root = mono_wasm_new_root(uri);
     const sub_root = mono_wasm_new_root(subProtocols);
     const on_close_root = mono_wasm_new_root(on_close);
@@ -87,11 +87,11 @@ export function mono_wasm_web_socket_open(uri: CharPtr, subProtocols: VoidPtr, o
         ws.addEventListener('close', local_on_close, { once: true });
 
         var ws_js_handle = mono_wasm_get_js_handle(ws);
-        Module.setValue(<number>web_socket_js_handle, <number>ws_js_handle, "i32");
+        Module.setValue(web_socket_js_handle, <any>ws_js_handle, "i32");
 
         var { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
         // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-        Module.setValue(<number>thenable_js_handle, <number>then_js_handle, "i32");
+        Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
         return task_ptr;
     }
@@ -105,7 +105,7 @@ export function mono_wasm_web_socket_open(uri: CharPtr, subProtocols: VoidPtr, o
     }
 }
 
-export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: VoidPtr, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: JSHandle, is_exception: Int32Ptr) {
+export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, message_type: number, end_of_message: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr) {
     const buffer_root = mono_wasm_new_root(buffer_ptr);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle)
@@ -131,7 +131,7 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
     }
 }
 
-export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: VoidPtr, offset: number, length: number, response_ptr: VoidPtr, thenable_js_handle: JSHandle, is_exception: Int32Ptr) {
+export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buffer_ptr: MonoObject, offset: number, length: number, response_ptr: MonoObject, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr) {
     const buffer_root = mono_wasm_new_root(buffer_ptr);
     const response_root = mono_wasm_new_root(response_ptr);
     const release_buffer = () => {
@@ -159,7 +159,7 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
             _mono_wasm_web_socket_receive_buffering(receive_event_queue, buffer_root, offset, length, response_root);
             release_buffer();
 
-            Module.setValue(<number>thenable_js_handle, 0, "i32");
+            Module.setValue(thenable_js_handle, 0, "i32");
             return null;
         }
         const { promise, promise_control } = _create_cancelable_promise(release_buffer, release_buffer);
@@ -172,7 +172,7 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
 
         const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
         // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-        Module.setValue(<number>thenable_js_handle, <number>then_js_handle, "i32");
+        Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
         return task_ptr;
     }
     catch (ex) {
@@ -180,7 +180,7 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
     }
 }
 
-export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: number, reason: string, wait_for_close_received: boolean, thenable_js_handle: JSHandle, is_exception: Int32Ptr) {
+export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: number, reason: MonoString, wait_for_close_received: boolean, thenable_js_handle: Int32Ptr, is_exception: Int32Ptr) {
     const reason_root = mono_wasm_new_root(reason);
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle)
@@ -205,7 +205,7 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
 
             var { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-            Module.setValue(<number>thenable_js_handle, <number>then_js_handle, "i32");
+            Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
             return task_ptr;
         }
@@ -219,7 +219,7 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
             } else {
                 ws.close(code);
             }
-            Module.setValue(<number>thenable_js_handle, 0, "i32");
+            Module.setValue(thenable_js_handle, 0, "i32");
             return null;// no promise
         }
     }
@@ -261,7 +261,7 @@ export function mono_wasm_web_socket_abort(webSocket_js_handle: JSHandle, is_exc
     }
 }
 
-function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uint8Array | string, thenable_js_handle: JSHandle) {
+function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uint8Array | string, thenable_js_handle: Int32Ptr) {
     // send and return promise
     ws.send(buffer);
     ws[wasm_ws_pending_send_buffer] = null;
@@ -306,7 +306,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uin
 
     const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
     // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-    Module.setValue(<number>thenable_js_handle, <number>then_js_handle, "i32");
+    Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
     return task_ptr;
 }
@@ -351,12 +351,12 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
     prevent_timer_throttling();
 }
 
-function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer_root: WasmRoot, buffer_offset: number, buffer_length: number, response_root: WasmRoot) {
+function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer_root: WasmRoot<MonoObject>, buffer_offset: number, buffer_length: number, response_root: WasmRoot<MonoObject>) {
     const event = event_queue.peek();
 
     const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
-        const targetView = Module.HEAPU8.subarray(<number>buffer_root.value + buffer_offset, <number>buffer_root.value + buffer_offset + buffer_length);
+        const targetView = Module.HEAPU8.subarray(<any>buffer_root.value + buffer_offset, <any>buffer_root.value + buffer_offset + buffer_length);
         const sourceView = event.data.subarray(event.offset, event.offset + count);
         targetView.set(sourceView, 0);
         event.offset += count;
@@ -365,15 +365,15 @@ function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer
     if (end_of_message) {
         event_queue.dequeue();
     }
-    Module.setValue(<number>response_root.value + 0, count, "i32");
-    Module.setValue(<number>response_root.value + 4, event.type, "i32");
-    Module.setValue(<number>response_root.value + 8, end_of_message, "i32");
+    Module.setValue(<any>response_root.value + 0, count, "i32");
+    Module.setValue(<any>response_root.value + 4, event.type, "i32");
+    Module.setValue(<any>response_root.value + 8, end_of_message, "i32");
 }
 
-function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_root: WasmRoot, buffer_offset: number, length: number, message_type: number, end_of_message: boolean): Uint8Array | string | null {
+function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_root: WasmRoot<MonoObject>, buffer_offset: number, length: number, message_type: number, end_of_message: boolean): Uint8Array | string | null {
     var buffer = ws[wasm_ws_pending_send_buffer];
     var offset = 0;
-    var message_ptr = <number>buffer_root.value + buffer_offset;
+    var message_ptr = <any>buffer_root.value + buffer_offset;
 
     if (buffer) {
         offset = ws[wasm_ws_pending_send_buffer_offset];
@@ -452,8 +452,8 @@ type WebSocketExtension = WebSocket & {
 }
 
 type ReceivePromiseControl = PromiseControl & {
-    response_root: WasmRoot
-    buffer_root: WasmRoot
+    response_root: WasmRoot<MonoObject>
+    buffer_root: WasmRoot<MonoObject>
     buffer_offset: number
     buffer_length: number
 }

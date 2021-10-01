@@ -9,12 +9,12 @@ import {
 } from './gc-handles';
 import corebindings, { runtimeHelpers } from './corebindings';
 import cwraps from './cwraps';
-import { mono_wasm_new_roots, mono_wasm_release_roots } from './roots';
+import { mono_wasm_new_root, mono_wasm_release_roots } from './roots';
 import { wrap_error } from './method-calls';
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from './strings';
 import { isThenable } from './cancelable-promise';
 import { has_backing_array_buffer } from './buffers';
-import { JSHandle, MonoMethod, MonoObject, wasm_type_symbol } from './types';
+import { JSHandle, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol } from './types';
 
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
     switch (true) {
@@ -34,11 +34,11 @@ export function js_to_mono_obj(js_obj: any) {
     return _js_to_mono_obj(false, js_obj)
 }
 
-export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any) {
+export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
     switch (true) {
         case js_obj === null:
         case typeof js_obj === "undefined":
-            return 0;
+            return MonoObjectNull;
         case typeof js_obj === "number": {
             let result = null;
             if ((js_obj | 0) === js_obj)
@@ -53,9 +53,9 @@ export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any) {
 
             return result;
         } case typeof js_obj === "string":
-            return js_string_to_mono_string(js_obj);
+            return <any>js_string_to_mono_string(js_obj);
         case typeof js_obj === "symbol":
-            return js_string_to_mono_string_interned(js_obj);
+            return <any>js_string_to_mono_string_interned(js_obj);
         case typeof js_obj === "boolean":
             return _box_js_bool(js_obj);
         case isThenable(js_obj) === true:
@@ -70,9 +70,9 @@ export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any) {
     }
 }
 
-function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any) {
+function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
     if (js_obj === null || typeof js_obj === "undefined")
-        return 0;
+        return MonoObjectNull;
 
     var result = null;
     if (js_obj[js_owned_gc_handle_symbol]) {
@@ -105,22 +105,22 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any) {
 }
 
 function _box_js_int(js_obj: number) {
-    Module.HEAP32[<number>runtimeHelpers._box_buffer / 4] = js_obj;
+    Module.HEAP32[<any>runtimeHelpers._box_buffer / 4] = js_obj;
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_int32, runtimeHelpers._box_buffer, 4);
 }
 
 function _box_js_uint(js_obj: number) {
-    Module.HEAPU32[<number>runtimeHelpers._box_buffer / 4] = js_obj;
+    Module.HEAPU32[<any>runtimeHelpers._box_buffer / 4] = js_obj;
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_uint32, runtimeHelpers._box_buffer, 4);
 }
 
 function _box_js_double(js_obj: number) {
-    Module.HEAPF64[<number>runtimeHelpers._box_buffer / 8] = js_obj;
+    Module.HEAPF64[<any>runtimeHelpers._box_buffer / 8] = js_obj;
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_double, runtimeHelpers._box_buffer, 8);
 }
 
 export function _box_js_bool(js_obj: boolean) {
-    Module.HEAP32[<number>runtimeHelpers._box_buffer / 4] = js_obj ? 1 : 0;
+    Module.HEAP32[<any>runtimeHelpers._box_buffer / 4] = js_obj ? 1 : 0;
     return cwraps.mono_wasm_box_primitive(runtimeHelpers._class_boolean, runtimeHelpers._box_buffer, 4);
 }
 
@@ -128,7 +128,7 @@ export function _box_js_bool(js_obj: boolean) {
 function js_typedarray_to_heap(typedArray: TypedArray) {
     var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
     var ptr = Module._malloc(numBytes);
-    var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <number>ptr, numBytes);
+    var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>ptr, numBytes);
     heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
     return heapBytes;
 }
@@ -145,8 +145,8 @@ export function js_typed_array_to_array(js_obj: any) {
     if (!!(has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT)) {
         var arrayType = js_obj[wasm_type_symbol];
         var heapBytes = js_typedarray_to_heap(js_obj);
-        var bufferArray = cwraps.mono_wasm_typed_array_new(heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
-        Module._free(heapBytes.byteOffset);
+        var bufferArray = cwraps.mono_wasm_typed_array_new(<any>heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
+        Module._free(<any>heapBytes.byteOffset);
         return bufferArray;
     }
     else {
@@ -163,7 +163,8 @@ export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number
 
 export function js_array_to_mono_array(js_array: any[], asString: boolean, should_add_in_flight: boolean) {
     var mono_array = asString ? cwraps.mono_wasm_string_array_new(js_array.length) : cwraps.mono_wasm_obj_array_new(js_array.length);
-    let [arrayRoot, elemRoot] = mono_wasm_new_roots([mono_array, 0]);
+    let arrayRoot = mono_wasm_new_root(mono_array);
+    let elemRoot = mono_wasm_new_root(MonoObjectNull);
 
     try {
         for (var i = 0; i < js_array.length; ++i) {

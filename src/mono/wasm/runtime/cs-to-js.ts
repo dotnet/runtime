@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root, WasmRoot } from './roots';
-import { GCHandle, MonoArray, MonoObject } from './types';
+import {
+    GCHandle, JSHandle, JSHandleDisposed, MonoArray,
+    MonoArrayNull, MonoObject, MonoObjectNull, MonoString
+} from './types';
 import { Module } from './modules'
 import { conv_string } from './strings';
 import corebindings, { runtimeHelpers } from './corebindings';
@@ -17,7 +20,7 @@ const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signat
 
 // this is only used from Blazor
 export function unbox_mono_obj(mono_obj: MonoObject) {
-    if (mono_obj === 0)
+    if (mono_obj === MonoObjectNull)
         return undefined;
 
     var root = mono_wasm_new_root(mono_obj);
@@ -28,14 +31,14 @@ export function unbox_mono_obj(mono_obj: MonoObject) {
     }
 }
 
-function _unbox_cs_owned_root_as_js_object(root: WasmRoot) {
+function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     // we don't need in-flight reference as we already have it rooted here
     var js_handle = corebindings._get_cs_owned_object_js_handle(root.value, 0);
     var js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     return js_obj;
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot, type: number) {
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: number) {
     if (root.value === undefined)
         throw new Error(`Expected a root but got ${root}`);
 
@@ -84,31 +87,31 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     }
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot) {
+export function _unbox_mono_obj_root(root: WasmRoot<any>) {
     if (root.value === 0)
         return undefined;
 
     var type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, runtimeHelpers._unbox_buffer);
     switch (type) {
         case 1: // int
-            return Module.HEAP32[<number>runtimeHelpers._unbox_buffer / 4];
+            return Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4];
         case 25: // uint32
-            return Module.HEAPU32[<number>runtimeHelpers._unbox_buffer / 4];
+            return Module.HEAPU32[<any>runtimeHelpers._unbox_buffer / 4];
         case 24: // float32
-            return Module.HEAPF32[<number>runtimeHelpers._unbox_buffer / 4];
+            return Module.HEAPF32[<any>runtimeHelpers._unbox_buffer / 4];
         case 2: // float64
-            return Module.HEAPF64[<number>runtimeHelpers._unbox_buffer / 8];
+            return Module.HEAPF64[<any>runtimeHelpers._unbox_buffer / 8];
         case 8: // boolean
-            return (Module.HEAP32[<number>runtimeHelpers._unbox_buffer / 4]) !== 0;
+            return (Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4]) !== 0;
         case 28: // char
-            return String.fromCharCode(Module.HEAP32[<number>runtimeHelpers._unbox_buffer / 4]);
+            return String.fromCharCode(Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4]);
         default:
             return _unbox_mono_obj_root_with_known_nonprimitive_type(root, type);
     }
 }
 
 export function mono_array_to_js_array(mono_array: MonoArray) {
-    if (mono_array === 0)
+    if (mono_array === MonoArrayNull)
         return null;
 
     var arrayRoot = mono_wasm_new_root(mono_array);
@@ -123,11 +126,11 @@ function is_nested_array(ele: MonoObject) {
     return corebindings._is_simple_array(ele);
 }
 
-export function _mono_array_root_to_js_array(arrayRoot: WasmRoot) {
-    if (arrayRoot.value === 0)
+export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>) {
+    if (arrayRoot.value === MonoArrayNull)
         return null;
 
-    let elemRoot = mono_wasm_new_root();
+    let elemRoot = mono_wasm_new_root<MonoObject>();
 
     try {
         var len = cwraps.mono_wasm_array_length(arrayRoot.value);
@@ -136,7 +139,7 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot) {
             elemRoot.value = cwraps.mono_wasm_array_get(arrayRoot.value, i);
 
             if (is_nested_array(elemRoot.value))
-                res[i] = _mono_array_root_to_js_array(elemRoot);
+                res[i] = _mono_array_root_to_js_array(<any>elemRoot);
             else
                 res[i] = _unbox_mono_obj_root(elemRoot);
         }
@@ -147,8 +150,8 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot) {
     return res;
 }
 
-export function _wrap_delegate_root_as_function(root: WasmRoot) {
-    if (root.value === 0)
+export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>) {
+    if (root.value === MonoObjectNull)
         return null;
 
     // get strong reference to the Delegate
@@ -207,7 +210,7 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     return result;
 }
 
-export function mono_wasm_create_cs_owned_object(core_name: CharPtr, args: VoidPtr, is_exception: Int32Ptr) {
+export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr) {
     var argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(core_name);
     try {
         var js_name = conv_string(nameRoot.value);
@@ -249,8 +252,8 @@ export function mono_wasm_create_cs_owned_object(core_name: CharPtr, args: VoidP
     }
 }
 
-function _unbox_task_root_as_promise(root: WasmRoot) {
-    if (root.value === 0)
+function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
+    if (root.value === MonoObjectNull)
         return null;
 
     if (!_are_promises_supported)
@@ -289,16 +292,16 @@ function _unbox_task_root_as_promise(root: WasmRoot) {
     return result;
 }
 
-function _unbox_ref_type_root_as_js_object(root: WasmRoot) {
+function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>) {
 
-    if (root.value === 0)
+    if (root.value === MonoObjectNull)
         return null;
 
     // this could be JSObject proxy of a js native object
     // we don't need in-flight reference as we already have it rooted here
     var js_handle = corebindings._try_get_cs_owned_object_js_handle(root.value, 0);
     if (js_handle) {
-        if (js_handle === -1) {
+        if (js_handle === JSHandleDisposed) {
             throw new Error("Cannot access a disposed JSObject at " + root.value);
         }
         return mono_wasm_get_jsobj_from_js_handle(js_handle);

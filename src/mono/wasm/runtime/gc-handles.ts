@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import corebindings from './corebindings'
-import { GCHandle, JSHandle } from './types';
+import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectNull } from './types';
 
 export const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
 export const _use_weak_ref = typeof globalThis.WeakRef === "function";
@@ -26,29 +26,29 @@ export const cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 
 export function get_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
     if (!gc_handle) {
-        return 0;
+        return MonoObjectNull;
     }
     // this is always strong gc_handle
     return corebindings._get_js_owned_object_by_gc_handle(gc_handle);
 }
 
 export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle) {
-    if (js_handle > 0)
-        return _cs_owned_objects_by_js_handle[<number>js_handle];
+    if (js_handle !== JSHandleNull && js_handle !== JSHandleDisposed)
+        return _cs_owned_objects_by_js_handle[<any>js_handle];
     return null;
 }
 
 // when should_add_in_flight === true, the JSObject would be temporarily hold by Normal gc_handle, so that it would not get collected during transition to the managed stack.
 // its InFlight gc_handle would be freed when the instance arrives to managed side via Interop.Runtime.ReleaseInFlight
 export function get_cs_owned_object_by_js_handle(js_handle: JSHandle, should_add_in_flight: boolean) {
-    if (!js_handle) {
-        return 0;
+    if (js_handle === JSHandleNull || js_handle === JSHandleDisposed) {
+        return MonoObjectNull;
     }
     return corebindings._get_cs_owned_object_by_js_handle(js_handle, should_add_in_flight ? 1 : 0);
 }
 
 export function get_js_obj(js_handle: JSHandle) {
-    if (js_handle > 0)
+    if (js_handle !== JSHandleNull && js_handle !== JSHandleDisposed)
         return mono_wasm_get_jsobj_from_js_handle(js_handle);
     return null;
 }
@@ -104,7 +104,7 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
 }
 
 export function mono_wasm_release_cs_owned_object(js_handle: JSHandle) {
-    var obj = _cs_owned_objects_by_js_handle[<number>js_handle];
+    var obj = _cs_owned_objects_by_js_handle[<any>js_handle];
     if (typeof obj !== "undefined" && obj !== null) {
         // if this is the global object then do not
         // unregister it.
@@ -115,7 +115,7 @@ export function mono_wasm_release_cs_owned_object(js_handle: JSHandle) {
             obj[cs_owned_js_handle_symbol] = undefined;
         }
 
-        _cs_owned_objects_by_js_handle[<number>js_handle] = undefined;
+        _cs_owned_objects_by_js_handle[<any>js_handle] = undefined;
         _js_handle_free_list.push(js_handle);
     }
     return obj;

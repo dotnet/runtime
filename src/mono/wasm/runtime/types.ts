@@ -1,14 +1,45 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-export type GCHandle = {}
-export type JSHandle = {}
-export interface MonoString extends ManagedPointer { }
-export interface MonoClass extends ManagedPointer { }
-export interface MonoMethod extends ManagedPointer { }
-export interface MonoObject extends ManagedPointer { }
-export interface MonoArray extends ManagedPointer { }
-export interface MonoAssembly extends ManagedPointer { }
+export type GCHandle = {
+    __brand: "GCHandle"
+
+}
+export type JSHandle = {
+    __brand: "JSHandle"
+}
+export interface MonoString extends ManagedPointer{
+    __brand: "MonoString"
+}
+export interface MonoClass extends ManagedPointer{
+    __brand: "MonoClass"
+}
+export interface MonoMethod extends ManagedPointer{
+    __brand: "MonoMethod"
+}
+export interface MonoObject extends ManagedPointer{
+    __brand: "MonoObject"
+}
+export interface MonoArray extends ManagedPointer{
+    __brand: "MonoArray"
+}
+export interface MonoAssembly extends ManagedPointer{
+    __brand: "MonoAssembly"
+}
+export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
+export const MonoObjectNull: MonoObject = <MonoObject><any>0;
+export const MonoArrayNull: MonoArray = <MonoArray><any>0;
+export const MonoAssemblyNull: MonoAssembly = <MonoAssembly><any>0;
+export const MonoClassNull: MonoClass = <MonoClass><any>0;
+export const MonoStringNull: MonoString = <MonoString><any>0;
+export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
+export const JSHandleNull: JSHandle = <JSHandle><any>0;
+export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
+export const CharPtrNull: CharPtr = <CharPtr><any>0;
+
+export function coerceNull<T extends ManagedPointer|NativePointer>(ptr:T|null|undefined):T {
+    return (<any>ptr | <any>0) as any;
+}
 
 export type MonoConfig = {
     assembly_root: string, // the subfolder containing managed assemblies and pdbs
@@ -74,12 +105,12 @@ export const enum AssetBehaviours {
 
 export type t_RuntimeHelpers = {
     get_call_sig: MonoMethod;
-    runtime_namespace: string ;
+    runtime_namespace: string;
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
 
-    _box_buffer: NativePointer;
-    _unbox_buffer: NativePointer;
+    _box_buffer: VoidPtr;
+    _unbox_buffer: VoidPtr;
     _class_int32: MonoClass;
     _class_uint32: MonoClass;
     _class_double: MonoClass;
@@ -88,7 +119,7 @@ export type t_RuntimeHelpers = {
     mono_wasm_bindings_is_ready: boolean;
 
     loaded_files: string[];
-    config: MonoConfig|MonoConfigError;
+    config: MonoConfig | MonoConfigError;
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");

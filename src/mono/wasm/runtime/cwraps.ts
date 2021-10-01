@@ -52,12 +52,12 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
 
 export interface t_Cwraps {
     // MONO
-    mono_wasm_register_root(start: CharPtr, size: number, name: CharPtr): number;
-    mono_wasm_deregister_root(addr: CharPtr): void;
+    mono_wasm_register_root(start: VoidPtr, size: number, name: string): number;
+    mono_wasm_deregister_root(addr: VoidPtr): void;
     mono_wasm_string_get_data(string: MonoString, outChars: CharPtrPtr, outLengthBytes: Int32Ptr, outIsInterned: Int32Ptr): void;
     mono_wasm_set_is_debugger_attached(value: boolean): void;
     mono_wasm_send_dbg_command(id: number, command_set: number, command: number, data: VoidPtr, size: number): boolean;
-    mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, data: VoidPtr, size: number, valtype: number, newvalue: CharPtr): boolean;
+    mono_wasm_send_dbg_command_with_parms(id: number, command_set: number, command: number, data: VoidPtr, size: number, valtype: number, newvalue: string): boolean;
     mono_wasm_setenv(name: string, value: string): void;
     mono_wasm_strdup(value: string): number;
     mono_wasm_parse_runtime_options(length: number, argv: VoidPtr): void;
@@ -65,9 +65,9 @@ export interface t_Cwraps {
     mono_set_timeout_exec(id: number): void;
     mono_wasm_load_icu_data(offset: VoidPtr): number;
     mono_wasm_get_icudt_name(name: string): string;
-    mono_wasm_add_assembly(name: CharPtr, data: VoidPtr, size: number): number;
-    mono_wasm_add_satellite_assembly(name: CharPtr, culture: CharPtr, data: VoidPtr, size: number): void;
-    mono_wasm_load_runtime(unused: CharPtr, debug_level: number): void;
+    mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
+    mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
+    mono_wasm_load_runtime(unused: string, debug_level: number): void;
     mono_wasm_exit(exit_code: number): number;
 
     // BINDING
@@ -93,7 +93,7 @@ export interface t_Cwraps {
     mono_wasm_typed_array_new(arr: VoidPtr, length: number, size: number, type: number): MonoArray;
 
     //DOTNET
-    mono_wasm_string_from_js(str: CharPtr): MonoString
+    mono_wasm_string_from_js(str: string): MonoString
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{}

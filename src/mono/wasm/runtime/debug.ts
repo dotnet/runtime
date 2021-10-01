@@ -10,7 +10,7 @@ var commands_received: any;
 var _call_function_res_cache: any = {}
 var _next_call_function_res_id = 0;
 var _debugger_buffer_len = -1;
-var _debugger_buffer: NativePointer;
+var _debugger_buffer: VoidPtr;
 var _debugger_heap_bytes: Uint8Array;
 
 export function mono_wasm_runtime_ready() {
@@ -53,7 +53,7 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
     }
     //reset _debugger_heap_bytes because Module.HEAPU8.buffer can be reallocated 
-    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, <number>_debugger_buffer, _debugger_buffer_len);
+    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, <any>_debugger_buffer, _debugger_buffer_len);
     _debugger_heap_bytes.set(_base64_to_uint8(command_parameters));
 }
 

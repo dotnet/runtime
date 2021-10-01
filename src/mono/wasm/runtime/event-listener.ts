@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_root } from './roots';
 import { isChromium, prevent_timer_throttling } from './scheduling';
-import { JSHandle, GCHandle } from './types';
+import { JSHandle, GCHandle, MonoString } from './types';
 import { _wrap_delegate_gc_handle_as_function } from './cs-to-js';
 import { mono_wasm_get_jsobj_from_js_handle, _js_owned_object_finalized, _lookup_js_owned_object, _use_finalization_registry } from './gc-handles';
 import { wrap_error } from './method-calls';
@@ -11,10 +11,9 @@ import { conv_string } from './strings';
 
 const listener_registration_count_symbol = Symbol.for("wasm listener_registration_count");
 
-export function mono_wasm_add_event_listener(js_handle: JSHandle, name: CharPtr, listener_gc_handle: GCHandle, optionsHandle: JSHandle) {
+export function mono_wasm_add_event_listener(js_handle: JSHandle, name: MonoString, listener_gc_handle: GCHandle, optionsHandle: JSHandle) {
     var nameRoot = mono_wasm_new_root(name);
     try {
-
         var sName = conv_string(nameRoot.value);
 
         var obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
@@ -50,7 +49,7 @@ export function mono_wasm_add_event_listener(js_handle: JSHandle, name: CharPtr,
     }
 }
 
-export function mono_wasm_remove_event_listener(js_handle: JSHandle, name: CharPtr, listener_gc_handle: GCHandle, capture: boolean) {
+export function mono_wasm_remove_event_listener(js_handle: JSHandle, name: MonoString, listener_gc_handle: GCHandle, capture: boolean) {
     var nameRoot = mono_wasm_new_root(name);
     try {
 

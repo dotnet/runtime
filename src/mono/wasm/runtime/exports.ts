@@ -20,7 +20,7 @@ import {
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
 } from './debug'
-import { setMONO, setBINDING } from './modules'
+import { setLegacyModules } from './modules'
 import { MonoConfig, MonoConfigError } from './types'
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -132,22 +132,24 @@ export let BINDING: BINDING = <any>{
     BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
 }
 
+// this is executed early during load of emscripten runtime
+// it exports methods to global objects MONO, BINDING and Module in backward compatible way
 export function export_to_emscripten(mono: any, binding: any, dotnet: any, module: t_ModuleExtension) {
+    // we want to have same instance of MONO, BINDING and Module in dotnet iffe
+    setLegacyModules(mono, binding, module);
+    
+    // here we merge methods to it from the local objects
     Object.assign(mono, MONO);
-    setMONO(mono, module);
-
     Object.assign(binding, BINDING);
-    setBINDING(binding, module);
-
     Object.assign(module, _linker_exports);
+
+    // here we merge objects used in tests
     Object.assign(module, {
         get config() {
             return runtimeHelpers.config
         },
+        call_static_method
     });
-
-    // tests
-    module.mono_call_static_method = call_static_method
 }
 
 // the methods would be visible to EMCC linker

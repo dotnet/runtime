@@ -8,12 +8,8 @@ export var Module: t_Module;
 export var MONO: any;
 export var BINDING: any;
 
-export function setMONO(mono: any, module: t_Module & any) {
+export function setLegacyModules(mono: any, binding: any, module: t_Module & any) {
     Module = module;
     MONO = mono;
-}
-
-export function setBINDING(binding: any, module: t_Module & any) {
-    Module = module;
     BINDING = binding;
 }

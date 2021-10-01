@@ -4,6 +4,7 @@
 import { JSHandle, GCHandle, MonoObject, t_RuntimeHelpers } from './types';
 import { ArgsMarshalString } from './method-binding';
 import { _create_primitive_converters } from './method-binding';
+import { PromiseControl } from './cancelable-promise';
 
 const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalString][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
@@ -31,8 +32,8 @@ const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalStri
 
 export interface t_CSwraps {
     // BINDING
-    _get_cs_owned_object_by_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): void;
-    _get_cs_owned_object_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): MonoObject;
+    _get_cs_owned_object_by_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): MonoObject;
+    _get_cs_owned_object_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): JSHandle;
     _try_get_cs_owned_object_js_handle(obj: MonoObject, shouldAddInflight: 0 | 1): JSHandle;
     _create_cs_owned_proxy(jsHandle: JSHandle, mappedType: number, shouldAddInflight: 0 | 1): MonoObject;
 
@@ -45,7 +46,7 @@ export interface t_CSwraps {
     _set_tcs_failure(gcHandle: GCHandle, result: string): void
     _get_tcs_task(gcHandle: GCHandle): MonoObject;
     _task_from_result(result: MonoObject): MonoObject
-    _setup_js_cont(task: MonoObject, continuation: MonoObject): MonoObject
+    _setup_js_cont(task: MonoObject, continuation: PromiseControl): MonoObject
 
     _object_to_string(obj: MonoObject): string;
     _get_date_value(obj: MonoObject): number;

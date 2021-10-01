@@ -81,7 +81,7 @@ function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, be
         var offset = begin * bytes_per_element;
 
         // Create a view over the heap pointed to by the pinned array address
-        var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <number>pinned_array + offset, num_of_bytes);
+        var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>pinned_array + offset, num_of_bytes);
         // Copy the bytes of the typed array to the heap.
         heapBytes.set(new Uint8Array(typed_array.buffer, typed_array.byteOffset, num_of_bytes));
 
@@ -171,7 +171,7 @@ export function has_backing_array_buffer(js_obj: any) {
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
     var memoryOffset = Module._malloc(bytes.length);
-    var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <number>memoryOffset, bytes.length);
+    var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
     heapBytes.set(bytes);
     return memoryOffset;
 }

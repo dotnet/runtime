@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDING, Module, MONO } from './modules'
-import { AssetEntry, MonoConfig, wasm_type_symbol } from './types'
+import { BINDING, Module } from './modules'
+import { AssetEntry, CharPtrNull, MonoConfig, MonoString, wasm_type_symbol } from './types'
 import cwraps from './cwraps'
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from './debug';
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from './icu';
@@ -25,13 +25,13 @@ export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo:
     } catch (ex: any) {
         var exceptionJsString = ex.message + '\n' + ex.stack;
         var exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(<number>exceptionMessage, <number>exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+        Module.setValue(exceptionMessage, <any>exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
         return 0;
     }
 }
 
 // This is for back-compat only and will eventually be removed
-export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, asyncHandleLongPtr: number, functionName: CharPtr, argsJson: CharPtr, treatResultAsVoid: boolean) {
+export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, asyncHandleLongPtr: number, functionName: MonoString, argsJson: MonoString, treatResultAsVoid: boolean) {
     try {
         // Passing a .NET long into JS via Emscripten is tricky. The method here is to pass
         // as pointer to the long, then combine two reads from the HEAPU32 array.
@@ -61,13 +61,13 @@ export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, async
     } catch (ex: any) {
         var exceptionJsString = ex.message + '\n' + ex.stack;
         var exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(<number>exceptionMessage, <number>exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+        Module.setValue(exceptionMessage, <any>exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
         return 0;
     }
 }
 
 // This is for back-compat only and will eventually be removed
-export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, funcName: CharPtr, arg0: any, arg1: any, arg2: any) {
+export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, funcName: MonoString, arg0: any, arg1: any, arg2: any) {
     try {
         // Get the function you're trying to invoke
         var funcNameJsString = conv_string(funcName);
@@ -81,7 +81,7 @@ export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, fun
     } catch (ex: any) {
         var exceptionJsString = ex.message + '\n' + ex.stack;
         var exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(<number>exceptionMessage, <number>exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
+        Module.setValue(exceptionMessage, <any>exceptionSystemString, 'i32'); // *exceptionMessage = exceptionSystemString;
         return 0;
     }
 }
@@ -93,10 +93,10 @@ export function mono_wasm_setenv(name: string, value: string) {
 }
 
 export function mono_wasm_set_runtime_options(options: string[]) {
-    var argv = <number>Module._malloc(options.length * 4);
+    var argv = Module._malloc(options.length * 4);
     let aindex = 0;
     for (var i = 0; i < options.length; ++i) {
-        Module.setValue(argv + (aindex * 4), cwraps.mono_wasm_strdup(options[i]), "i32");
+        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(options[i]), "i32");
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
@@ -598,12 +598,12 @@ export async function mono_wasm_load_config(configFilePath: string) {
     }
 }
 
-export function mono_wasm_asm_loaded(assembly_name: number, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number) {
+export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number) {
     // Only trigger this codepath for assemblies loaded after app is ready
     if (runtimeHelpers.mono_wasm_runtime_is_ready !== true)
         return;
 
-    const assembly_name_str = assembly_name !== 0 ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
+    const assembly_name_str = assembly_name !== CharPtrNull ? Module.UTF8ToString(assembly_name).concat('.dll') : '';
     const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
     const assembly_b64 = toBase64StringImpl(assembly_data);
 

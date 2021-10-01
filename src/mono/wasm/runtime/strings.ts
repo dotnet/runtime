@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root_buffer, WasmRootBuffer } from './roots';
-import { MonoString } from './types';
+import { MonoString, MonoStringNull } from './types';
 import { Module } from './modules'
 import cwraps from './cwraps'
 import { mono_wasm_new_root } from './roots';
@@ -12,25 +12,23 @@ export class StringDecoder {
     private mono_wasm_string_root: any;
     private mono_text_decoder: TextDecoder | undefined | null;
     private mono_wasm_string_decoder_buffer: NativePointer | undefined;
-    private interned_string_table: Map<number, string> | undefined;
 
     copy(mono_string: MonoString) {
-        if (!this.interned_string_table || !this.mono_wasm_string_decoder_buffer) {
+        if (!this.mono_wasm_string_decoder_buffer) {
             this.mono_text_decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-16le') : null;
             this.mono_wasm_string_root = mono_wasm_new_root();
             this.mono_wasm_string_decoder_buffer = Module._malloc(12);
-            this.interned_string_table = new Map();
         }
-        if (mono_string === 0)
+        if (mono_string === MonoStringNull)
             return null;
 
         this.mono_wasm_string_root.value = mono_string;
 
-        let ppChars = <number>this.mono_wasm_string_decoder_buffer + 0,
-            pLengthBytes = <number>this.mono_wasm_string_decoder_buffer + 4,
-            pIsInterned = <number>this.mono_wasm_string_decoder_buffer + 8;
+        let ppChars = <any>this.mono_wasm_string_decoder_buffer + 0,
+            pLengthBytes = <any>this.mono_wasm_string_decoder_buffer + 4,
+            pIsInterned = <any>this.mono_wasm_string_decoder_buffer + 8;
 
-        cwraps.mono_wasm_string_get_data(mono_string, ppChars, pLengthBytes, pIsInterned);
+        cwraps.mono_wasm_string_get_data(mono_string, <any>ppChars, <any>pLengthBytes, <any>pIsInterned);
 
         let result = mono_wasm_empty_string;
         let lengthBytes = Module.HEAP32[pLengthBytes / 4],
@@ -40,16 +38,16 @@ export class StringDecoder {
         if (pLengthBytes && pChars) {
             if (
                 isInterned &&
-                this.interned_string_table &&
-                this.interned_string_table.has(<number>mono_string) //TODO remove 2x lookup
+
+                interned_string_table.has(<any>mono_string) //TODO remove 2x lookup
             ) {
-                result = this.interned_string_table.get(<number>mono_string)!;
+                result = interned_string_table.get(<any>mono_string)!;
                 // console.log("intern table cache hit", mono_string, result.length);
             } else {
-                result = this.decode(pChars, pChars + lengthBytes);
+                result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {
                     // console.log("interned", mono_string, result.length);
-                    this.interned_string_table.set(<number>mono_string, result);
+                    interned_string_table.set(<any>mono_string, result);
                 }
             }
         }
@@ -58,20 +56,20 @@ export class StringDecoder {
         return result;
     }
 
-    private decode(start: number, end: number) {
+    private decode(start: CharPtr, end: CharPtr) {
         var str = "";
         if (this.mono_text_decoder) {
             // When threading is enabled, TextDecoder does not accept a view of a
             // SharedArrayBuffer, we must make a copy of the array first.
             // See https://github.com/whatwg/encoding/issues/172
             var subArray = typeof SharedArrayBuffer !== 'undefined' && Module.HEAPU8.buffer instanceof SharedArrayBuffer
-                ? Module.HEAPU8.slice(start, end)
-                : Module.HEAPU8.subarray(start, end);
+                ? Module.HEAPU8.slice(<any>start, <any>end)
+                : Module.HEAPU8.subarray(<any>start, <any>end);
 
             str = this.mono_text_decoder.decode(subArray);
         } else {
-            for (var i = 0; i < end - start; i += 2) {
-                var char = Module.getValue(start + i, 'i16');
+            for (var i = 0; i < <any>end - <any>start; i += 2) {
+                var char = Module.getValue(<any>start + i, 'i16');
                 str += String.fromCharCode(char);
             }
         }
@@ -80,16 +78,16 @@ export class StringDecoder {
     }
 }
 
-const interned_string_table = new Map();
-const interned_js_string_table = new Map();
-let _empty_string_ptr: CharPtr = 0;
+const interned_string_table = new Map<MonoString, string>();
+const interned_js_string_table = new Map<string, MonoString>();
+let _empty_string_ptr: MonoString = <any>0;
 const _interned_string_full_root_buffers = [];
 let _interned_string_current_root_buffer: WasmRootBuffer | null = null;
 let _interned_string_current_root_buffer_count = 0;
 export let string_decoder = new StringDecoder();
 export const mono_wasm_empty_string = "";
 
-export function conv_string(mono_obj: CharPtr) {
+export function conv_string(mono_obj: MonoString) {
     return string_decoder.copy(mono_obj);
 }
 
@@ -104,7 +102,7 @@ export function mono_intern_string(string: string) {
     return result;
 }
 
-function _store_string_in_intern_table(string: string, ptr: CharPtr, internIt: boolean) {
+function _store_string_in_intern_table(string: string, ptr: MonoString, internIt: boolean) {
     if (!ptr)
         throw new Error("null pointer passed to _store_string_in_intern_table");
     else if (typeof (ptr) !== "number")
@@ -128,8 +126,10 @@ function _store_string_in_intern_table(string: string, ptr: CharPtr, internIt: b
     // Store the managed string into the managed intern table. This can theoretically
     //  provide a different managed object than the one we passed in, so update our
     //  pointer (stored in the root) with the result.
-    if (internIt)
-        rootBuffer.set(index, ptr = cwraps.mono_wasm_intern_string(ptr));
+    if (internIt) {
+        ptr = cwraps.mono_wasm_intern_string(ptr)
+        rootBuffer.set(index, ptr);
+    }
 
     if (!ptr)
         throw new Error("mono_wasm_intern_string produced a null pointer");
@@ -188,11 +188,11 @@ export function js_string_to_mono_string(string: string) {
 
 function js_string_to_mono_string_new(string: string) {
     var buffer = Module._malloc((string.length + 1) * 2);
-    var buffer16 = (<number>buffer / 2) | 0;
+    var buffer16 = (<any>buffer / 2) | 0;
     for (var i = 0; i < string.length; i++)
         Module.HEAP16[buffer16 + i] = string.charCodeAt(i);
     Module.HEAP16[buffer16 + string.length] = 0;
-    var result = cwraps.mono_wasm_string_from_utf16(buffer, string.length);
+    var result = cwraps.mono_wasm_string_from_utf16(<any>buffer, string.length);
     Module._free(buffer);
     return result;
 }

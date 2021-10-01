@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRootBuffer } from './roots';
-import { MonoClass, MonoMethod } from './types';
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull } from './types';
 import { BINDING, MONO } from './modules';
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from './js-to-cs';
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from './strings';
@@ -11,9 +11,7 @@ import cwraps from './cwraps';
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
-
-
-const _method_descriptions = new Map();
+const _method_descriptions = new Map<MonoMethod, string>();
 
 export function find_method(klass: MonoClass, name: string, n: number) {
     var result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
@@ -32,7 +30,7 @@ export function get_method(method_name: string) {
 
 export function bind_runtime_method(method_name: string, signature: ArgsMarshalString) {
     var method = get_method(method_name);
-    return mono_bind_method(method, 0, signature, "BINDINGS_" + method_name);
+    return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
 };
 
 
@@ -293,7 +291,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
     }
 
     converter.scratchRootBuffer = undefined;
-    converter.scratchBuffer = 0 | 0;
+    converter.scratchBuffer = VoidPtrNull;
 
     return converter;
 }
@@ -327,10 +325,10 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: any, args_marshal: ArgsMarshalString, friendly_name: string) {
+export function mono_bind_method(method: MonoMethod, this_arg: MonoObject|null, args_marshal: ArgsMarshalString, friendly_name: string) {
     if (typeof (args_marshal) !== "string")
         throw new Error('args_marshal argument invalid, expected string');
-    this_arg = this_arg | 0;
+    this_arg = coerceNull(this_arg);
 
     var converter: Converter | null = null;
 
@@ -495,6 +493,6 @@ export type Converter = {
     compiled_variadic_function?: Function;
     compiled_function?: Function;
     scratchRootBuffer?: WasmRootBuffer;
-    scratchBuffer?: NativePointer;
+    scratchBuffer?: VoidPtr;
     has_warned_about_signature?: boolean;
 }
