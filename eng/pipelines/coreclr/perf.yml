@@ -42,8 +42,6 @@ jobs:
       jobParameters:
         buildArgs: -s mono+libs -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
-        archType: arm64
-        osGroup: Android
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
         extraStepsParameters:
