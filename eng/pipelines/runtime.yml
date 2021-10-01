@@ -783,6 +783,10 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
+    - ${{ if eq(variables['isFullMatrix'], false) }}:
+      - Linux_arm
+      - Linux_musl_arm
+      - Linux_musl_arm64
     - Linux_arm64
     - Linux_musl_x64
     - Linux_x64
