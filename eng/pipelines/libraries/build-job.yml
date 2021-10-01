@@ -73,7 +73,8 @@ jobs:
         - ${{ parameters.variables }}
 
         # Tests only run for 'allConfiguration' and 'net48' build-jobs
-        - ${{ if eq(parameters.runTests, true) }}:
+        # Only pass -test for when we aren't running tests using Helix.
+        - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, false)) }}:
           - _buildAction: -restore -build -test
         - ${{ if eq(parameters.useHelix, true) }}:
           - _additionalBuildArguments: /p:ArchiveTests=true
