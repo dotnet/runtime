@@ -1115,7 +1115,20 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for the node.
             void EmitNode(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
+                // Separate out several node types that, for conciseness, don't need a header and scope written into the source.
+                switch (node.Type)
+                {
+                    case RegexNode.Empty:
+                        return;
+
+                    case RegexNode.Atomic:
+                        EmitNode(node.Child(0));
+                        return;
+                }
+
+                // Put the node's code into its own scope
                 using var _ = EmitScope(writer, DescribeNode(node));
+
                 switch (node.Type)
                 {
                     case RegexNode.One:
@@ -1163,10 +1176,6 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             EmitNodeRepeater(node);
                         }
-                        break;
-
-                    case RegexNode.Atomic:
-                        EmitNode(node.Child(0));
                         break;
 
                     case RegexNode.Alternate:
@@ -1218,10 +1227,6 @@ namespace System.Text.RegularExpressions.Generator
 
                     case RegexNode.Nothing:
                         writer.WriteLine($"goto {doneLabel};");
-                        break;
-
-                    case RegexNode.Empty:
-                        // Emit nothing.
                         break;
 
                     case RegexNode.UpdateBumpalong:
