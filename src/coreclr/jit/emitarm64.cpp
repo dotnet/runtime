@@ -14591,8 +14591,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SN_0A: // bkpt, brk, nop
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            if (id->idIsEmptyAlign())
+            {
+                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
             break;
 
         case IF_SI_0B: // dmb, dsb, isb
