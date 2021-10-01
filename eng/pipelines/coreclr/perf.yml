@@ -40,7 +40,7 @@ jobs:
       platforms:
       - iOS_arm64
       jobParameters:
-        buildArgs: -s mono+packs -c $(_BuildConfig)
+        buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false
         extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-maui-apps.yml
