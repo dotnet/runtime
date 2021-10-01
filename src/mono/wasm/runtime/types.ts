@@ -86,6 +86,9 @@ export type t_RuntimeHelpers = {
     _class_boolean: MonoClass;
     mono_wasm_runtime_is_ready: boolean;
     mono_wasm_bindings_is_ready: boolean;
+
+    loaded_files: string[];
+    config: MonoConfig|MonoConfigError;
 }
 
 export const wasm_type_symbol = Symbol.for("wasm type");

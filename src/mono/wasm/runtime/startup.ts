@@ -14,9 +14,6 @@ import { runtimeHelpers, set_bind_runtime_method } from './corebindings';
 import { bind_runtime_method, get_method, _create_primitive_converters } from './method-binding';
 import { conv_string } from './strings';
 
-export const loaded_files: string[] = []
-
-
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any) {
     try {
         var blazorExports = (<any>globalThis).Blazor;
@@ -275,7 +272,7 @@ function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Prom
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    ctx.loaded_files.forEach(value => loaded_files.push(value.url));
+    ctx.loaded_files.forEach(value => runtimeHelpers.loaded_files.push(value.url));
     if (ctx.tracing) {
         console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
         console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
@@ -591,13 +588,11 @@ export async function mono_wasm_load_config(configFilePath: string) {
         } else { // shell or worker
             config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
         }
-        MONO.config = config;
-        module.config = MONO.config;
+        runtimeHelpers.config = config
     } catch (e) {
         const errMessage = "failed to load config file " + configFilePath;
         console.error(errMessage)
-        MONO.config = <any>{ message: errMessage, error: e };
-        module.config = MONO.config;
+        runtimeHelpers.config = { message: errMessage, error: e };
     } finally {
         Module.removeRunDependency(configFilePath);
     }

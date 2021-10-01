@@ -5,7 +5,7 @@ import { JSHandle, GCHandle, MonoObject, t_RuntimeHelpers } from './types';
 import { ArgsMarshalString } from './method-binding';
 import { _create_primitive_converters } from './method-binding';
 
-const fn_signatures: [csname: string, name: string, signature: ArgsMarshalString][] = [
+const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalString][] = [
     ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
     ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", 'mi'],
     ["_try_get_cs_owned_object_js_handle", "TryGetCSOwnedObjectJSHandle", "mi"],
@@ -31,10 +31,10 @@ const fn_signatures: [csname: string, name: string, signature: ArgsMarshalString
 
 export interface t_CSwraps {
     // BINDING
-    _get_cs_owned_object_by_js_handle(jsHandle: JSHandle, shouldAddInflight: number): void;
-    _get_cs_owned_object_js_handle(jsHandle: JSHandle, shouldAddInflight: number): MonoObject;
-    _try_get_cs_owned_object_js_handle(obj: MonoObject, shouldAddInflight: number): JSHandle;
-    _create_cs_owned_proxy(jsHandle: JSHandle, mappedType: number, shouldAddInflight: number): MonoObject;
+    _get_cs_owned_object_by_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): void;
+    _get_cs_owned_object_js_handle(jsHandle: JSHandle, shouldAddInflight: 0 | 1): MonoObject;
+    _try_get_cs_owned_object_js_handle(obj: MonoObject, shouldAddInflight: 0 | 1): JSHandle;
+    _create_cs_owned_proxy(jsHandle: JSHandle, mappedType: number, shouldAddInflight: 0 | 1): MonoObject;
 
     _get_js_owned_object_by_gc_handle(gcHandle: GCHandle): MonoObject;
     _get_js_owned_object_gc_handle(obj: MonoObject): GCHandle
@@ -69,7 +69,8 @@ export default wrapped_cs_functions;
 
 export const runtimeHelpers: t_RuntimeHelpers = <any>{
     namespace: "System.Runtime.InteropServices.JavaScript",
-    classname: "Runtime"
+    classname: "Runtime",
+    loaded_files: [],
 }
 
 let bind_runtime_method: Function

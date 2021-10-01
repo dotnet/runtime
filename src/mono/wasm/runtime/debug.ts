@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, MONO } from './modules'
+import { Module } from './modules'
 import { toBase64StringImpl, _base64_to_uint8 } from './base64'
 import cwraps from './cwraps'
 import { runtimeHelpers } from './corebindings';
-import { loaded_files } from './startup';
 
 var commands_received: any;
 var _call_function_res_cache: any = {}
@@ -15,7 +14,7 @@ var _debugger_buffer: NativePointer;
 var _debugger_heap_bytes: Uint8Array;
 
 export function mono_wasm_runtime_ready() {
-    runtimeHelpers.mono_wasm_runtime_is_ready = MONO.mono_wasm_runtime_is_ready = true;
+    runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
     // FIXME: where should this go?
     _next_call_function_res_id = 0;
@@ -112,7 +111,7 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}) {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files() {
     cwraps.mono_wasm_set_is_debugger_attached(true);
-    return loaded_files;
+    return runtimeHelpers.loaded_files;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {

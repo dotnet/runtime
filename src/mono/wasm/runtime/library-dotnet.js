@@ -67,7 +67,8 @@ const linked_functions = [
     'mono_wasm_get_icudt_name',
 ]
 
-// this generates simple adapter during emcc compilation
+// -- this javascript file is evaluated by emcc during compilation! --
+// we generate simple proxy for each exported function so that emcc will include them in the final output
 for (var linked_function of linked_functions) {
     const fn_template = `return __dotnet_runtime._linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
     DotNetSupportLib[linked_function] = new Function(fn_template)

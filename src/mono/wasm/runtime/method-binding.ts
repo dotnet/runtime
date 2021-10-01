@@ -15,7 +15,7 @@ const _signature_converters = new Map<string, Converter>();
 
 const _method_descriptions = new Map();
 
-export function find_method(klass: MonoClass, name: CharPtr, n: number) {
+export function find_method(klass: MonoClass, name: string, n: number) {
     var result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
     if (result) {
         _method_descriptions.set(result, name);

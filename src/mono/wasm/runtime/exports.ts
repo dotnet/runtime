@@ -21,12 +21,12 @@ import {
     mono_wasm_fire_debugger_agent_message,
 } from './debug'
 import { setMONO, setBINDING } from './modules'
-import { MonoConfig } from './types'
+import { MonoConfig, MonoConfigError } from './types'
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_bindings_init, loaded_files,
+    mono_bindings_init,
     mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_marshalled, mono_wasm_invoke_js_unmarshalled
 } from './startup'
 import { mono_set_timeout, schedule_background_exec } from './scheduling'
@@ -57,12 +57,14 @@ import { runtimeHelpers } from './corebindings'
 
 export let MONO: MONO = <any>{
     // current "public" MONO API
-    loaded_files,
     mono_wasm_setenv,
     mono_wasm_load_bytes_into_heap,
     mono_wasm_load_icu_data,
     mono_wasm_runtime_ready,
     mono_wasm_load_data_archive,
+    get loaded_files() {
+        return runtimeHelpers.loaded_files
+    },
 
     // EM_JS macro
     string_decoder,
@@ -76,7 +78,6 @@ export let MONO: MONO = <any>{
     //mono.mono_wasm_get_icudt_name = mono_wasm_get_icudt_name,
 
     // used in debugger
-    mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
     mono_wasm_get_loaded_files,
     mono_wasm_add_dbg_command_received,
     mono_wasm_send_dbg_command_with_parms,
@@ -88,12 +89,17 @@ export let MONO: MONO = <any>{
     mono_wasm_debugger_resume,
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
+    get mono_wasm_runtime_is_ready() {
+        return runtimeHelpers.mono_wasm_runtime_is_ready
+    },
 
     // used in tests
     mono_load_runtime_and_bcl_args,
     mono_wasm_load_config,
     mono_wasm_set_runtime_options,
-    // config ,
+    get config() {
+        return runtimeHelpers.config
+    },
 }
 
 export let BINDING: BINDING = <any>{
@@ -134,6 +140,11 @@ export function export_to_emscripten(mono: any, binding: any, dotnet: any, modul
     setBINDING(binding, module);
 
     Object.assign(module, _linker_exports);
+    Object.assign(module, {
+        get config() {
+            return runtimeHelpers.config
+        },
+    });
 
     // tests
     module.mono_call_static_method = call_static_method
@@ -195,12 +206,12 @@ export const _linker_exports = {
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts
 export interface MONO {
-    loaded_files: string[];
     mono_wasm_runtime_ready: typeof mono_wasm_runtime_ready
     mono_wasm_setenv: typeof mono_wasm_setenv
     mono_wasm_load_data_archive: typeof mono_wasm_load_data_archive;
     mono_wasm_load_bytes_into_heap: typeof mono_wasm_load_bytes_into_heap;
     mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
+    loaded_files: string[];
 }
 
 // this represents visibility in the javascript
@@ -220,7 +231,7 @@ export interface BINDING {
 
 // how we extended wasm Module
 export type t_ModuleExtension = t_Module & {
-    config?: MonoConfig,
+    config?: MonoConfig | MonoConfigError,
 
     //tests
     mono_call_static_method: typeof call_static_method
