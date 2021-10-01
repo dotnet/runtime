@@ -1,18 +1,35 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security;
-using Xunit;
 using System.Text;
+using Xunit;
 
 namespace System.IO.FileSystem.DriveInfoTests
 {
+    // Separate class from the rest of the DriveInfo tests to prevent adding an extra virtual drive to GetDrives().
+    public class DriveInfoVirtualDriveTests : IDisposable
+    {
+        private VirtualDriveHelper VirtualDrive { get; } = new VirtualDriveHelper();
+
+        public void Dispose() => VirtualDrive.Dispose();
+
+        // Cannot set the volume label on a SUBST'ed folder
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSubstAvailable))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void SetVolumeLabel_OnVirtualDrive_Throws()
+        {
+            char letter = VirtualDrive.VirtualDriveLetter; // Trigger calling subst
+            DriveInfo drive = DriveInfo.GetDrives().Where(d => d.RootDirectory.FullName[0] == letter).FirstOrDefault();
+            Assert.NotNull(drive);
+            Assert.Throws<IOException>(() => drive.VolumeLabel = "impossible");
+        }
+    }
+
     public class DriveInfoWindowsTests
     {
         [Theory]
