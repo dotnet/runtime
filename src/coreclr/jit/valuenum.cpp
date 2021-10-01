@@ -9874,12 +9874,14 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNFunc(GT_RSZ);
             break;
         case CORINFO_HELP_LMUL:
-        case CORINFO_HELP_LMUL_OVF:
             vnf = VNFunc(GT_MUL);
             break;
+        case CORINFO_HELP_LMUL_OVF:
+            vnf = VNF_MUL_OVF;
+            break;
         case CORINFO_HELP_ULMUL_OVF:
-            vnf = VNFunc(GT_MUL);
-            break; // Is this the right thing?
+            vnf = VNF_MUL_UN_OVF;
+            break;
         case CORINFO_HELP_LDIV:
             vnf = VNFunc(GT_DIV);
             break;
