@@ -1,10 +1,4 @@
 <Project>
-
-    <PropertyGroup>
-    <_MicrosoftNetCoreAppRefDir>$(AppRefDir)\</_MicrosoftNetCoreAppRefDir>
-    <LocalFrameworkOverrideName>Microsoft.NETCore.App</LocalFrameworkOverrideName>
-  </PropertyGroup>
-
   <Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
@@ -28,25 +22,20 @@
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+        <MicrosoftNetCoreAppRefPackDir>$(Build.SourcesDirectory)/artifacts/packages/Release/Shipping/</MicrosoftNetCoreAppRefPackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>$(Build.SourcesDirectory)/artifacts/packages/Release/Shipping/</MicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
     <ItemGroup>
-      <ResolvedTargetingPack Path="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                             PackageDirectory="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                             Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == 'Microsoft.NETCore.App'" />
-      <ResolvedRuntimePack
-                            Update="Microsoft.NETCore.App.Runtime.Mono.android-arm64"
-                            FrameworkName="Microsoft.NETCore.App"
-                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.android-arm64"
-                            NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                            PackageDirectory="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.android-arm64\$(RuntimePackInWorkloadVersion)"
-                            RuntimeIdentifier="android-arm64" />
-
-       <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
-                                   TargetingPackPath="$(_MicrosoftNetCoreAppRefDir.TrimEnd('/\'))"
-                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.android-arm64"
-                                   RuntimePackVersion="$(RuntimePackInWorkloadVersion)"
-                                   RuntimePackPath="$(NetCoreTargetingPackRoot)\Microsoft.NETCore.App.Runtime.Mono.android-arm64\$(RuntimePackInWorkloadVersion)"
-                                   RuntimeIdentifier="android-arm64" />
+      <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                             NuGetPackageVersion="$(ProductVersion)"
+                             PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                            />
+      <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
+                            />
+      <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+                                  TargetingPackVersion="$(ProductVersion)"
+                                   />
     </ItemGroup>
   </Target>
 
