@@ -5,7 +5,6 @@
 //------------------------------------------------------------------------------
 
 using System.CodeDom.Compiler;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
@@ -348,7 +347,7 @@ namespace System.Xml.Xsl
         {
             CheckArguments(input, results);
             CheckCommand();
-            _command!.Execute(input, documentResolver, arguments, results);
+            _command.Execute(input, documentResolver, arguments, results);
         }
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
@@ -357,7 +356,7 @@ namespace System.Xml.Xsl
         {
             CheckArguments(input, results);
             CheckCommand();
-            _command!.Execute(input.CreateNavigator()!, documentResolver, arguments, results);
+            _command.Execute(input.CreateNavigator()!, documentResolver, arguments, results);
         }
 
         private static void CheckArguments(object input, object results)
