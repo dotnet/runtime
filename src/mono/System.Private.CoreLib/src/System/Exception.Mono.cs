@@ -121,7 +121,7 @@ namespace System
                 if (method == null)
                     return null;
 
-                Module? module = method?.Module;
+                Module module = method.Module;
                 RuntimeModule? rtModule = module as RuntimeModule;
 
                 if (rtModule == null)
