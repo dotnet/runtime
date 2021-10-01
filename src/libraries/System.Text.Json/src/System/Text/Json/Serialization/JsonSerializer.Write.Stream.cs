@@ -18,7 +18,7 @@ namespace System.Text.Json
         // needs to be expanded\doubled because it is not large enough to write the current property or element.
         // We check for flush after each JSON property and element is written to the buffer.
         // Once the buffer is expanded to contain the largest single element\property, a 90% thresold
-        // means the buffer may be expanded a maximum of 4 times: 1-(1\(2^4))==.9375.
+        // means the buffer may be expanded a maximum of 4 times: 1-(1/(2^4))==.9375.
         private const float FlushThreshold = .90f;
 
         /// <summary>
@@ -332,6 +332,7 @@ namespace System.Text.Json
 
                             if (state.SuppressFlush)
                             {
+                                Debug.Assert(state.PendingTask is not null);
                                 state.SuppressFlush = false;
                             }
                             else
