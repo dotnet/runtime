@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from './modules'
+import { Module, runtimeHelpers } from './modules'
 import { toBase64StringImpl, _base64_to_uint8 } from './base64'
 import cwraps from './cwraps'
-import { runtimeHelpers } from './corebindings';
 
 var commands_received: any;
 var _call_function_res_cache: any = {}

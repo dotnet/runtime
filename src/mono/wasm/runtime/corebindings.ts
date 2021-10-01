@@ -68,12 +68,6 @@ for (let sig of fn_signatures) {
 
 export default wrapped_cs_functions;
 
-export const runtimeHelpers: t_RuntimeHelpers = <any>{
-    namespace: "System.Runtime.InteropServices.JavaScript",
-    classname: "Runtime",
-    loaded_files: [],
-}
-
 let bind_runtime_method: Function
 export function set_bind_runtime_method(method: Function) {
     bind_runtime_method = method;

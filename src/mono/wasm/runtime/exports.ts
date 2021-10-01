@@ -20,7 +20,7 @@ import {
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
 } from './debug'
-import { setLegacyModules } from './modules'
+import { runtimeHelpers, setLegacyModules } from './modules'
 import { MonoConfig, MonoConfigError } from './types'
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
@@ -53,7 +53,6 @@ import { mono_wasm_release_cs_owned_object } from './gc-handles'
 import { mono_bind_method, _create_primitive_converters } from './method-binding'
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from './web-socket'
 import cwraps from './cwraps'
-import { runtimeHelpers } from './corebindings'
 
 export let MONO: MONO = <any>{
     // current "public" MONO API
@@ -62,9 +61,7 @@ export let MONO: MONO = <any>{
     mono_wasm_load_icu_data,
     mono_wasm_runtime_ready,
     mono_wasm_load_data_archive,
-    get loaded_files() {
-        return runtimeHelpers.loaded_files
-    },
+    loaded_files: runtimeHelpers.loaded_files,
 
     // EM_JS macro
     string_decoder,
@@ -89,17 +86,13 @@ export let MONO: MONO = <any>{
     mono_wasm_debugger_resume,
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
-    get mono_wasm_runtime_is_ready() {
-        return runtimeHelpers.mono_wasm_runtime_is_ready
-    },
+    mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 
     // used in tests
     mono_load_runtime_and_bcl_args,
     mono_wasm_load_config,
     mono_wasm_set_runtime_options,
-    get config() {
-        return runtimeHelpers.config
-    },
+    config: runtimeHelpers.config,
 }
 
 export let BINDING: BINDING = <any>{
@@ -137,7 +130,7 @@ export let BINDING: BINDING = <any>{
 export function export_to_emscripten(mono: any, binding: any, dotnet: any, module: t_ModuleExtension) {
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     setLegacyModules(mono, binding, module);
-    
+
     // here we merge methods to it from the local objects
     Object.assign(mono, MONO);
     Object.assign(binding, BINDING);
@@ -145,10 +138,9 @@ export function export_to_emscripten(mono: any, binding: any, dotnet: any, modul
 
     // here we merge objects used in tests
     Object.assign(module, {
-        get config() {
-            return runtimeHelpers.config
-        },
-        call_static_method
+        // config,
+        call_static_method,
+        mono_call_static_method: call_static_method
     });
 }
 

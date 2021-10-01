@@ -6,9 +6,9 @@ import {
     GCHandle, JSHandle, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString
 } from './types';
-import { Module } from './modules'
+import { Module, runtimeHelpers } from './modules'
 import { conv_string } from './strings';
-import corebindings, { runtimeHelpers } from './corebindings';
+import corebindings from './corebindings';
 import cwraps from './cwraps';
 import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from './gc-handles';
 import { mono_method_get_call_signature, call_method, wrap_error } from './method-calls';

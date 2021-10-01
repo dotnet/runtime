@@ -3,7 +3,6 @@
 
 export type GCHandle = {
     __brand: "GCHandle"
-
 }
 export type JSHandle = {
     __brand: "JSHandle"

@@ -3,10 +3,9 @@
 
 import { WasmRootBuffer } from './roots';
 import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull } from './types';
-import { BINDING, MONO } from './modules';
+import { BINDING, MONO, runtimeHelpers } from './modules';
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from './js-to-cs';
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from './strings';
-import { runtimeHelpers } from './corebindings';
 import cwraps from './cwraps';
 
 const primitiveConverters = new Map<string, Converter>();
@@ -325,7 +324,7 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject|null, args_marshal: ArgsMarshalString, friendly_name: string) {
+export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string) {
     if (typeof (args_marshal) !== "string")
         throw new Error('args_marshal argument invalid, expected string');
     this_arg = coerceNull(this_arg);

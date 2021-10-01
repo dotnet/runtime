@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from './modules'
+import { Module, runtimeHelpers } from './modules'
 import {
     cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle, get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
     mono_wasm_release_cs_owned_object, _js_owned_object_registry, _use_finalization_registry
 } from './gc-handles';
-import corebindings, { runtimeHelpers } from './corebindings';
+import corebindings from './corebindings';
 import cwraps from './cwraps';
 import { mono_wasm_new_root, mono_wasm_release_roots } from './roots';
 import { wrap_error } from './method-calls';

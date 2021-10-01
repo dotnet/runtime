@@ -3,14 +3,13 @@
 
 import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer } from './roots';
 import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull } from './types';
-import { Module } from './modules'
+import { Module, runtimeHelpers } from './modules'
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from './cs-to-js';
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from './gc-handles';
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from './js-to-cs';
 import { ArgsMarshalString, mono_bind_method, Converter, _compile_converter_for_marshal_string, _decide_if_result_is_marshaled, find_method } from './method-binding';
 import { conv_string, js_string_to_mono_string } from './strings';
 import cwraps from './cwraps';
-import { runtimeHelpers } from './corebindings';
 import { bindings_lazy_init } from './startup';
 
 function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any) {

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDING, Module } from './modules'
+import { BINDING, Module, runtimeHelpers } from './modules'
 import { AssetEntry, CharPtrNull, MonoConfig, MonoString, wasm_type_symbol } from './types'
 import cwraps from './cwraps'
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from './debug';
@@ -10,7 +10,7 @@ import { toBase64StringImpl } from './base64';
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from './profiler';
 import { t_ModuleExtension } from './exports';
 import { mono_wasm_load_bytes_into_heap } from './buffers';
-import { runtimeHelpers, set_bind_runtime_method } from './corebindings';
+import { set_bind_runtime_method } from './corebindings';
 import { bind_runtime_method, get_method, _create_primitive_converters } from './method-binding';
 import { conv_string } from './strings';
 
