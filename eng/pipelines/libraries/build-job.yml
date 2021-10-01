@@ -31,7 +31,6 @@ parameters:
   runTests: false
   useHelix: true
   testScope: ''
-  testBuildPlatforms: []
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
