@@ -332,6 +332,7 @@ namespace System.Text.Json
 
                             if (state.SuppressFlush)
                             {
+                                Debug.Assert(!isFinalBlock);
                                 Debug.Assert(state.PendingTask is not null);
                                 state.SuppressFlush = false;
                             }
