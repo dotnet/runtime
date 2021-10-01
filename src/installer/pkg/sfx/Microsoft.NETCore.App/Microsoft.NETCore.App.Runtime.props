@@ -9,6 +9,8 @@
     <PublishReadyToRun Condition="'$(RuntimeFlavor)' == 'Mono'">false</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD when cross builing from Linux. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
     <!-- These components are installed by the root shared framework, but not others. -->
     <IncludeWerRelatedKeys>true</IncludeWerRelatedKeys>
     <IncludeBreadcrumbStoreFolder>true</IncludeBreadcrumbStoreFolder>
