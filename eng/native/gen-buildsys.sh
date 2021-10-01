@@ -27,7 +27,8 @@ majorVersion="$5"
 minorVersion="$6"
 
 if [[ "$compiler" != "default" ]]; then
-    source "$scriptroot/../common/native/init-compiler.sh" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
+    nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
+    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
 
     CCC_CC="$CC"
     CCC_CXX="$CXX"
