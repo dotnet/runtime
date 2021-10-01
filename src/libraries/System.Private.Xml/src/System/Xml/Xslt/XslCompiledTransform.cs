@@ -390,23 +390,5 @@ namespace System.Xml.Xsl
 
             return XmlNullResolver.Singleton;
         }
-
-        private QilExpression TestCompile(object stylesheet, XsltSettings settings, XmlResolver stylesheetResolver)
-        {
-            Reset();
-            CompileXsltToQil(stylesheet, settings, stylesheetResolver);
-            return _qil!;
-        }
-
-        private void TestGenerate(XsltSettings settings)
-        {
-            Debug.Assert(_qil != null, "You must compile to Qil first");
-            CompileQilToMsil(settings);
-        }
-
-        private void Transform(string inputUri, XsltArgumentList? arguments, XmlWriter results, XmlResolver documentResolver)
-        {
-            _command!.Execute(inputUri, documentResolver, arguments, results);
-        }
     }
 }
