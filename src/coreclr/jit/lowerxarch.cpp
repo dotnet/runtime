@@ -6315,31 +6315,31 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         bool     supportsRegOptional  = false;
                         bool     supportsRegOptional2 = false;
-                        unsigned overwrittenOpNum     = 0;
+                        unsigned resultOpNum     = 0;
                         LIR::Use use;
 
                         if (BlockRange().TryGetUse(node, &use))
                         {
-                            overwrittenOpNum = node->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
+                            resultOpNum = node->GetResultOpNumForFMA(use.User(), op1, op2, op3);
                         }
 
-                        if (overwrittenOpNum != 1 && IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) &&
+                        if (resultOpNum != 1 && IsContainableHWIntrinsicOp(node, op1, &supportsRegOptional) &&
                             !HWIntrinsicInfo::CopiesUpperBits(intrinsicId))
                         {
                             // result = ([op1] * op2) + op3
                             MakeSrcContained(node, op1);
                         }
-                        else if (overwrittenOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional2))
+                        else if (resultOpNum != 2 && IsContainableHWIntrinsicOp(node, op2, &supportsRegOptional2))
                         {
                             // result = (op1 * [op2]) + op3
                             MakeSrcContained(node, op2);
                         }
-                        else if (overwrittenOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
+                        else if (resultOpNum != 3 && IsContainableHWIntrinsicOp(node, op3, &supportsRegOptional))
                         {
                             // result = (op1 * op2) + [op3]
                             MakeSrcContained(node, op3);
                         }
-                        else if (overwrittenOpNum == 3)
+                        else if (resultOpNum == 3)
                         {
                             assert(supportsRegOptional2);
                             op2->SetRegOptional();

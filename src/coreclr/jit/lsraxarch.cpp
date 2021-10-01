@@ -2334,18 +2334,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
 
                 const bool copiesUpperBits = HWIntrinsicInfo::CopiesUpperBits(intrinsicId);
 
-                unsigned overwrittenOpNum = 0;
+                unsigned resultOpNum = 0;
                 LIR::Use use;
                 if (LIR::AsRange(blockSequence[curBBSeqNum]).TryGetUse(intrinsicTree, &use))
                 {
-                    overwrittenOpNum = intrinsicTree->GetOverwrittenOpNumForFMA(use.User(), op1, op2, op3);
+                    resultOpNum = intrinsicTree->GetResultOpNumForFMA(use.User(), op1, op2, op3);
                 }
 
                 // Intrinsics with CopyUpperBits semantics cannot have op1 be contained
                 assert(!copiesUpperBits || !op1->isContained());
 
                 // Intrinsics with CopyUpperBits semantics must have op1 as target
-                if (overwrittenOpNum == 1 || copiesUpperBits)
+                if (resultOpNum == 1 || copiesUpperBits)
                 {
                     tgtPrefUse = BuildUse(op1);
                     srcCount += 1;
@@ -2363,7 +2363,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         srcCount += BuildDelayFreeUses(op2, op1);
                     }
                 }
-                else if (overwrittenOpNum == 2)
+                else if (resultOpNum == 2)
                 {
                     tgtPrefUse = BuildUse(op2);
                     srcCount += 1;
@@ -2381,7 +2381,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         srcCount += op3->isContained() ? BuildOperandUses(op3) : BuildDelayFreeUses(op3, op1);
                     }
                 }
-                else if (overwrittenOpNum == 3)
+                else if (resultOpNum == 3)
                 {
                     tgtPrefUse = BuildUse(op3);
                     srcCount += 1;
@@ -2401,9 +2401,12 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 }
                 else
                 {
-                    assert(overwrittenOpNum == 0);
+                    assert(resultOpNum == 0);
                     if (op1->isContained())
                     {
+                        // In the case that result is writtent into destination that is different from any of the
+                        // source operands, we set op2 to be tgtPrefUse when op1 is contained. 
+
                         tgtPrefUse = BuildUse(op2);
                         srcCount += 1;
                         // result = ([op1] * op2) + op3
@@ -2412,6 +2415,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     }
                     else
                     {
+                        // When op1 is not contained, we set op1 to be tgtPrefUse.
+
                         tgtPrefUse = BuildUse(op1);
                         srcCount += 1;
 
