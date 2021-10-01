@@ -1309,7 +1309,7 @@ var MonoSupportLib = {
 						var fetch_promise = fetch_file_cb (attemptUrl);
 						fetch_promise.then (handleFetchResponse);
 					} catch (exc) {
-						console.error ("MONO_WASM: Error fetching `%s`\n%s", attemptUrl, exc);
+						console.error ("MONO_WASM: Error fetching '%s'\n%s", attemptUrl, exc);
 						attemptNextSource ();
 					}
 				};
