@@ -25,7 +25,7 @@ trigger:
 
 schedules:
   - cron: "0 8,20 * * *" # run at 8:00 and 20:00 (UTC) which is 00:00 and 12:00 (PST).
-    displayName:
+    displayName: Runtime default schedule
     branches:
       include:
       - main
