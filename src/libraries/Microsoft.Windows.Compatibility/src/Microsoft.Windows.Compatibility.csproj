@@ -51,8 +51,9 @@
                                      System.ServiceModel.Duplex;
                                      System.ServiceModel.Http;
                                      System.ServiceModel.NetTcp;
-                                     System.ServiceModel.Security"
-                      Version="$(ServiceModelVersion)" />
+                                     System.ServiceModel.Security;
+                                     System.Web.Services.Description"
+                      Version="$(SystemServiceModelPrimitivesVersion)" />
   </ItemGroup>
 
   <!-- Packages which are inbox in NET6 and shouldn't and can't be referenced anymore. -->
