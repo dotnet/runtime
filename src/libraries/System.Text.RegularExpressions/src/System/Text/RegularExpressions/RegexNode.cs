@@ -474,7 +474,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
-        private RegexNode Reduce()
+        internal RegexNode Reduce()
         {
             switch (Type)
             {
