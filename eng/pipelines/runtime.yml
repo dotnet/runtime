@@ -796,23 +796,23 @@ jobs:
 
 #
 # Libraries Build that only run when coreclr is changed
+# Only do this on PR builds since we use the Release builds for these test runs in CI
+# and those are already built above
 #
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-job.yml
-    buildConfig: Debug
-    platforms:
-      - Linux_arm
-      - Linux_musl_arm
-      - Linux_musl_arm64
-    jobParameters:
-      liveRuntimeBuildConfig: release
-      # Don't run on isFullMatrix as we need the Release libraries build then,
-      # which is already handled above.
-      condition: >-
-        and(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(variables['isFullMatrix'], false))
+
+- ${{ if eq(variables['isFullMatrix'], true) }}:
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Debug
+      platforms:
+        - Linux_arm
+        - Linux_musl_arm
+        - Linux_musl_arm64
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        condition: >-
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
 #
 # Libraries Build that only run when libraries is changed
