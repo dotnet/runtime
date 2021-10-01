@@ -537,18 +537,18 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.IpHlpApi)]
         internal static extern uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
-        [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe extern uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, int order);
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, bool order);
 
-        [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe extern uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, int order,
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
-        [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe extern uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, int order);
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, bool order);
 
-        [DllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe extern uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, int order,
+        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
         [DllImport(Interop.Libraries.IpHlpApi)]

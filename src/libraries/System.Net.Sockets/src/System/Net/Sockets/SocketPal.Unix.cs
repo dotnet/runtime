@@ -46,7 +46,7 @@ namespace System.Net.Sockets
             }
 
             Interop.Sys.IPPacketInformation nativePacketInfo = default;
-            if (Interop.Sys.TryGetIPPacketInformation(messageHeader, Convert.ToInt32(isIPv4), &nativePacketInfo) == 0)
+            if (!Interop.Sys.TryGetIPPacketInformation(messageHeader, isIPv4, &nativePacketInfo))
             {
                 return default(IPPacketInformation);
             }

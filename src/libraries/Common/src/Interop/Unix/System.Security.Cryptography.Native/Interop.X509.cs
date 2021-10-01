@@ -138,8 +138,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetData")]
         internal static extern IntPtr X509ExtensionGetData(IntPtr ex);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetCritical")]
-        internal static extern int X509ExtensionGetCritical(IntPtr ex);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ExtensionGetCritical")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool X509ExtensionGetCritical(IntPtr ex);
 
         [GeneratedDllImport(Libraries.CryptoNative)]
         private static partial SafeX509StoreHandle CryptoNative_X509ChainNew(SafeX509StackHandle systemTrust, SafeX509StackHandle userTrust);

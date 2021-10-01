@@ -15,8 +15,9 @@ internal static partial class Interop
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioNewFile", CharSet = CharSet.Ansi)]
         internal static partial SafeBioHandle BioNewFile(string filename, string mode);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDestroy")]
-        internal static extern int BioDestroy(IntPtr a);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioDestroy")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool BioDestroy(IntPtr a);
 
         [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioGets")]
         internal static partial int BioGets(SafeBioHandle b, byte[] buf, int size);

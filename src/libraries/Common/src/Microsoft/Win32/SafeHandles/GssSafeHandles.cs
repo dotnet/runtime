@@ -157,7 +157,7 @@ namespace Microsoft.Win32.SafeHandles
 
         private static bool InitIsNtlmInstalled()
         {
-            return Interop.NetSecurityNative.IsNtlmInstalled() != 0;
+            return Interop.NetSecurityNative.IsNtlmInstalled();
         }
     }
 
