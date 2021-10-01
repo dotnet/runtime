@@ -31,6 +31,10 @@
     <Error Condition="'$(SymbolsOutputPath)' == ''" Text="Publishing to disk requires the SymbolsOutputPath to be set to the root of the path to write to." />
 
     <Copy SourceFiles="$(DotNetHostBinDir)\PDB\$(LibPrefix)nethost$(SymbolsSuffix);$(DotNetHostBinDir)\PDB\$(StaticLibPrefix)nethost$(SymbolsSuffix)"
+          Condition="'$(TargetsWindows)' == 'true'"
+          DestinationFolder="$(SymbolsOutputPath)" />
+    <Copy SourceFiles="$(DotNetHostBinDir)\$(LibPrefix)nethost$(LibSuffix)$(SymbolsSuffix)"
+          Condition="'$(TargetsWindows)' != 'true'"
           DestinationFolder="$(SymbolsOutputPath)" />
   </Target>
 </Project>
