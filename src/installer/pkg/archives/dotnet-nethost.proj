@@ -15,7 +15,7 @@
       <FilesToPublish Include="$(DotNetHostBinDir)\$(LibPrefix)nethost$(LibSuffix)"
             Destination="$(OutputPath)$(LibPrefix)nethost$(LibSuffix)" />
       <FilesToPublish Include="$(DotNetHostBinDir)\$(LibPrefix)libnethost$(StaticLibSuffix)"
-            Destination="$(OutputPath)$(LibPrefix)libnethost$(StaticLibSuffix)" />
+            Destination="$(OutputPath)$(StaticLibPrefix)nethost$(StaticLibSuffix)" />
       <FilesToPublish Condition="'$(TargetsWindows)' == 'true'"
             Include="$(DotNetHostBinDir)\nethost.lib"
             Destination="$(OutputPath)$(LibPrefix)nethost.lib" />
