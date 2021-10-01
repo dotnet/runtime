@@ -195,12 +195,12 @@ namespace Microsoft.Interop.Analyzers
 
         private void PrepareForAnalysis(CompilationStartAnalysisContext context)
         {
-            var generatedMarshallingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedMarshallingAttribute);
-            var blittableTypeAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.BlittableTypeAttribute);
-            var nativeMarshallingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.NativeMarshallingAttribute);
-            var marshalUsingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute);
-            var genericContiguousCollectionMarshallerAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GenericContiguousCollectionMarshallerAttribute);
-            var spanOfByte = context.Compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
+            INamedTypeSymbol? generatedMarshallingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GeneratedMarshallingAttribute);
+            INamedTypeSymbol? blittableTypeAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.BlittableTypeAttribute);
+            INamedTypeSymbol? nativeMarshallingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.NativeMarshallingAttribute);
+            INamedTypeSymbol? marshalUsingAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute);
+            INamedTypeSymbol? genericContiguousCollectionMarshallerAttribute = context.Compilation.GetTypeByMetadataName(TypeNames.GenericContiguousCollectionMarshallerAttribute);
+            INamedTypeSymbol? spanOfByte = context.Compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(context.Compilation.GetSpecialType(SpecialType.System_Byte));
 
             if (generatedMarshallingAttribute is not null
                 && blittableTypeAttribute is not null
@@ -256,7 +256,7 @@ namespace Microsoft.Interop.Analyzers
 
                 AttributeData? blittableTypeAttributeData = null;
                 AttributeData? nativeMarshallingAttributeData = null;
-                foreach (var attr in type.GetAttributes())
+                foreach (AttributeData? attr in type.GetAttributes())
                 {
                     if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _generatedMarshallingAttribute))
                     {
@@ -416,7 +416,7 @@ namespace Microsoft.Interop.Analyzers
 
                 bool hasConstructor = false;
                 bool hasStackallocConstructor = false;
-                foreach (var ctor in marshalerType.Constructors)
+                foreach (IMethodSymbol? ctor in marshalerType.Constructors)
                 {
                     if (ctor.IsStatic)
                     {

@@ -239,10 +239,10 @@ namespace Microsoft.Interop
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
             var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
-            var elementMarshaller = Create(
+            IMarshallingGenerator? elementMarshaller = Create(
                 elementInfo,
                 new ContiguousCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
-            var elementType = elementMarshaller.AsNativeType(elementInfo);
+            TypeSyntax? elementType = elementMarshaller.AsNativeType(elementInfo);
 
             bool isBlittable = elementMarshaller is BlittableMarshaller;
 

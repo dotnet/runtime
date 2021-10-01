@@ -48,7 +48,7 @@ namespace Microsoft.Interop
         /// <returns>Managed and native identifiers</returns>
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            var (_, native) = ParentContext!.GetIdentifiers(info);
+            (string _, string native) = ParentContext!.GetIdentifiers(info);
             return (
                 $"{native}.ManagedValues[{IndexerIdentifier}]",
                 $"{_nativeSpanIdentifier}[{IndexerIdentifier}]"

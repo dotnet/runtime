@@ -78,7 +78,7 @@ namespace Microsoft.Interop
                 // Enum with no marshalling info
                 case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
                     // Check that the underlying type is not bool or char. C# does not allow this, but ECMA-335 does.
-                    var underlyingSpecialType = enumType.UnderlyingType;
+                    SpecialType underlyingSpecialType = enumType.UnderlyingType;
                     if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
                     {
                         throw new MarshallingNotSupportedException(info, context);
