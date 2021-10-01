@@ -5382,75 +5382,6 @@ void AppDomain::PublishHostedAssembly(
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-void AppDomain::UpdatePublishHostedAssembly(
-    DomainAssembly * pAssembly,
-    PTR_PEAssembly   pPEAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END
-
-    if (pAssembly->GetPEAssembly()->HasHostAssembly())
-    {
-        // We have to serialize all Add operations
-        CrstHolder lockAdd(&m_crstHostAssemblyMapAdd);
-        {
-            // Wrapper for m_hostAssemblyMap.Add that avoids call out into host
-            OriginalFileHostAssemblyMap::AddPhases addCall;
-            bool fAddOrigFile = false;
-
-            // For cases where the pefile is being updated
-            // 1. Preallocate one element
-            if (pPEAssembly != pAssembly->GetPEAssembly())
-            {
-                addCall.PreallocateForAdd(&m_hostAssemblyMapForOrigFile);
-                fAddOrigFile = true;
-            }
-
-            {
-                // We cannot call out into host from ForbidSuspend region (i.e. no allocations/deallocations)
-                ForbidSuspendThreadHolder suspend;
-                {
-                    CrstHolder lock(&m_crstHostAssemblyMap);
-
-                    // Remove from hash table.
-                    _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetPEAssembly()->GetHostAssembly()) != nullptr);
-                    m_hostAssemblyMap.Remove(pAssembly->GetPEAssembly()->GetHostAssembly());
-
-                    // Update PEAssembly on DomainAssembly. (This may cause the key for the hash to change, which is why we need this function)
-                    pAssembly->UpdatePEFileWorker(pPEAssembly);
-
-                    _ASSERTE(fAddOrigFile == (pAssembly->GetOriginalPEAssembly() != pAssembly->GetPEAssembly()));
-                    if (fAddOrigFile)
-                    {
-                        // Add to the orig file hash table if we might be in a case where we've cached the original pefile and not the final pe file (for use during GetAssemblyIfLoaded)
-                        addCall.Add(pAssembly);
-                    }
-
-                    // Add back to the hashtable (the call to Remove above guarantees that we will not call into host for table reallocation)
-                    _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetPEAssembly()->GetHostAssembly()) == nullptr);
-                    m_hostAssemblyMap.Add(pAssembly);
-                }
-            }
-
-            // 4. Cleanup the old memory (if any)
-            if (fAddOrigFile)
-                addCall.DeleteOldTable();
-        }
-    }
-    else
-    {
-
-        pAssembly->UpdatePEFileWorker(pPEAssembly);
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------------------
 void AppDomain::UnPublishHostedAssembly(
     DomainAssembly * pAssembly)
 {
@@ -5470,12 +5401,6 @@ void AppDomain::UnPublishHostedAssembly(
             CrstHolder lock(&m_crstHostAssemblyMap);
             _ASSERTE(m_hostAssemblyMap.Lookup(pAssembly->GetPEAssembly()->GetHostAssembly()) != nullptr);
             m_hostAssemblyMap.Remove(pAssembly->GetPEAssembly()->GetHostAssembly());
-
-            // We also have an entry in m_hostAssemblyMapForOrigFile. Handle that case.
-            if (pAssembly->GetOriginalPEAssembly() != pAssembly->GetPEAssembly())
-            {
-                m_hostAssemblyMapForOrigFile.Remove(pAssembly->GetOriginalPEAssembly()->GetHostAssembly());
-            }
         }
     }
 }
@@ -5501,18 +5426,7 @@ PTR_DomainAssembly AppDomain::FindAssembly(PTR_BINDER_SPACE_Assembly pHostAssemb
         ForbidSuspendThreadHolder suspend;
         {
             CrstHolder lock(&m_crstHostAssemblyMap);
-            PTR_DomainAssembly returnValue = m_hostAssemblyMap.Lookup(pHostAssembly);
-            if (returnValue == NULL)
-            {
-                // If not found in the m_hostAssemblyMap, look in the m_hostAssemblyMapForOrigFile
-                // This is necessary as it may happen during in a second AppDomain that the PEAssembly
-                // first discovered in the AppDomain may not be used by the DomainFile, but the CLRPrivBinderFusion
-                // will in some cases find the pHostAssembly associated with this no longer used PEAssembly
-                // instead of the PEAssembly that was finally decided upon.
-                returnValue = m_hostAssemblyMapForOrigFile.Lookup(pHostAssembly);
-            }
-
-            return returnValue;
+            return m_hostAssemblyMap.Lookup(pHostAssembly);
         }
     }
 }

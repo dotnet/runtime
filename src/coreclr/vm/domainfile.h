@@ -93,13 +93,6 @@ class DomainFile
         return m_pPEAssembly;
     }
 
-    PEAssembly *GetOriginalPEAssembly()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pOriginalPEAssembly!= NULL ? m_pOriginalPEAssembly : m_pPEAssembly;
-    }
-
-
     IMDInternalImport *GetMDImport()
     {
         WRAPPER_NO_CONTRACT;
@@ -605,10 +598,6 @@ private:
     void DeliverSyncEvents();
     void DeliverAsyncEvents();
 #endif
-
-    void UpdatePEFile(PTR_PEAssembly pFile);
-
-    BOOL IsInstrumented();
 
  public:
     ULONG HashIdentity();

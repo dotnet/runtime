@@ -3374,9 +3374,7 @@ DomainAssembly * Module::LoadAssembly(mdAssemblyRef kAssemblyRef)
     }
 
     {
-        PEAssemblyHolder pPEAssembly = GetDomainAssembly()->GetPEAssembly()->LoadAssembly(
-                kAssemblyRef,
-                NULL);
+        PEAssemblyHolder pPEAssembly = GetDomainAssembly()->GetPEAssembly()->LoadAssembly(kAssemblyRef);
         AssemblySpec spec;
         spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up

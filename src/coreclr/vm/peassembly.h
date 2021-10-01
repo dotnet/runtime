@@ -294,9 +294,7 @@ public:
     // File loading
     // ------------------------------------------------------------
 
-    PEAssembly * LoadAssembly(
-            mdAssemblyRef       kAssemblyRef,
-            IMDInternalImport * pImport = NULL);
+    PEAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
 
     void LoadLibrary();
 

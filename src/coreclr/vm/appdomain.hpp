@@ -2396,20 +2396,8 @@ private:
         static bool IsDeleted(const element_t & e) { return dac_cast<TADDR>(e) == (TADDR)-1; }
     };
 
-    struct OriginalFileHostAssemblyHashTraits : public HostAssemblyHashTraits
-    {
-    public:
-        static key_t GetKey(element_t const & elem)
-        {
-            STATIC_CONTRACT_WRAPPER;
-            return elem->GetOriginalPEAssembly()->GetHostAssembly();
-        }
-    };
-
     typedef SHash<HostAssemblyHashTraits> HostAssemblyMap;
-    typedef SHash<OriginalFileHostAssemblyHashTraits> OriginalFileHostAssemblyMap;
     HostAssemblyMap   m_hostAssemblyMap;
-    OriginalFileHostAssemblyMap   m_hostAssemblyMapForOrigFile;
     CrstExplicitInit  m_crstHostAssemblyMap;
     // Lock to serialize all Add operations (in addition to the "read-lock" above)
     CrstExplicitInit  m_crstHostAssemblyMapAdd;
@@ -2426,11 +2414,6 @@ private:
     // Called from DomainAssembly::Begin.
     void PublishHostedAssembly(
         DomainAssembly* pAssembly);
-
-    // Called from DomainAssembly::UpdatePEFile.
-    void UpdatePublishHostedAssembly(
-        DomainAssembly* pAssembly,
-        PTR_PEAssembly pPEAssembly);
 
     // Called from DomainAssembly::~DomainAssembly
     void UnPublishHostedAssembly(

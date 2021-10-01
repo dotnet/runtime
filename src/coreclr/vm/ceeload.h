@@ -43,7 +43,6 @@
 
 #include "ilinstrumentation.h"
 
-class PELoader;
 class Stub;
 class MethodDesc;
 class FieldDesc;

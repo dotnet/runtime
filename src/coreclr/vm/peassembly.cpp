@@ -642,10 +642,7 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
 // File loading
 // ------------------------------------------------------------
 
-PEAssembly *
-PEAssembly::LoadAssembly(
-    mdAssemblyRef       kAssemblyRef,
-    IMDInternalImport * pImport)
+PEAssembly* PEAssembly::LoadAssembly(mdAssemblyRef kAssemblyRef)
 {
     CONTRACT(PEAssembly *)
     {
@@ -658,9 +655,7 @@ PEAssembly::LoadAssembly(
     }
     CONTRACT_END;
 
-    if (pImport == NULL)
-        pImport = GetPersistentMDImport();
-
+    IMDInternalImport* pImport = GetPersistentMDImport();
     if (((TypeFromToken(kAssemblyRef) != mdtAssembly) &&
          (TypeFromToken(kAssemblyRef) != mdtAssemblyRef)) ||
         (!pImport->IsValidToken(kAssemblyRef)))

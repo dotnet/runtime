@@ -746,7 +746,6 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    UpdatePEFile(pAssembly->GetManifestFile());
     _ASSERTE(pAssembly->GetManifestModule()->GetPEAssembly()==m_pPEAssembly);
     m_pAssembly = pAssembly;
     m_pModule = pAssembly->GetManifestModule();
