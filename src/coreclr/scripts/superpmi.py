@@ -254,7 +254,7 @@ superpmi_common_parser.add_argument("--break_on_error", action="store_true", hel
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
-superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
+superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
 superpmi_common_parser.add_argument("-error_limit", help=error_limit_help)
 
@@ -425,7 +425,7 @@ def download_progress_hook(count, block_size, total_size):
         block_size (int)          : size of a block
         total_size (int)          : total size of a payload
     """
-    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.write("\rDownloading {0:.1f}/{1:.1f} MB...".format(count * block_size / 1024 / 1024, total_size / 1024 / 1024))
     sys.stdout.flush()
 
 
