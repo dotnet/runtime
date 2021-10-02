@@ -267,7 +267,14 @@ bool IntegralRange::Contains(int64_t value) const
             // CAST_OVF(long <- ulong)    - [0..LONG_MAX]
             // CAST_OVF(long <- long)     - [LONG_MIN..LONG_MAX]
             case TYP_LONG:
-                lowerBound = fromUnsigned ? SymbolicIntegerValue::Zero : LowerBoundForType(fromType);
+                if (fromUnsigned && (fromType == TYP_LONG))
+                {
+                    lowerBound = SymbolicIntegerValue::Zero;
+                }
+                else
+                {
+                    lowerBound = LowerBoundForType(fromType);
+                }
                 upperBound = UpperBoundForType(fromType);
                 break;
 
