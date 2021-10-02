@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Security.Cryptography.X509Certificates;
 
@@ -15,17 +16,50 @@ namespace System.Net.Security
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline)
         {
-            return Create(target, additionalCertificates, offline, null);
+            return Create(target, additionalCertificates, offline, null, false);
         }
 
-        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null)
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline, SslCertificateTrust? trust)
+        {
+            return Create(target, additionalCertificates, offline, trust, false);
+        }
+
+        public static SslStreamCertificateContext Create(X509Certificate2 target, X509Certificate2Collection? additionalCertificates, bool offline = false, SslCertificateTrust? trust = null, bool addAllAdditionalCertificatesIfSupported = false)
         {
             if (!target.HasPrivateKey)
             {
                 throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
             }
 
-            X509Certificate2[] intermediates = Array.Empty<X509Certificate2>();
+#pragma warning disable 0162 // Disable unreachable code warning. addAllAdditionalCertificatesIfSupported is const bool = false on some platforms
+            if (!SupportsAddAllAdditionalCertificates)
+            {
+                // Only OpenSSL pal supports the addAllAdditionalCertificatesIfSupported flag. Win32 API doesn't support it.
+                addAllAdditionalCertificatesIfSupported = false;
+            }
+#pragma warning restore 0162
+
+            X509Certificate2[] intermediates;
+
+            if (addAllAdditionalCertificatesIfSupported && additionalCertificates != null && additionalCertificates.Count >= 1)
+            {
+                Dictionary<string, X509Certificate2> additionalCertificateDict = new Dictionary<string, X509Certificate2>();
+
+                foreach (X509Certificate2 additionalCertificate in additionalCertificates)
+                {
+                    additionalCertificateDict.TryAdd(additionalCertificate.Thumbprint, additionalCertificate);
+                }
+
+                intermediates = new X509Certificate2[additionalCertificateDict.Count];
+
+                additionalCertificateDict.Values.CopyTo(intermediates, 0);
+
+                return new SslStreamCertificateContext(target, intermediates, trust);
+            }
+
+            intermediates = Array.Empty<X509Certificate2>();
+
             using (X509Chain chain = new X509Chain())
             {
                 if (additionalCertificates != null)

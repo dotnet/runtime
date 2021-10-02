@@ -9,6 +9,7 @@ namespace System.Net.Security
     {
         // No leaf, no root.
         private const bool TrimRootCertificate = true;
+        private const bool SupportsAddAllAdditionalCertificates = true;
 
         private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
         {

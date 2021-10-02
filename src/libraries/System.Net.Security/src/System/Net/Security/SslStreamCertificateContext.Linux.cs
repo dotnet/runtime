@@ -11,6 +11,7 @@ namespace System.Net.Security
     public partial class SslStreamCertificateContext
     {
         private const bool TrimRootCertificate = true;
+        private const bool SupportsAddAllAdditionalCertificates = true;
         internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
 
         private SslStreamCertificateContext(X509Certificate2 target, X509Certificate2[] intermediates, SslCertificateTrust? trust)
