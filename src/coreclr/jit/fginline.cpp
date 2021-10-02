@@ -888,6 +888,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
 
+    assert(call->gtGDVCandidatesCount <= 1);
     InlineCandidateInfo* inlineCandidateInfo = call->gtInlineCandidateInfo;
     noway_assert(inlineCandidateInfo);
     // Store the link to inlineCandidateInfo into inlineInfo

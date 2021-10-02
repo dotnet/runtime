@@ -4765,6 +4765,12 @@ struct GenTreeCall final : public GenTree
         void*                  gtDirectCallAddress; // Used to pass direct call address between lower and codegen
     };
 
+    void ClearInlineInfo()
+    {
+        //assert(gtGDVCandidatesCount <= 1);
+        gtInlineCandidateInfo = nullptr;
+    }
+
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;
 

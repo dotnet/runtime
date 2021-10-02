@@ -4767,7 +4767,8 @@ private:
                            unsigned               methAttr,
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
                            InlineCandidateInfo**  ppInlineCandidateInfo,
-                           InlineResult*          inlineResult);
+                           InlineResult*          inlineResult,
+                           UINT8                  gdvCandidateId);
 
     void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
                                 GenTree*      curArgVal,
@@ -4795,6 +4796,7 @@ private:
     void impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
+                                      UINT8                  candidateIndex,
                                       CORINFO_CALL_INFO*     callInfo);
 
     bool impTailCallRetTypeCompatible(bool                     allowWidening,

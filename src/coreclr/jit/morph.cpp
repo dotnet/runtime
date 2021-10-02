@@ -64,17 +64,17 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
 
     GenTreeCall* call = tree->AsCall();
 
-    call->gtCallType            = CT_HELPER;
-    call->gtCallMethHnd         = eeFindHelper(helper);
-    call->gtCallThisArg         = nullptr;
-    call->gtCallArgs            = args;
-    call->gtCallLateArgs        = nullptr;
-    call->fgArgInfo             = nullptr;
-    call->gtRetClsHnd           = nullptr;
-    call->gtCallMoreFlags       = GTF_CALL_M_EMPTY;
-    call->gtInlineCandidateInfo = nullptr;
-    call->gtControlExpr         = nullptr;
-    call->gtGDVCandidatesCount  = 0;
+    call->gtCallType           = CT_HELPER;
+    call->gtCallMethHnd        = eeFindHelper(helper);
+    call->gtCallThisArg        = nullptr;
+    call->gtCallArgs           = args;
+    call->gtCallLateArgs       = nullptr;
+    call->fgArgInfo            = nullptr;
+    call->gtRetClsHnd          = nullptr;
+    call->gtCallMoreFlags      = GTF_CALL_M_EMPTY;
+    call->gtControlExpr        = nullptr;
+    call->gtGDVCandidatesCount = 0;
+    call->ClearInlineInfo();
 #ifdef UNIX_X86_ABI
     call->gtFlags |= GTF_CALL_POP_ARGS;
 #endif // UNIX_X86_ABI
