@@ -28,27 +28,27 @@ jobs:
 
 # WebAssembly
 
-- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
-  - template: xplat-setup.yml
-    parameters:
-      jobTemplate: ${{ parameters.jobTemplate }}
-      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
-      variables: ${{ parameters.variables }}
-      hostedOs: Linux
-      osGroup: Browser
-      archType: wasm
-      targetRid: browser-wasm
-      platform: Browser_wasm
-      container:
-        image: ubuntu-18.04-webassembly-20210531091624-f5c7a43
-        registry: mcr
-      jobParameters:
-        runtimeFlavor: ${{ parameters.runtimeFlavor }}
-        stagedBuild: ${{ parameters.stagedBuild }}
-        buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
-        ${{ insert }}: ${{ parameters.jobParameters }}
+#- ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
+  #- template: xplat-setup.yml
+    #parameters:
+      #jobTemplate: ${{ parameters.jobTemplate }}
+      #helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      #variables: ${{ parameters.variables }}
+      #hostedOs: Linux
+      #osGroup: Browser
+      #archType: wasm
+      #targetRid: browser-wasm
+      #platform: Browser_wasm
+      #container:
+        #image: ubuntu-18.04-webassembly-20210531091624-f5c7a43
+        #registry: mcr
+      #jobParameters:
+        #runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        #stagedBuild: ${{ parameters.stagedBuild }}
+        #buildConfig: ${{ parameters.buildConfig }}
+        #${{ if eq(parameters.passPlatforms, true) }}:
+          #platforms: ${{ parameters.platforms }}
+        #${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly on Windows
 
