@@ -33,7 +33,6 @@
 DomainFile::DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly)
   : m_pDomain(pDomain),
     m_pPEAssembly(pPEAssembly),
-    m_pOriginalPEAssembly(NULL),
     m_pModule(NULL),
     m_level(FILE_LOAD_CREATE),
     m_pError(NULL),
@@ -69,8 +68,6 @@ DomainFile::~DomainFile()
     CONTRACTL_END;
 
     m_pPEAssembly->Release();
-    if(m_pOriginalPEAssembly)
-        m_pOriginalPEAssembly->Release();
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
     delete m_pError;

@@ -308,8 +308,7 @@ class DomainFile
     // ------------------------------------------------------------
 
     PTR_AppDomain               m_pDomain;
-    PTR_PEAssembly                  m_pPEAssembly;
-    PTR_PEAssembly                  m_pOriginalPEAssembly;  // keep file alive just in case someone is sitill using it. If this is not NULL then m_pPEAssembly contains reused file from the shared assembly
+    PTR_PEAssembly              m_pPEAssembly;
     PTR_Module                  m_pModule;
     FileLoadLevel               m_level;
     LOADERHANDLE                m_hExposedModuleObject;
