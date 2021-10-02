@@ -662,8 +662,6 @@ private:
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
 
-            returnTemp = origCall->gtInlineCandidateInfo[0].preexistingSpillTemp;
-
             assert(origCall->gtGDVCandidatesCount > 0);
             for (UINT8 candidateId = 0; candidateId < origCall->gtGDVCandidatesCount; candidateId++)
             {
@@ -682,7 +680,7 @@ private:
                     // use that instead of allocating a new temp.
                     //
 
-                    if (inlineInfo->preexistingSpillTemp != BAD_VAR_NUM)
+                    if (returnTemp == BAD_VAR_NUM)
                     {
                         returnTemp = inlineInfo->preexistingSpillTemp;
                     }
@@ -784,6 +782,7 @@ private:
             GenTreeCall* call   = compiler->gtCloneCandidateCall(origCall);
             call->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
+            call->gtGDVCandidatesCount = 0;
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
