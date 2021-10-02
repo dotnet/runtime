@@ -93,7 +93,7 @@ const emitJumpKind emitReverseJumpKinds[] = {
 //
 void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 {
-    unsigned short nAlignInstr   = alignmentBoundary / MAX1_ENCODED_SIZE;
+    unsigned short nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
     unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
 
     // Ensure that all align instructions fall in same IG.
@@ -107,7 +107,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
     while (nAlignInstr)
     {
-        emitLoopAlign(MAX1_ENCODED_SIZE);
+        emitLoopAlign(INSTR_ENCODED_SIZE);
         nAlignInstr--;
     }
 }
@@ -13354,7 +13354,7 @@ void emitter::emitDispIns(
         case IF_SN_0A: // SN_0A   ................ ................
             if (ins == INS_align)
             {
-                printf("[%d bytes]", id->idIsEmptyAlign() ? 0 : MAX1_ENCODED_SIZE);
+                printf("[%d bytes]", id->idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE);
             }
             break;
 

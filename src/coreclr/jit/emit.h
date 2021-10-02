@@ -583,7 +583,7 @@ protected:
         instruction _idIns : 10;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
-#define MAX1_ENCODED_SIZE 4
+#define INSTR_ENCODED_SIZE 4
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))

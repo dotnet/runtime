@@ -4813,7 +4813,7 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
     id->idCodeSize(paddingBytes);
 #elif defined(TARGET_ARM64)
-    assert(paddingBytes % MAX1_ENCODED_SIZE == 0);
+    assert(paddingBytes % INSTR_ENCODED_SIZE == 0);
 #endif  
     
     id->idaIG = emitCurIG;
@@ -5183,8 +5183,13 @@ void emitter::emitLoopAlignAdjustments()
                 int instrAdjusted =
                     (emitComp->opts.compJitAlignLoopBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
 #elif defined(TARGET_ARM64)
-                unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) / MAX1_ENCODED_SIZE;
-#endif  // TARGET_XARCH
+                unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) /
+                                                       INSTR_ENCODED_SIZE;
+                if (!emitComp->opts.compJitAlignLoopAdaptive)
+                {
+                    instrAdjusted = emitComp->opts.compJitAlignLoopBoundary / INSTR_ENCODED_SIZE;
+                }
+#endif  // TARGET_XARCH & TARGET_ARM64
 #endif  // DEBUG
                 // Adjust the padding amount in all align instructions in this IG
                 instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
@@ -5193,11 +5198,10 @@ void emitter::emitLoopAlignAdjustments()
                 {
                     
 #if defined(TARGET_XARCH)
-                    unsigned newPadding = min(paddingToAdj, MAX_ENCODED_SIZE); //TODO: Move this outside ifdef once MAX_ENCODED_SIZE is same for arm64
+                    unsigned newPadding = min(paddingToAdj, MAX_ENCODED_SIZE);
                     alignInstrToAdj->idCodeSize(newPadding);
 #elif defined(TARGET_ARM64)
-                    unsigned newPadding = min(paddingToAdj, MAX1_ENCODED_SIZE); // TODO: Move this outside ifdef once
-                                                                               // MAX_ENCODED_SIZE is same for arm64
+                    unsigned newPadding = min(paddingToAdj, INSTR_ENCODED_SIZE);
                     if (newPadding == 0)
                     {
                         alignInstrToAdj->idInsOpt(INS_OPTS_NONE);

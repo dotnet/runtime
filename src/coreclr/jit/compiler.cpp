@@ -2657,9 +2657,14 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
     }
 #elif TARGET_ARM64
-    // Since instructions of Arm64 are in multiple of 4, just have one padding limit
-    // for adaptive and non-adaptive alignment.
-    opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1);
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1);
+    }
+    else
+    {
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
+    }
 #endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));
