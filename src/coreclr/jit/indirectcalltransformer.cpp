@@ -662,6 +662,8 @@ private:
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
 
+            returnTemp = origCall->gtInlineCandidateInfo[0].preexistingSpillTemp;
+
             assert(origCall->gtGDVCandidatesCount > 0);
             for (UINT8 candidateId = 0; candidateId < origCall->gtGDVCandidatesCount; candidateId++)
             {
@@ -679,7 +681,11 @@ private:
                     // If there's a spill temp already associated with this inline candidate,
                     // use that instead of allocating a new temp.
                     //
-                    returnTemp = inlineInfo->preexistingSpillTemp;
+
+                    if (inlineInfo->preexistingSpillTemp != BAD_VAR_NUM)
+                    {
+                        returnTemp = inlineInfo->preexistingSpillTemp;
+                    }
 
                     if (returnTemp != BAD_VAR_NUM)
                     {
@@ -807,7 +813,7 @@ private:
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
             //
             CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
-            if (((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd)))
+            if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
             {
                 // Demote this call to a non-inline candidate
                 //

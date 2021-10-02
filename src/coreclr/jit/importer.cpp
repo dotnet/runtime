@@ -22032,11 +22032,6 @@ void Compiler::considerGuardedDevirtualization(
             {
                 break;
             }
-            if (!call->TypeIs(TYP_VOID))
-            {
-                // something is messed up with ret_expr currently
-                break;
-            }
         }
 
         // Add this as a potential candidate.
