@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="new">Malformed \\k&lt;...&gt; named back reference.</target>
+        <target state="translated">Źle sformułowany znak \\k&lt;...&gt; nazwany odwołaniem wstecznym.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
