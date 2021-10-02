@@ -24,7 +24,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             TraceProcess p,
             TraceTypeSystemContext tsc,
             TraceRuntimeDescToTypeSystemDesc idParser,
-            int clrInstanceID)
+            int clrInstanceID,
+            Logger logger)
         {
             // Capture the addresses of jitted code
             List<MemoryRegionInfo> infos = new List<MemoryRegionInfo>();
@@ -67,7 +68,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 MethodDesc method = null;
                 try
                 {
-                    method = idParser.ResolveMethodID(e.MethodID);
+                    method = idParser.ResolveMethodID(e.MethodID, throwIfNotFound: false);
                 }
                 catch
                 {
@@ -85,7 +86,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
             }
 
-            var sigProvider = new R2RSignatureTypeProvider(tsc);
+            var sigProvider = new R2RSignatureTypeProviderForGlobalTables(tsc);
             foreach (var module in p.LoadedModules)
             {
                 if (module.FilePath == "")
@@ -120,11 +121,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                     }
                 }
-                catch { }
+                catch
+                {
+                    logger.PrintWarning($"Failed to load method entry points from R2R module {module.FilePath}");
+                }
             }
 
             // Can have duplicate events, so pick first for each
-            var byMethodID = infos.GroupBy(i => i.MethodID).ToDictionary(g => g.Key, g => g.First());
+            var byMethodIDGroups = infos.GroupBy(i => i.MethodID);
+            var byMethodID = byMethodIDGroups.ToDictionary(g => g.Key, g => g.First());
             foreach (MethodILToNativeMapTraceData e in p.EventsInProcess.ByEventType<MethodILToNativeMapTraceData>())
             {
                 if (byMethodID.TryGetValue(e.MethodID, out MemoryRegionInfo inf))

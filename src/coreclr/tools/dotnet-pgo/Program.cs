@@ -1014,7 +1014,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                 filePathError = true;
                             }
                             else
-                                tsc.GetModuleFromPath(fileReference.FullName);
+                            {
+                                tsc.GetModuleFromPath(fileReference.FullName, throwIfNotLoadable: false);
+                            }
                         }
                         catch (Internal.TypeSystem.TypeSystemException.BadImageFormatException)
                         {
@@ -1133,7 +1135,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             p,
                             tsc,
                             idParser,
-                            clrInstanceId.Value);
+                            clrInstanceId.Value,
+                            s_logger);
                     }
 
                     return methodMemMap;
