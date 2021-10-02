@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="new">Malformed \\k&lt;...&gt; named back reference.</target>
+        <target state="translated">名为“向后引用”的 \\k&lt;...&gt; 格式不正确。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
