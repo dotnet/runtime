@@ -10,6 +10,7 @@ template_dir = os.getcwd()
 out_dir = template_dir
 idx = 0
 args_len = len(sys.argv)
+product_ver = ''
 while idx < args_len:
     arg = sys.argv[idx]
     idx += 1
@@ -61,6 +62,14 @@ while idx < args_len:
         dump_dir = sys.argv[idx]
         idx += 1
 
+    if arg == '-productver':
+        if idx >= args_len or sys.argv[idx].startswith('-'):
+            print("Must specify a value for -productver")
+            exit(1)
+
+        product_ver = sys.argv[idx]
+        idx += 1
+
 dump_names = []
 if dump_dir != '':
     for filename in os.listdir(dump_dir):
@@ -83,6 +92,10 @@ if job_id == '':
     print("ERROR: unespecified required argument -jobid")
     exit(1)
 
+if product_ver == '':
+    print("ERROR: unespecified required argument -productver")
+    exit(1)
+
 replace_string = ''
 dir_separator = '/' if platform.system() != 'Windows' else '\\'
 unix_user_folder = '$HOME/helix_payload/'
@@ -96,6 +109,7 @@ with open(source_file, 'r') as f:
     replace_string = file_text.replace('%JOBID%', job_id)
     replace_string = replace_string.replace('%WORKITEM%', workitem)
     replace_string = replace_string.replace('%BUILDID%', build_id)
+    replace_string = replace_string.replace('%PRODUCTVERSION%', product_ver)
     replace_string = replace_string.replace('%LOUTDIR%', unix_user_folder + workitem)
     replace_string = replace_string.replace('%WOUTDIR%', windows_user_folder + workitem)
 

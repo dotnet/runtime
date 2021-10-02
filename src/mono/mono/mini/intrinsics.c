@@ -2071,7 +2071,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				break;
 			}
 		}
-		else if (!strcmp ("ThrowForUnsupportedIntrinsicsVectorBaseType", cmethod->name)) {
+		else if (!strcmp ("ThrowForUnsupportedIntrinsicsVector64BaseType", cmethod->name) ||
+			 !strcmp ("ThrowForUnsupportedIntrinsicsVector128BaseType", cmethod->name) ||
+			 !strcmp ("ThrowForUnsupportedIntrinsicsVector256BaseType", cmethod->name)) {
 			/* The mono JIT can't optimize the body of this method away */
 			MonoGenericContext *ctx = mono_method_get_context (cmethod);
 			g_assert (ctx);

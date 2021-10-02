@@ -59,6 +59,16 @@ namespace System.Text.Json.Serialization.Converters
                 // ensure the enumerator already is stored
                 // in the WriteStack for proper disposal.
                 moveNextTask = enumerator.MoveNextAsync();
+
+                if (!moveNextTask.IsCompleted)
+                {
+                    // It is common for first-time MoveNextAsync() calls to return pending tasks,
+                    // since typically that is when underlying network connections are being established.
+                    // For this case only, suppress flushing the current buffer contents (e.g. the leading '[' token of the written array)
+                    // to give the stream owner the ability to recover in case of a connection error.
+                    state.SuppressFlush = true;
+                    goto SuspendDueToPendingTask;
+                }
             }
             else
             {
@@ -81,10 +91,11 @@ namespace System.Text.Json.Serialization.Converters
                 }
             }
 
+            Debug.Assert(moveNextTask.IsCompleted);
             JsonConverter<TElement> converter = GetElementConverter(ref state);
 
             // iterate through the enumerator while elements are being returned synchronously
-            for (; moveNextTask.IsCompleted; moveNextTask = enumerator.MoveNextAsync())
+            do
             {
                 if (!moveNextTask.Result)
                 {
@@ -105,8 +116,11 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     return false;
                 }
-            }
 
+                moveNextTask = enumerator.MoveNextAsync();
+            } while (moveNextTask.IsCompleted);
+
+        SuspendDueToPendingTask:
             // we have a pending MoveNextAsync() call;
             // wrap inside a regular task so that it can be awaited multiple times;
             // mark the current stackframe as pending completion.
