@@ -276,21 +276,24 @@ public:
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
 
     template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
+    static void DoProfilerCallbackHelper(ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, HRESULT *pHR, Args... args)
+    {
+        if (condition(pProfilerInfo))
+        {
+            HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
+            if (FAILED(innerHR))
+            {
+                *pHR = innerHR;
+            }
+        }
+    }
+
+    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
     FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
     {
         HRESULT hr = S_OK;
         IterateProfilers(callbackType,
-                         [](ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, HRESULT *pHR, Args... args)
-                            {
-                                if (condition(pProfilerInfo))
-                                {
-                                    HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
-                                    if (FAILED(innerHR))
-                                    {
-                                        *pHR = innerHR;
-                                    }
-                                }
-                            },
+                         &DoProfilerCallbackHelper<ConditionFunc, CallbackFunc, Data, Args...>,
                          condition, additionalData, callback, &hr, args...);
         return hr;
     }
