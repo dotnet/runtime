@@ -71,7 +71,6 @@ namespace DllImportGenerator.IntegrationTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/59721", typeof(PlatformDetection), nameof(PlatformDetection.IsNotReleaseRuntime), nameof(PlatformDetection.IsNotMonoRuntime))]
         public void ClearPreviousError()
         {
             int error = 100;
