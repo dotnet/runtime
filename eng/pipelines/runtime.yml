@@ -6,7 +6,6 @@ trigger:
   batch: true
   branches:
     include:
-    - main
     - release/*.*
   paths:
     include:
@@ -23,6 +22,14 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+
+schedules:
+  - cron: "0 8,20 * * *" # run at 8:00 and 20:00 (UTC) which is 00:00 and 12:00 (PST).
+    displayName: Runtime default schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
 
 pr:
   branches:
