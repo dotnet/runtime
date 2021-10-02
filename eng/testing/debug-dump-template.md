@@ -61,8 +61,8 @@ Open WinDbg and open the dump with `File>Open Dump`.
 ```
 
 ```
-!setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
-.sympath+ %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0
+!setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%
+.sympath+ %WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%
 ```
 
 Now you can use regular SOS commands like `!dumpstack`, `!pe`, etc.
@@ -82,8 +82,8 @@ If prompted, open a new command prompt to pick up the updated PATH.
 ```cmd
 dotnet-dump analyze ^
   <win-path-to-dump> ^
-  --command "setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0" ^
-  "setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0"
+  --command "setclrpath %WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%" ^
+  "setsymbolserver -directory %WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%"
 ```
 
 Now you can use regular SOS commands like `dumpstack`, `pe`, etc.
@@ -95,7 +95,7 @@ dotnet tool uninstall --global dotnet-dump
 ---
 ## If it's a Linux dump on Windows...
 
-Download the [Cross DAC Binaries](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\7.0.0`.
+Download the [Cross DAC Binaries](https://dev.azure.com/dnceng/public/_apis/build/builds/%BUILDID%/artifacts?artifactName=CoreCLRCrossDacArtifacts&api-version=6.0&%24format=zip), open it and choose the flavor that matches the dump you are to debug, and copy those files to `%WOUTDIR%\shared\Microsoft.NETCore.App\%PRODUCTVERSION%`.
 
 Now you can debug with WinDbg or `dotnet-dump` as if it was a Windows dump. See above.
 
@@ -109,9 +109,9 @@ Install or update LLDB if necessary ([instructions here](https://github.com/dotn
 Load the dump:
 ```sh
 lldb --core <lin-path-to-dump> \
-  %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0/dotnet \
-  -o "setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0" \
-  -o "setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0"
+  %LOUTDIR%/shared/Microsoft.NETCore.App/%PRODUCTVERSION%/dotnet \
+  -o "setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/%PRODUCTVERSION%" \
+  -o "setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/%PRODUCTVERSION%"
 ```
 
 If you want to load native symbols
@@ -130,8 +130,8 @@ If prompted, open a new command prompt to pick up the updated PATH.
 ```sh
 dotnet-dump analyze \
   <lin-path-to-dump> \
-  --command "setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0" \
-  "setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/7.0.0"
+  --command "setclrpath %LOUTDIR%/shared/Microsoft.NETCore.App/%PRODUCTVERSION%" \
+  "setsymbolserver -directory %LOUTDIR%/shared/Microsoft.NETCore.App/%PRODUCTVERSION%"
 ```
 
 ---

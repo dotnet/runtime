@@ -14,23 +14,23 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class CustomNativeTypeMarshallingGenerator : IMarshallingGenerator
     {
-        private readonly ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller;
-        private readonly bool enableByValueContentsMarshalling;
+        private readonly ICustomNativeTypeMarshallingStrategy _nativeTypeMarshaller;
+        private readonly bool _enableByValueContentsMarshalling;
 
         public CustomNativeTypeMarshallingGenerator(ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
         {
-            this.nativeTypeMarshaller = nativeTypeMarshaller;
-            this.enableByValueContentsMarshalling = enableByValueContentsMarshalling;
+            _nativeTypeMarshaller = nativeTypeMarshaller;
+            _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
         }
 
         public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
-            return nativeTypeMarshaller.AsArgument(info, context);
+            return _nativeTypeMarshaller.AsArgument(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
-            return nativeTypeMarshaller.AsNativeType(info);
+            return _nativeTypeMarshaller.AsNativeType(info);
         }
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
@@ -49,28 +49,28 @@ namespace Microsoft.Interop
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
-                    return nativeTypeMarshaller.GenerateSetupStatements(info, context);
+                    return _nativeTypeMarshaller.GenerateSetupStatements(info, context);
                 case StubCodeContext.Stage.Marshal:
                     if (!info.IsManagedReturnPosition && info.RefKind != RefKind.Out)
                     {
-                        return nativeTypeMarshaller.GenerateMarshalStatements(info, context, nativeTypeMarshaller.GetNativeTypeConstructorArguments(info, context));
+                        return _nativeTypeMarshaller.GenerateMarshalStatements(info, context, _nativeTypeMarshaller.GetNativeTypeConstructorArguments(info, context));
                     }
                     break;
                 case StubCodeContext.Stage.Pin:
                     if (!info.IsByRef || info.RefKind == RefKind.In)
                     {
-                        return nativeTypeMarshaller.GeneratePinStatements(info, context);
+                        return _nativeTypeMarshaller.GeneratePinStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.Unmarshal:
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In)
-                        || (enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
+                        || (_enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)))
                     {
-                        return nativeTypeMarshaller.GenerateUnmarshalStatements(info, context);
+                        return _nativeTypeMarshaller.GenerateUnmarshalStatements(info, context);
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    return nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
                 default:
                     break;
             }
@@ -80,12 +80,12 @@ namespace Microsoft.Interop
 
         public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            return enableByValueContentsMarshalling;
+            return _enableByValueContentsMarshalling;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return nativeTypeMarshaller.UsesNativeIdentifier(info, context);
+            return _nativeTypeMarshaller.UsesNativeIdentifier(info, context);
         }
     }
 }

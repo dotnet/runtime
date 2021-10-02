@@ -11,12 +11,12 @@ namespace Microsoft.Interop
 {
     internal class NoPreserveSigMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private static readonly HResultExceptionMarshaller HResultException = new HResultExceptionMarshaller();
-        private readonly IMarshallingGeneratorFactory inner;
+        private static readonly HResultExceptionMarshaller s_hResultException = new HResultExceptionMarshaller();
+        private readonly IMarshallingGeneratorFactory _inner;
 
         public NoPreserveSigMarshallingGeneratorFactory(IMarshallingGeneratorFactory inner)
         {
-            this.inner = inner;
+            _inner = inner;
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
@@ -25,9 +25,9 @@ namespace Microsoft.Interop
             {
                 // Use marshaller for native HRESULT return / exception throwing
                 System.Diagnostics.Debug.Assert(info.ManagedType.Equals(SpecialTypeInfo.Int32));
-                return HResultException;
+                return s_hResultException;
             }
-            return inner.Create(info, context);
+            return _inner.Create(info, context);
         }
     }
 }

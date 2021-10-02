@@ -225,13 +225,13 @@ namespace Microsoft.Interop.Analyzers
 
         private class PerCompilationAnalyzer
         {
-            private readonly INamedTypeSymbol GeneratedMarshallingAttribute;
-            private readonly INamedTypeSymbol BlittableTypeAttribute;
-            private readonly INamedTypeSymbol NativeMarshallingAttribute;
-            private readonly INamedTypeSymbol MarshalUsingAttribute;
-            private readonly INamedTypeSymbol GenericContiguousCollectionMarshallerAttribute;
-            private readonly INamedTypeSymbol SpanOfByte;
-            private readonly INamedTypeSymbol StructLayoutAttribute;
+            private readonly INamedTypeSymbol _generatedMarshallingAttribute;
+            private readonly INamedTypeSymbol _blittableTypeAttribute;
+            private readonly INamedTypeSymbol _nativeMarshallingAttribute;
+            private readonly INamedTypeSymbol _marshalUsingAttribute;
+            private readonly INamedTypeSymbol _genericContiguousCollectionMarshallerAttribute;
+            private readonly INamedTypeSymbol _spanOfByte;
+            private readonly INamedTypeSymbol _structLayoutAttribute;
 
             public PerCompilationAnalyzer(INamedTypeSymbol generatedMarshallingAttribute,
                                           INamedTypeSymbol blittableTypeAttribute,
@@ -241,13 +241,13 @@ namespace Microsoft.Interop.Analyzers
                                           INamedTypeSymbol spanOfByte,
                                           INamedTypeSymbol structLayoutAttribute)
             {
-                GeneratedMarshallingAttribute = generatedMarshallingAttribute;
-                BlittableTypeAttribute = blittableTypeAttribute;
-                NativeMarshallingAttribute = nativeMarshallingAttribute;
-                MarshalUsingAttribute = marshalUsingAttribute;
-                GenericContiguousCollectionMarshallerAttribute = genericContiguousCollectionMarshallerAttribute;
-                SpanOfByte = spanOfByte;
-                StructLayoutAttribute = structLayoutAttribute;
+                _generatedMarshallingAttribute = generatedMarshallingAttribute;
+                _blittableTypeAttribute = blittableTypeAttribute;
+                _nativeMarshallingAttribute = nativeMarshallingAttribute;
+                _marshalUsingAttribute = marshalUsingAttribute;
+                _genericContiguousCollectionMarshallerAttribute = genericContiguousCollectionMarshallerAttribute;
+                _spanOfByte = spanOfByte;
+                _structLayoutAttribute = structLayoutAttribute;
             }
 
             public void AnalyzeTypeDefinition(SymbolAnalysisContext context)
@@ -258,17 +258,17 @@ namespace Microsoft.Interop.Analyzers
                 AttributeData? nativeMarshallingAttributeData = null;
                 foreach (var attr in type.GetAttributes())
                 {
-                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, GeneratedMarshallingAttribute))
+                    if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _generatedMarshallingAttribute))
                     {
                         // If the type has the GeneratedMarshallingAttribute,
                         // we let the source generator handle error checking.
                         return;
                     }
-                    else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, BlittableTypeAttribute))
+                    else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _blittableTypeAttribute))
                     {
                         blittableTypeAttributeData = attr;
                     }
-                    else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, NativeMarshallingAttribute))
+                    else if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _nativeMarshallingAttribute))
                     {
                         nativeMarshallingAttributeData = attr;
                     }
@@ -281,7 +281,7 @@ namespace Microsoft.Interop.Analyzers
                             CannotHaveMultipleMarshallingAttributesRule,
                             type.ToDisplayString()));
                 }
-                else if (blittableTypeAttributeData is not null && (!type.HasOnlyBlittableFields() || type.IsAutoLayout(StructLayoutAttribute)))
+                else if (blittableTypeAttributeData is not null && (!type.HasOnlyBlittableFields() || type.IsAutoLayout(_structLayoutAttribute)))
                 {
                     context.ReportDiagnostic(
                         blittableTypeAttributeData.CreateDiagnostic(
@@ -290,7 +290,7 @@ namespace Microsoft.Interop.Analyzers
                 }
                 else if (nativeMarshallingAttributeData is not null)
                 {
-                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, isNativeMarshallingAttribute:true);
+                    AnalyzeNativeMarshalerType(context, type, nativeMarshallingAttributeData, isNativeMarshallingAttribute: true);
                 }
             }
 
@@ -307,7 +307,7 @@ namespace Microsoft.Interop.Analyzers
 
             public void AnalyzeElement(SymbolAnalysisContext context)
             {
-                AttributeData? attrData = context.Symbol.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(MarshalUsingAttribute, attr.AttributeClass));
+                AttributeData? attrData = context.Symbol.GetAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(_marshalUsingAttribute, attr.AttributeClass));
                 if (attrData is not null)
                 {
                     if (context.Symbol is IParameterSymbol param)
@@ -324,7 +324,7 @@ namespace Microsoft.Interop.Analyzers
             public void AnalyzeReturnType(SymbolAnalysisContext context)
             {
                 var method = (IMethodSymbol)context.Symbol;
-                AttributeData? attrData = method.GetReturnTypeAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(MarshalUsingAttribute, attr.AttributeClass));
+                AttributeData? attrData = method.GetReturnTypeAttributes().FirstOrDefault(attr => SymbolEqualityComparer.Default.Equals(_marshalUsingAttribute, attr.AttributeClass));
                 if (attrData is not null)
                 {
                     AnalyzeNativeMarshalerType(context, method.ReturnType, attrData, isNativeMarshallingAttribute: false);
@@ -364,12 +364,12 @@ namespace Microsoft.Interop.Analyzers
                 DiagnosticDescriptor requiredShapeRule = NativeTypeMustHaveRequiredShapeRule;
 
                 ManualTypeMarshallingHelper.NativeTypeMarshallingVariant variant = ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard;
-                if (marshalerType.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(GenericContiguousCollectionMarshallerAttribute, a.AttributeClass)))
+                if (marshalerType.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(_genericContiguousCollectionMarshallerAttribute, a.AttributeClass)))
                 {
                     variant = ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.ContiguousCollection;
                     requiredShapeRule = CollectionNativeTypeMustHaveRequiredShapeRule;
                     if (!ManualTypeMarshallingHelper.TryGetManagedValuesProperty(marshalerType, out _)
-                        || !ManualTypeMarshallingHelper.HasNativeValueStorageProperty(marshalerType, SpanOfByte))
+                        || !ManualTypeMarshallingHelper.HasNativeValueStorageProperty(marshalerType, _spanOfByte))
                     {
                         context.ReportDiagnostic(
                             GetDiagnosticLocations(context, marshalerType, nativeMarshalerAttributeData).CreateDiagnostic(
@@ -425,7 +425,7 @@ namespace Microsoft.Interop.Analyzers
 
                     hasConstructor = hasConstructor || ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, variant);
 
-                    if (!hasStackallocConstructor && ManualTypeMarshallingHelper.IsStackallocConstructor(ctor, type, SpanOfByte, variant))
+                    if (!hasStackallocConstructor && ManualTypeMarshallingHelper.IsStackallocConstructor(ctor, type, _spanOfByte, variant))
                     {
                         hasStackallocConstructor = true;
                         IFieldSymbol stackAllocSizeField = nativeType.GetMembers("StackBufferSize").OfType<IFieldSymbol>().FirstOrDefault();

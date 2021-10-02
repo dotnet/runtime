@@ -15,7 +15,7 @@ namespace Microsoft.Interop
 {
     internal sealed class ContiguousCollectionElementMarshallingCodeContext : StubCodeContext
     {
-        private readonly string nativeSpanIdentifier;
+        private readonly string _nativeSpanIdentifier;
 
         public override bool SingleFrameSpansNativeContext => false;
 
@@ -37,7 +37,7 @@ namespace Microsoft.Interop
         {
             CurrentStage = currentStage;
             IndexerIdentifier = CalculateIndexerIdentifierBasedOnParentContext(parentContext);
-            this.nativeSpanIdentifier = nativeSpanIdentifier;
+            _nativeSpanIdentifier = nativeSpanIdentifier;
             ParentContext = parentContext;
         }
 
@@ -51,13 +51,13 @@ namespace Microsoft.Interop
             var (_, native) = ParentContext!.GetIdentifiers(info);
             return (
                 $"{native}.ManagedValues[{IndexerIdentifier}]",
-                $"{nativeSpanIdentifier}[{IndexerIdentifier}]"
+                $"{_nativeSpanIdentifier}[{IndexerIdentifier}]"
             );
         }
 
         public override string GetAdditionalIdentifier(TypePositionInfo info, string name)
         {
-            return $"{nativeSpanIdentifier}__{IndexerIdentifier}__{name}";
+            return $"{_nativeSpanIdentifier}__{IndexerIdentifier}__{name}";
         }
 
         private static string CalculateIndexerIdentifierBasedOnParentContext(StubCodeContext? parentContext)

@@ -57,8 +57,8 @@ namespace Microsoft.Interop
 
         public ByValueContentsMarshalKind ByValueContentsMarshalKind { get; init; }
 
-        public bool IsManagedReturnPosition { get => this.ManagedIndex == ReturnIndex; }
-        public bool IsNativeReturnPosition { get => this.NativeIndex == ReturnIndex; }
+        public bool IsManagedReturnPosition { get => ManagedIndex == ReturnIndex; }
+        public bool IsNativeReturnPosition { get => NativeIndex == ReturnIndex; }
 
         public int ManagedIndex { get; init; } = UnsetIndex;
         public int NativeIndex { get; init; } = UnsetIndex;

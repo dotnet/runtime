@@ -29,18 +29,10 @@ internal static partial class Interop
         private static partial int AppleCryptoNative_X509GetPublicKey(SafeSecCertificateHandle cert, out SafeSecKeyRefHandle publicKey, out int pOSStatus);
 
         internal static X509ContentType X509GetContentType(ReadOnlySpan<byte> data)
-        {
-            unsafe
-            {
-                fixed (byte* dataPtr = &MemoryMarshal.GetReference(data))
-                {
-                    return X509GetContentType(dataPtr, data.Length);
-                }
-            }
-        }
+            => X509GetContentType(ref MemoryMarshal.GetReference(data), data.Length);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509GetContentType")]
-        private static unsafe extern X509ContentType X509GetContentType(byte* pbData, int cbData);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_X509GetContentType")]
+        private static partial X509ContentType X509GetContentType(ref byte pbData, int cbData);
 
         [GeneratedDllImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_X509CopyCertFromIdentity(

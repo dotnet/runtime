@@ -127,9 +127,9 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(Resources.TargetFrameworkNotSupportedDescription)));
 
-        private readonly List<Diagnostic> diagnostics = new List<Diagnostic>();
+        private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
-        public IEnumerable<Diagnostic> Diagnostics => diagnostics;
+        public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
 
         /// <summary>
         /// Report diagnostic for configuration that is not supported by the DLL import source generator
@@ -144,14 +144,14 @@ namespace Microsoft.Interop
         {
             if (unsupportedValue == null)
             {
-                diagnostics.Add(
+                _diagnostics.Add(
                     attributeData.CreateDiagnostic(
                         GeneratorDiagnostics.ConfigurationNotSupported,
                         configurationName));
             }
             else
             {
-                diagnostics.Add(
+                _diagnostics.Add(
                     attributeData.CreateDiagnostic(
                         GeneratorDiagnostics.ConfigurationValueNotSupported,
                         unsupportedValue,
@@ -191,7 +191,7 @@ namespace Microsoft.Interop
                 // Report the specific not-supported reason.
                 if (info.IsManagedReturnPosition)
                 {
-                    diagnostics.Add(
+                    _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails,
                             notSupportedDetails!,
@@ -199,7 +199,7 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    diagnostics.Add(
+                    _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails,
                             notSupportedDetails!,
@@ -213,7 +213,7 @@ namespace Microsoft.Interop
                 // than when there is no attribute and the type itself is not supported.
                 if (info.IsManagedReturnPosition)
                 {
-                    diagnostics.Add(
+                    _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnConfigurationNotSupported,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
@@ -221,7 +221,7 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    diagnostics.Add(
+                    _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterConfigurationNotSupported,
                             nameof(System.Runtime.InteropServices.MarshalAsAttribute),
@@ -233,7 +233,7 @@ namespace Microsoft.Interop
                 // Report that the type is not supported
                 if (info.IsManagedReturnPosition)
                 {
-                    diagnostics.Add(
+                    _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ReturnTypeNotSupported,
                             info.ManagedType.DiagnosticFormattedName,
@@ -241,7 +241,7 @@ namespace Microsoft.Interop
                 }
                 else
                 {
-                    diagnostics.Add(
+                    _diagnostics.Add(
                         diagnosticLocation.CreateDiagnostic(
                             GeneratorDiagnostics.ParameterTypeNotSupported,
                             info.ManagedType.DiagnosticFormattedName,
@@ -255,7 +255,7 @@ namespace Microsoft.Interop
             string reasonResourceName,
             params string[] reasonArgs)
         {
-            diagnostics.Add(
+            _diagnostics.Add(
                 attributeData.CreateDiagnostic(
                     GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported,
                     new LocalizableResourceString(reasonResourceName, Resources.ResourceManager, typeof(Resources), reasonArgs)));
@@ -267,7 +267,7 @@ namespace Microsoft.Interop
         /// <param name="minimumSupportedVersion">Minimum supported version of .NET</param>
         public void ReportTargetFrameworkNotSupported(Version minimumSupportedVersion)
         {
-            diagnostics.Add(
+            _diagnostics.Add(
                 Diagnostic.Create(
                     TargetFrameworkNotSupported,
                     Location.None,

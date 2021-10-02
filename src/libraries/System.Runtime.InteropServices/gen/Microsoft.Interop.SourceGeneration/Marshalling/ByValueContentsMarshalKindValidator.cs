@@ -12,16 +12,16 @@ namespace Microsoft.Interop
     /// </summary>
     public class ByValueContentsMarshalKindValidator : IMarshallingGeneratorFactory
     {
-        private readonly IMarshallingGeneratorFactory inner;
+        private readonly IMarshallingGeneratorFactory _inner;
 
         public ByValueContentsMarshalKindValidator(IMarshallingGeneratorFactory inner)
         {
-            this.inner = inner;
+            _inner = inner;
         }
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
-            return ValidateByValueMarshalKind(info, context, inner.Create(info, context));
+            return ValidateByValueMarshalKind(info, context, _inner.Create(info, context));
         }
 
         private static IMarshallingGenerator ValidateByValueMarshalKind(TypePositionInfo info, StubCodeContext context, IMarshallingGenerator generator)

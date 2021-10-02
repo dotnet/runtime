@@ -14,15 +14,15 @@ namespace Microsoft.Interop
 {
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private static readonly BlittableMarshaller Blittable = new BlittableMarshaller();
-        private static readonly Forwarder Forwarder = new Forwarder();
+        private static readonly BlittableMarshaller s_blittable = new BlittableMarshaller();
+        private static readonly Forwarder s_forwarder = new Forwarder();
 
-        private readonly IMarshallingGeneratorFactory innerMarshallingGenerator;
+        private readonly IMarshallingGeneratorFactory _innerMarshallingGenerator;
 
         public AttributedMarshallingModelGeneratorFactory(IMarshallingGeneratorFactory innerMarshallingGenerator, InteropGenerationOptions options)
         {
             Options = options;
-            this.innerMarshallingGenerator = innerMarshallingGenerator;
+            _innerMarshallingGenerator = innerMarshallingGenerator;
             ElementMarshallingGeneratorFactory = this;
         }
 
@@ -39,9 +39,9 @@ namespace Microsoft.Interop
             return info.MarshallingAttributeInfo switch
             {
                 NativeMarshallingAttributeInfo marshalInfo => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                BlittableTypeAttributeInfo => Blittable,
-                GeneratedNativeMarshallingAttributeInfo => Forwarder,
-                _ => innerMarshallingGenerator.Create(info, context)
+                BlittableTypeAttributeInfo => s_blittable,
+                GeneratedNativeMarshallingAttributeInfo => s_forwarder,
+                _ => _innerMarshallingGenerator.Create(info, context)
             };
         }
 

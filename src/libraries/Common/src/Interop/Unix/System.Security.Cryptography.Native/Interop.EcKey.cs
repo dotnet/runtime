@@ -30,8 +30,9 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EcKeyGenerateKey(SafeEcKeyHandle eckey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyUpRef")]
-        internal static extern int EcKeyUpRef(IntPtr r);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyUpRef")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool EcKeyUpRef(IntPtr r);
 
         [GeneratedDllImport(Libraries.CryptoNative)]
         private static partial int CryptoNative_EcKeyGetSize(SafeEcKeyHandle ecKey, out int keySize);

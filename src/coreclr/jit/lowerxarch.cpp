@@ -1286,6 +1286,15 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         node->gtOp1 = op1;
         BlockRange().Remove(op2);
 
+        op2 = op2->AsOp()->gtGetOp1();
+
+        if (op2 != nullptr)
+        {
+            // Some zero vectors are Create/Initialization nodes with a constant zero operand
+            // We should also remove this to avoid dead code
+            BlockRange().Remove(op2);
+        }
+
         LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
         ReplaceWithLclVar(op1Use);
         op1 = node->gtOp1;

@@ -25,9 +25,9 @@ namespace Microsoft.Interop
 
     internal sealed class DllImportStubContext : IEquatable<DllImportStubContext>
     {
-// We don't need the warnings around not setting the various
-// non-nullable fields/properties on this type in the constructor
-// since we always use a property initializer.
+        // We don't need the warnings around not setting the various
+        // non-nullable fields/properties on this type in the constructor
+        // since we always use a property initializer.
 #pragma warning disable 8618
         private DllImportStubContext()
         {

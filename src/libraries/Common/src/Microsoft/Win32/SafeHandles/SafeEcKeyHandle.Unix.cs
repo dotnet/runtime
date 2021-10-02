@@ -35,7 +35,7 @@ namespace Microsoft.Win32.SafeHandles
             // that we don't lose a tracked reference in low-memory situations.
             SafeEcKeyHandle safeHandle = new SafeEcKeyHandle();
 
-            if (Interop.Crypto.EcKeyUpRef(handle) == 0)
+            if (!Interop.Crypto.EcKeyUpRef(handle))
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }

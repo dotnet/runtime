@@ -55,11 +55,11 @@ namespace Microsoft.Interop
         // Error code representing success. This maps to S_OK for Windows HRESULT semantics and 0 for POSIX errno semantics.
         private const int SuccessErrorCode = 0;
 
-        private readonly bool setLastError;
-        private readonly List<BoundGenerator> paramMarshallers;
-        private readonly BoundGenerator retMarshaller;
-        private readonly List<BoundGenerator> sortedMarshallers;
-        private readonly bool stubReturnsVoid;
+        private readonly bool _setLastError;
+        private readonly List<BoundGenerator> _paramMarshallers;
+        private readonly BoundGenerator _retMarshaller;
+        private readonly List<BoundGenerator> _sortedMarshallers;
+        private readonly bool _stubReturnsVoid;
 
         public PInvokeStubCodeGenerator(
             IEnumerable<TypePositionInfo> argTypes,
@@ -67,7 +67,7 @@ namespace Microsoft.Interop
             Action<TypePositionInfo, MarshallingNotSupportedException> marshallingNotSupportedCallback,
             IMarshallingGeneratorFactory generatorFactory)
         {
-            this.setLastError = setLastError;
+            _setLastError = setLastError;
 
             List<BoundGenerator> allMarshallers = new();
             List<BoundGenerator> paramMarshallers = new();
@@ -98,17 +98,17 @@ namespace Microsoft.Interop
                 }
             }
 
-            this.stubReturnsVoid = managedRetMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
+            _stubReturnsVoid = managedRetMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
 
-            if (!managedRetMarshaller.TypeInfo.IsNativeReturnPosition && !this.stubReturnsVoid)
+            if (!managedRetMarshaller.TypeInfo.IsNativeReturnPosition && !_stubReturnsVoid)
             {
                 // If the managed ret marshaller isn't the native ret marshaller, then the managed ret marshaller
                 // is a parameter.
                 paramMarshallers.Add(managedRetMarshaller);
             }
 
-            this.retMarshaller = nativeRetMarshaller;
-            this.paramMarshallers = paramMarshallers;
+            _retMarshaller = nativeRetMarshaller;
+            _paramMarshallers = paramMarshallers;
 
             // We are doing a topological sort of our marshallers to ensure that each parameter/return value's
             // dependencies are unmarshalled before their dependents. This comes up in the case of contiguous
@@ -132,7 +132,7 @@ namespace Microsoft.Interop
             // the return value has dependencies on numRows and numColumns and numRows has a dependency on numColumns,
             // we want to unmarshal numColumns, then numRows, then the return value.
             // A topological sort ensures we get this order correct.
-            this.sortedMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
+            _sortedMarshallers = MarshallerHelpers.GetTopologicallySortedElements(
                 allMarshallers,
                 static m => GetInfoIndex(m.TypeInfo),
                 static m => GetInfoDependencies(m.TypeInfo))
@@ -141,7 +141,7 @@ namespace Microsoft.Interop
             if (managedRetMarshaller.Generator.UsesNativeIdentifier(managedRetMarshaller.TypeInfo, this))
             {
                 // Update the native identifier for the return value
-                this.ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
+                ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
             }
 
             static IEnumerable<int> GetInfoDependencies(TypePositionInfo info)
@@ -214,7 +214,7 @@ namespace Microsoft.Interop
         {
             var setupStatements = new List<StatementSyntax>();
 
-            foreach (var marshaller in paramMarshallers)
+            foreach (var marshaller in _paramMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
                 if (info.IsManagedReturnPosition)
@@ -236,15 +236,15 @@ namespace Microsoft.Interop
                 AppendVariableDeclations(setupStatements, info, marshaller.Generator);
             }
 
-            bool invokeReturnsVoid = retMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
+            bool invokeReturnsVoid = _retMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
 
             // Stub return is not the same as invoke return
-            if (!stubReturnsVoid && !retMarshaller.TypeInfo.IsManagedReturnPosition)
+            if (!_stubReturnsVoid && !_retMarshaller.TypeInfo.IsManagedReturnPosition)
             {
                 // Stub return should be the last parameter for the invoke
-                Debug.Assert(paramMarshallers.Any() && paramMarshallers.Last().TypeInfo.IsManagedReturnPosition, "Expected stub return to be the last parameter for the invoke");
+                Debug.Assert(_paramMarshallers.Any() && _paramMarshallers.Last().TypeInfo.IsManagedReturnPosition, "Expected stub return to be the last parameter for the invoke");
 
-                (TypePositionInfo stubRetTypeInfo, IMarshallingGenerator stubRetGenerator) = paramMarshallers.Last();
+                (TypePositionInfo stubRetTypeInfo, IMarshallingGenerator stubRetGenerator) = _paramMarshallers.Last();
 
                 // Declare variables for stub return value
                 AppendVariableDeclations(setupStatements, stubRetTypeInfo, stubRetGenerator);
@@ -253,12 +253,12 @@ namespace Microsoft.Interop
             if (!invokeReturnsVoid)
             {
                 // Declare variables for invoke return value
-                AppendVariableDeclations(setupStatements, retMarshaller.TypeInfo, retMarshaller.Generator);
+                AppendVariableDeclations(setupStatements, _retMarshaller.TypeInfo, _retMarshaller.Generator);
             }
 
             // Do not manually handle SetLastError when generating forwarders.
             // We want the runtime to handle everything.
-            if (this.setLastError)
+            if (_setLastError)
             {
                 // Declare variable for last error
                 setupStatements.Add(MarshallerHelpers.DeclareWithDefault(
@@ -304,7 +304,7 @@ namespace Microsoft.Interop
                 allStatements.AddRange(tryStatements);
             }
 
-            if (this.setLastError)
+            if (_setLastError)
             {
                 // Marshal.SetLastPInvokeError(<lastError>);
                 allStatements.Add(ExpressionStatement(
@@ -318,7 +318,7 @@ namespace Microsoft.Interop
             }
 
             // Return
-            if (!stubReturnsVoid)
+            if (!_stubReturnsVoid)
                 allStatements.Add(ReturnStatement(IdentifierName(ReturnIdentifier)));
 
             // Wrap all statements in an unsafe block
@@ -327,11 +327,11 @@ namespace Microsoft.Interop
             void GenerateStatementsForStage(Stage stage, List<StatementSyntax> statementsToUpdate)
             {
                 int initialCount = statementsToUpdate.Count;
-                this.CurrentStage = stage;
+                CurrentStage = stage;
 
                 if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Cleanup))
                 {
-                    var retStatements = retMarshaller.Generator.Generate(retMarshaller.TypeInfo, this);
+                    var retStatements = _retMarshaller.Generator.Generate(_retMarshaller.TypeInfo, this);
                     statementsToUpdate.AddRange(retStatements);
                 }
 
@@ -340,7 +340,7 @@ namespace Microsoft.Interop
                     // For Unmarshal and GuaranteedUnmarshal stages, use the topologically sorted
                     // marshaller list to generate the marshalling statements
 
-                    foreach (var marshaller in sortedMarshallers)
+                    foreach (var marshaller in _sortedMarshallers)
                     {
                         statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, this));
                     }
@@ -348,7 +348,7 @@ namespace Microsoft.Interop
                 else
                 {
                     // Generate code for each parameter for the current stage in declaration order.
-                    foreach (var marshaller in paramMarshallers)
+                    foreach (var marshaller in _paramMarshallers)
                     {
                         var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                         statementsToUpdate.AddRange(generatedStatements);
@@ -371,9 +371,9 @@ namespace Microsoft.Interop
             void GenerateStatementsForInvoke(List<StatementSyntax> statementsToUpdate, InvocationExpressionSyntax invoke)
             {
                 var fixedStatements = new List<FixedStatementSyntax>();
-                this.CurrentStage = Stage.Pin;
+                CurrentStage = Stage.Pin;
                 // Generate code for each parameter for the current stage
-                foreach (var marshaller in paramMarshallers)
+                foreach (var marshaller in _paramMarshallers)
                 {
                     var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                     // Collect all the fixed statements. These will be used in the Invoke stage.
@@ -386,9 +386,9 @@ namespace Microsoft.Interop
                     }
                 }
 
-                this.CurrentStage = Stage.Invoke;
+                CurrentStage = Stage.Invoke;
                 // Generate code for each parameter for the current stage
-                foreach (var marshaller in paramMarshallers)
+                foreach (var marshaller in _paramMarshallers)
                 {
                     // Get arguments for invocation
                     ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, this);
@@ -406,13 +406,13 @@ namespace Microsoft.Interop
                     invokeStatement = ExpressionStatement(
                         AssignmentExpression(
                             SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(this.GetIdentifiers(retMarshaller.TypeInfo).native),
+                            IdentifierName(GetIdentifiers(_retMarshaller.TypeInfo).native),
                             invoke));
                 }
 
                 // Do not manually handle SetLastError when generating forwarders.
                 // We want the runtime to handle everything.
-                if (setLastError)
+                if (_setLastError)
                 {
                     // Marshal.SetLastSystemError(0);
                     var clearLastError = ExpressionStatement(
@@ -464,17 +464,17 @@ namespace Microsoft.Interop
             return (
                 ParameterList(
                     SeparatedList(
-                        paramMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
-                retMarshaller.Generator.AsNativeType(retMarshaller.TypeInfo),
-                retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator attributedReturn
-                ? attributedReturn.GenerateAttributesForReturnType(retMarshaller.TypeInfo)
+                        _paramMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
+                _retMarshaller.Generator.AsNativeType(_retMarshaller.TypeInfo),
+                _retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator attributedReturn
+                ? attributedReturn.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
                 : null
             );
         }
 
         private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator)
         {
-            var (managed, native) = this.GetIdentifiers(info);
+            var (managed, native) = GetIdentifiers(info);
 
             // Declare variable for return value
             if (info.IsManagedReturnPosition || info.IsNativeReturnPosition)
