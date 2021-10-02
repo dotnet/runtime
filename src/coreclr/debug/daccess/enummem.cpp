@@ -93,9 +93,7 @@ HRESULT ClrDataAccess::EnumMemCollectImages()
                 // and people may have come to rely on this - so we'll include them for now.
                 if (
                     assembly->GetPath().IsEmpty() && // is in-memory
-                    assembly->HasMetadata() &&       // skip resource assemblies
-                    assembly->IsLoaded() &&     // skip files not yet loaded
-                    !assembly->IsDynamic())          // skip dynamic (GetLoadedLayout asserts anyway)
+                    assembly->HasLoadedPEImage())         // skip files not yet loaded or Dynamic
                 {
                     pStartAddr = PTR_TO_TADDR(assembly->GetLoadedLayout()->GetBase());
                     ulSize = assembly->GetLoadedLayout()->GetSize();
@@ -636,7 +634,7 @@ HRESULT ClrDataAccess::EnumMemDumpModuleList(CLRDataEnumMemoryFlags flags)
                 // the DOS header, PE headers, and IMAGE_COR20_HEADER for the Flags member.
                 // We expose no API today to find this out.
                 PTR_PEAssembly pPEAssembly = modDef->GetPEAssembly();
-                PEImage * pILImage = pPEAssembly->GetILimage();
+                PEImage * pILImage = pPEAssembly->GetPEImage();
 
                 // Implicitly gets the COR header.
                 if ((pILImage) && (pILImage->HasLoadedLayout()))

@@ -529,9 +529,9 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    if (!pFile->HasLoadedIL())
+    if (!pFile->HasLoadedPEImage())
     {
-        DoLog("Ready to Run disabled - no loaded IL image");
+        DoLog("Ready to Run disabled - no loaded PE image");
         return NULL;
     }
 

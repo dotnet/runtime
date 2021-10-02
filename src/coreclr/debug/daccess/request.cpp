@@ -1507,7 +1507,7 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, __out
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEAssembly *pPEAssembly = mt->GetModule()->GetPEAssembly();
-        if (pPEAssembly->GetILimage() == NULL)
+        if (pPEAssembly->GetPEImage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;
@@ -1771,7 +1771,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, __out_
         // There is a case where metadata was unloaded and the AppendType call will fail.
         // This is when an AppDomain has been unloaded but not yet collected.
         PEAssembly *pPEAssembly = pMT->GetModule()->GetPEAssembly();
-        if (pPEAssembly->GetILimage() == NULL)
+        if (pPEAssembly->GetPEImage() == NULL)
         {
             if (pNeeded)
                 *pNeeded = 16;

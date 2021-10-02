@@ -1258,7 +1258,7 @@ protected:
             return DacGetMDImport(GetReflectionModule(), true);
         }
 #endif // DACCESS_COMPILE
-        return m_pPEAssembly->GetPersistentMDImport();
+        return m_pPEAssembly->GetMDImport();
     }
 
 #ifndef DACCESS_COMPILE

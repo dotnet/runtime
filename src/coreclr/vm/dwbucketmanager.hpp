@@ -708,7 +708,7 @@ void BaseBucketParamsManager::GetModuleTimeStamp(__out_ecount(maxLength) WCHAR* 
 
             if (!pFile->IsDynamic())
             {
-                ulTimeStamp = pFile->GetILImageTimeDateStamp();
+                ulTimeStamp = pFile->GetPEImageTimeDateStamp();
                 _ASSERTE(ulTimeStamp != 0);
             }
 

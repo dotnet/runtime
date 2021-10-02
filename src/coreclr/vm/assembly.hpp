@@ -299,7 +299,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
-        return m_pManifestFile->GetPersistentMDImport();
+        return m_pManifestFile->GetMDImport();
     }
 
     HRESULT GetCustomAttribute(mdToken parentToken,

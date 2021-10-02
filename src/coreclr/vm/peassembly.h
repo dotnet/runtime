@@ -79,8 +79,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // --------------------------------------------------------------------------------
 
-typedef ReleaseHolder<IMDInternalImport> IMDInternalImportHolder;
-
 class PEAssembly
 {
     // ------------------------------------------------------------
@@ -122,9 +120,6 @@ public:
     BOOL Equals(PEImage *pImage);
 #endif // DACCESS_COMPILE
 
-
-    void GetMVID(GUID *pMvid);
-
     // ------------------------------------------------------------
     // Descriptive strings
     // ------------------------------------------------------------
@@ -138,8 +133,22 @@ public:
     const SString &GetModuleFileNameHint();
 #endif // DACCESS_COMPILE
 
+    LPCWSTR GetPathForErrorMessages();
+
+    // This returns a non-empty path representing the source of the assembly; it may
+    // be the parent assembly for dynamic or memory assemblies
+    const SString& GetEffectivePath();
+
+    // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
+    // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
+    // assembly.
+    BOOL GetCodeBase(SString& result);
+
     // Full name is the most descriptive name available (path, codebase, or name as appropriate)
-    void GetPathOrCodeBase(SString &result);
+    void GetPathOrCodeBase(SString& result);
+
+    // Display name is the fusion binding name for an assembly
+    void GetDisplayName(SString& result, DWORD flags = 0);
 
 #ifdef LOGGING
     // This is useful for log messages
@@ -150,10 +159,8 @@ public:
     // Checks
     // ------------------------------------------------------------
 
-    CHECK CheckLoaded();
     void ValidateForExecution();
     BOOL IsMarkedAsNoPlatform();
-
 
     // ------------------------------------------------------------
     // Classification
@@ -166,11 +173,7 @@ public:
     // Metadata access
     // ------------------------------------------------------------
 
-    BOOL HasMetadata();
-
-    IMDInternalImport *GetPersistentMDImport();
-    IMDInternalImport *GetMDImportWithRef();
-    void MakeMDImportPersistent() {m_bHasPersistentMDImport=TRUE;};
+    IMDInternalImport *GetMDImport();
 
 #ifndef DACCESS_COMPILE
     IMetaDataEmit *GetEmitter();
@@ -179,28 +182,33 @@ public:
     TADDR GetMDInternalRWAddress();
 #endif // DACCESS_COMPILE
 
-    HRESULT GetScopeName(LPCUTF8 * pszName);
-    BOOL IsStrongNamed();
-    const void *GetPublicKey(DWORD *pcbPK);
+    void ConvertMDInternalToReadWrite();
+
+    void GetMVID(GUID* pMvid);
     ULONG GetHashAlgId();
-    HRESULT GetVersion(USHORT *pMajor, USHORT *pMinor, USHORT *pBuild, USHORT *pRevision);
+    HRESULT GetVersion(USHORT* pMajor, USHORT* pMinor, USHORT* pBuild, USHORT* pRevision);
+    BOOL IsStrongNamed();
+    LPCUTF8 GetSimpleName();
+    HRESULT GetScopeName(LPCUTF8 * pszName);
+    const void *GetPublicKey(DWORD *pcbPK);
     LPCSTR GetLocale();
     DWORD GetFlags();
-    HRESULT GetFlagsNoTrigger(DWORD * pdwFlags);
+
     // ------------------------------------------------------------
     // PE file access
     // ------------------------------------------------------------
 
     BOOL IsReadyToRun();
     WORD GetSubsystem();
+
     mdToken GetEntryPointToken(
 #ifdef _DEBUG
         BOOL bAssumeLoaded = FALSE
 #endif //_DEBUG
-        );
+    );
+
     BOOL IsILOnly();
     BOOL IsDll();
-
     TADDR GetIL(RVA il);
 
     PTR_VOID GetRvaField(RVA field);
@@ -223,15 +231,14 @@ public:
                      LPCSTR *szFileName, DWORD *dwLocation,
                      BOOL fSkipRaiseResolveEvent, DomainAssembly* pDomainAssembly,
                      AppDomain* pAppDomain);
+
 #ifndef DACCESS_COMPILE
     PTR_CVOID GetMetadata(COUNT_T *pSize);
 #endif
+
     PTR_CVOID GetLoadedMetadata(COUNT_T *pSize);
-
     void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
-
-    ULONG GetILImageTimeDateStamp();
-
+    ULONG GetPEImageTimeDateStamp();
 
     // ------------------------------------------------------------
     // Image memory access
@@ -245,44 +252,54 @@ public:
     // in the no-IL image case.
     // ------------------------------------------------------------
 
-    // For IJW purposes only - this asserts that we have an IJW image.
-    HMODULE GetIJWBase();
-
-    // The debugger can tolerate a null value here for native only loading cases
-    PTR_VOID GetDebuggerContents(COUNT_T *pSize = NULL);
-
-#ifndef DACCESS_COMPILE
-    // Returns the IL image range; may force a LoadLibrary
-    const void *GetManagedFileContents(COUNT_T *pSize = NULL);
-#endif // DACCESS_COMPILE
-
-    PTR_CVOID GetLoadedImageContents(COUNT_T *pSize = NULL);
-
-    // ------------------------------------------------------------
-    // Native image access
-    // ------------------------------------------------------------
-
-    BOOL IsLoaded();
-    PTR_PEImageLayout GetLoadedLayout();
-    BOOL IsPtrInILImage(PTR_CVOID data);
-
-    PEImage* GetILimage()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_PEImage;
-    }
-
-    BOOL HasILimage()
+    BOOL HasPEImage()
     {
         LIMITED_METHOD_DAC_CONTRACT;
         return m_PEImage != NULL;
     }
 
-    BOOL HasLoadedIL()
+    PEImage* GetPEImage()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return HasILimage() && GetILimage()->HasLoadedLayout();
+        return m_PEImage;
     }
+
+    void EnsureLoaded();
+
+    BOOL HasLoadedPEImage()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return HasPEImage() && GetPEImage()->HasLoadedLayout();
+    }
+
+    PTR_PEImageLayout GetLoadedLayout()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        _ASSERTE(HasPEImage());
+        return GetPEImage()->GetLoadedLayout();
+    };
+
+    BOOL IsLoaded()
+    {
+        return IsDynamic() || HasLoadedPEImage();
+    }
+
+    BOOL IsPtrInPEImage(PTR_CVOID data);
+
+    // For IJW purposes only - this asserts that we have an IJW image.
+    HMODULE GetIJWBase();
+
+    // The debugger can tolerate a null value here for native only loading cases
+    PTR_VOID GetDebuggerContents(COUNT_T* pSize = NULL);
+
+#ifndef DACCESS_COMPILE
+    // Returns the IL image range; may force a LoadLibrary
+    const void* GetManagedFileContents(COUNT_T* pSize = NULL);
+#endif // DACCESS_COMPILE
+
+    PTR_CVOID GetLoadedImageContents(COUNT_T* pSize = NULL);
 
     // ------------------------------------------------------------
     // Resource access
@@ -296,13 +313,16 @@ public:
 
     PEAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
 
-    void LoadLibrary();
+    // ------------------------------------------------------------
+    // Assembly Binder and host assembly (BINDER_SPACE::Assembly)
+    // ------------------------------------------------------------
 
-    LPCWSTR GetPathForErrorMessages();
+    bool HasHostAssembly()
+    {
+        STATIC_CONTRACT_WRAPPER;
+        return GetHostAssembly() != NULL;
+    }
 
-    void ConvertMDInternalToReadWrite();
-
-public:
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
     PTR_BINDER_SPACE_Assembly GetHostAssembly()
     {
@@ -312,6 +332,7 @@ public:
 
     // Returns the AssemblyBinder* instance associated with the PEAssembly
     // which owns the context into which the current PEAssembly was loaded.
+    // For Dynamic assemblies this is the fallback binder.
     PTR_AssemblyBinder GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
@@ -323,8 +344,7 @@ public:
 
 #endif //!DACCESS_COMPILE
 
-    bool HasHostAssembly()
-    { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
+    ULONG HashIdentity();
 
     PTR_AssemblyBinder GetFallbackBinder()
     {
@@ -334,12 +354,7 @@ public:
     }
 
     // ------------------------------------------------------------
-    // Statics initialization.
-    // ------------------------------------------------------------
-    static void Attach();
-
-    // ------------------------------------------------------------
-    // Public API
+    // Creation entry points
     // ------------------------------------------------------------
 
     // CoreCLR's PrivBinder PEAssembly creation entrypoint
@@ -360,34 +375,6 @@ public:
         IMetaDataAssemblyEmit* pEmit);
 
       // ------------------------------------------------------------
-      // binding & source
-      // ------------------------------------------------------------
-
-      ULONG HashIdentity();
-
-      // ------------------------------------------------------------
-      // Descriptive strings
-      // ------------------------------------------------------------
-
-      // This returns a non-empty path representing the source of the assembly; it may
-      // be the parent assembly for dynamic or memory assemblies
-      const SString& GetEffectivePath();
-
-      // Codebase is the fusion codebase or path for the assembly.  It is in URL format.
-      // Note this may be obtained from the parent PEAssembly if we don't have a path or fusion
-      // assembly.
-      BOOL GetCodeBase(SString& result);
-
-      // Display name is the fusion binding name for an assembly
-      void GetDisplayName(SString& result, DWORD flags = 0);
-
-      // ------------------------------------------------------------
-      // Metadata access
-      // ------------------------------------------------------------
-
-      LPCUTF8 GetSimpleName();
-
-      // ------------------------------------------------------------
       // Utility functions
       // ------------------------------------------------------------
 
@@ -403,14 +390,10 @@ private:
     // For use inside LoadLibrary callback
     void SetLoadedHMODULE(HMODULE hMod);
 
-    // DO NOT USE !!! this is to be removed when we move to new fusion binding API
-
     // Helper for creating metadata for CreateDynamic
     static void DefineEmitScope(
         GUID   iid,
         void** ppEmit);
-
-    IMDInternalImportHolder GetMDImport();
 
     // Private helper for crufty exception handling reasons
     static PEAssembly* DoOpenSystem();
@@ -422,7 +405,7 @@ private:
 #ifdef DACCESS_COMPILE
     // just to make the DAC and GCC happy.
     virtual ~PEAssembly() {};
-    PEAssembly() {}
+    PEAssembly() = default;
 #else
     PEAssembly(
         BINDER_SPACE::Assembly* pBindResultInfo,
@@ -437,15 +420,8 @@ private:
 #endif
 
     void OpenMDImport();
-    void OpenMDImport_Unsafe();
     void OpenImporter();
     void OpenEmitter();
-
-    void ReleaseMetadataInterfaces(BOOL bDestructor);
-
-#ifndef DACCESS_COMPILE
-    void EnsureImageOpened();
-#endif // DACCESS_COMPILE
 
 
 private:
@@ -467,7 +443,6 @@ private:
     // but don't rely on it in the runtime. In runtime try QI'ing the m_pMDImport for
     // IID_IMDInternalImportENC
     BOOL                     m_MDImportIsRW_Debugger_Use_Only;
-    Volatile<BOOL>           m_bHasPersistentMDImport;
 
 #ifndef DACCESS_COMPILE
     IMDInternalImport* m_pMDImport;

@@ -2455,19 +2455,11 @@ ClrDataModule::GetVersionId(
 
     EX_TRY
     {
-        if (!m_module->GetPEAssembly()->HasMetadata())
+        GUID mdVid;
+        status = m_module->GetMDImport()->GetScopeProps(NULL, &mdVid);
+        if (SUCCEEDED(status))
         {
-            status = E_NOINTERFACE;
-        }
-        else
-        {
-            GUID mdVid;
-
-            status = m_module->GetMDImport()->GetScopeProps(NULL, &mdVid);
-            if (SUCCEEDED(status))
-            {
-                *vid = mdVid;
-            }
+            *vid = mdVid;
         }
     }
     EX_CATCH
@@ -2873,17 +2865,10 @@ ClrDataModule::GetMdInterface(PVOID* retIface)
     {
         if (m_mdImport == NULL)
         {
-            if (!m_module->GetPEAssembly()->HasMetadata())
-            {
-                status = E_NOINTERFACE;
-                goto Exit;
-            }
-
             //
             // Make sure internal MD is in RW format.
             //
             IMDInternalImport* rwMd;
-
             status = ConvertMDInternalImport(m_module->GetMDImport(), &rwMd);
             if (FAILED(status))
             {

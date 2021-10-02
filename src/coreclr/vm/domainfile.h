@@ -96,7 +96,7 @@ class DomainFile
     IMDInternalImport *GetMDImport()
     {
         WRAPPER_NO_CONTRACT;
-        return m_pPEAssembly->GetPersistentMDImport();
+        return m_pPEAssembly->GetMDImport();
     }
 
     OBJECTREF GetExposedModuleObjectIfExists()

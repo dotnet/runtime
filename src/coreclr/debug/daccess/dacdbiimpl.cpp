@@ -4201,7 +4201,7 @@ HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isMo
         PTR_PEAssembly pPEAssembly = pTargetModule->GetPEAssembly();
         _ASSERTE(pPEAssembly != NULL);
 
-        if (pPEAssembly->HasLoadedIL())
+        if (pPEAssembly->HasLoadedPEImage())
         {
             *isModuleMapped = pPEAssembly->GetLoadedLayout()->IsMapped();
             hr = S_OK;

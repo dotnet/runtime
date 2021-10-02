@@ -6139,7 +6139,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
     _ASSERTE(pPEAssembly != NULL);
 
     PTR_PEImageLayout pLayout = NULL;
-    if (pPEAssembly->HasILimage())
+    if (pPEAssembly->HasPEImage())
     {
         pLayout = pPEAssembly->GetLoadedLayout();
     }
@@ -6338,7 +6338,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(!bIsDynamicAssembly)
     {
-        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetILimage()->GetPath().GetUnicode();
+        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetPEImage()->GetPath().GetUnicode();
         ModuleNativePath = (PWCHAR)pEmptyString;
     }
 

@@ -3997,9 +3997,9 @@ DWORD ProfToEEInterfaceImpl::GetModuleFlags(Module * pModule)
     }
 #endif
     // Not Dynamic.
-    if (pPEAssembly->HasILimage())
+    if (pPEAssembly->HasPEImage())
     {
-        PEImage * pILImage = pPEAssembly->GetILimage();
+        PEImage * pILImage = pPEAssembly->GetPEImage();
         if (pILImage->IsFile())
         {
             dwRet |= COR_PRF_MODULE_DISK;
@@ -4286,7 +4286,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // PEAssembly::CheckLoaded & Module::GetDynamicIL both take a lock
+        // PEAssembly::HasLoadedPEImage & Module::GetDynamicIL both take a lock
         CAN_TAKE_LOCK;
 
     }
@@ -4326,7 +4326,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
 
     PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
-    if (!pPEAssembly->CheckLoaded())
+    if (!pPEAssembly->HasLoadedPEImage())
         return (CORPROF_E_DATAINCOMPLETE);
 
     LPCBYTE pbMethod = NULL;
@@ -4436,7 +4436,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBodyAllocator(ModuleID         modul
     Module * pModule = (Module *) moduleId;
 
     if (pModule->IsBeingUnloaded() ||
-        !pModule->GetPEAssembly()->CheckLoaded())
+        !pModule->GetPEAssembly()->HasLoadedPEImage())
     {
         return (CORPROF_E_DATAINCOMPLETE);
     }

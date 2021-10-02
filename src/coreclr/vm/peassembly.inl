@@ -34,9 +34,7 @@ inline CHECK PEAssembly::Invariant()
     }
     else
     {
-        // If m_image is null, then we should have a native image. However, this is not valid initially
-        // during construction.  We should find a way to assert this.
-        CHECK(CheckPointer((PEImage*) m_PEImage, NULL_OK));
+       CHECK(CheckPointer((PEImage*)m_PEImage));
     }
     CHECK_OK;
 }
@@ -110,7 +108,7 @@ inline void PEAssembly::ValidateForExecution()
     //
     // Ensure reference assemblies are not loaded for execution
     //
-    ReleaseHolder<IMDInternalImport> mdImport(this->GetMDImportWithRef());
+    IMDInternalImport* mdImport = GetMDImport();
     if (mdImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly),
                                            g_ReferenceAssemblyAttribute,
                                            NULL,
@@ -149,7 +147,7 @@ inline void PEAssembly::GetMVID(GUID *pMvid)
     }
     CONTRACTL_END;
 
-    IfFailThrow(GetPersistentMDImport()->GetScopeProps(NULL, pMvid));
+    IfFailThrow(GetMDImport()->GetScopeProps(NULL, pMvid));
 }
 
 // ------------------------------------------------------------
@@ -266,45 +264,9 @@ inline BOOL PEAssembly::IsDynamic() const
 // ------------------------------------------------------------
 // Metadata access
 // ------------------------------------------------------------
-
-inline BOOL PEAssembly::HasMetadata()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return true;
-}
-
-inline IMDInternalImportHolder PEAssembly::GetMDImport()
+inline IMDInternalImport* PEAssembly::GetMDImport()
 {
     WRAPPER_NO_CONTRACT;
-    if (m_bHasPersistentMDImport)
-        return IMDInternalImportHolder(GetPersistentMDImport(),FALSE);
-    else
-        return IMDInternalImportHolder(GetMDImportWithRef(),TRUE);
-};
-
-inline IMDInternalImport* PEAssembly::GetPersistentMDImport()
-{
-/*
-    CONTRACT(IMDInternalImport *)
-    {
-        INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-*/
-    SUPPORTS_DAC;
 
 #ifdef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
@@ -314,42 +276,7 @@ inline IMDInternalImport* PEAssembly::GetPersistentMDImport()
 
     return m_pMDImport;
 #endif
-}
-
-inline IMDInternalImport *PEAssembly::GetMDImportWithRef()
-{
-/*
-    CONTRACT(IMDInternalImport *)
-    {
-        INSTANCE_CHECK;
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-*/
-
-#ifdef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-    return DacGetMDImport(this, true);
-#else
-    CONTRACTL
-    {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-    SimpleReadLockHolder lock(m_pMetadataLock);
-    if(m_pMDImport)
-        m_pMDImport->AddRef();
-    return m_pMDImport;
-#endif
-}
+};
 
 #ifndef DACCESS_COMPILE
 
@@ -359,7 +286,6 @@ inline IMetaDataImport2 *PEAssembly::GetRWImporter()
     {
         INSTANCE_CHECK;
         POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
         GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
@@ -380,7 +306,6 @@ inline IMetaDataEmit *PEAssembly::GetEmitter()
         MODE_ANY;
         GC_NOTRIGGER;
         POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
         THROWS;
     }
     CONTRACT_END;
@@ -428,7 +353,7 @@ inline BOOL PEAssembly::IsReadyToRun()
     }
     CONTRACTL_END;
 
-    if (HasILimage())
+    if (HasPEImage())
     {
         return GetLoadedLayout()->HasReadyToRunHeader();
     }
@@ -459,8 +384,8 @@ inline mdToken PEAssembly::GetEntryPointToken(
     if (IsDynamic())
         return mdTokenNil;
 
-    _ASSERTE (!bAssumeLoaded || HasLoadedIL ());
-    return GetILimage()->GetEntryPointToken();
+    _ASSERTE (!bAssumeLoaded || HasLoadedPEImage ());
+    return GetPEImage()->GetEntryPointToken();
 }
 
 inline BOOL PEAssembly::IsILOnly()
@@ -473,7 +398,7 @@ inline BOOL PEAssembly::IsILOnly()
     if (IsDynamic())
         return FALSE;
 
-    return GetILimage()->IsILOnly();
+    return GetPEImage()->IsILOnly();
 }
 
 inline BOOL PEAssembly::IsDll()
@@ -483,7 +408,7 @@ inline BOOL PEAssembly::IsDll()
     if (IsDynamic())
         return TRUE;
 
-    return GetILimage()->IsDll();
+    return GetPEImage()->IsDll();
 }
 
 inline PTR_VOID PEAssembly::GetRvaField(RVA field)
@@ -493,7 +418,7 @@ inline PTR_VOID PEAssembly::GetRvaField(RVA field)
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
         PRECONDITION(CheckRvaField(field));
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -514,7 +439,7 @@ inline CHECK PEAssembly::CheckRvaField(RVA field)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -534,7 +459,7 @@ inline CHECK PEAssembly::CheckRvaField(RVA field, COUNT_T size)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -556,7 +481,7 @@ inline BOOL PEAssembly::HasTls()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(IsLoaded());
     }
     CONTRACTL_END;
 
@@ -578,7 +503,7 @@ inline BOOL PEAssembly::IsRvaFieldTls(RVA field)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(IsLoaded());
     }
     CONTRACTL_END;
 
@@ -601,7 +526,7 @@ inline UINT32 PEAssembly::GetFieldTlsOffset(RVA field)
         INSTANCE_CHECK;
         PRECONDITION(CheckRvaField(field));
         PRECONDITION(IsRvaFieldTls(field));
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -616,7 +541,7 @@ inline UINT32 PEAssembly::GetTlsIndex()
 {
     CONTRACTL
     {
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         INSTANCE_CHECK;
         PRECONDITION(HasTls());
         NOTHROW;
@@ -635,7 +560,7 @@ inline const void *PEAssembly::GetInternalPInvokeTarget(RVA target)
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
         PRECONDITION(CheckInternalPInvokeTarget(target));
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -652,7 +577,7 @@ inline CHECK PEAssembly::CheckInternalPInvokeTarget(RVA target)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -669,7 +594,7 @@ inline IMAGE_COR_VTABLEFIXUP *PEAssembly::GetVTableFixups(COUNT_T *pCount/*=NULL
 {
     CONTRACT(IMAGE_COR_VTABLEFIXUP *)
     {
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
@@ -694,7 +619,7 @@ inline void *PEAssembly::GetVTable(RVA rva)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         PRECONDITION(!IsILOnly());
         PRECONDITION(GetLoadedLayout()->CheckRva(rva));
         NOTHROW;
@@ -714,7 +639,7 @@ inline HMODULE PEAssembly::GetIJWBase()
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         PRECONDITION(!IsILOnly());
         NOTHROW;
         GC_NOTRIGGER;
@@ -742,7 +667,7 @@ inline PTR_VOID PEAssembly::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
     // helper thread.  The debugger will have to expect a zero base
     // in some circumstances.
 
-    if (IsLoaded())
+    if (HasLoadedPEImage())
     {
         if (pSize != NULL)
             *pSize = GetLoadedLayout()->GetSize();
@@ -770,7 +695,7 @@ inline PTR_CVOID PEAssembly::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
     }
     CONTRACTL_END;
 
-    if (IsLoaded() && !IsDynamic())
+    if (HasLoadedPEImage())
     {
         if (pSize != NULL)
         {
@@ -794,7 +719,7 @@ inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
     CONTRACT(const void *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
@@ -804,7 +729,7 @@ inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
 
     // Right now, we will trigger a LoadLibrary for the caller's sake,
     // even if we are in a scenario where we could normally avoid it.
-    LoadLibrary();
+    EnsureLoaded();
 
     if (pSize != NULL)
         *pSize = GetLoadedLayout()->GetSize();
@@ -814,7 +739,7 @@ inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
 }
 #endif // DACCESS_COMPILE
 
-inline BOOL PEAssembly::IsPtrInILImage(PTR_CVOID data)
+inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
 {
     CONTRACTL
     {
@@ -826,42 +751,13 @@ inline BOOL PEAssembly::IsPtrInILImage(PTR_CVOID data)
     }
     CONTRACTL_END;
 
-    if (HasILimage())
+    if (HasPEImage())
     {
-        return GetILimage()->IsPtrInImage(data);
+        return GetPEImage()->IsPtrInImage(data);
     }
     else
         return FALSE;
 }
-// ------------------------------------------------------------
-// Native image access
-// ------------------------------------------------------------
-
-inline PTR_PEImageLayout PEAssembly::GetLoadedLayout()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    _ASSERTE(HasILimage());
-
-    return GetILimage()->GetLoadedLayout();
-};
-
-inline BOOL PEAssembly::IsLoaded()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if(IsDynamic())
-        return TRUE;
-
-    return HasLoadedIL();
-};
 
 // ------------------------------------------------------------
 // Descriptive strings
@@ -895,14 +791,14 @@ inline LPCSTR PEAssembly::GetSimpleName()
     CONTRACTL
     {
         NOTHROW;
-        if (!m_bHasPersistentMDImport) { GC_TRIGGERS;} else {DISABLED(GC_TRIGGERS);};
+        DISABLED(GC_TRIGGERS);
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     LPCSTR name = "";
-    IMDInternalImportHolder pImport = GetMDImport();
+    IMDInternalImport* pImport = GetMDImport();
     if (pImport != NULL)
     {
         if (FAILED(pImport->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, &name, NULL, NULL)))
@@ -996,40 +892,6 @@ inline DWORD PEAssembly::GetFlags()
     DWORD flags;
     IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, &flags));
     return flags;
-}
-
-// In the cases where you know the module is loaded, and cannot tolerate triggering and
-// loading, this alternative to PEAssembly::GetFlags is useful.  Profiling API uses this.
-inline HRESULT PEAssembly::GetFlagsNoTrigger(DWORD * pdwFlags)
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (pdwFlags != NULL);
-
-    if (!m_bHasPersistentMDImport)
-        return E_FAIL;
-
-    return GetPersistentMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, pdwFlags);
-}
-
-// ------------------------------------------------------------
-// Metadata access
-// ------------------------------------------------------------
-
-inline void PEAssembly::OpenMDImport()
-{
-    WRAPPER_NO_CONTRACT;
-    //need synchronization
-    _ASSERTE(m_pMetadataLock->LockTaken() && m_pMetadataLock->IsWriterLock());
-    OpenMDImport_Unsafe();
 }
 
 #endif  // PEASSEMBLY_INL_

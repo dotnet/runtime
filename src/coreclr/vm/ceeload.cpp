@@ -494,7 +494,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         {
             // For composite images, manifest metadata gets loaded as part of the native image
             COUNT_T cMeta = 0;
-            if (GetPEAssembly()->GetILimage()->GetNativeManifestMetadata(&cMeta) != NULL)
+            if (GetPEAssembly()->GetPEImage()->GetNativeManifestMetadata(&cMeta) != NULL)
             {
                 // Load the native assembly import
                 GetNativeAssemblyImport(TRUE /* loadAllowed */);
@@ -2374,7 +2374,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     {
         // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
         COUNT_T cMeta=0;
-        const void* pMeta = GetPEAssembly()->GetILimage()->GetNativeManifestMetadata(&cMeta);
+        const void* pMeta = GetPEAssembly()->GetPEImage()->GetNativeManifestMetadata(&cMeta);
         if (pMeta == NULL)
         {
             return FALSE;
@@ -3038,7 +3038,7 @@ BOOL Module::IsSigInIL(PCCOR_SIGNATURE signature)
     }
     CONTRACTL_END;
 
-    return m_pPEAssembly->IsPtrInILImage(signature);
+    return m_pPEAssembly->IsPtrInPEImage(signature);
 }
 
 void Module::InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb)
@@ -3160,7 +3160,7 @@ BYTE *Module::GetProfilerBase()
     {
         RETURN NULL;
     }
-    else if (m_pPEAssembly->IsLoaded())
+    else if (m_pPEAssembly->HasLoadedPEImage())
     {
         RETURN  (BYTE*)(m_pPEAssembly->GetLoadedLayout()->GetBase());
     }
@@ -4615,7 +4615,7 @@ IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
     }
     CONTRACT_END;
 
-    RETURN GetPEAssembly()->GetILimage()->GetNativeMDImport(loadAllowed);
+    RETURN GetPEAssembly()->GetPEImage()->GetNativeMDImport(loadAllowed);
 }
 
 BYTE* Module::GetNativeFixupBlobData(RVA rva)

@@ -4337,9 +4337,8 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 DWORD rva;
                 IfFailThrow(pInternalImport->GetFieldRVA(pFD->GetMemberDef(), &rva));
 
-                // Ensure that the IL image is loaded. Note that this assembly may
-                // have an ngen image, but this type may have failed to load during ngen.
-                GetModule()->GetPEAssembly()->LoadLibrary();
+                // Ensure that the IL image is loaded.
+                GetModule()->GetPEAssembly()->EnsureLoaded();
 
                 DWORD fldSize;
                 if (FieldDescElementType == ELEMENT_TYPE_VALUETYPE)

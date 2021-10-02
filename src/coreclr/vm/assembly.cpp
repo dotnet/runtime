@@ -1657,7 +1657,7 @@ MethodDesc* Assembly::GetEntryPoint()
         break;
 
     case mdtMethodDef:
-        if (m_pManifestFile->GetPersistentMDImport()->IsValidToken(mdEntry))
+        if (m_pManifestFile->GetMDImport()->IsValidToken(mdEntry))
             pModule = m_pManifest;
         break;
     }
@@ -2240,7 +2240,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
     ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
 
     // We're going to do this twice, once for InternalsVisibleTo and once for IgnoresAccessChecks
-    ReleaseHolder<IMDInternalImport> pImport(pAssembly->GetMDImportWithRef());
+    IMDInternalImport* pImport = pAssembly->GetMDImport();
     for(int count = 0 ; count < 2 ; ++count)
     {
         _ASSERTE(pImport != NULL);

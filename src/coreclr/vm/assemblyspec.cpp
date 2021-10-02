@@ -231,7 +231,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    ReleaseHolder<IMDInternalImport> pImport(pFile->GetMDImportWithRef());
+    IMDInternalImport* pImport = pFile->GetMDImport();
     mdAssembly a;
     IfFailThrow(pImport->GetAssemblyFromScope(&a));
 

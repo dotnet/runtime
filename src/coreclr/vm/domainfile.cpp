@@ -285,7 +285,7 @@ CHECK DomainFile::CheckLoaded()
     if (GetPEAssembly()->IsSystem())
         CHECK_OK;
 
-    CHECK_MSG(GetPEAssembly()->CheckLoaded(), "PEAssembly has not been loaded");
+    CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
 
     CHECK_OK;
 }
@@ -313,7 +313,7 @@ CHECK DomainFile::CheckActivated()
     if (GetPEAssembly()->IsSystem())
         CHECK_OK;
 
-    CHECK_MSG(GetPEAssembly()->CheckLoaded(), "PEAssembly has not been loaded");
+    CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
     CHECK_MSG(IsLoaded(), "DomainFile has not been fully loaded");
     CHECK_MSG(m_bDisableActivationCheck || CheckLoadLevel(FILE_ACTIVE), "File has not had execution verified");
 
@@ -528,7 +528,7 @@ void DomainFile::LoadLibrary()
     }
     CONTRACTL_END;
 
-    GetPEAssembly()->LoadLibrary();
+    GetPEAssembly()->EnsureLoaded();
 }
 
 void DomainFile::PostLoadLibrary()
@@ -536,8 +536,8 @@ void DomainFile::PostLoadLibrary()
     CONTRACTL
     {
         INSTANCE_CHECK;
-        // Note that GetPEAssembly()->LoadLibrary must be called before this OUTSIDE OF THE LOCKS
-        PRECONDITION(GetPEAssembly()->CheckLoaded());
+        // Note that GetPEAssembly()->EnsureLoaded must be called before this OUTSIDE OF THE LOCKS
+        PRECONDITION(GetPEAssembly()->IsLoaded());
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -877,10 +877,6 @@ void DomainAssembly::Allocate()
     {
         //! If you decide to remove "if" do not remove this brace: order is important here - in the case of an exception,
         //! the Assembly holder must destruct before the AllocMemTracker declared above.
-
-        // We can now rely on the fact that our MDImport will not change so we can stop refcounting it.
-        GetPEAssembly()->MakeMDImportPersistent();
-
         NewHolder<Assembly> assemblyHolder(NULL);
 
         assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
@@ -1046,7 +1042,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
         ULONG size;
         BYTE *blob;
         mdModule mdMod;
-        ReleaseHolder<IMDInternalImport> mdImport(GetPEAssembly()->GetMDImportWithRef());
+        IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
         mdMod = mdImport->GetModuleFromScope();
         mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
 

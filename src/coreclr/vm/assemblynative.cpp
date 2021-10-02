@@ -289,7 +289,7 @@ void QCALLTYPE AssemblyNative::LoadFromStream(INT_PTR ptrNativeAssemblyBinder, I
     // we created above. We need pointer comparison instead of pe image equivalence
     // to avoid mixed binaries/PDB pairs of other images.
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.
-    BOOL fIsSameAssembly = (pLoadedAssembly->GetManifestFile()->GetILimage() == pILImage);
+    BOOL fIsSameAssembly = (pLoadedAssembly->GetManifestFile()->GetPEImage() == pILImage);
 
     // Setting the PDB info is only applicable for our original assembly.
     // This applies to both Desktop CLR and CoreCLR, with or without fusion.

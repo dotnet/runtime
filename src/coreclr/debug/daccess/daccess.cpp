@@ -679,11 +679,6 @@ MetaEnum::New(Module* mod,
         *handle = TO_CDENUM(NULL);
     }
 
-    if (!mod->GetPEAssembly()->HasMetadata())
-    {
-        return S_FALSE;
-    }
-
     metaEnum = new (nothrow) MetaEnum;
     if (!metaEnum)
     {
@@ -6477,7 +6472,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
     isNGEN = false;
     if (pDir == NULL || pDir->Size == 0)
     {
-        mdImage = pPEAssembly->GetILimage();
+        mdImage = pPEAssembly->GetPEImage();
         if (mdImage != NULL)
         {
             layout = mdImage->GetLoadedLayout();
