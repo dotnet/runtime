@@ -2528,7 +2528,7 @@ bool Compiler::impSpillStackEntry(unsigned level,
         {
             JITDUMP("\n*** see V%02u = GT_RET_EXPR, noting temp\n", tnum);
             GenTree*             call = tree->AsRetExpr()->gtInlineCandidate;
-            InlineCandidateInfo* ici  = call->AsCall()->gtInlineCandidateInfo;
+            InlineCandidateInfo* ici  = call->AsCall()->GetInlineCandidateInfo();
             ici->preexistingSpillTemp = tnum;
         }
     }
@@ -6913,8 +6913,8 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                     if (call->IsVirtualStub())
                     {
                         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                                dspPtr(call->gtInlineCandidateInfo->stubAddr));
-                        call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
+                                dspPtr(call->GetInlineCandidateInfo()->stubAddr));
+                        call->gtStubCallStubAddr = call->GetInlineCandidateInfo()->stubAddr;
                     }
                 }
             }
@@ -9565,11 +9565,11 @@ DONE_CALL:
                         gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
 
                     // Link the retExpr to the call so if necessary we can manipulate it later.
-                    InlineCandidateInfo* inlineInfo = &origCall->gtInlineCandidateInfo[i];
+                    InlineCandidateInfo* inlineInfo = origCall->GetInlineCandidateInfo(i);
                     inlineInfo->retExpr             = retExpr;
                 }
                 // Propagate retExpr as the placeholder for the call.
-                call = origCall->gtInlineCandidateInfo[0].retExpr;
+                call = origCall->GetInlineCandidateInfo()->retExpr;
             }
             else
             {
@@ -19369,7 +19369,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                                  CORINFO_CONTEXT_HANDLE exactContextHnd,
                                  InlineCandidateInfo**  ppInlineCandidateInfo,
                                  InlineResult*          inlineResult,
-                                 UINT8                  gdvCandidateId)
+                                 UINT8                  candidateId)
 {
     // Either EE or JIT might throw exceptions below.
     // If that happens, just don't inline the method.
@@ -19383,7 +19383,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
         CORINFO_CONTEXT_HANDLE exactContextHnd;
         InlineResult*          result;
         InlineCandidateInfo**  ppInlineCandidateInfo;
-        UINT8                  gdvCandidateId;
+        UINT8                  candidateId;
     } param;
     memset(&param, 0, sizeof(param));
 
@@ -19394,7 +19394,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
     param.exactContextHnd       = (exactContextHnd != nullptr) ? exactContextHnd : MAKE_METHODCONTEXT(fncHandle);
     param.result                = inlineResult;
     param.ppInlineCandidateInfo = ppInlineCandidateInfo;
-    param.gdvCandidateId        = gdvCandidateId;
+    param.candidateId           = candidateId;
 
     bool success = eeRunWithErrorTrap<Param>(
         [](Param* pParam) {
@@ -19520,7 +19520,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 
             if (pParam->call->IsGuardedDevirtualizationCandidate())
             {
-                pInfo = &pParam->call->gtInlineCandidateInfo[pParam->gdvCandidateId];
+                pInfo = pParam->call->GetInlineCandidateInfo(pParam->candidateId);
             }
             else
             {
@@ -20565,8 +20565,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     if (call->IsVirtualStub())
     {
         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                dspPtr(call->gtInlineCandidateInfo->stubAddr));
-        call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
+                dspPtr(call->GetInlineCandidateInfo()->stubAddr));
+        call->gtStubCallStubAddr = call->GetInlineCandidateInfo()->stubAddr;
     }
 }
 
@@ -20688,7 +20688,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     }
 
     assert(max(1, call->GetGDVCandidatesCount()) > candidateIndex);
-    InlineCandidateInfo* inlineInfo = call->gtInlineCandidateInfo;
+    InlineCandidateInfo* inlineInfo = call->GetInlineCandidateInfo();
 
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
      * restricts the inliner to non-expanding inlines.  I removed the check to allow for non-expanding
@@ -20699,7 +20699,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        inlineInfo = &call->gtInlineCandidateInfo[candidateIndex];
+        inlineInfo = call->GetInlineCandidateInfo(candidateIndex);
         if (inlineInfo->guardedMethodUnboxedEntryHandle != nullptr)
         {
             fncHandle = inlineInfo->guardedMethodUnboxedEntryHandle;
@@ -20826,13 +20826,14 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (call->IsGuardedDevirtualizationCandidate())
     {
-        assert(call->gtInlineCandidateInfo != nullptr);
-        call->gtInlineCandidateInfo[candidateIndex] = *inlineCandidateInfo;
+        assert(call->GetInlineCandidateInfo() != nullptr);
+        *call->GetInlineCandidateInfo(candidateIndex) = *inlineCandidateInfo;
     }
     else
     {
-        call->gtInlineCandidateInfo = inlineCandidateInfo;
+        call->SetSingleInlineCandidate(this, inlineCandidateInfo);
     }
+    inlineCandidateInfo = nullptr;
 
     // Mark the call node as inline candidate.
     call->gtFlags |= GTF_CALL_INLINE_CANDIDATE;
@@ -22178,26 +22179,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         pInfo.stubAddr = nullptr;
     }
 
-    const UINT8 maxCandidates = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
-    call->SetGDVCandidatesCount(call->GetGDVCandidatesCount() + 1);
-    assert(call->GetGDVCandidatesCount() <= maxCandidates);
-
-    if (call->GetGDVCandidatesCount() == 1)
-    {
-        // in 90% cases virtual calls are monomorphic so let's avoid allocating too much
-        call->gtInlineCandidateInfo = new (this, CMK_GDVCandidates) InlineCandidateInfo[1]{pInfo};
-    }
-    else if (call->GetGDVCandidatesCount() == 2)
-    {
-        // Ok, re-alloc to store multiple candidates.
-        InlineCandidateInfo firstInfo = call->gtInlineCandidateInfo[0];
-        call->gtInlineCandidateInfo =
-            new (this, CMK_GDVCandidates) InlineCandidateInfo[maxCandidates]{firstInfo, pInfo};
-    }
-    else
-    {
-        call->gtInlineCandidateInfo[call->GetGDVCandidatesCount() - 1] = pInfo;
-    }
+    call->AddGDVInlineCandidate(this, &pInfo);
 }
 
 void Compiler::addExpRuntimeLookupCandidate(GenTreeCall* call)

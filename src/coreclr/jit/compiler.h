@@ -4836,7 +4836,7 @@ private:
                            CORINFO_CONTEXT_HANDLE exactContextHnd,
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult,
-                           UINT8                  gdvCandidateId);
+                           UINT8                  candidateId);
 
     void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
                                 GenTree*      curArgVal,

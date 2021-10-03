@@ -889,7 +889,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 #endif // FEATURE_SIMD
 
     assert(call->GetGDVCandidatesCount() <= 1);
-    InlineCandidateInfo* inlineCandidateInfo = call->gtInlineCandidateInfo;
+    InlineCandidateInfo* inlineCandidateInfo = call->GetInlineCandidateInfo();
     noway_assert(inlineCandidateInfo);
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;
@@ -1431,10 +1431,10 @@ _Done:
         // but may still be referenced from a GT_RET_EXPR node. We will replace GT_RET_EXPR node
         // in fgUpdateInlineReturnExpressionPlaceHolder. At that time we will also update the flags
         // on the basic block of GT_RET_EXPR node.
-        if (iciCall->gtInlineCandidateInfo->retExpr->OperGet() == GT_RET_EXPR)
+        if (iciCall->GetInlineCandidateInfo()->retExpr->OperGet() == GT_RET_EXPR)
         {
             // Save the basic block flags from the retExpr basic block.
-            iciCall->gtInlineCandidateInfo->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
+            iciCall->GetInlineCandidateInfo()->retExpr->AsRetExpr()->bbFlags = pInlineInfo->retBB->bbFlags;
         }
         iciCall->ReplaceWith(pInlineInfo->retExpr, this);
     }

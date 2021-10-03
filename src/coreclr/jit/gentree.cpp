@@ -1043,6 +1043,76 @@ bool GenTreeCall::IsHelperCall(Compiler* compiler, unsigned helper) const
     return IsHelperCall(compiler->eeFindHelper(helper));
 }
 
+//-------------------------------------------------------------------------
+// SetSingleInlineCandidate: Sets (copies) inline info to the current call.
+//
+// Arguments:
+//     compiler - the compiler instance for allocations
+//     info - inline candidate info to set
+//
+// Return Value:
+//     Returns pointer to the copied inline info
+//
+InlineCandidateInfo* GenTreeCall::SetSingleInlineCandidate(Compiler* comp, const InlineCandidateInfo* info)
+{
+    assert(info != nullptr);
+    assert(GetGDVCandidatesCount() == 0);
+    gtInlineCandidateInfo = new (comp, CMK_Inlining) InlineCandidateInfo[1]{*info};
+    return gtInlineCandidateInfo;
+}
+
+//-------------------------------------------------------------------------
+// AddGDVInlineCandidate: Adds (copies) given inline candidate info to the list
+//     of GDV candidates.
+//
+// Arguments:
+//     compiler - the compiler instance for allocations
+//     info - inline candidate info to add
+//
+// Return Value:
+//     Returns pointer to the copied inline info
+//
+InlineCandidateInfo* GenTreeCall::AddGDVInlineCandidate(Compiler* comp, const InlineCandidateInfo* info)
+{
+    assert(IsGuardedDevirtualizationCandidate());
+    const UINT8 maxCandidates = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
+    if (GetGDVCandidatesCount() == 0)
+    {
+        // In >90% cases we deal with monomorphic calls so let's avoid allocating too much.
+        SetSingleInlineCandidate(comp, info);
+        SetGDVCandidatesCount(1);
+    }
+    else if (GetGDVCandidatesCount() == 1)
+    {
+        // Non-monomorphic case - re-alloc
+        const InlineCandidateInfo firstInfo = gtInlineCandidateInfo[0];
+        gtInlineCandidateInfo = new (comp, CMK_Inlining) InlineCandidateInfo[maxCandidates]{firstInfo, *info};
+        SetGDVCandidatesCount(2);
+    }
+    else
+    {
+        gtInlineCandidateInfo[GetGDVCandidatesCount()] = *info;
+        SetGDVCandidatesCount(GetGDVCandidatesCount() + 1);
+    }
+    assert(GetGDVCandidatesCount() <= maxCandidates);
+    return GetInlineCandidateInfo(GetGDVCandidatesCount() - 1);
+}
+
+//-------------------------------------------------------------------------
+// GetInlineCandidateInfo: Returns an inline candidate for given index.
+//
+// Arguments:
+//     index - 0 or index of a candidate for GDV
+//
+// Return Value:
+//     Returns an inline candidate for given index.
+//
+InlineCandidateInfo* GenTreeCall::GetInlineCandidateInfo(UINT8 index) const
+{
+    assert(max(1, GetGDVCandidatesCount()) > index);
+    return gtInlineCandidateInfo + index;
+}
+
 //------------------------------------------------------------------------
 // GenTreeCall::ReplaceCallOperand:
 //    Replaces a given operand to a call node and updates the call
@@ -12123,10 +12193,10 @@ void Compiler::gtDispTree(GenTree*     tree,
                 printf(" (FramesRoot last use)");
             }
 
-            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->gtInlineCandidateInfo != nullptr) &&
-                (call->gtInlineCandidateInfo->exactContextHnd != nullptr))
+            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->GetInlineCandidateInfo() != nullptr) &&
+                (call->GetInlineCandidateInfo()->exactContextHnd != nullptr))
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(call->gtInlineCandidateInfo->exactContextHnd));
+                printf(" (exactContextHnd=0x%p)", dspPtr(call->GetInlineCandidateInfo()->exactContextHnd));
             }
 
             gtDispCommonEndLine(tree);
@@ -17775,7 +17845,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             {
                 // For inline candidates, we've already cached the return
                 // type class handle in the inline info.
-                InlineCandidateInfo* inlInfo = call->gtInlineCandidateInfo;
+                InlineCandidateInfo* inlInfo = call->GetInlineCandidateInfo();
                 assert(inlInfo != nullptr);
 
                 // Grab it as our first cut at a return type.

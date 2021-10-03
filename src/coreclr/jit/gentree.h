@@ -4778,6 +4778,12 @@ struct GenTreeCall final : public GenTree
         gtInlineCandidateInfo = nullptr;
     }
 
+    InlineCandidateInfo* SetSingleInlineCandidate(Compiler* comp, const InlineCandidateInfo* info);
+
+    InlineCandidateInfo* AddGDVInlineCandidate(Compiler* comp, const InlineCandidateInfo* info);
+
+    InlineCandidateInfo* GetInlineCandidateInfo(UINT8 index = 0) const;
+
     // expression evaluated after args are placed which determines the control target
     GenTree* gtControlExpr;
 

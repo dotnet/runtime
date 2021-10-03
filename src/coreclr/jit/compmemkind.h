@@ -60,7 +60,6 @@ CompMemKindMacro(TailMergeThrows)
 CompMemKindMacro(EarlyProp)
 CompMemKindMacro(ZeroInit)
 CompMemKindMacro(Pgo)
-CompMemKindMacro(GDVCandidates)
 //clang-format on
 
 #undef CompMemKindMacro

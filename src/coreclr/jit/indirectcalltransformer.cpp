@@ -535,7 +535,7 @@ private:
                 return;
             }
 
-            likelihood = origCall->gtInlineCandidateInfo->likelihood;
+            likelihood = origCall->GetInlineCandidateInfo()->likelihood;
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
@@ -640,7 +640,7 @@ private:
             // Find target method table
             //
             GenTree*             methodTable       = compiler->gtNewMethodTableLookup(thisTree);
-            CORINFO_CLASS_HANDLE clsHnd            = origCall->gtInlineCandidateInfo[checkIdx].guardedClassHandle;
+            CORINFO_CLASS_HANDLE clsHnd            = origCall->GetInlineCandidateInfo(checkIdx)->guardedClassHandle;
             GenTree*             targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
 
             // Compare and jump to else (which does the indirect call) if NOT equal
@@ -666,7 +666,7 @@ private:
             assert(origCall->GetGDVCandidatesCount() > 0);
             for (UINT8 candidateId = 0; candidateId < origCall->GetGDVCandidatesCount(); candidateId++)
             {
-                InlineCandidateInfo* const inlineInfo = &origCall->gtInlineCandidateInfo[candidateId];
+                InlineCandidateInfo* const inlineInfo = origCall->GetInlineCandidateInfo(candidateId);
                 GenTree* const             retExpr    = inlineInfo->retExpr;
 
                 // Sanity check the ret expr if non-null: it should refer to the original call.
@@ -767,9 +767,9 @@ private:
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock);
             thenBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
             thenBlock->bbJumpDest = remainderBlock;
-            thenBlock->inheritWeightPercentage(currBlock, origCall->gtInlineCandidateInfo[checkIdx].likelihood);
+            thenBlock->inheritWeightPercentage(currBlock, origCall->GetInlineCandidateInfo(checkIdx)->likelihood);
 
-            InlineCandidateInfo* inlineInfo = &origCall->gtInlineCandidateInfo[checkIdx];
+            InlineCandidateInfo* inlineInfo = origCall->GetInlineCandidateInfo(checkIdx);
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
             // copy 'this' to temp with exact type.
@@ -806,7 +806,7 @@ private:
                 // TODO: fix
                 assert(checkIdx > 0);
                 call                     = compiler->gtCloneCandidateCall(origCall);
-                call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
+                call->gtStubCallStubAddr = call->GetInlineCandidateInfo()->stubAddr;
             }
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
@@ -847,7 +847,7 @@ private:
                 inlineInfo->clsHandle            = compiler->info.compCompHnd->getMethodClass(methodHnd);
                 inlineInfo->exactContextHnd      = context;
                 inlineInfo->preexistingSpillTemp = returnTemp;
-                call->gtInlineCandidateInfo      = inlineInfo;
+                inlineInfo                       = call->SetSingleInlineCandidate(compiler, inlineInfo);
 
                 // If there was a ret expr for this call, we need to create a new one
                 // and append it just after the call.
@@ -898,7 +898,7 @@ private:
             UINT32 elseLikelihood = 100;
             for (UINT8 i = 0; i < origCall->GetGDVCandidatesCount(); i++)
             {
-                elseLikelihood -= origCall->gtInlineCandidateInfo[i].likelihood;
+                elseLikelihood -= origCall->GetInlineCandidateInfo(i)->likelihood;
             }
             elseBlock->inheritWeightPercentage(currBlock, elseLikelihood > 100 /*overflow*/ ? 0 : elseLikelihood);
 
@@ -906,8 +906,8 @@ private:
             // null out the candidate info field.
             if (call->IsVirtualStub())
             {
-                JITDUMP("Restoring stub addr %p from candidate info\n", call->gtInlineCandidateInfo->stubAddr);
-                call->gtStubCallStubAddr = call->gtInlineCandidateInfo->stubAddr;
+                JITDUMP("Restoring stub addr %p from candidate info\n", call->GetInlineCandidateInfo()->stubAddr);
+                call->gtStubCallStubAddr = call->GetInlineCandidateInfo()->stubAddr;
             }
             else
             {
@@ -1092,11 +1092,11 @@ private:
                     if (call->IsGuardedDevirtualizationCandidate() &&
                         // TODO: for some reason multi-check GDV doesn't work well with GDV-Chain-opt
                         (JitConfig.JitGuardedDevirtualizationCheckCount() == 1) &&
-                        (call->gtInlineCandidateInfo->likelihood >= gdvChainLikelihood))
+                        (call->GetInlineCandidateInfo()->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
-                                compiler->dspTreeID(call), call->gtInlineCandidateInfo->likelihood, gdvChainLikelihood,
-                                chainStatementDup, chainNodeDup);
+                                compiler->dspTreeID(call), call->GetInlineCandidateInfo()->likelihood,
+                                gdvChainLikelihood, chainStatementDup, chainNodeDup);
 
                         call->gtCallMoreFlags |= GTF_CALL_M_GUARDED_DEVIRT_CHAIN;
                         break;
