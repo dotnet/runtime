@@ -498,8 +498,8 @@ CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRang
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
 #endif // DEBUG
 
-// Number of type checks for a virtual call
-CONFIG_INTEGER(JitGuardedDevirtualizationCheckCount, W("JitGuardedDevirtualizationCheckCount"), 4)
+// Max number of type checks for a virtual call
+CONFIG_INTEGER(JitGuardedDevirtualizationCheckCount, W("JitGuardedDevirtualizationCheckCount"), 3)
 
 // Enable insertion of patchpoints into Tier0 methods with loops.
 CONFIG_INTEGER(TC_OnStackReplacement, W("TC_OnStackReplacement"), 0)

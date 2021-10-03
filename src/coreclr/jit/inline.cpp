@@ -715,7 +715,9 @@ void InlineResult::Report()
     {
         if (m_Call->GetGDVCandidatesCount() < 2)
         {
-            // compiler should have revoked candidacy on the call by now
+            // Compiler should have revoked candidacy on the call by now
+            // However, in GDV case we might see cases where some of the
+            // candidates are inlineable and some are not.
             assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
         }
 
