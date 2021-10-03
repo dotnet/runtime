@@ -36,10 +36,9 @@
     </Exec>
   </Target>
 
-  <Target Name="GetCrossBuildArgumentsForDNNE"
+  <Target Name="GetLinuxCrossBuildArgumentsForDNNE"
           DependsOnTargets="GetCompilerForDNNE"
-          BeforeTargets="DnneBuildNativeExports"
-          Condition="'$(CrossBuild)' == 'true' and '$(TargetsWindows)' != 'true'">
+          Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">
     <Exec Command="cmake -P &quot;$(RepositoryEngineeringDir)/native/output-toolchain-info.cmake&quot;"
           EchoOff="true"
           ConsoleToMsBuild="true"
@@ -65,4 +64,8 @@
       <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
+
+  <Target Name="GetBuildArgumentsForDNNE"
+          DependsOnTargets="GetCompilerForDNNE;GetLinuxCrossBuildArgumentsForDNNE"
+          BeforeTargets="DnneBuildNativeExports" />
 </Project>
