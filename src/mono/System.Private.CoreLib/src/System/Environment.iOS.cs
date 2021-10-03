@@ -100,14 +100,15 @@ namespace System
             static string CombineDocumentDirectory(string subdirectory)
             {
 #if TARGET_TVOS
-                string? path = CombineSearchPath(NSSearchPathDirectory.NSLibraryDirectory, Path.Combine("Caches", "Documents", subdirectory));
+                string? path = CombineSearchPath(NSSearchPathDirectory.NSLibraryDirectory, Path.Combine("Caches", "Documents"));
                 // Special version of CombineSearchPath which creates the path if needed.
                 // This isn't needed for "real" search paths which always exist, but on tvOS
                 // the base path is really a subdirectory we define rather than an OS directory.
                 // In order to not treat Directory.Exists(SpecialFolder.ApplicationData) differently
                 // on tvOS, guarantee that it exists by creating it here
-                if (!Directory.Exists (path))
-                    Directory.CreateDirectory (path);
+                if (!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+                path = Path.Combine(path, subdirectory);
 #else
                 string? path = CombineSearchPath(NSSearchPathDirectory.NSDocumentDirectory, subdirectory);
 #endif

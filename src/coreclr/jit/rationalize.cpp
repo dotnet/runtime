@@ -160,11 +160,11 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
                 addr->gtFlags |= GTF_VAR_USEASG;
             }
 
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         if (varDsc->lvPromotedStruct())
         {
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_IsStructArg));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
         addr->gtType = simdType;

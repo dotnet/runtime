@@ -34,7 +34,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct DateTimeOffset : IComparable, ISpanFormattable, IComparable<DateTimeOffset>, IEquatable<DateTimeOffset>, ISerializable, IDeserializationCallback
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IAdditionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
           IAdditiveIdentity<DateTimeOffset, TimeSpan>,
           IComparisonOperators<DateTimeOffset, DateTimeOffset>,
@@ -42,7 +42,7 @@ namespace System
           ISpanParseable<DateTimeOffset>,
           ISubtractionOperators<DateTimeOffset, TimeSpan, DateTimeOffset>,
           ISubtractionOperators<DateTimeOffset, DateTimeOffset, TimeSpan>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         // Constants

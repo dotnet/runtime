@@ -2553,6 +2553,16 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 						// as second, re-classify current callstack to be executing managed code.
 						data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_MANAGED;
 					}
+					if (data->stack_walk_data.top_frame && ep_stack_contents_get_length (&data->stack_contents) == 0) {
+						// If no managed frames (including helper frames) are located on stack, mark sample as beginning in external code.
+						// This can happen on attached embedding threads returning to native code between runtime invokes.
+						// Make sure sample is still written into EventPipe for all attached threads even if they are currently not having
+						// any managed frames on stack. Prevents some tools applying thread time heuristics to prolong duration of last sample
+						// when embedding thread returns to native code. It also opens ability to visualize number of samples in unmanaged code
+						// on attached threads when executing outside of runtime. If tooling is not interested in these sample events, they are easy
+						// to identify and filter out.
+						data->payload_data = EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL;
+					}
 
 					sampled_thread_count++;
 				}
@@ -2570,7 +2580,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	THREAD_INFO_TYPE adapter = { { 0 } };
 	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
 		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, i);
-		if (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length(&data->stack_contents) > 0) {
+		if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
 			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
 			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.

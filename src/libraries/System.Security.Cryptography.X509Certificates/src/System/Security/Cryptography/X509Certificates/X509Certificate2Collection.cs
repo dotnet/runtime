@@ -6,6 +6,7 @@ using Internal.Cryptography.Pal;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates.Asn1;
 using System.Collections.Generic;
 
@@ -411,6 +412,202 @@ namespace System.Security.Cryptography.X509Certificates
                     RemoveAt(Count - 1);
                 }
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Exports the X.509 public certificates as a PKCS7 certificate collection, encoded as PEM.
+        /// </summary>
+        /// <returns>The PEM encoded PKCS7 collection.</returns>
+        /// <exception cref="CryptographicException">
+        /// A certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public string ExportPkcs7Pem()
+        {
+            byte[]? pkcs7 = Export(X509ContentType.Pkcs7);
+
+            if (pkcs7 is null)
+            {
+                throw new CryptographicException(SR.Cryptography_X509_ExportFailed);
+            }
+
+            int encodedSize = PemEncoding.GetEncodedSize(PemLabels.Pkcs7Certificate.Length, pkcs7.Length);
+
+            return string.Create(encodedSize, pkcs7, static (destination, pkcs7) => {
+                if (!PemEncoding.TryWrite(PemLabels.Pkcs7Certificate, pkcs7, destination, out int written) ||
+                    written != destination.Length)
+                {
+                    Debug.Fail("Pre-allocated buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Attempts to export the X.509 public certificates as a PKCS7 certificate collection, encoded as PEM.
+        /// </summary>
+        /// <param name="destination">The buffer to receive the PEM encoded PKCS7 collection.</param>
+        /// <param name="charsWritten">When this method returns, the total number of characters written to <paramref name="destination" />.</param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> was large enough to receive PEM encoded PKCS7
+        ///   certificate collection; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// A certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public bool TryExportPkcs7Pem(Span<char> destination, out int charsWritten)
+        {
+            byte[]? pkcs7 = Export(X509ContentType.Pkcs7);
+
+            if (pkcs7 is null)
+            {
+                throw new CryptographicException(SR.Cryptography_X509_ExportFailed);
+            }
+
+            return PemEncoding.TryWrite(PemLabels.Pkcs7Certificate, pkcs7, destination, out charsWritten);
+        }
+
+        /// <summary>
+        /// Exports the public X.509 certificates, encoded as PEM.
+        /// </summary>
+        /// <returns>
+        /// The PEM encoding of the certificates.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// A certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        /// <exception cref="OverflowException">
+        /// The combined size of encoding all certificates exceeds <see cref="int.MaxValue" />.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 certificate collection will contain certificates
+        ///   where each certificate begins with <c>-----BEGIN CERTIFICATE-----</c>
+        ///   and ends with <c>-----END CERTIFICATE-----</c>, with the base64 encoded DER
+        ///   contents of the certificate between the PEM boundaries. Each certificate is
+        ///   separated by a single line-feed character.
+        /// </p>
+        /// <p>
+        ///   Certificates are encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public string ExportCertificatePems()
+        {
+            int size = GetCertificatePemsSize();
+
+            return string.Create(size, this, static (destination, col) => {
+                if (!col.TryExportCertificatePems(destination, out int charsWritten) ||
+                    charsWritten != destination.Length)
+                {
+                    Debug.Fail("Pre-allocated buffer was not the correct size.");
+                    throw new CryptographicException();
+                }
+            });
+        }
+
+        /// <summary>
+        /// Attempts to export the public X.509 certificates, encoded as PEM.
+        /// </summary>
+        /// <param name="destination">The buffer to receive the PEM encoded certificates.</param>
+        /// <param name="charsWritten">When this method returns, the total number of characters written to <paramref name="destination" />.</param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> was large enough to receive the encoded PEMs;
+        ///   otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        /// A certificate is corrupt, in an invalid state, or could not be exported
+        /// to PEM.
+        /// </exception>
+        /// <remarks>
+        /// <p>
+        ///   A PEM-encoded X.509 certificate collection will contain certificates
+        ///   where each certificate begins with <c>-----BEGIN CERTIFICATE-----</c>
+        ///   and ends with <c>-----END CERTIFICATE-----</c>, with the base64 encoded DER
+        ///   contents of the certificate between the PEM boundaries. Each certificate is
+        ///   separated by a single line-feed character.
+        /// </p>
+        /// <p>
+        ///   Certificates are encoded according to the IETF RFC 7468 &quot;strict&quot;
+        ///   encoding rules.
+        /// </p>
+        /// </remarks>
+        public bool TryExportCertificatePems(Span<char> destination, out int charsWritten)
+        {
+            Span<char> buffer = destination;
+            int written = 0;
+
+            for (int i = 0; i < Count; i++)
+            {
+                ReadOnlyMemory<byte> certData = this[i].RawDataMemory;
+                int certSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, certData.Length);
+
+                // If we ran out of space in the destination, return false. It's okay
+                // that we may have successfully written data to the destination
+                // already. Since certificates only contain "public" information,
+                // we don't need to clear what has been written already.
+                if (buffer.Length < certSize)
+                {
+                    charsWritten = 0;
+                    return false;
+                }
+
+                if (!PemEncoding.TryWrite(PemLabels.X509Certificate, certData.Span, buffer, out int certWritten) ||
+                    certWritten != certSize)
+                {
+                    Debug.Fail("Presized buffer is too small or did not write the correct amount.");
+                    throw new CryptographicException();
+                }
+
+                buffer = buffer.Slice(certWritten);
+                written += certWritten;
+
+                // write a new line if not the last certificate.
+                if (i < Count - 1)
+                {
+                    if (buffer.IsEmpty)
+                    {
+                        charsWritten = 0;
+                        return false;
+                    }
+
+                    // Always use Unix line endings between certificates to match the
+                    // behavior of PemEncoding.TryWrite, which is following RFC 7468.
+                    buffer[0] = '\n';
+                    buffer = buffer.Slice(1);
+                    written++;
+                }
+            }
+
+            charsWritten = written;
+            return true;
+        }
+
+        private int GetCertificatePemsSize()
+        {
+            checked
+            {
+                int size = 0;
+
+                for (int i = 0; i < Count; i++)
+                {
+                    size += PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, this[i].RawDataMemory.Length);
+
+                    // Add a \n character between each certificate, except the last one.
+                    if (i < Count - 1)
+                    {
+                        size += 1;
+                    }
+                }
+
+                return size;
             }
         }
     }

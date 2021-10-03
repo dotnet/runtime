@@ -13,11 +13,11 @@ namespace System
     /// </summary>
     public readonly struct DateOnly : IComparable, IComparable<DateOnly>, IEquatable<DateOnly>, ISpanFormattable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IComparisonOperators<DateOnly, DateOnly>,
           IMinMaxValue<DateOnly>,
           ISpanParseable<DateOnly>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private readonly int _dayNumber;

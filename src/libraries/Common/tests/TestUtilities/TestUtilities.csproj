@@ -33,6 +33,7 @@
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" />
     <Compile Include="System\PlatformDetection.Windows.cs" />
+    <Compile Include="System\WindowsIdentityFixture.cs" />
     <!--
       Interop.Library is not designed to support runtime checks therefore we are picking the Windows
       variant from the Common folder and adding the missing members manually.

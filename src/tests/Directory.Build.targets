@@ -370,7 +370,7 @@
 
         <!-- Wasm App Builder always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="WasmAppBuilder/"/>
 
         <!-- MonoAOTCompiler always builds in Debug -->
@@ -378,14 +378,10 @@
           Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="MonoAOTCompiler/"/>
 
+        <!-- MonoTargetsTasks always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="JsonToItemsTaskFactory/"/>
-
-        <!-- RuntimeConfigParser always builds in Debug -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\RuntimeConfigParser\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="RuntimeConfigParser/"/>
+          Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="MonoTargetsTasks/"/>
 
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"

@@ -27,6 +27,8 @@ jobs:
 - job: linux
   displayName: Docker Linux
   timeoutInMinutes: 180
+  variables:
+    DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
     name: NetCorePublic-Pool
     queue: BuildPool.Ubuntu.1804.Amd64.Open
@@ -50,6 +52,8 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/3.0"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/3.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 3.0 -xops 10"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 3.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -58,6 +62,8 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 2.0"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -66,15 +72,23 @@ jobs:
 
   - bash: |
       cd '$(httpStressProject)'
+      export CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
+      export SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
       export HTTPSTRESS_CLIENT_ARGS="$HTTPSTRESS_CLIENT_ARGS -http 1.1"
       export HTTPSTRESS_SERVER_ARGS="$HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
+  - publish: $(Build.ArtifactStagingDirectory)/dumps
+    artifact: DumpsLinux
+    condition: failed()
+
 - job: windows
   displayName: Docker NanoServer
   timeoutInMinutes: 150
+  variables:
+    DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
     name: NetCorePublic-Pool
     queue: BuildPool.Server.Amd64.VS2019.Open
@@ -106,6 +120,10 @@ jobs:
 
   - powershell: |
       cd '$(httpStressProject)'
+      $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/2.0"
+      $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/2.0"
+      New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+      New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 2.0"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 2.0"
       docker-compose up --abort-on-container-exit --no-color
@@ -114,11 +132,19 @@ jobs:
 
   - powershell: |
       cd '$(httpStressProject)'
+      $env:CLIENT_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/client/1.1"
+      $env:SERVER_DUMPS_SHARE="$(Build.ArtifactStagingDirectory)/dumps/server/1.1"
+      New-Item -Force $env:CLIENT_DUMPS_SHARE -ItemType Directory
+      New-Item -Force $env:SERVER_DUMPS_SHARE -ItemType Directory
       $env:HTTPSTRESS_CLIENT_ARGS = "$env:HTTPSTRESS_CLIENT_ARGS -http 1.1"
       $env:HTTPSTRESS_SERVER_ARGS = "$env:HTTPSTRESS_SERVER_ARGS -http 1.1"
       docker-compose up --abort-on-container-exit --no-color
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
+
+  - publish: $(Build.ArtifactStagingDirectory)/dumps
+    artifact: DumpsWindows
+    condition: failed()
 
   - powershell: |
       Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled True

@@ -50,8 +50,6 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
-    PEImageLayout::Startup();
-
     RETURN;
 }
 

@@ -2823,7 +2823,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     {
         // For instance method:
         assert(info.compThisArg != BAD_VAR_NUM);
-        bool compThisArgAddrExposedOK = !lvaTable[info.compThisArg].lvAddrExposed;
+        bool compThisArgAddrExposedOK = !lvaTable[info.compThisArg].IsAddressExposed();
 
 #ifndef JIT32_GCENCODER
         compThisArgAddrExposedOK = compThisArgAddrExposedOK || copiedForGenericsCtxt;
@@ -2834,7 +2834,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // written to or address-exposed.
         assert(compThisArgAddrExposedOK && !lvaTable[info.compThisArg].lvHasILStoreOp &&
                (lvaArg0Var == info.compThisArg ||
-                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].lvAddrExposed ||
+                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
 }

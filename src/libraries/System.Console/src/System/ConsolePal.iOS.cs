@@ -8,75 +8,15 @@ using System.Text;
 
 namespace System
 {
-    internal sealed class NSLogStream : ConsoleStream
+    internal sealed class NSLogStream : CachedConsoleStream
     {
-        private readonly StringBuilder _buffer = new StringBuilder();
-        private readonly Encoding _encoding;
-        private readonly Decoder _decoder;
+        public NSLogStream(Encoding encoding) : base(encoding) {}
 
-        public NSLogStream(Encoding encoding) : base(FileAccess.Write)
+        protected override unsafe void Print(ReadOnlySpan<char> line)
         {
-            _encoding = encoding;
-            _decoder = _encoding.GetDecoder();
-        }
-
-        public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
-
-        public override void Write(ReadOnlySpan<byte> buffer)
-        {
-            int maxCharCount = _encoding.GetMaxCharCount(buffer.Length);
-            char[]? pooledBuffer = null;
-            Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
-            try
+            fixed (char* ptr = line)
             {
-                int count = _decoder.GetChars(buffer, charSpan, false);
-                if (count > 0)
-                {
-                    WriteOrCache(_buffer, charSpan.Slice(0, count));
-                }
-            }
-            finally
-            {
-                if (pooledBuffer != null)
-                {
-                    ArrayPool<char>.Shared.Return(pooledBuffer);
-                }
-            }
-        }
-
-        private static void WriteOrCache(StringBuilder cache, Span<char> charBuffer)
-        {
-            int lastNewLine = charBuffer.LastIndexOf('\n');
-            if (lastNewLine != -1)
-            {
-                Span<char> lineSpan = charBuffer.Slice(0, lastNewLine);
-                if (cache.Length > 0)
-                {
-                    Print(cache.Append(lineSpan).ToString());
-                    cache.Clear();
-                }
-                else
-                {
-                    Print(lineSpan);
-                }
-
-                if (lastNewLine + 1 < charBuffer.Length)
-                {
-                    cache.Append(charBuffer.Slice(lastNewLine + 1));
-                }
-
-                return;
-            }
-
-            // no newlines found, add the entire buffer to the cache
-            cache.Append(charBuffer);
-
-            static unsafe void Print(ReadOnlySpan<char> line)
-            {
-                fixed (char* ptr = line)
-                {
-                    Interop.Sys.Log((byte*)ptr, line.Length * 2);
-                }
+                Interop.Sys.Log((byte*)ptr, line.Length * 2);
             }
         }
     }

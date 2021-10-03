@@ -52,7 +52,7 @@ Pure netstandard configuration:
 All supported targets with unique windows/unix build for netcoreapp:
 ```
 <PropertyGroup>
-  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)-windows</TargetFrameworks>
+  <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetFrameworkCurrent)</TargetFrameworks>
 <PropertyGroup>
 ```
 
@@ -73,7 +73,7 @@ When building an individual project the `BuildTargetFramework` and `TargetOS` wi
 
 ## Supported full build settings
 - .NET Core latest on current OS (default) -> `$(NetCoreAppCurrent)-[RunningOS]`
-- .NET Framework latest -> `net48-windows`
+- .NET Framework latest -> `net48`
 
 # Library project guidelines
 
