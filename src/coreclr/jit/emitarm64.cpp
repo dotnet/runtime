@@ -12160,7 +12160,6 @@ void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
         }
         else
         {
-            assert(id->idCodeSize() == sz);
             printf("              ");
         }
     }

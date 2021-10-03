@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -169,6 +169,60 @@ namespace Wasm.Build.Tests
 
             // no aot!
             BlazorPublish(id, config, expectedFileType: NativeFilesType.Relinked);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("Debug")]
+        [InlineData("Release")]
+        public void WithDllImportInMainAssembly(string config)
+        {
+            // Based on https://github.com/dotnet/runtime/issues/59255
+            string id = $"blz_dllimp_{config}";
+            string projectFile = CreateProjectWithNativeReference(id);
+            string nativeSource = @"
+                #include <stdio.h>
+
+                extern ""C"" {
+                    int cpp_add(int a, int b) {
+                        return a + b;
+                    }
+                }";
+
+            File.WriteAllText(Path.Combine(_projectDir!, "mylib.cpp"), nativeSource);
+
+            string myDllImportCs = @$"
+                using System.Runtime.InteropServices;
+                namespace {id};
+
+                public static class MyDllImports
+                {{
+                    [DllImport(""mylib"")]
+                    public static extern int cpp_add(int a, int b);
+                }}";
+
+            File.WriteAllText(Path.Combine(_projectDir!, "Pages", "MyDllImport.cs"), myDllImportCs);
+
+            AddItemsPropertiesToProject(projectFile, extraItems: @"<NativeFileReference Include=""mylib.cpp"" />");
+
+            BlazorBuild(id, config, expectedFileType: NativeFilesType.Relinked);
+            CheckNativeFileLinked(forPublish: false);
+
+            BlazorPublish(id, config, expectedFileType: NativeFilesType.Relinked);
+            CheckNativeFileLinked(forPublish: true);
+
+            void CheckNativeFileLinked(bool forPublish)
+            {
+                // very crude way to check that the native file was linked in
+                // needed because we don't run the blazor app yet
+                string objBuildDir = Path.Combine(_projectDir!, "obj", config, "net6.0", "wasm", forPublish ? "for-publish" : "for-build");
+                string pinvokeTableHPath = Path.Combine(objBuildDir, "pinvoke-table.h");
+                Assert.True(File.Exists(pinvokeTableHPath), $"Could not find {pinvokeTableHPath}");
+
+                string pinvokeTableHContents = File.ReadAllText(pinvokeTableHPath);
+                string pattern = $"\"cpp_add\".*{id}";
+                Assert.True(Regex.IsMatch(pinvokeTableHContents, pattern),
+                                $"Could not find {pattern} in {pinvokeTableHPath}");
+            }
         }
 
         private string CreateProjectWithNativeReference(string id)

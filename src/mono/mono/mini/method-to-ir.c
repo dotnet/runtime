@@ -10247,8 +10247,13 @@ field_access_end:
 					}
 
 					if (context_used) {
-						ins = mini_emit_get_rgctx_klass (cfg, context_used,
-							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
+						MONO_INST_NEW (cfg, ins, OP_RTTYPE);
+						ins->dreg = alloc_ireg_ref (cfg);
+						ins->inst_p0 = tclass;
+						ins->type = STACK_OBJ;
+						MONO_ADD_INS (cfg->cbb, ins);
+						cfg->flags |= MONO_CFG_NEEDS_DECOMPOSE;
+						cfg->cbb->needs_decompose = TRUE;
 					} else if (cfg->compile_aot) {
 						if (method->wrapper_type) {
 							error_init (error); //got to do it since there are multiple conditionals below
@@ -12008,6 +12013,72 @@ MONO_DISABLE_WARNING(4065) // switch with default but no case
 		return mono_op_to_op_imm (opcode);
 	}
 MONO_RESTORE_WARNING
+}
+
+gboolean
+mono_op_no_side_effects (int opcode)
+{
+	/* FIXME: Add more instructions */
+	/* INEG sets the condition codes, and the OP_LNEG decomposition depends on this on x86 */
+	switch (opcode) {
+	case OP_MOVE:
+	case OP_FMOVE:
+	case OP_VMOVE:
+	case OP_XMOVE:
+	case OP_RMOVE:
+	case OP_VZERO:
+	case OP_XZERO:
+	case OP_ICONST:
+	case OP_I8CONST:
+	case OP_ADD_IMM:
+	case OP_R8CONST:
+	case OP_LADD_IMM:
+	case OP_ISUB_IMM:
+	case OP_IADD_IMM:
+	case OP_LNEG:
+	case OP_ISUB:
+	case OP_CMOV_IGE:
+	case OP_ISHL_IMM:
+	case OP_ISHR_IMM:
+	case OP_ISHR_UN_IMM:
+	case OP_IAND_IMM:
+	case OP_ICONV_TO_U1:
+	case OP_ICONV_TO_I1:
+	case OP_SEXT_I4:
+	case OP_LCONV_TO_U1:
+	case OP_ICONV_TO_U2:
+	case OP_ICONV_TO_I2:
+	case OP_LCONV_TO_I2:
+	case OP_LDADDR:
+	case OP_PHI:
+	case OP_NOP:
+	case OP_ZEXT_I4:
+	case OP_NOT_NULL:
+	case OP_IL_SEQ_POINT:
+	case OP_RTTYPE:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+gboolean
+mono_ins_no_side_effects (MonoInst *ins)
+{
+	if (mono_op_no_side_effects (ins->opcode))
+		return TRUE;
+	if (ins->opcode == OP_AOTCONST) {
+		MonoJumpInfoType type = (MonoJumpInfoType)ins->inst_p1;
+		// Some AOTCONSTs have side effects
+		switch (type) {
+		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+		case MONO_PATCH_INFO_LDSTR:
+		case MONO_PATCH_INFO_VTABLE:
+		case MONO_PATCH_INFO_METHOD_RGCTX:
+			return TRUE;
+		}
+	}
+	return FALSE;
 }
 
 /**
