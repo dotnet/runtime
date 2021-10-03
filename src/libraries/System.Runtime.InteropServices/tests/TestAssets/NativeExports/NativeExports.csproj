@@ -65,7 +65,33 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="GetAppleCrossBuildArgumentsForDNNE"
+          Condition="'$(TargetsOSX)' == 'true'
+                    or '$(TargetstvOS)' == 'true'
+                    or '$(TargetsiOS)' == 'true'
+                    or '$(TargetstvOSSimulator)' == 'true'
+                    or '$(TargetsiOSSimulator)' == 'true'
+                    or '$(TargetsMacCatalyst)' == 'true'">
+    <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.13</TargetTriple>
+    </PropertyGroup>
+
+    <Error Condition="'$(TargetTriple)' == ''" Text="A target triple was not specified for the native components build. Update the 'GetAppleCrossBuildArgumentsForDNNE' target to specify a triple." />
+
+    <PropertyGroup>
+      <DnneLinkerUserFlags>-target $(TargetTriple)</DnneLinkerUserFlags>
+      <DnneCompilerUserFlags>-target $(TargetTriple)</DnneCompilerUserFlags>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="GetBuildArgumentsForDNNE"
-          DependsOnTargets="GetCompilerForDNNE;GetLinuxCrossBuildArgumentsForDNNE"
+          DependsOnTargets="GetCompilerForDNNE;
+                            GetLinuxCrossBuildArgumentsForDNNE;
+                            GetAppleCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports" />
 </Project>
