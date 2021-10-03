@@ -263,13 +263,22 @@ namespace System.Text.RegularExpressions.Generator
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
-            writer.WriteLine("// Minimum required length check");
             int minRequiredLength = rm.Code.Tree.MinRequiredLength;
-            string minRequiredLengthOffset = rm.Code.Tree.MinRequiredLength > 0 ? $" - {rm.Code.Tree.MinRequiredLength}" : "";
             Debug.Assert(minRequiredLength >= 0);
-            using (EmitBlock(writer, !rtl ?
-                $"if (runtextpos <= runtextend{minRequiredLengthOffset})" :
-                $"if (runtextpos{minRequiredLengthOffset} >= runtextbeg)"))
+            string clause = !rtl ?
+                minRequiredLength switch
+                {
+                    0 => "if (runtextpos <= runtextend)",
+                    1 => "if (runtextpos < runtextend)",
+                    _ => $"if (runtextpos < runtextend - {minRequiredLength - 1})"
+                } :
+                minRequiredLength switch
+                {
+                    0 => "if (runtextpos >= runtextbeg)",
+                    1 => "if (runtextpos > runtextbeg)",
+                    _ => $"if (runtextpos - {minRequiredLength - 1} > runtextbeg)"
+                };
+            using (EmitBlock(writer, clause))
             {
                 EmitAnchorAndLeadingChecks();
             }
@@ -631,13 +640,11 @@ namespace System.Text.RegularExpressions.Generator
                     }
 
                     Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
+                    bool hasCharClassConditions = false;
                     if (charClassIndex < lcc.Length)
                     {
-                        // if (!CharInClass(textSpan[i + charClassIndex], prefix[0], "...") ||
+                        // if (CharInClass(textSpan[i + charClassIndex], prefix[0], "...") &&
                         //     ...)
-                        // {
-                        //     continue;
-                        // }
                         Debug.Assert(needLoop);
                         int start = charClassIndex;
                         for (; charClassIndex < lcc.Length; charClassIndex++)
@@ -647,24 +654,23 @@ namespace System.Text.RegularExpressions.Generator
 
                             if (charClassIndex == start)
                             {
-                                writer.Write($"if (!{charInClassExpr}");
+                                writer.Write($"if ({charInClassExpr}");
                             }
                             else
                             {
-                                writer.WriteLine(" ||");
-                                writer.Write($"    !{charInClassExpr}");
+                                writer.WriteLine(" &&");
+                                writer.Write($"    {charInClassExpr}");
                             }
                         }
                         writer.WriteLine(")");
-                        using (EmitBlock(writer, null))
-                        {
-                            writer.WriteLine("continue;");
-                        }
-                        writer.WriteLine();
+                        hasCharClassConditions = true;
                     }
 
-                    writer.WriteLine("base.runtextpos = runtextpos + i;");
-                    writer.WriteLine("return true;");
+                    using (hasCharClassConditions ? EmitBlock(writer, null) : default)
+                    {
+                        writer.WriteLine("base.runtextpos = runtextpos + i;");
+                        writer.WriteLine("return true;");
+                    }
 
                     loopBlock.Dispose();
                 }
@@ -1488,9 +1494,6 @@ namespace System.Text.RegularExpressions.Generator
                 int minIterations = node.M;
                 int maxIterations = node.N;
 
-                string originalDoneLabel = doneLabel;
-                doneLabel = DefineLabel();
-
                 Span<char> setChars = stackalloc char[3]; // 3 is max we can use with IndexOfAny
                 int numSetChars = 0;
 
@@ -1512,14 +1515,12 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.WriteLine($", {Literal(node.Ch)});");
                     
-                    using (EmitBlock(writer, $"if ({iterationLocal} != -1)"))
+                    using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        writer.WriteLine(textSpanPos > 0 ?
+                            $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
+                            $"{iterationLocal} = {textSpanLocal}.Length;");
                     }
-
-                    writer.WriteLine(textSpanPos > 0 ?
-                        $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
-                        $"{iterationLocal} = {textSpanLocal}.Length;");
                 }
                 else if (node.Type == RegexNode.Setloopatomic &&
                     maxIterations == int.MaxValue &&
@@ -1539,14 +1540,12 @@ namespace System.Text.RegularExpressions.Generator
                     writer.WriteLine(numSetChars == 2 ?
                         $", {Literal(setChars[0])}, {Literal(setChars[1])});" :
                         $", {Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])});");
-                    using (EmitBlock(writer, $"if ({iterationLocal} != -1)"))
+                    using (EmitBlock(writer, $"if ({iterationLocal} == -1)"))
                     {
-                        writer.WriteLine($"goto {doneLabel};");
+                        writer.WriteLine(textSpanPos > 0 ?
+                            $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
+                            $"{iterationLocal} = {textSpanLocal}.Length;");
                     }
-
-                    writer.WriteLine(textSpanPos > 0 ?
-                        $"{iterationLocal} = {textSpanLocal}.Length - {textSpanPos};" :
-                        $"{iterationLocal} = {textSpanLocal}.Length;");
                 }
                 else if (node.Type == RegexNode.Setloopatomic && maxIterations == int.MaxValue && node.Str == RegexCharClass.AnyClass)
                 {
@@ -1565,16 +1564,12 @@ namespace System.Text.RegularExpressions.Generator
                     switch (node.Type)
                     {
                         case RegexNode.Oneloopatomic:
-                            expr = ToLowerIfNeeded(hasTextInfo, options, expr, IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch));
-                            expr = $"{expr} != {Literal(node.Ch)}";
-                            break;
                         case RegexNode.Notoneloopatomic:
                             expr = ToLowerIfNeeded(hasTextInfo, options, expr, IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch));
-                            expr = $"{expr} == {Literal(node.Ch)}";
+                            expr = $"{expr} {(node.Type == RegexNode.Oneloopatomic ? "==" : "!=")} {Literal(node.Ch)}";
                             break;
                         case RegexNode.Setloopatomic:
                             expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node));
-                            expr = $"!{expr}";
                             break;
                     }
 
@@ -1582,25 +1577,14 @@ namespace System.Text.RegularExpressions.Generator
                     TransferTextSpanPosToRunTextPos();
 
                     writer.WriteLine($"int {iterationLocal} = 0;");
-                    using (EmitBlock(writer, $"while (true)"))
+
+                    string maxClause = maxIterations != int.MaxValue ? $"{iterationLocal} < {maxIterations} && " : "";
+                    using (EmitBlock(writer, $"while ({maxClause}(uint){iterationLocal} < (uint){textSpanLocal}.Length && {expr})"))
                     {
                         EmitTimeoutCheck(writer, hasTimeout);
-                        string clause = "if (";
-                        if (maxIterations != int.MaxValue)
-                        {
-                            clause += $"{iterationLocal} >= {maxIterations} || ";
-                        }
-                        using (EmitBlock(writer, $"{clause}(uint){iterationLocal} >= (uint){textSpanLocal}.Length || {expr})"))
-                        {
-                            writer.WriteLine($"goto {doneLabel};");
-                        }
                         writer.WriteLine($"{iterationLocal}++;");
                     }
                 }
-
-                // Done:
-                MarkLabel(doneLabel);
-                doneLabel = originalDoneLabel; // Restore the original done label
 
                 // Check to ensure we've found at least min iterations.
                 if (minIterations > 0)
@@ -3052,16 +3036,9 @@ namespace System.Text.RegularExpressions.Generator
             if (!invariant && RegexCharClass.TryGetSingleRange(charClass, out char lowInclusive, out char highInclusive))
             {
                 bool invert = RegexCharClass.IsNegated(charClass);
-                if (lowInclusive == highInclusive)
-                {
-                    chExpr = $"({chExpr} {(invert ? "!=" : "==")} {Literal(lowInclusive)})";
-                }
-                else
-                {
-                    chExpr = $"(((uint){chExpr}) - {Literal(lowInclusive)} {(invert ? ">=" : "<")} (uint){highInclusive - lowInclusive + 1})";
-                }
-
-                return chExpr;
+                return lowInclusive == highInclusive ?
+                    $"({chExpr} {(invert ? "!=" : "==")} {Literal(lowInclusive)})" :
+                    $"(((uint){chExpr}) - {Literal(lowInclusive)} {(invert ? ">" : "<=")} (uint)({Literal(highInclusive)} - {Literal(lowInclusive)}))";
             }
 
             // Next if the character class contains nothing but a single Unicode category, we can calle char.GetUnicodeCategory and
