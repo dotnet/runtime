@@ -4709,7 +4709,6 @@ struct GenTreeCall final : public GenTree
 
     void ClearGuardedDevirtualizationCandidate()
     {
-        SetGDVCandidatesCount(0);
         gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
 
@@ -4805,8 +4804,6 @@ struct GenTreeCall final : public GenTree
 
     UINT8 GetGDVCandidatesCount() const
     {
-        const bool isGDV = IsGuardedDevirtualizationCandidate();
-        assert(((gtGDVCandidatesCount == 0) && !isGDV) ^ (isGDV && (gtGDVCandidatesCount > 0)));
         return gtGDVCandidatesCount;
     }
 

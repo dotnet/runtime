@@ -6909,6 +6909,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 {
                     JITDUMP("Disabling GDV for [%06u] because of in-box struct return\n");
                     call->ClearGuardedDevirtualizationCandidate();
+                    call->SetGDVCandidatesCount(0);
                     if (call->IsVirtualStub())
                     {
                         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
@@ -20555,6 +20556,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             dspTreeID(call));
 
     call->ClearGuardedDevirtualizationCandidate();
+    call->SetGDVCandidatesCount(0);
 
     // If we have a stub address, restore it back into the union that it shares
     // with the candidate info.
@@ -21998,7 +22000,7 @@ void Compiler::considerGuardedDevirtualization(
 
     assert(call->GetGDVCandidatesCount() == 0);
 
-    INDEBUG(CORINFO_SIG_INFO prevSig);
+    INDEBUG(CORINFO_SIG_INFO prevSig = {});
 
     for (UINT i = 0; i < numberOfClasses; i++)
     {
@@ -22039,17 +22041,26 @@ void Compiler::considerGuardedDevirtualization(
             continue;
         }
 
+        if ((call->GetGDVCandidatesCount() > 0) && !call->TypeIs(TYP_VOID))
+        {
+            // TODO: there is an issue somewhere for secondary guesses
+            // with non-void return type
+            break;
+        }
+
         CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
         JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
 
 #ifdef DEBUG
         CORINFO_SIG_INFO sig;
         info.compCompHnd->getMethodSig(likelyMethod, &sig);
-        if (i > 0)
+        if (call->GetGDVCandidatesCount() > 0)
         {
-            assert(sig.retType         != prevSig.retType);
-            assert(sig.retTypeClass    != prevSig.retTypeClass);
-            assert(sig.retTypeSigClass != prevSig.retTypeSigClass);
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(likelyMethod, &sig);
+            assert(sig.retType == prevSig.retType);
+            assert(sig.retTypeClass == prevSig.retTypeClass);
+            assert(sig.retTypeSigClass == prevSig.retTypeSigClass);
         }
         prevSig = sig;
 #endif
@@ -22188,9 +22199,8 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
 
     const UINT8 maxCandidates   = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
     call->SetGDVCandidatesCount(call->GetGDVCandidatesCount() + 1);
-    assert(maxCandidates >= call->GetGDVCandidatesCount());
+    assert(call->GetGDVCandidatesCount() <= maxCandidates);
 
-    auto x = info.compFullName;
     if (call->GetGDVCandidatesCount() == 1)
     {
         // in 90% cases virtual calls are monomorphic so let's avoid allocating too much

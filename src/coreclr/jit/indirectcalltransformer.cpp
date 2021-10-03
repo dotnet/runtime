@@ -209,6 +209,7 @@ private:
             FixupRetExpr();
             ClearFlag();
             CreateRemainder();
+            assert(GetChecksCount() > 0);
             for (UINT8 i = 0; i < GetChecksCount(); i++)
             {
                 CreateCheck(i);
