@@ -22041,29 +22041,8 @@ void Compiler::considerGuardedDevirtualization(
             continue;
         }
 
-        if ((call->GetGDVCandidatesCount() > 0) && !call->TypeIs(TYP_VOID))
-        {
-            // TODO: there is an issue somewhere for secondary guesses
-            // with non-void return type
-            break;
-        }
-
         CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
         JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
-
-#ifdef DEBUG
-        CORINFO_SIG_INFO sig;
-        info.compCompHnd->getMethodSig(likelyMethod, &sig);
-        if (call->GetGDVCandidatesCount() > 0)
-        {
-            CORINFO_SIG_INFO sig;
-            info.compCompHnd->getMethodSig(likelyMethod, &sig);
-            assert(sig.retType == prevSig.retType);
-            assert(sig.retTypeClass == prevSig.retTypeClass);
-            assert(sig.retTypeSigClass == prevSig.retTypeSigClass);
-        }
-        prevSig = sig;
-#endif
 
         // Add this as a potential candidate.
         //

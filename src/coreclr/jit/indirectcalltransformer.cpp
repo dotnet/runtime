@@ -1089,7 +1089,9 @@ private:
                 {
                     GenTreeCall* const call = root->AsCall();
 
-                    if (call->IsGuardedDevirtualizationCandidate() && (call->GetGDVCandidatesCount() == 1) &&
+                    if (call->IsGuardedDevirtualizationCandidate() &&
+                        // TODO: for some reason multi-check GDV doesn't work well with GDV-Chain-opt
+                        (JitConfig.JitGuardedDevirtualizationCheckCount() == 1) &&
                         (call->gtInlineCandidateInfo->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
