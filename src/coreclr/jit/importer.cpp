@@ -9557,7 +9557,7 @@ DONE_CALL:
                 // Make the call its own tree (spill the stack if needed).
                 impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
-                for (UINT8 i = 0; i < max(1, origCall->gtGDVCandidatesCount); i++)
+                for (UINT8 i = 0; i < max(1, origCall->GetGDVCandidatesCount()); i++)
                 {
                     // TODO: Still using the widened type.
                     GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
@@ -20517,26 +20517,24 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 {
     GenTreeCall* call = callNode->AsCall();
 
-    bool hasNonInlineableCandidates    = false;
-    bool firstCandidateIsNonInlineable = false;
-    const UINT8 candidates = call->IsGuardedDevirtualizationCandidate() ? call->gtGDVCandidatesCount : 1;
-    for (UINT8 candidateId = 0; candidateId < candidates; candidateId++)
+    if (call->IsGuardedDevirtualizationCandidate())
     {
-        // Do the actual evaluation
-        if (!impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, candidateId, callInfo))
+        UINT8 inlineableGdvCount = 0;
+        for (UINT8 candidateId = 0; candidateId < call->GetGDVCandidatesCount(); candidateId++)
         {
-            hasNonInlineableCandidates = true;
-            if (candidateId == 0)
+            if (!impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, candidateId, callInfo))
             {
-                firstCandidateIsNonInlineable = true;
+                // TODO: remove only non-inlineable candidates here.
+                // Currently we just ignore all candidates after first non-inlineable one
+                break;
             }
-            break;
+            inlineableGdvCount++;
         }
+        call->SetGDVCandidatesCount(inlineableGdvCount);
     }
-
-    if (hasNonInlineableCandidates && !firstCandidateIsNonInlineable)
+    else
     {
-        call->gtGDVCandidatesCount = 1;
+        impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, 0, callInfo);
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -20685,7 +20683,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         return false;
     }
 
-    assert(max(1, call->gtGDVCandidatesCount) > candidateIndex);
+    assert(max(1, call->GetGDVCandidatesCount()) > candidateIndex);
     InlineCandidateInfo* inlineInfo = call->gtInlineCandidateInfo;
     
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
@@ -21998,11 +21996,13 @@ void Compiler::considerGuardedDevirtualization(
                 eeGetClassName(likelyClasses[i].clsHandle), likelyClasses[i].likelihood);
     }
 
-    assert(call->gtGDVCandidatesCount == 0);
+    assert(call->GetGDVCandidatesCount() == 0);
+
+    INDEBUG(CORINFO_SIG_INFO prevSig);
 
     for (UINT i = 0; i < numberOfClasses; i++)
     {
-        if (call->gtGDVCandidatesCount >= (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount())
+        if (call->GetGDVCandidatesCount() >= (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount())
         {
             break;
         }
@@ -22042,20 +22042,17 @@ void Compiler::considerGuardedDevirtualization(
         CORINFO_METHOD_HANDLE likelyMethod = dvInfo.devirtualizedMethod;
         JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
 
+#ifdef DEBUG
+        CORINFO_SIG_INFO sig;
+        info.compCompHnd->getMethodSig(likelyMethod, &sig);
         if (i > 0)
         {
-            // TODO: skip valuetypes and generics for secondary guesses for now
-            CORINFO_SIG_INFO sig;
-            info.compCompHnd->getMethodSig(likelyMethod, &sig);
-            if ((sig.sigInst.methInstCount != 0) || (sig.sigInst.classInstCount != 0))
-            {
-                break;
-            }
-            if ((info.compCompHnd->getClassAttribs(likelyClasses[i].clsHandle) & CORINFO_FLG_VALUECLASS) != 0)
-            {
-                break;
-            }
+            assert(sig.retType         != prevSig.retType);
+            assert(sig.retTypeClass    != prevSig.retTypeClass);
+            assert(sig.retTypeSigClass != prevSig.retTypeSigClass);
         }
+        prevSig = sig;
+#endif
 
         // Add this as a potential candidate.
         //
@@ -22190,15 +22187,16 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     }
 
     const UINT8 maxCandidates   = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
-    const UINT8 candidatesCount = ++call->gtGDVCandidatesCount;
-    assert(maxCandidates >= candidatesCount);
+    call->SetGDVCandidatesCount(call->GetGDVCandidatesCount() + 1);
+    assert(maxCandidates >= call->GetGDVCandidatesCount());
 
-    if (candidatesCount == 1)
+    auto x = info.compFullName;
+    if (call->GetGDVCandidatesCount() == 1)
     {
         // in 90% cases virtual calls are monomorphic so let's avoid allocating too much
         call->gtInlineCandidateInfo = new (this, CMK_GDVCandidates) InlineCandidateInfo[1]{pInfo};
     }
-    else if (candidatesCount == 2)
+    else if (call->GetGDVCandidatesCount() == 2)
     {
         // Ok, re-alloc to store multiple candidates.
         InlineCandidateInfo firstInfo = call->gtInlineCandidateInfo[0];
@@ -22207,7 +22205,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
     }
     else
     {
-        call->gtInlineCandidateInfo[candidatesCount - 1] = pInfo;
+        call->gtInlineCandidateInfo[call->GetGDVCandidatesCount() - 1] = pInfo;
     }
 }
 

@@ -662,8 +662,8 @@ private:
             // Note implicit by-ref returns should have already been converted
             // so any struct copy we induce here should be cheap.
 
-            assert(origCall->gtGDVCandidatesCount > 0);
-            for (UINT8 candidateId = 0; candidateId < origCall->gtGDVCandidatesCount; candidateId++)
+            assert(origCall->GetGDVCandidatesCount() > 0);
+            for (UINT8 candidateId = 0; candidateId < origCall->GetGDVCandidatesCount(); candidateId++)
             {
                 InlineCandidateInfo* const inlineInfo = &origCall->gtInlineCandidateInfo[candidateId];
                 GenTree* const             retExpr    = inlineInfo->retExpr;
@@ -755,7 +755,7 @@ private:
         //
         virtual UINT8 GetChecksCount() override
         {
-            return origCall->gtGDVCandidatesCount;
+            return origCall->GetGDVCandidatesCount();
         }
 
         //------------------------------------------------------------------------
@@ -782,7 +782,7 @@ private:
             GenTreeCall* call   = compiler->gtCloneCandidateCall(origCall);
             call->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
-            call->gtGDVCandidatesCount = 0;
+            call->SetGDVCandidatesCount(0);
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
@@ -895,7 +895,7 @@ private:
             }
 
             UINT32 elseLikelihood = 100;
-            for (UINT8 i = 0; i < origCall->gtGDVCandidatesCount; i++)
+            for (UINT8 i = 0; i < origCall->GetGDVCandidatesCount(); i++)
             {
                 elseLikelihood -= origCall->gtInlineCandidateInfo[i].likelihood;
             }
@@ -1088,7 +1088,7 @@ private:
                 {
                     GenTreeCall* const call = root->AsCall();
 
-                    if (call->IsGuardedDevirtualizationCandidate() && (call->gtGDVCandidatesCount == 1) &&
+                    if (call->IsGuardedDevirtualizationCandidate() && (call->GetGDVCandidatesCount() == 1) &&
                         (call->gtInlineCandidateInfo->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",

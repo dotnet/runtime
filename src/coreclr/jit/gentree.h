@@ -4709,6 +4709,7 @@ struct GenTreeCall final : public GenTree
 
     void ClearGuardedDevirtualizationCandidate()
     {
+        SetGDVCandidatesCount(0);
         gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
     }
 
@@ -4774,7 +4775,7 @@ struct GenTreeCall final : public GenTree
 
     void ClearInlineInfo()
     {
-        //assert(gtGDVCandidatesCount <= 1);
+        SetGDVCandidatesCount(0);
         gtInlineCandidateInfo = nullptr;
     }
 
@@ -4801,6 +4802,18 @@ struct GenTreeCall final : public GenTree
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
     UINT8 gtGDVCandidatesCount;
+
+    UINT8 GetGDVCandidatesCount() const
+    {
+        const bool isGDV = IsGuardedDevirtualizationCandidate();
+        assert(((gtGDVCandidatesCount == 0) && !isGDV) ^ (isGDV && (gtGDVCandidatesCount > 0)));
+        return gtGDVCandidatesCount;
+    }
+
+    void SetGDVCandidatesCount(UINT8 count)
+    {
+        gtGDVCandidatesCount = count;
+    }
 
     bool IsHelperCall() const
     {
