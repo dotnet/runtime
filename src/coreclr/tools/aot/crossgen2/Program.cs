@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -696,13 +697,13 @@ namespace ILCompiler
 
                     if (_commandLineOptions.CompositeKeyFile != null)
                     {
-                        ImmutableArray<byte> compositeStrongNameKey = File.ReadAllBytes(_commandLineOptions.CompositeKeyFile).ToImmutableArray();
+                        byte[] compositeStrongNameKey = File.ReadAllBytes(_commandLineOptions.CompositeKeyFile);
                         if (!IsValidPublicKey(compositeStrongNameKey))
                         {
                             throw new Exception(string.Format(SR.ErrorCompositeKeyFileNotPublicKey));
                         }
 
-                        compositeImageSettings.PublicKey = compositeStrongNameKey;
+                        compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
                     }
 
                     //
@@ -954,7 +955,7 @@ namespace ILCompiler
             }
         }
 
-        private static readonly ImmutableArray<byte> s_ecmaKey = ImmutableArray.Create(new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 });
+        private static ReadOnlySpan<byte> s_ecmaKey => new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0 };
 
         private const int SnPublicKeyBlobSize = 13;
 
@@ -968,24 +969,22 @@ namespace ILCompiler
         // From StrongNameInternal.cpp
         // Checks to see if a public key is a valid instance of a PublicKeyBlob as
         // defined in StongName.h
-        internal static bool IsValidPublicKey(ImmutableArray<byte> blob)
+        internal static bool IsValidPublicKey(ReadOnlySpan<byte> blob)
         {
             // The number of public key bytes must be at least large enough for the header and one byte of data.
-            if (blob.IsDefault || blob.Length < s_publicKeyHeaderSize + 1)
+            if (blob.Length < s_publicKeyHeaderSize + 1)
             {
                 return false;
             }
 
-            var blobReader = new BinaryReader(new MemoryStream(blob.ToArray()));
-
             // Signature algorithm ID
-            var sigAlgId = blobReader.ReadUInt32();
+            var sigAlgId = BinaryPrimitives.ReadUInt32LittleEndian(blob);
             // Hash algorithm ID
-            var hashAlgId = blobReader.ReadUInt32();
+            var hashAlgId = BinaryPrimitives.ReadUInt32LittleEndian(blob.Slice(4));
             // Size of public key data in bytes, not including the header
-            var publicKeySize = blobReader.ReadUInt32();
+            var publicKeySize = BinaryPrimitives.ReadUInt32LittleEndian(blob.Slice(8));
             // publicKeySize bytes of public key data
-            var publicKey = blobReader.ReadByte();
+            var publicKey = blob[12];
 
             // The number of public key bytes must be the same as the size of the header plus the size of the public key data.
             if (blob.Length != s_publicKeyHeaderSize + publicKeySize)
@@ -994,7 +993,7 @@ namespace ILCompiler
             }
 
             // Check for the ECMA key, which does not obey the invariants checked below.
-            if (System.Linq.Enumerable.SequenceEqual(blob, s_ecmaKey))
+            if (blob.SequenceEqual(s_ecmaKey))
             {
                 return true;
             }
