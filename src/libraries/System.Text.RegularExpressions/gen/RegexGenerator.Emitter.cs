@@ -264,15 +264,15 @@ namespace System.Text.RegularExpressions.Generator
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
             // especially since we want the "return false" code regardless.
             int minRequiredLength = rm.Code.Tree.MinRequiredLength;
-            Debug.Assert(rm.Code.Tree.MinRequiredLength >= 0);
+            Debug.Assert(minRequiredLength >= 0);
             string clause = !rtl ?
-                rm.Code.Tree.MinRequiredLength switch
+                minRequiredLength switch
                 {
                     0 => "if (runtextpos <= runtextend)",
                     1 => "if (runtextpos < runtextend)",
                     _ => $"if (runtextpos < runtextend - {minRequiredLength - 1})"
                 } :
-                rm.Code.Tree.MinRequiredLength switch
+                minRequiredLength switch
                 {
                     0 => "if (runtextpos >= runtextbeg)",
                     1 => "if (runtextpos > runtextbeg)",
@@ -1564,16 +1564,12 @@ namespace System.Text.RegularExpressions.Generator
                     switch (node.Type)
                     {
                         case RegexNode.Oneloopatomic:
-                            expr = ToLowerIfNeeded(hasTextInfo, options, expr, IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch));
-                            expr = $"{expr} == {Literal(node.Ch)}";
-                            break;
                         case RegexNode.Notoneloopatomic:
                             expr = ToLowerIfNeeded(hasTextInfo, options, expr, IsCaseInsensitive(node) && RegexCharClass.ParticipatesInCaseConversion(node.Ch));
-                            expr = $"{expr} != {Literal(node.Ch)}";
+                            expr = $"{expr} {(node.Type == RegexNode.Oneloopatomic ? "==" : "!=")} {Literal(node.Ch)}";
                             break;
                         case RegexNode.Setloopatomic:
                             expr = MatchCharacterClass(hasTextInfo, options, expr, node.Str!, IsCaseInsensitive(node));
-                            expr = $"{expr}";
                             break;
                     }
 
