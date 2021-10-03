@@ -43,13 +43,13 @@
   <PropertyGroup>
     <!-- For source generator support we need to target multiple versions of Rolsyn in order to be able to run on older versions of Roslyn -->
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>3.11.0</MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-3.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisVersion>4.0.0-3.final</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisVersion>4.0.0-4.final</MicrosoftCodeAnalysisVersion>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>3.10.0</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>3.10.0</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.0.0-4.final</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.21479.6</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetCompatibilityVersion>1.0.0-rc.1.21459.41</MicrosoftDotNetCompatibilityVersion>
