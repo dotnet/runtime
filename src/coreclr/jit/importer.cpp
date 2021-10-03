@@ -9561,7 +9561,8 @@ DONE_CALL:
                 for (UINT8 i = 0; i < max(1, origCall->GetGDVCandidatesCount()); i++)
                 {
                     // TODO: Still using the widened type.
-                    GenTree* retExpr = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
+                    GenTree* retExpr =
+                        gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
 
                     // Link the retExpr to the call so if necessary we can manipulate it later.
                     InlineCandidateInfo* inlineInfo = &origCall->gtInlineCandidateInfo[i];
@@ -20523,7 +20524,8 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         UINT8 inlineableGdvCount = 0;
         for (UINT8 candidateId = 0; candidateId < call->GetGDVCandidatesCount(); candidateId++)
         {
-            if (!impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, candidateId, callInfo))
+            if (!impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, candidateId,
+                                              callInfo))
             {
                 // TODO: remove only non-inlineable candidates here.
                 // Currently we just ignore all candidates after first non-inlineable one
@@ -20687,7 +20689,7 @@ bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     assert(max(1, call->GetGDVCandidatesCount()) > candidateIndex);
     InlineCandidateInfo* inlineInfo = call->gtInlineCandidateInfo;
-    
+
     /* I removed the check for BBJ_THROW.  BBJ_THROW is usually marked as rarely run.  This more or less
      * restricts the inliner to non-expanding inlines.  I removed the check to allow for non-expanding
      * inlining in throw blocks.  I should consider the same thing for catch and filter regions. */
@@ -22176,7 +22178,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
         pInfo.stubAddr = nullptr;
     }
 
-    const UINT8 maxCandidates   = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
+    const UINT8 maxCandidates = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
     call->SetGDVCandidatesCount(call->GetGDVCandidatesCount() + 1);
     assert(call->GetGDVCandidatesCount() <= maxCandidates);
 
