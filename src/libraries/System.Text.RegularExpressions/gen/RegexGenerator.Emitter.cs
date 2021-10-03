@@ -154,28 +154,27 @@ namespace System.Text.RegularExpressions.Generator
 #if DEBUG
             writer.WriteLine("        /*");
             writer.WriteLine($"{rm.Code.Tree.ToString().Replace("*/", @"* /")}");
-            writer.WriteLine($"{rm.Code.ToString().Replace("*/", @"* /")}");
             writer.WriteLine("        */");
 #endif
-            writer.WriteLine($"        pattern = {patternExpression};");
-            writer.WriteLine($"        roptions = {optionsExpression};");
-            writer.WriteLine($"        internalMatchTimeout = {timeoutExpression};");
-            writer.WriteLine($"        factory = new RunnerFactory();");
+            writer.WriteLine($"        base.pattern = {patternExpression};");
+            writer.WriteLine($"        base.roptions = {optionsExpression};");
+            writer.WriteLine($"        base.internalMatchTimeout = {timeoutExpression};");
+            writer.WriteLine($"        base.factory = new RunnerFactory();");
             if (rm.Code.Caps is not null)
             {
-                writer.Write("        Caps = new global::System.Collections.Hashtable {");
+                writer.Write("        base.Caps = new global::System.Collections.Hashtable {");
                 AppendHashtableContents(writer, rm.Code.Caps);
                 writer.WriteLine(" };");
             }
             if (rm.Code.Tree.CapNames is not null)
             {
-                writer.Write("        CapNames = new global::System.Collections.Hashtable {");
+                writer.Write("        base.CapNames = new global::System.Collections.Hashtable {");
                 AppendHashtableContents(writer, rm.Code.Tree.CapNames);
                 writer.WriteLine(" };");
             }
             if (rm.Code.Tree.CapsList is not null)
             {
-                writer.Write("        capslist = new string[] {");
+                writer.Write("        base.capslist = new string[] {");
                 string separator = "";
                 foreach (string s in rm.Code.Tree.CapsList)
                 {
@@ -185,7 +184,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine(" };");
             }
-            writer.WriteLine($"        capsize = {rm.Code.CapSize};");
+            writer.WriteLine($"        base.capsize = {rm.Code.CapSize};");
             writer.WriteLine($"        base.InitializeReferences();");
             writer.WriteLine($"    }}");
             writer.WriteLine("    ");
@@ -854,8 +853,8 @@ namespace System.Text.RegularExpressions.Generator
                 bool allBranchesStartUnique = true;
                 for (int i = 0; i < childCount; i++)
                 {
-                    if (node.Child(i).FindBranchOneMultiStart() is not RegexNode oneOrMulti ||
-                        !seenChars.Add(oneOrMulti.Type == RegexNode.One ? oneOrMulti.Ch : oneOrMulti.Str![0]))
+                    if (node.Child(i).FindBranchOneOrMultiStart() is not RegexNode oneOrMulti ||
+                        !seenChars.Add(oneOrMulti.FirstCharOfOneOrMulti()))
                     {
                         allBranchesStartUnique = false;
                         break;
@@ -889,10 +888,10 @@ namespace System.Text.RegularExpressions.Generator
                             Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, child.Description());
                             Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
 
-                            RegexNode childStart = child.FindBranchOneMultiStart();
+                            RegexNode childStart = child.FindBranchOneOrMultiStart();
                             Debug.Assert(childStart is not null, child.Description());
 
-                            writer.WriteLine($"case {Literal(childStart.Type == RegexNode.One ? childStart.Ch : childStart.Str![0])}:");
+                            writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
                             writer.Indent++;
 
                             // Emit the code for the branch, without the first character that was already matched in the switch.
