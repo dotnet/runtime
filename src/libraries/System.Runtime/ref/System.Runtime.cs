@@ -13137,7 +13137,7 @@ namespace System.Runtime.CompilerServices
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
         [CLSCompliant(false)]
-        public static unsafe void* StackAlloc<T>(int length) { throw null; }
+        public static unsafe Span<T> StackAlloc<T>(int length) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {

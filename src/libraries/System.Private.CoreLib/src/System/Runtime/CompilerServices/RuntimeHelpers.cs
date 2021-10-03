@@ -112,6 +112,6 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         [CLSCompliant(false)]
-        public static unsafe void* StackAlloc<T>(int length) { throw new InvalidProgramException(); }
+        public static Span<T> StackAlloc<T>(int length) { throw new InvalidProgramException(); }
     }
 }

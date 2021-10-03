@@ -14,27 +14,27 @@ namespace StackMemTest
             public object o;
             public int i;
         }
+        private const int spanSize = 1000;
         unsafe static int Main(string[] args)
         {
             Console.WriteLine("StackMem");
 
-            Span<AwesomeStruct> theSpan = new Span<AwesomeStruct>(RuntimeHelpers.StackAlloc<AwesomeStruct>(200_000), 200_000);
+            Span<AwesomeStruct> theSpan = RuntimeHelpers.StackAlloc<AwesomeStruct>(spanSize);
+            Console.WriteLine(theSpan.Length);
 
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < spanSize; i++)
             {
                 theSpan[i].o = i.ToString();
                 theSpan[i].i = i;
             }
 
-            for (int i = 0; i < 100000; i++)
+            for (int i = 0; i < spanSize; i++)
             {
                 if (!theSpan[i].i.ToString().Equals(theSpan[i].o))
                 {
                     return -i;
                 }
             }
-
-            
 
             return 100;
         }

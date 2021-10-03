@@ -4079,6 +4079,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     ableToUseLocalloc = true;
                 }
 
+                GenTree* spanElemCount = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc Span<T> size field assignment"));
+                GenTree* spanPointerField = nullptr;
+
                 if (!impBlockIsInALoop(block) && ableToUseLocalloc)
                 {
                     if (elemCount->IsIntegralConst())
@@ -4114,18 +4117,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                             GenTree*  varNode         = gtNewLclvNode(lvaStackallocList, TYP_REF);
                             GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
 
-                            retNode = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(locAllocedMemory, gtNewIconNode(allocSize, TYP_I_IMPL), elemCount, 
+                            spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(locAllocedMemory, gtNewIconNode(allocSize, TYP_I_IMPL), elemCount, 
                             // HACKATHON ... The stackAllocElemHnd handle should be handled specially to allow for ready to run.
                                 gtNewIconNode((ssize_t)stackAllocElemHnd, TYP_I_IMPL),
                                 varAddrNode
                                 ));
-                            break;
                         }
                         else
                         {
                             // We just need to return the localloced memory
-                            retNode = locAllocedMemory;
-                            break;
+                            spanPointerField = locAllocedMemory;
                         }
                     }
                     else
@@ -4144,7 +4145,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
 
                         // Compute allocation size dynamically
-                        GenTree* allocSize = gtNewOperNode(GT_MUL, TYP_INT, elemCount, gtNewIconNode(elemSize, TYP_INT));
+                        GenTree* allocSizeElemCount = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc allocation size"));
+                        GenTree* allocSize = gtNewOperNode(GT_MUL, TYP_INT, allocSizeElemCount, gtNewIconNode(elemSize, TYP_INT));
 
                         GenTree* cmpAgainstMaxLocallocSize = gtNewOperNode(GT_LT, TYP_INT, allocSize, gtNewIconNode(MAX_STACKALLOC_DYNAMIC_SIZE + 1));
 
@@ -4168,14 +4170,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         {
                             GenTree* dynamicAllocatedMem = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_STACKMEM_NOGC, TYP_I_IMPL, gtNewCallArgs(callAllocSize, varAddrNode));
                             GenTreeColon* colonNoGcStackMem = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, locAllocedMem, dynamicAllocatedMem);
-                            retNode = gtNewQmarkNode(TYP_I_IMPL, cmpAgainstMaxLocallocSize, colonNoGcStackMem);
+                            spanPointerField = gtNewQmarkNode(TYP_I_IMPL, cmpAgainstMaxLocallocSize, colonNoGcStackMem);
                         }
                         else
                         {
                             GenTreeColon* colonGcStackMem = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, locAllocedMem, gtNewIconNode(0, TYP_I_IMPL));
                             GenTree* localAllocatedMemoryForRegistration = gtNewQmarkNode(TYP_I_IMPL, cmpAgainstMaxLocallocSize, colonGcStackMem);
 
-                            retNode = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(localAllocatedMemoryForRegistration, callAllocSize, gtCloneExpr(elemCount), 
+                            GenTree* stackAllocElemCountParam = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc elemCount parameter"));
+                            spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(localAllocatedMemoryForRegistration, callAllocSize, stackAllocElemCountParam, 
                                 // HACKATHON ... The stackAllocElemHnd handle should be handled specially to allow for ready to run.
                                     gtNewIconNode((ssize_t)stackAllocElemHnd, TYP_I_IMPL),
                                     varAddrNode
@@ -4198,12 +4201,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     GenTree*  varNode         = gtNewLclvNode(lvaStackallocList, TYP_REF);
                     GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
 
-                    GenTree* allocSize = gtNewOperNode(GT_MUL, TYP_INT, elemCount, gtNewIconNode(elemSize, TYP_INT));
+                    GenTree* allocSizeElemCount = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc allocation size"));
+                    GenTree* allocSize = gtNewOperNode(GT_MUL, TYP_INT, allocSizeElemCount, gtNewIconNode(elemSize, TYP_INT));
                     GenTree* callAllocSize = gtNewOperNode(GT_ADD, TYP_INT, allocSize, gtNewIconNode(registrationLinkedListNodeSize));
 
                     if (needsReporting)
                     {
-                        retNode = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(gtNewIconNode(0, TYP_I_IMPL), callAllocSize, gtCloneExpr(elemCount), 
+                        GenTree* stackAllocElemCountParam = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc elemCount parameter"));
+                        spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(gtNewIconNode(0, TYP_I_IMPL), callAllocSize, stackAllocElemCountParam,
                             // HACKATHON ... The stackAllocElemHnd handle should be handled specially to allow for ready to run.
                                 gtNewIconNode((ssize_t)stackAllocElemHnd, TYP_I_IMPL),
                                 varAddrNode
@@ -4211,9 +4216,25 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     }
                     else
                     {
-                        retNode = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_STACKMEM_NOGC, TYP_I_IMPL, gtNewCallArgs(callAllocSize, varAddrNode));
+                        spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_STACKMEM_NOGC, TYP_I_IMPL, gtNewCallArgs(callAllocSize, varAddrNode));
                     }
                 }
+
+//                retNode = spanPointerField;
+
+                unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("Span<T> for StackAlloc<T>"));
+                lvaSetStruct(spanTTemp, sig->retTypeClass, false);
+                GenTree* addrOfSpanTTempPointer = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
+                GenTree* dereffedSpanTTempPointer = gtNewOperNode(GT_IND, TYP_BYREF, addrOfSpanTTempPointer);
+                GenTree* gtAssignedSpanTTempPointer = gtNewAssignNode(dereffedSpanTTempPointer, spanPointerField);
+
+                GenTree* addrOfSpanTTempPointer2 = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
+                GenTree* addrOfSpanTTempSize = gtNewOperNode(GT_ADD, TYP_BYREF, addrOfSpanTTempPointer2, gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL)); // HACKATHON OFFSET not set usefully here
+                GenTree* dereffedSpanTTempSize = gtNewOperNode(GT_IND, TYP_INT, addrOfSpanTTempSize);
+                GenTree* gtAssignedSpanTTempSize = gtNewAssignNode(dereffedSpanTTempSize, spanElemCount);
+
+                GenTree* gtCommaAssignPointerAndGetResult = gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempPointer, impCreateLocalNode(spanTTemp DEBUGARG(0)));
+                retNode = gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempSize, gtCommaAssignPointerAndGetResult);
                 break;
             }
 
