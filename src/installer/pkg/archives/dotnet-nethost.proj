@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <CreateSymbolsArchive>true</CreateSymbolsArchive>
+    <CreateSymbolsArchive Condition="'$(DotNetBuildFromSource)' != 'true'">true</CreateSymbolsArchive>
   </PropertyGroup>
 
   <ItemGroup>
