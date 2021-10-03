@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
-            => configuration.Get<T>(_ => { });
+            => configuration.Get<T>(null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -42,15 +42,11 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
-        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions> configureOptions)
+        public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
             if (configuration == null)
             {
                 throw new ArgumentNullException(nameof(configuration));
-            }
-            if (configureOptions is null)
-            {
-                throw new ArgumentNullException(nameof(configureOptions));
             }
 
             object? result = configuration.Get(typeof(T), configureOptions);
@@ -71,7 +67,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(this IConfiguration configuration, Type type)
-            => configuration.Get(type, _ => { });
+            => configuration.Get(type, null);
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -87,7 +83,7 @@ namespace Microsoft.Extensions.Configuration
             this IConfiguration configuration,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
             Type type,
-            Action<BinderOptions> configureOptions)
+            Action<BinderOptions>? configureOptions)
         {
             if (configuration == null)
             {
@@ -95,7 +91,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             var options = new BinderOptions();
-            configureOptions(options);
+            configureOptions?.Invoke(options);
             return BindInstance(type, instance: null, config: configuration, options: options);
         }
 
