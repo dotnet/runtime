@@ -11537,12 +11537,30 @@ public:
 #if defined(FEATURE_HW_INTRINSICS)
             case GT_HWINTRINSIC:
 #endif
-                for (GenTree** use : node->AsMultiOp()->UseEdges())
+                if (TVisitor::UseExecutionOrder && node->IsReverseOp())
                 {
-                    result = WalkTree(use, node);
+                    assert(node->AsMultiOp()->GetOperandCount() == 2);
+
+                    result = WalkTree(&node->AsMultiOp()->Op(2), node);
                     if (result == fgWalkResult::WALK_ABORT)
                     {
                         return result;
+                    }
+                    result = WalkTree(&node->AsMultiOp()->Op(1), node);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                else
+                {
+                    for (GenTree** use : node->AsMultiOp()->UseEdges())
+                    {
+                        result = WalkTree(use, node);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
                     }
                 }
                 break;

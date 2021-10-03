@@ -4069,9 +4069,18 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
 #endif
-            for (GenTree* operand : tree->AsMultiOp()->Operands())
+            if (tree->IsReverseOp())
             {
-                fgSetTreeSeqHelper(operand, isLIR);
+                assert(tree->AsMultiOp()->GetOperandCount() == 2);
+                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(2), isLIR);
+                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(1), isLIR);
+            }
+            else
+            {
+                for (GenTree* operand : tree->AsMultiOp()->Operands())
+                {
+                    fgSetTreeSeqHelper(operand, isLIR);
+                }
             }
             break;
 #endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
@@ -4426,7 +4435,7 @@ GenTree* Compiler::fgGetFirstNode(GenTree* tree)
     GenTree* child = tree;
     while (child->NumChildren() > 0)
     {
-        if (child->OperIsBinary() && child->IsReverseOp())
+        if ((child->OperIsBinary() || child->OperIsMultiOp()) && child->IsReverseOp())
         {
             child = child->GetChild(1);
         }

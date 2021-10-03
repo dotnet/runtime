@@ -2079,6 +2079,16 @@ public:
         return (gtFlags & GTF_REVERSE_OPS) ? true : false;
     }
 
+    void SetReverseOp()
+    {
+        gtFlags |= GTF_REVERSE_OPS;
+    }
+
+    void ClearReverseOp()
+    {
+        gtFlags &= ~GTF_REVERSE_OPS;
+    }
+
     bool IsUnsigned() const
     {
         return ((gtFlags & GTF_UNSIGNED) != 0);
@@ -2791,7 +2801,7 @@ class GenTreeUseEdgeIterator final
     GenTree*  m_node;
     GenTree** m_edge;
     // Pointer sized state storage, GenTreePhi::Use* or GenTreeCall::Use*
-    // or the exclusive end of GenTreeMultiOp's operand array.
+    // or the exclusive end/beginning of GenTreeMultiOp's operand array.
     void* m_statePtr;
     // Integer sized state storage, usually the operand index for non-list based nodes.
     int m_state;
@@ -2817,6 +2827,7 @@ class GenTreeUseEdgeIterator final
 
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void AdvanceMultiOp();
+    void AdvanceReversedMultiOp();
     void SetEntryStateForMultiOp();
 #endif
 

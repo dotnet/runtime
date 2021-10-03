@@ -2663,14 +2663,48 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
         case 2:
             // A "binary" case.
-            level = gtSetEvalOrder(multiOp->Op(1));
-            lvl2  = gtSetEvalOrder(multiOp->Op(2));
 
-            // The old implementation also swapped the operands
-            // and applied GTF_REVERSE_OPS. We will not support
-            // the latter for MultiOps, the former though is ok.
-            // TODO-CQ: re-enable operands swapping for commutative
-            // intrinsics here.
+            // This way we have "level" be the complexity of the
+            // first tree to be evaluated, and "lvl2" - the second.
+            if (multiOp->IsReverseOp())
+            {
+                level = gtSetEvalOrder(multiOp->Op(2));
+                lvl2  = gtSetEvalOrder(multiOp->Op(1));
+            }
+            else
+            {
+                level = gtSetEvalOrder(multiOp->Op(1));
+                lvl2  = gtSetEvalOrder(multiOp->Op(2));
+            }
+
+            // We want the more complex tree to be evaluated first.
+            if (level < lvl2)
+            {
+                bool canSwap = multiOp->IsReverseOp() ? gtCanSwapOrder(multiOp->Op(2), multiOp->Op(1))
+                                                      : gtCanSwapOrder(multiOp->Op(1), multiOp->Op(2));
+
+                // The InitN intrinsic for two operands used to be not reversible, so preserve this.
+                // TODO-List-Cleanup: delete this only-needed-for-zero-diffs quirk.
+                if (multiOp->OperIs(GT_SIMD) && (multiOp->AsSIMD()->GetSIMDIntrinsicId() == SIMDIntrinsicInitN))
+                {
+                    canSwap = false;
+                }
+
+                if (canSwap)
+                {
+                    if (multiOp->IsReverseOp())
+                    {
+                        multiOp->ClearReverseOp();
+                    }
+                    else
+                    {
+                        multiOp->SetReverseOp();
+                    }
+
+                    std::swap(level, lvl2);
+                }
+            }
+
             if (level < 1)
             {
                 level = lvl2;
@@ -9479,7 +9513,27 @@ void GenTreeUseEdgeIterator::AdvanceMultiOp()
     assert(m_node->OperIs(GT_SIMD, GT_HWINTRINSIC));
 
     m_edge++;
-    if ((m_edge == m_statePtr))
+    if (m_edge == m_statePtr)
+    {
+        Terminate();
+    }
+}
+
+//------------------------------------------------------------------------
+// GenTreeUseEdgeIterator::AdvanceReversedMultiOp: produces the next operand of a multi-op node
+//                                                 marked with GTF_REVRESE_OPS and advances the state.
+//
+// Takes advantage of the fact that GenTreeMultiOp stores the operands in a contigious array, simply
+// decrementing the "m_edge" pointer, unless the beginning, stored in "m_statePtr", has been reached.
+//
+void GenTreeUseEdgeIterator::AdvanceReversedMultiOp()
+{
+    assert(m_node != nullptr);
+    assert(m_node->OperIs(GT_SIMD, GT_HWINTRINSIC));
+    assert((m_node->AsMultiOp()->GetOperandCount() == 2) && m_node->IsReverseOp());
+
+    m_edge--;
+    if (m_edge == m_statePtr)
     {
         Terminate();
     }
@@ -9491,7 +9545,6 @@ void GenTreeUseEdgeIterator::AdvanceMultiOp()
 //
 void GenTreeUseEdgeIterator::SetEntryStateForMultiOp()
 {
-    m_edge              = m_node->AsMultiOp()->GetOperandArray();
     size_t operandCount = m_node->AsMultiOp()->GetOperandCount();
 
     if (operandCount == 0)
@@ -9500,8 +9553,20 @@ void GenTreeUseEdgeIterator::SetEntryStateForMultiOp()
     }
     else
     {
-        m_statePtr = m_edge + operandCount;
-        m_advance  = &GenTreeUseEdgeIterator::AdvanceMultiOp;
+        if (m_node->IsReverseOp())
+        {
+            assert(operandCount == 2);
+
+            m_edge     = m_node->AsMultiOp()->GetOperandArray() + 1;
+            m_statePtr = m_node->AsMultiOp()->GetOperandArray() - 1;
+            m_advance  = &GenTreeUseEdgeIterator::AdvanceReversedMultiOp;
+        }
+        else
+        {
+            m_edge     = m_node->AsMultiOp()->GetOperandArray();
+            m_statePtr = m_node->AsMultiOp()->GetOperandArray(operandCount);
+            m_advance  = &GenTreeUseEdgeIterator::AdvanceMultiOp;
+        }
     }
 }
 #endif
@@ -10382,7 +10447,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
         /* Then print the general purpose flags */
         GenTreeFlags flags = tree->gtFlags;
 
-        if (tree->OperIsBinary())
+        if (tree->OperIsBinary() || tree->OperIsMultiOp())
         {
             genTreeOps oper = tree->OperGet();
 
@@ -10395,9 +10460,9 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
                 }
             }
         }
-        else // !tree->OperIsBinary()
+        else // !(tree->OperIsBinary() || tree->OperIsMultiOp())
         {
-            // the GTF_REVERSE flag only applies to binary operations
+            // the GTF_REVERSE flag only applies to binary operations (which some MultiOp nodes are).
             flags &= ~GTF_REVERSE_OPS; // we use this value for GTF_VAR_ARR_INDEX above
         }
 
