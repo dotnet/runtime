@@ -20510,11 +20510,26 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 {
     GenTreeCall* call = callNode->AsCall();
 
+    bool hasNonInlineableCandidates    = false;
+    bool firstCandidateIsNonInlineable = false;
     const UINT8 candidates = call->IsGuardedDevirtualizationCandidate() ? call->gtGDVCandidatesCount : 1;
     for (UINT8 candidateId = 0; candidateId < candidates; candidateId++)
     {
         // Do the actual evaluation
-        impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, candidateId, callInfo);
+        if (!impMarkInlineCandidateHelper(call, exactContextHnd, exactContextNeedsRuntimeLookup, candidateId, callInfo))
+        {
+            hasNonInlineableCandidates = true;
+            if (candidateId == 0)
+            {
+                firstCandidateIsNonInlineable = true;
+            }
+            break;
+        }
+    }
+
+    if (hasNonInlineableCandidates && !firstCandidateIsNonInlineable)
+    {
+        call->gtGDVCandidatesCount = 1;
     }
 
     // If this call is an inline candidate or is not a guarded devirtualization
@@ -20566,7 +20581,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    method may be marked as "noinline" to short-circuit any
 //    future assessments of calls to this method.
 
-void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
+bool Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
                                             CORINFO_CONTEXT_HANDLE exactContextHnd,
                                             bool                   exactContextNeedsRuntimeLookup,
                                             UINT8                  candidateIndex,
@@ -20584,7 +20599,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
          * figure out why we did not set MAXOPT for this compile.
          */
         assert(!compIsForInlining());
-        return;
+        return false;
     }
 
     if (compIsForImportOnly())
@@ -20592,7 +20607,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         // Don't bother creating the inline candidate during verification.
         // Otherwise the call to info.compCompHnd->canInline will trigger a recursive verification
         // that leads to the creation of multiple instances of Compiler.
-        return;
+        return false;
     }
 
     InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate");
@@ -20601,21 +20616,21 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (opts.compDbgCode)
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_DEBUG_CODEGEN);
-        return;
+        return false;
     }
 
     // Don't inline if inlining into this method is disabled.
     if (impInlineRoot()->m_inlineStrategy->IsInliningDisabled())
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_IS_JIT_NOINLINE);
-        return;
+        return false;
     }
 
     // Don't inline into callers that use the NextCallReturnAddress intrinsic.
     if (info.compHasNextCallRetAddr)
     {
         inlineResult.NoteFatal(InlineObservation::CALLER_USES_NEXT_CALL_RET_ADDR);
-        return;
+        return false;
     }
 
     // Inlining candidate determination needs to honor only IL tail prefix.
@@ -20623,7 +20638,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (call->IsTailPrefixedCall())
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_EXPLICIT_TAIL_PREFIX);
-        return;
+        return false;
     }
 
     // Tail recursion elimination takes precedence over inlining.
@@ -20633,7 +20648,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (gtIsRecursiveCall(call) && call->IsImplicitTailCall())
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IMPLICIT_REC_TAIL_CALL);
-        return;
+        return false;
     }
 
     if (call->IsVirtual())
@@ -20643,7 +20658,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (!call->IsGuardedDevirtualizationCandidate())
         {
             inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT);
-            return;
+            return false;
         }
     }
 
@@ -20653,14 +20668,14 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     {
         assert(!call->IsGuardedDevirtualizationCandidate());
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_CALL_TO_HELPER);
-        return;
+        return false;
     }
 
     /* Ignore indirect calls */
     if (call->gtCallType == CT_INDIRECT)
     {
         inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_NOT_DIRECT_MANAGED);
-        return;
+        return false;
     }
 
     assert(max(1, call->gtGDVCandidatesCount) > candidateIndex);
@@ -20728,7 +20743,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 #endif
 
             inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_CATCH);
-            return;
+            return false;
         }
 
         if (bbInFilterILRange(compCurBB))
@@ -20741,7 +20756,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 #endif
 
             inlineResult.NoteFatal(InlineObservation::CALLSITE_IS_WITHIN_FILTER);
-            return;
+            return false;
         }
     }
 
@@ -20750,7 +20765,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (methAttr & CORINFO_FLG_DONT_INLINE)
     {
         inlineResult.NoteFatal(InlineObservation::CALLEE_IS_NOINLINE);
-        return;
+        return false;
     }
 
     /* Cannot inline synchronized methods */
@@ -20758,7 +20773,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     if (methAttr & CORINFO_FLG_SYNCH)
     {
         inlineResult.NoteFatal(InlineObservation::CALLEE_IS_SYNCHRONIZED);
-        return;
+        return false;
     }
 
     /* Check legality of PInvoke callsite (for inlining of marshalling code) */
@@ -20770,7 +20785,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
         if (!impCanPInvokeInlineCallSite(block))
         {
             inlineResult.NoteFatal(InlineObservation::CALLSITE_PINVOKE_EH);
-            return;
+            return false;
         }
     }
 
@@ -20779,7 +20794,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
 
     if (inlineResult.IsFailure())
     {
-        return;
+        return false;
     }
 
     // The old value should be null OR this call should be a guarded devirtualization candidate.
@@ -20819,6 +20834,7 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
     inlineResult.SetReported();
+    return true;
 }
 
 /******************************************************************************/

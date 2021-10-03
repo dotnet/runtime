@@ -713,8 +713,11 @@ void InlineResult::Report()
     // a failing observation yet, do so now.
     if (IsFailure() && (m_Call != nullptr))
     {
-        // compiler should have revoked candidacy on the call by now
-        assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        if (m_Call->gtGDVCandidatesCount < 2)
+        {
+            // compiler should have revoked candidacy on the call by now
+            assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        }
 
         if (m_Call->gtInlineObservation == InlineObservation::CALLEE_UNUSED_INITIAL)
         {

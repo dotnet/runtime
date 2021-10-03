@@ -4793,7 +4793,7 @@ private:
                                 bool                   exactContextNeedsRuntimeLookup,
                                 CORINFO_CALL_INFO*     callInfo);
 
-    void impMarkInlineCandidateHelper(GenTreeCall*           call,
+    bool impMarkInlineCandidateHelper(GenTreeCall*           call,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
                                       bool                   exactContextNeedsRuntimeLookup,
                                       UINT8                  candidateIndex,
