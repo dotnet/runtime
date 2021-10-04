@@ -1,7 +1,14 @@
 # wa-info
 `wa-info` is a tool to inspect [WebAssembly](https://webassembly.org/) [binary format](https://webassembly.github.io/spec/core/binary/index.html) wasm files.
 
-It can show sections overview in the summary output, disassemble function(s) code, show information about dotnet AOT.
+It can show sections overview in the summary output, disassemble function(s) code, show information about dotnet AOT. It is available as [dotnet tool](https://docs.microsoft.com/en-us/dotnet/core/tools/global-tools).
+
+### Installation
+
+To install `wa-info` as dotnet tool run:
+```
+dotnet tool install -g wa-info
+```
 
 ### Command line options
 
