@@ -64,10 +64,10 @@ jobs:
       platforms:
       - iOS_arm64
       dependsOn:
-        - Build_Android_arm_release_AllSubsets_Mono
-        - Build_Android_arm64_release_AllSubsets_Mono
-        - Build_Android_x86_release_AllSubsets_Mono
-        - Build_Android_x64_release_AllSubsets_Mono
+        - Build_Android_arm_release_Maui_Packs_Mono
+        - Build_Android_arm64_release_Maui_Packs_Mono
+        - Build_Android_x86_release_Maui_Packs_Mono
+        - Build_Android_x64_release_Maui_Packs_Mono
       jobParameters:
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
