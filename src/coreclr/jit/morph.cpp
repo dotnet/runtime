@@ -10014,15 +10014,14 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         }
         else // InitBlk
         {
-#if FEATURE_SIMD
+#ifdef FEATURE_SIMD
             if (varTypeIsSIMD(asgType))
             {
                 assert(!isCopyBlock); // Else we would have returned the tree above.
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = new (this, GT_SIMD)
-                    GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseJitType(), size);
+                src = gtNewSIMDNode(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseJitType(), size);
             }
             else
 #endif
