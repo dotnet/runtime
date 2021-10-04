@@ -22,6 +22,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(MyTypeWithPropertyOrdering))]
     [JsonSerializable(typeof(MyIntermediateType))]
     [JsonSerializable(typeof(HighLowTempsImmutable))]
+    [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]

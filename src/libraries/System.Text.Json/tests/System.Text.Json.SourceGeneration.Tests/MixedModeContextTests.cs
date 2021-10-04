@@ -25,6 +25,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
@@ -68,6 +69,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MixedModeContext.Default.MyNestedClass.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MixedModeContext.Default.ByteArray.SerializeHandler);
             Assert.Null(MixedModeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MixedModeContext.Default.String.SerializeHandler);
             Assert.NotNull(MixedModeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
