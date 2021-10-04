@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from './cwraps';
-import { Module } from './modules';
+import cwraps from "./cwraps";
+import { Module } from "./modules";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -18,14 +18,14 @@ const _scratch_root_free_instances: WasmRoot<any>[] = [];
  */
 export function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer {
     if (capacity <= 0)
-        throw new Error('capacity >= 1');
+        throw new Error("capacity >= 1");
 
     capacity = capacity | 0;
 
     const capacityBytes = capacity * 4;
     const offset = Module._malloc(capacityBytes);
     if ((<any>offset % 4) !== 0)
-        throw new Error('Malloc returned an unaligned offset');
+        throw new Error("Malloc returned an unaligned offset");
 
     _zero_region(offset, capacityBytes);
 
@@ -38,13 +38,13 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
  */
 export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity: number, name?: string): WasmRootBuffer {
     if (capacity <= 0)
-        throw new Error('capacity >= 1');
+        throw new Error("capacity >= 1");
 
     capacity = capacity | 0;
 
     const capacityBytes = capacity * 4;
     if ((<any>offset % 4) !== 0)
-        throw new Error('Unaligned offset');
+        throw new Error("Unaligned offset");
 
     _zero_region(offset, capacityBytes);
 
@@ -71,8 +71,8 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
     }
 
     if (value !== undefined) {
-        if (typeof (value) !== 'number')
-            throw new Error('value must be an address in the managed heap');
+        if (typeof (value) !== "number")
+            throw new Error("value must be an address in the managed heap");
 
         result.set(value);
     } else {
@@ -100,7 +100,7 @@ export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(co
         for (var i = 0; i < result.length; i++)
             result[i] = mono_wasm_new_root();
     } else {
-        throw new Error('count_or_values must be either an array or a number greater than 0');
+        throw new Error("count_or_values must be either an array or a number greater than 0");
     }
 
     return result;
@@ -140,7 +140,7 @@ function _mono_wasm_release_scratch_index(index: number) {
 
 function _mono_wasm_claim_scratch_index() {
     if (!_scratch_root_buffer || !_scratch_root_free_indices) {
-        _scratch_root_buffer = mono_wasm_new_root_buffer(maxScratchRoots, 'js roots');
+        _scratch_root_buffer = mono_wasm_new_root_buffer(maxScratchRoots, "js roots");
 
         _scratch_root_free_indices = new Int32Array(maxScratchRoots);
         _scratch_root_free_indices_count = maxScratchRoots;
@@ -149,7 +149,7 @@ function _mono_wasm_claim_scratch_index() {
     }
 
     if (_scratch_root_free_indices_count < 1)
-        throw new Error('Out of scratch root space');
+        throw new Error("Out of scratch root space");
 
     const result = _scratch_root_free_indices[_scratch_root_free_indices_count - 1];
     _scratch_root_free_indices_count--;
@@ -172,12 +172,12 @@ export class WasmRootBuffer {
         this.__offset32 = (<number><any>offset / 4) | 0;
         this.__count = capacity;
         this.length = capacity;
-        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || 'noname');
+        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
         this.__ownsAllocation = ownsAllocation;
     }
 
     _throw_index_out_of_range() {
-        throw new Error('index out of range');
+        throw new Error("index out of range");
     }
 
     _check_in_range(index: number) {
@@ -229,7 +229,7 @@ export class WasmRootBuffer {
     }
 
     toString() {
-        return '[root buffer @' + this.get_address(0) + ', size ' + this.__count + ']';
+        return "[root buffer @" + this.get_address(0) + ", size " + this.__count + "]";
     }
 }
 
@@ -289,6 +289,6 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     toString() {
-        return '[root @' + this.get_address() + ']';
+        return "[root @" + this.get_address() + "]";
     }
 }

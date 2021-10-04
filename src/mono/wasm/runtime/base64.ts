@@ -7,7 +7,7 @@
 
 export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) :                 string{
     const reader = _makeByteReader(inArray, offset, length);
-    let result = '';
+    let result = "";
     let ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0;
     let bits = 0, equalsCount = 0, sum = 0;
     const mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
@@ -43,9 +43,9 @@ export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?
         }
 
         if (equalsCount === 2) {
-            result += '==';
+            result += "==";
         } else if (equalsCount === 1) {
-            result += '=';
+            result += "=";
         } else {
             bits = (sum & mask4) >> shift4;
             result += _base64Table[bits];
@@ -56,33 +56,33 @@ export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?
 }
 
 const _base64Table = [
-    'A', 'B', 'C', 'D',
-    'E', 'F', 'G', 'H',
-    'I', 'J', 'K', 'L',
-    'M', 'N', 'O', 'P',
-    'Q', 'R', 'S', 'T',
-    'U', 'V', 'W', 'X',
-    'Y', 'Z',
-    'a', 'b', 'c', 'd',
-    'e', 'f', 'g', 'h',
-    'i', 'j', 'k', 'l',
-    'm', 'n', 'o', 'p',
-    'q', 'r', 's', 't',
-    'u', 'v', 'w', 'x',
-    'y', 'z',
-    '0', '1', '2', '3',
-    '4', '5', '6', '7',
-    '8', '9',
-    '+', '/'
+    "A", "B", "C", "D",
+    "E", "F", "G", "H",
+    "I", "J", "K", "L",
+    "M", "N", "O", "P",
+    "Q", "R", "S", "T",
+    "U", "V", "W", "X",
+    "Y", "Z",
+    "a", "b", "c", "d",
+    "e", "f", "g", "h",
+    "i", "j", "k", "l",
+    "m", "n", "o", "p",
+    "q", "r", "s", "t",
+    "u", "v", "w", "x",
+    "y", "z",
+    "0", "1", "2", "3",
+    "4", "5", "6", "7",
+    "8", "9",
+    "+", "/"
 ];
 
 function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
     read: () => number | null
 } {
-    let position = (typeof (index) === 'number') ? index : 0;
+    let position = (typeof (index) === "number") ? index : 0;
     let endpoint: number;
 
-    if (typeof (count) === 'number')
+    if (typeof (count) === "number")
         endpoint = (position + count);
     else
         endpoint = (bytes.length - position);
@@ -98,7 +98,7 @@ function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
         }
     };
 
-    Object.defineProperty(result, 'eof', {
+    Object.defineProperty(result, "eof", {
         get: function () {
             return (position >= endpoint);
         },

@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import corebindings from './corebindings';
-import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectNull } from './types';
+import corebindings from "./corebindings";
+import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectNull } from "./types";
 
-export const _use_finalization_registry = typeof globalThis.FinalizationRegistry === 'function';
-export const _use_weak_ref = typeof globalThis.WeakRef === 'function';
+export const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
+export const _use_weak_ref = typeof globalThis.WeakRef === "function";
 export let _js_owned_object_registry: FinalizationRegistry<any>;
 
 // this is array, not map. We maintain list of gaps in _js_handle_free_list so that it could be as compact as possible
@@ -20,8 +20,8 @@ if (_use_finalization_registry) {
     _js_owned_object_registry = new globalThis.FinalizationRegistry(_js_owned_object_finalized);
 }
 
-export const js_owned_gc_handle_symbol = Symbol.for('wasm js_owned_gc_handle');
-export const cs_owned_js_handle_symbol = Symbol.for('wasm cs_owned_js_handle');
+export const js_owned_gc_handle_symbol = Symbol.for("wasm js_owned_gc_handle");
+export const cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 
 
 export function get_js_owned_object_by_gc_handle(gc_handle: GCHandle) {
@@ -105,13 +105,13 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
 
 export function mono_wasm_release_cs_owned_object(js_handle: JSHandle) {
     const obj = _cs_owned_objects_by_js_handle[<any>js_handle];
-    if (typeof obj !== 'undefined' && obj !== null) {
+    if (typeof obj !== "undefined" && obj !== null) {
         // if this is the global object then do not
         // unregister it.
         if (globalThis === obj)
             return obj;
 
-        if (typeof obj[cs_owned_js_handle_symbol] !== 'undefined') {
+        if (typeof obj[cs_owned_js_handle_symbol] !== "undefined") {
             obj[cs_owned_js_handle_symbol] = undefined;
         }
 

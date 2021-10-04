@@ -4,8 +4,8 @@
 /// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
-import { t_ModuleExtension } from './exports';
-import { MonoConfig, t_RuntimeHelpers } from './types';
+import { t_ModuleExtension } from "./exports";
+import { MonoConfig, t_RuntimeHelpers } from "./types";
 
 export var Module: t_Module & t_ModuleExtension;
 export var MONO: any;
@@ -21,8 +21,8 @@ let monoConfig: MonoConfig;
 let runtime_is_ready = false;
 
 export const runtimeHelpers: t_RuntimeHelpers = <any>{
-    namespace: 'System.Runtime.InteropServices.JavaScript',
-    classname: 'Runtime',
+    namespace: "System.Runtime.InteropServices.JavaScript",
+    classname: "Runtime",
     loaded_files: [],
     get mono_wasm_runtime_is_ready() {
         return runtime_is_ready;

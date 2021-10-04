@@ -2,24 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 declare interface ManagedPointer {
-    __brandbase: 'ManagedPointer'
+    __brandbase: "ManagedPointer"
 }
 
 declare interface NativePointer {
-    __brandbase: 'NativePointer'
+    __brandbase: "NativePointer"
 }
 
 declare interface VoidPtr extends NativePointer {
-    __brand: 'VoidPtr'
+    __brand: "VoidPtr"
 }
 declare interface CharPtr extends NativePointer {
-    __brand: 'CharPtr'
+    __brand: "CharPtr"
 }
 declare interface Int32Ptr extends NativePointer {
-    __brand: 'Int32Ptr'
+    __brand: "Int32Ptr"
 }
 declare interface CharPtrPtr extends NativePointer {
-    __brand: 'CharPtrPtr'
+    __brand: "CharPtrPtr"
 }
 
 declare let ENVIRONMENT_IS_WEB: boolean;

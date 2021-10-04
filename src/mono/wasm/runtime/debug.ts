@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from './modules';
-import { toBase64StringImpl, _base64_to_uint8 } from './base64';
-import cwraps from './cwraps';
+import { Module, runtimeHelpers } from "./modules";
+import { toBase64StringImpl, _base64_to_uint8 } from "./base64";
+import cwraps from "./cwraps";
 
 let commands_received: any;
 let _call_function_res_cache: any = {};
@@ -24,7 +24,7 @@ export function mono_wasm_runtime_ready() {
     if ((<any>globalThis).dotnetDebugger)
         debugger;
     else
-        console.debug('mono_wasm_runtime_ready', 'fe00e07a-5519-4dfe-b35a-f867dbaf2e28');
+        console.debug("mono_wasm_runtime_ready", "fe00e07a-5519-4dfe-b35a-f867dbaf2e28");
 }
 
 export function mono_wasm_fire_debugger_agent_message() {
@@ -62,7 +62,7 @@ export function mono_wasm_send_dbg_command_with_parms(id: number, command_set: n
 
     const { res_ok, res } = commands_received;
     if (!res_ok)
-        throw new Error('Failed on mono_wasm_invoke_method_debugger_agent_with_parms');
+        throw new Error("Failed on mono_wasm_invoke_method_debugger_agent_with_parms");
     return res;
 }
 
@@ -72,7 +72,7 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 
     const { res_ok, res } = commands_received;
     if (!res_ok)
-        throw new Error('Failed on mono_wasm_send_dbg_command');
+        throw new Error("Failed on mono_wasm_send_dbg_command");
     return res;
 
 }
@@ -80,7 +80,7 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 export function mono_wasm_get_dbg_command_info() {
     const { res_ok, res } = commands_received;
     if (!res_ok)
-        throw new Error('Failed on mono_wasm_get_dbg_command_info');
+        throw new Error("Failed on mono_wasm_get_dbg_command_info");
     return res;
 }
 
@@ -95,16 +95,16 @@ export function mono_wasm_detach_debugger() {
  * Raises an event for the debug proxy
  */
 export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}) {
-    if (typeof event !== 'object')
+    if (typeof event !== "object")
         throw new Error(`event must be an object, but got ${JSON.stringify(event)}`);
 
     if (event.eventName === undefined)
         throw new Error(`event.eventName is a required parameter, in event: ${JSON.stringify(event)}`);
 
-    if (typeof args !== 'object')
+    if (typeof args !== "object")
         throw new Error(`args must be an object, but got ${JSON.stringify(args)}`);
 
-    console.debug('mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae', JSON.stringify(event), JSON.stringify(args));
+    console.debug("mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae", JSON.stringify(event), JSON.stringify(args));
 }
 
 // Used by the debugger to enumerate loaded dlls and pdbs
@@ -114,7 +114,7 @@ export function mono_wasm_get_loaded_files() {
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
-    if (objectId.startsWith('dotnet:array:')) {
+    if (objectId.startsWith("dotnet:array:")) {
         const ret = details.map((p: any) => p.value);
         return ret;
     }
@@ -161,7 +161,7 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     const details = request.details;
     let proxy: any = {};
 
-    if (objId.startsWith('dotnet:cfo_res:')) {
+    if (objId.startsWith("dotnet:cfo_res:")) {
         if (objId in _call_function_res_cache)
             proxy = _call_function_res_cache[objId];
         else
@@ -173,29 +173,29 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     const fn_args = request.arguments != undefined ? request.arguments.map(a => JSON.stringify(a.value)) : [];
 
     const fn_body_template = `var fn = ${request.functionDeclaration}; return fn.apply(proxy, [${fn_args}]);`;
-    const fn_defn = new Function('proxy', fn_body_template);
+    const fn_defn = new Function("proxy", fn_body_template);
     const fn_res = fn_defn(proxy);
 
     if (fn_res === undefined)
-        return { type: 'undefined' };
+        return { type: "undefined" };
 
     if (Object(fn_res) !== fn_res) {
-        if (typeof (fn_res) == 'object' && fn_res == null)
+        if (typeof (fn_res) == "object" && fn_res == null)
             return { type: typeof (fn_res), subtype: `${fn_res}`, value: null };
         return { type: typeof (fn_res), description: `${fn_res}`, value: `${fn_res}` };
     }
 
     if (request.returnByValue && fn_res.subtype == undefined)
-        return { type: 'object', value: fn_res };
+        return { type: "object", value: fn_res };
 
     if (Object.getPrototypeOf(fn_res) == Array.prototype) {
 
         const fn_res_id = _cache_call_function_res(fn_res);
 
         return {
-            type: 'object',
-            subtype: 'array',
-            className: 'Array',
+            type: "object",
+            subtype: "array",
+            className: "Array",
             description: `Array(${fn_res.length})`,
             objectId: fn_res_id
         };
@@ -205,9 +205,9 @@ export function mono_wasm_call_function_on(request: CallRequest) {
     }
 
     if (fn_res == proxy)
-        return { type: 'object', className: 'Object', description: 'Object', objectId: objId };
+        return { type: "object", className: "Object", description: "Object", objectId: objId };
     const fn_res_id = _cache_call_function_res(fn_res);
-    return { type: 'object', className: 'Object', description: 'Object', objectId: fn_res_id };
+    return { type: "object", className: "Object", description: "Object", objectId: fn_res_id };
 }
 
 
@@ -229,7 +229,7 @@ function _get_cfo_res_details(objectId: string, args: any) {
     Object.keys(descriptors).forEach(k => {
         let new_obj;
         const prop_desc = descriptors[k];
-        if (typeof prop_desc.value == 'object') {
+        if (typeof prop_desc.value == "object") {
             // convert `{value: { type='object', ... }}`
             // to      `{ name: 'foo', value: { type='object', ... }}
             new_obj = Object.assign({ name: k }, prop_desc);
@@ -243,7 +243,7 @@ function _get_cfo_res_details(objectId: string, args: any) {
             new_obj = {
                 name: k,
                 // merge/add `type` and `description` to `d.value`
-                value: Object.assign({ type: (typeof prop_desc.value), description: '' + prop_desc.value },
+                value: Object.assign({ type: (typeof prop_desc.value), description: "" + prop_desc.value },
                     prop_desc)
             };
         } else if (prop_desc.get !== undefined) {
@@ -254,13 +254,13 @@ function _get_cfo_res_details(objectId: string, args: any) {
             new_obj = {
                 name: k,
                 get: {
-                    className: 'Function',
+                    className: "Function",
                     description: `get ${k} () {}`,
-                    type: 'function'
+                    type: "function"
                 }
             };
         } else {
-            new_obj = { name: k, value: { type: 'symbol', value: '<Unknown>', description: '<Unknown>' } };
+            new_obj = { name: k, value: { type: "symbol", value: "<Unknown>", description: "<Unknown>" } };
         }
 
         res_details.push(new_obj);

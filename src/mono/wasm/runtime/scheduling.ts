@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from './cwraps';
+import cwraps from "./cwraps";
 
 const timeout_queue: Function[] = [];
 let spread_timers_maximum = 0;
@@ -11,10 +11,10 @@ let pump_count = 0;
 if (globalThis.navigator) {
     const nav: any = globalThis.navigator;
     if (nav.userAgentData && nav.userAgentData.brands) {
-        isChromium = nav.userAgentData.brands.some((i: any) => i.brand == 'Chromium');
+        isChromium = nav.userAgentData.brands.some((i: any) => i.brand == "Chromium");
     }
     else if (nav.userAgent) {
-        isChromium = nav.userAgent.includes('Chrome');
+        isChromium = nav.userAgent.includes("Chrome");
     }
 }
 
@@ -58,14 +58,14 @@ export function prevent_timer_throttling() {
 
 export function schedule_background_exec() {
     ++pump_count;
-    if (typeof globalThis.setTimeout === 'function') {
+    if (typeof globalThis.setTimeout === "function") {
         globalThis.setTimeout(pump_message, 0);
     }
 }
 
 export function mono_set_timeout(timeout: number, id: number) {
 
-    if (typeof globalThis.setTimeout === 'function') {
+    if (typeof globalThis.setTimeout === "function") {
         globalThis.setTimeout(function () {
             mono_wasm_set_timeout_exec(id);
         }, timeout);

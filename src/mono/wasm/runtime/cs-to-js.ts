@@ -1,22 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, WasmRoot } from './roots';
+import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
     GCHandle, JSHandle, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString
-} from './types';
-import { Module, runtimeHelpers } from './modules';
-import { conv_string } from './strings';
-import corebindings from './corebindings';
-import cwraps from './cwraps';
-import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from './gc-handles';
-import { mono_method_get_call_signature, call_method, wrap_error } from './method-calls';
-import { _js_to_mono_obj } from './js-to-cs';
-import { _are_promises_supported, _create_cancelable_promise } from './cancelable-promise';
+} from "./types";
+import { Module, runtimeHelpers } from "./modules";
+import { conv_string } from "./strings";
+import corebindings from "./corebindings";
+import cwraps from "./cwraps";
+import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
+import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
+import { _js_to_mono_obj } from "./js-to-cs";
+import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 
-const delegate_invoke_symbol = Symbol.for('wasm delegate_invoke');
-const delegate_invoke_signature_symbol = Symbol.for('wasm delegate_invoke_signature');
+const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
+const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
 
 // this is only used from Blazor
 export function unbox_mono_obj(mono_obj: MonoObject) {
@@ -47,12 +47,12 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
         case 26: // int64
         case 27: // uint64
             // TODO: Fix this once emscripten offers HEAPI64/HEAPU64 or can return them
-            throw new Error('int64 not available');
+            throw new Error("int64 not available");
         case 3: // string
         case 29: // interned string
             return conv_string(root.value);
         case 4: //vts
-            throw new Error('no idea on how to unbox value types');
+            throw new Error("no idea on how to unbox value types");
         case 5: // delegate
             return _wrap_delegate_root_as_function(root);
         case 6: // Task
@@ -68,7 +68,7 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
         case 16:
         case 17:
         case 18:
-            throw new Error('Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.');
+            throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
         case 20: // clr .NET DateTime
             var dateValue = corebindings._get_date_value(root.value);
             return new Date(dateValue);
@@ -182,14 +182,14 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
         // bind the method
         const delegateRoot = mono_wasm_new_root(get_js_owned_object_by_gc_handle(gc_handle));
         try {
-            if (typeof result[delegate_invoke_symbol] === 'undefined') {
+            if (typeof result[delegate_invoke_symbol] === "undefined") {
                 result[delegate_invoke_symbol] = cwraps.mono_wasm_get_delegate_invoke(delegateRoot.value);
                 if (!result[delegate_invoke_symbol]) {
-                    throw new Error('System.Delegate Invoke method can not be resolved.');
+                    throw new Error("System.Delegate Invoke method can not be resolved.");
                 }
             }
 
-            if (typeof result[delegate_invoke_signature_symbol] === 'undefined') {
+            if (typeof result[delegate_invoke_signature_symbol] === "undefined") {
                 result[delegate_invoke_signature_symbol] = mono_method_get_call_signature(result[delegate_invoke_symbol], delegateRoot.value);
             }
         } finally {
@@ -215,12 +215,12 @@ export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: Mo
     try {
         const js_name = conv_string(nameRoot.value);
         if (!js_name) {
-            return wrap_error(is_exception, 'Invalid name @' + nameRoot.value);
+            return wrap_error(is_exception, "Invalid name @" + nameRoot.value);
         }
 
         const coreObj = (<any>globalThis)[js_name];
-        if (coreObj === null || typeof coreObj === 'undefined') {
-            return wrap_error(is_exception, 'JavaScript host object \'' + js_name + '\' not found.');
+        if (coreObj === null || typeof coreObj === "undefined") {
+            return wrap_error(is_exception, "JavaScript host object '" + js_name + "' not found.");
         }
 
         try {
@@ -257,7 +257,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
         return null;
 
     if (!_are_promises_supported)
-        throw new Error('Promises are not supported thus \'System.Threading.Tasks.Task\' can not work in this context.');
+        throw new Error("Promises are not supported thus 'System.Threading.Tasks.Task' can not work in this context.");
 
     // get strong reference to Task
     const gc_handle = corebindings._get_js_owned_object_gc_handle(root.value);
@@ -302,7 +302,7 @@ function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>) {
     const js_handle = corebindings._try_get_cs_owned_object_js_handle(root.value, 0);
     if (js_handle) {
         if (js_handle === JSHandleDisposed) {
-            throw new Error('Cannot access a disposed JSObject at ' + root.value);
+            throw new Error("Cannot access a disposed JSObject at " + root.value);
         }
         return mono_wasm_get_jsobj_from_js_handle(js_handle);
     }

@@ -1,28 +1,28 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from './modules';
+import { Module, runtimeHelpers } from "./modules";
 import {
     cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle, get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
     mono_wasm_release_cs_owned_object, _js_owned_object_registry, _use_finalization_registry
-} from './gc-handles';
-import corebindings from './corebindings';
-import cwraps from './cwraps';
-import { mono_wasm_new_root, mono_wasm_release_roots } from './roots';
-import { wrap_error } from './method-calls';
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from './strings';
-import { isThenable } from './cancelable-promise';
-import { has_backing_array_buffer } from './buffers';
-import { JSHandle, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol } from './types';
+} from "./gc-handles";
+import corebindings from "./corebindings";
+import cwraps from "./cwraps";
+import { mono_wasm_new_root, mono_wasm_release_roots } from "./roots";
+import { wrap_error } from "./method-calls";
+import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import { isThenable } from "./cancelable-promise";
+import { has_backing_array_buffer } from "./buffers";
+import { JSHandle, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol } from "./types";
 
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
     switch (true) {
         case js_obj === null:
-        case typeof js_obj === 'undefined':
+        case typeof js_obj === "undefined":
             return 0;
-        case typeof js_obj === 'symbol':
-        case typeof js_obj === 'string':
+        case typeof js_obj === "symbol":
+        case typeof js_obj === "string":
             return corebindings._create_uri(js_obj);
         default:
             return _extract_mono_obj(should_add_in_flight, js_obj);
@@ -37,9 +37,9 @@ export function js_to_mono_obj(js_obj: any) {
 export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
     switch (true) {
         case js_obj === null:
-        case typeof js_obj === 'undefined':
+        case typeof js_obj === "undefined":
             return MonoObjectNull;
-        case typeof js_obj === 'number': {
+        case typeof js_obj === "number": {
             let result = null;
             if ((js_obj | 0) === js_obj)
                 result = _box_js_int(js_obj);
@@ -52,17 +52,17 @@ export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): Mon
                 throw new Error(`Boxing failed for ${js_obj}`);
 
             return result;
-        } case typeof js_obj === 'string':
+        } case typeof js_obj === "string":
             return <any>js_string_to_mono_string(js_obj);
-        case typeof js_obj === 'symbol':
+        case typeof js_obj === "symbol":
             return <any>js_string_to_mono_string_interned(js_obj);
-        case typeof js_obj === 'boolean':
+        case typeof js_obj === "boolean":
             return _box_js_bool(js_obj);
         case isThenable(js_obj) === true:
             var { task_ptr } = _wrap_js_thenable_as_task(js_obj);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
             return task_ptr;
-        case js_obj.constructor.name === 'Date':
+        case js_obj.constructor.name === "Date":
             // getTime() is always UTC
             return corebindings._create_date_time(js_obj.getTime());
         default:
@@ -71,7 +71,7 @@ export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): Mon
 }
 
 function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
-    if (js_obj === null || typeof js_obj === 'undefined')
+    if (js_obj === null || typeof js_obj === "undefined")
         return MonoObjectNull;
 
     let result = null;
@@ -94,7 +94,7 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
     if (!result) {
         // Obtain the JS -> C# type mapping.
         const wasm_type = js_obj[wasm_type_symbol];
-        const wasm_type_id = typeof wasm_type === 'undefined' ? 0 : wasm_type;
+        const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
 
         const js_handle = mono_wasm_get_js_handle(js_obj);
 
@@ -150,12 +150,12 @@ export function js_typed_array_to_array(js_obj: any) {
         return bufferArray;
     }
     else {
-        throw new Error('Object \'' + js_obj + '\' is not a typed array');
+        throw new Error("Object '" + js_obj + "' is not a typed array");
     }
 }
 
 export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number) {
-    if (typeof (js_obj) !== 'number')
+    if (typeof (js_obj) !== "number")
         throw new Error(`Expected numeric value for enum argument, got '${js_obj}'`);
 
     return js_obj | 0;
@@ -209,7 +209,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
             corebindings._release_js_owned_object_by_gc_handle(tcs_gc_handle);
         }
     }, (reason) => {
-        corebindings._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : '');
+        corebindings._set_tcs_failure(tcs_gc_handle, reason ? reason.toString() : "");
         // let go of the thenable reference
         mono_wasm_release_cs_owned_object(thenable_js_handle);
 
@@ -234,7 +234,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
 export function mono_wasm_typed_array_to_array(js_handle: JSHandle, is_exception: Int32Ptr) {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
-        return wrap_error(is_exception, 'ERR06: Invalid JS object handle \'' + js_handle + '\'');
+        return wrap_error(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'");
     }
 
     // returns pointer to C# array

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from './cwraps';
-import { GlobalizationMode } from './types';
+import cwraps from "./cwraps";
+import { GlobalizationMode } from "./types";
 
 let num_icu_assets_loaded_successfully = 0;
 
@@ -30,26 +30,26 @@ export function mono_wasm_get_icudt_name(culture: string): string {
 export function mono_wasm_globalization_init(globalization_mode: GlobalizationMode) {
     let invariantMode = false;
 
-    if (globalization_mode === 'invariant')
+    if (globalization_mode === "invariant")
         invariantMode = true;
 
     if (!invariantMode) {
         if (num_icu_assets_loaded_successfully > 0) {
-            console.debug('MONO_WASM: ICU data archive(s) loaded, disabling invariant mode');
-        } else if (globalization_mode !== 'icu') {
-            console.debug('MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode');
+            console.debug("MONO_WASM: ICU data archive(s) loaded, disabling invariant mode");
+        } else if (globalization_mode !== "icu") {
+            console.debug("MONO_WASM: ICU data archive(s) not loaded, using invariant globalization mode");
             invariantMode = true;
         } else {
-            const msg = 'invariant globalization mode is inactive and no ICU data archives were loaded';
-            console.error('MONO_WASM: ERROR: ' + msg);
+            const msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
+            console.error("MONO_WASM: ERROR: " + msg);
             throw new Error(msg);
         }
     }
 
     if (invariantMode)
-        cwraps.mono_wasm_setenv('DOTNET_SYSTEM_GLOBALIZATION_INVARIANT', '1');
+        cwraps.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1");
 
     // Set globalization mode to PredefinedCulturesOnly
-    cwraps.mono_wasm_setenv('DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY', '1');
+    cwraps.mono_wasm_setenv("DOTNET_SYSTEM_GLOBALIZATION_PREDEFINED_CULTURES_ONLY", "1");
 }
 

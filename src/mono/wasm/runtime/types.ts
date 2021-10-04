@@ -2,28 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 export type GCHandle = {
-    __brand: 'GCHandle'
+    __brand: "GCHandle"
 }
 export type JSHandle = {
-    __brand: 'JSHandle'
+    __brand: "JSHandle"
 }
 export interface MonoString extends ManagedPointer{
-    __brand: 'MonoString'
+    __brand: "MonoString"
 }
 export interface MonoClass extends ManagedPointer{
-    __brand: 'MonoClass'
+    __brand: "MonoClass"
 }
 export interface MonoMethod extends ManagedPointer{
-    __brand: 'MonoMethod'
+    __brand: "MonoMethod"
 }
 export interface MonoObject extends ManagedPointer{
-    __brand: 'MonoObject'
+    __brand: "MonoObject"
 }
 export interface MonoArray extends ManagedPointer{
-    __brand: 'MonoArray'
+    __brand: "MonoArray"
 }
 export interface MonoAssembly extends ManagedPointer{
-    __brand: 'MonoAssembly'
+    __brand: "MonoAssembly"
 }
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
 export const MonoObjectNull: MonoObject = <MonoObject><any>0;
@@ -75,31 +75,31 @@ export type AssetEntry = {
 }
 
 export interface AssemblyEntry extends AssetEntry {
-    name: 'assembly'
+    name: "assembly"
 }
 
 export interface SatelliteAssemblyEntry extends AssetEntry {
-    name: 'resource',
+    name: "resource",
     culture: string
 }
 
 export interface VfsEntry extends AssetEntry {
-    name: 'vfs',
+    name: "vfs",
     virtual_path: string
 }
 
 export interface IcuData extends AssetEntry {
-    name: 'icu',
+    name: "icu",
     load_remote: boolean
 }
 
 // Note that since these are annoated as `declare const enum` they are replaces by tsc with their raw value during compilation
 export const enum AssetBehaviours {
-    Resource = 'resource', // load asset as a managed resource assembly
-    Assembly = 'assembly', // load asset as a managed assembly (or debugging information)
-    Heap = 'heap', // store asset into the native heap
-    ICU = 'icu', // load asset as an ICU data archive
-    VFS = 'vfs', // load asset into the virtual filesystem (for fopen, File.Open, etc)
+    Resource = "resource", // load asset as a managed resource assembly
+    Assembly = "assembly", // load asset as a managed assembly (or debugging information)
+    Heap = "heap", // store asset into the native heap
+    ICU = "icu", // load asset as an ICU data archive
+    VFS = "vfs", // load asset into the virtual filesystem (for fopen, File.Open, etc)
 }
 
 export type t_RuntimeHelpers = {
@@ -121,12 +121,12 @@ export type t_RuntimeHelpers = {
     config: MonoConfig | MonoConfigError;
 }
 
-export const wasm_type_symbol = Symbol.for('wasm type');
+export const wasm_type_symbol = Symbol.for("wasm type");
 
 export const enum GlobalizationMode {
-    ICU = 'icu', // load ICU globalization data from any runtime assets with behavior "icu".
-    INVARIANT = 'invariant', //  operate in invariant globalization mode.
-    AUTO = 'auto' // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+    ICU = "icu", // load ICU globalization data from any runtime assets with behavior "icu".
+    INVARIANT = "invariant", //  operate in invariant globalization mode.
+    AUTO = "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 }
 
 export type AOTProfilerOptions = {

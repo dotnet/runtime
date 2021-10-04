@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, MonoArray } from './types';
-import { Module } from './modules';
-import { mono_wasm_get_jsobj_from_js_handle } from './gc-handles';
-import { wrap_error } from './method-calls';
-import { _js_to_mono_obj } from './js-to-cs';
+import { JSHandle, MonoArray } from "./types";
+import { Module } from "./modules";
+import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
+import { wrap_error } from "./method-calls";
+import { _js_to_mono_obj } from "./js-to-cs";
 
 // Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
 // 	 adress of managed pinned array -> copy from heap -> typed array memory
@@ -43,7 +43,7 @@ function typed_array_from(pinned_array: MonoArray, begin: number, end: number, b
             newTypedArray = new Uint8ClampedArray(end - begin);
             break;
         default:
-            throw new Error('Unknown array type ' + type);
+            throw new Error("Unknown array type " + type);
     }
 
     typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
@@ -67,7 +67,7 @@ function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, be
         // lets play it safe and throw an error here instead of assuming to much.
         // Better safe than sorry later
         if (bytes_per_element !== typed_array.BYTES_PER_ELEMENT)
-            throw new Error('Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT \'' + typed_array.BYTES_PER_ELEMENT + '\' sizeof managed element: \'' + bytes_per_element + '\'');
+            throw new Error("Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT '" + typed_array.BYTES_PER_ELEMENT + "' sizeof managed element: '" + bytes_per_element + "'");
 
         // how much space we have to work with
         let num_of_bytes = (end - begin) * bytes_per_element;
@@ -88,7 +88,7 @@ function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, be
         return num_of_bytes;
     }
     else {
-        throw new Error('Object \'' + typed_array + '\' is not a typed array');
+        throw new Error("Object '" + typed_array + "' is not a typed array");
     }
 
 }
@@ -110,7 +110,7 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
         // lets play it safe and throw an error here instead of assuming to much.
         // Better safe than sorry later
         if (bytes_per_element !== typed_array.BYTES_PER_ELEMENT)
-            throw new Error('Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT \'' + typed_array.BYTES_PER_ELEMENT + '\' sizeof managed element: \'' + bytes_per_element + '\'');
+            throw new Error("Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT '" + typed_array.BYTES_PER_ELEMENT + "' sizeof managed element: '" + bytes_per_element + "'");
 
         // how much space we have to work with
         let num_of_bytes = (end - begin) * bytes_per_element;
@@ -129,14 +129,14 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
         return num_of_bytes;
     }
     else {
-        throw new Error('Object \'' + typed_array + '\' is not a typed array');
+        throw new Error("Object '" + typed_array + "' is not a typed array");
     }
 }
 
 export function mono_wasm_typed_array_copy_to(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr) {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
-        return wrap_error(is_exception, 'ERR07: Invalid JS object handle \'' + js_handle + '\'');
+        return wrap_error(is_exception, "ERR07: Invalid JS object handle '" + js_handle + "'");
     }
 
     const res = typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
@@ -153,7 +153,7 @@ export function mono_wasm_typed_array_from(pinned_array: MonoArray, begin: numbe
 export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr) {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
-        return wrap_error(is_exception, 'ERR08: Invalid JS object handle \'' + js_handle + '\'');
+        return wrap_error(is_exception, "ERR08: Invalid JS object handle '" + js_handle + "'");
     }
 
     const res = typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
@@ -162,7 +162,7 @@ export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_arra
 }
 
 export function has_backing_array_buffer(js_obj: any) {
-    return typeof SharedArrayBuffer !== 'undefined'
+    return typeof SharedArrayBuffer !== "undefined"
         ? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
         : js_obj.buffer instanceof ArrayBuffer;
 }

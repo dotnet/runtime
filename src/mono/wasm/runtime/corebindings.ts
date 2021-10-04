@@ -1,33 +1,33 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, GCHandle, MonoObject, t_RuntimeHelpers } from './types';
-import { ArgsMarshalString } from './method-binding';
-import { _create_primitive_converters } from './method-binding';
-import { PromiseControl } from './cancelable-promise';
+import { JSHandle, GCHandle, MonoObject, t_RuntimeHelpers } from "./types";
+import { ArgsMarshalString } from "./method-binding";
+import { _create_primitive_converters } from "./method-binding";
+import { PromiseControl } from "./cancelable-promise";
 
 const fn_signatures: [jsname: string, csname: string, signature: ArgsMarshalString][] = [
-    ['_get_cs_owned_object_by_js_handle', 'GetCSOwnedObjectByJSHandle', 'ii!'],
-    ['_get_cs_owned_object_js_handle', 'GetCSOwnedObjectJSHandle', 'mi'],
-    ['_try_get_cs_owned_object_js_handle', 'TryGetCSOwnedObjectJSHandle', 'mi'],
-    ['_create_cs_owned_proxy', 'CreateCSOwnedProxy', 'iii!'],
+    ["_get_cs_owned_object_by_js_handle", "GetCSOwnedObjectByJSHandle", "ii!"],
+    ["_get_cs_owned_object_js_handle", "GetCSOwnedObjectJSHandle", "mi"],
+    ["_try_get_cs_owned_object_js_handle", "TryGetCSOwnedObjectJSHandle", "mi"],
+    ["_create_cs_owned_proxy", "CreateCSOwnedProxy", "iii!"],
 
-    ['_get_js_owned_object_by_gc_handle', 'GetJSOwnedObjectByGCHandle', 'i!'],
-    ['_get_js_owned_object_gc_handle', 'GetJSOwnedObjectGCHandle', 'm'],
-    ['_release_js_owned_object_by_gc_handle', 'ReleaseJSOwnedObjectByGCHandle', 'i'],
+    ["_get_js_owned_object_by_gc_handle", "GetJSOwnedObjectByGCHandle", "i!"],
+    ["_get_js_owned_object_gc_handle", "GetJSOwnedObjectGCHandle", "m"],
+    ["_release_js_owned_object_by_gc_handle", "ReleaseJSOwnedObjectByGCHandle", "i"],
 
-    ['_create_tcs', 'CreateTaskSource', ''],
-    ['_set_tcs_result', 'SetTaskSourceResult', 'io'],
-    ['_set_tcs_failure', 'SetTaskSourceFailure', 'is'],
-    ['_get_tcs_task', 'GetTaskSourceTask', 'i!'],
-    ['_task_from_result', 'TaskFromResult', 'o!'],
-    ['_setup_js_cont', 'SetupJSContinuation', 'mo'],
+    ["_create_tcs", "CreateTaskSource", ""],
+    ["_set_tcs_result", "SetTaskSourceResult", "io"],
+    ["_set_tcs_failure", "SetTaskSourceFailure", "is"],
+    ["_get_tcs_task", "GetTaskSourceTask", "i!"],
+    ["_task_from_result", "TaskFromResult", "o!"],
+    ["_setup_js_cont", "SetupJSContinuation", "mo"],
 
-    ['_object_to_string', 'ObjectToString', 'm'],
-    ['_get_date_value', 'GetDateValue', 'm'],
-    ['_create_date_time', 'CreateDateTime', 'd!'],
-    ['_create_uri', 'CreateUri', 's!'],
-    ['_is_simple_array', 'IsSimpleArray', 'm'],
+    ["_object_to_string", "ObjectToString", "m"],
+    ["_get_date_value", "GetDateValue", "m"],
+    ["_create_date_time", "CreateDateTime", "d!"],
+    ["_create_uri", "CreateUri", "s!"],
+    ["_is_simple_array", "IsSimpleArray", "m"],
 ];
 
 export interface t_CSwraps {

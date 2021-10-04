@@ -1,26 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, WasmRoot } from './roots';
-import { prevent_timer_throttling } from './scheduling';
-import { Queue } from './queue';
-import { PromiseControl, _create_cancelable_promise } from './cancelable-promise';
-import { _mono_array_root_to_js_array, _wrap_delegate_root_as_function } from './cs-to-js';
-import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from './gc-handles';
-import { _wrap_js_thenable_as_task } from './js-to-cs';
-import { wrap_error } from './method-calls';
-import { conv_string } from './strings';
-import { JSHandle, MonoArray, MonoObject, MonoString } from './types';
+import { mono_wasm_new_root, WasmRoot } from "./roots";
+import { prevent_timer_throttling } from "./scheduling";
+import { Queue } from "./queue";
+import { PromiseControl, _create_cancelable_promise } from "./cancelable-promise";
+import { _mono_array_root_to_js_array, _wrap_delegate_root_as_function } from "./cs-to-js";
+import { mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle } from "./gc-handles";
+import { _wrap_js_thenable_as_task } from "./js-to-cs";
+import { wrap_error } from "./method-calls";
+import { conv_string } from "./strings";
+import { JSHandle, MonoArray, MonoObject, MonoString } from "./types";
 
-const wasm_ws_pending_send_buffer = Symbol.for('wasm ws_pending_send_buffer');
-const wasm_ws_pending_send_buffer_offset = Symbol.for('wasm ws_pending_send_buffer_offset');
-const wasm_ws_pending_send_buffer_type = Symbol.for('wasm ws_pending_send_buffer_type');
-const wasm_ws_pending_receive_event_queue = Symbol.for('wasm ws_pending_receive_event_queue');
-const wasm_ws_pending_receive_promise_queue = Symbol.for('wasm ws_pending_receive_promise_queue');
-const wasm_ws_pending_open_promise = Symbol.for('wasm ws_pending_open_promise');
-const wasm_ws_pending_close_promises = Symbol.for('wasm ws_pending_close_promises');
-const wasm_ws_pending_send_promises = Symbol.for('wasm ws_pending_send_promises');
-const wasm_ws_is_aborted = Symbol.for('wasm ws_is_aborted');
+const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
+const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
+const wasm_ws_pending_send_buffer_type = Symbol.for("wasm ws_pending_send_buffer_type");
+const wasm_ws_pending_receive_event_queue = Symbol.for("wasm ws_pending_receive_event_queue");
+const wasm_ws_pending_receive_promise_queue = Symbol.for("wasm ws_pending_receive_promise_queue");
+const wasm_ws_pending_open_promise = Symbol.for("wasm ws_pending_open_promise");
+const wasm_ws_pending_close_promises = Symbol.for("wasm ws_pending_close_promises");
+const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises");
+const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
 let mono_wasm_web_socket_close_warning = false;
 let _text_decoder_utf8: TextDecoder | undefined = undefined;
 let _text_encoder_utf8: TextEncoder | undefined = undefined;
@@ -34,7 +34,7 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
     try {
         const js_uri = conv_string(uri_root.value);
         if (!js_uri) {
-            return wrap_error(is_exception, 'ERR12: Invalid uri \'' + uri_root.value + '\'');
+            return wrap_error(is_exception, "ERR12: Invalid uri '" + uri_root.value + "'");
         }
 
         const js_subs = _mono_array_root_to_js_array(sub_root);
@@ -49,7 +49,7 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
         ws[wasm_ws_pending_open_promise] = open_promise_control;
         ws[wasm_ws_pending_send_promises] = [];
         ws[wasm_ws_pending_close_promises] = [];
-        ws.binaryType = 'arraybuffer';
+        ws.binaryType = "arraybuffer";
         const local_on_open = (ev: Event) => {
             if (ws[wasm_ws_is_aborted]) return;
             open_promise_control.resolve(null);
@@ -61,7 +61,7 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
             prevent_timer_throttling();
         };
         const local_on_close = (ev: CloseEvent) => {
-            ws.removeEventListener('message', local_on_message);
+            ws.removeEventListener("message", local_on_message);
             if (ws[wasm_ws_is_aborted]) return;
             js_on_close(ev.code, ev.reason);
 
@@ -76,22 +76,22 @@ export function mono_wasm_web_socket_open(uri: MonoString, subProtocols: MonoArr
             const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
             receive_promise_queue.drain((receive_promise_control) => {
                 const response_root = receive_promise_control.response_root;
-                Module.setValue(<any>response_root.value + 0, 0, 'i32');// count
-                Module.setValue(<any>response_root.value + 4, 2, 'i32');// type:close
-                Module.setValue(<any>response_root.value + 8, 1, 'i32');// end_of_message: true
+                Module.setValue(<any>response_root.value + 0, 0, "i32");// count
+                Module.setValue(<any>response_root.value + 4, 2, "i32");// type:close
+                Module.setValue(<any>response_root.value + 8, 1, "i32");// end_of_message: true
                 receive_promise_control.resolve(null);
             });
         };
-        ws.addEventListener('message', local_on_message);
-        ws.addEventListener('open', local_on_open, { once: true });
-        ws.addEventListener('close', local_on_close, { once: true });
+        ws.addEventListener("message", local_on_message);
+        ws.addEventListener("open", local_on_open, { once: true });
+        ws.addEventListener("close", local_on_close, { once: true });
 
         const ws_js_handle = mono_wasm_get_js_handle(ws);
-        Module.setValue(web_socket_js_handle, <any>ws_js_handle, 'i32');
+        Module.setValue(web_socket_js_handle, <any>ws_js_handle, "i32");
 
         const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
         // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-        Module.setValue(thenable_js_handle, <any>then_js_handle, 'i32');
+        Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
         return task_ptr;
     }
@@ -110,10 +110,10 @@ export function mono_wasm_web_socket_send(webSocket_js_handle: JSHandle, buffer_
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
         if (!ws)
-            throw new Error('ERR17: Invalid JS object handle ' + webSocket_js_handle);
+            throw new Error("ERR17: Invalid JS object handle " + webSocket_js_handle);
 
         if (ws.readyState != WebSocket.OPEN) {
-            throw new Error('InvalidState: The WebSocket is not connected.');
+            throw new Error("InvalidState: The WebSocket is not connected.");
         }
 
         const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_root, offset, length, message_type, end_of_message);
@@ -142,24 +142,24 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
         if (!ws)
-            throw new Error('ERR18: Invalid JS object handle ' + webSocket_js_handle);
+            throw new Error("ERR18: Invalid JS object handle " + webSocket_js_handle);
         const receive_event_queue = ws[wasm_ws_pending_receive_event_queue];
         const receive_promise_queue = ws[wasm_ws_pending_receive_promise_queue];
 
         const readyState = ws.readyState;
         if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
-            throw new Error('InvalidState: The WebSocket is not connected.');
+            throw new Error("InvalidState: The WebSocket is not connected.");
         }
 
         if (receive_event_queue.getLength()) {
             if (receive_promise_queue.getLength() != 0) {
-                throw new Error('ERR20: Invalid WS state');// assert
+                throw new Error("ERR20: Invalid WS state");// assert
             }
             // finish synchronously
             _mono_wasm_web_socket_receive_buffering(receive_event_queue, buffer_root, offset, length, response_root);
             release_buffer();
 
-            Module.setValue(thenable_js_handle, 0, 'i32');
+            Module.setValue(thenable_js_handle, 0, "i32");
             return null;
         }
         const { promise, promise_control } = _create_cancelable_promise(release_buffer, release_buffer);
@@ -172,7 +172,7 @@ export function mono_wasm_web_socket_receive(webSocket_js_handle: JSHandle, buff
 
         const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
         // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-        Module.setValue(thenable_js_handle, <any>then_js_handle, 'i32');
+        Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
         return task_ptr;
     }
     catch (ex) {
@@ -185,7 +185,7 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle);
         if (!ws)
-            throw new Error('ERR19: Invalid JS object handle ' + webSocket_js_handle);
+            throw new Error("ERR19: Invalid JS object handle " + webSocket_js_handle);
 
         if (ws.readyState == WebSocket.CLOSED) {
             return null;// no promise
@@ -205,21 +205,21 @@ export function mono_wasm_web_socket_close(webSocket_js_handle: JSHandle, code: 
 
             const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
             // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-            Module.setValue(thenable_js_handle, <any>then_js_handle, 'i32');
+            Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
             return task_ptr;
         }
         else {
             if (!mono_wasm_web_socket_close_warning) {
                 mono_wasm_web_socket_close_warning = true;
-                console.warn('WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.');
+                console.warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
             }
             if (js_reason) {
                 ws.close(code, js_reason);
             } else {
                 ws.close(code);
             }
-            Module.setValue(thenable_js_handle, 0, 'i32');
+            Module.setValue(thenable_js_handle, 0, "i32");
             return null;// no promise
         }
     }
@@ -235,26 +235,26 @@ export function mono_wasm_web_socket_abort(webSocket_js_handle: JSHandle, is_exc
     try {
         const ws = mono_wasm_get_jsobj_from_js_handle(webSocket_js_handle) as WebSocketExtension;
         if (!ws)
-            throw new Error('ERR18: Invalid JS object handle ' + webSocket_js_handle);
+            throw new Error("ERR18: Invalid JS object handle " + webSocket_js_handle);
 
         ws[wasm_ws_is_aborted] = true;
         const open_promise_control = ws[wasm_ws_pending_open_promise];
         if (open_promise_control) {
-            open_promise_control.reject('OperationCanceledException');
+            open_promise_control.reject("OperationCanceledException");
         }
         for (const close_promise_control of ws[wasm_ws_pending_close_promises]) {
-            close_promise_control.reject('OperationCanceledException');
+            close_promise_control.reject("OperationCanceledException");
         }
         for (const send_promise_control of ws[wasm_ws_pending_send_promises]) {
-            send_promise_control.reject('OperationCanceledException');
+            send_promise_control.reject("OperationCanceledException");
         }
 
         ws[wasm_ws_pending_receive_promise_queue].drain(receive_promise_control => {
-            receive_promise_control.reject('OperationCanceledException');
+            receive_promise_control.reject("OperationCanceledException");
         });
 
         // this is different from Managed implementation
-        ws.close(1000, 'Connection was aborted.');
+        ws.close(1000, "Connection was aborted.");
     }
     catch (ex) {
         return wrap_error(is_exception, ex);
@@ -287,7 +287,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uin
         else if (ws.readyState != WebSocket.OPEN) {
             // only reject if the data were not sent
             // bufferedAmount does not reset to zero once the connection closes
-            promise_control.reject('InvalidState: The WebSocket is not connected.');
+            promise_control.reject("InvalidState: The WebSocket is not connected.");
         }
         else if (!promise_control.isDone) {
             globalThis.setTimeout(polling_check, nextDelay);
@@ -306,7 +306,7 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer: Uin
 
     const { task_ptr, then_js_handle } = _wrap_js_thenable_as_task(promise);
     // task_ptr above is not rooted, we need to return it to mono without any intermediate mono call which could cause GC
-    Module.setValue(thenable_js_handle, <any>then_js_handle, 'i32');
+    Module.setValue(thenable_js_handle, <any>then_js_handle, "i32");
 
     return task_ptr;
 }
@@ -315,7 +315,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
     const event_queue = ws[wasm_ws_pending_receive_event_queue];
     const promise_queue = ws[wasm_ws_pending_receive_promise_queue];
 
-    if (typeof event.data === 'string') {
+    if (typeof event.data === "string") {
         if (_text_encoder_utf8 === undefined) {
             _text_encoder_utf8 = new TextEncoder();
         }
@@ -329,8 +329,8 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
         });
     }
     else {
-        if (event.data.constructor.name !== 'ArrayBuffer') {
-            throw new Error('ERR19: WebSocket receive expected ArrayBuffer');
+        if (event.data.constructor.name !== "ArrayBuffer") {
+            throw new Error("ERR19: WebSocket receive expected ArrayBuffer");
         }
         event_queue.enqueue({
             type: 1,// WebSocketMessageType.Binary
@@ -339,7 +339,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
         });
     }
     if (promise_queue.getLength() && event_queue.getLength() > 1) {
-        throw new Error('ERR20: Invalid WS state');// assert
+        throw new Error("ERR20: Invalid WS state");// assert
     }
     while (promise_queue.getLength() && event_queue.getLength()) {
         const promise_control = promise_queue.dequeue()!;
@@ -365,9 +365,9 @@ function _mono_wasm_web_socket_receive_buffering(event_queue: Queue<any>, buffer
     if (end_of_message) {
         event_queue.dequeue();
     }
-    Module.setValue(<any>response_root.value + 0, count, 'i32');
-    Module.setValue(<any>response_root.value + 4, event.type, 'i32');
-    Module.setValue(<any>response_root.value + 8, end_of_message, 'i32');
+    Module.setValue(<any>response_root.value + 0, count, "i32");
+    Module.setValue(<any>response_root.value + 4, event.type, "i32");
+    Module.setValue(<any>response_root.value + 8, end_of_message, "i32");
 }
 
 function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_root: WasmRoot<MonoObject>, buffer_offset: number, length: number, message_type: number, end_of_message: boolean): Uint8Array | string | null {
@@ -423,11 +423,11 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_roo
             // text, convert from UTF-8 bytes to string, because of bad browser API
             if (_text_decoder_utf8 === undefined) {
                 // we do not validate outgoing data https://github.com/dotnet/runtime/issues/59214
-                _text_decoder_utf8 = new TextDecoder('utf-8', { fatal: false });
+                _text_decoder_utf8 = new TextDecoder("utf-8", { fatal: false });
             }
 
             // See https://github.com/whatwg/encoding/issues/172
-            const bytes = typeof SharedArrayBuffer !== 'undefined' && buffer instanceof SharedArrayBuffer
+            const bytes = typeof SharedArrayBuffer !== "undefined" && buffer instanceof SharedArrayBuffer
                 ? (<any>buffer).slice(0, offset)
                 : buffer.subarray(0, offset);
             return _text_decoder_utf8.decode(bytes);

@@ -1,26 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer } from './roots';
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull } from './types';
-import { Module, runtimeHelpers } from './modules';
-import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from './cs-to-js';
-import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from './gc-handles';
-import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from './js-to-cs';
-import { ArgsMarshalString, mono_bind_method, Converter, _compile_converter_for_marshal_string, _decide_if_result_is_marshaled, find_method } from './method-binding';
-import { conv_string, js_string_to_mono_string } from './strings';
-import cwraps from './cwraps';
-import { bindings_lazy_init } from './startup';
+import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer } from "./roots";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull } from "./types";
+import { Module, runtimeHelpers } from "./modules";
+import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
+import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
+import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
+import { ArgsMarshalString, mono_bind_method, Converter, _compile_converter_for_marshal_string, _decide_if_result_is_marshaled, find_method } from "./method-binding";
+import { conv_string, js_string_to_mono_string } from "./strings";
+import cwraps from "./cwraps";
+import { bindings_lazy_init } from "./startup";
 
 function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any) {
-    const has_args = args && (typeof args === 'object') && args.length > 0;
-    const has_args_marshal = typeof args_marshal === 'string';
+    const has_args = args && (typeof args === "object") && args.length > 0;
+    const has_args_marshal = typeof args_marshal === "string";
 
     if (has_args) {
         if (!has_args_marshal)
-            throw new Error('No signature provided for method call.');
+            throw new Error("No signature provided for method call.");
         else if (args.length > args_marshal.length)
-            throw new Error('Too many parameter values. Expected at most ' + args_marshal.length + ' value(s) for signature ' + args_marshal);
+            throw new Error("Too many parameter values. Expected at most " + args_marshal.length + " value(s) for signature " + args_marshal);
     }
 
     return has_args_marshal && has_args;
@@ -112,10 +112,10 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
     this_arg = coerceNull(this_arg);
 
     // Detect someone accidentally passing the wrong type of value to method
-    if (typeof method !== 'number')
+    if (typeof method !== "number")
         throw new Error(`method must be an address in the native heap, but was '${method}'`);
     if (!method)
-        throw new Error('no method specified');
+        throw new Error("no method specified");
 
     const needs_converter = _verify_args_for_method_call(args_marshal, args);
 
@@ -182,7 +182,7 @@ export function call_static_method(fqn: string, args: any[], signature: ArgsMars
 
     const method = mono_method_resolve(fqn);
 
-    if (typeof signature === 'undefined')
+    if (typeof signature === "undefined")
         signature = mono_method_get_call_signature(method);
 
     return call_method(method, undefined, signature, args);
@@ -193,7 +193,7 @@ export function mono_bind_static_method(fqn: string, signature: ArgsMarshalStrin
 
     const method = mono_method_resolve(fqn);
 
-    if (typeof signature === 'undefined')
+    if (typeof signature === "undefined")
         signature = mono_method_get_call_signature(method);
 
     return mono_bind_method(method, null, signature, fqn);
@@ -204,13 +204,13 @@ export function mono_bind_assembly_entry_point(assembly: string, signature: Args
 
     const asm = cwraps.mono_wasm_assembly_load(assembly);
     if (!asm)
-        throw new Error('Could not find assembly: ' + assembly);
+        throw new Error("Could not find assembly: " + assembly);
 
     const method = cwraps.mono_wasm_assembly_get_entry_point(asm);
     if (!method)
-        throw new Error('Could not find entry point for assembly: ' + assembly);
+        throw new Error("Could not find entry point for assembly: " + assembly);
 
-    if (typeof signature === 'undefined')
+    if (typeof signature === "undefined")
         signature = mono_method_get_call_signature(method);
 
     return function (...args: any[]) {
@@ -234,13 +234,13 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
     const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(method_name);
     try {
         const js_name = conv_string(nameRoot.value);
-        if (!js_name || (typeof (js_name) !== 'string')) {
-            return wrap_error(is_exception, 'ERR12: Invalid method name object \'' + nameRoot.value + '\'');
+        if (!js_name || (typeof (js_name) !== "string")) {
+            return wrap_error(is_exception, "ERR12: Invalid method name object '" + nameRoot.value + "'");
         }
 
         const obj = get_js_obj(js_handle);
         if (!obj) {
-            return wrap_error(is_exception, 'ERR13: Invalid JS object handle \'' + js_handle + '\' while invoking \'' + js_name + '\'');
+            return wrap_error(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'");
         }
 
         const js_args = _mono_array_root_to_js_array(argsRoot);
@@ -248,8 +248,8 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
         var res;
         try {
             const m = obj[js_name];
-            if (typeof m === 'undefined')
-                throw new Error('Method: \'' + js_name + '\' not found for: \'' + Object.prototype.toString.call(obj) + '\'');
+            if (typeof m === "undefined")
+                throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
             var res = m.apply(obj, js_args);
             return _js_to_mono_obj(true, res);
         } catch (ex) {
@@ -266,12 +266,12 @@ export function mono_wasm_get_object_property(js_handle: JSHandle, property_name
     try {
         const js_name = conv_string(nameRoot.value);
         if (!js_name) {
-            return wrap_error(is_exception, 'Invalid property name object \'' + nameRoot.value + '\'');
+            return wrap_error(is_exception, "Invalid property name object '" + nameRoot.value + "'");
         }
 
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (!obj) {
-            return wrap_error(is_exception, 'ERR01: Invalid JS object handle \'' + js_handle + '\' while geting \'' + js_name + '\'');
+            return wrap_error(is_exception, "ERR01: Invalid JS object handle '" + js_handle + "' while geting '" + js_name + "'");
         }
 
         try {
@@ -292,12 +292,12 @@ export function mono_wasm_set_object_property(js_handle: JSHandle, property_name
 
         const property = conv_string(nameRoot.value);
         if (!property) {
-            return wrap_error(is_exception, 'Invalid property name object \'' + property_name + '\'');
+            return wrap_error(is_exception, "Invalid property name object '" + property_name + "'");
         }
 
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (!js_obj) {
-            return wrap_error(is_exception, 'ERR02: Invalid JS object handle \'' + js_handle + '\' while setting \'' + property + '\'');
+            return wrap_error(is_exception, "ERR02: Invalid JS object handle '" + js_handle + "' while setting '" + property + "'");
         }
 
         let result = false;
@@ -335,7 +335,7 @@ export function mono_wasm_set_object_property(js_handle: JSHandle, property_name
 export function mono_wasm_get_by_index(js_handle: JSHandle, property_index: number, is_exception: Int32Ptr) {
     const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!obj) {
-        return wrap_error(is_exception, 'ERR03: Invalid JS object handle \'' + js_handle + '\' while getting [' + property_index + ']');
+        return wrap_error(is_exception, "ERR03: Invalid JS object handle '" + js_handle + "' while getting [" + property_index + "]");
     }
 
     try {
@@ -351,7 +351,7 @@ export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: numb
     try {
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (!obj) {
-            return wrap_error(is_exception, 'ERR04: Invalid JS object handle \'' + js_handle + '\' while setting [' + property_index + ']');
+            return wrap_error(is_exception, "ERR04: Invalid JS object handle '" + js_handle + "' while setting [" + property_index + "]");
         }
 
         const js_value = _unbox_mono_obj_root(valueRoot);
@@ -383,7 +383,7 @@ export function mono_wasm_get_global_object(global_name: MonoString, is_exceptio
 
         // TODO returning null may be useful when probing for browser features
         if (globalObj === null || typeof globalObj === undefined) {
-            return wrap_error(is_exception, 'Global object \'' + js_name + '\' not found.');
+            return wrap_error(is_exception, "Global object '" + js_name + "' not found.");
         }
 
         return _js_to_mono_obj(true, globalObj);
@@ -393,12 +393,12 @@ export function mono_wasm_get_global_object(global_name: MonoString, is_exceptio
 }
 
 export function wrap_error(is_exception: Int32Ptr | null, ex: any) {
-    let res = 'unknown exception';
+    let res = "unknown exception";
     if (ex) {
         res = ex.toString();
     }
     if (is_exception) {
-        Module.setValue(is_exception, 1, 'i32');
+        Module.setValue(is_exception, 1, "i32");
     }
     return js_string_to_mono_string(res);
 }
@@ -406,44 +406,44 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any) {
 export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): ArgsMarshalString {
     const instanceRoot = mono_wasm_new_root(mono_obj);
     try {
-        return call_method(runtimeHelpers.get_call_sig, undefined, 'im', [method, instanceRoot.value]);
+        return call_method(runtimeHelpers.get_call_sig, undefined, "im", [method, instanceRoot.value]);
     } finally {
         instanceRoot.release();
     }
 }
 
 export function mono_method_resolve(fqn: string) {
-    const assembly = fqn.substring(fqn.indexOf('[') + 1, fqn.indexOf(']')).trim();
-    fqn = fqn.substring(fqn.indexOf(']') + 1).trim();
+    const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
+    fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
 
-    const methodname = fqn.substring(fqn.indexOf(':') + 1);
-    fqn = fqn.substring(0, fqn.indexOf(':')).trim();
+    const methodname = fqn.substring(fqn.indexOf(":") + 1);
+    fqn = fqn.substring(0, fqn.indexOf(":")).trim();
 
-    let namespace = '';
+    let namespace = "";
     let classname = fqn;
-    if (fqn.indexOf('.') != -1) {
-        const idx = fqn.lastIndexOf('.');
+    if (fqn.indexOf(".") != -1) {
+        const idx = fqn.lastIndexOf(".");
         namespace = fqn.substring(0, idx);
         classname = fqn.substring(idx + 1);
     }
 
     if (!assembly.trim())
-        throw new Error('No assembly name specified');
+        throw new Error("No assembly name specified");
     if (!classname.trim())
-        throw new Error('No class name specified');
+        throw new Error("No class name specified");
     if (!methodname.trim())
-        throw new Error('No method name specified');
+        throw new Error("No method name specified");
 
     const asm = cwraps.mono_wasm_assembly_load(assembly);
     if (!asm)
-        throw new Error('Could not find assembly: ' + assembly);
+        throw new Error("Could not find assembly: " + assembly);
 
     const klass = cwraps.mono_wasm_assembly_find_class(asm, namespace, classname);
     if (!klass)
-        throw new Error('Could not find class: ' + namespace + ':' + classname + ' in assembly ' + assembly);
+        throw new Error("Could not find class: " + namespace + ":" + classname + " in assembly " + assembly);
 
     const method = find_method(klass, methodname, -1);
     if (!method)
-        throw new Error('Could not find method: ' + methodname);
+        throw new Error("Could not find method: " + methodname);
     return method;
 }
