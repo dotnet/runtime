@@ -55,6 +55,7 @@ namespace AppHost.Bundle.Tests
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
         public void Bundled_Framework_dependent_App_GUI_DownlevelHostFxr_ErrorDialog(BundleOptions options)
         {
             var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
