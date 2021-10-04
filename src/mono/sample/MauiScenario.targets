@@ -23,8 +23,8 @@
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
-        <MicrosoftNetCoreAppRefPackDir>./DownloadedPackages</MicrosoftNetCoreAppRefPackDir>
-        <MicrosoftNetCoreAppRuntimePackDir>./DownloadedPackages</MicrosoftNetCoreAppRuntimePackDir>
+        <MicrosoftNetCoreAppRefPackDir>./ArtifactPacks</MicrosoftNetCoreAppRefPackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>./ArtifactPacks</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
     <ItemGroup>
       <!-- <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
