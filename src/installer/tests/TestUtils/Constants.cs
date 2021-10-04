@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace Microsoft.DotNet.CoreSetup.Test
 {
-    internal static class Constants
+    public static class Constants
     {
         public const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
 
@@ -72,6 +72,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
         }
 
+        public static class DotnetRoot
+        {
+            public const string EnvironmentVariable = "DOTNET_ROOT";
+            public const string WindowsX86EnvironmentVariable = "DOTNET_ROOT(x86)";
+            public const string ArchitectureEnvironmentVariablePrefix = "DOTNET_ROOT_";
+        }
+
         public static class ErrorCode
         {
             public const int InvalidArgFailure = unchecked((int)0x80008081);
@@ -81,6 +88,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const int LibHostInvalidArgs = unchecked((int)0x80008092);
             public const int AppArgNotRunnable = unchecked((int)0x80008094);
             public const int FrameworkMissingFailure = unchecked((int)0x80008096);
+            public const int BundleExtractionFailure = unchecked((int)0x8000809f);
 
             public const int COMPlusException = unchecked((int)0xe0434352);
             public const int SIGABRT = 134;
