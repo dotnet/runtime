@@ -33,6 +33,13 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
 
+        private bool? _supportsRandomAccess;
+        internal bool SupportsRandomAccess
+        {
+            get => _supportsRandomAccess ??= CanSeek;
+            set => _supportsRandomAccess = value;
+        }
+
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
 
         internal void EnsureThreadPoolBindingInitialized() { /* nop */ }

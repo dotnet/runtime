@@ -33,12 +33,27 @@ namespace System.IO
                 // The Windows implementation uses ReadFile, which ignores the offset if the handle
                 // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
                 // the function to be used by FileStream for all the same situations.
-                int result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
-
-                // Fallback to read if pread fails.
-                if (result == -1)
+                int result;
+                if (handle.SupportsRandomAccess)
                 {
-                    Debug.Assert(Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ENXIO || !handle.CanSeek); // We want to catch other errors and add unit tests for them.
+                    // Try pread for seekable files.
+                    result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
+                    if (result == -1)
+                    {
+                        // Some devices (such as /dev/tty) are reported as seekable by macOS but pread is unable to handle them and returns ENXIO.
+                        // Historically we were able to handle /dev/tty using read so we need to fallback to read for that case.
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        // We want to discover more errors that could make pread fail and add unit tests for them.
+                        Debug.Assert(errorInfo.Error == Interop.Error.ENXIO);
+                        if (errorInfo.Error == Interop.Error.ENXIO)
+                        {
+                            handle.SupportsRandomAccess = false;
+                            result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                        }
+                    }
+                }
+                else
+                {
                     result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
                 }
 
@@ -97,12 +112,27 @@ namespace System.IO
                     // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
                     // the function to be used by FileStream for all the same situations.
                     int bytesToWrite = GetNumberOfBytesToWrite(buffer.Length);
-                    int bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
-
-                    // Fallback to write if pwrite fails.
-                    if (bytesWritten == -1)
+                    int bytesWritten;
+                    if (handle.SupportsRandomAccess)
                     {
-                        Debug.Assert(Interop.Sys.GetLastErrorInfo().Error == Interop.Error.ENXIO || !handle.CanSeek); // We want to catch other errors and add unit tests for them.
+                        bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
+                        if (bytesWritten == -1)
+                        {
+                            // Some devices (such as /dev/tty) are reported as seekable by macOS but pwrite is unable to handle them and returns ENXIO.
+                            // Historically we were able to handle /dev/tty using write so we need to fallback to write for that case.
+                            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                            // We want to discover more errors that could make pwrite fail and add unit tests for them.
+                            Debug.Assert(errorInfo.Error == Interop.Error.ENXIO);
+
+                            if (errorInfo.Error == Interop.Error.ENXIO)
+                            {
+                                handle.SupportsRandomAccess = false;
+                                bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
+                            }
+                        }
+                    }
+                    else
+                    {
                         bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
                     }
 
