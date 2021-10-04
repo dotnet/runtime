@@ -77,11 +77,11 @@
             '$(TargetOS)' == 'iOSSimulator' or 
             '$(TargetOS)' == 'tvOS' or 
             '$(TargetOS)' == 'tvOSSimulator'">
-    <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
+    <PropertyGroup Condition=" '$(TargetOS)' == 'MacCatalyst'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
     </PropertyGroup>
-    <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
+    <PropertyGroup Condition="'$(TargetOS)' == 'OSX'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.13</TargetTriple>
     </PropertyGroup>
