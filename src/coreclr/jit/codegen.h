@@ -967,7 +967,6 @@ protected:
                                regNumber       targetReg);
     void genSIMDIntrinsic32BitConvert(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode);
-    void genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode);
     void genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, regNumber tgtReg);
     void genSIMDIntrinsicWiden(GenTreeSIMD* simdNode);
     void genSIMDIntrinsic(GenTreeSIMD* simdNode);

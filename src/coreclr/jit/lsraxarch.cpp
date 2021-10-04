@@ -2018,16 +2018,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
             buildInternalIntRegisterDefForNode(simdTree);
             break;
 
-        case SIMDIntrinsicNarrow:
-            // We need an internal register different from targetReg.
-            setInternalRegsDelayFree = true;
-            buildInternalFloatRegisterDefForNode(simdTree);
-            if ((compiler->getSIMDSupportLevel() == SIMD_AVX2_Supported) && (simdTree->GetSimdBaseType() != TYP_DOUBLE))
-            {
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            break;
-
         case SIMDIntrinsicShuffleSSE2:
             // Second operand is an integer constant and marked as contained.
             assert(simdTree->gtGetOp2()->isContainedIntOrIImmed());

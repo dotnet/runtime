@@ -3262,6 +3262,13 @@ public:
                               unsigned    simdSize,
                               bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdNarrowNode(var_types   type,
+                                 GenTree*    op1,
+                                 GenTree*    op2,
+                                 CorInfoType simdBaseJitType,
+                                 unsigned    simdSize,
+                                 bool        isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
