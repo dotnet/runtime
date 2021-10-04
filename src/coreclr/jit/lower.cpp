@@ -5217,13 +5217,10 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
 
         unsigned bits = type == TYP_INT ? 32 : 64;
         // if the dividend operand is AND or RSZ with a constant then the number of input bits can be reduced
-        if (dividend->OperIs(GT_AND))
+        if (dividend->OperIs(GT_AND) && dividend->gtGetOp2()->IsCnsIntOrI())
         {
-            size_t maskCns = static_cast<size_t>(
-                dividend->gtGetOp1()->IsCnsIntOrI()
-                    ? dividend->gtGetOp1()->AsIntCon()->IconValue()
-                    : dividend->gtGetOp2()->IsCnsIntOrI() ? dividend->gtGetOp2()->AsIntCon()->IconValue() : 0);
-            if (maskCns)
+            size_t maskCns = static_cast<size_t>(dividend->gtGetOp2()->AsIntCon()->IconValue());
+            if (maskCns != 0)
             {
                 unsigned maskBits = 1;
                 while (maskCns >>= 1)
@@ -5236,7 +5233,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         {
             size_t shiftCns = static_cast<size_t>(dividend->gtGetOp2()->AsIntCon()->IconValue());
             if (shiftCns < bits)
+            {
                 bits -= static_cast<unsigned>(shiftCns);
+            }
         }
 
         if (type == TYP_INT)
