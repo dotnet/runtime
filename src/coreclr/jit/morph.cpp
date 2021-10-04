@@ -14138,6 +14138,47 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             }
             break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
+            switch (hw->gtHWIntrinsicId)
+            {
+                case NI_SSE_Xor:
+                case NI_SSE2_Xor:
+                case NI_AVX_Xor:
+                case NI_AVX2_Xor:
+                {
+                    // Transform XOR(X, 0) to X for vectors
+                    GenTree* op1 = hw->gtGetOp1();
+                    GenTree* op2 = hw->gtGetOp2();
+                    if (!gtIsActiveCSE_Candidate(tree))
+                    {
+                        if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op1);
+                            INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op2;
+                        }
+                        if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op2);
+                            INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op1;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+            break;
+        }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
         default:
             break;
     }
