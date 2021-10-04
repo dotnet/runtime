@@ -4,6 +4,13 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>wa_info</RootNamespace>
+    <ToolCommandName>wa-info</ToolCommandName>
+    <PackAsTool>true</PackAsTool>
+    <Version>0.0.1</Version>
+    <Authors>Radek Doulik</Authors>
+    <PackageOutputPath>nupkg</PackageOutputPath>
+    <PackageDescription>A tool to inspect WebAssembly binary format files</PackageDescription>
+    <RepositoryUrl>https://github.com/radekdoulik/wa-info</RepositoryUrl>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
