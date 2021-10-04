@@ -16,8 +16,10 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_FileOptions_TestData))]
         public void CharacterDevice_FileStream_Write(string devicePath, FileOptions fileOptions)
         {
-            VerifyDeviceExists(devicePath);
-            using FileStream fs = new(devicePath, new FileStreamOptions { Options = fileOptions, Access = FileAccess.Write });
+            FileStreamOptions options = new() { Options = fileOptions, Access = FileAccess.Write };
+            VerifyDeviceIsReachable(devicePath, options);
+
+            using FileStream fs = new(devicePath, options);
             fs.Write(Encoding.UTF8.GetBytes("foo"));
         }
 
@@ -25,8 +27,10 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_FileOptions_TestData))]
         public async Task CharacterDevice_FileStream_WriteAsync(string devicePath, FileOptions fileOptions)
         {
-            VerifyDeviceExists(devicePath);
-            using FileStream fs = new(devicePath, new FileStreamOptions { Options = fileOptions, Access = FileAccess.Write  });
+            FileStreamOptions options = new() { Options = fileOptions, Access = FileAccess.Write };
+            VerifyDeviceIsReachable(devicePath, options);
+
+            using FileStream fs = new(devicePath, options);
             await fs.WriteAsync(Encoding.UTF8.GetBytes("foo"));
         }
 
@@ -34,7 +38,8 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public void CharacterDevice_WriteAllBytes(string devicePath)
         {
-            VerifyDeviceExists(devicePath);
+            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Access = FileAccess.Write });
+
             File.WriteAllBytes(devicePath, Encoding.UTF8.GetBytes("foo"));
         }
 
@@ -42,7 +47,8 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public async Task CharacterDevice_WriteAllBytesAsync(string devicePath)
         {
-            VerifyDeviceExists(devicePath);
+            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Options = FileOptions.Asynchronous, Access = FileAccess.Write });
+
             await File.WriteAllBytesAsync(devicePath, Encoding.UTF8.GetBytes("foo"));
         }
 
@@ -50,7 +56,8 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public void CharacterDevice_WriteAllText(string devicePath)
         {
-            VerifyDeviceExists(devicePath);
+            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Access = FileAccess.Write });
+
             File.WriteAllText(devicePath, "foo");
         }
 
@@ -58,16 +65,26 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public async Task CharacterDevice_WriteAllTextAsync(string devicePath)
         {
-            VerifyDeviceExists(devicePath);
+            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Options = FileOptions.Asynchronous, Access = FileAccess.Write });
+
             await File.WriteAllTextAsync(devicePath, "foo");
         }
 
-        private static void VerifyDeviceExists(string devicePath)
+        private static void VerifyDeviceIsReachable(string devicePath, FileStreamOptions? options)
         {
             if (!File.Exists(devicePath))
             {
-                throw new SkipTestException("Device does not exists in this platform");
-            }   
+                throw new SkipTestException("Device does not exists");
+            }
+
+            try
+            {
+                File.Open(devicePath, options).Dispose();
+            }
+            catch (IOException ex)
+            {
+                throw new SkipTestException($"Device failed to open: {ex.Message}");
+            }
         }
 
         private static string[] DevicePaths = { "/dev/tty", "/dev/console", "/dev/null", "/dev/zero" };

@@ -44,7 +44,7 @@ namespace System.IO
                         // Historically we were able to handle /dev/tty using read so we need to fallback to read for that case.
                         Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                         // We want to discover more errors that could make pread fail and add unit tests for them.
-                        Debug.Assert(errorInfo.Error == Interop.Error.ENXIO);
+                        Debug.Assert(errorInfo.Error == Interop.Error.ENXIO, $"Unexpected error: {errorInfo.Error}");
                         if (errorInfo.Error == Interop.Error.ENXIO)
                         {
                             handle.SupportsRandomAccess = false;
@@ -122,7 +122,7 @@ namespace System.IO
                             // Historically we were able to handle /dev/tty using write so we need to fallback to write for that case.
                             Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
                             // We want to discover more errors that could make pwrite fail and add unit tests for them.
-                            Debug.Assert(errorInfo.Error == Interop.Error.ENXIO);
+                            Debug.Assert(errorInfo.Error == Interop.Error.ENXIO, $"Unexpected error: {errorInfo.Error}");
 
                             if (errorInfo.Error == Interop.Error.ENXIO)
                             {
