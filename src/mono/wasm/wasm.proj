@@ -176,9 +176,7 @@
     <Copy SourceFiles="runtime/driver.c;
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
-                       runtime/binding_support.js;
-                       runtime/dotnet_support.js;
-                       runtime/library_mono.js;
+                       runtime/library-dotnet.js;
                        $(SystemNativeDir)\pal_random.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />

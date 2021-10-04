@@ -5734,7 +5734,11 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
         // TODO-CQ: fix the VNs for normalize-on-load locals and remove this quirk.
         bool isBoolQuirk = varType == TYP_BOOL;
 
-        // Assertion prop can tell us to omit adding a cast here.
+        // Assertion prop can tell us to omit adding a cast here. This is
+        // useful when the local is a small-typed parameter that is passed in a
+        // register: in that case, the ABI specifies that the upper bits might
+        // be invalid, but the assertion guarantees us that we have normalized
+        // when we wrote it.
         if (optLocalAssertionProp && !isBoolQuirk &&
             optAssertionIsSubrange(tree, IntegralRange::ForType(varType), apFull) != NO_ASSERTION_INDEX)
         {
@@ -11330,18 +11334,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                             unsigned   fieldLclNum = varDsc->lvFieldLclStart;
                             LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
 
-                            if (!varTypeIsSmallInt(fieldDsc->lvType))
-                            {
-                                // TODO-CQ: support that substitution for small types without creating `CAST` node.
-                                // When a small struct is returned in a register higher bits could be left in undefined
-                                // state.
-                                JITDUMP("Replacing an independently promoted local var V%02u with its only field  "
-                                        "V%02u for "
-                                        "the return [%06u]\n",
-                                        lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
-                                lclVar->SetLclNum(fieldLclNum);
-                                lclVar->ChangeType(fieldDsc->lvType);
-                            }
+                            JITDUMP("Replacing an independently promoted local var V%02u with its only field  "
+                                    "V%02u for "
+                                    "the return [%06u]\n",
+                                    lclVar->GetLclNum(), fieldLclNum, dspTreeID(tree));
+                            lclVar->SetLclNum(fieldLclNum);
+                            lclVar->ChangeType(fieldDsc->lvType);
                         }
                     }
                 }
@@ -13848,7 +13846,12 @@ GenTree* Compiler::fgMorphRetInd(GenTreeUnOp* ret)
                 DEBUG_DESTROY_NODE(ind);
                 DEBUG_DESTROY_NODE(addr);
                 ret->gtOp1 = lclVar;
-                return ret->gtGetOp1();
+                // We use GTF_DONT_CSE as an "is under GT_ADDR" check. We can
+                // get rid of it now since the GT_RETURN node should never have
+                // its address taken.
+                assert((ret->gtFlags & GTF_DONT_CSE) == 0);
+                lclVar->gtFlags &= ~GTF_DONT_CSE;
+                return lclVar;
             }
             else if (!varDsc->lvDoNotEnregister)
             {

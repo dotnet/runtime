@@ -12064,15 +12064,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    // The code generator generates GC tracking information
-                    // based on the RHS of the assignment.  Later the LHS (which is
-                    // is a BYREF) gets used and the emitter checks that that variable
-                    // is being tracked.  It is not (since the RHS was an int and did
-                    // not need tracking).  To keep this assert happy, we change the RHS
-                    if (lclTyp == TYP_BYREF && !varTypeIsGC(op1->gtType))
-                    {
-                        op1->gtType = TYP_BYREF;
-                    }
                     op1 = gtNewAssignNode(op2, op1);
                 }
 
