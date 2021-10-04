@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, runtimeHelpers } from './modules'
+import { Module, runtimeHelpers } from "./modules";
 import {
     cs_owned_js_handle_symbol, get_cs_owned_object_by_js_handle, get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol,
     mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle,
     mono_wasm_release_cs_owned_object, _js_owned_object_registry, _use_finalization_registry
-} from './gc-handles';
-import corebindings from './corebindings';
-import cwraps from './cwraps';
-import { mono_wasm_new_root, mono_wasm_release_roots } from './roots';
-import { wrap_error } from './method-calls';
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from './strings';
-import { isThenable } from './cancelable-promise';
-import { has_backing_array_buffer } from './buffers';
-import { JSHandle, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol } from './types';
+} from "./gc-handles";
+import corebindings from "./corebindings";
+import cwraps from "./cwraps";
+import { mono_wasm_new_root, mono_wasm_release_roots } from "./roots";
+import { wrap_error } from "./method-calls";
+import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import { isThenable } from "./cancelable-promise";
+import { has_backing_array_buffer } from "./buffers";
+import { JSHandle, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol } from "./types";
 
 export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
     switch (true) {
@@ -23,7 +23,7 @@ export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
             return 0;
         case typeof js_obj === "symbol":
         case typeof js_obj === "string":
-            return corebindings._create_uri(js_obj)
+            return corebindings._create_uri(js_obj);
         default:
             return _extract_mono_obj(should_add_in_flight, js_obj);
     }
@@ -31,7 +31,7 @@ export function _js_to_mono_uri(should_add_in_flight: boolean, js_obj: any) {
 
 // this is only used from Blazor
 export function js_to_mono_obj(js_obj: any) {
-    return _js_to_mono_obj(false, js_obj)
+    return _js_to_mono_obj(false, js_obj);
 }
 
 export function _js_to_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObject {
@@ -74,7 +74,7 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
     if (js_obj === null || typeof js_obj === "undefined")
         return MonoObjectNull;
 
-    var result = null;
+    let result = null;
     if (js_obj[js_owned_gc_handle_symbol]) {
         // for js_owned_gc_handle we don't want to create new proxy
         // since this is strong gc_handle we don't need to in-flight reference
@@ -96,7 +96,7 @@ function _extract_mono_obj(should_add_in_flight: boolean, js_obj: any): MonoObje
         const wasm_type = js_obj[wasm_type_symbol];
         const wasm_type_id = typeof wasm_type === "undefined" ? 0 : wasm_type;
 
-        var js_handle = mono_wasm_get_js_handle(js_obj);
+        const js_handle = mono_wasm_get_js_handle(js_obj);
 
         result = corebindings._create_cs_owned_proxy(js_handle, wasm_type_id, should_add_in_flight ? 1 : 0);
     }
@@ -126,9 +126,9 @@ export function _box_js_bool(js_obj: boolean) {
 
 // https://github.com/Planeshifter/emscripten-examples/blob/master/01_PassingArrays/sum_post.js
 function js_typedarray_to_heap(typedArray: TypedArray) {
-    var numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
-    var ptr = Module._malloc(numBytes);
-    var heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>ptr, numBytes);
+    const numBytes = typedArray.length * typedArray.BYTES_PER_ELEMENT;
+    const ptr = Module._malloc(numBytes);
+    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>ptr, numBytes);
     heapBytes.set(new Uint8Array(typedArray.buffer, typedArray.byteOffset, numBytes));
     return heapBytes;
 }
@@ -142,10 +142,10 @@ export function js_typed_array_to_array(js_obj: any) {
     // you need to use a view. A view provides a context — that is, a data type, starting offset,
     // and number of elements — that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-    if (!!(has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT)) {
-        var arrayType = js_obj[wasm_type_symbol];
-        var heapBytes = js_typedarray_to_heap(js_obj);
-        var bufferArray = cwraps.mono_wasm_typed_array_new(<any>heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
+    if (has_backing_array_buffer(js_obj) && js_obj.BYTES_PER_ELEMENT) {
+        const arrayType = js_obj[wasm_type_symbol];
+        const heapBytes = js_typedarray_to_heap(js_obj);
+        const bufferArray = cwraps.mono_wasm_typed_array_new(<any>heapBytes.byteOffset, js_obj.length, js_obj.BYTES_PER_ELEMENT, arrayType);
         Module._free(<any>heapBytes.byteOffset);
         return bufferArray;
     }
@@ -162,13 +162,13 @@ export function js_to_mono_enum(js_obj: any, method: MonoMethod, parmIdx: number
 }
 
 export function js_array_to_mono_array(js_array: any[], asString: boolean, should_add_in_flight: boolean) {
-    var mono_array = asString ? cwraps.mono_wasm_string_array_new(js_array.length) : cwraps.mono_wasm_obj_array_new(js_array.length);
-    let arrayRoot = mono_wasm_new_root(mono_array);
-    let elemRoot = mono_wasm_new_root(MonoObjectNull);
+    const mono_array = asString ? cwraps.mono_wasm_string_array_new(js_array.length) : cwraps.mono_wasm_obj_array_new(js_array.length);
+    const arrayRoot = mono_wasm_new_root(mono_array);
+    const elemRoot = mono_wasm_new_root(MonoObjectNull);
 
     try {
-        for (var i = 0; i < js_array.length; ++i) {
-            var obj = js_array[i];
+        for (let i = 0; i < js_array.length; ++i) {
+            let obj = js_array[i];
             if (asString)
                 obj = obj.toString();
 
@@ -193,7 +193,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
 
     // hold strong JS reference to thenable while in flight
     // ideally, this should be hold alive by lifespan of the resulting C# Task, but this is good cheap aproximation
-    var thenable_js_handle = mono_wasm_get_js_handle(thenable);
+    const thenable_js_handle = mono_wasm_get_js_handle(thenable);
 
     // Note that we do not implement promise/task roundtrip. 
     // With more complexity we could recover original instance when this Task is marshaled back to JS.
@@ -232,7 +232,7 @@ export function _wrap_js_thenable_as_task(thenable: Promise<any>): {
 }
 
 export function mono_wasm_typed_array_to_array(js_handle: JSHandle, is_exception: Int32Ptr) {
-    var js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
+    const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
         return wrap_error(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'");
     }

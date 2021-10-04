@@ -4,7 +4,7 @@
 import {
     mono_wasm_new_root, mono_wasm_new_roots, mono_wasm_release_roots,
     mono_wasm_new_root_buffer, mono_wasm_new_root_buffer_from_pointer
-} from './roots'
+} from "./roots";
 import {
     mono_wasm_add_dbg_command_received,
     mono_wasm_send_dbg_command_with_parms,
@@ -19,24 +19,24 @@ import {
     mono_wasm_get_loaded_files,
     mono_wasm_raise_debug_event,
     mono_wasm_fire_debugger_agent_message,
-} from './debug'
-import { runtimeHelpers, setLegacyModules } from './modules'
-import { MonoConfig, MonoConfigError } from './types'
+} from "./debug";
+import { runtimeHelpers, setLegacyModules } from "./modules";
+import { MonoConfig, MonoConfigError } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
     mono_bindings_init,
     mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_marshalled, mono_wasm_invoke_js_unmarshalled
-} from './startup'
-import { mono_set_timeout, schedule_background_exec } from './scheduling'
-import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from './icu'
-import { conv_string, js_string_to_mono_string, mono_intern_string, string_decoder } from './strings'
-import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from './js-to-cs'
+} from "./startup";
+import { mono_set_timeout, schedule_background_exec } from "./scheduling";
+import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
+import { conv_string, js_string_to_mono_string, mono_intern_string, string_decoder } from "./strings";
+import { js_to_mono_obj, js_typed_array_to_array, mono_wasm_typed_array_to_array } from "./js-to-cs";
 import {
     mono_array_to_js_array, mono_wasm_create_cs_owned_object, unbox_mono_obj,
     _unbox_mono_obj_root_with_known_nonprimitive_type
-} from './cs-to-js'
+} from "./cs-to-js";
 import {
     call_static_method, mono_bind_assembly_entry_point,
     mono_bind_static_method, mono_call_assembly_entry_point,
@@ -45,16 +45,16 @@ import {
     mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property,
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
-} from './method-calls'
-import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from './buffers'
-import { mono_wasm_cancel_promise } from './cancelable-promise'
-import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from './event-listener'
-import { mono_wasm_release_cs_owned_object } from './gc-handles'
-import { mono_bind_method, _create_primitive_converters } from './method-binding'
-import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from './web-socket'
-import cwraps from './cwraps'
+} from "./method-calls";
+import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_typed_array_copy_from, mono_wasm_load_bytes_into_heap } from "./buffers";
+import { mono_wasm_cancel_promise } from "./cancelable-promise";
+import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from "./event-listener";
+import { mono_wasm_release_cs_owned_object } from "./gc-handles";
+import { mono_bind_method, _create_primitive_converters } from "./method-binding";
+import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
+import cwraps from "./cwraps";
 
-export let MONO: MONO = <any>{
+export const MONO: MONO = <any>{
     // current "public" MONO API
     mono_wasm_setenv,
     mono_wasm_load_bytes_into_heap,
@@ -93,9 +93,9 @@ export let MONO: MONO = <any>{
     mono_wasm_load_config,
     mono_wasm_set_runtime_options,
     config: runtimeHelpers.config,
-}
+};
 
-export let BINDING: BINDING = <any>{
+export const BINDING: BINDING = <any>{
     //current "public" BINDING API
     mono_obj_array_new: cwraps.mono_wasm_obj_array_new,
     mono_obj_array_set: cwraps.mono_wasm_obj_array_set,
@@ -123,7 +123,7 @@ export let BINDING: BINDING = <any>{
 
     // startup
     BINDING_ASM: "[System.Private.Runtime.InteropServices.JavaScript]System.Runtime.InteropServices.JavaScript.Runtime",
-}
+};
 
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
@@ -195,7 +195,7 @@ export const _linker_exports = {
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
     mono_wasm_get_icudt_name,
-}
+};
 
 // this represents visibility in the javascript
 // like https://github.com/dotnet/aspnetcore/blob/main/src/Components/Web.JS/src/Platform/Mono/MonoTypes.ts

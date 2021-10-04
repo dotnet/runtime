@@ -1,54 +1,54 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoArray, MonoAssembly, MonoClass, MonoMethod, MonoObject, MonoString } from './types';
-import { Module } from './modules'
+import { MonoArray, MonoAssembly, MonoClass, MonoMethod, MonoObject, MonoString } from "./types";
+import { Module } from "./modules";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
     // MONO
     ["mono_wasm_register_root", "number", ["number", "number", "string"]],
     ["mono_wasm_deregister_root", null, ["number"]],
-    ["mono_wasm_string_get_data", null, ['number', 'number', 'number', 'number']],
-    ['mono_wasm_set_is_debugger_attached', 'void', ['bool']],
-    ['mono_wasm_send_dbg_command', 'bool', ['number', 'number', 'number', 'number', 'number']],
-    ['mono_wasm_send_dbg_command_with_parms', 'bool', ['number', 'number', 'number', 'number', 'number', 'number', 'string']],
-    ['mono_wasm_setenv', null, ['string', 'string']],
-    ['mono_wasm_parse_runtime_options', null, ['number', 'number']],
-    ['mono_wasm_strdup', 'number', ['string']],
-    ['mono_background_exec', null, []],
-    ["mono_set_timeout_exec", null, ['number']],
-    ['mono_wasm_load_icu_data', 'number', ['number']],
-    ['mono_wasm_get_icudt_name', 'string', ['string']],
-    ['mono_wasm_add_assembly', 'number', ['string', 'number', 'number']],
-    ['mono_wasm_add_satellite_assembly', 'void', ['string', 'string', 'number', 'number']],
-    ['mono_wasm_load_runtime', null, ['string', 'number']],
-    ['mono_wasm_exit', null, ['number']],
+    ["mono_wasm_string_get_data", null, ["number", "number", "number", "number"]],
+    ["mono_wasm_set_is_debugger_attached", "void", ["bool"]],
+    ["mono_wasm_send_dbg_command", "bool", ["number", "number", "number", "number", "number"]],
+    ["mono_wasm_send_dbg_command_with_parms", "bool", ["number", "number", "number", "number", "number", "number", "string"]],
+    ["mono_wasm_setenv", null, ["string", "string"]],
+    ["mono_wasm_parse_runtime_options", null, ["number", "number"]],
+    ["mono_wasm_strdup", "number", ["string"]],
+    ["mono_background_exec", null, []],
+    ["mono_set_timeout_exec", null, ["number"]],
+    ["mono_wasm_load_icu_data", "number", ["number"]],
+    ["mono_wasm_get_icudt_name", "string", ["string"]],
+    ["mono_wasm_add_assembly", "number", ["string", "number", "number"]],
+    ["mono_wasm_add_satellite_assembly", "void", ["string", "string", "number", "number"]],
+    ["mono_wasm_load_runtime", null, ["string", "number"]],
+    ["mono_wasm_exit", null, ["number"]],
 
     // BINDING
-    ['mono_wasm_assembly_load', 'number', ['string']],
-    ['mono_wasm_find_corlib_class', 'number', ['string', 'string']],
-    ['mono_wasm_assembly_find_class', 'number', ['number', 'string', 'string']],
-    ['mono_wasm_assembly_find_method', 'number', ['number', 'string', 'number']],
-    ['mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']],
-    ['mono_wasm_string_get_utf8', 'number', ['number']],
-    ['mono_wasm_string_from_utf16', 'number', ['number', 'number']],
-    ['mono_wasm_get_obj_type', 'number', ['number']],
-    ['mono_wasm_array_length', 'number', ['number']],
-    ['mono_wasm_array_get', 'number', ['number', 'number']],
-    ['mono_wasm_obj_array_new', 'number', ['number']],
-    ['mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']],
-    ['mono_wasm_register_bundled_satellite_assemblies', 'void', []],
-    ['mono_wasm_try_unbox_primitive_and_get_type', 'number', ['number', 'number']],
-    ['mono_wasm_box_primitive', 'number', ['number', 'number', 'number']],
-    ['mono_wasm_intern_string', 'number', ['number']],
-    ['mono_wasm_assembly_get_entry_point', 'number', ['number']],
-    ['mono_wasm_get_delegate_invoke', 'number', ['number']],
-    ['mono_wasm_string_array_new', 'number', ['number']],
-    ['mono_wasm_typed_array_new', 'number', ['number', 'number', 'number', 'number']],
+    ["mono_wasm_assembly_load", "number", ["string"]],
+    ["mono_wasm_find_corlib_class", "number", ["string", "string"]],
+    ["mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
+    ["mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
+    ["mono_wasm_invoke_method", "number", ["number", "number", "number", "number"]],
+    ["mono_wasm_string_get_utf8", "number", ["number"]],
+    ["mono_wasm_string_from_utf16", "number", ["number", "number"]],
+    ["mono_wasm_get_obj_type", "number", ["number"]],
+    ["mono_wasm_array_length", "number", ["number"]],
+    ["mono_wasm_array_get", "number", ["number", "number"]],
+    ["mono_wasm_obj_array_new", "number", ["number"]],
+    ["mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
+    ["mono_wasm_register_bundled_satellite_assemblies", "void", []],
+    ["mono_wasm_try_unbox_primitive_and_get_type", "number", ["number", "number"]],
+    ["mono_wasm_box_primitive", "number", ["number", "number", "number"]],
+    ["mono_wasm_intern_string", "number", ["number"]],
+    ["mono_wasm_assembly_get_entry_point", "number", ["number"]],
+    ["mono_wasm_get_delegate_invoke", "number", ["number"]],
+    ["mono_wasm_string_array_new", "number", ["number"]],
+    ["mono_wasm_typed_array_new", "number", ["number", "number", "number", "number"]],
 
     //DOTNET
-    ['mono_wasm_string_from_js', 'number', ['string']],
-]
+    ["mono_wasm_string_from_js", "number", ["string"]],
+];
 
 export interface t_Cwraps {
     // MONO
@@ -96,12 +96,12 @@ export interface t_Cwraps {
     mono_wasm_string_from_js(str: string): MonoString
 }
 
-const wrapped_c_functions: t_Cwraps = <any>{}
-for (let sig of fn_signatures) {
+const wrapped_c_functions: t_Cwraps = <any>{};
+for (const sig of fn_signatures) {
     const wf: any = wrapped_c_functions;
     // lazy init on first run
     wf[sig[0]] = function () {
-        const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3])
+        const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3]);
         wf[sig[0]] = fce;
         return fce.apply(undefined, arguments);
     };

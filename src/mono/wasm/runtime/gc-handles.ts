@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import corebindings from './corebindings'
-import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectNull } from './types';
+import corebindings from "./corebindings";
+import { GCHandle, JSHandle, JSHandleDisposed, JSHandleNull, MonoObjectNull } from "./types";
 
 export const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "function";
 export const _use_weak_ref = typeof globalThis.WeakRef === "function";
@@ -67,7 +67,7 @@ export function _js_owned_object_finalized(gc_handle: GCHandle) {
 export function _lookup_js_owned_object(gc_handle: GCHandle) {
     if (!gc_handle)
         return null;
-    var wr = _js_owned_object_table.get(gc_handle);
+    const wr = _js_owned_object_table.get(gc_handle);
     if (wr) {
         return wr.deref();
         // TODO: could this be null before _js_owned_object_finalized was called ?
@@ -77,7 +77,7 @@ export function _lookup_js_owned_object(gc_handle: GCHandle) {
 }
 
 export function _register_js_owned_object(gc_handle: GCHandle, js_obj: any) {
-    var wr;
+    let wr;
     if (_use_weak_ref) {
         wr = new WeakRef(js_obj);
     }
@@ -87,7 +87,7 @@ export function _register_js_owned_object(gc_handle: GCHandle, js_obj: any) {
             deref: () => {
                 return js_obj;
             }
-        }
+        };
     }
     _js_owned_object_table.set(gc_handle, wr);
 }
@@ -96,7 +96,7 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     if (js_obj[cs_owned_js_handle_symbol]) {
         return js_obj[cs_owned_js_handle_symbol];
     }
-    var js_handle = _js_handle_free_list.length ? _js_handle_free_list.pop() : _next_js_handle++;
+    const js_handle = _js_handle_free_list.length ? _js_handle_free_list.pop() : _next_js_handle++;
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
     _cs_owned_objects_by_js_handle[<number>js_handle!] = js_obj;
     js_obj[cs_owned_js_handle_symbol] = js_handle;
@@ -104,7 +104,7 @@ export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
 }
 
 export function mono_wasm_release_cs_owned_object(js_handle: JSHandle) {
-    var obj = _cs_owned_objects_by_js_handle[<any>js_handle];
+    const obj = _cs_owned_objects_by_js_handle[<any>js_handle];
     if (typeof obj !== "undefined" && obj !== null) {
         // if this is the global object then do not
         // unregister it.
