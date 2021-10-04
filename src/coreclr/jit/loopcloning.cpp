@@ -723,51 +723,70 @@ void LoopCloneContext::PrintConditions(unsigned loopNum)
 #endif
 
 //--------------------------------------------------------------------------------------------------
-// CondToStmtInBlock - Convert an array of conditions. Evaluate them into a JTRUE stmt and add it to
-//      the block
+// CondToStmtInBlock: Convert an array of conditions to IR. Evaluate them into a JTRUE stmt and add it to
+// a new block after `insertAfter`.
 //
 // Arguments:
-//      comp    Compiler instance
-//      conds   Array of conditions to evaluate into a JTRUE stmt
-//      block   Block to insert the stmt into
-//      reverse Reverse conditions if true.
+//      comp        Compiler instance
+//      conds       Array of conditions to evaluate into a JTRUE stmt
+//      slowHead    Branch here on condition failure
+//      insertAfter Insert the conditions in a block after this block
 //
 // Note:
 //      The condition that will be generated: jmpTrue(cond1 & cond2 ... == 0)
+//      That is, if any condition fails, we branch.
+//      We assume that `insertAfter` is a fall-through block, and we add it to the predecessors list
+//      of the first newly added block. `insertAfter` is also assumed to be in the same loop (we can
+//      clone its loop number).
 //
-// Return Values:
-//      None.
+// Return Value:
+//      Last block added
 //
-void LoopCloneContext::CondToStmtInBlock(Compiler*                          comp,
-                                         JitExpandArrayStack<LC_Condition>& conds,
-                                         BasicBlock*                        block,
-                                         bool                               reverse)
+BasicBlock* LoopCloneContext::CondToStmtInBlock(Compiler*                          comp,
+                                                JitExpandArrayStack<LC_Condition>& conds,
+                                                BasicBlock*                        slowHead,
+                                                BasicBlock*                        insertAfter)
 {
     noway_assert(conds.Size() > 0);
+    assert(slowHead != nullptr);
+    assert((insertAfter->bbJumpKind == BBJ_NONE) || (insertAfter->bbJumpKind == BBJ_COND));
+
+    BasicBlock* newBlk = comp->fgNewBBafter(BBJ_COND, insertAfter, /*extendRegion*/ true);
+    newBlk->inheritWeight(insertAfter);
+    newBlk->bbNatLoopNum = insertAfter->bbNatLoopNum;
+    newBlk->bbJumpDest   = slowHead;
+
+    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", newBlk->bbNum, newBlk->bbJumpDest->bbNum);
+    comp->fgAddRefPred(newBlk->bbJumpDest, newBlk);
+
+    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", insertAfter->bbNum, newBlk->bbNum);
+    comp->fgAddRefPred(newBlk, insertAfter);
 
     // Get the first condition.
-    GenTree* cond = conds[0].ToGenTree(comp, block);
+    GenTree* cond = conds[0].ToGenTree(comp, newBlk);
     for (unsigned i = 1; i < conds.Size(); ++i)
     {
         // Append all conditions using AND operator.
-        cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, block));
+        cond = comp->gtNewOperNode(GT_AND, TYP_INT, cond, conds[i].ToGenTree(comp, newBlk));
     }
 
     // Add "cond == 0" node
-    cond = comp->gtNewOperNode(reverse ? GT_NE : GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
+    cond = comp->gtNewOperNode(GT_EQ, TYP_INT, cond, comp->gtNewIconNode(0));
 
-    // Add jmpTrue "cond == 0" to slow path.
+    // Add jmpTrue "cond == 0"
     GenTree*   jmpTrueTree = comp->gtNewOperNode(GT_JTRUE, TYP_VOID, cond);
     Statement* stmt        = comp->fgNewStmtFromTree(jmpTrueTree);
 
     // Add stmt to the block.
-    comp->fgInsertStmtAtEnd(block, stmt);
+    comp->fgInsertStmtAtEnd(newBlk, stmt);
 
     // Remorph.
     JITDUMP("Loop cloning condition tree before morphing:\n");
     DBEXEC(comp->verbose, comp->gtDispTree(jmpTrueTree));
     JITDUMP("\n");
-    comp->fgMorphBlockStmt(block, stmt DEBUGARG("Loop cloning condition"));
+    comp->fgMorphBlockStmt(newBlk, stmt DEBUGARG("Loop cloning condition"));
+
+    return newBlk;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -1552,80 +1571,54 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
 }
 
 //--------------------------------------------------------------------------------------------------
-// optInsertLoopChoiceConditions - Insert the loop conditions for a loop between loop head and entry
+// optInsertLoopChoiceConditions: Insert the loop conditions for a loop after the loop head.
 //
 // Arguments:
 //      context     loop cloning context variable
 //      loopNum     the loop index
-//      head        loop head for "loopNum"
-//      slowHead    the slow path loop head
+//      slowHead    the slow path loop head, where the condition failures branch
+//      insertAfter insert the conditions after this block
 //
 // Return Value:
-//      The last conditional block inserted.
+//      The last condition block added.
 //
 // Operation:
 //      Create the following structure.
 //
-//      Note below that the cond0 is inverted in head, i.e., if true jump to cond1. This is because
-//      condn cannot jtrue to loop head h2. It has to be from a direct pred block.
-//
-//      cond0 (in h)  -?> cond1
-//      slowHead      --> e2 (slowHead) always
+//      h (fall through)
+//      !cond0        -?> slowHead
 //      !cond1        -?> slowHead
-//      !cond2        -?> slowHead
 //      ...
 //      !condn        -?> slowHead
 //      h2/entry (fast)
-//
-//      Insert condition 0 in 'h' and create other condition blocks and insert conditions in them.
-//      On entry, block 'h' is a conditional block, but its bbJumpDest hasn't yet been set.
+//      ...
+//      slowHead      -?> e2 (slowHead) branch or fall-through to e2
 //
 BasicBlock* Compiler::optInsertLoopChoiceConditions(LoopCloneContext* context,
                                                     unsigned          loopNum,
-                                                    BasicBlock*       head,
-                                                    BasicBlock*       slowHead)
+                                                    BasicBlock*       slowHead,
+                                                    BasicBlock*       insertAfter)
 {
     JITDUMP("Inserting loop " FMT_LP " loop choice conditions\n", loopNum);
     assert(context->HasBlockConditions(loopNum));
-    assert(head->bbJumpKind == BBJ_COND);
+    assert(slowHead != nullptr);
+    assert(insertAfter->bbJumpKind == BBJ_NONE);
 
-    BasicBlock*                                              curCond   = head;
     JitExpandArrayStack<JitExpandArrayStack<LC_Condition>*>* levelCond = context->GetBlockConditions(loopNum);
     for (unsigned i = 0; i < levelCond->Size(); ++i)
     {
-        bool isHeaderBlock = (curCond == head);
-
-        // Flip the condition if header block.
-        JITDUMP("Adding loop " FMT_LP " level %u block conditions to " FMT_BB "\n    ", loopNum, i, curCond->bbNum);
+        JITDUMP("Adding loop " FMT_LP " level %u block conditions\n    ", loopNum, i);
         DBEXEC(verbose, context->PrintBlockLevelConditions(i, (*levelCond)[i]));
-        context->CondToStmtInBlock(this, *((*levelCond)[i]), curCond, /*reverse*/ isHeaderBlock);
-
-        // Create each condition block ensuring wiring between them.
-        BasicBlock* tmp = fgNewBBafter(BBJ_COND, isHeaderBlock ? slowHead : curCond, /*extendRegion*/ true);
-        tmp->inheritWeight(head);
-        tmp->bbNatLoopNum = head->bbNatLoopNum;
-
-        curCond->bbJumpDest = isHeaderBlock ? tmp : slowHead;
-
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", curCond->bbNum, curCond->bbJumpDest->bbNum);
-        fgAddRefPred(curCond->bbJumpDest, curCond);
-
-        if (!isHeaderBlock)
-        {
-            JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", curCond->bbNum, tmp->bbNum);
-            fgAddRefPred(tmp, curCond);
-        }
-
-        curCond = tmp;
+        insertAfter = context->CondToStmtInBlock(this, *((*levelCond)[i]), slowHead, insertAfter);
     }
 
     // Finally insert cloning conditions after all deref conditions have been inserted.
-    JITDUMP("Adding loop " FMT_LP " cloning conditions to " FMT_BB "\n", loopNum, curCond->bbNum);
-    JITDUMP("    ");
+    JITDUMP("Adding loop " FMT_LP " cloning conditions\n    ", loopNum);
     DBEXEC(verbose, context->PrintConditions(loopNum));
     JITDUMP("\n");
-    context->CondToStmtInBlock(this, *(context->GetConditions(loopNum)), curCond, /*reverse*/ false);
-    return curCond;
+    insertAfter = context->CondToStmtInBlock(this, *(context->GetConditions(loopNum)), slowHead, insertAfter);
+
+    return insertAfter;
 }
 
 //------------------------------------------------------------------------
@@ -1760,13 +1753,14 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     //
     // to this pair of loops:
     //
-    // H ?-> E2
+    // H ?-> H3   (all loop failure conditions branch to new slow path loop head)
     // H2--> E    (Optional; if E == T == F, let H fall through to F/T/E)
     // F
     // T
     // E
     // B  ?-> T
     // X2--> X
+    // H3 --> E2  (aka slowHead. Or, H3 falls through to F2 == T2 == E2)
     // F2
     // T2
     // E2
@@ -1829,6 +1823,11 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         }
     }
 
+    // We're going to create a new loop head for the slow loop immediately before the slow loop itself. All failed
+    // conditions will branch to the slow head. The slow head will either fall through to the entry, or unconditionally
+    // branch to the slow path entry. This puts the slow loop in the canonical loop form.
+    BasicBlock* slowHeadPrev = newPred;
+
     // Now we'll make "h2", after "h" to go to "e" -- unless the loop is a do-while,
     // so that "h" already falls through to "e" (e == t == f).
     // It might look like this code is unreachable, since "h" must be a BBJ_ALWAYS, but
@@ -1847,9 +1846,6 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
         h2->bbNatLoopNum = ambientLoop;
 
         h2->bbJumpDest = loop.lpEntry;
-
-        fgAddRefPred(h2, h); // Add h->h2 pred edge
-        JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", h->bbNum, h2->bbNum);
         fgReplacePred(loop.lpEntry, h, h2);
         JITDUMP("Replace " FMT_BB " -> " FMT_BB " with " FMT_BB " -> " FMT_BB "\n", h->bbNum, loop.lpEntry->bbNum,
                 h2->bbNum, loop.lpEntry->bbNum);
@@ -1972,75 +1968,70 @@ void Compiler::optCloneLoop(unsigned loopInd, LoopCloneContext* context)
     }
 #endif // DEBUG
 
-    // We will create the following structure
+    // Insert the loop choice conditions. We will create the following structure:
     //
-    // cond0 (in h)  -?> cond1
-    // slow          --> e2 (slow) always
-    // !cond1        -?> slow
-    // !cond2        -?> slow
-    // ...
-    // !condn        -?> slow
-    // h2/entry (fast)
+    //      h (fall through)
+    //      !cond0        -?> slowHead
+    //      !cond1        -?> slowHead
+    //      ...
+    //      !condn        -?> slowHead
+    //      h2/entry (fast)
+    //      ...
+    //      slowHead      -?> e2 (slowHead) branch or fall-through to e2
     //
-    // We should always have block conditions, at the minimum, the array should be deref-able
+    // We should always have block conditions; at the minimum, the array should be deref-able.
     assert(context->HasBlockConditions(loopInd));
 
     if (h->bbJumpKind == BBJ_NONE)
     {
-        assert((h->bbNext == h2) || (h->bbNext == loop.lpEntry));
+        assert(h->bbNext == loop.lpEntry);
+        fgRemoveRefPred(h->bbNext, h);
     }
     else
     {
         assert(h->bbJumpKind == BBJ_ALWAYS);
         assert(h->bbJumpDest == loop.lpEntry);
+        assert(h2 != nullptr);
+        h->bbJumpKind = BBJ_NONE;
+        h->bbJumpDest = nullptr;
     }
 
-    // If all the conditions are true, go to E2.
+    // If any condition is false, go to slowHead (which branches or falls through to e2).
     BasicBlock* e2      = nullptr;
     bool        foundIt = blockMap->Lookup(loop.lpEntry, &e2);
-
-    // We're going to replace the fall-through path from "h".
-    if (h->bbJumpKind == BBJ_NONE)
-    {
-        fgRemoveRefPred(h->bbNext, h);
-    }
+    assert(foundIt && e2 != nullptr);
 
     // Create a unique header for the slow path.
     JITDUMP("Create unique head block for slow path loop\n");
-    BasicBlock* slowHead = fgNewBBafter(BBJ_ALWAYS, h, /*extendRegion*/ true);
-    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, h->bbNum);
-    slowHead->bbWeight = h->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
+    BasicBlock* slowHead = fgNewBBafter(BBJ_NONE, slowHeadPrev, /*extendRegion*/ true);
+    JITDUMP("Adding " FMT_BB " after " FMT_BB "\n", slowHead->bbNum, slowHeadPrev->bbNum);
+    slowHead->bbWeight = slowHeadPrev->isRunRarely() ? BB_ZERO_WEIGHT : ambientWeight;
     slowHead->scaleBBWeight(slowPathWeightScaleFactor);
     slowHead->bbNatLoopNum = ambientLoop;
-    slowHead->bbJumpDest   = e2;
 
-    fgAddRefPred(slowHead, h);
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", h->bbNum, slowHead->bbNum);
+    if (slowHead->bbNext != e2)
+    {
+        // We can't just fall through to the slow path entry, so make it an unconditional branch.
+        slowHead->bbJumpKind = BBJ_ALWAYS;
+        slowHead->bbJumpDest = e2;
+    }
 
-    // This is the only predecessor to the copied loop, and it hasn't been added yet.
-    fgAddRefPred(slowHead->bbJumpDest, slowHead);
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowHead->bbNum, slowHead->bbJumpDest->bbNum);
+    fgAddRefPred(e2, slowHead);
+    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", slowHead->bbNum, e2->bbNum);
 
-    // "h" is now going to be a COND block
-    h->bbJumpKind = BBJ_COND;
+    BasicBlock* condLast = optInsertLoopChoiceConditions(context, loopInd, slowHead, h);
 
-    BasicBlock* condLast = optInsertLoopChoiceConditions(context, loopInd, h, slowHead);
-    condLast->bbJumpDest = slowHead;
-
-    JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbJumpDest->bbNum);
-    fgAddRefPred(condLast->bbJumpDest, condLast);
-
-    // Add the fall-through path pred.
+    // Add the fall-through path pred (either to F/T/E for fall-through from conditions to fast path,
+    // or H2 if branch to E of fast path).
     assert(condLast->bbJumpKind == BBJ_COND);
     JITDUMP("Adding " FMT_BB " -> " FMT_BB "\n", condLast->bbNum, condLast->bbNext->bbNum);
     fgAddRefPred(condLast->bbNext, condLast);
 
-    // If h2 is present it is already the head or replace 'h' by 'condLast'.
+    // If h2 is present it is already the head. Else, replace 'h' as the loop head by 'condLast'.
     if (h2 == nullptr)
     {
         optUpdateLoopHead(loopInd, loop.lpHead, condLast);
     }
-    assert(foundIt && e2 != nullptr);
 
     // Don't unroll loops that we've cloned -- the unroller expects any loop it should unroll to
     // initialize the loop counter immediately before entering the loop, but we've left a shared

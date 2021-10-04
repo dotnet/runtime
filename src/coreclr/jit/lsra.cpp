@@ -6478,6 +6478,8 @@ void LinearScan::recordMaxSpill()
         maxSpill[TYP_FLOAT] += 1;
     }
 #endif // TARGET_X86
+
+    compiler->codeGen->regSet.tmpBeginPreAllocateTemps();
     for (int i = 0; i < TYP_COUNT; i++)
     {
         if (var_types(i) != RegSet::tmpNormalizeType(var_types(i)))
@@ -6917,7 +6919,7 @@ void LinearScan::resolveRegisters()
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #ifdef TARGET_ARM
-                            else if (treeNode->OperIsMultiRegOp())
+                            else if (compFeatureArgSplit() && treeNode->OperIsMultiRegOp())
                             {
                                 GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
                                 multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());

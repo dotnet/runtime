@@ -225,7 +225,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                     {
                         const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
 #ifdef TARGET_AMD64
-                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+                        const bool willUseOnlySimdMov = canUse16BytesSimdMov && (size % XMM_REGSIZE_BYTES == 0);
 #else
                         const bool willUseOnlySimdMov = (size % 8 == 0);
 #endif
@@ -1285,6 +1285,15 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 
         node->gtOp1 = op1;
         BlockRange().Remove(op2);
+
+        op2 = op2->AsOp()->gtGetOp1();
+
+        if (op2 != nullptr)
+        {
+            // Some zero vectors are Create/Initialization nodes with a constant zero operand
+            // We should also remove this to avoid dead code
+            BlockRange().Remove(op2);
+        }
 
         LIR::Use op1Use(BlockRange(), &node->gtOp1, node);
         ReplaceWithLclVar(op1Use);
@@ -4464,32 +4473,27 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         // we should never see a gtControlExpr whose type is void.
         assert(ctrlExpr->TypeGet() != TYP_VOID);
 
-        // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
-        if (!call->IsFastTailCall())
-        {
 #ifdef TARGET_X86
-            // On x86, we need to generate a very specific pattern for indirect VSD calls:
-            //
-            //    3-byte nop
-            //    call dword ptr [eax]
-            //
-            // Where EAX is also used as an argument to the stub dispatch helper. Make
-            // sure that the call target address is computed into EAX in this case.
-            if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
-            {
-                assert(ctrlExpr->isIndir());
-                MakeSrcContained(call, ctrlExpr);
-            }
-            else
+        // On x86, we need to generate a very specific pattern for indirect VSD calls:
+        //
+        //    3-byte nop
+        //    call dword ptr [eax]
+        //
+        // Where EAX is also used as an argument to the stub dispatch helper. Make
+        // sure that the call target address is computed into EAX in this case.
+        if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
+        {
+            assert(ctrlExpr->isIndir());
+            MakeSrcContained(call, ctrlExpr);
+        }
+        else
 #endif // TARGET_X86
-                if (ctrlExpr->isIndir())
-            {
-                // We may have cases where we have set a register target on the ctrlExpr, but if it
-                // contained we must clear it.
-                ctrlExpr->SetRegNum(REG_NA);
-                MakeSrcContained(call, ctrlExpr);
-            }
+            if (ctrlExpr->isIndir())
+        {
+            // We may have cases where we have set a register target on the ctrlExpr, but if it
+            // contained we must clear it.
+            ctrlExpr->SetRegNum(REG_NA);
+            MakeSrcContained(call, ctrlExpr);
         }
     }
 

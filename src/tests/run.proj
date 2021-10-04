@@ -606,6 +606,12 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <ItemGroup>
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=10000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=4400" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-trampolines=21000" />
       <MonoAotOption Include="llvm" />
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />

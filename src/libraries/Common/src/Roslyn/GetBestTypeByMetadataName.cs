@@ -3,9 +3,9 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.Reflection
+namespace Microsoft.CodeAnalysis.DotnetRuntime.Extensions
 {
-    internal static partial class RoslynExtensions
+    internal static class RoslynExtensions
     {
         // Copied from: https://github.com/dotnet/roslyn/blob/main/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/CompilationExtensions.cs
         /// <summary>
