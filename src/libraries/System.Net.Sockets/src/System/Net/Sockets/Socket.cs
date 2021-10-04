@@ -1933,7 +1933,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2015,7 +2015,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2051,7 +2051,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return optionValue;
@@ -2076,7 +2076,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2100,7 +2100,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             if (optionLength != realOptionLength)
@@ -2136,7 +2136,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return realOptionLength;
@@ -3432,7 +3432,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3445,7 +3445,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3472,7 +3472,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3486,7 +3486,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return lingerOption;
@@ -3502,7 +3502,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return multicastOption;
@@ -3519,7 +3519,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return multicastOption;
@@ -3690,11 +3690,19 @@ namespace System.Net.Sockets
             }
         }
 
-        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
+        private void UpdateStatusAfterSocketOptionErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
+        {
+            // Don't disconnect socket for unknown options.
+            bool noDisconnect = error == SocketError.ProtocolOption ||
+                                error == SocketError.OperationNotSupported;
+            UpdateStatusAfterSocketErrorAndThrowException(error, callerName, noDisconnect);
+        }
+
+        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null, bool noDisconnect = false)
         {
             // Update the internal state of this socket according to the error before throwing.
             var socketException = new SocketException((int)error);
-            UpdateStatusAfterSocketError(socketException);
+            UpdateStatusAfterSocketError(socketException, noDisconnect);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException, memberName: callerName);
             throw socketException;
         }
@@ -3702,18 +3710,18 @@ namespace System.Net.Sockets
         // UpdateStatusAfterSocketError(socketException) - updates the status of a connected socket
         // on which a failure occurred. it'll go to winsock and check if the connection
         // is still open and if it needs to update our internal state.
-        internal void UpdateStatusAfterSocketError(SocketException socketException)
+        internal void UpdateStatusAfterSocketError(SocketException socketException, bool noDisconnect = false)
         {
-            UpdateStatusAfterSocketError(socketException.SocketErrorCode);
+            UpdateStatusAfterSocketError(socketException.SocketErrorCode, noDisconnect);
         }
 
-        internal void UpdateStatusAfterSocketError(SocketError errorCode)
+        internal void UpdateStatusAfterSocketError(SocketError errorCode, bool noDisconnect = false)
         {
             // If we already know the socket is disconnected
             // we don't need to do anything else.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode},noDisconnect:{noDisconnect}");
 
-            if (_isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
+            if (!noDisconnect && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
                     errorCode != SocketError.TimedOut)))
             {

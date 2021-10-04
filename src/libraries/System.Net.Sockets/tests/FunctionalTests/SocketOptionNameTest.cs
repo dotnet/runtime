@@ -562,6 +562,130 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        public void GetUnsupportedSocketOption_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1)));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void GetUnsupportedSocketOptionBytesArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                var optionValue = new byte[4];
+                Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void GetUnsupportedSocketOptionLengthArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionLength: 4));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedSocketOptionIntArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue: 1));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedSocketOptionBytesArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                var optionValue = new byte[4];
+                Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedSocketOptionBoolArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                bool optionValue = true;
+                Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void GetUnsupportedRawSocketOption_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                var optionValue = new byte[4];
+                Assert.Throws<SocketException>(() => socket1.GetRawSocketOption(-1, -1, optionValue));
+
+                Assert.True(socket1.Connected);
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedRawSocketOption_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                Assert.True(socket1.Connected);
+
+                var optionValue = new byte[4];
+                Assert.Throws<SocketException>(() => socket1.SetRawSocketOption(-1, -1, optionValue));
+
+                Assert.True(socket1.Connected);
+            }
+        }
     }
 
     [Collection("NoParallelTests")]
