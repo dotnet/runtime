@@ -39,10 +39,10 @@
   <Target Name="GetLinuxCrossBuildArgumentsForDNNE"
           DependsOnTargets="GetCompilerForDNNE"
           Condition="'$(CrossBuild)' == 'true' and (
-            '$(TargetOS)' == 'Linux' or 
-            '$(TargetOS)' == 'NetBSD' or 
-            '$(TargetOS)' == 'FreeBSD' or 
-            '$(TargetOS)' == 'illumos' or 
+            '$(TargetOS)' == 'Linux' or
+            '$(TargetOS)' == 'NetBSD' or
+            '$(TargetOS)' == 'FreeBSD' or
+            '$(TargetOS)' == 'illumos' or
             '$(TargetOS)' == 'Solaris')">
     <Exec Command="cmake -P &quot;$(RepositoryEngineeringDir)/native/output-toolchain-info.cmake&quot;"
           EchoOff="true"
@@ -66,16 +66,15 @@
       <CommonToolchainArgs>--target=$(TargetTriple) --gcc-toolchain=$(ROOTFS_DIR)/usr --sysroot=$(ROOTFS_DIR)</CommonToolchainArgs>
       <DnneLinkerUserFlags>$(CommonToolchainArgs) $(DnneLinkerUserFlags.Replace(';',' '))</DnneLinkerUserFlags>
       <DnneCompilerUserFlags>$(CommonToolchainArgs) $(DnneCompilerUserFlags.Replace(';',' '))</DnneCompilerUserFlags>
-      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
     </PropertyGroup>
   </Target>
 
   <Target Name="GetAppleCrossBuildArgumentsForDNNE"
-          Condition="'$(TargetOS)' == 'OSX' or 
-            '$(TargetOS)' == 'MacCatalyst' or 
-            '$(TargetOS)' == 'iOS' or 
-            '$(TargetOS)' == 'iOSSimulator' or 
-            '$(TargetOS)' == 'tvOS' or 
+          Condition="'$(TargetOS)' == 'OSX' or
+            '$(TargetOS)' == 'MacCatalyst' or
+            '$(TargetOS)' == 'iOS' or
+            '$(TargetOS)' == 'iOSSimulator' or
+            '$(TargetOS)' == 'tvOS' or
             '$(TargetOS)' == 'tvOSSimulator'">
     <PropertyGroup Condition=" '$(TargetOS)' == 'MacCatalyst'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
@@ -95,8 +94,13 @@
   </Target>
 
   <Target Name="GetBuildArgumentsForDNNE"
-          DependsOnTargets="GetCompilerForDNNE;
+          DependsOnTargets="ResolveFrameworkReferences;
+                            GetCompilerForDNNE;
                             GetLinuxCrossBuildArgumentsForDNNE;
                             GetAppleCrossBuildArgumentsForDNNE"
-          BeforeTargets="DnneBuildNativeExports" />
+          BeforeTargets="DnneBuildNativeExports">
+    <PropertyGroup>
+      <DnneNetHostDir>$([System.IO.Path]::GetDirectoryName('$(AppHostSourcePath)'))</DnneNetHostDir>
+    </PropertyGroup>
+  </Target>
 </Project>
