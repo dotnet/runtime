@@ -255,7 +255,7 @@ namespace Microsoft.Interop.Analyzers
 
                 AttributeData? blittableTypeAttributeData = null;
                 AttributeData? nativeMarshallingAttributeData = null;
-                foreach (AttributeData? attr in type.GetAttributes())
+                foreach (AttributeData attr in type.GetAttributes())
                 {
                     if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, _generatedMarshallingAttribute))
                     {
@@ -415,7 +415,7 @@ namespace Microsoft.Interop.Analyzers
 
                 bool hasConstructor = false;
                 bool hasStackallocConstructor = false;
-                foreach (IMethodSymbol? ctor in marshalerType.Constructors)
+                foreach (IMethodSymbol ctor in marshalerType.Constructors)
                 {
                     if (ctor.IsStatic)
                     {

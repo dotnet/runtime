@@ -102,7 +102,7 @@ namespace Microsoft.Interop.Analyzers
             var dllImportSyntax = (AttributeSyntax)dllImportAttr!.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
 
             // Create GeneratedDllImport attribute based on the DllImport attribute
-            SyntaxNode? generatedDllImportSyntax = GetGeneratedDllImportAttribute(
+            SyntaxNode generatedDllImportSyntax = GetGeneratedDllImportAttribute(
                 editor,
                 generator,
                 dllImportSyntax,
@@ -183,7 +183,7 @@ namespace Microsoft.Interop.Analyzers
         {
             unmanagedCallConvAttributeMaybe = null;
             // Create GeneratedDllImport based on the DllImport attribute
-            SyntaxNode? generatedDllImportSyntax = generator.ReplaceNode(dllImportSyntax,
+            SyntaxNode generatedDllImportSyntax = generator.ReplaceNode(dllImportSyntax,
                 dllImportSyntax.Name,
                 generator.TypeExpression(generatedDllImportAttrType));
 
@@ -282,7 +282,7 @@ namespace Microsoft.Interop.Analyzers
         private static bool TryGetAttribute(IMethodSymbol method, INamedTypeSymbol attributeType, out AttributeData? attr)
         {
             attr = default;
-            foreach (AttributeData? attrLocal in method.GetAttributes())
+            foreach (AttributeData attrLocal in method.GetAttributes())
             {
                 if (SymbolEqualityComparer.Default.Equals(attrLocal.AttributeClass, attributeType))
                 {

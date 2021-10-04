@@ -74,7 +74,7 @@ namespace Microsoft.Interop.Analyzers
             {
                 // Make sure declarations are marked partial. Technically, we can just check one
                 // declaration, since Roslyn would error on inconsistent partial declarations.
-                foreach (SyntaxReference? reference in methodSymbol.DeclaringSyntaxReferences)
+                foreach (SyntaxReference reference in methodSymbol.DeclaringSyntaxReferences)
                 {
                     SyntaxNode? syntax = reference.GetSyntax(context.CancellationToken);
                     if (syntax is MethodDeclarationSyntax methodSyntax && !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
@@ -87,7 +87,7 @@ namespace Microsoft.Interop.Analyzers
 
                 for (INamedTypeSymbol? typeSymbol = methodSymbol.ContainingType; typeSymbol is not null; typeSymbol = typeSymbol.ContainingType)
                 {
-                    foreach (SyntaxReference? reference in typeSymbol.DeclaringSyntaxReferences)
+                    foreach (SyntaxReference reference in typeSymbol.DeclaringSyntaxReferences)
                     {
                         SyntaxNode? syntax = reference.GetSyntax(context.CancellationToken);
                         if (syntax is TypeDeclarationSyntax typeSyntax && !typeSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))

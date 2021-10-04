@@ -178,7 +178,7 @@ namespace Microsoft.Interop
                 (context, data) =>
                 {
                     IncrementalTracker?.RecordExecutedStep(new IncrementalityTracker.ExecutedStepInfo(IncrementalityTracker.StepName.OutputSourceFile, data));
-                    foreach (Diagnostic? diagnostic in data.Item2)
+                    foreach (Diagnostic diagnostic in data.Item2)
                     {
                         context.ReportDiagnostic(diagnostic);
                     }
