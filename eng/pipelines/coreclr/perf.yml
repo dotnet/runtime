@@ -42,13 +42,13 @@ jobs:
       - Android_x86
       - Android_arm
       - Android_arm64
-    jobParameters:
-      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-      nameSuffix: Maui_Packs_Mono
-      isOfficialBuild: false
-      extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-      extraStepsParameters:
-        name: MonoRuntimePacks
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: Maui_Packs_Mono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
       # - MacCatalyst_x64
       # - MacCatalyst_arm64
       # - iOS_arm
