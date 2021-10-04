@@ -2814,16 +2814,15 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         {
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
-
+#ifdef TARGET_X86
+            // For x86, we need one more to convert it from 8 bytes to 16 bytes.
+            emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
+#endif
             if (regSize == YMM_REGSIZE_BYTES)
             {
                 // Extend the bytes in the lower lanes to the upper lanes
                 emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
             }
-#ifdef TARGET_X86
-            // For x86, we need one more to convert it from 8 bytes to 16 bytes.
-            emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
-#endif
         }
 
         instruction simdMov      = simdUnalignedMovIns();
