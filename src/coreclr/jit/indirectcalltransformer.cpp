@@ -539,8 +539,9 @@ private:
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
-            const bool isChainedGdv = ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0) &&
-                                      (origCall->GetGDVCandidatesCount() == 1);
+            const bool multipleCandidates = origCall->GetGDVCandidatesCount() > 1;
+            const bool isChainedGdv =
+                ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0) && !multipleCandidates;
 
             // NOTE: calls with multiple GDV candidates don't support this opt yet.
 
@@ -554,7 +555,10 @@ private:
             if (isChainedGdv)
             {
                 TransformForChainedGdv();
+            }
 
+            if (!multipleCandidates)
+            {
                 // Look ahead and see if there's another Gdv we might chain to this one.
                 //
                 ScoutForChainedGdv();
