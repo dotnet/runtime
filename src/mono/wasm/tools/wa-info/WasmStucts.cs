@@ -276,7 +276,8 @@ namespace WebAssemblyInfo
         public string ToString(string? name)
         {
             var results = Results.Types.Length == 0 ? "" : $" (result {Results})";
-            return $"(func {name}(param {Parameters}){results})";
+            var parameters = Parameters.Types.Length == 0 ? "" : $"(param { Parameters})";
+            return $"(func {name}{parameters}{results})";
         }
 
         public override string ToString()
