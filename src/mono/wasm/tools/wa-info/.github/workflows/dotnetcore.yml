@@ -1,0 +1,46 @@
+name: .NET Core
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+        source-url: https://nuget.pkg.github.com/<owner>/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Install dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal
+    - name: Pack nuget
+      run: dotnet pack -c Release
+    - name: Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: NuGets
+        path: |
+          nupkg\*.nupkg
+    - name: Setup NuGet
+      uses: nuget/setup-nuget@v1
+    - name: Publish to nuget
+      run: |
+        dotnet nuget push nupkg\*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --no-symbols --skip-duplicate --source "https://api.nuget.org/v3/index.json"
+    - name: Publish to github
+      run: |
+        nuget sources Add -Name "GPR" -Source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" -UserName ${{ github.repository_owner }} -Password ${{ secrets.GITHUB_TOKEN }}
+        nuget setApiKey ${{ secrets.NUGET_API_KEY }} -Source "GPR"
+        nuget push nupkg\*.nupkg -Source "GPR" -SkipDuplicate
