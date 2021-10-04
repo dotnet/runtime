@@ -45,6 +45,12 @@ namespace WebAssemblyInfo
                     return $"{opStr} {FunctionName(Idx, reader)}";
                 case Opcode.I32_Const:
                     return $"{opStr} {I32}";
+                case Opcode.I64_Const:
+                    return $"{opStr} {I64}";
+                case Opcode.F32_Const:
+                    return $"{opStr} {F32}";
+                case Opcode.F64_Const:
+                    return $"{opStr} {F64}";
                 case Opcode.I32_Load:
                 case Opcode.I64_Load:
                 case Opcode.F32_Load:
