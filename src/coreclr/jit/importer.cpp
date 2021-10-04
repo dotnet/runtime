@@ -22155,7 +22155,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*          call,
 
     // If the guarded class is a value class, look for an unboxed entry point.
     //
-    if ((info.compCompHnd->getClassAttribs(classHandle) & CORINFO_FLG_VALUECLASS) != 0)
+    if (info.compCompHnd->isValueClass(classHandle))
     {
         JITDUMP("    ... class is a value class, looking for unboxed entry\n");
         bool                  requiresInstMethodTableArg = false;
