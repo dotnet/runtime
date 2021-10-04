@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-"use strict";
+'use strict';
 
 var DotNetSupportLib = {
     // this will become globalThis.DOTNET
@@ -25,15 +25,15 @@ const linked_functions = [
     'mono_wasm_setenv',
 
     //BindingSupportLib
-    `mono_bindings_init`,
-    `mono_bind_method`,
-    `mono_method_invoke`,
-    `mono_method_get_call_signature`,
-    `mono_method_resolve`,
-    `mono_bind_static_method`,
-    `mono_bind_assembly_entry_point`,
-    `mono_call_assembly_entry_point`,
-    `mono_intern_string`,
+    'mono_bindings_init',
+    'mono_bind_method',
+    'mono_method_invoke',
+    'mono_method_get_call_signature',
+    'mono_method_resolve',
+    'mono_bind_static_method',
+    'mono_bind_assembly_entry_point',
+    'mono_call_assembly_entry_point',
+    'mono_intern_string',
 
     //DotNetSupportLib
     'mono_wasm_invoke_js_blazor',
@@ -65,16 +65,16 @@ const linked_functions = [
     // pal_icushim_static.c
     'mono_wasm_load_icu_data',
     'mono_wasm_get_icudt_name',
-]
+];
 
 // -- this javascript file is evaluated by emcc during compilation! --
 // we generate simple proxy for each exported function so that emcc will include them in the final output
 for (var linked_function of linked_functions) {
     const fn_template = `return __dotnet_runtime._linker_exports.${linked_function}.apply(__dotnet_runtime, arguments)`;
-    DotNetSupportLib[linked_function] = new Function(fn_template)
+    DotNetSupportLib[linked_function] = new Function(fn_template);
 }
 
-autoAddDeps(DotNetSupportLib, '$MONO')
-autoAddDeps(DotNetSupportLib, '$BINDING')
-autoAddDeps(DotNetSupportLib, '$DOTNET')
-mergeInto(LibraryManager.library, DotNetSupportLib)
+autoAddDeps(DotNetSupportLib, '$MONO');
+autoAddDeps(DotNetSupportLib, '$BINDING');
+autoAddDeps(DotNetSupportLib, '$DOTNET');
+mergeInto(LibraryManager.library, DotNetSupportLib);
