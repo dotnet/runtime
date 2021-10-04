@@ -10,8 +10,7 @@
 #define PROFILE_LEAVE    2
 #define PROFILE_TAILCALL 4
 
-// Scratch space to store HFA return values (max 16 bytes)
-#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE (NUM_FLOAT_ARGUMENT_REGISTERS * sizeof(double))
 
 typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 {
@@ -49,8 +48,7 @@ void ProfileSetFunctionIDInPlatformSpecificHandle(void* pPlatformSpecificHandle,
 }
 
 ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHandle)
-    : m_argIterator(pSig),
-    m_bufferPos(0)
+    : m_argIterator(pSig), m_bufferPos(0)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -60,6 +58,8 @@ ProfileArgIterator::ProfileArgIterator(MetaSig* pSig, void* pPlatformSpecificHan
     m_handle = pPlatformSpecificHandle;
 
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(pPlatformSpecificHandle);
+    ZeroMemory(pData->buffer, PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE);
+
 #ifdef _DEBUG
     // Unwind a frame and get the SP for the profiled method to make sure it matches
     // what the JIT gave us
@@ -119,6 +119,42 @@ ProfileArgIterator::~ProfileArgIterator()
     m_handle = nullptr;
 }
 
+LPVOID ProfileArgIterator::CopyStructFromFPRegs(int firstFPReg, int numFPRegs, int hfaFieldSize)
+{
+    WRAPPER_NO_CONTRACT;
+
+    PROFILE_PLATFORM_SPECIFIC_DATA* pData = reinterpret_cast<PROFILE_PLATFORM_SPECIFIC_DATA*>(m_handle);
+
+    if (hfaFieldSize == 8)
+    {
+        UINT64* pDest = (UINT64*)&pData->buffer[m_bufferPos];
+
+        for (int i = 0; i < numFPRegs; ++i)
+        {
+            pDest[i] = (UINT64)pData->floatArgumentRegisters.q[firstFPReg + i].Low;
+        }
+
+        m_bufferPos += numFPRegs * sizeof(UINT64);
+
+        return pDest;
+    }
+    else
+    {
+        _ASSERTE(hfaFieldSize == 4);
+
+        UINT32* pDest = (UINT32*)&pData->buffer[m_bufferPos];
+
+        for (int i = 0; i < numFPRegs; ++i)
+        {
+            pDest[i] = (UINT32)pData->floatArgumentRegisters.q[firstFPReg + i].Low;
+        }
+
+        m_bufferPos += numFPRegs * sizeof(UINT32);
+
+        return pDest;
+    }
+}
+
 LPVOID ProfileArgIterator::GetNextArgAddr()
 {
     WRAPPER_NO_CONTRACT;
@@ -142,7 +178,23 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
     if (TransitionBlock::IsFloatArgumentRegisterOffset(argOffset))
     {
-        return (LPBYTE)&pData->floatArgumentRegisters + (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+        ArgLocDesc argLocDesc;
+        m_argIterator.GetArgLoc(argOffset, &argLocDesc);
+
+        if (argLocDesc.m_cFloatReg > 1)
+        {
+            if (argLocDesc.m_hfaFieldSize != 16)
+            {
+                return CopyStructFromFPRegs(argLocDesc.m_idxFloatReg, argLocDesc.m_cFloatReg, argLocDesc.m_hfaFieldSize);
+            }
+        }
+#ifdef _DEBUG
+        else
+        {
+            _ASSERTE(argLocDesc.m_cFloatReg == 1);
+        }
+#endif
+        return (LPBYTE)&pData->floatArgumentRegisters.q[argLocDesc.m_idxFloatReg];
     }
 
     LPVOID pArg = nullptr;
@@ -241,46 +293,39 @@ LPVOID ProfileArgIterator::GetReturnBufferAddr(void)
     }
 
     UINT fpReturnSize = m_argIterator.GetFPReturnSize();
+
     if (fpReturnSize != 0)
-    {    
+    {
         TypeHandle thReturnValueType;
         m_argIterator.GetSig()->GetReturnTypeNormalized(&thReturnValueType);
+
         if (!thReturnValueType.IsNull() && thReturnValueType.IsHFA())
         {
-            UINT hfaFieldSize = fpReturnSize / 4;
-            UINT totalSize = m_argIterator.GetSig()->GetReturnTypeSize();
-            _ASSERTE(totalSize % hfaFieldSize == 0);
-            _ASSERTE(totalSize <= 16);
+            CorInfoHFAElemType hfaElemType = thReturnValueType.GetHFAType();
 
-            BYTE *dest = pData->buffer;
-            for (UINT floatRegIdx = 0; floatRegIdx < totalSize / hfaFieldSize; ++floatRegIdx)
+            if (hfaElemType == CORINFO_HFA_ELEM_VECTOR128)
             {
-                if (hfaFieldSize == 4)
+                return &pData->floatArgumentRegisters.q[0];
+            }
+            else
+            {
+                int hfaFieldSize = 8;
+
+                if (hfaElemType == CORINFO_HFA_ELEM_FLOAT)
                 {
-                    *(UINT32*)dest = *(UINT32*)&pData->floatArgumentRegisters.q[floatRegIdx];
-                    dest += 4;
+                    hfaFieldSize = 4;
                 }
-                else if (hfaFieldSize == 8)
-                {
-                    *(UINT64*)dest = *(UINT64*)&pData->floatArgumentRegisters.q[floatRegIdx];
-                    dest += 8;
-                }
+#ifdef _DEBUG
                 else
                 {
-                    _ASSERTE(hfaFieldSize == 16);
-                    *(NEON128*)dest = pData->floatArgumentRegisters.q[floatRegIdx];
-                    dest += 16;
+                    _ASSERTE((hfaElemType == CORINFO_HFA_ELEM_DOUBLE) || (hfaElemType == CORINFO_HFA_ELEM_VECTOR64));
                 }
+#endif
+                const int cntFPRegs = thReturnValueType.GetSize() / hfaFieldSize;
 
-                if (floatRegIdx > 8)
-                {
-                    // There's only space for 8 arguments in buffer
-                    _ASSERTE(FALSE);
-                    break;
-                }
+                // On Arm64 HFA and HVA values are returned in s0-s3, d0-d3, or v0-v3.
+                return CopyStructFromFPRegs(0, cntFPRegs, hfaFieldSize);
             }
-
-            return pData->buffer;
         }
 
         return &pData->floatArgumentRegisters.q[0];

@@ -178,6 +178,30 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(string.Empty, logger.LastFormattedString);
             Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M5(logger, LogLevel.Trace);
+            Assert.Null(logger.LastException);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(-1, logger.LastEventId.Id);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M6(logger, LogLevel.Trace);
+            Assert.Null(logger.LastException);
+            Assert.Equal(string.Empty, logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(6, logger.LastEventId.Id);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MessageTestExtensions.M7(logger, LogLevel.Trace, "p", "q");
+            Assert.Null(logger.LastException);
+            Assert.Equal("\"p\" -> \"q\"", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(7, logger.LastEventId.Id);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]
@@ -309,6 +333,14 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal("M9", logger.LastFormattedString);
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            LevelTestExtensions.M10vs11(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("event ID 10 vs. 11", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Warning, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal(11, logger.LastEventId.Id);
         }
 
         [Fact]
@@ -343,6 +375,81 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
             Assert.Equal(1, logger.CallCount);
             Assert.Equal("CustomEventName", logger.LastEventId.Name);
+
+            logger.Reset();
+            EventNameTestExtensions.CustomEventName(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("CustomEventName", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Trace, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal("CustomEventName", logger.LastEventId.Name);
+        }
+
+        [Fact]
+        public void SkipEnabledCheckTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            logger.Enabled = false;
+            Assert.False(logger.IsEnabled(LogLevel.Information));
+            SkipEnabledCheckExtensions.LoggerMethodWithFalseSkipEnabledCheck(logger);
+            Assert.Null(logger.LastException);
+            Assert.Null(logger.LastFormattedString);
+            Assert.Equal((LogLevel)(-1), logger.LastLogLevel);
+            Assert.Equal(0, logger.CallCount);
+            Assert.Equal(default, logger.LastEventId);
+
+            logger.Reset();
+            logger.Enabled = false;
+            Assert.False(logger.IsEnabled(LogLevel.Debug));
+            SkipEnabledCheckExtensions.LoggerMethodWithTrueSkipEnabledCheck(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("Message: When using SkipEnabledCheck, the generated code skips logger.IsEnabled(logLevel) check before calling log. To be used when consumer has already guarded logger method in an IsEnabled check.", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+            Assert.Equal("LoggerMethodWithTrueSkipEnabledCheck", logger.LastEventId.Name);
+        }
+
+        [Fact]
+        public void NestedClassTests()
+        {
+            var logger = new MockLogger();
+
+            logger.Reset();
+            NestedClassTestsExtensions<ABC>.NestedMiddleParentClass.NestedClass.M8(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M8", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NonStaticNestedClassTestsExtensions<ABC>.NonStaticNestedMiddleParentClass.NestedClass.M9(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M9", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NestedStruct.Logger.M10(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M10", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            NestedRecord.Logger.M11(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M11", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
+
+            logger.Reset();
+            MultiLevelNestedClass.NestedStruct.NestedRecord.Logger.M12(logger);
+            Assert.Null(logger.LastException);
+            Assert.Equal("M12", logger.LastFormattedString);
+            Assert.Equal(LogLevel.Debug, logger.LastLogLevel);
+            Assert.Equal(1, logger.CallCount);
         }
 
         [Fact]

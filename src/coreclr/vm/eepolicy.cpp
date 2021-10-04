@@ -616,6 +616,10 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
     WRAPPER_NO_CONTRACT;
 
+    // Disable GC stress triggering GC at this point, we don't want the GC to start running
+    // on this thread when we have only a very limited space left on the stack
+    GCStressPolicy::InhibitHolder iholder;
+
     STRESS_LOG0(LF_EH, LL_INFO100, "In EEPolicy::HandleFatalStackOverflow\n");
 
     FrameWithCookie<FaultingExceptionFrame> fef;
@@ -625,7 +629,13 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     if (pExceptionInfo && pExceptionInfo->ContextRecord)
     {
         GCX_COOP();
+#if defined(TARGET_X86) && defined(TARGET_WINDOWS)
+        // For Windows x86, we don't have a reliable method to unwind to the first managed call frame,
+        // so we handle at least the cases when the stack overflow happens in JIT helpers
         AdjustContextForJITHelpers(pExceptionInfo->ExceptionRecord, pExceptionInfo->ContextRecord);
+#else
+        Thread::VirtualUnwindToFirstManagedCallFrame(pExceptionInfo->ContextRecord);
+#endif
         fef.InitAndLink(pExceptionInfo->ContextRecord);
     }
 

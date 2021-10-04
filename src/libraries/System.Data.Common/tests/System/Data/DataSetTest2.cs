@@ -435,7 +435,7 @@ namespace System.Data.Tests
 
             StringBuilder resultXML = new StringBuilder();
 
-            resultXML.Append("<" + ds.DataSetName + "xmlns=\"namespace\">");
+            resultXML.Append($"<{ds.DataSetName}xmlns=\"namespace\">");
 
             resultXML.Append("<Parent>");
             resultXML.Append("<ParentId>1</ParentId>");
@@ -455,7 +455,7 @@ namespace System.Data.Tests
             resultXML.Append("<String2>Value5</String2>");
             resultXML.Append("</Parent>");
 
-            resultXML.Append("</" + ds.DataSetName + ">");
+            resultXML.Append($"</{ds.DataSetName}>");
 
             ds.Tables.Add(dt);
             string strXML = ds.GetXml();

@@ -39,27 +39,20 @@ setup_dirs_local()
 restore_optdata()
 {
     local OptDataProjectFilePath="$__ProjectRoot/.nuget/optdata/optdata.csproj"
-    if [[ "$__SkipRestoreOptData" == 0 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        echo "Restoring the OptimizationData package"
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
-                                               $OptDataProjectFilePath /t:Restore /m \
-                                               -bl:"$__LogsDir/OptRestore_$__ConfigTriplet.binlog" \
-                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs \
-                                               /nodereuse:false
-        local exit_code="$?"
-        if [[ "$exit_code" != 0 ]]; then
-            echo "${__ErrMsgPrefix}Failed to restore the optimization data package."
-            exit "$exit_code"
-        fi
-    fi
 
     if [[ "$__PgoOptimize" == 1 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
 
+        local RestoreArg=""
+
+        if [[ "$__SkipRestoreOptData" == "0" ]]; then
+            RestoreArg="/restore"
+        fi
+
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath \
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath $RestoreArg /t:DumpPgoDataPackagePath \
                                             ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} \
                                             -bl:"$__LogsDir/PgoVersionRead_$__ConfigTriplet.binlog" > /dev/null 2>&1
         local exit_code="$?"

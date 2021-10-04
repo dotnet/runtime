@@ -12,7 +12,7 @@ namespace TypeSystemTests
     {
         protected override void PrepareRuntimeSpecificStaticFieldLayout(TypeSystemContext context, ref ComputedStaticFieldLayout layout)
         {
-            // GC statics start with a pointer to the "EEType" that signals the size and GCDesc to the GC
+            // GC statics start with a pointer to the "MethodTable" that signals the size and GCDesc to the GC
             layout.GcStatics.Size = context.Target.LayoutPointerSize;
             layout.ThreadGcStatics.Size = context.Target.LayoutPointerSize;
         }

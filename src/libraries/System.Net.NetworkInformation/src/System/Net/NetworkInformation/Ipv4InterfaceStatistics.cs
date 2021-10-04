@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Net.NetworkInformation
 {
     /// <summary>
@@ -16,6 +18,10 @@ namespace System.Net.NetworkInformation
         public abstract long IncomingUnknownProtocolPackets { get; }
         public abstract long NonUnicastPacketsReceived { get; }
         public abstract long NonUnicastPacketsSent { get; }
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public abstract long OutgoingPacketsDiscarded { get; }
         public abstract long OutgoingPacketsWithErrors { get; }
         public abstract long OutputQueueLength { get; }

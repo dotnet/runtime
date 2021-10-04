@@ -1,14 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
+
 namespace System.Net.Http.Tests
 {
     public class Int64NumberHeaderParserTest
@@ -60,8 +56,6 @@ namespace System.Net.Http.Tests
             CheckValidParsedValue("123456789012345", 0, 123456789012345, 15);
             CheckValidParsedValue("0", 0, 0, 1);
             CheckValidParsedValue("000015", 0, 15, 6);
-            CheckValidParsedValue(" 123 \t\r\n ", 0, 123, 9);
-            CheckValidParsedValue("a 5 \r\n ", 1, 5, 7);
             CheckValidParsedValue(" 987", 0, 987, 4);
             CheckValidParsedValue("987 ", 0, 987, 4);
             CheckValidParsedValue("a456", 1, 456, 4);
@@ -88,6 +82,11 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("-123", 0);
             CheckInvalidParsedValue("123456789012345678901234567890", 0); // value >> Int64.MaxValue
             CheckInvalidParsedValue("9223372036854775808", 0); // value = Int64.MaxValue + 1
+            CheckInvalidParsedValue(" 123 \t\r\n ", 0);
+            CheckInvalidParsedValue("a 5 \r\n ", 1);
+            CheckInvalidParsedValue("1\n", 0);
+            CheckInvalidParsedValue("2\r", 0);
+            CheckInvalidParsedValue("3\r\n ", 0);
         }
 
         [Fact]

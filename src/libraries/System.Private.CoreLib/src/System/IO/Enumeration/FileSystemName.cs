@@ -10,9 +10,7 @@ namespace Microsoft.IO.Enumeration
 namespace System.IO.Enumeration
 #endif
 {
-    /// <summary>
-    /// Provides methods for matching file system names.
-    /// </summary>
+    /// <summary>Provides methods for matching file system names.</summary>
     public static class FileSystemName
     {
         // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
@@ -27,10 +25,10 @@ namespace System.IO.Enumeration
             '*', '?'
         };
 
-        /// <summary>
-        /// Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior. For compatibility, Windows
-        /// changes some wildcards to provide a closer match to historical DOS 8.3 filename matching.
-        /// </summary>
+        /// <summary>Translates the given Win32 expression. Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior.</summary>
+        /// <param name="expression">The expression to translate.</param>
+        /// <returns>A string with the translated Win32 expression.</returns>
+        /// <remarks>For compatibility, Windows changes some wildcards to provide a closer match to historical DOS 8.3 filename matching.</remarks>
         public static string TranslateWin32Expression(string? expression)
         {
             if (string.IsNullOrEmpty(expression) || expression == "*" || expression == "*.*")
@@ -72,28 +70,23 @@ namespace System.IO.Enumeration
             return modified ? sb.ToString() : expression;
         }
 
-        /// <summary>
-        /// Return true if the given expression matches the given name. Supports the following wildcards:
-        /// '*', '?', '&lt;', '&gt;', '"'. The backslash character '\' escapes.
-        /// </summary>
+        /// <summary>Verifies whether the given Win32 expression matches the given name. Supports the following wildcards: '*', '?', '&lt;', '&gt;', '"'. The backslash character '\' escapes.</summary>
         /// <param name="expression">The expression to match with, such as "*.foo".</param>
         /// <param name="name">The name to check against the expression.</param>
-        /// <param name="ignoreCase">True to ignore case (default).</param>
-        /// <remarks>
-        /// This is based off of System.IO.PatternMatcher used in FileSystemWatcher, which is based off
-        /// of RtlIsNameInExpression, which defines the rules for matching DOS wildcards ('*', '?', '&lt;', '&gt;', '"').
-        ///
-        /// Like PatternMatcher, matching will not line up with Win32 behavior unless you transform the expression
-        /// using <see cref="TranslateWin32Expression(string)"/>
-        /// </remarks>
+        /// <param name="ignoreCase"><see langword="true" /> to ignore case (default), <see langword="false" /> if the match should be case-sensitive.</param>
+        /// <returns><see langword="true" /> if the given expression matches the given name; otherwise, <see langword="false" />.</returns>
+        /// <remarks>The syntax of the <paramref name="expression" /> parameter is based on the syntax used by FileSystemWatcher, which is based on [RtlIsNameInExpression](/windows/win32/devnotes/rtlisnameinexpression), which defines the rules for matching DOS wildcards (`'*'`, `'?'`, `'&lt;'`, `'&gt;'`, `'"'`).
+        /// Matching will not correspond to Win32 behavior unless you transform the expression using <see cref="FileSystemName.TranslateWin32Expression(string)" />.</remarks>
         public static bool MatchesWin32Expression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true)
         {
             return MatchPattern(expression, name, ignoreCase, useExtendedWildcards: true);
         }
 
-        /// <summary>
-        /// Return true if the given expression matches the given name. '*' and '?' are wildcards, '\' escapes.
-        /// </summary>
+        /// <summary>Verifies whether the given expression matches the given name. Supports the following wildcards: '*' and '?'. The backslash character '\\' escapes.</summary>
+        /// <param name="expression">The expression to match with.</param>
+        /// <param name="name">The name to check against the expression.</param>
+        /// <param name="ignoreCase"><see langword="true" /> to ignore case (default); <see langword="false" /> if the match should be case-sensitive.</param>
+        /// <returns><see langword="true" /> if the given expression matches the given name; otherwise, <see langword="false" />.</returns>
         public static bool MatchesSimpleExpression(ReadOnlySpan<char> expression, ReadOnlySpan<char> name, bool ignoreCase = true)
         {
             return MatchPattern(expression, name, ignoreCase, useExtendedWildcards: false);

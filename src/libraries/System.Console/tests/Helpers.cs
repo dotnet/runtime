@@ -17,29 +17,17 @@ class Helpers
 
         try
         {
-            using (MemoryStream memStream = new MemoryStream())
-            {
-                using (StreamWriter sw = new StreamWriter(memStream))
-                {
-                    setHelper(sw);
+            var memStream = new MemoryStream();
+            var sw = new StreamWriter(memStream);
+            setHelper(sw);
 
-                    TextWriter newStream = getHelper();
+            TextWriter newStream = getHelper();
+            Assert.NotNull(newStream);
+            newStream.Write(TestString);
+            newStream.Flush();
 
-                    Assert.NotNull(newStream);
-
-                    newStream.Write(TestString);
-                    newStream.Flush();
-
-                    memStream.Seek(0, SeekOrigin.Begin);
-
-                    using (StreamReader sr = new StreamReader(memStream))
-                    {
-                        string fromConsole = readHelper(sr);
-
-                        Assert.Equal(TestString, fromConsole);
-                    }
-                }
-            }
+            memStream.Seek(0, SeekOrigin.Begin);
+            Assert.Equal(TestString, readHelper(new StreamReader(memStream)));
         }
         finally
         {

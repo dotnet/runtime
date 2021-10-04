@@ -128,7 +128,7 @@ namespace System.Net.Security
 
     internal sealed class SafeFreeContextBuffer_SECURITY : SafeFreeContextBuffer
     {
-        internal SafeFreeContextBuffer_SECURITY() : base() { }
+        public SafeFreeContextBuffer_SECURITY() : base() { }
 
         protected override bool ReleaseHandle()
         {

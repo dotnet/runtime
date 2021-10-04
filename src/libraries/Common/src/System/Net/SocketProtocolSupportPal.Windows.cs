@@ -9,12 +9,8 @@ using SocketType = System.Net.Internals.SocketType;
 
 namespace System.Net
 {
-    internal static class SocketProtocolSupportPal
+    internal static partial class SocketProtocolSupportPal
     {
-        public static bool OSSupportsIPv6 { get; } = IsSupported(AddressFamily.InterNetworkV6);
-        public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
-        public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
-
         private static bool IsSupported(AddressFamily af)
         {
             Interop.Winsock.EnsureInitialized();

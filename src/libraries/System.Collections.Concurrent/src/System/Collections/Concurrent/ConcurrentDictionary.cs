@@ -471,7 +471,8 @@ namespace System.Collections.Concurrent
 
         private bool TryGetValueInternal(TKey key, int hashcode, [MaybeNullWhen(false)] out TValue value)
         {
-            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode);
+            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode,
+                          $"Invalid comparer: _comparer {_comparer} key {key} _comparer.GetHashCode(key) {_comparer?.GetHashCode(key)} hashcode {hashcode}");
 
             // We must capture the volatile _tables field into a local variable: it is set to a new table on each table resize.
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
@@ -1986,9 +1987,6 @@ namespace System.Collections.Concurrent
                     _budget = int.MaxValue;
                 }
 
-                // Now acquire all other locks for the table
-                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
-
                 object[] newLocks = tables._locks;
 
                 // Add more locks
@@ -2005,6 +2003,9 @@ namespace System.Collections.Concurrent
                 var newBuckets = new Node[newLength];
                 var newCountPerLock = new int[newLocks.Length];
                 var newTables = new Tables(newBuckets, newLocks, newCountPerLock);
+
+                // Now acquire all other locks for the table
+                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
 
                 // Copy all data into a new table, creating new nodes for all elements
                 foreach (Node? bucket in tables._buckets)

@@ -77,11 +77,13 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream GetFile(string name)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override FileStream[] GetFiles(bool getResourceModules)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
@@ -102,8 +104,9 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
-        public override string Location => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
+        public override string Location => string.Empty;
 
+        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
 
         [RequiresUnreferencedCode("Types might be removed")]
@@ -301,22 +304,15 @@ namespace System.Reflection.Emit
         /// a transient module.
         /// </summary>
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
-        public ModuleBuilder DefineDynamicModule(string name) =>
-            DefineDynamicModuleInternal(name, emitSymbolInfo: false);
-
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
-        public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo) =>
-            DefineDynamicModuleInternal(name, emitSymbolInfo);
-
-        private ModuleBuilder DefineDynamicModuleInternal(string name, bool emitSymbolInfo)
+        public ModuleBuilder DefineDynamicModule(string name)
         {
             lock (SyncRoot)
             {
-                return DefineDynamicModuleInternalNoLock(name, emitSymbolInfo);
+                return DefineDynamicModuleInternalNoLock(name);
             }
         }
 
-        private ModuleBuilder DefineDynamicModuleInternalNoLock(string name, bool emitSymbolInfo)
+        private ModuleBuilder DefineDynamicModuleInternalNoLock(string name)
         {
             if (name == null)
             {
@@ -342,19 +338,6 @@ namespace System.Reflection.Emit
             // Init(...) has already been called on _manifestModuleBuilder in InitManifestModule()
             ModuleBuilder dynModule = _manifestModuleBuilder;
 
-            // Create the symbol writer
-            ISymbolWriter? writer = null;
-            if (emitSymbolInfo)
-            {
-                writer = SymWrapperCore.SymWriter.CreateSymWriter();
-
-                // Pass the "real" module to the VM.
-                // This symfile is never written to disk so filename does not matter.
-                IntPtr pInternalSymWriter = ModuleBuilder.nCreateISymWriterForDynamicModule(dynModule.InternalModule, "Unused");
-                ((SymWrapperCore.SymWriter)writer).InternalSetUnderlyingWriter(pInternalSymWriter);
-            }
-
-            dynModule.SetSymWriter(writer);
             _assemblyData._moduleBuilderList.Add(dynModule);
 
             if (dynModule == _manifestModuleBuilder)

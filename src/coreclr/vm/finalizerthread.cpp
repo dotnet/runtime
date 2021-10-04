@@ -274,14 +274,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         if (gcGenAnalysisState == GcGenAnalysisState::Done)
         {
             gcGenAnalysisState = GcGenAnalysisState::Disabled;
-            EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
+            if (gcGenAnalysisTrace)
+            {
+                EventPipeAdapter::Disable(gcGenAnalysisEventPipeSessionId);
+#ifdef GEN_ANALYSIS_STRESS
+                GenAnalysis::EnableGenerationalAwareSession();
+#endif
+            }
             // Writing an empty file to indicate completion
             fclose(fopen(GENAWARE_COMPLETION_FILE_NAME,"w+"));
-#ifdef GEN_ANALYSIS_STRESS
-            {
-                GenAnalysis::EnableGenerationalAwareSession();
-            }
-#endif
         }
 
         if (!bPriorityBoosted)
@@ -377,11 +378,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
         INSTALL_UNHANDLED_MANAGED_EXCEPTION_TRAP;
         {
             GetFinalizerThread()->SetBackground(TRUE);
-
-            {
-                GCX_PREEMP();
-                EnsureYieldProcessorNormalizedInitialized();
-            }
 
             while (!fQuitFinalizer)
             {

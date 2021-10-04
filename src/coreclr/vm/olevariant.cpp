@@ -329,20 +329,24 @@ VARTYPE OleVariant::GetVarTypeForTypeHandle(TypeHandle type)
 #endif
 
 #ifdef FEATURE_COMINTEROP
-    if (CoreLibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
-        return VT_DISPATCH;
-    if (CoreLibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
-        return VT_UNKNOWN;
-    if (CoreLibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
-        return VT_ERROR;
-    if (CoreLibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
-        return VT_CY;
-    if (CoreLibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
-        return VT_BSTR;
+    // The wrapper types are only available when built-in COM is supported.
+    if (g_pConfig->IsBuiltInCOMSupported())
+    {
+        if (CoreLibBinder::IsClass(pMT, CLASS__DISPATCH_WRAPPER))
+            return VT_DISPATCH;
+        if (CoreLibBinder::IsClass(pMT, CLASS__UNKNOWN_WRAPPER))
+            return VT_UNKNOWN;
+        if (CoreLibBinder::IsClass(pMT, CLASS__ERROR_WRAPPER))
+            return VT_ERROR;
+        if (CoreLibBinder::IsClass(pMT, CLASS__CURRENCY_WRAPPER))
+            return VT_CY;
+        if (CoreLibBinder::IsClass(pMT, CLASS__BSTR_WRAPPER))
+            return VT_BSTR;
 
-    // VariantWrappers cannot be stored in VARIANT's.
-    if (CoreLibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
-        COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+        // VariantWrappers cannot be stored in VARIANT's.
+        if (CoreLibBinder::IsClass(pMT, CLASS__VARIANT_WRAPPER))
+            COMPlusThrow(kArgumentException, IDS_EE_COM_UNSUPPORTED_SIG);
+    }
 #endif // FEATURE_COMINTEROP
 
     if (pMT->IsEnum())
@@ -866,23 +870,13 @@ const OleVariant::Marshaler *OleVariant::GetMarshalerForVarType(VARTYPE vt, BOOL
 
 #ifdef FEATURE_COMINTEROP
 
-#ifdef CROSSGEN_COMPILE
-#define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
-    { static const Marshaler marshaler = { NULL, NULL, NULL, NULL, NULL, NULL }; RETURN &marshaler; }
-#else
 #define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
     { static const Marshaler marshaler = { OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
-#endif
 
 #else // FEATURE_COMINTEROP
 
-#ifdef CROSSGEN_COMPILE
-#define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
-    { static const Marshaler marshaler = { NULL, NULL, NULL }; RETURN &marshaler; }
-#else
 #define RETURN_MARSHALER(OleToCom, ComToOle, OleRefToCom, ArrayOleToCom, ArrayComToOle, ClearArray) \
     { static const Marshaler marshaler = { ArrayOleToCom, ArrayComToOle, ClearArray }; RETURN &marshaler; }
-#endif
 
 #endif // FEATURE_COMINTEROP
 
@@ -1084,7 +1078,6 @@ VariantArray:
     }
 } // OleVariant::Marshaler *OleVariant::GetMarshalerForVarType()
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_COMINTEROP
 
@@ -4847,7 +4840,7 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
     }
 }
 
-BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrappers)
+BOOL OleVariant::IsArrayOfWrappers(_In_ BASEARRAYREF *pArray, _Out_opt_ BOOL *pbOfInterfaceWrappers)
 {
     CONTRACTL
     {
@@ -4857,6 +4850,11 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
     }
     CONTRACTL_END;
 
+    if (!g_pConfig->IsBuiltInCOMSupported())
+    {
+        return FALSE;
+    }
+
     TypeHandle hndElemType = (*pArray)->GetArrayElementTypeHandle();
 
     if (!hndElemType.IsTypeDesc())
@@ -4864,7 +4862,10 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
         if (hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__DISPATCH_WRAPPER)) ||
             hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__UNKNOWN_WRAPPER)))
         {
-            *pbOfInterfaceWrappers = TRUE;
+            if (pbOfInterfaceWrappers)
+            {
+                *pbOfInterfaceWrappers = TRUE;
+            }
             return TRUE;
         }
 
@@ -4872,12 +4873,17 @@ BOOL OleVariant::IsArrayOfWrappers(BASEARRAYREF *pArray, BOOL *pbOfInterfaceWrap
             hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY_WRAPPER)) ||
             hndElemType == TypeHandle(CoreLibBinder::GetClass(CLASS__BSTR_WRAPPER)))
         {
-            *pbOfInterfaceWrappers = FALSE;
+            if (pbOfInterfaceWrappers)
+            {
+                *pbOfInterfaceWrappers = FALSE;
+            }
             return TRUE;
         }
     }
 
-    *pbOfInterfaceWrappers = FALSE;
+    if (pbOfInterfaceWrappers)
+        *pbOfInterfaceWrappers = FALSE;
+
     return FALSE;
 }
 
@@ -4889,6 +4895,7 @@ BASEARRAYREF OleVariant::ExtractWrappedObjectsFromArray(BASEARRAYREF *pArray)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pArray));
+        PRECONDITION(IsArrayOfWrappers(pArray, NULL));
     }
     CONTRACTL_END;
 
@@ -5022,6 +5029,7 @@ TypeHandle OleVariant::GetWrappedArrayElementType(BASEARRAYREF *pArray)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pArray));
+        PRECONDITION(IsArrayOfWrappers(pArray, NULL));
     }
     CONTRACTL_END;
 
@@ -5067,8 +5075,7 @@ TypeHandle OleVariant::GetArrayElementTypeWrapperAware(BASEARRAYREF *pArray)
     }
     CONTRACTL_END;
 
-    BOOL bArrayOfInterfaceWrappers;
-    if (IsArrayOfWrappers(pArray, &bArrayOfInterfaceWrappers))
+    if (IsArrayOfWrappers(pArray, nullptr))
     {
         return GetWrappedArrayElementType(pArray);
     }
@@ -5273,4 +5280,3 @@ BSTR OleVariant::ConvertStringToBSTR(STRINGREF *pStringObj)
 }
 #endif // FEATURE_COMINTEROP
 
-#endif // CROSSGEN_COMPILE

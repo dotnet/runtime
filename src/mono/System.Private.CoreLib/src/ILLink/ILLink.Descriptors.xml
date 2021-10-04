@@ -129,8 +129,6 @@
 		</type>
 
 		<type fullname="System.Environment">
-			<!-- appdomain.c: mono_get_corlib_version -->
-			<field name="mono_corlib_version" />
 			<method name="get_StackTrace" />
 		</type>
 

@@ -5,7 +5,7 @@
       <argument>ILLink</argument>
       <argument>IL2050</argument>
       <property name="Scope">member</property>
-      <property name="Target">M:System.DirectoryServices.AccountManagement.UnsafeNativeMethods.IntADsOpenObject(System.String,System.String,System.String,System.Int32,System.Guid@,System.Object@)</property>
+      <property name="Target">M:System.DirectoryServices.AccountManagement.UnsafeNativeMethods.ADsOpenObject(System.String,System.String,System.String,System.Int32,System.Guid@,System.Object@)</property>
     </attribute>
     <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
       <argument>ILLink</argument>

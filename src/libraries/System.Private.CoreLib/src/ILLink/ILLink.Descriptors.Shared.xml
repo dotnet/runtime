@@ -13,6 +13,7 @@
     <type fullname="System.Threading.Tasks.Task">
       <property name="ParentForDebugger" />
       <property name="StateFlagsForDebugger" />
+      <property name="StateFlags" />
       <method name="GetDelegateContinuationsForDebugger" />
       <method name="SetNotificationForWaitCompletion" />
     </type>
@@ -57,8 +58,8 @@
     </type>
 
      <!-- methods used by hot reload --> 
-    <type fullname="System.Reflection.Metadata.AssemblyExtensions">
-      <method name="GetApplyUpdateCapabilities" />
+    <type fullname="System.Reflection.Metadata.MetadataUpdater">
+      <method name="GetCapabilities" />
     </type>
   </assembly>
 </linker>

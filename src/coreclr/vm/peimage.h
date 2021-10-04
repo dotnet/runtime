@@ -58,7 +58,6 @@ typedef DPTR(class PEImage)                PTR_PEImage;
 
 class PEImage
 {
-    friend class PEModule;
 public:
     // ------------------------------------------------------------
     // Public constants
@@ -165,15 +164,11 @@ public:
     IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);
 
     BOOL HasContents() ;
-    BOOL HasNativeHeader() ;
     BOOL IsPtrInImage(PTR_CVOID data);
     CHECK CheckFormat();
 
     // Check utilites
     CHECK CheckILFormat();
-#ifdef FEATURE_PREJIT
-    CHECK CheckNativeFormat();
-#endif // FEATURE_PREJIT
     static CHECK CheckCanonicalFullPath(const SString &path);
     static CHECK CheckStartup();
     PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
@@ -182,8 +177,6 @@ public:
     static void GetPathFromDll(HINSTANCE hMod, SString &result);
 #endif // !TARGET_UNIX
     static BOOL PathEquals(const SString &p1, const SString &p2);
-    BOOL IsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; return m_bIsTrustedNativeImage;};
-    void SetIsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; m_bIsTrustedNativeImage=TRUE;};
 
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
@@ -196,11 +189,6 @@ public:
     BOOL HasReadyToRunHeader();
     BOOL IsReferenceAssembly();
     BOOL IsComponentAssembly();
-#ifdef FEATURE_PREJIT
-    BOOL IsNativeILILOnly();
-    BOOL IsNativeILDll();
-    void GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
-#endif
     PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL);
     BOOL HasDirectoryEntry(int entry);
     mdToken GetEntryPointToken();
@@ -214,10 +202,6 @@ public:
     BOOL Has32BitNTHeaders();
 
     void VerifyIsAssembly();
-    void VerifyIsNIAssembly();
-
-
-    static void GetAll(SArray<PEImage*> &images);
 
 private:
 #ifndef DACCESS_COMPILE
@@ -240,8 +224,6 @@ private:
     // ------------------------------------------------------------
 
     void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
-
-    void VerifyIsILOrNIAssembly(BOOL fIL);
 
     struct PEImageLocator
     {
@@ -287,8 +269,6 @@ private:
     // We are piggy backing on the fact that module name is the same as file name!!!
     //
     SString     m_sModuleFileNameHintUsedByDac; // This is only used by DAC
-private:
-    BOOL        m_bIsTrustedNativeImage;
 
 protected:
 

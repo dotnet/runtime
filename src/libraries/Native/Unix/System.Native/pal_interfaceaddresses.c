@@ -29,6 +29,8 @@
 #endif
 #if HAVE_NET_IFMEDIA_H
 #include <net/if_media.h>
+#elif HAVE_IOS_NET_IFMEDIA_H
+#include "ios/net/if_media.h"
 #endif
 
 #if defined(AF_PACKET)
@@ -203,7 +205,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                 lla.NumAddressBytes = sadl->sdl_alen;
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
-#if HAVE_NET_IFMEDIA_H
+#if HAVE_NET_IFMEDIA_H || HAVE_IOS_NET_IFMEDIA_H
                 if (lla.HardwareType == NetworkInterfaceType_Ethernet)
                 {
                     // WI-FI and Ethernet have same address type so we can try to distinguish more
@@ -383,7 +385,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
 
             struct ifreq ifr;
-            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name)-1);
+            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name));
+            ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 
             if (socketfd == -1)
             {

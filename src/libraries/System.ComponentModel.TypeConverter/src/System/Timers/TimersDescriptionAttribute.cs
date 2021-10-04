@@ -24,7 +24,7 @@ namespace System.Timers
         /// <summary>
         /// Constructs a new localized sys description.
         /// </summary>
-        internal TimersDescriptionAttribute(string description, string unused) : base(SR.GetResourceString(description))
+        internal TimersDescriptionAttribute(string description, string? unused) : base(SR.GetResourceString(description))
         {
             // Needed for overload resolution
             Debug.Assert(unused == null);

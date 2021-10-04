@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace System.ComponentModel.Design
@@ -29,7 +30,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Overrides Object's Equals method.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is CommandID cid && cid.Guid.Equals(Guid) && cid.ID == ID;
         }
@@ -45,6 +46,6 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Overrides Object's ToString method.
         /// </summary>
-        public override string ToString() => Guid.ToString() + " : " + ID.ToString(CultureInfo.CurrentCulture);
+        public override string ToString() => $"{Guid} : {ID}";
     }
 }

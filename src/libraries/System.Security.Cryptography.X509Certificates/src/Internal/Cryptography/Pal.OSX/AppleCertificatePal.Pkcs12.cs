@@ -19,7 +19,7 @@ namespace Internal.Cryptography.Pal
         {
             using (ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData))
             {
-                reader.Decrypt(password);
+                reader.Decrypt(password, ephemeralSpecified: false);
 
                 UnixPkcs12Reader.CertAndKey certAndKey = reader.GetSingleCert();
                 AppleCertificatePal pal = (AppleCertificatePal)certAndKey.Cert!;

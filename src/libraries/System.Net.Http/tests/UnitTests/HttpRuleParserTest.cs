@@ -189,7 +189,6 @@ namespace System.Net.Http.Tests
             AssertGetQuotedStringLength("\"\\xx\"", 0, 5, HttpParseResult.Parsed); // "\xx"
             AssertGetQuotedStringLength("\"(x)\"", 0, 5, HttpParseResult.Parsed); // "(x)"
             AssertGetQuotedStringLength(" \" (x) \" ", 1, 7, HttpParseResult.Parsed); // " (x) "
-            AssertGetQuotedStringLength("\"text\r\n new line\"", 0, 17, HttpParseResult.Parsed); // "text<crlf> new line"
             AssertGetQuotedStringLength("\"a\\\u00FC\\\"b\\\"c\\\"\\\"d\\\"\"", 0, 18, HttpParseResult.Parsed); // "a\\u00FC\"b\"c\"\"d\""
             AssertGetQuotedStringLength("\"\\\" \"", 0, 5, HttpParseResult.Parsed); // "\" "
         }
@@ -199,6 +198,7 @@ namespace System.Net.Http.Tests
         {
             AssertGetQuotedStringLength("\"x", 0, 0, HttpParseResult.InvalidFormat); // "x
             AssertGetQuotedStringLength(" \"x ", 1, 0, HttpParseResult.InvalidFormat); // ' "x '
+            AssertGetQuotedStringLength("\"text\r\n new line\"", 0, 0, HttpParseResult.InvalidFormat); // "text<crlf> new line"
         }
 
         [Fact]
@@ -224,7 +224,6 @@ namespace System.Net.Http.Tests
             AssertGetCommentLength("(\\xx)", 0, 5, HttpParseResult.Parsed); // (\xx)
             AssertGetCommentLength("(\"x\")", 0, 5, HttpParseResult.Parsed); // ("x")
             AssertGetCommentLength(" ( \"x\" ) ", 1, 7, HttpParseResult.Parsed); // ( "x" )
-            AssertGetCommentLength("(text\r\n new line)", 0, 17, HttpParseResult.Parsed); // (text<crlf> new line)
             AssertGetCommentLength("(\\) )", 0, 5, HttpParseResult.Parsed); // (\))
             AssertGetCommentLength("(\\( )", 0, 5, HttpParseResult.Parsed); // (\()
 
@@ -253,6 +252,7 @@ namespace System.Net.Http.Tests
             AssertGetCommentLength("((x ", 0, 0, HttpParseResult.InvalidFormat);
             AssertGetCommentLength("(x(x ", 0, 0, HttpParseResult.InvalidFormat);
             AssertGetCommentLength("(x(((((((((x ", 0, 0, HttpParseResult.InvalidFormat);
+            AssertGetCommentLength("(text\r\n new line)", 0, 0, HttpParseResult.InvalidFormat);
 
             // To prevent attacker from sending comments resulting in stack overflow exceptions, we limit the depth
             // of nested comments. I.e. the following comment is considered invalid since it is considered a
@@ -284,15 +284,18 @@ namespace System.Net.Http.Tests
             Assert.Equal(1, HttpRuleParser.GetWhitespaceLength("a\t", 1));
             Assert.Equal(3, HttpRuleParser.GetWhitespaceLength("a\t  ", 1));
             Assert.Equal(2, HttpRuleParser.GetWhitespaceLength("\t b", 0));
+        }
 
-            // Newlines
-            Assert.Equal(3, HttpRuleParser.GetWhitespaceLength("a\r\n b", 1));
-            Assert.Equal(3, HttpRuleParser.GetWhitespaceLength("\r\n ", 0));
-            Assert.Equal(3, HttpRuleParser.GetWhitespaceLength("\r\n\t", 0));
-            Assert.Equal(13, HttpRuleParser.GetWhitespaceLength("  \r\n\t\t  \r\n   ", 0));
+        [Fact]
+        public void GetWhitespaceLength_NewLines_NotAllowed()
+        {
+            Assert.Equal(0, HttpRuleParser.GetWhitespaceLength("a\r\n b", 1));
+            Assert.Equal(0, HttpRuleParser.GetWhitespaceLength("\r\n ", 0));
+            Assert.Equal(0, HttpRuleParser.GetWhitespaceLength("\r\n\t", 0));
+            Assert.Equal(2, HttpRuleParser.GetWhitespaceLength("  \r\n\t\t  \r\n   ", 0));
             Assert.Equal(1, HttpRuleParser.GetWhitespaceLength(" \r\n", 0)); // first char considered valid whitespace
             Assert.Equal(1, HttpRuleParser.GetWhitespaceLength(" \r\n\r\n ", 0));
-            Assert.Equal(3, HttpRuleParser.GetWhitespaceLength(" \r\n\r\n ", 3));
+            Assert.Equal(0, HttpRuleParser.GetWhitespaceLength(" \r\n\r\n ", 3));
         }
 
         [Fact]

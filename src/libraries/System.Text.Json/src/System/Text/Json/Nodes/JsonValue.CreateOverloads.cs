@@ -10,7 +10,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(bool value, JsonNodeOptions? options = null) => new JsonValueTrimmable<bool>(value, JsonMetadataServices.BooleanConverter);
@@ -18,7 +18,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(bool? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<bool>(value.Value, JsonMetadataServices.BooleanConverter) : null;
@@ -26,7 +26,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(byte value, JsonNodeOptions? options = null) => new JsonValueTrimmable<byte>(value, JsonMetadataServices.ByteConverter);
@@ -34,7 +34,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(byte? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<byte>(value.Value, JsonMetadataServices.ByteConverter) : null;
@@ -42,7 +42,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(char value, JsonNodeOptions? options = null) => new JsonValueTrimmable<char>(value, JsonMetadataServices.CharConverter);
@@ -50,7 +50,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(char? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<char>(value.Value, JsonMetadataServices.CharConverter) : null;
@@ -58,7 +58,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(DateTime value, JsonNodeOptions? options = null) => new JsonValueTrimmable<DateTime>(value, JsonMetadataServices.DateTimeConverter);
@@ -66,7 +66,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(DateTime? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<DateTime>(value.Value, JsonMetadataServices.DateTimeConverter) : null;
@@ -74,7 +74,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(DateTimeOffset value, JsonNodeOptions? options = null) => new JsonValueTrimmable<DateTimeOffset>(value, JsonMetadataServices.DateTimeOffsetConverter);
@@ -82,7 +82,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(DateTimeOffset? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<DateTimeOffset>(value.Value, JsonMetadataServices.DateTimeOffsetConverter) : null;
@@ -90,7 +90,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(decimal value, JsonNodeOptions? options = null) => new JsonValueTrimmable<decimal>(value, JsonMetadataServices.DecimalConverter);
@@ -98,7 +98,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(decimal? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<decimal>(value.Value, JsonMetadataServices.DecimalConverter) : null;
@@ -106,7 +106,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(double value, JsonNodeOptions? options = null) => new JsonValueTrimmable<double>(value, JsonMetadataServices.DoubleConverter);
@@ -114,7 +114,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(double? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<double>(value.Value, JsonMetadataServices.DoubleConverter) : null;
@@ -122,7 +122,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(Guid value, JsonNodeOptions? options = null) => new JsonValueTrimmable<Guid>(value, JsonMetadataServices.GuidConverter);
@@ -130,7 +130,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(Guid? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<Guid>(value.Value, JsonMetadataServices.GuidConverter) : null;
@@ -138,7 +138,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(short value, JsonNodeOptions? options = null) => new JsonValueTrimmable<short>(value, JsonMetadataServices.Int16Converter);
@@ -146,7 +146,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(short? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<short>(value.Value, JsonMetadataServices.Int16Converter) : null;
@@ -154,7 +154,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(int value, JsonNodeOptions? options = null) => new JsonValueTrimmable<int>(value, JsonMetadataServices.Int32Converter);
@@ -162,7 +162,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(int? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<int>(value.Value, JsonMetadataServices.Int32Converter) : null;
@@ -170,7 +170,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(long value, JsonNodeOptions? options = null) => new JsonValueTrimmable<long>(value, JsonMetadataServices.Int64Converter);
@@ -178,7 +178,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(long? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<long>(value.Value, JsonMetadataServices.Int64Converter) : null;
@@ -186,7 +186,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -195,7 +195,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -204,7 +204,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue Create(float value, JsonNodeOptions? options = null) => new JsonValueTrimmable<float>(value, JsonMetadataServices.SingleConverter);
@@ -212,7 +212,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(float? value, JsonNodeOptions? options = null) => value.HasValue ? new JsonValueTrimmable<float>(value.Value, JsonMetadataServices.SingleConverter) : null;
@@ -220,7 +220,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(string? value, JsonNodeOptions? options = null) => value != null ? new JsonValueTrimmable<string>(value, JsonMetadataServices.StringConverter) : null;
@@ -228,7 +228,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -237,7 +237,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -246,7 +246,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -255,7 +255,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -264,7 +264,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -273,7 +273,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [CLSCompliantAttribute(false)]
@@ -282,7 +282,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(JsonElement value, JsonNodeOptions? options = null)
@@ -300,7 +300,7 @@ namespace System.Text.Json.Nodes
         /// <summary>
         ///   Initializes a new instance of the <see cref="JsonValue"/> class that contains the specified value.
         /// </summary>
-        /// <param name="value">The value to add.</param>
+        /// <param name="value">The underlying value of the new <see cref="JsonValue"/> instance.</param>
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create(JsonElement? value, JsonNodeOptions? options = null)

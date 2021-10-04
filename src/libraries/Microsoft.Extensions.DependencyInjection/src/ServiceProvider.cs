@@ -30,16 +30,23 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal ServiceProviderEngineScope Root { get; }
 
-        internal ServiceProvider(IEnumerable<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
+        internal static bool VerifyOpenGenericServiceTrimmability { get; } =
+            AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", out bool verifyOpenGenerics) ? verifyOpenGenerics : false;
+
+        internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
         {
+            // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
+            Root = new ServiceProviderEngineScope(this, isRootScope: true);
             _engine = GetEngine();
             _createServiceAccessor = CreateServiceAccessor;
             _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
 
-            Root = new ServiceProviderEngineScope(this);
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
+            // The list of built in services that aren't part of the list of service descriptors
+            // keep this in sync with CallSiteFactory.IsService
             CallSiteFactory.Add(typeof(IServiceProvider), new ServiceProviderCallSite());
-            CallSiteFactory.Add(typeof(IServiceScopeFactory), new ServiceScopeFactoryCallSite(Root));
+            CallSiteFactory.Add(typeof(IServiceScopeFactory), new ConstantCallSite(typeof(IServiceScopeFactory), Root));
+            CallSiteFactory.Add(typeof(IServiceProviderIsService), new ConstantCallSite(typeof(IServiceProviderIsService), CallSiteFactory));
 
             if (options.ValidateScopes)
             {
@@ -68,6 +75,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 }
             }
 
+            DependencyInjectionEventSource.Log.ServiceProviderBuilt(this);
         }
 
         /// <summary>
@@ -80,15 +88,21 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <inheritdoc />
         public void Dispose()
         {
-            _disposed = true;
+            DisposeCore();
             Root.Dispose();
         }
 
         /// <inheritdoc/>
         public ValueTask DisposeAsync()
         {
-            _disposed = true;
+            DisposeCore();
             return Root.DisposeAsync();
+        }
+
+        private void DisposeCore()
+        {
+            _disposed = true;
+            DependencyInjectionEventSource.Log.ServiceProviderDisposed(this);
         }
 
         private void OnCreate(ServiceCallSite callSite)
@@ -110,8 +124,10 @@ namespace Microsoft.Extensions.DependencyInjection
 
             Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
             OnResolve(serviceType, serviceProviderEngineScope);
-            DependencyInjectionEventSource.Log.ServiceResolved(serviceType);
-            return realizedService.Invoke(serviceProviderEngineScope);
+            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+            var result = realizedService.Invoke(serviceProviderEngineScope);
+            System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
+            return result;
         }
 
         private void ValidateService(ServiceDescriptor descriptor)
@@ -140,7 +156,7 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
             {
-                DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);
+                DependencyInjectionEventSource.Log.CallSiteBuilt(this, serviceType, callSite);
                 OnCreate(callSite);
 
                 // Optimize singleton case
@@ -158,7 +174,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal void ReplaceServiceAccessor(ServiceCallSite callSite, Func<ServiceProviderEngineScope, object> accessor)
         {
-            _realizedServices[callSite.ImplementationType] = accessor;
+            _realizedServices[callSite.ServiceType] = accessor;
         }
 
         internal IServiceScope CreateScope()
@@ -168,14 +184,14 @@ namespace Microsoft.Extensions.DependencyInjection
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return new ServiceProviderEngineScope(this);
+            return new ServiceProviderEngineScope(this, isRootScope: false);
         }
 
         private ServiceProviderEngine GetEngine()
         {
             ServiceProviderEngine engine;
 
-#if !NETSTANDARD2_1
+#if NETFRAMEWORK || NETSTANDARD2_0
             engine = new DynamicServiceProviderEngine(this);
 #else
             if (RuntimeFeature.IsDynamicCodeCompiled)

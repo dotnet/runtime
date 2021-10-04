@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -78,22 +79,23 @@ namespace System.Diagnostics
                 ShellExecuteHelper executeHelper = new ShellExecuteHelper(&shellExecuteInfo);
                 if (!executeHelper.ShellExecuteOnSTAThread())
                 {
-                    int error = executeHelper.ErrorCode;
-                    if (error == 0)
+                    int errorCode = executeHelper.ErrorCode;
+                    if (errorCode == 0)
                     {
-                        error = GetShellError(shellExecuteInfo.hInstApp);
+                        errorCode = GetShellError(shellExecuteInfo.hInstApp);
                     }
 
-                    switch (error)
+                    switch (errorCode)
                     {
-                        case Interop.Errors.ERROR_BAD_EXE_FORMAT:
-                        case Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH:
-                            throw new Win32Exception(error, SR.InvalidApplication);
                         case Interop.Errors.ERROR_CALL_NOT_IMPLEMENTED:
                             // This happens on Windows Nano
                             throw new PlatformNotSupportedException(SR.UseShellExecuteNotSupported);
                         default:
-                            throw new Win32Exception(error);
+                            string nativeErrorMessage = errorCode == Interop.Errors.ERROR_BAD_EXE_FORMAT || errorCode == Interop.Errors.ERROR_EXE_MACHINE_TYPE_MISMATCH
+                                ? SR.InvalidApplication
+                                : GetErrorMessage(errorCode);
+
+                            throw CreateExceptionForErrorStartingProcess(nativeErrorMessage, errorCode, startInfo.FileName, startInfo.WorkingDirectory);
                     }
                 }
 

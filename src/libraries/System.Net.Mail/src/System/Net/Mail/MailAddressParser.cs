@@ -27,7 +27,7 @@ namespace System.Net.Mail
         {
             int index = data.Length - 1;
             bool parseSuccess = TryParseAddress(data, false, ref index, out parsedAddress, throwExceptionIfFail);
-            Debug.Assert(!parseSuccess || index == -1, "The index indicates that part of the address was not parsed: " + index);
+            Debug.Assert(!parseSuccess || index == -1, $"The index indicates that part of the address was not parsed: {index}");
             return parseSuccess;
         }
 
@@ -66,7 +66,7 @@ namespace System.Net.Mail
         private static bool TryParseAddress(string data, bool expectMultipleAddresses, ref int index, out ParseAddressInfo parseAddressInfo, bool throwExceptionIfFail)
         {
             Debug.Assert(!string.IsNullOrEmpty(data));
-            Debug.Assert(index >= 0 && index < data.Length, "Index out of range: " + index + ", " + data.Length);
+            Debug.Assert(index >= 0 && index < data.Length, $"Index out of range: {index}, {data.Length}");
 
             // Parsed components to be assembled as a MailAddress later
             string? displayName;
@@ -378,7 +378,7 @@ namespace System.Net.Mail
                     return false;
                 }
 
-                Debug.Assert(data[index + 1] == MailBnfHelper.Quote, "Mis-aligned index: " + index);
+                Debug.Assert(data[index + 1] == MailBnfHelper.Quote, $"Mis-aligned index: {index}");
 
                 // Do not include the bounding quotes on the display name
                 int leftIndex = index + 2;
@@ -417,7 +417,7 @@ namespace System.Net.Mail
                     return false;
                 }
 
-                Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, "Mis-aligned index: " + index);
+                Debug.Assert(index < 0 || data[index] == MailBnfHelper.Comma, $"Mis-aligned index: {index}");
 
                 // Do not include the Comma (if any), and because there were no bounding quotes,
                 // trim extra whitespace.

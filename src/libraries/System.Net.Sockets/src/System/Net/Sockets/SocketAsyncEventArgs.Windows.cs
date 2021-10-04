@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -71,7 +72,7 @@ namespace System.Net.Sockets
         private Internals.SocketAddress? _pinnedSocketAddress;
 
         // SendPacketsElements property variables.
-        private FileStream[]? _sendPacketsFileStreams;
+        private SafeFileHandle[]? _sendPacketsFileHandles;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -702,7 +703,7 @@ namespace System.Net.Sockets
             {
                 // Loop through the elements attempting to open each files and get its handle.
                 int index = 0;
-                _sendPacketsFileStreams = new FileStream[sendPacketsElementsFileCount];
+                _sendPacketsFileHandles = new SafeFileHandle[sendPacketsElementsFileCount];
                 try
                 {
                     foreach (SendPacketsElement spe in sendPacketsElementsCopy)
@@ -710,8 +711,8 @@ namespace System.Net.Sockets
                         if (spe?.FilePath != null)
                         {
                             // Create a FileStream to open the file.
-                            _sendPacketsFileStreams[index] =
-                                new FileStream(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            _sendPacketsFileHandles[index] =
+                                File.OpenHandle(spe.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
 
                             // Get the file handle from the stream.
                             index++;
@@ -722,8 +723,8 @@ namespace System.Net.Sockets
                 {
                     // Got an exception opening a file - close any open streams, then throw.
                     for (int i = index - 1; i >= 0; i--)
-                        _sendPacketsFileStreams[i].Dispose();
-                    _sendPacketsFileStreams = null;
+                        _sendPacketsFileHandles[i].Dispose();
+                    _sendPacketsFileHandles = null;
                     throw;
                 }
             }
@@ -1018,7 +1019,7 @@ namespace System.Net.Sockets
                     else if (spe.FilePath != null)
                     {
                         // This element is a file.
-                        sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileStreams![fileIndex].SafeFileHandle.DangerousGetHandle();
+                        sendPacketsDescriptorPinned[descriptorIndex].fileHandle = _sendPacketsFileHandles![fileIndex].DangerousGetHandle();
                         sendPacketsDescriptorPinned[descriptorIndex].fileOffset = spe.OffsetLong;
                         sendPacketsDescriptorPinned[descriptorIndex].length = (uint)spe.Count;
                         sendPacketsDescriptorPinned[descriptorIndex].flags =
@@ -1239,14 +1240,14 @@ namespace System.Net.Sockets
         private void FinishOperationSendPackets()
         {
             // Close the files if open.
-            if (_sendPacketsFileStreams != null)
+            if (_sendPacketsFileHandles != null)
             {
-                for (int i = 0; i < _sendPacketsFileStreams.Length; i++)
+                for (int i = 0; i < _sendPacketsFileHandles.Length; i++)
                 {
-                    _sendPacketsFileStreams[i]?.Dispose();
+                    _sendPacketsFileHandles[i]?.Dispose();
                 }
 
-                _sendPacketsFileStreams = null;
+                _sendPacketsFileHandles = null;
             }
         }
 

@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #pragma once
-
+#ifdef WINDOWS
 #include <Windows.h>
 #include <comdef.h>
-#include <cassert>
 #include <exception>
 #include <type_traits>
+#endif // WINDOWS
 #include <atomic>
+#include <cassert>
 
 // Common macro for working in COM
 #define RETURN_IF_FAILED(exp) { hr = exp; if (FAILED(hr)) { return hr; } }
 
+#ifdef WINDOWS
 namespace Internal
 {
     template<typename I>
@@ -20,7 +22,7 @@ namespace Internal
         /* [in] */ REFIID riid,
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject,
         /* [in] */ I obj)
-    {
+    {    
         if (riid == __uuidof(I))
         {
             *ppvObject = static_cast<I>(obj);
@@ -50,24 +52,25 @@ namespace Internal
         return __QueryInterfaceImpl(riid, ppvObject, remain...);
     }
 }
+#endif // WINDOWS
 
 // Implementation of IUnknown operations
 class UnknownImpl
 {
-public:
-    UnknownImpl() = default;
+public:  
+    UnknownImpl() : _refCount{ 1 } {};
     virtual ~UnknownImpl() = default;
 
     UnknownImpl(const UnknownImpl&) = delete;
     UnknownImpl& operator=(const UnknownImpl&) = delete;
 
-    UnknownImpl(UnknownImpl&&) = default;
-    UnknownImpl& operator=(UnknownImpl&&) = default;
+    UnknownImpl(UnknownImpl&&) = delete;
+    UnknownImpl& operator=(UnknownImpl&&) = delete;
 
     template<typename I1, typename ...IR>
     HRESULT DoQueryInterface(
         /* [in] */ REFIID riid,
-        /* [iid_is][out] */ _COM_Outptr_ void **ppvObject,
+        /* [iid_is][out] */ void **ppvObject,
         /* [in] */ I1 i1,
         /* [in] */ IR... remain)
     {
@@ -80,9 +83,15 @@ public:
         }
         else
         {
+#ifdef WINDOWS
+            // Internal::__QueryInterfaceImpl available only for Windows due to __uuidof(T) availability
             HRESULT hr = Internal::__QueryInterfaceImpl(riid, ppvObject, i1, remain...);
             if (hr != S_OK)
                 return hr;
+#else
+            *ppvObject = nullptr;
+            return E_NOTIMPL;
+#endif // WINDOWS
         }
 
         DoAddRef();
@@ -111,7 +120,7 @@ protected:
     }
 
 private:
-    std::atomic<ULONG> _refCount = 1;
+    std::atomic<ULONG> _refCount;  
 };
 
 // Macro to use for defining ref counting impls
@@ -119,6 +128,7 @@ private:
     STDMETHOD_(ULONG, AddRef)(void) { return UnknownImpl::DoAddRef(); } \
     STDMETHOD_(ULONG, Release)(void) { return UnknownImpl::DoRelease(); }
 
+#ifdef WINDOWS
 // Templated class factory
 template<typename T>
 class ClassFactoryBasic : public UnknownImpl, public IClassFactory
@@ -336,6 +346,7 @@ public: // IUnknown
 
     DEFINE_REF_COUNTING();
 };
+#endif // WINDOWS
 
 template<typename T>
 struct ComSmartPtr

@@ -10,6 +10,8 @@ namespace System.Text.RegularExpressions.Tests
 {
     public class RegexCultureTests
     {
+        // TODO: Validate source generator after figuring out what to do with culture
+
         [Theory]
         [InlineData("^aa$", "aA", "da-DK", RegexOptions.None, false)]
         [InlineData("^aA$", "aA", "da-DK", RegexOptions.None, true)]
@@ -67,13 +69,27 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        [Theory]
+        [InlineData(RegexOptions.None)]
+        [InlineData(RegexOptions.Compiled)]
+        public void CharactersLowercasedOneByOne(RegexOptions options)
+        {
+            using (new ThreadCultureChange("en-US"))
+            {
+                Assert.True(new Regex("\uD801\uDC00", options | RegexOptions.IgnoreCase).IsMatch("\uD801\uDC00"));
+                Assert.True(new Regex("\uD801\uDC00", options | RegexOptions.IgnoreCase).IsMatch("abcdefg\uD801\uDC00"));
+                Assert.True(new Regex("\uD801", options | RegexOptions.IgnoreCase).IsMatch("\uD801\uDC00"));
+                Assert.True(new Regex("\uDC00", options | RegexOptions.IgnoreCase).IsMatch("\uD801\uDC00"));
+            }
+        }
+
         /// <summary>
         /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I
         /// </summary>
         [Theory]
         [InlineData(2)]
         [InlineData(256)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36848", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56407", TestPlatforms.Android)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length)
         {
             var turkish = new CultureInfo("tr-TR");

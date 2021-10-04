@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             {
                 var sb = new StringBuilder();
                 sb.AppendLine("### PROCESS INFORMATION:");
-                sb.AppendFormat($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture.ToString()}").AppendLine();
+                sb.AppendLine($"###\tArchitecture: {RuntimeInformation.ProcessArchitecture}");
                 foreach (string prop in new string[]
                 {
                         nameof(p.BasePriority),

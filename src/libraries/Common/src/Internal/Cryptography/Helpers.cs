@@ -13,10 +13,16 @@ namespace Internal.Cryptography
 #if NET5_0_OR_GREATER
         [UnsupportedOSPlatformGuard("ios")]
         [UnsupportedOSPlatformGuard("tvos")]
-        [UnsupportedOSPlatformGuard("maccatalyst")]
-        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst();
+        public static bool IsDSASupported => !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS();
 #else
         public static bool IsDSASupported => true;
+#endif
+
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatformGuard("android")]
+        public static bool IsRC2Supported => !OperatingSystem.IsAndroid();
+#else
+        public static bool IsRC2Supported => true;
 #endif
 
         [return: NotNullIfNotNull("src")]
@@ -30,17 +36,12 @@ namespace Internal.Cryptography
             return (byte[])(src.Clone());
         }
 
-        public static int GetPaddingSize(this SymmetricAlgorithm algorithm)
+        public static int GetPaddingSize(this SymmetricAlgorithm algorithm, CipherMode mode, int feedbackSizeInBits)
         {
-            // CFB8 does not require any padding at all
-            // otherwise, it is always required to pad for block size
-            if (algorithm.Mode == CipherMode.CFB && algorithm.FeedbackSize == 8)
-                return 1;
-
-            return algorithm.BlockSize / 8;
+            return (mode == CipherMode.CFB ? feedbackSizeInBits : algorithm.BlockSize) / 8;
         }
 
-        internal static bool TryCopyToDestination(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        internal static bool TryCopyToDestination(this ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
         {
             if (source.TryCopyTo(destination))
             {

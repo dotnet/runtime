@@ -7,6 +7,7 @@ using System.ComponentModel;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -329,7 +330,7 @@ namespace System.Data.OleDb
             DataColumn precision = new DataColumn("NumericPrecision", typeof(short));
             DataColumn scale = new DataColumn("NumericScale", typeof(short));
 
-            DataColumn dataType = new DataColumn("DataType", typeof(System.Type));
+            DataColumn dataType = new DataColumn(SchemaTableColumn.DataType, typeof(Type));
             DataColumn providerType = new DataColumn("ProviderType", typeof(int));
 
             DataColumn isLong = new DataColumn("IsLong", typeof(bool));
@@ -584,7 +585,7 @@ namespace System.Data.OleDb
 #if DEBUG
                 if (AdapterSwitches.DataSchema.TraceVerbose)
                 {
-                    Debug.WriteLine("OleDbDataReader[" + info.ordinal.ToInt64().ToString(CultureInfo.InvariantCulture) + ", " + dbColumnInfo.pwszName + "]=" + dbType.enumOleDbType.ToString() + "," + dbType.dataSourceType + ", " + dbType.wType);
+                    Debug.WriteLine($"OleDbDataReader[{info.ordinal}, {dbColumnInfo.pwszName}]={dbType.enumOleDbType},{dbType.dataSourceType}, {dbType.wType}");
                 }
 #endif
                 rowCount++;
@@ -968,7 +969,7 @@ namespace System.Data.OleDb
 
             OleDbDataReader? reader = null;
 
-            if (null != result)
+            if (result != null)
             {
                 // only when the first datareader is closed will the connection close
                 ChapterHandle chapterHandle = ChapterHandle.CreateChapterHandle(result, rowbinding, valueOffset);
@@ -977,7 +978,7 @@ namespace System.Data.OleDb
                 reader.BuildMetaInfo();
                 reader.HasRowsRead();
 
-                if (null != _connection)
+                if (_connection != null)
                 {
                     // connection tracks all readers to prevent cmd from executing
                     // until all readers (including nested) are closed
@@ -985,7 +986,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            return reader;
+            return reader!;
         }
 
         public override string GetDataTypeName(int index)
@@ -1730,7 +1731,6 @@ namespace System.Data.OleDb
 
             RowHandleBuffer rowHandleBuffer = _rowHandleNativeBuffer!;
             bool mustRelease = false;
-
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
@@ -1881,7 +1881,6 @@ namespace System.Data.OleDb
             bool mustReleaseBinding = false;
             bool[] mustRelease = new bool[columnBindings.Length];
             StringMemHandle?[] sptr = new StringMemHandle[columnBindings.Length];
-
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
@@ -2110,7 +2109,7 @@ namespace System.Data.OleDb
 #if DEBUG
                             if (AdapterSwitches.DataSchema.TraceVerbose)
                             {
-                                Debug.WriteLine("PartialKeyColumn detected: <" + name + "> metaindex=" + metaindex);
+                                Debug.WriteLine($"PartialKeyColumn detected: <{name}> metaindex={metaindex}");
                             }
 #endif
                             partialPrimaryKey = true;
@@ -2201,7 +2200,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                         if (AdapterSwitches.DataSchema.TraceVerbose)
                                         {
-                                            Debug.WriteLine("MultipleUniqueIndexes detected: <" + uniqueIndexName + "> <" + indexname + ">");
+                                            Debug.WriteLine($"MultipleUniqueIndexes detected: <{uniqueIndexName}> <{indexname}>");
                                         }
 #endif
                                         uniq = null;
@@ -2213,7 +2212,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                 if (AdapterSwitches.DataSchema.TraceVerbose)
                                 {
-                                    Debug.WriteLine("PartialKeyColumn detected: " + name);
+                                    Debug.WriteLine($"PartialKeyColumn detected: {name}");
                                 }
 #endif
                                 partialPrimaryKey = true;
@@ -2228,7 +2227,7 @@ namespace System.Data.OleDb
 #if DEBUG
                                     if (AdapterSwitches.DataSchema.TraceVerbose)
                                     {
-                                        Debug.WriteLine("PartialUniqueIndexes detected: <" + uniqueIndexName + "> <" + indexname + ">");
+                                        Debug.WriteLine($"PartialUniqueIndexes detected: <{uniqueIndexName}> <{indexname}>");
                                     }
 #endif
                                     uniq = null;
@@ -2249,7 +2248,7 @@ namespace System.Data.OleDb
 #if DEBUG
                         if (AdapterSwitches.DataSchema.TraceVerbose)
                         {
-                            Debug.WriteLine("upgrade single unique index to be a key: <" + uniqueIndexName + ">");
+                            Debug.WriteLine($"upgrade single unique index to be a key: <{uniqueIndexName}>");
                         }
 #endif
                         // upgrade single unique index to be a key
@@ -2500,7 +2499,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_GUID=DBCOL_SPECIALCOL DBCOLUMN_NAME=" + info.columnName + " DBCOLUMN_KEYCOLUMN=" + info.isKeyColumn);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_GUID=DBCOL_SPECIALCOL DBCOLUMN_NAME={info.columnName} DBCOLUMN_KEYCOLUMN={info.isKeyColumn}");
                     }
 #endif
                     info.isHidden = true;
@@ -2511,7 +2510,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_NUMBER=" + info.ordinal.ToInt64().ToString(CultureInfo.InvariantCulture) + " DBCOLUMN_NAME=" + info.columnName);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_NUMBER={info.ordinal} DBCOLUMN_NAME={info.columnName}");
                     }
 #endif
                     info.isHidden = true;
@@ -2522,7 +2521,7 @@ namespace System.Data.OleDb
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
                     {
-                        Debug.WriteLine("Filtered Column: DBCOLUMN_FLAGS=" + info.flags.ToString("X8", null) + " DBCOLUMN_NAME=" + info.columnName);
+                        Debug.WriteLine($"Filtered Column: DBCOLUMN_FLAGS={info.flags:X8} DBCOLUMN_NAME={info.columnName}");
                     }
 #endif
                     info.isHidden = true;

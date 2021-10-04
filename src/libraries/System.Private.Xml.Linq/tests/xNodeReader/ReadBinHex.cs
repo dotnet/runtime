@@ -447,7 +447,7 @@ namespace CoreXml.Test.XLinq
                         bytes = DataReader.ReadContentAsBinHex(bbb, 0, bbb.Length);
                         for (int i = 0; i < bytes; i++)
                         {
-                            output.AppendFormat(bbb[i].ToString());
+                            output.Append(bbb[i]);
                         }
                     }
 
@@ -866,7 +866,7 @@ namespace CoreXml.Test.XLinq
                         bytes = DataReader.ReadElementContentAsBinHex(bbb, 0, bbb.Length);
                         for (int i = 0; i < bytes; i++)
                         {
-                            output.AppendFormat(bbb[i].ToString());
+                            output.Append(bbb[i]);
                         }
                     }
                     if (TestLog.Compare(output.ToString().Length, 1735, "Expected Length : 1735"))

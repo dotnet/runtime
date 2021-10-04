@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Xml.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49365", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class TCErrorConditionWriter// : XmlWriterTestCaseBase
     {
         public static string file = "writerErr.out";

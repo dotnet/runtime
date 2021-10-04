@@ -20,9 +20,13 @@
 #include <mono/utils/mono-rand.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
+#include <mono/metadata/assembly.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/environment-internals.h>
+#include <mono/metadata/metadata-internals.h>
+#include <runtime_version.h>
+#include <mono/metadata/profiler.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -526,6 +530,15 @@ ep_rt_mono_thread_setup (bool background_thread)
 static
 inline
 void
+ep_rt_mono_thread_setup_2 (bool background_thread, EventPipeThreadType thread_type)
+{
+	extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
+	ep_rt_mono_thread_attach_2 (background_thread, thread_type);
+}
+
+static
+inline
+void
 ep_rt_mono_thread_teardown (void)
 {
 	extern void ep_rt_mono_thread_detach (void);
@@ -589,7 +602,11 @@ inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
+#if SIZEOF_SIZE_T == 8
+	return (size_t)(mono_atomic_cas_i64((volatile gint64*)(target), (gint64)(value), (gint64)(expected)));
+#else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+#endif
 }
 
 /*
@@ -598,6 +615,9 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 
 EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
 EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
+
+EP_RT_DEFINE_ARRAY (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
+EP_RT_DEFINE_ARRAY_ITERATOR (execution_checkpoint_array, ep_rt_execution_checkpoint_array_t, ep_rt_execution_checkpoint_array_iterator_t, EventPipeExecutionCheckpoint *)
 
 static
 inline
@@ -843,7 +863,9 @@ bool
 ep_rt_config_value_get_enable (void)
 {
 	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_EnableEventPipe");
+	gchar *value = g_getenv ("DOTNET_EnableEventPipe");
+	if (!value)
+		value = g_getenv ("COMPlus_EnableEventPipe");
 	if (value && atoi (value) == 1)
 		enable = true;
 	g_free (value);
@@ -855,7 +877,10 @@ inline
 ep_char8_t *
 ep_rt_config_value_get_config (void)
 {
-	return g_getenv ("COMPlus_EventPipeConfig");
+	gchar *value = g_getenv ("DOTNET_EventPipeConfig");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeConfig");
+	return (ep_char8_t *)value;
 }
 
 static
@@ -863,7 +888,10 @@ inline
 ep_char8_t *
 ep_rt_config_value_get_output_path (void)
 {
-	return g_getenv ("COMPlus_EventPipeOutputPath");
+	gchar *value = g_getenv ("DOTNET_EventPipeOutputPath");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeOutputPath");
+	return (ep_char8_t *)value;
 }
 
 static
@@ -872,7 +900,9 @@ uint32_t
 ep_rt_config_value_get_circular_mb (void)
 {
 	uint32_t circular_mb = 0;
-	gchar *value = g_getenv ("COMPlus_EventPipeCircularMB");
+	gchar *value = g_getenv ("DOTNET_EventPipeCircularMB");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeCircularMB");
 	if (value)
 		circular_mb = strtoul (value, NULL, 10);
 	g_free (value);
@@ -885,7 +915,9 @@ bool
 ep_rt_config_value_get_output_streaming (void)
 {
 	bool enable = false;
-	gchar *value = g_getenv ("COMPlus_EventPipeOutputStreaming");
+	gchar *value = g_getenv ("DOTNET_EventPipeOutputStreaming");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeOutputStreaming");
 	if (value && atoi (value) == 1)
 		enable = true;
 	g_free (value);
@@ -907,7 +939,9 @@ uint32_t
 ep_rt_config_value_get_rundown (void)
 {
 	uint32_t value_uint32_t = 1;
-	gchar *value = g_getenv ("COMPlus_EventPipeRundown");
+	gchar *value = g_getenv ("DOTNET_EventPipeRundown");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeRundown");
 	if (value)
 		value_uint32_t = (uint32_t)atoi (value);
 	g_free (value);
@@ -1173,13 +1207,13 @@ ep_rt_is_running (void)
 static
 inline
 void
-ep_rt_execute_rundown (void)
+ep_rt_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints)
 {
 	if (ep_rt_config_value_get_rundown () > 0) {
 		// Ask the runtime to emit rundown events.
 		if (/*is_running &&*/ !ep_rt_process_shutdown ()) {
-			extern void ep_rt_mono_execute_rundown (void);
-			ep_rt_mono_execute_rundown ();
+			extern void ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkpoints);
+			ep_rt_mono_execute_rundown (execution_checkpoints);
 		}
 	}
 }
@@ -1226,7 +1260,7 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
 
-	ep_rt_mono_thread_setup (thread_params->background_thread);
+	ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_params->thread_params.thread_type);
 
 	thread_params->thread_params.thread = ep_rt_thread_get_handle ();
 	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);
@@ -1820,6 +1854,30 @@ ep_rt_diagnostics_command_line_get (void)
 	return cmd_line;
 }
 
+static
+inline
+const ep_char8_t *
+ep_rt_entrypoint_assembly_name_get_utf8 (void)
+{
+	MonoAssembly *main_assembly = mono_assembly_get_main ();
+	if (!main_assembly || !main_assembly->image)
+		return "";
+
+	const char *assembly_name = m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	if (!assembly_name)
+		return "";
+
+	return (const ep_char8_t*)assembly_name;
+}
+
+static
+inline
+const ep_char8_t *
+ep_rt_runtime_version_get_utf8 (void)
+{
+	return (const ep_char8_t *)EGLIB_TOSTRING (RuntimeProductVersion);
+}
+
 /*
  * Thread.
  */
@@ -2163,7 +2221,110 @@ bool
 ep_rt_mono_write_event_module_load (MonoImage *image);
 
 bool
+ep_rt_mono_write_event_module_unload (MonoImage *image);
+
+bool
 ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
+
+bool
+ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid);
+
+bool
+ep_rt_mono_write_event_type_load_start (MonoType *type);
+
+bool
+ep_rt_mono_write_event_type_load_stop (MonoType *type);
+
+bool
+ep_rt_mono_write_event_exception_thrown (MonoObject *object);
+
+bool
+ep_rt_mono_write_event_exception_clause (
+	MonoMethod *method,
+	uint32_t clause_num,
+	MonoExceptionEnum clause_type,
+	MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj);
+
+bool
+ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
+	const uint8_t *buffer,
+	uint64_t size,
+	MonoProfilerCodeBufferType type,
+	const void *data);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_start (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_stop (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_wait (
+	uint32_t active_thread_count,
+	uint32_t retired_worker_thread_count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
+	double throughput,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment (
+	double average_throughput,
+	uint32_t networker_thread_count,
+	/*NativeRuntimeEventSource.ThreadAdjustmentReasonMap*/ int32_t reason,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_worker_thread_adjustment_stats (
+	double duration,
+	double throughput,
+	double threadpool_worker_thread_wait,
+	double throughput_wave,
+	double throughput_error_estimate,
+	double average_throughput_error_estimate,
+	double throughput_ratio,
+	double confidence,
+	double new_control_setting,
+	uint16_t new_thread_wave_magnitude,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_enqueue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	bool multi_dequeues,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_dequeue (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_working_thread_count (
+	uint16_t count,
+	uint16_t clr_instance_id);
 
 /*
 * EventPipe provider callbacks.
@@ -2201,6 +2362,16 @@ EventPipeEtwCallbackDotNETRuntimePrivate (
 
 void
 EventPipeEtwCallbackDotNETRuntimeStress (
+	const uint8_t *source_id,
+	unsigned long is_enabled,
+	uint8_t level,
+	uint64_t match_any_keywords,
+	uint64_t match_all_keywords,
+	EventFilterDescriptor *filter_data,
+	void *callback_data);
+
+void
+EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
 	uint8_t level,

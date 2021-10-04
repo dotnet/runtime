@@ -14,30 +14,30 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Retrieves the requested assembly.
         /// </summary>
-        Assembly GetAssembly(AssemblyName name);
+        Assembly? GetAssembly(AssemblyName name);
 
         /// <summary>
         /// Retrieves the requested assembly.
         /// </summary>
-        Assembly GetAssembly(AssemblyName name, bool throwOnError);
+        Assembly? GetAssembly(AssemblyName name, bool throwOnError);
 
         /// <summary>
         /// Loads a type with the given name.
         /// </summary>
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        Type GetType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name);
+        Type? GetType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name);
 
         /// <summary>
         /// Loads a type with the given name.
         /// </summary>
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        Type GetType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError);
+        Type? GetType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError);
 
         /// <summary>
         /// Loads a type with the given name.
         /// </summary>
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-        Type GetType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError, bool ignoreCase);
+        Type? GetType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string name, bool throwOnError, bool ignoreCase);
 
         /// <summary>
         /// References the given assembly name. Once an assembly has
@@ -49,6 +49,6 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Returns the path to the file name from which the assembly was loaded.
         /// </summary>
-        string GetPathOfAssembly(AssemblyName name);
+        string? GetPathOfAssembly(AssemblyName name);
     }
 }

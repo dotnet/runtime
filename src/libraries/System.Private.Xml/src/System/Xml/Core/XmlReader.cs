@@ -328,7 +328,7 @@ namespace System.Xml
 
             try
             {
-                return XmlUntypedStringConverter.Instance.FromString(strContentValue, returnType, (namespaceResolver ?? this as IXmlNamespaceResolver)!);
+                return XmlUntypedConverter.Untyped.ChangeType(strContentValue, returnType, namespaceResolver ?? this as IXmlNamespaceResolver);
             }
             catch (FormatException e)
             {
@@ -534,7 +534,7 @@ namespace System.Xml
                 return value;
             }
 
-            return returnType == typeof(string) ? string.Empty : XmlUntypedStringConverter.Instance.FromString(string.Empty, returnType, namespaceResolver);
+            return returnType == typeof(string) ? string.Empty : XmlUntypedConverter.Untyped.ChangeType(string.Empty, returnType, namespaceResolver);
         }
 
         // Checks local name and namespace of the current element and returns its content as the requested type.

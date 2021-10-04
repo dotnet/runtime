@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(t));
             }
-            if (!t.IsRuntimeImplemented())
+            if (t is not RuntimeType)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             }
@@ -191,7 +191,7 @@ namespace System.Runtime.InteropServices
             if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
-            void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
+            void* pRawData = Unsafe.AsPointer(ref MemoryMarshal.GetArrayDataReference(arr));
             return (IntPtr)((byte*)pRawData + (uint)index * (nuint)arr.GetElementSize());
         }
 
@@ -589,7 +589,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structureType));
             }
-            if (!structureType.IsRuntimeImplemented())
+            if (structureType is not RuntimeType)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(structureType));
             }
@@ -1113,7 +1113,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            if (!type.IsRuntimeImplemented())
+            if (type is not RuntimeType)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(type));
             }
@@ -1161,7 +1161,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(t));
             }
-            if (!t.IsRuntimeImplemented())
+            if (t is not RuntimeType)
             {
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             }

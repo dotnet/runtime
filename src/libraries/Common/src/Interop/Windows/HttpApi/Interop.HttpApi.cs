@@ -508,7 +508,7 @@ internal static partial class Interop
         {
             private int _size;
 
-            private SafeLocalFreeChannelBinding() { }
+            public SafeLocalFreeChannelBinding() { }
 
             public override int Size
             {

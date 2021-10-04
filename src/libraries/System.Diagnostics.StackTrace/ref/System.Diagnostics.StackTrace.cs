@@ -19,6 +19,7 @@ namespace System.Diagnostics
         public virtual int GetFileLineNumber() { throw null; }
         public virtual string? GetFileName() { throw null; }
         public virtual int GetILOffset() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
         public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
         public override string ToString() { throw null; }
@@ -54,7 +55,7 @@ namespace System.Diagnostics.SymbolStore
 {
     public partial interface ISymbolBinder
     {
-        [System.ObsoleteAttribute("The recommended alternative is ISymbolBinder1.GetReader. ISymbolBinder1.GetReader takes the importer interface pointer as an IntPtr instead of an Int32, and thus works on both 32-bit and 64-bit architectures. https://go.microsoft.com/fwlink/?linkid=14202=14202")]
+        [System.ObsoleteAttribute("ISymbolBinder.GetReader has been deprecated because it is not 64-bit compatible. Use ISymbolBinder1.GetReader instead. ISymbolBinder1.GetReader accepts the importer interface pointer as an IntPtr instead of an Int32, and thus works on both 32-bit and 64-bit architectures.")]
         System.Diagnostics.SymbolStore.ISymbolReader? GetReader(int importer, string filename, string searchPath);
     }
     public partial interface ISymbolBinder1

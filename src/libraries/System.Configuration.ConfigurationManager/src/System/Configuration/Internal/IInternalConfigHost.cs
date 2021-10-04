@@ -103,6 +103,8 @@ namespace System.Configuration.Internal
 
         IDisposable Impersonate();
 
+#pragma warning disable SYSLIB0003 // Obsolete: CAS
         void GetRestrictedPermissions(IInternalConfigRecord configRecord, out PermissionSet permissionSet, out bool isHostReady);
+#pragma warning restore SYSLIB0003 // Obsolete: CAS
     }
 }

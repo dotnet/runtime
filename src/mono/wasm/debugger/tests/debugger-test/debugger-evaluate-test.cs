@@ -309,4 +309,108 @@ namespace DebuggerTests
             return await Task.FromResult(default(T));
         }
     }
+    public class EvaluateMethodTestsClass
+    {
+        public class ParmToTest
+        {
+            public int a;
+            public int b;
+            public ParmToTest()
+            {
+                a = 10;
+                b = 10;
+            }
+            public string MyMethod()
+            {
+                return "methodOK";
+            }
+        }
+        public class TestEvaluate
+        {
+            public int a;
+            public int b;
+            public int c;
+            public string str = "str_const_";
+            public bool t = true;
+            public bool f = false;
+            public ParmToTest objToTest;
+            public ParmToTest ParmToTestObj => objToTest;
+            public ParmToTest ParmToTestObjNull => null;
+            public ParmToTest ParmToTestObjException => throw new Exception("error2");
+            public void run(int g, int h, string a, string valString, int this_a)
+            {
+                objToTest = new ParmToTest();
+                int d = g + 1;
+                int e = g + 2;
+                int f = g + 3;
+                int i = d + e + f;
+                this.a = 1;
+                b = 2;
+                c = 3;
+                this.a = this.a + 1;
+                b = b + 1;
+                c = c + 1;
+            }
+
+            public int CallMethod()
+            {
+                return a;
+            }
+
+            public int CallMethodWithParm(int parm)
+            {
+                return a + parm;
+            }
+
+            public void CallMethodChangeValue()
+            {
+                a = a + 10;
+            }
+
+            public int CallMethodWithMultipleParms(int parm, int parm2)
+            {
+                return a + parm + parm2;
+            }
+
+            public string CallMethodWithParmString(string parm)
+            {
+                return str + parm;
+            }
+
+            public string CallMethodWithParmBool(bool parm)
+            {
+                if (parm)
+                    return "TRUE";
+                return "FALSE";
+            }
+
+            public int CallMethodWithObj(ParmToTest parm)
+            {
+                if (parm == null)
+                    return -1;
+                return parm.a;
+            }
+
+
+            public string CallMethodWithChar(char parm)
+            {
+                return str + parm;
+            }
+        }
+
+        public static void EvaluateMethods()
+        {
+            TestEvaluate f = new TestEvaluate();
+            f.run(100, 200, "9000", "test", 45);
+        }
+
+    }
+
+    public static class EvaluateStaticClass
+    {
+        public static int StaticField1 = 10;
+        public static string StaticProperty1 => "StaticProperty1";
+		public static string StaticPropertyWithError => throw new Exception("not implemented");
+    }
+
 }

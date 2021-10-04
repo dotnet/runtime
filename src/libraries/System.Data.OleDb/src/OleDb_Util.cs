@@ -334,7 +334,7 @@ namespace System.Data.OleDb
 
         internal static OleDbHResult GetErrorDescription(UnsafeNativeMethods.IErrorInfo errorInfo, OleDbHResult hresult, out string message)
         {
-            OleDbHResult hr = errorInfo.GetDescription(out message);
+            OleDbHResult hr = errorInfo.GetDescription(out message!);
             if (((int)hr < 0) && ADP.IsEmpty(message))
             {
                 message = FailedGetDescription(hr) + Environment.NewLine + ODB.ELookup(hresult);
@@ -697,9 +697,7 @@ namespace System.Data.OleDb
             {
                 builder.Length = 0;
             }
-            builder.Append("(0x");
-            builder.Append(((int)hr).ToString("X8", CultureInfo.InvariantCulture));
-            builder.Append(')');
+            builder.Append($"(0x{(int)hr:X8})");
             return builder.ToString();
         }
 
@@ -710,9 +708,7 @@ namespace System.Data.OleDb
             string? value = (string?)g_wlookpup[id];
             if (null == value)
             {
-                value = "0x" + ((short)id).ToString("X2", CultureInfo.InvariantCulture) + " " + ((short)id);
-                value += " " + ((DBTypeEnum)id).ToString();
-                g_wlookpup[id] = value;
+                g_wlookpup[id] = value = $"0x{(short)id:X2} {(short)id} {(DBTypeEnum)id}";
             }
             return value;
         }

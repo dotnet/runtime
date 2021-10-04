@@ -277,77 +277,83 @@ namespace System.Buffers.Text
 
         private static bool TryParseUInt64D(ReadOnlySpan<byte> source, out ulong value, out int bytesConsumed)
         {
-            if (source.Length < 1)
+            if (source.IsEmpty)
             {
-                bytesConsumed = 0;
-                value = default;
-                return false;
+                goto FalseExit;
             }
 
+            // We use 'nuint' for the firstDigit and nextChar data types in this method because
+            // it gives us a free early zero-extension to 64 bits when running on a 64-bit platform.
+            //
             // Parse the first digit separately. If invalid here, we need to return false.
-            ulong firstDigit = source[0] - 48u; // '0'
-            if (firstDigit > 9)
-            {
-                bytesConsumed = 0;
-                value = default;
-                return false;
-            }
+
+            nuint firstDigit = (uint)source[0] - '0';
+            if ((uint)firstDigit > 9) { goto FalseExit; }
             ulong parsedValue = firstDigit;
 
-            if (source.Length < ParserHelpers.Int64OverflowLength)
+            // At this point, we successfully read a single digit character.
+            // The only failure condition from here on out is integer overflow.
+
+            int idx = 1;
+            if (source.Length < ParserHelpers.UInt64OverflowLength)
             {
-                // Length is less than Parsers.Int64OverflowLength; overflow is not possible
-                for (int index = 1; index < source.Length; index++)
+                // If the input span is short enough such that integer overflow isn't an issue,
+                // don't bother performing overflow checks. Just keep shifting in new digits
+                // until we see a non-digit character or until we've exhausted our input buffer.
+
+                while (true)
                 {
-                    ulong nextDigit = source[index] - 48u; // '0'
-                    if (nextDigit > 9)
-                    {
-                        bytesConsumed = index;
-                        value = parsedValue;
-                        return true;
-                    }
-                    parsedValue = parsedValue * 10 + nextDigit;
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    nuint nextChar = (uint)source[idx] - '0';
+                    if ((uint)nextChar > 9) { break; } // not a digit
+                    parsedValue = parsedValue * 10 + nextChar;
+                    idx++;
                 }
             }
             else
             {
-                // Length is greater than Parsers.Int64OverflowLength; overflow is only possible after Parsers.Int64OverflowLength
-                // digits. There may be no overflow after Parsers.Int64OverflowLength if there are leading zeroes.
-                for (int index = 1; index < ParserHelpers.Int64OverflowLength - 1; index++)
+                while (true)
                 {
-                    ulong nextDigit = source[index] - 48u; // '0'
-                    if (nextDigit > 9)
+                    if ((uint)idx >= (uint)source.Length) { break; } // EOF
+                    nuint nextChar = (uint)source[idx] - '0';
+                    if ((uint)nextChar > 9) { break; } // not a digit
+                    idx++;
+
+                    // The const below is the smallest unsigned x for which "x * 10 + 9"
+                    // might overflow ulong.MaxValue. If the current accumulator is below
+                    // this const, there's no risk of overflowing.
+
+                    const ulong OverflowRisk = 0x1999_9999_9999_9999ul;
+
+                    if (parsedValue < OverflowRisk)
                     {
-                        bytesConsumed = index;
-                        value = parsedValue;
-                        return true;
+                        parsedValue = parsedValue * 10 + nextChar;
+                        continue;
                     }
-                    parsedValue = parsedValue * 10 + nextDigit;
-                }
-                for (int index = ParserHelpers.Int64OverflowLength - 1; index < source.Length; index++)
-                {
-                    ulong nextDigit = source[index] - 48u; // '0'
-                    if (nextDigit > 9)
+
+                    // If the current accumulator is exactly equal to the const above,
+                    // then "accumulator * 10 + 5" is the highest we can go without overflowing
+                    // ulong.MaxValue. This also implies that if the current accumulator
+                    // is higher than the const above, there's no hope that we'll succeed,
+                    // so we may as well just fail now.
+
+                    if (parsedValue != OverflowRisk || (uint)nextChar > 5)
                     {
-                        bytesConsumed = index;
-                        value = parsedValue;
-                        return true;
+                        goto FalseExit;
                     }
-                    // If parsedValue > (ulong.MaxValue / 10), any more appended digits will cause overflow.
-                    // if parsedValue == (ulong.MaxValue / 10), any nextDigit greater than 5 implies overflow.
-                    if (parsedValue > ulong.MaxValue / 10 || (parsedValue == ulong.MaxValue / 10 && nextDigit > 5))
-                    {
-                        bytesConsumed = 0;
-                        value = default;
-                        return false;
-                    }
-                    parsedValue = parsedValue * 10 + nextDigit;
+
+                    parsedValue = OverflowRisk * 10 + nextChar;
                 }
             }
 
-            bytesConsumed = source.Length;
+            bytesConsumed = idx;
             value = parsedValue;
             return true;
+
+        FalseExit:
+            bytesConsumed = 0;
+            value = default;
+            return false;
         }
     }
 }

@@ -57,6 +57,9 @@ namespace System
 
         public static bool IsWindows10Version2004Build19573OrGreater => IsWindowsVersionOrLater(10, 0, 19573);
 
+        // Windows 11 aka 21H2
+        public static bool IsWindows10Version22000OrGreater => IsWindowsVersionOrLater(10, 0, 22000);
+
         public static bool IsWindowsIoTCore
         {
             get
@@ -101,30 +104,6 @@ namespace System
                         return false;
                 }
             }
-        }
-
-        public static bool IsWindowsSubsystemForLinux => m_isWindowsSubsystemForLinux.Value;
-        public static bool IsNotWindowsSubsystemForLinux => !IsWindowsSubsystemForLinux;
-
-        private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
-        private static bool GetIsWindowsSubsystemForLinux()
-        {
-            // https://github.com/Microsoft/BashOnWindows/issues/423#issuecomment-221627364
-            if (IsLinux)
-            {
-                const string versionFile = "/proc/version";
-                if (File.Exists(versionFile))
-                {
-                    string s = File.ReadAllText(versionFile);
-
-                    if (s.Contains("Microsoft") || s.Contains("WSL"))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
         }
 
         private static string GetWindowsInstallationType()

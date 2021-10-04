@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection.ServiceLookup;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
@@ -135,16 +136,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+            
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceC = (DisposableServiceC)compiledCallSite(provider.Root);
 
-            Assert.Equal(3, disposables.Count);
+            Assert.Equal(3, provider.Root.Disposables.Count);
         }
 
         [Theory]
@@ -161,16 +159,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceC = (DisposableServiceC)compiledCallSite(provider.Root);
 
-            Assert.Equal(3, disposables.Count);
+            Assert.Equal(3, provider.Root.Disposables.Count);
         }
 
         [Theory]
@@ -190,16 +185,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+            
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceC = (ServiceC)compiledCallSite(provider.Root);
 
-            Assert.Empty(disposables);
+            Assert.Empty(provider.Root.Disposables);
         }
 
         [Theory]
@@ -215,16 +207,13 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            provider.Root._captureDisposableCallback = obj =>
-            {
-                disposables.Add(obj);
-            };
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceD), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
             var serviceD = (ServiceD)compiledCallSite(provider.Root);
 
-            Assert.Empty(disposables);
+            Assert.Empty(provider.Root.Disposables);
         }
 
         [Fact]
@@ -281,6 +270,31 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             ServiceF instance = ActivatorUtilities.CreateInstance<ServiceF>(provider);
 
             Assert.NotNull(instance);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57333")]
+        public void CallSiteFactoryResolvesIEnumerableOfOpenGenericServiceAfterResolvingClosedImplementation()
+        {
+            IServiceCollection descriptors = new ServiceCollection();
+            descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<int>), typeof(FakeIntService)));
+            descriptors.Add(ServiceDescriptor.Scoped(typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>)));
+
+            ServiceProvider provider = descriptors.BuildServiceProvider();
+
+            IFakeOpenGenericService<int> processor = provider.GetService<IFakeOpenGenericService<int>>();
+            IEnumerable<IFakeOpenGenericService<int>> processors = provider.GetService<IEnumerable<IFakeOpenGenericService<int>>>();
+
+            Type[] implementationTypes = processors.Select(p => p.GetType()).ToArray();
+            Assert.Equal(typeof(FakeIntService), processor.GetType());
+            Assert.Equal(2, implementationTypes.Length);
+            Assert.Equal(typeof(FakeIntService), implementationTypes[0]);
+            Assert.Equal(typeof(FakeOpenGenericService<int>), implementationTypes[1]);
+        }
+
+        private class FakeIntService : IFakeOpenGenericService<int>
+        {
+            public int Value => 0;
         }
 
         private interface IServiceG

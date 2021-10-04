@@ -19,7 +19,6 @@ using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/52114", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     public class HostTests
     {
         [Fact]
@@ -678,7 +677,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         [Fact]
         public async Task HostStopsApplicationWithOneBackgroundServiceErrorAndOthersWithoutError()
-        { 
+        {
             var wasOtherServiceStarted = false;
 
             TaskCompletionSource<bool> throwingTcs = new();
@@ -1326,13 +1325,13 @@ namespace Microsoft.Extensions.Hosting.Internal
             BackgroundServiceExceptionBehavior testBehavior,
             params string[] expectedExceptionMessages)
         {
-            using TestEventListener listener = new TestEventListener();
+            TestLoggerProvider logger = new TestLoggerProvider();
             var backgroundDelayTaskSource = new TaskCompletionSource<bool>();
 
             using IHost host = CreateBuilder()
                 .ConfigureLogging(logging =>
                 {
-                    logging.AddEventSourceLogger();
+                    logging.AddProvider(logger);
                 })
                 .ConfigureServices((hostContext, services) =>
                 {
@@ -1351,20 +1350,47 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             while (true)
             {
-                EventWrittenEventArgs[] events =
-                    listener.EventData.Where(
-                        e => e.EventSource.Name == "Microsoft-Extensions-Logging").ToArray();
-
+                LogEvent[] events = logger.GetEvents();
                 if (expectedExceptionMessages.All(
                         expectedMessage => events.Any(
-                            e => e.Payload.OfType<string>().Any(
-                                p => p.Contains(expectedMessage)))))
+                            e => e.Message.Contains(expectedMessage))))
                 {
                     break;
                 }
 
                 Assert.InRange(sw.Elapsed, TimeSpan.Zero, timeout);
                 await Task.Delay(TimeSpan.FromMilliseconds(30));
+            }
+        }
+
+        /// <summary>
+        /// Tests that when a BackgroundService is canceled when stopping the host,
+        /// no error is logged.
+        /// </summary>
+        [Fact]
+        public async Task HostNoErrorWhenServiceIsCanceledAsPartOfStop()
+        {
+            TestLoggerProvider logger = new TestLoggerProvider();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddProvider(logger);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHostedService<WorkerTemplateService>();
+                })
+                .Build();
+
+            host.Start();
+            await host.StopAsync();
+
+            foreach (LogEvent logEvent in logger.GetEvents())
+            {
+                Assert.True(logEvent.LogLevel < LogLevel.Error);
+
+                Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
             }
         }
 
@@ -1512,6 +1538,28 @@ namespace Microsoft.Extensions.Hosting.Internal
                 await _executeDelayTask;
 
                 throw new Exception("Background Exception");
+            }
+        }
+
+        /// <summary>
+        /// A copy of the default "Worker" template.
+        /// </summary>
+        private class WorkerTemplateService : BackgroundService
+        {
+            private readonly ILogger<WorkerTemplateService> _logger;
+
+            public WorkerTemplateService(ILogger<WorkerTemplateService> logger)
+            {
+                _logger = logger;
+            }
+
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                while (!stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    await Task.Delay(1000, stoppingToken);
+                }
             }
         }
     }

@@ -18,9 +18,6 @@
 #define sparseMC // Support filling in details where guesses are okay and will still generate good code. (i.e. helper
                  // function addresses)
 
-bool g_debugRec = false;
-bool g_debugRep = false;
-
 // static variable initialization
 Hash MethodContext::m_hash;
 
@@ -387,11 +384,13 @@ bool MethodContext::Equal(MethodContext* other)
     // Compare MethodInfo's first.
     CORINFO_METHOD_INFO otherInfo;
     unsigned            otherFlags = 0;
-    other->repCompileMethod(&otherInfo, &otherFlags);
+    CORINFO_OS          otherOs    = CORINFO_WINNT;
+    other->repCompileMethod(&otherInfo, &otherFlags, &otherOs);
 
     CORINFO_METHOD_INFO ourInfo;
     unsigned            ourFlags = 0;
-    repCompileMethod(&ourInfo, &ourFlags);
+    CORINFO_OS          ourOs    = CORINFO_WINNT;
+    repCompileMethod(&ourInfo, &ourFlags, &ourOs);
 
     if (otherInfo.ILCodeSize != ourInfo.ILCodeSize)
         return false;
@@ -421,6 +420,8 @@ bool MethodContext::Equal(MethodContext* other)
     if (otherInfo.locals.cbSig != ourInfo.locals.cbSig)
         return false;
     if (otherFlags != ourFlags)
+        return false;
+    if (otherOs != ourOs)
         return false;
 
 // Now compare the other maps to "estimate" equality.
@@ -646,7 +647,7 @@ unsigned int toCorInfoSize(CorInfoType cit)
     return -1;
 }
 
-void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
+void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os)
 {
     if (CompileMethod == nullptr)
         CompileMethod = new LightWeightMap<DWORD, Agnostic_CompileMethod>();
@@ -665,6 +666,8 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
     value.info.args   = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(info->args, CompileMethod, SigInstHandleMap);
     value.info.locals = SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(info->locals, CompileMethod, SigInstHandleMap);
 
+    value.os = (DWORD)os;
+
     value.flags = (DWORD)flags;
 
     CompileMethod->Add(0, value);
@@ -672,14 +675,14 @@ void MethodContext::recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags)
 }
 void MethodContext::dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value)
 {
-    printf("CompileMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u args-%s locals-%s flg-%08X",
+    printf("CompileMethod key %u, value ftn-%016llX scp-%016llX ilo-%u ils-%u ms-%u ehc-%u opt-%u rk-%u args-%s locals-%s flg-%08X os-%u",
            key, value.info.ftn, value.info.scope, value.info.ILCode_offset, value.info.ILCodeSize, value.info.maxStack,
            value.info.EHcount, value.info.options, value.info.regionKind,
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.args, CompileMethod, SigInstHandleMap).c_str(),
            SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap).c_str(),
-           value.flags);
+           value.flags, value.os);
 }
-void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
+void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags, CORINFO_OS* os)
 {
     AssertMapAndKeyExistNoMessage(CompileMethod, 0);
 
@@ -702,6 +705,7 @@ void MethodContext::repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags)
     info->locals = SpmiRecordsHelper::Restore_CORINFO_SIG_INFO(value.info.locals, CompileMethod, SigInstHandleMap);
 
     *flags             = (unsigned)value.flags;
+    *os                = (CORINFO_OS)value.os;
 }
 
 void MethodContext::recGetMethodClass(CORINFO_METHOD_HANDLE methodHandle, CORINFO_CLASS_HANDLE classHandle)
@@ -3167,23 +3171,53 @@ void MethodContext::recResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     }
 
     Agnostic_ResolveVirtualMethodKey key;
+    ZeroMemory(&key, sizeof(key)); // Zero token including any struct padding
     key.virtualMethod  = CastHandle(info->virtualMethod);
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
+
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
     Agnostic_ResolveVirtualMethodResult result;
-    result.returnValue = returnValue;
-    result.devirtualizedMethod = CastHandle(info->devirtualizedMethod);
+    result.returnValue                = returnValue;
+    result.devirtualizedMethod        = CastHandle(info->devirtualizedMethod);
     result.requiresInstMethodTableArg = info->requiresInstMethodTableArg;
-    result.exactContext = CastHandle(info->exactContext);
-    result.detail = (DWORD) info->detail;
+    result.exactContext               = CastHandle(info->exactContext);
+    result.detail                     = (DWORD) info->detail;
+
+    if (returnValue)
+    {
+        result.resolvedTokenDevirtualizedMethod        = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedMethod, ResolveToken);
+        result.resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(&info->resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+    }
+    else
+    {
+        ZeroMemory(&result.resolvedTokenDevirtualizedMethod, sizeof(result.resolvedTokenDevirtualizedMethod));
+        ZeroMemory(&result.resolvedTokenDevirtualizedUnboxedMethod, sizeof(result.resolvedTokenDevirtualizedUnboxedMethod));
+    }
+
     ResolveVirtualMethod->Add(key, result);
     DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethodKey& key, const Agnostic_ResolveVirtualMethodResult& result)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, objClass-%016llX, context-%016llX :: returnValue-%d, devirtMethod-%016llX, requiresInstArg-%d, exactContext-%016llX, detail-%d",
-        key.virtualMethod, key.objClass, key.context, result.returnValue, result.devirtualizedMethod, result.requiresInstMethodTableArg, result.exactContext, result.detail);
+    printf("ResolveVirtualMethod key virtMethod-%016llX, objClass-%016llX, context-%016llX pResolvedTokenVirtualMethodNonNull-%08X pResolvedTokenVirtualMethod{%s}",
+        key.virtualMethod,
+        key.objClass,
+        key.context,
+        key.pResolvedTokenVirtualMethodNonNull,
+        key.pResolvedTokenVirtualMethodNonNull ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.pResolvedTokenVirtualMethod).c_str() : "???");
+    printf(", value returnValue-%s, devirtMethod-%016llX, requiresInstArg-%s, exactContext-%016llX, detail-%d, tokDvMeth{%s}, tokDvUnboxMeth{%s}",
+        result.returnValue ? "true" : "false",
+        result.devirtualizedMethod,
+        result.requiresInstMethodTableArg ? "true" : "false",
+        result.exactContext,
+        result.detail,
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedMethod).c_str() : "???",
+        result.returnValue ? SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(result.resolvedTokenDevirtualizedUnboxedMethod).c_str() : "???");
 }
 
 bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
@@ -3194,7 +3228,11 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     key.objClass       = CastHandle(info->objClass);
     key.context        = CastHandle(info->context);
 
-    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX", key.virtualMethod, key.objClass, key.context);
+    key.pResolvedTokenVirtualMethodNonNull = info->pResolvedTokenVirtualMethod != NULL ? 1 : 0;
+    if (key.pResolvedTokenVirtualMethodNonNull)
+        key.pResolvedTokenVirtualMethod = SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(info->pResolvedTokenVirtualMethod, ResolveToken);
+
+    AssertMapAndKeyExist(ResolveVirtualMethod, key, ": %016llX-%016llX-%016llX-%08X", key.virtualMethod, key.objClass, key.context, key.pResolvedTokenVirtualMethodNonNull);
 
     Agnostic_ResolveVirtualMethodResult result = ResolveVirtualMethod->Get(key);
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
@@ -3203,6 +3241,11 @@ bool MethodContext::repResolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info
     info->requiresInstMethodTableArg = result.requiresInstMethodTableArg;
     info->exactContext = (CORINFO_CONTEXT_HANDLE) result.exactContext;
     info->detail = (CORINFO_DEVIRTUALIZATION_DETAIL) result.detail;
+    if (result.returnValue)
+    {
+        info->resolvedTokenDevirtualizedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedMethod, ResolveToken);
+        info->resolvedTokenDevirtualizedUnboxedMethod = SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(&result.resolvedTokenDevirtualizedUnboxedMethod, ResolveToken);
+    }
     return result.returnValue;
 }
 
@@ -4152,7 +4195,9 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO* pEEInfoOut)
         pEEInfoOut->osPageSize                                 = (size_t)0x1000;
         pEEInfoOut->maxUncheckedOffsetForNullObject            = (size_t)((32 * 1024) - 1);
         pEEInfoOut->targetAbi                                  = CORINFO_DESKTOP_ABI;
-#ifdef TARGET_UNIX
+#ifdef TARGET_OSX
+        pEEInfoOut->osType                                     = CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
         pEEInfoOut->osType                                     = CORINFO_UNIX;
 #else
         pEEInfoOut->osType                                     = CORINFO_WINNT;
@@ -4807,6 +4852,7 @@ void MethodContext::dmpGetStringLiteral(DLD key, DD value)
 {
     printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
         GetStringLiteral->GetBuffer(value.B), value.A);
+    GetStringLiteral->Unlock();
 }
 
 const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
@@ -5000,18 +5046,6 @@ int MethodContext::repFilterException(struct _EXCEPTION_POINTERS* pExceptionPoin
         int result = (int)value;
         return result;
     }
-}
-
-void MethodContext::recHandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    if (HandleException == nullptr)
-        HandleException = new DenseLightWeightMap<DWORD>();
-
-    HandleException->Append(pExceptionPointers->ExceptionRecord->ExceptionCode);
-}
-void MethodContext::dmpHandleException(DWORD key, DWORD value)
-{
-    printf("HandleException key %u, value %u", key, value);
 }
 
 void MethodContext::recGetAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup)
@@ -5468,6 +5502,7 @@ void MethodContext::dmpAllocPgoInstrumentationBySchema(DWORDLONG key, const Agno
             printf(" %u-{Offset %016llX ILOffset %u Kind %u(0x%x) Count %u Other %u}\n",
                 i, pBuf[i].Offset, pBuf[i].ILOffset, pBuf[i].InstrumentationKind, pBuf[i].InstrumentationKind, pBuf[i].Count, pBuf[i].Other);
         }
+        AllocPgoInstrumentationBySchema->Unlock();
     }
     printf("}");
 }
@@ -5637,6 +5672,7 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
 
             printf("}\n");
         }
+        GetPgoInstrumentationResults->Unlock();
     }
     printf("} data_index-%u", value.data_index);
 }
@@ -6238,6 +6274,40 @@ DWORD MethodContext::repGetExpectedTargetArchitecture()
     return value;
 }
 
+void MethodContext::recDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls, bool result)
+{
+    if (DoesFieldBelongToClass == nullptr)
+        DoesFieldBelongToClass = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(fld);
+    key.B = CastHandle(cls);
+
+    DWORD value = (DWORD)result;
+    DoesFieldBelongToClass->Add(key, value);
+    DEBUG_REC(dmpDoesFieldBelongToClass(key, result));
+}
+
+void MethodContext::dmpDoesFieldBelongToClass(DLDL key, bool value)
+{
+    printf("DoesFieldBelongToClass key fld=%016llX, cls=%016llx, result=%d", key.A, key.B, value);
+}
+
+bool MethodContext::repDoesFieldBelongToClass(CORINFO_FIELD_HANDLE fld, CORINFO_CLASS_HANDLE cls)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(fld);
+    key.B = CastHandle(cls);
+
+    AssertMapAndKeyExist(DoesFieldBelongToClass, key, ": key %016llX %016llX", key.A, key.B);
+
+    bool value = (bool)DoesFieldBelongToClass->Get(key);
+    DEBUG_REP(dmpDoesFieldBelongToClass(key, value));
+    return value;
+}
+
 void MethodContext::recIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK, bool result)
 {
     if (IsValidToken == nullptr)
@@ -6787,7 +6857,8 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
     }
     else
     {
-        repCompileMethod(&info, &flags);
+        CORINFO_OS os;
+        repCompileMethod(&info, &flags, &os);
         pInfo = &info;
     }
 
@@ -6921,7 +6992,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
     // Obtain the Method Info structure for this method
     CORINFO_METHOD_INFO  info;
     unsigned             flags = 0;
-    repCompileMethod(&info, &flags);
+    CORINFO_OS os;
+    repCompileMethod(&info, &flags, &os);
 
     if ((GetPgoInstrumentationResults != nullptr) &&
         (GetPgoInstrumentationResults->GetIndex(CastHandle(info.ftn)) != -1))
@@ -7120,4 +7192,31 @@ void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
         isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
     }
 
+}
+
+
+bool g_debugRec = false;
+bool g_debugRep = false;
+
+void SetDebugDumpVariables()
+{
+    static WCHAR* g_debugRecStr = nullptr;
+    static WCHAR* g_debugRepStr = nullptr;
+    if (g_debugRecStr == nullptr)
+    {
+        g_debugRecStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRec"), W("0"));
+    }
+    if (g_debugRepStr == nullptr)
+    {
+        g_debugRepStr = GetEnvironmentVariableWithDefaultW(W("SuperPMIShimDebugRep"), W("0"));
+    }
+
+    if (0 == wcscmp(g_debugRecStr, W("1")))
+    {
+        g_debugRec = true;
+    }
+    if (0 == wcscmp(g_debugRepStr, W("1")))
+    {
+        g_debugRep = true;
+    }
 }

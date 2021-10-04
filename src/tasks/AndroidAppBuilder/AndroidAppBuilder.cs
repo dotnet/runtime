@@ -43,6 +43,11 @@ public class AndroidAppBuilderTask : Task
     /// </summary>
     public string? RuntimeComponents { get; set; } = ""!;
 
+    /// <summary>
+    /// Diagnostic ports configuration string
+    /// </summary>
+    public string? DiagnosticPorts { get; set; } = ""!;
+
     [Required]
     public string RuntimeIdentifier { get; set; } = ""!;
 
@@ -82,11 +87,9 @@ public class AndroidAppBuilderTask : Task
 
     public override bool Execute()
     {
-        Utils.Logger = Log;
-
         string abi = DetermineAbi();
 
-        var apkBuilder = new ApkBuilder();
+        var apkBuilder = new ApkBuilder(Log);
         apkBuilder.ProjectName = ProjectName;
         apkBuilder.AppDir = AppDir;
         apkBuilder.OutputDir = OutputDir;
@@ -102,6 +105,7 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.ForceAOT = ForceAOT;
         apkBuilder.StaticLinkedRuntime = StaticLinkedRuntime;
         apkBuilder.RuntimeComponents = RuntimeComponents;
+        apkBuilder.DiagnosticPorts = DiagnosticPorts;
         apkBuilder.Assemblies = Assemblies;
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(abi, MainLibraryFileName, MonoRuntimeHeaders);
 

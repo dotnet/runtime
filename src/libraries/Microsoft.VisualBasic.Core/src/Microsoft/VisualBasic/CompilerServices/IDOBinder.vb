@@ -824,6 +824,8 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification:=IDOBinder.SuppressionJustification)>
+        <UnconditionalSuppressMessage("ReflectionAnalysis", "IL2111:ReflectionToDynamicallyAccessedMembers",
+            Justification:=IDOBinder.SuppressionJustification)>
         Public Overrides Function FallbackConvert(
                 ByVal target As DynamicMetaObject,
                 ByVal errorSuggestion As DynamicMetaObject) As DynamicMetaObject

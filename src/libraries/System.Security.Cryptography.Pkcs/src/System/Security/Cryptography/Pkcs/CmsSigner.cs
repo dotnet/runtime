@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
@@ -51,15 +52,9 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
-        // This can be implemented with NETCOREAPP2_0 with the cert creation API.
-        // * Open the parameters as RSACSP (RSA PKCS#1 signature was hard-coded in netfx)
-        //   * Which will fail on non-Windows
-        // * Create a certificate with subject CN=CMS Signer Dummy Certificate
-        //   * Need to check against .NET Framework to find out what the NotBefore/NotAfter values are
-        //   * No extensions
-        //
-        // Since it would only work on Windows, it could also be just done as P/Invokes to
-        // CertCreateSelfSignedCertificate on a split Windows/netstandard implementation.
+#if NET6_0_OR_GREATER
+        [Obsolete(Obsoletions.CmsSignerCspParamsCtorMessage, DiagnosticId = Obsoletions.CmsSignerCspParamsCtorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+ #endif
         public CmsSigner(CspParameters parameters) => throw new PlatformNotSupportedException();
 
         public CmsSigner(SubjectIdentifierType signerIdentifierType, X509Certificate2? certificate) : this(signerIdentifierType, certificate, null)

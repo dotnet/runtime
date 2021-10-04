@@ -8,6 +8,7 @@ using System.Diagnostics;
 using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -45,6 +46,34 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 InitializeFrameInfos(Array.Empty<FrameInfo>());
             }
             _lateTriggeredCompilation = context.CompilationCurrentPhase != 0;
+            RegisterInlineeModuleIndices(context);
+        }
+
+        private void RegisterInlineeModuleIndices(NodeFactory factory)
+        {
+            if (_inlinedMethods != null)
+            {
+                foreach (var inlinee in _inlinedMethods)
+                {
+                    MethodDesc inlineeDefinition = inlinee.GetTypicalMethodDefinition();
+                    if (!(inlineeDefinition is EcmaMethod ecmaInlineeDefinition))
+                    {
+                        // We don't record non-ECMA methods because they don't have tokens that
+                        // diagnostic tools could reason about anyway.
+                        continue;
+                    }
+
+                    if (!factory.CompilationModuleGroup.VersionsWithMethodBody(inlinee))
+                    {
+                        // We cannot record inlining info across version bubble as cross-bubble assemblies
+                        // are not guaranteed to preserve token values. Only non-versionable methods may be
+                        // inlined across the version bubble.
+                        Debug.Assert(inlinee.IsNonVersionable());
+                        continue;
+                    }
+                    factory.ManifestMetadataTable.EnsureModuleIndexable(ecmaInlineeDefinition.Module);
+                }
+            }
         }
 
         public override int DependencyPhaseForDeferredStaticComputation => _lateTriggeredCompilation ? 2 : 0;
@@ -301,7 +330,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(_debugVarInfos == null);
             // Process the debug info from JIT format to R2R format immediately as it is large
             // and not used in the rest of the process except to emit.
-            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos);
+            _debugVarInfos = DebugInfoTableNode.CreateVarBlobForMethod(debugVarInfos, _method.Context.Target);
         }
 
         public void InitializeDebugEHClauseInfos(DebugEHClauseInfo[] debugEHClauseInfos)
@@ -316,14 +345,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_method, otherNode._method);
         }
 
-        public void InitializeInliningInfo(MethodDesc[] inlinedMethods)
+        public void InitializeInliningInfo(MethodDesc[] inlinedMethods, NodeFactory factory)
         {
             Debug.Assert(_inlinedMethods == null);
             _inlinedMethods = inlinedMethods;
+            if (this.Marked)
+                RegisterInlineeModuleIndices(factory);
         }
 
         public int Offset => 0;
         public override bool IsShareable => throw new NotImplementedException();
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => IsEmpty;
+
+        public override string ToString() => _method.ToString();
     }
 }

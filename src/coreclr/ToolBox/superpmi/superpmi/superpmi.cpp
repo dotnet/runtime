@@ -181,6 +181,8 @@ int __cdecl main(int argc, char* argv[])
         return doParallelSuperPMI(o);
     }
 
+    SetBreakOnException(o.breakOnException);
+
     SetSuperPmiTargetArchitecture(o.targetArchitecture);
 
     if (o.methodStatsTypes != NULL &&
@@ -229,6 +231,8 @@ int __cdecl main(int argc, char* argv[])
     {
         diffMCL.InitializeMCL(o.diffMCLFilename);
     }
+
+    SetDebugDumpVariables();
 
     // The method context reader handles skipping any unrequested method contexts
     // Used in conjunction with an MCI file, it does a lot less work...

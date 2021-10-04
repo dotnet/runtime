@@ -25,7 +25,6 @@
 #include <utils/strenc-internals.h>
 #include <utils/strenc.h>
 #include <utils/mono-error-internals.h>
-#include <utils/mono-io-portability.h>
 #include <utils/mono-logger-internals.h>
 
 #if defined(_POSIX_VERSION)
@@ -1041,23 +1040,7 @@ mono_pe_file_map (const gunichar2 *filename, guint32 *map_size, void **handle)
 		goto exit;
 	}
 
-	if ((filed = mono_file_map_open (filename_ext)) == NULL && IS_PORTABILITY_SET) {
-		gint saved_errno = errno;
-
-		located_filename = mono_portability_find_file (filename_ext, TRUE);
-		if (!located_filename) {
-			mono_set_errno (saved_errno);
-
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
-			goto exit;
-		}
-
-		if ((filed = mono_file_map_open (located_filename)) == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, located_filename, strerror (errno));
-			goto exit;
-		}
-	}
-	else if (filed == NULL) {
+	if ((filed = mono_file_map_open (filename_ext)) == NULL) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
 		goto exit;
 	}

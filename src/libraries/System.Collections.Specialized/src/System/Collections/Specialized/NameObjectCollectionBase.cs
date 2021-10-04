@@ -52,14 +52,14 @@ namespace System.Collections.Specialized
             Reset(capacity);
         }
 
-        [Obsolete("Please use NameObjectCollectionBase(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameObjectCollectionBase(IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(IHashCodeProvider? hashProvider, IComparer? comparer)
         {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);
             Reset();
         }
 
-        [Obsolete("Please use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use NameObjectCollectionBase(Int32, IEqualityComparer) instead.")]
         protected NameObjectCollectionBase(int capacity, IHashCodeProvider? hashProvider, IComparer? comparer)
         {
             _keyComparer = new CompatibleComparer(hashProvider, comparer);

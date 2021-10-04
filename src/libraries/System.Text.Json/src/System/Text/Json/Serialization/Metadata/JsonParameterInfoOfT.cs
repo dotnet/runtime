@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -12,32 +11,32 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class JsonParameterInfo<T> : JsonParameterInfo
     {
+        internal override object? ClrDefaultValue => default(T);
+
         public T TypedDefaultValue { get; private set; } = default!;
 
-        public override void Initialize(
-            Type runtimePropertyType,
-            ParameterInfo parameterInfo,
-            JsonPropertyInfo matchingProperty,
-            JsonSerializerOptions options)
+        public override void Initialize(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty, JsonSerializerOptions options)
         {
-            base.Initialize(
-                runtimePropertyType,
-                parameterInfo,
-                matchingProperty,
-                options);
+            base.Initialize(parameterInfo, matchingProperty, options);
+            InitializeDefaultValue(matchingProperty);
+        }
 
-            Debug.Assert(parameterInfo.ParameterType == matchingProperty.DeclaredPropertyType);
+        protected override void InitializeDefaultValue(JsonPropertyInfo matchingProperty)
+        {
+            Debug.Assert(ClrInfo.ParameterType == matchingProperty.DeclaredPropertyType);
 
-            if (parameterInfo.HasDefaultValue)
+            if (ClrInfo.HasDefaultValue)
             {
-                if (parameterInfo.DefaultValue == null && !matchingProperty.PropertyTypeCanBeNull)
+                object? defaultValue = ClrInfo.DefaultValue;
+
+                if (defaultValue == null && !matchingProperty.PropertyTypeCanBeNull)
                 {
                     DefaultValue = TypedDefaultValue;
                 }
                 else
                 {
-                    DefaultValue = parameterInfo.DefaultValue;
-                    TypedDefaultValue = (T)parameterInfo.DefaultValue!;
+                    DefaultValue = defaultValue;
+                    TypedDefaultValue = (T)defaultValue!;
                 }
             }
             else

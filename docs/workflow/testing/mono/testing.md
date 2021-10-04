@@ -5,8 +5,18 @@ Before running tests, [build Mono](../../building/mono/README.md) using the desi
 ## Runtime Tests
 ### Desktop Mono:
 
-To build the runtime tests for Mono JIT or interpreter, build CoreCLR and execute the following command from `$(REPO_ROOT)/src/tests`
+To build the runtime tests for Mono JIT or interpreter:
+
+1. Build CoreCLR - the `clr.native` subset is enough but you can build the whole thing, optionally.  From the `$(REPO_ROOT)`:
+
 ```
+./build.sh clr.native -c <release|debug>
+```
+
+2. Build the tests (in `$(REPO_ROOT)/src/tests`)
+
+```
+cd src/tests
 ./build.sh excludemonofailures <release|debug>
 ```
 
@@ -40,20 +50,16 @@ The last few lines of the build log should contain something like this:
 To run all tests, execute that command, adding `wasm` to the end.
 
 ### Android:
-Build the runtime tests for Android x64
+Build the runtime tests for Android x64/ARM64
 ```
-$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Android x64 <Release/Debug>
+$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Android <x64/arm64> <Release/Debug>
 ```
 
-The last few lines of the build log should contain something like this:
+Run one test wrapper from repo root
 ```
---------------------------------------------------
- Example run.sh command
-
- src/tests/run.sh --coreOverlayDir=<repo_root>artifacts/tests/coreclr/Android.x64.Release/Tests/Core_Root --testNativeBinDir=<repo_root>/artifacts/obj/coreclr/Android.x64.Release/tests --testRootDir=<repo_root>/artifacts/tests/coreclr/Android.x64.Release --copyNativeTestBin Release
---------------------------------------------------
+export CORE_ROOT=<path_to_folder_Core_Root>
+./dotnet.sh <path_to_xunit.console.dll> <path_to_*.XUnitWrapper.dll>
 ```
-To run all tests, execute that command, adding `Android` at the end.
 
 ### Additional Documents
 For more details about internals of the runtime tests, please refer to the [CoreCLR testing documents](../coreclr)

@@ -24,7 +24,7 @@ namespace System.Text.Json.Nodes
         ///     the start of the value.
         ///   </para>
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown, the reader is reset to the state it was in when the method was called.
         ///   </para>
         ///   <para>
@@ -50,7 +50,7 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value.
+        ///   Parses text representing a single JSON value.
         /// </summary>
         /// <param name="json">JSON text to parse.</param>
         /// <param name="nodeOptions">Options to control the node behavior after parsing.</param>
@@ -79,7 +79,7 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value.
+        ///   Parses text representing a single JSON value.
         /// </summary>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="nodeOptions">Options to control the node behavior after parsing.</param>

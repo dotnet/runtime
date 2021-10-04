@@ -247,6 +247,7 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Reflection" />
     <Reference Include="System.Resources.ResourceManager" />

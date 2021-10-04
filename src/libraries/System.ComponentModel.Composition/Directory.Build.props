@@ -3,23 +3,5 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <PackageDescription>This namespace provides classes that constitute the core of the Managed Extensibility Framework, or MEF.
-
-Commonly Used Types:
-System.ComponentModel.Composition.ChangeRejectedException
-System.ComponentModel.Composition.CompositionContractMismatchException
-System.ComponentModel.Composition.CompositionError
-System.ComponentModel.Composition.CompositionException
-System.ComponentModel.Composition.ExportAttribute
-System.ComponentModel.Composition.ImportAttribute
-System.ComponentModel.Composition.ImportCardinalityMismatchException
-System.ComponentModel.Composition.Hosting.AggregateCatalog
-System.ComponentModel.Composition.Hosting.ApplicationCatalog
-System.ComponentModel.Composition.Hosting.AssemblyCatalog
-System.ComponentModel.Composition.Hosting.CompositionContainer
-System.ComponentModel.Composition.Primitives.ComposablePartException
-System.ComponentModel.Composition.Primitives.ExportDefinition
-System.ComponentModel.Composition.Primitives.ImportDefinition
-System.ComponentModel.Composition.ReflectionModel.ReflectionModelServices</PackageDescription>
   </PropertyGroup>
 </Project>

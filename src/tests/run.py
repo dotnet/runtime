@@ -84,7 +84,6 @@ parser.add_argument("-test_location", dest="test_location", nargs="?", default=N
 parser.add_argument("-core_root", dest="core_root", nargs='?', default=None)
 parser.add_argument("-runtime_repo_location", dest="runtime_repo_location", default=os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 parser.add_argument("-test_env", dest="test_env", default=None)
-parser.add_argument("-crossgen_altjit", dest="crossgen_altjit", default=None)
 
 # Optional arguments which change execution.
 
@@ -92,17 +91,16 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
-parser.add_argument("--run_crossgen_tests", dest="run_crossgen_tests", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
-parser.add_argument("--precompile_core_root", dest="precompile_core_root", action="store_true", default=False)
-parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests. Useful in conjunction with --precompile_core_root")
+parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
 parser.add_argument("--sequential", dest="sequential", action="store_true", default=False)
 
 parser.add_argument("--analyze_results_only", dest="analyze_results_only", action="store_true", default=False)
 parser.add_argument("--verbose", dest="verbose", action="store_true", default=False)
 parser.add_argument("--limited_core_dumps", dest="limited_core_dumps", action="store_true", default=False)
 parser.add_argument("--run_in_context", dest="run_in_context", action="store_true", default=False)
+parser.add_argument("--tiering_test", dest="tiering_test", action="store_true", default=False)
 
 ################################################################################
 # Globals
@@ -842,9 +840,6 @@ def run_tests(args,
         test_env_script_path  : Path to script to use to set the test environment, if any.
     """
 
-    if args.precompile_core_root:
-        precompile_core_root(args)
-
     if args.skip_test_run:
         return
 
@@ -869,11 +864,6 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
-    if args.run_crossgen_tests:
-        print("Running tests R2R")
-        print("Setting RunCrossGen=true")
-        os.environ["RunCrossGen"] = "true"
-
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
         print("Setting RunCrossGen2=true")
@@ -895,6 +885,10 @@ def run_tests(args,
         os.environ["CLRCustomTestLauncher"] = args.runincontext_script_path
         os.environ["RunInUnloadableContext"] = "1";
         per_test_timeout = 20*60*1000
+
+    if args.tiering_test:
+        print("Running test repeatedly to promote methods to tier1")
+        os.environ["CLRCustomTestLauncher"] = args.tieringtest_script_path
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.
     # This is read by the test wrapper invoker, in src\tests\Common\Coreclr.TestWrapper\CoreclrTestWrapperLib.cs.
@@ -963,11 +957,6 @@ def setup_args(args):
                               "Error setting analyze_results_only")
 
     coreclr_setup_args.verify(args,
-                              "crossgen_altjit",
-                              lambda arg: True,
-                              "Error setting crossgen_altjit")
-
-    coreclr_setup_args.verify(args,
                               "rid",
                               lambda arg: True,
                               "Error setting rid")
@@ -998,19 +987,9 @@ def setup_args(args):
                               "Error setting large_version_bubble")
 
     coreclr_setup_args.verify(args,
-                              "run_crossgen_tests",
-                              lambda arg: True,
-                              "Error setting run_crossgen_tests")
-
-    coreclr_setup_args.verify(args,
                               "run_crossgen2_tests",
                               lambda unused: True,
                               "Error setting run_crossgen2_tests")
-
-    coreclr_setup_args.verify(args,
-                              "precompile_core_root",
-                              lambda arg: True,
-                              "Error setting precompile_core_root")
 
     coreclr_setup_args.verify(args,
                               "skip_test_run",
@@ -1037,6 +1016,11 @@ def setup_args(args):
                               lambda arg: True,
                               "Error setting run_in_context")
 
+    coreclr_setup_args.verify(args,
+                              "tiering_test",
+                              lambda arg: True,
+                              "Error setting tiering_test")
+
     print("host_os                  : %s" % coreclr_setup_args.host_os)
     print("arch                     : %s" % coreclr_setup_args.arch)
     print("build_type               : %s" % coreclr_setup_args.build_type)
@@ -1044,101 +1028,15 @@ def setup_args(args):
     print("core_root                : %s" % coreclr_setup_args.core_root)
     print("test_location            : %s" % coreclr_setup_args.test_location)
 
-    coreclr_setup_args.crossgen_path = os.path.join(coreclr_setup_args.core_root, "crossgen%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
     coreclr_setup_args.corerun_path = os.path.join(coreclr_setup_args.core_root, "corerun%s" % (".exe" if coreclr_setup_args.host_os == "windows" else ""))
     coreclr_setup_args.dotnetcli_script_path = os.path.join(coreclr_setup_args.runtime_repo_location, "dotnet%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.coreclr_tests_dir = os.path.join(coreclr_setup_args.coreclr_dir, "tests")
     coreclr_setup_args.coreclr_tests_src_dir = os.path.join(coreclr_setup_args.runtime_repo_location, "src", "tests")
     coreclr_setup_args.runincontext_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "runincontext%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
+    coreclr_setup_args.tieringtest_script_path = os.path.join(coreclr_setup_args.coreclr_tests_src_dir, "Common", "scripts", "tieringtest%s" % (".cmd" if coreclr_setup_args.host_os == "windows" else ".sh"))
     coreclr_setup_args.logs_dir = os.path.join(coreclr_setup_args.artifacts_location, "log")
 
     return coreclr_setup_args
-
-def precompile_core_root(args):
-    """ Precompile all of the assemblies in the core_root directory
-
-    Args:
-        args
-    """
-
-    skip_list = [
-        ".*xunit.*",
-        ".*api-ms-win-core.*",
-        ".*api-ms-win.*",
-        ".*System.Private.CoreLib.*"
-    ]
-
-    unix_skip_list = [
-        ".*mscorlib.*",
-        ".*System.Runtime.WindowsRuntime.*",
-        ".*System.Runtime.WindowsRuntime.UI.Xaml.*",
-        ".*R2RDump.dll.*"
-    ]
-
-    arm64_unix_skip_list = [
-        ".*Microsoft.CodeAnalysis.VisualBasic.*",
-        ".*System.Net.NameResolution.*",
-        ".*System.Net.Sockets.*",
-        ".*System.Net.Primitives.*"
-    ]
-
-    if args.host_os != "windows":
-        skip_list += unix_skip_list
-
-        if args.arch == "arm64":
-            skip_list += arm64_unix_skip_list
-
-    assert os.path.isdir(args.test_location)
-    assert os.path.isdir(args.core_root)
-
-    def call_crossgen(file, env):
-        assert os.path.isfile(args.crossgen_path)
-        command = [args.crossgen_path, "/Platform_Assemblies_Paths", args.core_root, file]
-
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
-        proc.communicate()
-
-        return_code = proc.returncode
-
-        if return_code == -2146230517:
-            print("%s is not a managed assembly." % file)
-            return False
-
-        if return_code != 0:
-            print("Unable to precompile %s (%d)" % (file, return_code))
-            return False
-
-        print("Successfully precompiled %s" % file)
-        return True
-
-    print("Precompiling all assemblies in %s" % args.core_root)
-    print("")
-
-    env = os.environ.copy()
-
-    if not args.crossgen_altjit is None:
-        env["COMPlus_AltJit"]="*"
-        env["COMPlus_AltJitNgen"]="*"
-        env["COMPlus_AltJitName"]=args.crossgen_altjit
-        env["COMPlus_AltJitAssertOnNYI"]="1"
-        env["COMPlus_NoGuiOnAssert"]="1"
-        env["COMPlus_ContinueOnAssert"]="0"
-
-    dlls = [os.path.join(args.core_root, item) for item in os.listdir(args.core_root) if item.endswith("dll") and "mscorlib" not in item]
-
-    def in_skip_list(item):
-        found = False
-        for skip_re in skip_list:
-            if re.match(skip_re, item.lower()) is not None:
-                found = True
-        return found
-
-    dlls = [dll for dll in dlls if not in_skip_list(dll)]
-
-    for dll in dlls:
-        call_crossgen(dll, env)
-
-    print("")
 
 if sys.version_info.major < 3:
     def to_unicode(s):

@@ -353,6 +353,9 @@
   <data name="PlatformNotSupported_Drawing" xml:space="preserve">
     <value>System.Drawing is not supported on this platform.</value>
   </data>
+  <data name="PlatformNotSupported_Unix" xml:space="preserve">
+    <value>System.Drawing.Common is not supported on non-Windows platforms. See https://aka.ms/systemdrawingnonwindows for more information.</value>
+  </data>
   <data name="PrintDocumentDesc" xml:space="preserve">
     <value>Defines an object that sends output to a printer.</value>
   </data>

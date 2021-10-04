@@ -6,8 +6,9 @@
 // <is-shared-static>)
 
 // clang-format off
-ValueNumFuncDef(MapStore, 3, false, false, false)
-ValueNumFuncDef(MapSelect, 2, false, false, false)
+ValueNumFuncDef(MemOpaque, 1, false, false, false)  // Args: 0: loop num
+ValueNumFuncDef(MapStore, 4, false, false, false)   // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
+ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
 
 ValueNumFuncDef(FieldSeq, 2, false, false, false)   // Sequence (VN of null == empty) of (VN's of) field handles.
 ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for FieldSeqStore::NotAField.
@@ -74,6 +75,10 @@ ValueNumFuncDef(Dbl2Int, 1, false, false, false)
 ValueNumFuncDef(Dbl2UInt, 1, false, false, false)
 ValueNumFuncDef(Dbl2Lng, 1, false, false, false)
 ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
+ValueNumFuncDef(Dbl2IntOvf, 1, false, false, false)
+ValueNumFuncDef(Dbl2UIntOvf, 1, false, false, false)
+ValueNumFuncDef(Dbl2LngOvf, 1, false, false, false)
+ValueNumFuncDef(Dbl2ULngOvf, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 
@@ -173,13 +178,13 @@ ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD i
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64
 #include "hwintrinsiclistxarch.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_As
+#define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
 
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_As
+#define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
 
 #elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32

@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -26,6 +27,22 @@ namespace System
     //
     [Serializable]
     public readonly struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, ISpanFormattable
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
+        , IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>,
+          IAdditiveIdentity<TimeSpan, TimeSpan>,
+          IComparisonOperators<TimeSpan, TimeSpan>,
+          IDivisionOperators<TimeSpan, double, TimeSpan>,
+          IDivisionOperators<TimeSpan, TimeSpan, double>,
+          IMinMaxValue<TimeSpan>,
+          IMultiplyOperators<TimeSpan, double, TimeSpan>,
+          IMultiplicativeIdentity<TimeSpan, double>,
+          ISpanParseable<TimeSpan>,
+          ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>,
+          IUnaryNegationOperators<TimeSpan, TimeSpan>,
+          IUnaryPlusOperators<TimeSpan, TimeSpan>
+#pragma warning restore SA1001, CA2252
+#endif // FEATURE_GENERIC_MATH
     {
         public const long TicksPerMillisecond = 10000;
 
@@ -73,7 +90,7 @@ namespace System
         {
             long totalMilliSeconds = ((long)days * 3600 * 24 + (long)hours * 3600 + (long)minutes * 60 + seconds) * 1000 + milliseconds;
             if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
-                throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowArgumentOutOfRange_TimeSpanTooLong();
             _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
         }
 
@@ -198,15 +215,14 @@ namespace System
         private static TimeSpan Interval(double value, double scale)
         {
             if (double.IsNaN(value))
-                throw new ArgumentException(SR.Arg_CannotBeNaN);
-            double ticks = value * scale;
-            return IntervalFromDoubleTicks(ticks);
+                ThrowHelper.ThrowArgumentException_Arg_CannotBeNaN();
+            return IntervalFromDoubleTicks(value * scale);
         }
 
         private static TimeSpan IntervalFromDoubleTicks(double ticks)
         {
             if ((ticks > long.MaxValue) || (ticks < long.MinValue) || double.IsNaN(ticks))
-                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+                ThrowHelper.ThrowOverflowException_TimeSpanTooLong();
             if (ticks == long.MaxValue)
                 return TimeSpan.MaxValue;
             return new TimeSpan((long)ticks);
@@ -487,5 +503,167 @@ namespace System
         public static bool operator >(TimeSpan t1, TimeSpan t2) => t1._ticks > t2._ticks;
 
         public static bool operator >=(TimeSpan t1, TimeSpan t2) => t1._ticks >= t2._ticks;
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator +(TimeSpan left, TimeSpan right)
+            => left + right;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan IAdditionOperators<TimeSpan, TimeSpan, TimeSpan>.operator +(TimeSpan left, TimeSpan right)
+        //     => checked(left + right);
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IAdditiveIdentity<TimeSpan, TimeSpan>.AdditiveIdentity => default;
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <(TimeSpan left, TimeSpan right)
+            => left<right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator <=(TimeSpan left, TimeSpan right)
+            => left <= right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >(TimeSpan left, TimeSpan right)
+            => left > right;
+
+        [RequiresPreviewFeatures]
+        static bool IComparisonOperators<TimeSpan, TimeSpan>.operator >=(TimeSpan left, TimeSpan right)
+            => left >= right;
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator /(TimeSpan left, double right)
+            => left / right;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan IDivisionOperators<TimeSpan, double, TimeSpan>.operator /(TimeSpan left, double right)
+        //     => checked(left / right);
+
+        [RequiresPreviewFeatures]
+        static double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
+            => left / right;
+
+        // [RequiresPreviewFeatures]
+        // static checked double IDivisionOperators<TimeSpan, TimeSpan, double>.operator /(TimeSpan left, TimeSpan right)
+        //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeSpan, TimeSpan>.operator ==(TimeSpan left, TimeSpan right)
+            => left == right;
+
+        [RequiresPreviewFeatures]
+        static bool IEqualityOperators<TimeSpan, TimeSpan>.operator !=(TimeSpan left, TimeSpan right)
+            => left != right;
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IMinMaxValue<TimeSpan>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IMinMaxValue<TimeSpan>.MaxValue => MaxValue;
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures]
+        static double IMultiplicativeIdentity<TimeSpan, double>.MultiplicativeIdentity => 1.0;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
+            => left * right;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan IMultiplyOperators<TimeSpan, double, TimeSpan>.operator *(TimeSpan left, double right)
+        //     => checked(left * right);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IParseable<TimeSpan>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool IParseable<TimeSpan>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeSpan result)
+            => TryParse(s, provider, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan ISpanParseable<TimeSpan>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures]
+        static bool ISpanParseable<TimeSpan>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeSpan result)
+            => TryParse(s, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator -(TimeSpan left, TimeSpan right)
+            => left - right;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan ISubtractionOperators<TimeSpan, TimeSpan, TimeSpan>.operator -(TimeSpan left, TimeSpan right)
+        //     => checked(left - right);
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator -(TimeSpan value)
+            => -value;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan IUnaryNegationOperators<TimeSpan, TimeSpan>.operator -(TimeSpan value)
+        //     => checked(-value);
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures]
+        static TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value)
+            => +value;
+
+        // [RequiresPreviewFeatures]
+        // static checked TimeSpan IUnaryPlusOperators<TimeSpan, TimeSpan>.operator +(TimeSpan value)
+        //     => checked(+value);
+#endif // FEATURE_GENERIC_MATH
     }
 }

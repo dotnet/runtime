@@ -24,7 +24,7 @@ namespace SslStress
 {
     public struct DataSegment
     {
-        private readonly byte[] _buffer;
+        private byte[] _buffer;
 
         public DataSegment(int length)
         {
@@ -37,7 +37,12 @@ namespace SslStress
         public Span<byte> AsSpan() => new Span<byte>(_buffer, 0, Length);
 
         public ulong Checksum => CRC.CalculateCRC(AsSpan());
-        public void Return() => ArrayPool<byte>.Shared.Return(_buffer);
+        public void Return()
+        {
+            byte[] toReturn = _buffer;
+            _buffer = null;
+            ArrayPool<byte>.Shared.Return(toReturn);
+        }
 
         /// Create and populate a segment with random data
         public static DataSegment CreateRandom(Random random, int maxLength)

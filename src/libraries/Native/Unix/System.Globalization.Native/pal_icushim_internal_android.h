@@ -94,6 +94,7 @@ typedef void* UCalendar;
 
 typedef enum UErrorCode {
     U_STRING_NOT_TERMINATED_WARNING = -124,
+    U_USING_DEFAULT_WARNING = -127,
     U_ZERO_ERROR =  0,
     U_ILLEGAL_ARGUMENT_ERROR = 1,
     U_INTERNAL_PROGRAM_ERROR = 5,
@@ -432,7 +433,6 @@ typedef struct UFieldPosition {
     int32_t endIndex;
 } UFieldPosition;
 
-
 void u_charsToUChars(const char * cs, UChar * us, int32_t length);
 void u_getVersion(UVersionInfo versionArray);
 int32_t u_strlen(const UChar * s);
@@ -441,7 +441,9 @@ UChar * u_strcpy(UChar * dst, const UChar * src);
 UChar * u_strncpy(UChar * dst, const UChar * src, int32_t n);
 UChar32 u_tolower(UChar32 c);
 UChar32 u_toupper(UChar32 c);
-UChar* u_uastrcpy(UChar * dst, const char * src);	
+UChar* u_uastrncpy(UChar * dst, const char * src, int32_t n);
+void ubrk_close(UBreakIterator * bi);
+UBreakIterator* ubrk_openRules(const UChar * rules, int32_t rulesLength, const UChar * text, int32_t textLength, UParseError * parseErr, UErrorCode * status);
 void ucal_add(UCalendar * cal, UCalendarDateFields field, int32_t amount, UErrorCode * status);
 void ucal_close(UCalendar * cal);
 int32_t ucal_get(const UCalendar * cal, UCalendarDateFields field, UErrorCode * status);
@@ -455,7 +457,7 @@ int32_t ucal_getWindowsTimeZoneID(const UChar *	id, int32_t	len, UChar * winid, 
 UCalendar * ucal_open(const UChar * zoneID, int32_t len, const char * locale, UCalendarType type, UErrorCode * status);
 UEnumeration * ucal_openTimeZoneIDEnumeration(USystemTimeZoneType zoneType, const char * region, const int32_t * rawOffset, UErrorCode * ec);
 void ucal_set(UCalendar * cal, UCalendarDateFields field, int32_t value);
-void ucal_setMillis(UCalendar * cal, UDate dateTime, UErrorCode * status);	
+void ucal_setMillis(UCalendar * cal, UDate dateTime, UErrorCode * status);
 void ucol_close(UCollator * coll);
 void ucol_closeElements(UCollationElements * elems);
 int32_t ucol_getOffset(const UCollationElements *elems);
@@ -531,6 +533,7 @@ const UChar * ures_getStringByIndex(const UResourceBundle * resourceBundle, int3
 UResourceBundle * ures_open(const char * packageName, const char * locale, UErrorCode * status);
 void usearch_close(UStringSearch * searchiter);
 int32_t usearch_first(UStringSearch * strsrch, UErrorCode * status);
+const UBreakIterator* usearch_getBreakIterator(const UStringSearch * strsrch);
 int32_t usearch_getMatchedLength(const UStringSearch * strsrch);
 int32_t usearch_last(UStringSearch * strsrch, UErrorCode * status);
 UStringSearch * usearch_openFromCollator(const UChar * pattern, int32_t patternlength, const UChar * text, int32_t textlength, const UCollator * collator, UBreakIterator * breakiter, UErrorCode * status);

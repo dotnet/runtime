@@ -152,7 +152,7 @@ namespace System.Diagnostics.Metrics
         }
 
         /// <summary>
-        /// Enable the listener to start listeneing to instruments measurement recording.
+        /// Enable the listener to start listening to instruments measurement recording.
         /// </summary>
         public void Start()
         {
@@ -185,20 +185,34 @@ namespace System.Diagnostics.Metrics
         /// </summary>
         public void RecordObservableInstruments()
         {
+            List<Exception>? exceptionsList = null;
             DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
             while (current is not null)
             {
                 if (current.Value.IsObservable)
                 {
-                    current.Value.Observe(this);
+                    try
+                    {
+                        current.Value.Observe(this);
+                    }
+                    catch (Exception e)
+                    {
+                        exceptionsList ??= new List<Exception>();
+                        exceptionsList.Add(e);
+                    }
                 }
 
                 current = current.Next;
             }
+
+            if (exceptionsList is not null)
+            {
+                throw new AggregateException(exceptionsList);
+            }
         }
 
         /// <summary>
-        /// Disposes the listeners which will stop it from listeneing to any instrument.
+        /// Disposes the listeners which will stop it from listening to any instrument.
         /// </summary>
         public void Dispose()
         {

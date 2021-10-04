@@ -1949,7 +1949,7 @@ namespace System.Tests
         public static void BigMul128_Unsigned(ulong a, ulong b, string result)
         {
             ulong high = Math.BigMul(a, b, out ulong low);
-            Assert.Equal(result, high.ToString("X16") + low.ToString("X16"));
+            Assert.Equal(result, $"{high:X16}{low:X16}");
         }
 
         [Theory]
@@ -1968,7 +1968,7 @@ namespace System.Tests
         public static void BigMul128_Signed(long a, long b, string result)
         {
             long high = Math.BigMul(a, b, out long low);
-            Assert.Equal(result, high.ToString("X16") + low.ToString("X16"));
+            Assert.Equal(result, $"{high:X16}{low:X16}");
         }
 
         [Theory]

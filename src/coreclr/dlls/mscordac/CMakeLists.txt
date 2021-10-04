@@ -127,7 +127,6 @@ set(COREDAC_LIBRARIES
     ${END_WHOLE_ARCHIVE}
     dbgutil
     mdcompiler_dac
-    mdhotdata_dac
     mdruntime_dac
     mdruntimerw_dac
     utilcode_dac

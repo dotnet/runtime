@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -82,11 +83,13 @@ namespace System.Data
             AggregateNode.Bind(_relation, list);
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval()
         {
             throw ExprException.EvalNoContext();
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
             if (_column == null || _relation == null)
@@ -99,6 +102,7 @@ namespace System.Data
             return parent[_column, parent.HasVersion(version) ? version : DataRowVersion.Current];
         }
 
+        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         internal override object Eval(int[] recordNos)
         {
             throw ExprException.ComputeNotAggregate(ToString()!);

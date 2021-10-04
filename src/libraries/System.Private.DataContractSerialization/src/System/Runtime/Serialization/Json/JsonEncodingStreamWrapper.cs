@@ -439,8 +439,7 @@ namespace System.Runtime.Serialization.Json
         {
             try
             {
-                //this.stream = new BufferedStream(inputStream);
-                _stream = inputStream;
+                _stream = new BufferedStream(inputStream);
 
                 SupportedEncoding expectedEnc = GetSupportedEncoding(expectedEncoding);
                 SupportedEncoding dataEnc = ReadEncoding();
@@ -472,8 +471,7 @@ namespace System.Runtime.Serialization.Json
         private void InitForWriting(Stream outputStream, Encoding writeEncoding)
         {
             _encoding = writeEncoding;
-            //this.stream = new BufferedStream(outputStream);
-            _stream = outputStream;
+            _stream = new BufferedStream(outputStream);
 
             // Set the encoding code
             _encodingCode = GetSupportedEncoding(writeEncoding);

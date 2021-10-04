@@ -7,3 +7,4 @@
 #include "pal_types.h"
 
 PALEXPORT void SystemNative_Log(uint8_t* buffer, int32_t length);
+PALEXPORT void SystemNative_LogError(uint8_t* buffer, int32_t length);

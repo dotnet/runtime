@@ -83,10 +83,6 @@ ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
 // Determines if a COM object can be cast to the specified type.
 BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT);
 
-// includes Types which hold a "ComObject" class
-// and types which are imported through typelib
-BOOL IsComWrapperClass(TypeHandle type);
-
 // includes Type which hold a "__ComObject" class
 BOOL IsComObjectClass(TypeHandle type);
 
@@ -172,14 +168,23 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
 // Called from EEStartup, to initialize com Interop specific data structures.
 void InitializeComInterop();
 
+#endif // FEATURE_COMINTEROP
+
 //--------------------------------------------------------------------------------
 // Clean up Helpers
 //--------------------------------------------------------------------------------
+
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
+
 // called by syncblock, on the finalizer thread to do major cleanup
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
 // called by syncblock, during GC, do only minimal work
 void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
+
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS)
+
+#ifdef FEATURE_COMINTEROP
 
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie);

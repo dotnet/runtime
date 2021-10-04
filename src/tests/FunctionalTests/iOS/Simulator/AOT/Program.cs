@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 
 public static class Program
 {
@@ -14,6 +14,7 @@ public static class Program
     public static async Task<int> Main(string[] args)
     {
         mono_ios_set_summary($"Starting functional test");
+
         Console.WriteLine("Done!");
         await Task.Delay(5000);
 

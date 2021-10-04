@@ -11,6 +11,7 @@ parameters:
   timeoutInMinutes: ''
   variables: {}
   dependOnEvaluatePaths: false
+  uploadAs: 'azureBlob'
 
 ### Product build
 jobs:
@@ -49,6 +50,8 @@ jobs:
 
     - name: publishLogsArtifactPrefix
       value: 'BuildLogs_CoreCLR_JIT'
+    - name: uploadAs
+      value: ${{ parameters.uploadAs }}
 
     - name: compilerArg
       value: ''
@@ -85,11 +88,11 @@ jobs:
     # preinstalled, so we only need this step for OSX and Windows.
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
-        displayName: Install native dependencies
+        displayName: Install native dependencies (OSX)
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
-        displayName: Install native dependencies
+        displayName: Install native dependencies (windows)
 
     # Install internal tools on official builds
     # Since our internal tools are behind an authenticated feed,
@@ -106,14 +109,27 @@ jobs:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -nopgooptimize -skiprestoreoptdata -component alljits
         displayName: Build CoreCLR JIT
 
-    # Ensure the Python azure-storage-blob package is installed before doing the upload.
-    - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
-      displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+    - ${{ if eq(parameters.uploadAs, 'azureBlob') }}:
+      # Ensure the Python azure-storage-blob package is installed before doing the upload.
+      - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+        displayName: Upgrade Pip to latest and install azure-storage-blob Python package
 
-    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion)
-      displayName: Upload JIT to Azure Storage
-      env:
-        CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitrollingbuild.py upload -build_type $(buildConfig) -arch $(archType) -host_os $(osGroup) -git_hash $(Build.SourceVersion)
+        displayName: Upload JIT to Azure Storage
+        env:
+          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+    - ${{ if eq(parameters.uploadAs, 'pipelineArtifacts') }}:
+      # Publish product output directory for consumption by tests.
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(buildProductRootFolderPath)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: $(buildProductArtifactName)
+          displayName: 'product build'
 
     # Publish Logs
     - task: PublishPipelineArtifact@1

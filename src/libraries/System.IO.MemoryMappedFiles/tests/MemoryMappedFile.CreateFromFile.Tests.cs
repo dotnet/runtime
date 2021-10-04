@@ -697,6 +697,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
             WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
@@ -704,6 +705,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
             WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, PlatformDetection.IsSuperUser);
@@ -948,6 +950,23 @@ namespace System.IO.MemoryMappedFiles.Tests
             catch (UnauthorizedAccessException) { }
             // ENODEV Operation not supported by device.
             catch (IOException ex) when (ex.HResult == 19) { };
+        }
+
+        /// <summary>
+        /// Test to verify that the MemoryMappedFile has the same underlying handle as the FileStream it's created from
+        /// </summary>
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact]
+        public void MapHandleMatchesFileStreamHandle()
+        {
+            using (FileStream fs = File.OpenWrite(GetTestFilePath()))
+            {
+                using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(fs, null, 4096, MemoryMappedFileAccess.ReadWrite, HandleInheritability.None, false))
+                {
+                    SafeMemoryMappedFileHandle handle = mmf.SafeMemoryMappedFileHandle;
+                    Assert.Equal(fs.SafeFileHandle.DangerousGetHandle(), handle.DangerousGetHandle());
+                }
+            }
         }
     }
 }

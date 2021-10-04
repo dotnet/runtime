@@ -14,7 +14,6 @@ namespace System.Runtime.Tests
         [InlineData(false)]
         [InlineData(true)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31853", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void ProfileOptimization_CheckFileExists(bool stopProfile)
         {
             string profileFile = GetTestFileName();

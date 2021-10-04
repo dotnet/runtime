@@ -20,7 +20,8 @@ corehost_init_t::corehost_init_t(
     const pal::string_t& additional_deps_serialized,
     const std::vector<pal::string_t>& probe_paths,
     const host_mode_t mode,
-    const fx_definition_vector_t& fx_definitions)
+    const fx_definition_vector_t& fx_definitions,
+    const std::vector<std::pair<pal::string_t, pal::string_t>>& additional_properties)
     : m_tfm(get_app(fx_definitions).get_runtime_config().get_tfm())
     , m_deps_file(deps_file)
     , m_additional_deps_serialized(additional_deps_serialized)
@@ -34,6 +35,12 @@ corehost_init_t::corehost_init_t(
     , m_host_info_app_path(host_info.app_path)
 {
     make_cstr_arr(m_probe_paths, &m_probe_paths_cstr);
+
+    for (const auto& additional_property : additional_properties)
+    {
+        m_clr_keys.push_back(additional_property.first);
+        m_clr_values.push_back(additional_property.second);
+    }
 
     size_t fx_count = fx_definitions.size();
     m_fx_names.reserve(fx_count);

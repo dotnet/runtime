@@ -58,8 +58,6 @@ public:
     void QCALLTYPE PrepareMethod(MethodDesc* pMD, TypeHandle *pInstantiation, UINT32 cInstantiation);
 
     static FCDECL1(void, PrepareDelegate, Object* delegateUNSAFE);
-    static FCDECL1(void, PrepareContractedDelegate, Object* delegateUNSAFE);
-    static FCDECL0(void, ProbeForSufficientStack);
     static FCDECL0(void, EnsureSufficientExecutionStack);
     static FCDECL0(FC_BOOL_RET, TryEnsureSufficientExecutionStack);
 
@@ -93,8 +91,6 @@ public:
     void QCALLTYPE GetEnumValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames);
 
     static FCDECL2_IV(Object*, InternalBoxEnum, ReflectClassBaseObject* pEnumType, INT64 value);
-    static FCDECL2(FC_BOOL_RET, InternalEquals, Object *pRefThis, Object* pRefTarget);
-    static FCDECL2(FC_BOOL_RET, InternalHasFlag, Object *pRefThis, Object* pRefFlags);
 };
 
 #endif // _REFLECTIONINVOCATION_H_

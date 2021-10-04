@@ -23,7 +23,6 @@ set(MDRUNTIME_HEADERS
   ../../inc/pedecoder.h
   ../../inc/posterror.h
   ../compiler/regmeta.h
-  ../hotdata/export.h
   ../inc/assemblymdinternaldisp.h
   ../inc/liteweightstgdb.h
   ../inc/mdcolumndescriptors.h
@@ -58,10 +57,6 @@ target_sources(mdruntime_wks INTERFACE $<TARGET_OBJECTS:mdruntime_wks_obj>)
 add_library_clr(mdruntime-dbi ${MDRUNTIME_SOURCES})
 set_target_properties(mdruntime-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdruntime-dbi PRIVATE stdafx.h)
-
-add_library_clr(mdruntime_crossgen ${MDRUNTIME_SOURCES})
-set_target_properties(mdruntime_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-target_precompile_headers(mdruntime_crossgen PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_ppdb ${MDRUNTIME_SOURCES})
 target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)

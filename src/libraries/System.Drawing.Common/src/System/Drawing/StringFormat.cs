@@ -86,7 +86,7 @@ namespace System.Drawing
 #endif
                     Gdip.GdipDeleteStringFormat(new HandleRef(this, nativeFormat));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex)
@@ -442,9 +442,6 @@ namespace System.Drawing
         /// <summary>
         /// Converts this <see cref='StringFormat'/> to a human-readable string.
         /// </summary>
-        public override string ToString()
-        {
-            return "[StringFormat, FormatFlags=" + FormatFlags.ToString() + "]";
-        }
+        public override string ToString() => $"[StringFormat, FormatFlags={FormatFlags.ToString()}]";
     }
 }

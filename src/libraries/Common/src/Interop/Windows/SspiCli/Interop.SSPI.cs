@@ -65,6 +65,7 @@ internal static partial class Interop
             SECPKG_ATTR_LOCAL_CERT_CONTEXT = 0x54,     // returns PCCERT_CONTEXT
             SECPKG_ATTR_ROOT_STORE = 0x55,             // returns HCERTCONTEXT to the root store
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx
+            SECPKG_ATTR_CLIENT_CERT_POLICY = 0x60,     // sets    SecPkgCred_ClientCertCtlPolicy
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
             SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
             SECPKG_ATTR_UI_INFO = 0x68, // sets SEcPkgContext_UiInfo
@@ -315,6 +316,20 @@ internal static partial class Interop
             }
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct SecPkgCred_ClientCertPolicy
+        {
+            public uint dwFlags;
+            public Guid guidPolicyId;
+            public uint dwCertFlags;
+            public uint dwUrlRetrievalTimeout;
+            public BOOL fCheckRevocationFreshnessTime;
+            public uint dwRevocationFreshnessTime;
+            public BOOL fOmitUsageCheck;
+            public char* pwszSslCtlStoreName;
+            public char* pwszSslCtlIdentifier;
+        }
+
         [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, SetLastError = true)]
         internal static extern int EncryptMessage(
               ref CredHandle contextHandle,
@@ -472,5 +487,12 @@ internal static partial class Interop
             [In] string domainName,
             [In] string password,
             [Out] out SafeSspiAuthDataHandle authData);
+
+        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static extern SECURITY_STATUS SetCredentialsAttributesW(
+            [In] ref CredHandle handlePtr,
+            [In] long ulAttribute,
+            [In] ref SecPkgCred_ClientCertPolicy pBuffer,
+            [In] long cbBuffer);
     }
 }

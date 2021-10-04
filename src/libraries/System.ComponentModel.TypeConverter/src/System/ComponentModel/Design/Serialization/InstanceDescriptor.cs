@@ -16,14 +16,14 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new InstanceDescriptor.
         /// </summary>
-        public InstanceDescriptor(MemberInfo member, ICollection arguments) : this(member, arguments, true)
+        public InstanceDescriptor(MemberInfo? member, ICollection? arguments) : this(member, arguments, true)
         {
         }
 
         /// <summary>
         /// Creates a new InstanceDescriptor.
         /// </summary>
-        public InstanceDescriptor(MemberInfo member, ICollection arguments, bool isComplete)
+        public InstanceDescriptor(MemberInfo? member, ICollection? arguments, bool isComplete)
         {
             MemberInfo = member;
             IsComplete = isComplete;
@@ -78,7 +78,7 @@ namespace System.ComponentModel.Design.Serialization
                 {
                     throw new ArgumentException(SR.InstanceDescriptorMustBeReadable);
                 }
-                MethodInfo getMethod = pi.GetGetMethod();
+                MethodInfo? getMethod = pi.GetGetMethod();
                 if (getMethod != null && !getMethod.IsStatic)
                 {
                     throw new ArgumentException(SR.InstanceDescriptorMustBeStatic);
@@ -104,24 +104,24 @@ namespace System.ComponentModel.Design.Serialization
         /// The MemberInfo object that was passed into the constructor
         /// of this InstanceDescriptor.
         /// </summary>
-        public MemberInfo MemberInfo { get; }
+        public MemberInfo? MemberInfo { get; }
 
         /// <summary>
         /// Invokes this instance descriptor, returning the object
         /// the descriptor describes.
         /// </summary>
-        public object Invoke()
+        public object? Invoke()
         {
-            object[] translatedArguments = new object[Arguments.Count];
+            object?[] translatedArguments = new object[Arguments.Count];
             Arguments.CopyTo(translatedArguments, 0);
 
             // Instance descriptors can contain other instance
             // descriptors. Translate them if necessary.
             for (int i = 0; i < translatedArguments.Length; i++)
             {
-                if (translatedArguments[i] is InstanceDescriptor)
+                if (translatedArguments[i] is InstanceDescriptor instanceDescriptor)
                 {
-                    translatedArguments[i] = ((InstanceDescriptor)translatedArguments[i]).Invoke();
+                    translatedArguments[i] = instanceDescriptor.Invoke();
                 }
             }
 

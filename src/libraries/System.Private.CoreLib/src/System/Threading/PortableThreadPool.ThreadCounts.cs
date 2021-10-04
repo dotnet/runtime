@@ -47,6 +47,14 @@ namespace System.Threading
                 _data -= (ulong)(ushort)value << NumProcessingWorkShift;
             }
 
+            public void InterlockedDecrementNumProcessingWork()
+            {
+                Debug.Assert(NumProcessingWorkShift == 0);
+
+                ThreadCounts counts = new ThreadCounts(Interlocked.Decrement(ref _data));
+                Debug.Assert(counts.NumProcessingWork >= 0);
+            }
+
             /// <summary>
             /// Number of thread pool threads that currently exist.
             /// </summary>
@@ -81,10 +89,39 @@ namespace System.Threading
                 }
             }
 
+            public ThreadCounts InterlockedSetNumThreadsGoal(short value)
+            {
+                ThreadPoolInstance._threadAdjustmentLock.VerifyIsLocked();
+
+                ThreadCounts counts = this;
+                while (true)
+                {
+                    ThreadCounts newCounts = counts;
+                    newCounts.NumThreadsGoal = value;
+
+                    ThreadCounts countsBeforeUpdate = InterlockedCompareExchange(newCounts, counts);
+                    if (countsBeforeUpdate == counts)
+                    {
+                        return newCounts;
+                    }
+
+                    counts = countsBeforeUpdate;
+                }
+            }
+
             public ThreadCounts VolatileRead() => new ThreadCounts(Volatile.Read(ref _data));
 
-            public ThreadCounts InterlockedCompareExchange(ThreadCounts newCounts, ThreadCounts oldCounts) =>
-                new ThreadCounts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
+            public ThreadCounts InterlockedCompareExchange(ThreadCounts newCounts, ThreadCounts oldCounts)
+            {
+#if DEBUG
+                if (newCounts.NumThreadsGoal != oldCounts.NumThreadsGoal)
+                {
+                    ThreadPoolInstance._threadAdjustmentLock.VerifyIsLocked();
+                }
+#endif
+
+                return new ThreadCounts(Interlocked.CompareExchange(ref _data, newCounts._data, oldCounts._data));
+            }
 
             public static bool operator ==(ThreadCounts lhs, ThreadCounts rhs) => lhs._data == rhs._data;
             public static bool operator !=(ThreadCounts lhs, ThreadCounts rhs) => lhs._data != rhs._data;

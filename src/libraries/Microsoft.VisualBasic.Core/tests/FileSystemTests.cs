@@ -43,7 +43,6 @@ namespace Microsoft.VisualBasic.Tests
         //   public static void ChDrive(string Drive){ throw null; }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void CloseAllFiles()
         {
             var fileName1 = GetTestFilePath();
@@ -182,6 +181,7 @@ namespace Microsoft.VisualBasic.Tests
         //   public static OpenMode FileAttr(int FileNumber){ throw null; }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53815", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void FileClose()
         {
             int fileNumber = FileSystem.FreeFile();
@@ -376,6 +376,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53815", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void FileOpen()
         {
             // OpenMode.Append:
@@ -706,6 +707,7 @@ namespace Microsoft.VisualBasic.Tests
         //   public static void WriteLine(int FileNumber, params object[] Output) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53815", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Write_ArgumentException()
         {
             int fileNumber = FileSystem.FreeFile();

@@ -388,7 +388,7 @@ namespace System
                     result *= scale;
                 }
 
-                return (ulong)(BitConverter.DoubleToInt64Bits(result));
+                return BitConverter.DoubleToUInt64Bits(result);
             }
 
             return NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
@@ -450,7 +450,7 @@ namespace System
                     result *= scale;
                 }
 
-                return (ushort)(BitConverter.HalfToInt16Bits((Half)result));
+                return BitConverter.HalfToUInt16Bits((Half)result);
             }
 
             if ((totalDigits <= 15) && (fastExponent <= 22))
@@ -467,7 +467,7 @@ namespace System
                     result *= scale;
                 }
 
-                return (ushort)(BitConverter.HalfToInt16Bits((Half)(result)));
+                return BitConverter.HalfToUInt16Bits((Half)(result));
             }
 
             return (ushort)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);
@@ -529,7 +529,7 @@ namespace System
                     result *= scale;
                 }
 
-                return (uint)(BitConverter.SingleToInt32Bits(result));
+                return BitConverter.SingleToUInt32Bits(result);
             }
 
             if ((totalDigits <= 15) && (fastExponent <= 22))
@@ -546,7 +546,7 @@ namespace System
                     result *= scale;
                 }
 
-                return (uint)(BitConverter.SingleToInt32Bits((float)(result)));
+                return BitConverter.SingleToUInt32Bits((float)(result));
             }
 
             return (uint)NumberToFloatingPointBitsSlow(ref number, in info, positiveExponent, integerDigitsPresent, fractionalDigitsPresent);

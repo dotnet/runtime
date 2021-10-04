@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
@@ -98,24 +97,6 @@ namespace System.Text.Json
                         .ToArray()
 #endif
                 );
-        }
-
-        /// <summary>
-        /// Emulates Dictionary.TryAdd on netstandard.
-        /// </summary>
-        public static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, in TKey key, in TValue value) where TKey : notnull
-        {
-#if NETSTANDARD2_0 || NETFRAMEWORK
-            if (!dictionary.ContainsKey(key))
-            {
-                dictionary[key] = value;
-                return true;
-            }
-
-            return false;
-#else
-            return dictionary.TryAdd(key, value);
-#endif
         }
 
         /// <summary>

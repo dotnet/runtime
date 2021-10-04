@@ -112,7 +112,8 @@ namespace System.Text.RegularExpressions
             CultureInfo culture = CultureInfo.CurrentCulture;
             Key key = new Key(pattern, culture.ToString(), RegexOptions.None, Regex.s_defaultMatchTimeout);
 
-            if (!TryGet(key, out Regex? regex))
+            Regex? regex = Get(key);
+            if (regex is null)
             {
                 regex = new Regex(pattern, culture);
                 Add(key, regex);
@@ -130,7 +131,8 @@ namespace System.Text.RegularExpressions
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
             Key key = new Key(pattern, culture.ToString(), options, matchTimeout);
 
-            if (!TryGet(key, out Regex? regex))
+            Regex? regex = Get(key);
+            if (regex is null)
             {
                 regex = new Regex(pattern, options, matchTimeout, culture);
                 Add(key, regex);
@@ -139,20 +141,18 @@ namespace System.Text.RegularExpressions
             return regex;
         }
 
-        private static bool TryGet(Key key, [NotNullWhen(true)] out Regex? regex)
+        private static Regex? Get(Key key)
         {
             long lastAccessedStamp = 0;
 
             // We optimize for repeated usage of the same regular expression over and over,
             // by having a fast-path that stores the most recently used instance.  Check
             // to see if that instance is the one we want; if it is, we're done.
-            Node? lastAccessed = s_lastAccessed;
-            if (lastAccessed != null)
+            if (s_lastAccessed is Node lastAccessed)
             {
-                if (lastAccessed.Key.Equals(key))
+                if (key.Equals(lastAccessed.Key))
                 {
-                    regex = lastAccessed.Regex;
-                    return true;
+                    return lastAccessed.Regex;
                 }
 
                 // We had a last accessed item, but it didn't match the one being requested.
@@ -174,17 +174,15 @@ namespace System.Text.RegularExpressions
                 // that another thread subsequently sees this updated value.
                 Volatile.Write(ref node.LastAccessStamp, lastAccessedStamp + 1);
 
-                //  Update our fast-path single-field cache.
+                // Update our fast-path single-field cache.
                 s_lastAccessed = node;
 
                 // Return the cached regex.
-                regex = node.Regex;
-                return true;
+                return node.Regex;
             }
 
             // Not in the cache.
-            regex = null;
-            return false;
+            return null;
         }
 
         private static void Add(Key key, Regex regex)
@@ -287,17 +285,10 @@ namespace System.Text.RegularExpressions
                 _options == other._options &&
                 _matchTimeout == other._matchTimeout;
 
-            public static bool operator ==(Key left, Key right) =>
-                left.Equals(right);
-
-            public static bool operator !=(Key left, Key right) =>
-                !left.Equals(right);
-
             public override int GetHashCode() =>
-                _pattern.GetHashCode() ^
-                _culture.GetHashCode() ^
-                ((int)_options);
-                // no need to include timeout in the hashcode; it'll almost always be the same
+                // Hash code only factors in pattern and options, as regex instances are unlikely to have
+                // the same pattern and options but different culture and timeout.
+                _pattern.GetHashCode() ^ (int)_options;
         }
 
         /// <summary>Node for a cached Regex instance.</summary>

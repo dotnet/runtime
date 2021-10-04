@@ -128,8 +128,7 @@ namespace System
                 int processId = s_processId;
                 if (processId == 0)
                 {
-                    Interlocked.CompareExchange(ref s_processId, GetProcessId(), 0);
-                    processId = s_processId;
+                    s_processId = processId = GetProcessId();
                     // Assume that process Id zero is invalid for user processes. It holds for all mainstream operating systems.
                     Debug.Assert(processId != 0);
                 }
@@ -208,6 +207,21 @@ namespace System
         {
             [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+        }
+
+        private static volatile int s_systemPageSize;
+
+        public static int SystemPageSize
+        {
+            get
+            {
+                int systemPageSize = s_systemPageSize;
+                if (systemPageSize == 0)
+                {
+                    s_systemPageSize = systemPageSize = GetSystemPageSize();
+                }
+                return systemPageSize;
+            }
         }
 
         private static bool ValidateAndConvertRegistryTarget(EnvironmentVariableTarget target)

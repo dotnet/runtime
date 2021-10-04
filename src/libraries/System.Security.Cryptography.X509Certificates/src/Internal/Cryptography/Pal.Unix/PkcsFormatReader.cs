@@ -253,24 +253,49 @@ namespace Internal.Cryptography.Pal
             return true;
         }
 
-        internal static bool TryReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, [NotNullWhen(true)] out ICertificatePal? certPal, out Exception? openSslException)
+        internal static bool TryReadPkcs12(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool ephemeralSpecified,
+            [NotNullWhen(true)] out ICertificatePal? certPal,
+            out Exception? openSslException)
         {
             List<ICertificatePal>? ignored;
 
-            return TryReadPkcs12(rawData, password, true, out certPal!, out ignored, out openSslException);
+            return TryReadPkcs12(
+                rawData,
+                password,
+                single: true,
+                ephemeralSpecified,
+                out certPal!,
+                out ignored,
+                out openSslException);
         }
 
-        internal static bool TryReadPkcs12(ReadOnlySpan<byte> rawData, SafePasswordHandle password, [NotNullWhen(true)] out List<ICertificatePal>? certPals, out Exception? openSslException)
+        internal static bool TryReadPkcs12(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool ephemeralSpecified,
+            [NotNullWhen(true)] out List<ICertificatePal>? certPals,
+            out Exception? openSslException)
         {
             ICertificatePal? ignored;
 
-            return TryReadPkcs12(rawData, password, false, out ignored, out certPals!, out openSslException);
+            return TryReadPkcs12(
+                rawData,
+                password,
+                single: false,
+                ephemeralSpecified,
+                out ignored,
+                out certPals!,
+                out openSslException);
         }
 
         private static bool TryReadPkcs12(
             ReadOnlySpan<byte> rawData,
             SafePasswordHandle password,
             bool single,
+            bool ephemeralSpecified,
             out ICertificatePal? readPal,
             out List<ICertificatePal>? readCerts,
             out Exception? openSslException)
@@ -287,7 +312,7 @@ namespace Internal.Cryptography.Pal
 
             using (pfx)
             {
-                return TryReadPkcs12(pfx, password, single, out readPal, out readCerts);
+                return TryReadPkcs12(pfx, password, single, ephemeralSpecified, out readPal, out readCerts);
             }
         }
 
@@ -295,10 +320,11 @@ namespace Internal.Cryptography.Pal
             OpenSslPkcs12Reader pfx,
             SafePasswordHandle password,
             bool single,
+            bool ephemeralSpecified,
             out ICertificatePal? readPal,
             out List<ICertificatePal>? readCerts)
         {
-            pfx.Decrypt(password);
+            pfx.Decrypt(password, ephemeralSpecified);
 
             if (single)
             {

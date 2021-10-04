@@ -360,7 +360,7 @@ typedef AutoCleanupGCAssert<FALSE>                  AutoCleanupGCAssertPreemp;
 typedef GCAssert<TRUE>                  GCAssertCoop;
 typedef GCAssert<FALSE>                 GCAssertPreemp;
 
-#if !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_COOP()                      GCCoop __gcHolder("GCX_COOP", __FUNCTION__, __FILE__, __LINE__)
@@ -444,7 +444,7 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP_NO_THREAD_BROKEN(_cond)      GCCoopHackNoThread __gcHolder(_cond)
 #endif
 
-#else // !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#else // !defined(DACCESS_COMPILE)
 
 #define GCX_COOP()
 #define GCX_COOP_NO_DTOR()
@@ -465,9 +465,9 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 
 #define GCX_POP()
 
-#endif // !defined(CROSSGEN_COMPILE) && !defined(DACCESS_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
-#if defined(_DEBUG_IMPL) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG_IMPL)
 
 #define GCX_ASSERT_PREEMP()                 ::AutoCleanupGCAssertPreemp __gcHolder
 #define GCX_ASSERT_COOP()                   ::AutoCleanupGCAssertCoop __gcHolder
@@ -916,6 +916,83 @@ public:
     //These are here for support from native code.  They are never called from our managed classes.
     static BOOL nativeIsWhiteSpace(WCHAR c);
     static BOOL nativeIsDigit(WCHAR c);
+};
+
+// ======================================================================================
+// Simple, reusable 100ns timer for normalizing ticks. For use in Q/FCalls to avoid discrepency with
+// tick frequency between native and managed.
+class NormalizedTimer
+{
+private:
+    static const int64_t NormalizedTicksPerSecond = 10000000 /* 100ns ticks per second (1e7) */;
+    static Volatile<double> s_frequency;
+
+    LARGE_INTEGER startTimestamp;
+    LARGE_INTEGER stopTimestamp;
+
+#if _DEBUG
+    bool isRunning = false;
+#endif // _DEBUG
+
+public:
+    NormalizedTimer()
+    {
+        LIMITED_METHOD_CONTRACT;
+        if (s_frequency.Load() == -1)
+        {
+            double frequency;
+            LARGE_INTEGER qpfValue;
+            QueryPerformanceFrequency(&qpfValue);
+            frequency = static_cast<double>(qpfValue.QuadPart);
+            frequency /= NormalizedTicksPerSecond;
+            s_frequency.Store(frequency);
+        }
+
+        startTimestamp.QuadPart = 0;
+        startTimestamp.QuadPart = 0;
+    }
+
+    // ======================================================================================
+    // Start the timer
+    inline
+    void Start()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!isRunning);
+        QueryPerformanceCounter(&startTimestamp);
+
+#if _DEBUG
+        isRunning = true;
+#endif // _DEBUG
+    }
+
+    // ======================================================================================
+    // stop the timer. If called before starting, sets the start time to the same as the stop
+    inline
+    void Stop()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(isRunning);
+        QueryPerformanceCounter(&stopTimestamp);
+
+#if _DEBUG
+        isRunning = false;
+#endif // _DEBUG
+    }
+
+    // ======================================================================================
+    // Return elapsed ticks. This will stop a running timer.
+    // Will return 0 if called out of order.
+    // Only recalculated this value if it has been stopped/started since previous calculation.
+    inline
+    int64_t Elapsed100nsTicks()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(!isRunning);
+        _ASSERTE(startTimestamp.QuadPart > 0);
+        _ASSERTE(stopTimestamp.QuadPart > 0);
+        return static_cast<int64_t>((stopTimestamp.QuadPart - startTimestamp.QuadPart) / s_frequency);
+    }
 };
 
 #ifdef _DEBUG
