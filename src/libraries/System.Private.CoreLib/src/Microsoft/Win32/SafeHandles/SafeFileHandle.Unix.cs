@@ -16,6 +16,7 @@ namespace Microsoft.Win32.SafeHandles
 
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
+        private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -33,11 +34,18 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
 
-        private bool? _supportsRandomAccess;
         internal bool SupportsRandomAccess
         {
-            get => _supportsRandomAccess ??= CanSeek;
-            set => _supportsRandomAccess = value;
+            get
+            {
+                if (_supportsRandomAccess == NullableBool.Undefined)
+                {
+                    _supportsRandomAccess = GetCanSeek() ? NullableBool.True : NullableBool.False;
+                }
+
+                return _supportsRandomAccess == NullableBool.True;
+            }
+            set => _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
         }
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
