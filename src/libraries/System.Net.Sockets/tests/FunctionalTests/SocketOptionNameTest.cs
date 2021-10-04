@@ -27,7 +27,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+                    SocketException se = Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
                 }
             }
         }
@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+                    SocketException se = Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
                 }
             }
         }
@@ -60,7 +60,7 @@ namespace System.Net.Sockets.Tests
             {
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(groupIp, interfaceIndex));
 
-                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership));
+                SocketException se = Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership));
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.Net.Sockets.Tests
             int interfaceIndex = 31415;
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                Assert.Throws<SocketException>(() =>
+                SocketException se = Assert.Throws<SocketException>(() =>
                     s.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex)));
             }
         }
@@ -222,7 +222,7 @@ namespace System.Net.Sockets.Tests
             int interfaceIndex = 31415;
             using (Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
             {
-                Assert.Throws<SocketException>(() =>
+                SocketException se = Assert.Throws<SocketException>(() =>
                                                s.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastInterface, interfaceIndex));
             }
         }
@@ -569,11 +569,11 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1)));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1)));
-
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -584,12 +584,12 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
-
                 var optionValue = new byte[4];
-                Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -600,11 +600,11 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionLength: 4));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionLength: 4));
-
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -615,11 +615,11 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue: 1));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue: 1));
-
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -630,12 +630,12 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
-
                 var optionValue = new byte[4];
-                Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -646,12 +646,12 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
-
                 bool optionValue = true;
-                Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -662,12 +662,12 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
-
                 var optionValue = new byte[4];
-                Assert.Throws<SocketException>(() => socket1.GetRawSocketOption(-1, -1, optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetRawSocketOption(-1, -1, optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
 
@@ -678,12 +678,12 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                Assert.True(socket1.Connected);
-
                 var optionValue = new byte[4];
-                Assert.Throws<SocketException>(() => socket1.SetRawSocketOption(-1, -1, optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetRawSocketOption(-1, -1, optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
-                Assert.True(socket1.Connected);
+                Assert.True(socket1.Connected, "Connected");
             }
         }
     }
