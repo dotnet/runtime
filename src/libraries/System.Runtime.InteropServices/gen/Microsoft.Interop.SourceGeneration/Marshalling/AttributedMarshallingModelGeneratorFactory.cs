@@ -1,14 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis.CSharp;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -239,10 +236,10 @@ namespace Microsoft.Interop
             ICustomNativeTypeMarshallingStrategy marshallingStrategy)
         {
             var elementInfo = new TypePositionInfo(collectionInfo.ElementType, collectionInfo.ElementMarshallingInfo) { ManagedIndex = info.ManagedIndex };
-            var elementMarshaller = Create(
+            IMarshallingGenerator elementMarshaller = Create(
                 elementInfo,
                 new ContiguousCollectionElementMarshallingCodeContext(StubCodeContext.Stage.Setup, string.Empty, context));
-            var elementType = elementMarshaller.AsNativeType(elementInfo);
+            TypeSyntax elementType = elementMarshaller.AsNativeType(elementInfo);
 
             bool isBlittable = elementMarshaller is BlittableMarshaller;
 

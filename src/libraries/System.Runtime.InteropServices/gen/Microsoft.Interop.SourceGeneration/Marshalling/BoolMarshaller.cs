@@ -34,7 +34,7 @@ namespace Microsoft.Interop
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            var type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))
@@ -85,7 +85,7 @@ namespace Microsoft.Interop
                         // <managedIdentifier> = <nativeIdentifier> == _trueValue;
                         //   or
                         // <managedIdentifier> = <nativeIdentifier> != _falseValue;
-                        var (binaryOp, comparand) = _compareToTrue ? (SyntaxKind.EqualsExpression, _trueValue) : (SyntaxKind.NotEqualsExpression, _falseValue);
+                        (SyntaxKind binaryOp, int comparand) = _compareToTrue ? (SyntaxKind.EqualsExpression, _trueValue) : (SyntaxKind.NotEqualsExpression, _falseValue);
 
                         yield return ExpressionStatement(
                             AssignmentExpression(

@@ -18,7 +18,7 @@ namespace Microsoft.Interop
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            var type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))

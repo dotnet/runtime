@@ -1,14 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -78,7 +72,7 @@ namespace Microsoft.Interop
                 // Enum with no marshalling info
                 case { ManagedType: EnumTypeInfo enumType, MarshallingAttributeInfo: NoMarshallingInfo }:
                     // Check that the underlying type is not bool or char. C# does not allow this, but ECMA-335 does.
-                    var underlyingSpecialType = enumType.UnderlyingType;
+                    SpecialType underlyingSpecialType = enumType.UnderlyingType;
                     if (underlyingSpecialType == SpecialType.System_Boolean || underlyingSpecialType == SpecialType.System_Char)
                     {
                         throw new MarshallingNotSupportedException(info, context);

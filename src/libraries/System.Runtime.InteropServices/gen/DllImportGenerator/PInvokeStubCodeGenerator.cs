@@ -3,15 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Microsoft.Interop.StubCodeContext;
 
 namespace Microsoft.Interop
 {
@@ -76,7 +73,7 @@ namespace Microsoft.Interop
             BoundGenerator nativeRetMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), new Forwarder());
             BoundGenerator managedRetMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), new Forwarder());
 
-            foreach (var argType in argTypes)
+            foreach (TypePositionInfo argType in argTypes)
             {
                 BoundGenerator generator = CreateGenerator(argType);
                 allMarshallers.Add(generator);
@@ -214,7 +211,7 @@ namespace Microsoft.Interop
         {
             var setupStatements = new List<StatementSyntax>();
 
-            foreach (var marshaller in _paramMarshallers)
+            foreach (BoundGenerator marshaller in _paramMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
                 if (info.IsManagedReturnPosition)
@@ -269,7 +266,7 @@ namespace Microsoft.Interop
             var tryStatements = new List<StatementSyntax>();
             var guaranteedUnmarshalStatements = new List<StatementSyntax>();
             var cleanupStatements = new List<StatementSyntax>();
-            var invoke = InvocationExpression(IdentifierName(dllImportName));
+            InvocationExpressionSyntax invoke = InvocationExpression(IdentifierName(dllImportName));
 
             // Handle GuaranteedUnmarshal first since that stage producing statements affects multiple other stages.
             GenerateStatementsForStage(Stage.GuaranteedUnmarshal, guaranteedUnmarshalStatements);
@@ -331,7 +328,7 @@ namespace Microsoft.Interop
 
                 if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Cleanup))
                 {
-                    var retStatements = _retMarshaller.Generator.Generate(_retMarshaller.TypeInfo, this);
+                    IEnumerable<StatementSyntax> retStatements = _retMarshaller.Generator.Generate(_retMarshaller.TypeInfo, this);
                     statementsToUpdate.AddRange(retStatements);
                 }
 
@@ -340,7 +337,7 @@ namespace Microsoft.Interop
                     // For Unmarshal and GuaranteedUnmarshal stages, use the topologically sorted
                     // marshaller list to generate the marshalling statements
 
-                    foreach (var marshaller in _sortedMarshallers)
+                    foreach (BoundGenerator marshaller in _sortedMarshallers)
                     {
                         statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, this));
                     }
@@ -348,9 +345,9 @@ namespace Microsoft.Interop
                 else
                 {
                     // Generate code for each parameter for the current stage in declaration order.
-                    foreach (var marshaller in _paramMarshallers)
+                    foreach (BoundGenerator marshaller in _paramMarshallers)
                     {
-                        var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
+                        IEnumerable<StatementSyntax> generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                         statementsToUpdate.AddRange(generatedStatements);
                     }
                 }
@@ -358,11 +355,11 @@ namespace Microsoft.Interop
                 if (statementsToUpdate.Count > initialCount)
                 {
                     // Comment separating each stage
-                    var newLeadingTrivia = TriviaList(
+                    SyntaxTriviaList newLeadingTrivia = TriviaList(
                         Comment($"//"),
                         Comment($"// {stage}"),
                         Comment($"//"));
-                    var firstStatementInStage = statementsToUpdate[initialCount];
+                    StatementSyntax firstStatementInStage = statementsToUpdate[initialCount];
                     newLeadingTrivia = newLeadingTrivia.AddRange(firstStatementInStage.GetLeadingTrivia());
                     statementsToUpdate[initialCount] = firstStatementInStage.WithLeadingTrivia(newLeadingTrivia);
                 }
@@ -373,11 +370,11 @@ namespace Microsoft.Interop
                 var fixedStatements = new List<FixedStatementSyntax>();
                 CurrentStage = Stage.Pin;
                 // Generate code for each parameter for the current stage
-                foreach (var marshaller in _paramMarshallers)
+                foreach (BoundGenerator marshaller in _paramMarshallers)
                 {
-                    var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
+                    IEnumerable<StatementSyntax> generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                     // Collect all the fixed statements. These will be used in the Invoke stage.
-                    foreach (var statement in generatedStatements)
+                    foreach (StatementSyntax statement in generatedStatements)
                     {
                         if (statement is not FixedStatementSyntax fixedStatement)
                             continue;
@@ -388,7 +385,7 @@ namespace Microsoft.Interop
 
                 CurrentStage = Stage.Invoke;
                 // Generate code for each parameter for the current stage
-                foreach (var marshaller in _paramMarshallers)
+                foreach (BoundGenerator marshaller in _paramMarshallers)
                 {
                     // Get arguments for invocation
                     ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, this);
@@ -415,7 +412,7 @@ namespace Microsoft.Interop
                 if (_setLastError)
                 {
                     // Marshal.SetLastSystemError(0);
-                    var clearLastError = ExpressionStatement(
+                    ExpressionStatementSyntax clearLastError = ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,
@@ -425,7 +422,7 @@ namespace Microsoft.Interop
                                 Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(SuccessErrorCode)))))));
 
                     // <lastError> = Marshal.GetLastSystemError();
-                    var getLastError = ExpressionStatement(
+                    ExpressionStatementSyntax getLastError = ExpressionStatement(
                         AssignmentExpression(
                             SyntaxKind.SimpleAssignmentExpression,
                             IdentifierName(LastErrorIdentifier),
@@ -442,7 +439,7 @@ namespace Microsoft.Interop
                 {
                     fixedStatements.Reverse();
                     invokeStatement = fixedStatements.First().WithStatement(invokeStatement);
-                    foreach (var fixedStatement in fixedStatements.Skip(1))
+                    foreach (FixedStatementSyntax fixedStatement in fixedStatements.Skip(1))
                     {
                         invokeStatement = fixedStatement.WithStatement(Block(invokeStatement));
                     }
@@ -474,7 +471,7 @@ namespace Microsoft.Interop
 
         private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator)
         {
-            var (managed, native) = GetIdentifiers(info);
+            (string managed, string native) = GetIdentifiers(info);
 
             // Declare variable for return value
             if (info.IsManagedReturnPosition || info.IsNativeReturnPosition)

@@ -46,7 +46,7 @@ namespace Microsoft.Interop
         {
             get
             {
-                foreach (var typeInfo in ElementTypeInformation)
+                foreach (TypePositionInfo typeInfo in ElementTypeInformation)
                 {
                     if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
                         && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
@@ -84,7 +84,7 @@ namespace Microsoft.Interop
             }
 
             // Determine containing type(s)
-            var containingTypes = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
+            ImmutableArray<TypeDeclarationSyntax>.Builder containingTypes = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
             INamedTypeSymbol currType = method.ContainingType;
             while (!(currType is null))
             {
@@ -102,9 +102,9 @@ namespace Microsoft.Interop
                 currType = currType.ContainingType;
             }
 
-            var (typeInfos, generatorFactory) = GenerateTypeInformation(method, dllImportData, diagnostics, env);
+            (ImmutableArray<TypePositionInfo> typeInfos, IMarshallingGeneratorFactory generatorFactory) = GenerateTypeInformation(method, dllImportData, diagnostics, env);
 
-            var additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
+            ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
             // Define additional attributes for the stub definition.
             if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
@@ -135,7 +135,7 @@ namespace Microsoft.Interop
         private static (ImmutableArray<TypePositionInfo>, IMarshallingGeneratorFactory) GenerateTypeInformation(IMethodSymbol method, GeneratedDllImportData dllImportData, GeneratorDiagnostics diagnostics, StubEnvironment env)
         {
             // Compute the current default string encoding value.
-            var defaultEncoding = CharEncoding.Undefined;
+            CharEncoding defaultEncoding = CharEncoding.Undefined;
             if (dllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
             {
                 defaultEncoding = dllImportData.CharSet switch
@@ -152,10 +152,10 @@ namespace Microsoft.Interop
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
             // Determine parameter and return types
-            var typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
+            ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
-                var param = method.Parameters[i];
+                IParameterSymbol param = method.Parameters[i];
                 MarshallingInfo marshallingInfo = marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with

@@ -28,8 +28,8 @@ namespace Microsoft.Interop
 
         public override ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
         {
-            var windowsExpr = _windowsMarshaller.AsArgument(info, context).Expression;
-            var nonWindowsExpr = _nonWindowsMarshaller.AsArgument(info, context).Expression;
+            ExpressionSyntax windowsExpr = _windowsMarshaller.AsArgument(info, context).Expression;
+            ExpressionSyntax nonWindowsExpr = _nonWindowsMarshaller.AsArgument(info, context).Expression;
 
             // If the Windows and non-Windows syntax are equivalent, just return one of them.
             if (windowsExpr.IsEquivalentTo(nonWindowsExpr))
@@ -54,7 +54,7 @@ namespace Microsoft.Interop
             // void**
             // or
             // void*
-            var type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))
@@ -86,10 +86,10 @@ namespace Microsoft.Interop
                     // [Compat] The built-in system could determine the platform at runtime and pin only on
                     // the platform on which is is needed. In the generated source, if pinning is needed for
                     // any platform, it is done on every platform.
-                    foreach (var s in _windowsMarshaller.Generate(info, context))
+                    foreach (StatementSyntax s in _windowsMarshaller.Generate(info, context))
                         yield return s;
 
-                    foreach (var s in _nonWindowsMarshaller.Generate(info, context))
+                    foreach (StatementSyntax s in _nonWindowsMarshaller.Generate(info, context))
                         yield return s;
 
                     break;
@@ -137,7 +137,7 @@ namespace Microsoft.Interop
             bool hasNonWindowsStatements = nonWindowsStatements.Any();
             if (hasWindowsStatements)
             {
-                var windowsIfBlock = IfStatement(IsWindows, Block(windowsStatements));
+                IfStatementSyntax windowsIfBlock = IfStatement(IsWindows, Block(windowsStatements));
                 if (hasNonWindowsStatements)
                 {
                     // if (OperatingSystem.IsWindows())

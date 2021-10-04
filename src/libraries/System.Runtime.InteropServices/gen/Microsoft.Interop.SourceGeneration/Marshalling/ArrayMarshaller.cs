@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -78,7 +77,7 @@ namespace Microsoft.Interop
 
         private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)
         {
-            var (managedIdentifer, nativeIdentifier) = context.GetIdentifiers(info);
+            (string managedIdentifer, string nativeIdentifier) = context.GetIdentifiers(info);
             string byRefIdentifier = $"__byref_{managedIdentifer}";
             TypeSyntax arrayElementType = _elementType;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
@@ -92,13 +91,13 @@ namespace Microsoft.Interop
                 // for single-dimensional zero-based arrays.
 
                 // ref <elementType> <byRefIdentifier> = <managedIdentifer> == null ? ref *(<elementType*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
-                var nullRef =
+                PrefixUnaryExpressionSyntax nullRef =
                     PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression,
                         CastExpression(
                             PointerType(arrayElementType),
                             LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))));
 
-                var getArrayDataReference =
+                InvocationExpressionSyntax getArrayDataReference =
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,

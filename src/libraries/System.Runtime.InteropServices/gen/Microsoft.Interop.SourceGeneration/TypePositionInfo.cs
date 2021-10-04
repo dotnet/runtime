@@ -83,7 +83,7 @@ namespace Microsoft.Interop
 
             ByValueContentsMarshalKind marshalKind = ByValueContentsMarshalKind.Default;
 
-            foreach (var attr in attributes)
+            foreach (AttributeData attr in attributes)
             {
                 if (SymbolEqualityComparer.Default.Equals(attr.AttributeClass, outAttributeType))
                 {
