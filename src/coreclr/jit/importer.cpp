@@ -20580,6 +20580,9 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 //    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
 //    callInfo -- call info from VM
 //
+// Returns:
+//    True if the given call is inlineable.
+//
 // Notes:
 //    If callNode is an inline candidate, this method sets the flag
 //    GTF_CALL_INLINE_CANDIDATE, and ensures that helper methods have

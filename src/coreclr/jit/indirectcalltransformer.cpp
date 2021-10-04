@@ -600,16 +600,16 @@ private:
         //
         virtual void CreateCheck(UINT8 checkIdx) override
         {
-            // There's no need for a new block here. We can just append to currBlock.
-            //
             if (checkIdx == 0)
             {
+                // There's no need for a new block here. We can just append to currBlock.
                 checkBlock             = currBlock;
                 checkBlock->bbJumpKind = BBJ_COND;
                 checkBlock->inheritWeight(currBlock);
             }
             else
             {
+                // Append to the previous "Then" block
                 BasicBlock* prevCheckBlock = checkBlock;
                 checkBlock                 = CreateAndInsertBasicBlock(BBJ_COND, thenBlock);
                 checkBlock->bbFlags |= currBlock->bbFlags & BBF_SPLIT_GAINED;
@@ -808,13 +808,7 @@ private:
             // We know this call can devirtualize or we would not have set up GDV here.
             // So impDevirtualizeCall should succeed in devirtualizing.
             //
-            if (call->IsVirtual())
-            {
-                // TODO: fix
-                assert(checkIdx > 0);
-                call                     = compiler->gtCloneCandidateCall(origCall);
-                call->gtStubCallStubAddr = call->GetInlineCandidateInfo()->stubAddr;
-            }
+            assert(!call->IsVirtual())
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
