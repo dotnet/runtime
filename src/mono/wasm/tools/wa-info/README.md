@@ -61,6 +61,7 @@ Module: path: dotnet.wasm
 ```
 
 Disassemble function
+*note: build the app with `-p:WasmNativeDebugSymbols=true -p:WasmNativeStrip=false` to preserve name custom section*
 ```
 > wa-info.exe -d -f ves_icall_RuntimeFieldInfo_GetValueInternal$ dotnet.wasm
 (func ves_icall_RuntimeFieldInfo_GetValueInternal(param i32 i32 i32) (result i32))
