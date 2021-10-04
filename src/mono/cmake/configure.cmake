@@ -175,3 +175,9 @@ if(HOST_SOLARIS)
   set(HAVE_NETINET_TCP_H 1)
   set(HAVE_GETADDRINFO 1)
 endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  # FreeBSD fails earlier ac_check_headers for these because <sys/types.h> is needed.
+  set(HAVE_SYS_SYSCTL_H 1)
+  set(HAVE_SYS_USER_H 1)
+endif()

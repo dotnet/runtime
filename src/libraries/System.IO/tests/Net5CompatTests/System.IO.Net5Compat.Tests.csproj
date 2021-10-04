@@ -4,8 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <!-- Windows is currently the only OS for which we provide a new strategy, so we test the Net5Compat only for Windows -->
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\**\*.cs" />

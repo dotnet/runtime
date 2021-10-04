@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string DefaultInstallPath = "_DOTNET_TEST_DEFAULT_INSTALL_PATH";
             public const string RegistryPath = "_DOTNET_TEST_REGISTRY_PATH";
             public const string GloballyRegisteredPath = "_DOTNET_TEST_GLOBALLY_REGISTERED_PATH";
-            public const string InstallLocationFilePath = "_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH";
+            public const string InstallLocationPath = "_DOTNET_TEST_INSTALL_LOCATION_PATH";
         }
 
         public static class RuntimeId

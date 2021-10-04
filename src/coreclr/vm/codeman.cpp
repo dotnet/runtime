@@ -1230,15 +1230,12 @@ void EEJitManager::SetCpuInfo()
     LIMITED_METHOD_CONTRACT;
 
     //
-    // NOTE: This function needs to be kept in sync with Zapper::CompileAssembly()
     // NOTE: This function needs to be kept in sync with compSetProcesor() in jit\compiler.cpp
     //
 
     CORJIT_FLAGS CPUCompileFlags;
 
 #if defined(TARGET_X86)
-    // NOTE: if you're adding any flags here, you probably should also be doing it
-    // for ngen (zapper.cpp)
     CORINFO_CPU cpuInfo;
     GetSpecificCpuInfo(&cpuInfo);
 
@@ -1569,6 +1566,8 @@ static bool ValidateJitName(LPCWSTR pwzJitName)
     return true;
 }
 
+CORINFO_OS getClrVmOs();
+
 // LoadAndInitializeJIT: load the JIT dll into the process, and initialize it (call the UtilCode initialization function,
 // check the JIT-EE interface GUID, etc.)
 //
@@ -1675,6 +1674,9 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
                     if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) == 0)
                     {
                         pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
+
+                        // Specify to the JIT that it is working with the OS that we are compiled against
+                        pICorJitCompiler->setTargetOS(getClrVmOs());
 
                         // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
                         *ppICorJitCompiler = pICorJitCompiler;
@@ -2404,6 +2406,11 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 #endif
 
     size_t reserveSize = initialRequestSize;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    reserveSize += JUMP_ALLOCATE_SIZE;
+#endif
+
     if (reserveSize < minReserveSize)
         reserveSize = minReserveSize;
     reserveSize = ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);

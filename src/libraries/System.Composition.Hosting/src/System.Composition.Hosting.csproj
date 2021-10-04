@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <SetIsTrimmable>false</SetIsTrimmable>
     <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
@@ -52,7 +52,7 @@ System.Composition.Hosting.CompositionHost</PackageDescription>
     <Reference Include="System.Threading" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
 </Project>

@@ -74,7 +74,6 @@ set(ILASM_LINK_LIBRARIES
   utilcodestaticnohost
   mscorpe
   ${START_LIBRARY_GROUP} # Start group of libraries that have circular references
-  mdhotdata_ppdb
   mdcompiler_ppdb
   mdruntime_ppdb
   mdruntimerw_ppdb

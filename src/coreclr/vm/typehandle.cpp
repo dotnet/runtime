@@ -297,16 +297,6 @@ PTR_Module TypeHandle::GetLoaderModule() const
         return AsMethodTable()->GetLoaderModule();
 }
 
-PTR_Module TypeHandle::GetZapModule() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsTypeDesc())
-        return AsTypeDesc()->GetZapModule();
-    else
-        return AsMethodTable()->GetZapModule();
-}
-
 PTR_BaseDomain TypeHandle::GetDomain() const
 {
     LIMITED_METHOD_DAC_CONTRACT;

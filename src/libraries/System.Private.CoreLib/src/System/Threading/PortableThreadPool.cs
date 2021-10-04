@@ -85,13 +85,13 @@ namespace System.Threading
 
         private PortableThreadPool()
         {
-            _minThreads = ForcedMinWorkerThreads > 0 ? ForcedMinWorkerThreads : (short)Environment.ProcessorCount;
+            _minThreads = HasForcedMinThreads ? ForcedMinWorkerThreads : (short)Environment.ProcessorCount;
             if (_minThreads > MaxPossibleThreadCount)
             {
                 _minThreads = MaxPossibleThreadCount;
             }
 
-            _maxThreads = ForcedMaxWorkerThreads > 0 ? ForcedMaxWorkerThreads : DefaultMaxWorkerThreadCount;
+            _maxThreads = HasForcedMaxThreads ? ForcedMaxWorkerThreads : DefaultMaxWorkerThreadCount;
             if (_maxThreads > MaxPossibleThreadCount)
             {
                 _maxThreads = MaxPossibleThreadCount;
@@ -103,6 +103,11 @@ namespace System.Threading
 
             _separated.counts.NumThreadsGoal = _minThreads;
         }
+
+        private static bool HasForcedMinThreads =>
+            ForcedMinWorkerThreads > 0 && (ForcedMaxWorkerThreads <= 0 || ForcedMinWorkerThreads <= ForcedMaxWorkerThreads);
+        private static bool HasForcedMaxThreads =>
+            ForcedMaxWorkerThreads > 0 && (ForcedMinWorkerThreads <= 0 || ForcedMinWorkerThreads <= ForcedMaxWorkerThreads);
 
         public bool SetMinThreads(int workerThreads, int ioCompletionThreads)
         {
@@ -124,9 +129,9 @@ namespace System.Threading
 
                 ThreadPool.SetMinIOCompletionThreads(ioCompletionThreads);
 
-                if (ForcedMinWorkerThreads != 0)
+                if (HasForcedMinThreads)
                 {
-                    return true;
+                    return workerThreads == ForcedMinWorkerThreads;
                 }
 
                 short newMinThreads = (short)Math.Max(1, Math.Min(workerThreads, MaxPossibleThreadCount));
@@ -184,9 +189,9 @@ namespace System.Threading
 
                 ThreadPool.SetMaxIOCompletionThreads(ioCompletionThreads);
 
-                if (ForcedMaxWorkerThreads != 0)
+                if (HasForcedMaxThreads)
                 {
-                    return true;
+                    return workerThreads == ForcedMaxWorkerThreads;
                 }
 
                 short newMaxThreads = (short)Math.Min(workerThreads, MaxPossibleThreadCount);

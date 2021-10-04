@@ -12,7 +12,7 @@ The rule of thumb is that we (**dotnet/runtime**) review every API that is being
 
 ## Steps
 
-1. **Requester files an issue**. The issue description should contain a speclet that represents a sketch of the new APIs, including samples on how the APIs are being used. The goal isn't to get a complete API list, but a good handle on how the new APIs would roughly look like and in what scenarios they are being used. Please use [this template](https://github.com/dotnet/runtime/issues/new?assignees=&labels=api-suggestion&template=02_api_proposal.md&title=). The issue should have the label `api-suggestion`. Here is [a good example](https://github.com/dotnet/runtime/issues/38344) of an issue following that template.
+1. **Requester files an issue**. The issue description should contain a speclet that represents a sketch of the new APIs, including samples on how the APIs are being used. The goal isn't to get a complete API list, but a good handle on how the new APIs would roughly look like and in what scenarios they are being used. Please use [this template](https://github.com/dotnet/runtime/issues/new?assignees=&labels=api-suggestion&template=02_api_proposal.yml&title=%5BAPI+Proposal%5D%3A+). The issue should have the label `api-suggestion`. Here is [a good example](https://github.com/dotnet/runtime/issues/38344) of an issue following that template.
 
 2. **We assign an owner**. We'll assign a dedicated owner from our side that
 sponsors the issue. This is usually [the area owner](issue-guide.md#areas) for which the API proposal or design change request was filed for.

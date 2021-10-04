@@ -870,13 +870,10 @@ void EEStartupHelper()
 #endif // !TARGET_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
-        if(!NingenEnabled())
-        {
-            // Initialize the debugging services. This must be done before any
-            // EE thread objects are created, and before any classes or
-            // modules are loaded.
-            InitializeDebugger(); // throws on error
-        }
+        // Initialize the debugging services. This must be done before any
+        // EE thread objects are created, and before any classes or
+        // modules are loaded.
+        InitializeDebugger(); // throws on error
 #endif // DEBUGGING_SUPPORTED
 
 #ifdef PROFILING_SUPPORTED
@@ -986,11 +983,8 @@ void EEStartupHelper()
         StackSampler::Init();
 #endif
 
-        if (!NingenEnabled())
-        {
-            // Perform any once-only SafeHandle initialization.
-            SafeHandle::Init();
-        }
+        // Perform any once-only SafeHandle initialization.
+        SafeHandle::Init();
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         // retrieve configured max size for the mini-metadata buffer (defaults to 64KB)

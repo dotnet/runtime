@@ -1,114 +1,101 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
+#if USE_MDT_EVENTSOURCE
+using Microsoft.Diagnostics.Tracing;
+#else
 using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
+#endif
+using System;
+using System.Collections.Generic;
 using System.Threading;
-using Tracing.Tests.Common;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
-namespace Tracing.Tests
+AppContext.SetSwitch("appContextSwitch", true);
+AppDomain.CurrentDomain.SetData("appContextBoolData", true); // Not loggeed, bool key
+AppDomain.CurrentDomain.SetData("appContextBoolAsStringData", "true");
+AppDomain.CurrentDomain.SetData("appContextStringData", "myString"); // Not logged, string does not parse as bool
+AppDomain.CurrentDomain.SetData("appContextSwitch", "false"); // should not override the SetSwitch above
+
+// Create an EventListener.
+using (var myListener = new RuntimeEventListener())
 {
-    public sealed class RuntimeEventSourceTest
+    if (myListener.Verify())
     {
-        static int Main(string[] args)
+        Console.WriteLine("Test passed");
+        return 100;
+    }
+    else
+    {
+        Console.WriteLine($"Test Failed - did not see one or more of the expected runtime counters.");
+        Console.WriteLine("Observed events: ");
+        foreach (var (k, v) in myListener.ObservedEvents)
         {
-            SimpleEventListener.EnableKeywords = (EventKeywords)0;
-            using (SimpleEventListener noEventsListener = new SimpleEventListener("NoEvents"))
-            {
-                // Create an EventListener.
-                SimpleEventListener.EnableKeywords = (EventKeywords)0x4c14fccbd;
-                using (SimpleEventListener listener = new SimpleEventListener("Simple"))
-                {
-                    // Trigger the allocator task.
-                    System.Threading.Tasks.Task.Run(new Action(Allocator));
-
-                    // Wait for events.
-                    Thread.Sleep(1000);
-
-                    // Generate some GC events.
-                    GC.Collect(2, GCCollectionMode.Forced);
-
-                    // Wait for more events.
-                    Thread.Sleep(1000);
-
-                    // Ensure that we've seen some events.
-                    Assert.True("listener.EventCount > 0", listener.EventCount > 0);
-                }
-
-                // Generate some more GC events.
-                GC.Collect(2, GCCollectionMode.Forced);
-
-                // Ensure that we've seen no events.
-                Assert.True("noEventsListener.EventCount == 0", noEventsListener.EventCount == 0);
-            }
-
-            return 100;
+            Console.WriteLine("Event: " + k + " " + v);
         }
+        return 1;
+    }
+}
 
-        private static void Allocator()
+public class RuntimeEventListener : EventListener
+{
+    internal readonly Dictionary<string, bool> ObservedEvents = new Dictionary<string, bool>();
+
+    private static readonly string[] s_expectedEvents = new[] {
+        "appContextSwitch",
+        "appContextBoolAsStringData",
+        "RuntimeHostConfigSwitch", // Set in the project file
+    };
+
+    private static readonly string[] s_unexpectedEvents = new[] {
+        "appContextBoolData",
+        "appContextStringData",
+    };
+
+    protected override void OnEventSourceCreated(EventSource source)
+    {
+        if (source.Name.Equals("System.Runtime"))
         {
-            while (true)
-            {
-                for(int i=0; i<1000; i++)
-                    GC.KeepAlive(new object());
-
-                Thread.Sleep(10);
-            }
+            EnableEvents(source, EventLevel.Informational, (EventKeywords)1 /* RuntimeEventSource.Keywords.AppContext */);
         }
     }
 
-    internal sealed class SimpleEventListener : EventListener
+    protected override void OnEventWritten(EventWrittenEventArgs eventData)
     {
-        private string m_name;
-
-        // Keep track of the set of keywords to be enabled.
-        public static EventKeywords EnableKeywords
+        // Check AppContext switches
+        if (eventData is { EventName: "LogAppContextSwitch",
+                           Payload: { Count: 2 } })
         {
-            get;
-            set;
+            var switchName = (string)eventData.Payload[0];
+            ObservedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
+            return;
         }
+    }
 
-        public SimpleEventListener(string name)
+    public bool Verify()
+    {
+        foreach (var key in s_expectedEvents)
         {
-            m_name = name;
-        }
-
-        public int EventCount { get; private set; } = 0;
-
-        protected override void OnEventSourceCreated(EventSource eventSource)
-        {
-            if (eventSource.Name.Equals("Microsoft-Windows-DotNETRuntime"))
+            if (!ObservedEvents[key])
             {
-                if (EnableKeywords != 0)
-                {
-                    // Enable events.
-                    EnableEvents(eventSource, EventLevel.Verbose, EnableKeywords);
-                }
-                else
-                {
-                    // Enable the provider, but not any keywords, so we should get no events as long as no rundown occurs.
-                    EnableEvents(eventSource, EventLevel.Critical, EnableKeywords);
-                }
+                Console.WriteLine($"Could not find key {key}");
+                return false;
+            }
+            else
+            {
+                Console.WriteLine($"Saw {key}");
             }
         }
 
-        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        foreach (var key in s_unexpectedEvents)
         {
-            Console.WriteLine($"[{m_name}] ThreadID = {eventData.OSThreadId} ID = {eventData.EventId} Name = {eventData.EventName}");
-            Console.WriteLine($"TimeStamp: {eventData.TimeStamp.ToLocalTime()}");
-            Console.WriteLine($"LocalTime: {DateTime.Now}");
-            Console.WriteLine($"Difference: {DateTime.UtcNow - eventData.TimeStamp}");
-            Assert.True("eventData.TimeStamp <= DateTime.UtcNow", eventData.TimeStamp <= DateTime.UtcNow);
-            for (int i = 0; i < eventData.Payload.Count; i++)
+            if (ObservedEvents.ContainsKey(key))
             {
-                string payloadString = eventData.Payload[i] != null ? eventData.Payload[i].ToString() : string.Empty;
-                Console.WriteLine($"\tName = \"{eventData.PayloadNames[i]}\" Value = \"{payloadString}\"");
+                Console.WriteLine($"Should not have seen {key}");
+                return false;
             }
-            Console.WriteLine("\n");
-
-            EventCount++;
         }
+        return true;
     }
 }

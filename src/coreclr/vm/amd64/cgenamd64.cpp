@@ -599,8 +599,8 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
         PRECONDITION(pLoaderAllocator != NULL || pMethod->GetLoaderAllocator() != NULL);
         // If a domain is provided, the MethodDesc mustn't yet be set up to have one, or it must match the MethodDesc's domain,
         // unless we're in a compilation domain (NGen loads assemblies as domain-bound but compiles them as domain neutral).
-        PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTablePtr()->IsNull() ||
-            pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocator() || IsCompilationProcess());
+        PRECONDITION(!pLoaderAllocator || !pMethod || pMethod->GetMethodDescChunk()->GetMethodTable() == NULL ||
+            pLoaderAllocator == pMethod->GetMethodDescChunk()->GetFirstMethodDesc()->GetLoaderAllocator());
     }
     CONTRACTL_END;
 
@@ -1011,8 +1011,6 @@ PCODE DynamicHelpers::CreateHelperWithTwoArgs(LoaderAllocator * pAllocator, TADD
 PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator, CORINFO_RUNTIME_LOOKUP * pLookup, DWORD dictionaryIndexAndSlot, Module * pModule)
 {
     STANDARD_VM_CONTRACT;
-
-    _ASSERTE(!MethodTable::IsPerInstInfoRelative());
 
     PCODE helperAddress = (pLookup->helper == CORINFO_HELP_RUNTIMEHANDLE_METHOD ?
         GetEEFuncEntryPoint(JIT_GenericHandleMethodWithSlotAndModule) :

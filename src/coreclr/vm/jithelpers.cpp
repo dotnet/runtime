@@ -3112,10 +3112,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
         {
             const JitGenericHandleCacheKey *key = g_pJitGenericHandleCache->IterateGetKey(&iter);
             BaseDomain* pKeyDomain = key->GetDomain();
-            if (pKeyDomain == pDomain || pKeyDomain == NULL
-                // We compute fake domain for types during NGen (see code:ClassLoader::ComputeLoaderModule).
-                // To avoid stale handles, we need to clear the cache unconditionally during NGen.
-                || IsCompilationProcess())
+            if (pKeyDomain == pDomain || pKeyDomain == NULL)
             {
                 // Advance the iterator before we delete!!  See notes in EEHash.h
                 keepGoing = g_pJitGenericHandleCache->IterateNext(&iter);
@@ -3222,11 +3219,11 @@ CORINFO_GENERIC_HANDLE JIT_GenericHandleWorker(MethodDesc * pMD, MethodTable * p
         // If the dictionary on the base type got expanded, update the current type's base type dictionary
         // pointer to use the new one on the base type.
 
-        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex].GetValue();
-        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex].GetValue();
+        Dictionary* pMTDictionary = pMT->GetPerInstInfo()[dictionaryIndex];
+        Dictionary* pDeclaringMTDictionary = pDeclaringMT->GetPerInstInfo()[dictionaryIndex];
         if (pMTDictionary != pDeclaringMTDictionary)
         {
-            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo()->GetValuePtr();
+            TypeHandle** pPerInstInfo = (TypeHandle**)pMT->GetPerInstInfo();
             FastInterlockExchangePointer(pPerInstInfo + dictionaryIndex, (TypeHandle*)pDeclaringMTDictionary);
         }
     }
@@ -3277,7 +3274,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethod, CORINFO_METHOD_HANDLE  
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
@@ -3297,7 +3293,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodWithSlotAndModule, CORINF
     CONTRACTL{
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(pArgs));
     } CONTRACTL_END;
 
@@ -3319,7 +3314,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
      CONTRACTL {
         FCALL_CHECK;
         PRECONDITION(CheckPointer(methodHnd));
-        PRECONDITION(GetMethod(methodHnd)->IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 

@@ -1206,7 +1206,7 @@ float emitter::insEvaluateExecutionCost(instrDesc* id)
     assert(throughput >= 0.0);
     assert(latency >= 0.0);
 
-    if (memAccessKind == PERFSCORE_MEMORY_WRITE)
+    if (memAccessKind == PERFSCORE_MEMORY_WRITE || memAccessKind == PERFSCORE_MEMORY_READ_WRITE)
     {
         // We assume that we won't read back from memory for the next WR_GENERAL cycles
         // Thus we normally won't pay latency costs for writes.
@@ -1265,7 +1265,7 @@ void emitter::perfScoreUnhandledInstruction(instrDesc* id, insExecutionCharacter
 //    CodeGen::genCodeForBBlist() as it walks the blocks.
 //    When we are in the prolog/epilog this value is nullptr.
 //
-BasicBlock::weight_t emitter::getCurrentBlockWeight()
+weight_t emitter::getCurrentBlockWeight()
 {
     // If we have a non-null compCurBB, then use it to get the current block weight
     if (emitComp->compCurBB != nullptr)
@@ -1466,6 +1466,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     info->idSize        = sz;
     info->idVarRefOffs  = 0;
     info->idMemCookie   = 0;
+    info->idFlags       = GTF_EMPTY;
     info->idFinallyCall = false;
     info->idCatchRet    = false;
     info->idCallSig     = nullptr;
@@ -5641,7 +5642,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     //
     if (emitComp->fgHaveProfileData())
     {
-        const float scenarioHotWeight = 256.0f;
+        const weight_t scenarioHotWeight = 256.0;
         if (emitComp->fgCalledCount > (scenarioHotWeight * emitComp->fgProfileRunsCount()))
         {
             allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
@@ -5656,8 +5657,8 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     }
 #endif
 
-#ifdef TARGET_XARCH
-    // For x64/x86, align methods that are "optimizations enabled" to 32 byte boundaries if
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+    // For x64/x86/arm64, align methods that are "optimizations enabled" to 32 byte boundaries if
     // they are larger than 16 bytes and contain a loop.
     //
     if (emitComp->opts.OptimizationEnabled() && !emitComp->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT) &&
@@ -6388,7 +6389,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #endif
 
     unsigned actualCodeSize = emitCurCodeOffs(cp);
+
+#if defined(TARGET_ARM64)
+    assert(emitTotalCodeSize == actualCodeSize);
+#else
     assert(emitTotalCodeSize >= actualCodeSize);
+#endif
 
 #if EMITTER_STATS
     totAllocdSize += emitTotalCodeSize;

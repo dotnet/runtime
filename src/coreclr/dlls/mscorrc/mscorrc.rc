@@ -150,7 +150,6 @@ BEGIN
     COR_E_SERIALIZATION                     "An error relating to serialization occurred during the load of file or assembly '%1'."
     COR_E_SECURITY                          "A security violation has occurred."
     IDS_EE_PROC_NOT_FOUND                   "A procedure imported by '%1' could not be loaded."
-    IDS_EE_SIMD_NGEN_DISALLOWED             "Target-dependent SIMD vector types may not be used with ngen."
     IDS_IBC_MISSING_EXTERNAL_TYPE           "The generic type specified by the IBC data is not available to this assembly"
     IDS_IBC_MISSING_EXTERNAL_METHOD         "The generic method specified by the IBC data is not available to this assembly"
     IDS_EE_HWINTRINSIC_NGEN_DISALLOWED      "Hardware intrinsics may not be used with ngen."

@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyModel
         public CompilationLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
@@ -24,12 +24,12 @@ namespace Microsoft.Extensions.DependencyModel
         public CompilationLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path,
-            string hashPath)
+            string? path,
+            string? hashPath)
             : base(type, name, version, hash, dependencies, serviceable, path, hashPath)
         {
             if (assemblies == null)

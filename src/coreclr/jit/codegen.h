@@ -453,19 +453,20 @@ protected:
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      IL_OFFSETX            ilOffset,
-                     regNumber             base   = REG_NA,
-                     bool                  isJump = false);
+                     regNumber             base,
+                     bool                  isJump);
     // clang-format on
 
     // clang-format off
-    void genEmitCall(int                   callType,
-                     CORINFO_METHOD_HANDLE methHnd,
-                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                     GenTreeIndir*         indir
-                     X86_ARG(int  argSize),
-                     emitAttr              retSize
-                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX            ilOffset);
+    void genEmitCallIndir(int                   callType,
+                          CORINFO_METHOD_HANDLE methHnd,
+                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                          GenTreeIndir*         indir
+                          X86_ARG(int  argSize),
+                          emitAttr              retSize
+                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                          IL_OFFSETX            ilOffset,
+                          bool                  isJump);
     // clang-format on
 
     //
@@ -1008,12 +1009,12 @@ protected:
     void genHWIntrinsic(GenTreeHWIntrinsic* node);
 #if defined(TARGET_XARCH)
     void genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber reg, GenTree* rmOp);
-    void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
+    void genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
     void genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_RM(
         GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2);
-    void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival);
-    void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins);
+    void genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, int8_t ival);
+    void genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr);
     void genHWIntrinsic_R_R_R_RM(
         instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber op2Reg, GenTree* op3);
     void genBaseIntrinsic(GenTreeHWIntrinsic* node);
@@ -1260,7 +1261,9 @@ protected:
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
     instruction genGetInsForOper(genTreeOps oper, var_types type);
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
-    void genCallInstruction(GenTreeCall* call);
+    GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
+    void genCall(GenTreeCall* call);
+    void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);

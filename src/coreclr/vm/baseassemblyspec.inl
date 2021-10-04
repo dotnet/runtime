@@ -209,7 +209,7 @@ inline void BaseAssemblySpec::CopyFrom(const BaseAssemblySpec *pSpec)
     }
 
 
-    m_pBindingContext = pSpec->m_pBindingContext;
+    m_pBinder = pSpec->m_pBinder;
 
 }
 
@@ -318,14 +318,10 @@ inline BOOL BaseAssemblySpec::CompareEx(BaseAssemblySpec *pSpec, DWORD dwCompare
 
 
     // If the assemblySpec contains the binding context, then check if they match.
-    if (!(pSpec->IsAssemblySpecForCoreLib() && IsAssemblySpecForCoreLib()))
+    if (pSpec->m_pBinder != m_pBinder)
     {
-        if (pSpec->m_pBindingContext != m_pBindingContext)
-        {
-            return FALSE;
-        }
+        return FALSE;
     }
-
 
     return TRUE;
 }

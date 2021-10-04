@@ -171,7 +171,7 @@ void EEClass::Destruct(MethodTable * pOwningMT)
     }
 
 #ifdef FEATURE_COMINTEROP
-    if (GetSparseCOMInteropVTableMap() != NULL && !pOwningMT->IsZapped())
+    if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
 #endif // FEATURE_COMINTEROP
 
@@ -877,15 +877,7 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
             LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replaced approximate parent %s with exact parent %s from token %x\n", pParentMT->GetDebugClassName(), pNewParentMT->GetDebugClassName(), crExtends));
 
             // SetParentMethodTable is not used here since we want to update the indirection cell in the NGen case
-            if (pMT->IsParentMethodTableIndirectPointerMaybeNull())
-            {
-                *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
-            }
-            else
-            {
-                pMT->GetParentMethodTablePointerPtr()->SetValueMaybeNull(pNewParentMT);
-            }
-
+            *pMT->GetParentMethodTableValuePtr() = pNewParentMT;
             pParentMT = pNewParentMT;
         }
     }
@@ -903,9 +895,9 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         DWORD nDicts = pParentMT->GetNumDicts();
         for (DWORD iDict = 0; iDict < nDicts; iDict++)
         {
-            if (pMT->GetPerInstInfo()[iDict].GetValueMaybeNull() != pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull())
+            if (pMT->GetPerInstInfo()[iDict] != pParentMT->GetPerInstInfo()[iDict])
             {
-                pMT->GetPerInstInfo()[iDict].SetValueMaybeNull(pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull());
+                pMT->GetPerInstInfo()[iDict] = pParentMT->GetPerInstInfo()[iDict];
             }
         }
     }
@@ -1467,16 +1459,17 @@ int MethodTable::GetVectorSize()
 
         if (strcmp(className, "Vector`1") == 0)
         {
-            vectorSize = GetNumInstanceFieldBytes();
             _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
-            return vectorSize;
+            vectorSize = GetNumInstanceFieldBytes();
         }
-        if (strcmp(className, "Vector128`1") == 0)
+        else if (strcmp(className, "Vector128`1") == 0)
         {
+            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 16;
         }
         else if (strcmp(className, "Vector64`1") == 0)
         {
+            _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             vectorSize = 8;
         }
         if (vectorSize != 0)
@@ -1486,7 +1479,6 @@ int MethodTable::GetVectorSize()
             CorElementType corType = typeArg.GetSignatureCorElementType();
             if (((corType >= ELEMENT_TYPE_I1) && (corType <= ELEMENT_TYPE_R8)) || (corType == ELEMENT_TYPE_I) || (corType == ELEMENT_TYPE_U))
             {
-                _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
                 return vectorSize;
             }
         }

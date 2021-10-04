@@ -29,30 +29,6 @@
 #include "../binder/inc/assemblybindercommon.hpp"
 #include "../binder/inc/applicationcontext.hpp"
 
-STDAPI BinderAddRefPEImage(PEImage *pPEImage)
-{
-    HRESULT hr = S_OK;
-
-    if (pPEImage != NULL)
-    {
-        pPEImage->AddRef();
-    }
-
-    return hr;
-}
-
-STDAPI BinderReleasePEImage(PEImage *pPEImage)
-{
-    HRESULT hr = S_OK;
-
-    if (pPEImage != NULL)
-    {
-        pPEImage->Release();
-    }
-
-    return hr;
-}
-
 static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
 {
     CONTRACTL
@@ -68,35 +44,22 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     EEFileLoadException::Throw(name, hr);
 }
 
-// See code:BINDER_SPACE::AssemblyBinderCommon::GetAssembly for info on fNgenExplicitBind
-// and fExplicitBindToNativeImage, and see code:CEECompileInfo::LoadAssemblyByPath
-// for an example of how they're used.
-VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
-                         BOOL            fThrowOnFileNotFound,
-                         CoreBindResult *pResult,
-                         BOOL fNgenExplicitBind /* = FALSE */,
-                         BOOL fExplicitBindToNativeImage /* = FALSE */)
+HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAssembly)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pResult));
+        PRECONDITION(CheckPointer(ppAssembly));
         PRECONDITION(CheckPointer(pAppDomain));
         PRECONDITION(IsCoreLib() == FALSE); // This should never be called for CoreLib (explicit loading)
     }
     CONTRACTL_END;
 
-    ReleaseHolder<BINDER_SPACE::Assembly> result;
     HRESULT hr=S_OK;
 
-    pResult->Reset();
-
     // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBindingContextFromParentAssembly(pAppDomain);
-
-    // Get the reference to the TPABinder context
-    DefaultAssemblyBinder *pTPABinder = pAppDomain->GetTPABinderContext();
+    AssemblyBinder *pBinder = GetBinderFromParentAssembly(pAppDomain);
 
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);
@@ -122,42 +85,27 @@ VOID  AssemblySpec::Bind(AppDomain      *pAppDomain,
     }
     else if (m_wszCodeBase == NULL)
     {
-        // For name based binding these arguments shouldn't have been changed from default
-        _ASSERTE(!fNgenExplicitBind && !fExplicitBindToNativeImage);
         AssemblyNameData assemblyNameData = { 0 };
         PopulateAssemblyNameData(assemblyNameData);
         hr = pBinder->BindAssemblyByName(&assemblyNameData, &pPrivAsm);
     }
     else
     {
-        hr = pTPABinder->Bind(m_wszCodeBase,
-                              GetParentAssembly() ? GetParentAssembly()->GetFile() : NULL,
-                              fNgenExplicitBind,
-                              fExplicitBindToNativeImage,
-                              &pPrivAsm);
+        hr = pAppDomain->GetDefaultBinder()->Bind(m_wszCodeBase, &pPrivAsm);
     }
 
-    pResult->SetHRBindResult(hr);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pPrivAsm != nullptr);
-
-        result = pPrivAsm.Extract();
-        _ASSERTE(result != nullptr);
-
-        pResult->Init(result);
+        *ppAssembly = pPrivAsm.Extract();
     }
-    else if (FAILED(hr) && (fThrowOnFileNotFound || (!Assembly::FileNotFound(hr))))
-    {
-        ThrowLoadError(this, hr);
-    }
+
+    return hr;
 }
 
 
 STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
                             PEImage           **ppPEImage,
-                            PEImage           **ppNativeImage,
-                            BOOL                fExplicitBindToNativeImage,
                             BundleFileLocation  bundleFileLocation)
 {
     HRESULT hr = S_OK;
@@ -166,10 +114,7 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
     EX_TRY
     {
-        PEImageHolder pImage = NULL;
-        PEImageHolder pNativeImage = NULL;
-
-        pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
+        PEImageHolder pImage = PEImage::OpenImage(wszAssemblyPath, MDInternalImport_Default, bundleFileLocation);
 
         // Make sure that the IL image can be opened if the native image is not available.
         hr=pImage->TryOpenFile();
@@ -180,9 +125,6 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
 
         if (pImage)
             *ppPEImage = pImage.Extract();
-
-        if (ppNativeImage)
-            *ppNativeImage = pNativeImage.Extract();
     }
     EX_CATCH_HRESULT(hr);
 
@@ -190,40 +132,9 @@ STDAPI BinderAcquirePEImage(LPCWSTR             wszAssemblyPath,
     return hr;
 }
 
-STDAPI BinderHasNativeHeader(PEImage *pPEImage, BOOL* result)
-{
-    HRESULT hr = S_OK;
-
-    _ASSERTE(pPEImage != NULL);
-    _ASSERTE(result != NULL);
-
-    EX_TRY
-    {
-        *result = pPEImage->HasNativeHeader();
-    }
-    EX_CATCH_HRESULT(hr);
-
-    if (FAILED(hr))
-    {
-        *result = false;
-
-#if defined(TARGET_UNIX)
-        // PAL_LOADLoadPEFile may fail while loading IL masquerading as NI.
-        // This will result in a ThrowHR(E_FAIL).  Suppress the error.
-        if(hr == E_FAIL)
-        {
-            hr = S_OK;
-        }
-#endif // defined(TARGET_UNIX)
-    }
-
-    return hr;
-}
-
 STDAPI BinderAcquireImport(PEImage                  *pPEImage,
                            IMDInternalImport       **ppIAssemblyMetaDataImport,
-                           DWORD                    *pdwPAFlags,
-                           BOOL                      bNativeImage)
+                           DWORD                    *pdwPAFlags)
 {
     HRESULT hr = S_OK;
 
@@ -247,9 +158,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
         *ppIAssemblyMetaDataImport = pPEImage->GetMDImport();
         if (!*ppIAssemblyMetaDataImport)
         {
-            // Some native images don't contain metadata, to reduce size
-            if (!bNativeImage)
-                IfFailGo(COR_E_BADIMAGEFORMAT);
+            IfFailGo(COR_E_BADIMAGEFORMAT);
         }
         else
             (*ppIAssemblyMetaDataImport)->AddRef();
@@ -277,18 +186,14 @@ HRESULT BaseAssemblySpec::ParseName()
 
     EX_TRY
     {
-        NewHolder<BINDER_SPACE::AssemblyIdentityUTF8> pAssemblyIdentity;
+        BINDER_SPACE::AssemblyIdentityUTF8* pAssemblyIdentity;
         AppDomain *pDomain = ::GetAppDomain();
         _ASSERTE(pDomain);
 
         BINDER_SPACE::ApplicationContext *pAppContext = NULL;
-        DefaultAssemblyBinder *pBinder = pDomain->GetTPABinderContext();
-        if (pBinder != NULL)
-        {
-            pAppContext = pBinder->GetAppContext();
-        }
+        DefaultAssemblyBinder *pBinder = pDomain->GetDefaultBinder();
 
-        hr = BINDER_SPACE::AssemblyBinderCommon::GetAssemblyIdentity(m_pAssemblyName, pAppContext, pAssemblyIdentity);
+        hr = pBinder->GetAppContext()->GetAssemblyIdentity(m_pAssemblyName, &pAssemblyIdentity);
 
         if (FAILED(hr))
         {

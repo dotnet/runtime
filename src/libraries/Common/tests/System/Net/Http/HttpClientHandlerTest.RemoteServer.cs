@@ -1237,8 +1237,9 @@ namespace System.Net.Http.Functional.Tests
             {
                 yield return new object[] { remoteServer, remoteServer.GZipUri };
 
-                // Remote deflate endpoint isn't correctly following the deflate protocol.
-                //yield return new object[] { remoteServer, remoteServer.DeflateUri };
+                // Remote deflate endpoint isn't correctly following the deflate protocol,
+                // but SocketsHttpHandler makes it work, anyway.
+                yield return new object[] { remoteServer, remoteServer.DeflateUri };
             }
         }
 
@@ -1271,10 +1272,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        // The remote server endpoint was written to use DeflateStream, which isn't actually a correct
-        // implementation of the deflate protocol (the deflate protocol requires the zlib wrapper around
-        // deflate).  Until we can get that updated (and deal with previous releases still testing it
-        // via a DeflateStream-based implementation), we utilize httpbin.org to help validate behavior.
         [OuterLoop("Uses external servers")]
         [Theory]
         [InlineData("http://httpbin.org/deflate", "\"deflated\": true")]

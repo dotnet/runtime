@@ -69,7 +69,7 @@ namespace System.Diagnostics
     public abstract partial class Switch
     {
         protected Switch(string displayName, string? description) { }
-        protected Switch(string displayName, string? description, string? defaultSwitchValue) { }
+        protected Switch(string displayName, string? description, string defaultSwitchValue) { }
         public System.Collections.Specialized.StringDictionary Attributes { get { throw null; } }
         public string Description { get { throw null; } }
         public string DisplayName { get { throw null; } }

@@ -27,7 +27,7 @@
 #include "ex.h"
 #include "sarray.h"
 #include "memoryrange.h"
-#include "../md/hotdata/hotheap.h"
+#include "../md/datablob.h"
 
 //*****************************************************************************
 // NOTE:
@@ -379,13 +379,6 @@ protected:
         WRAPPER_NO_CONTRACT;
         return GetDataReadOnly(nOffset, pData);
     } // StgPoolReadOnly::GetData
-
-private:
-#if !defined(FEATURE_UTILCODE_NO_DEPENDENCIES)
-    // hot pool data
-    MetaData::HotHeap m_HotHeap;
-#endif //!(defined(FEATURE_UTILCODE_NO_DEPENDENCIES))
-
 };  // class StgPoolReadOnly
 
 //

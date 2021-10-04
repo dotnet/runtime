@@ -306,7 +306,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // TODO-1stClassStructs: for now we can't work with STORE_BLOCK source in register.
             const unsigned srcLclNum = src->AsLclVar()->GetLclNum();
-            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(Compiler::DNER_BlockOp));
+            comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }
 
         if (blkNode->OperIs(GT_STORE_OBJ))
@@ -779,7 +779,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         case TYP_ULONG:
         case TYP_DOUBLE:
         {
-            cmpIntrinsic = NI_AdvSimd_Arm64_CompareEqual;
+            cmpIntrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
             break;
         }
 
@@ -1215,7 +1215,12 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     //   var tmp1 = AdvSimd.Multiply(op1, op2);
     //   ...
 
-    NamedIntrinsic multiply = (simdBaseType == TYP_DOUBLE) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Multiply;
+    NamedIntrinsic multiply = NI_AdvSimd_Multiply;
+
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        multiply = (simdSize == 8) ? NI_AdvSimd_MultiplyScalar : NI_AdvSimd_Arm64_Multiply;
+    }
     assert(!varTypeIsLong(simdBaseType));
 
     tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseJitType, simdSize);
@@ -1247,24 +1252,29 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
         if (simdSize == 8)
         {
-            assert(simdBaseType == TYP_FLOAT);
+            if (simdBaseType == TYP_FLOAT)
+            {
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd8
+                //          +--*  tmp2 simd8
+                //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
+                //   ...
 
-            // We will be constructing the following parts:
-            //   ...
-            //          /--*  tmp1 simd8
-            //          +--*  tmp2 simd8
-            //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
-            //   ...
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
+                //   ...
 
-            // This is roughly the following managed code:
-            //   ...
-            //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
-            //   ...
-
-            tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType,
-                                                    simdSize);
-            BlockRange().InsertAfter(tmp2, tmp1);
-            LowerNode(tmp1);
+                tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType,
+                                                        simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
+            }
+            else
+            {
+                // No pairs to add for double, as its a single element
+            }
         }
         else
         {

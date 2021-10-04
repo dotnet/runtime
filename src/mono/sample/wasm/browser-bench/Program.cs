@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace Sample
 {
@@ -17,18 +20,52 @@ namespace Sample
         BenchTask[] tasks =
         {
             new ExceptionsTask(),
-            new JsonTask ()
+            new JsonTask (),
+            new WebSocketTask()
         };
-
-        static Test instance;
+        static Test instance = new Test ();
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static string RunBenchmark()
+        public static Task<string> RunBenchmark()
         {
-            if (instance == null)
-                instance = new Test();
-
             return instance.RunTasks ();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        // the constructors of the task we care about are already used when createing tasks field
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2057")]
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2072")]
+        public static void SetTasks(string taskNames)
+        {
+            Regex pattern;
+            var names = taskNames.Split(',');
+            var tasksList = new List<BenchTask>();
+
+            for (int i = 0; i < names.Length; i++)
+            {
+                var idx = names[i].IndexOf(':');
+                string name;
+
+                if (idx == -1) {
+                    name = names[i];
+                    pattern = null;
+                }
+                else
+                {
+                    name = names[i].Substring(0, idx);
+                    pattern = new Regex (names[i][(idx + 1)..]);
+                }
+
+                var taskType = Type.GetType($"Sample.{name}Task");
+                if (taskType == null)
+                    continue;
+
+                var task = (BenchTask)Activator.CreateInstance(taskType);
+                task.pattern = pattern;
+                tasksList.Add (task);
+            }
+
+            instance.tasks = tasksList.ToArray ();
         }
 
         int taskCounter = 0;
@@ -38,52 +75,73 @@ namespace Sample
         BenchTask Task
         {
             get { return task; }
-            set { task = value; measurementIdx = 0; task.Initialize(); }
+            set { task = value; }
         }
-        List<BenchTask.Result> results = new List<BenchTask.Result> ();
+        List<BenchTask.Result> results = new();
         bool resultsReturned;
 
-        public string RunTasks()
+        bool NextTask ()
+        {
+            bool hasMeasurement;
+            do {
+                if (taskCounter == tasks.Length)
+                    return false;
+
+                Task = tasks[taskCounter];
+                measurementIdx = -1;
+                hasMeasurement = NextMeasurement();
+
+                if (hasMeasurement)
+                    task.Initialize();
+
+                taskCounter++;
+            } while (!hasMeasurement);
+
+            return true;
+        }
+
+        bool NextMeasurement ()
+        {
+            runIdx = 0;
+
+            while (measurementIdx < Task.Measurements.Length - 1)
+            {
+                measurementIdx++;
+
+                if (Task.pattern == null || Task.pattern.Match(Task.Measurements[measurementIdx].Name).Success)
+                    return true;
+            }
+
+            measurementIdx = -1;
+
+            return false;
+        }
+
+        public async Task<string> RunTasks()
         {
             if (resultsReturned)
                 return "";
 
             if (taskCounter == 0) {
-                taskCounter++;
-                Task = tasks[0];
+                NextTask ();
                 return "Benchmark started<br>";
             }
 
-            if (runIdx >= Task.Measurements [measurementIdx].NumberOfRuns)
-            {
-                runIdx = 0;
+            if (measurementIdx == -1)
+                return ResultsSummary();
 
-                measurementIdx++;
-                if (measurementIdx >= Task.Measurements.Length)
-                {
-                    taskCounter++;
-
-                    if (taskCounter > tasks.Length)
-                    {
-                        resultsReturned = true;
-
-                        return ResultsSummary();
-                    }
-
-                    Task = tasks[taskCounter - 1];
-                }
-
-            }
+            if (runIdx >= Task.Measurements [measurementIdx].NumberOfRuns && !NextMeasurement() && !NextTask ())
+                    return ResultsSummary();
 
             runIdx++;
 
-            return Task.RunBatch(results, measurementIdx);
+            return await Task.RunBatch(results, measurementIdx);
         }
 
         string ResultsSummary ()
         {
             Dictionary<string, double> minTimes = new Dictionary<string, double> ();
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             foreach (var result in results)
             {
@@ -112,9 +170,11 @@ namespace Sample
                     time *= 1000;
                     unit = "us";
                 }
-                sb.Append($"| {key,32} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
+                sb.Append($"| {key.Replace('_',' '),38} | {time,10:F4}{unit} |<br>".Replace (" ", "&nbsp;"));
             }
             sb.Append("</tt>");
+
+            resultsReturned = true;
 
             return sb.ToString();
         }

@@ -602,7 +602,11 @@ inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
+#if SIZEOF_SIZE_T == 8
+	return (size_t)(mono_atomic_cas_i64((volatile gint64*)(target), (gint64)(value), (gint64)(expected)));
+#else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+#endif
 }
 
 /*
@@ -1855,7 +1859,15 @@ inline
 const ep_char8_t *
 ep_rt_entrypoint_assembly_name_get_utf8 (void)
 {
-	return (const ep_char8_t *)m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	MonoAssembly *main_assembly = mono_assembly_get_main ();
+	if (!main_assembly || !main_assembly->image)
+		return "";
+
+	const char *assembly_name = m_image_get_assembly_name (mono_assembly_get_main ()->image);
+	if (!assembly_name)
+		return "";
+
+	return (const ep_char8_t*)assembly_name;
 }
 
 static

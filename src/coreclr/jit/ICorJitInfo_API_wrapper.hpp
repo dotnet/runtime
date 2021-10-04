@@ -1690,6 +1690,16 @@ uint32_t WrapICorJitInfo::getJitFlags(
     return temp;
 }
 
+bool WrapICorJitInfo::doesFieldBelongToClass(
+          CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(doesFieldBelongToClass);
+    bool temp = wrapHnd->doesFieldBelongToClass(fldHnd, cls);
+    API_LEAVE(doesFieldBelongToClass);
+    return temp;
+}
+
 /**********************************************************************************/
 // clang-format on
 /**********************************************************************************/

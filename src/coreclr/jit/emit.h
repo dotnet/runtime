@@ -243,8 +243,8 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    weight_t igWeight;    // the block weight used for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
 #endif
 
 #ifdef DEBUG
@@ -1128,15 +1128,6 @@ protected:
             _idCallRegPtr = 1;
         }
 
-        bool idIsCallAddr() const
-        {
-            return _idCallAddr != 0;
-        }
-        void idSetIsCallAddr()
-        {
-            _idCallAddr = 1;
-        }
-
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
@@ -1348,7 +1339,7 @@ protected:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-    BasicBlock::weight_t getCurrentBlockWeight();
+    weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 
@@ -1481,6 +1472,10 @@ protected:
 
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
+
+#ifdef DEBUG
+    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+#endif // DEBUG
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -2792,6 +2787,68 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         return (unsigned)cns;
     }
 }
+
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+{
+    emitAttr defaultSize = id->idOpSize();
+    emitAttr newSize     = defaultSize;
+    switch (id->idIns())
+    {
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        {
+            return EA_16BYTE;
+        }
+
+        case INS_pextrb:
+        case INS_pinsrb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_extractps:
+        case INS_insertps:
+        case INS_pextrd:
+        case INS_pinsrd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_pextrq:
+        case INS_pinsrq:
+        {
+            return EA_8BYTE;
+        }
+
+        default:
+        {
+            return id->idOpSize();
+        }
+    }
+}
+#endif // DEBUG
 
 #endif // TARGET_XARCH
 

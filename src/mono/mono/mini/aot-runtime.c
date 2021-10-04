@@ -319,7 +319,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 		assembly = mono_get_corlib ()->assembly;
 	} else {
 		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+		mono_assembly_request_prepare_byname (&req, alc);
 		req.basedir = amodule->assembly->basedir;
 		assembly = mono_assembly_request_byname (&amodule->image_names [index], &req, &status);
 	}
@@ -2388,10 +2388,11 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
 	/*
-	 * Using INTERNAL avoids firing managed assembly load events
-	 * whose execution might require this module to be already loaded.
+	 * Don't fire managed assembly load events whose execution
+	 * might require this module to be already loaded.
 	 */
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_INTERNAL, alc);
+	mono_assembly_request_prepare_open (&req, alc);
+	req.request.no_managed_load_event = TRUE;
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);
@@ -3534,7 +3535,17 @@ mono_aot_find_jit_info (MonoImage *image, gpointer addr)
 		else
 			code_len = amodule->llvm_code_end - code;
 	} else {
-		code_len = (guint8*)methods [pos + 1] - (guint8*)methods [pos];
+		guint8* code_end = (guint8*)methods [pos + 1];
+
+		if (code >= amodule->jit_code_start && code < amodule->jit_code_end && code_end > amodule->jit_code_end) {
+			code_end = amodule->jit_code_end;
+		}
+
+		if (code >= amodule->llvm_code_start && code < amodule->llvm_code_end && code_end > amodule->llvm_code_end) {
+			code_end = amodule->llvm_code_end;
+		}
+
+		code_len = code_end - code;
 	}
 #endif
 

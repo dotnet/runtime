@@ -485,7 +485,6 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 AssemblySpec spec;
                 spec.InitializeSpec(domainAssemblyToRemove->GetFile());
                 VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
-                pAppDomain->RemoveNativeImageDependency(&spec);
             }
 
             domainAssemblyIt++;

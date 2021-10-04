@@ -567,7 +567,7 @@ mono_domain_assembly_open_internal (MonoAssemblyLoadContext *alc, const char *na
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, alc);
 	ass = mono_assembly_request_open (name, &req, NULL);
 
 	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm

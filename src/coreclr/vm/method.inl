@@ -6,12 +6,6 @@
 #ifndef _METHOD_INL_
 #define _METHOD_INL_
 
-inline BOOL MethodDesc::HasTemporaryEntryPoint()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetMethodDescChunk()->HasTemporaryEntryPoints();
-}
-
 inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 {
     WRAPPER_NO_CONTRACT;
@@ -19,12 +13,6 @@ inline InstantiatedMethodDesc* MethodDesc::AsInstantiatedMethodDesc() const
 
     _ASSERTE(GetClassification() == mcInstantiated);
     return dac_cast<PTR_InstantiatedMethodDesc>(this);
-}
-
-inline BOOL MethodDesc::IsZapped()
-{
-    WRAPPER_NO_CONTRACT;
-    return FALSE;
 }
 
 inline PTR_DynamicResolver DynamicMethodDesc::GetResolver()

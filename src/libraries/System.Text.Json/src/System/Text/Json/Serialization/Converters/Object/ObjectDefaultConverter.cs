@@ -16,9 +16,6 @@ namespace System.Text.Json.Serialization.Converters
     {
         internal override bool CanHaveIdMetadata => true;
 
-#if NET6_0_OR_GREATER
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, [MaybeNullWhen(false)] out T value)
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
@@ -249,9 +246,6 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-#if NET6_0_OR_GREATER
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-#endif
         internal sealed override bool OnTryWrite(
             Utf8JsonWriter writer,
             T value,

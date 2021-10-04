@@ -484,7 +484,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
             dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
-#endif // FEATURE _SPLIT_ARG
+#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -1132,7 +1132,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    compiler->getSIMDInitTempVarNum();
+                    var_types requiredSimdTempType = (intrin.id == NI_Vector64_GetElement) ? TYP_SIMD8 : TYP_SIMD16;
+                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
             }
 

@@ -5,6 +5,7 @@
  */
 
 #include <config.h>
+#include <mono/metadata/tokentype.h>
 #include "llvmonly-runtime.h"
 #include "aot-runtime.h"
 

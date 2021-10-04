@@ -479,6 +479,29 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     {
         m_mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
     }
+
+#ifdef DEBUG
+    if (comp->compStressCompile(Compiler::STRESS_VN_BUDGET, 50))
+    {
+        // Bias toward smaller budgets as we want to stress returning
+        // unexpectedly opaque results.
+        //
+        CLRRandom* random = comp->m_inlineStrategy->GetRandom(comp->info.compMethodHash());
+        double     p      = random->NextDouble();
+
+        if (p <= 0.5)
+        {
+            m_mapSelectBudget = random->Next(0, 5);
+        }
+        else
+        {
+            int limit         = random->Next(1, DEFAULT_MAP_SELECT_BUDGET + 1);
+            m_mapSelectBudget = random->Next(0, limit);
+        }
+
+        JITDUMP("VN Stress: setting select budget to %u\n", m_mapSelectBudget);
+    }
+#endif
 }
 
 //
@@ -4242,11 +4265,12 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
     ValueNum  selectedElem;
+    unsigned  elemWidth = elemTyp == TYP_STRUCT ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
 
-    if (fldSeq == FieldSeqStore::NotAField())
+    if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > elemWidth))
     {
         // This doesn't represent a proper array access
-        JITDUMP("    *** NotAField sequence encountered in fgValueNumberArrIndexVal\n");
+        JITDUMP("    *** Not a proper arrray access encountered in fgValueNumberArrIndexVal\n");
 
         // a new unique value number
         selectedElem = vnStore->VNForExpr(compCurBB, elemTyp);
@@ -7116,6 +7140,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
             unsigned      lhsLclNum    = lclVarTree->GetLclNum();
             FieldSeqNode* lhsFldSeq    = nullptr;
             unsigned      lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
+            LclVarDsc*    lhsVarDsc    = lvaGetDesc(lhsLclNum);
             // If it's excluded from SSA, don't need to do anything.
             if (lvaInSsa(lhsLclNum) && lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
             {
@@ -7176,9 +7201,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         }
                         else
                         {
-                            rhsVNPair = lvaTable[rhsLclVarTree->GetLclNum()]
-                                            .GetPerSsaData(rhsLclVarTree->GetSsaNum())
-                                            ->m_vnPair;
+                            rhsVNPair         = rhsVarDsc->GetPerSsaData(rhsLclVarTree->GetSsaNum())->m_vnPair;
                             var_types indType = rhsLclVarTree->TypeGet();
 
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
@@ -7186,7 +7209,6 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     }
                     else
                     {
-                        rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, rhs->TypeGet()));
                         isNewUniq = true;
                     }
                 }
@@ -7205,9 +7227,7 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         }
                         else
                         {
-                            rhsVNPair = lvaTable[rhsLclVarTree->GetLclNum()]
-                                            .GetPerSsaData(rhsLclVarTree->GetSsaNum())
-                                            ->m_vnPair;
+                            rhsVNPair         = rhsVarDsc->GetPerSsaData(rhsLclVarTree->GetSsaNum())->m_vnPair;
                             var_types indType = rhsLclVarTree->TypeGet();
 
                             rhsVNPair = vnStore->VNPairApplySelectors(rhsVNPair, rhsFldSeq, indType);
@@ -7273,6 +7293,11 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     isNewUniq = true;
                 }
 
+                if (!isNewUniq && (lclVarTree != nullptr) && (rhsLclVarTree != nullptr))
+                {
+                    isNewUniq = fgValueNumberIsStructReinterpretation(lclVarTree, rhsLclVarTree);
+                }
+
                 if (isNewUniq)
                 {
                     rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
@@ -7293,14 +7318,13 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                     }
                     else
                     {
-                        ValueNumPair oldLhsVNPair =
-                            lvaTable[lhsLclNum].GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
+                        ValueNumPair oldLhsVNPair = lhsVarDsc->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
                         rhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lhsFldSeq, rhsVNPair,
                                                                         lclVarTree->TypeGet(), compCurBB);
                     }
                 }
 
-                lvaTable[lhsLclNum].GetPerSsaData(lclDefSsaNum)->m_vnPair = vnStore->VNPNormalPair(rhsVNPair);
+                lhsVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = vnStore->VNPNormalPair(rhsVNPair);
 
 #ifdef DEBUG
                 if (verbose)
@@ -7336,6 +7360,67 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         // to be able to give VN's to.
         tree->gtVNPair.SetBoth(ValueNumStore::VNForVoid());
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberIsStructReinterpretation: Checks if there is a struct reinterpretation that prevent VN propagation.
+//
+// Arguments:
+//    lhsLclVarTree - a lcl var tree on the lhs of the asg;
+//    rhsLclVarTree - a lcl var tree on the rhs of the asg;
+//
+// Return Value:
+//    True if the locals have different struct types and VN can't use rhs VN for lhs VN.
+//    False if locals have the same struct type or if this ASG is not a struct ASG.
+//
+bool Compiler::fgValueNumberIsStructReinterpretation(GenTreeLclVarCommon* lhsLclVarTree,
+                                                     GenTreeLclVarCommon* rhsLclVarTree)
+{
+    assert(lhsLclVarTree != nullptr);
+    assert(rhsLclVarTree != nullptr);
+
+    if (rhsLclVarTree->TypeGet() == TYP_STRUCT)
+    {
+        if (rhsLclVarTree->TypeGet() == lhsLclVarTree->TypeGet())
+        {
+            if (lhsLclVarTree->isLclField() || rhsLclVarTree->isLclField())
+            {
+                // Jit does not have a real support for `LCL_FLD struct [FldSeq]` because it can't determinate their
+                // size
+                // when the fieldSeq is `NotAField`, but by mistake we could have
+                // `BLK(ADDR byref(LCL_FLD struct Fseq[]))` nowadays in out IR.
+                // Generate a unique VN for now, it currently won't match the other side,
+                // otherwise we would not have 'OBJ struct2 (ADDR(LCL_FLD struct1))` cast.
+                return true;
+            }
+
+            assert(lhsLclVarTree->OperIs(GT_LCL_VAR));
+            assert(rhsLclVarTree->OperIs(GT_LCL_VAR));
+
+            const LclVarDsc* lhsVarDsc = lvaGetDesc(lhsLclVarTree);
+            const LclVarDsc* rhsVarDsc = lvaGetDesc(rhsLclVarTree);
+            assert(rhsVarDsc->TypeGet() == TYP_STRUCT);
+            assert(lhsVarDsc->TypeGet() == TYP_STRUCT);
+
+            CORINFO_CLASS_HANDLE rhsStructHnd = rhsVarDsc->GetStructHnd();
+            CORINFO_CLASS_HANDLE lhsStructHnd = lhsVarDsc->GetStructHnd();
+
+            if (rhsStructHnd != lhsStructHnd)
+            {
+                // This can occur for nested structs or for unsafe casts, when we have IR like
+                // struct1 = struct2.
+                // Use an unique value number for the old map, as we don't have information about
+                // the dst field values using dst FIELD_HANDLE.
+                // Note that other asignments, like struct1 = IND struct(ADDR(LCL_VAR long))
+                // will be handled in `VNPairApplySelectorsAssign`, here we care only about
+                // `LCL_VAR structX = (*)LCL_VAR structY` cases.
+                JITDUMP("    *** Different struct handles for Dst/Src of COPYBLK\n");
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void Compiler::fgValueNumberTree(GenTree* tree)
@@ -7989,12 +8074,10 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                         rhsVNPair.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
                                     }
 
-                                    unsigned     lclDefSsaNum;
                                     ValueNumPair newLhsVNPair;
                                     if (isEntire)
                                     {
                                         newLhsVNPair = rhsVNPair;
-                                        lclDefSsaNum = lclVarTree->GetSsaNum();
                                     }
                                     else
                                     {
@@ -8003,11 +8086,12 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                         ValueNumPair oldLhsVNPair = lvaTable[lclVarTree->GetLclNum()]
                                                                         .GetPerSsaData(lclVarTree->GetSsaNum())
                                                                         ->m_vnPair;
-                                        lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
                                         newLhsVNPair =
                                             vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
                                                                                 lhs->TypeGet(), compCurBB);
                                     }
+
+                                    unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
 
                                     if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
                                     {
@@ -9764,25 +9848,25 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNF_Dbl2Int;
             break;
         case CORINFO_HELP_DBL2INT_OVF:
-            vnf = VNF_Dbl2Int;
+            vnf = VNF_Dbl2IntOvf;
             break;
         case CORINFO_HELP_DBL2LNG:
             vnf = VNF_Dbl2Lng;
             break;
         case CORINFO_HELP_DBL2LNG_OVF:
-            vnf = VNF_Dbl2Lng;
+            vnf = VNF_Dbl2LngOvf;
             break;
         case CORINFO_HELP_DBL2UINT:
             vnf = VNF_Dbl2UInt;
             break;
         case CORINFO_HELP_DBL2UINT_OVF:
-            vnf = VNF_Dbl2UInt;
+            vnf = VNF_Dbl2UIntOvf;
             break;
         case CORINFO_HELP_DBL2ULNG:
             vnf = VNF_Dbl2ULng;
             break;
         case CORINFO_HELP_DBL2ULNG_OVF:
-            vnf = VNF_Dbl2ULng;
+            vnf = VNF_Dbl2ULngOvf;
             break;
         case CORINFO_HELP_FLTREM:
             vnf = VNFunc(GT_MOD);

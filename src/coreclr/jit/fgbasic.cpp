@@ -119,6 +119,10 @@ void Compiler::fgInit()
     /* This is set by fgComputeReachability */
     fgEnterBlks = BlockSetOps::UninitVal();
 
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    fgAlwaysBlks = BlockSetOps::UninitVal();
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+
 #ifdef DEBUG
     fgEnterBlksSetValid = false;
 #endif // DEBUG
@@ -1952,8 +1956,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                         {
                             // Addr taken on "this" pointer is significant,
                             // go ahead to mark it as permanently addr-exposed here.
-                            lvaSetVarAddrExposed(0);
                             // This may be conservative, but probably not very.
+                            lvaSetVarAddrExposed(0 DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
                         }
                     }
                 } // isInlining
@@ -2191,35 +2195,37 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
 void Compiler::fgAdjustForAddressExposedOrWrittenThis()
 {
+    LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
+
     // Optionally enable adjustment during stress.
     if (!tiVerificationNeeded && compStressCompile(STRESS_GENERIC_VARN, 15))
     {
-        lvaTable[info.compThisArg].lvHasILStoreOp = true;
+        thisVarDsc->lvHasILStoreOp = true;
     }
 
     // If this is exposed or written to, create a temp for the modifiable this
-    if (lvaTable[info.compThisArg].lvAddrExposed || lvaTable[info.compThisArg].lvHasILStoreOp)
+    if (thisVarDsc->IsAddressExposed() || thisVarDsc->lvHasILStoreOp)
     {
         // If there is a "ldarga 0" or "starg 0", grab and use the temp.
         lvaArg0Var = lvaGrabTemp(false DEBUGARG("Address-exposed, or written this pointer"));
         noway_assert(lvaArg0Var > (unsigned)info.compThisArg);
-        lvaTable[lvaArg0Var].lvType            = lvaTable[info.compThisArg].TypeGet();
-        lvaTable[lvaArg0Var].lvAddrExposed     = lvaTable[info.compThisArg].lvAddrExposed;
-        lvaTable[lvaArg0Var].lvDoNotEnregister = lvaTable[info.compThisArg].lvDoNotEnregister;
+        LclVarDsc* arg0varDsc = lvaGetDesc(lvaArg0Var);
+        arg0varDsc->lvType    = thisVarDsc->TypeGet();
+        arg0varDsc->SetAddressExposed(thisVarDsc->IsAddressExposed() DEBUGARG(thisVarDsc->GetAddrExposedReason()));
+        arg0varDsc->lvDoNotEnregister = thisVarDsc->lvDoNotEnregister;
 #ifdef DEBUG
-        lvaTable[lvaArg0Var].lvVMNeedsStackAddr = lvaTable[info.compThisArg].lvVMNeedsStackAddr;
-        lvaTable[lvaArg0Var].lvLiveInOutOfHndlr = lvaTable[info.compThisArg].lvLiveInOutOfHndlr;
-        lvaTable[lvaArg0Var].lvLclFieldExpr     = lvaTable[info.compThisArg].lvLclFieldExpr;
-        lvaTable[lvaArg0Var].lvLiveAcrossUCall  = lvaTable[info.compThisArg].lvLiveAcrossUCall;
+        arg0varDsc->SetDoNotEnregReason(thisVarDsc->GetDoNotEnregReason());
 #endif
-        lvaTable[lvaArg0Var].lvHasILStoreOp = lvaTable[info.compThisArg].lvHasILStoreOp;
-        lvaTable[lvaArg0Var].lvVerTypeInfo  = lvaTable[info.compThisArg].lvVerTypeInfo;
+        arg0varDsc->lvHasILStoreOp = thisVarDsc->lvHasILStoreOp;
+        arg0varDsc->lvVerTypeInfo  = thisVarDsc->lvVerTypeInfo;
 
         // Clear the TI_FLAG_THIS_PTR in the original 'this' pointer.
-        noway_assert(lvaTable[lvaArg0Var].lvVerTypeInfo.IsThisPtr());
-        lvaTable[info.compThisArg].lvVerTypeInfo.ClearThisPtr();
-        lvaTable[info.compThisArg].lvAddrExposed  = false;
-        lvaTable[info.compThisArg].lvHasILStoreOp = false;
+        noway_assert(arg0varDsc->lvVerTypeInfo.IsThisPtr());
+        thisVarDsc->lvVerTypeInfo.ClearThisPtr();
+        // Note that here we don't clear `m_doNotEnregReason` and it stays
+        // `doNotEnreg` with `AddrExposed` reason.
+        thisVarDsc->CleanAddressExposed();
+        thisVarDsc->lvHasILStoreOp = false;
     }
 }
 
@@ -2722,9 +2728,12 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                     if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
                     {
                         // Method has an explicit tail call that may run like a loop or may not be generated as a tail
-                        // call in tier 0, switch to optimized to avoid spending too much time running slower code and
-                        // to avoid stack overflow from recursion
-                        fgSwitchToOptimized();
+                        // call in tier 0, switch to optimized to avoid spending too much time running slower code
+                        if (!opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) ||
+                            ((info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0))
+                        {
+                            fgSwitchToOptimized();
+                        }
                     }
                 }
                 else
@@ -4870,8 +4879,8 @@ BasicBlock* Compiler::fgConnectFallThrough(BasicBlock* bSrc, BasicBlock* bDst)
                             jmpBlk->bbFlags |= BBF_RUN_RARELY;
                         }
 
-                        BasicBlock::weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
-                        BasicBlock::weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
+                        weight_t weightDiff = (newEdge->edgeWeightMax() - newEdge->edgeWeightMin());
+                        weight_t slop       = BasicBlock::GetSlopFraction(bSrc, bDst);
                         //
                         // If the [min/max] values for our edge weight is within the slop factor
                         //  then we will set the BBF_PROF_WEIGHT flag for the block
