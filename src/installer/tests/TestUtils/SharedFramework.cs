@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
     /// <summary>
     /// Helper class for creating, modifying and cleaning up shared frameworks
     /// </summary>
-    internal static class SharedFramework
+    public static class SharedFramework
     {
         private static readonly Mutex id_mutex = new Mutex();
 
