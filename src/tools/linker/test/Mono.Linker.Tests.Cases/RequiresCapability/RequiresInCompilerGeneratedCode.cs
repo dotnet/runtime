@@ -13,7 +13,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	public class RequiresUnreferencedCodeInCompilerGeneratedCode
+	public class RequiresInCompilerGeneratedCode
 	{
 		public static void Main ()
 		{
@@ -37,49 +37,49 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			StateMachinesOnlyReferencedViaReflection.Test ();
 
-			ComplexCases.AsyncBodyCallingRUCMethod.Test ();
-			ComplexCases.GenericAsyncBodyCallingRUCMethod.Test ();
-			ComplexCases.GenericAsyncEnumerableBodyCallingRUCWithAnnotations.Test ();
+			ComplexCases.AsyncBodyCallingMethodWithRequires.Test ();
+			ComplexCases.GenericAsyncBodyCallingMethodWithRequires.Test ();
+			ComplexCases.GenericAsyncEnumerableBodyCallingRequiresWithAnnotations.Test ();
 		}
 
 		class WarnInIteratorBody
 		{
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestCallBeforeYieldReturn ()
 			{
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				yield return 0;
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestCallAfterYieldReturn ()
 			{
 				yield return 0;
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
-				typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 				yield return 1;
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestLdftn ()
 			{
 				yield return 0;
 				yield return 1;
-				var action = new Action (RequiresUnreferencedCodeMethod);
+				var action = new Action (MethodWithRequires);
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
-				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				yield return 0;
 				yield return 1;
 			}
@@ -99,9 +99,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static IEnumerable<int> TestCall ()
 			{
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				yield return 0;
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				yield return 1;
 			}
 
@@ -109,8 +109,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static IEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
-				typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 				yield return 1;
 			}
@@ -120,13 +120,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				yield return 0;
 				yield return 1;
-				var action = new Action (RequiresUnreferencedCodeMethod);
+				var action = new Action (MethodWithRequires);
 			}
 
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static IEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
-				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				yield return 0;
 				yield return 1;
 			}
@@ -167,41 +167,41 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class WarnInAsyncBody
 		{
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async void TestCallBeforeYieldReturn ()
 			{
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				await MethodAsync ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async void TestCallAfterYieldReturn ()
 			{
 				await MethodAsync ();
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async void TestReflectionAccess ()
 			{
 				await MethodAsync ();
-				typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 				await MethodAsync ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async void TestLdftn ()
 			{
 				await MethodAsync ();
-				var action = new Action (RequiresUnreferencedCodeMethod);
+				var action = new Action (MethodWithRequires);
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async void TestDynamicallyAccessedMethod ()
 			{
-				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				await MethodAsync ();
 			}
 
@@ -220,9 +220,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static async void TestCall ()
 			{
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				await MethodAsync ();
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				await MethodAsync ();
 			}
 
@@ -230,8 +230,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static async void TestReflectionAccess ()
 			{
 				await MethodAsync ();
-				typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 				await MethodAsync ();
 			}
@@ -240,13 +240,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static async void TestLdftn ()
 			{
 				await MethodAsync ();
-				var action = new Action (RequiresUnreferencedCodeMethod);
+				var action = new Action (MethodWithRequires);
 			}
 
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static async void TestDynamicallyAccessedMethod ()
 			{
-				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				await MethodAsync ();
 			}
 
@@ -286,46 +286,46 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class WarnInAsyncIteratorBody
 		{
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<int> TestCallBeforeYieldReturn ()
 			{
 				await MethodAsync ();
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				yield return 0;
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<int> TestCallAfterYieldReturn ()
 			{
 				yield return 0;
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				await MethodAsync ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async IAsyncEnumerable<int> TestReflectionAccess ()
 			{
 				yield return 0;
 				await MethodAsync ();
-				typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 				await MethodAsync ();
 				yield return 1;
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async IAsyncEnumerable<int> TestLdftn ()
 			{
 				await MethodAsync ();
 				yield return 0;
-				var action = new Action (RequiresUnreferencedCodeMethod);
+				var action = new Action (MethodWithRequires);
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
-				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				yield return 0;
 				await MethodAsync ();
 			}
@@ -345,10 +345,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static async IAsyncEnumerable<int> TestCall ()
 			{
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				await MethodAsync ();
 				yield return 0;
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 				await MethodAsync ();
 			}
 
@@ -357,8 +357,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				await MethodAsync ();
 				yield return 0;
-				typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 				await MethodAsync ();
 				yield return 0;
@@ -368,14 +368,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static async IAsyncEnumerable<int> TestLdftn ()
 			{
 				await MethodAsync ();
-				var action = new Action (RequiresUnreferencedCodeMethod);
+				var action = new Action (MethodWithRequires);
 				yield return 0;
 			}
 
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static async IAsyncEnumerable<int> TestDynamicallyAccessedMethod ()
 			{
-				typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				yield return 0;
 				await MethodAsync ();
 			}
@@ -419,15 +419,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class WarnInLocalFunction
 		{
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static void TestCall ()
 			{
 				LocalFunction ();
 
-				void LocalFunction () => RequiresUnreferencedCodeMethod ();
+				void LocalFunction () => MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static void TestCallWithClosure (int p = 0)
 			{
 				LocalFunction ();
@@ -435,37 +435,37 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				void LocalFunction ()
 				{
 					p++;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestReflectionAccess ()
 			{
 				LocalFunction ();
 
-				void LocalFunction () => typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				void LocalFunction () => typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static void TestLdftn ()
 			{
 				LocalFunction ();
 
 				void LocalFunction ()
 				{
-					var action = new Action (RequiresUnreferencedCodeMethod);
+					var action = new Action (MethodWithRequires);
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestDynamicallyAccessedMethod ()
 			{
 				LocalFunction ();
 
-				void LocalFunction () => typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				void LocalFunction () => typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 			}
 
 			public static void Test ()
@@ -480,7 +480,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class SuppressInLocalFunction
 		{
-			// RequiresUnreferencedCode doesn't propagate into local functions yet
+			// Requires doesn't propagate into local functions yet
 			// so its suppression effect also doesn't propagate
 
 			[RequiresUnreferencedCode ("Suppress in body")]
@@ -489,7 +489,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction ();
 
 				[ExpectedWarning ("IL2026")]
-				void LocalFunction () => RequiresUnreferencedCodeMethod ();
+				void LocalFunction () => MethodWithRequires ();
 			}
 
 			[RequiresUnreferencedCode ("Suppress in body")]
@@ -501,7 +501,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				void LocalFunction ()
 				{
 					p++;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 				}
 			}
 
@@ -511,8 +511,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction ();
 
 				[ExpectedWarning ("IL2026")]
-				void LocalFunction () => typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-					.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+				void LocalFunction () => typeof (RequiresInCompilerGeneratedCode)
+					.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 					.Invoke (null, new object[] { });
 			}
 
@@ -524,7 +524,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2026")]
 				void LocalFunction ()
 				{
-					var action = new Action (RequiresUnreferencedCodeMethod);
+					var action = new Action (MethodWithRequires);
 				}
 			}
 
@@ -534,7 +534,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				LocalFunction ();
 
 				[ExpectedWarning ("IL2026")]
-				void LocalFunction () => typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+				void LocalFunction () => typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 			}
 
 			[RequiresUnreferencedCode ("Suppress in body")]
@@ -612,35 +612,35 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[RequiresUnreferencedCode ("Suppress in body")]
-			static void TestCallRUCMethodInLtftnLocalFunction ()
+			static void TestCallMethodWithRequiresInLtftnLocalFunction ()
 			{
 				var _ = new Action (LocalFunction);
 
 				[ExpectedWarning ("IL2026")]
-				void LocalFunction () => RequiresUnreferencedCodeMethod ();
+				void LocalFunction () => MethodWithRequires ();
 			}
 
 			class DynamicallyAccessedLocalFunction
 			{
 				[RequiresUnreferencedCode ("Suppress in body")]
-				public static void TestCallRUCMethodInDynamicallyAccessedLocalFunction ()
+				public static void TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ()
 				{
 					typeof (DynamicallyAccessedLocalFunction).RequiresNonPublicMethods ();
 
 					[ExpectedWarning ("IL2026")]
-					void LocalFunction () => RequiresUnreferencedCodeMethod ();
+					void LocalFunction () => MethodWithRequires ();
 				}
 			}
 
 			[ExpectedWarning ("IL2026")]
 			static void TestSuppressionLocalFunction ()
 			{
-				LocalFunction (); // This will produce a warning since the location function has RUC on it
+				LocalFunction (); // This will produce a warning since the location function has Requires on it
 
 				[RequiresUnreferencedCode ("Suppress in body")]
 				void LocalFunction (Type unknownType = null)
 				{
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 					unknownType.RequiresNonPublicMethods ();
 				}
 			}
@@ -653,7 +653,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[RequiresUnreferencedCode ("Suppress in body")]
 				void LocalFunction (Type unknownType = null)
 				{
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 					unknownType.RequiresNonPublicMethods ();
 				}
 			}
@@ -673,8 +673,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestGenericLocalFunctionInner<TestType> ();
 				TestGenericLocalFunctionWithAnnotations<TestType> ();
 				TestGenericLocalFunctionWithAnnotationsAndClosure<TestType> ();
-				TestCallRUCMethodInLtftnLocalFunction ();
-				DynamicallyAccessedLocalFunction.TestCallRUCMethodInDynamicallyAccessedLocalFunction ();
+				TestCallMethodWithRequiresInLtftnLocalFunction ();
+				DynamicallyAccessedLocalFunction.TestCallMethodWithRequiresInDynamicallyAccessedLocalFunction ();
 				TestSuppressionLocalFunction ();
 				TestSuppressionOnOuterAndLocalFunction ();
 			}
@@ -682,44 +682,44 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class WarnInLambda
 		{
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static void TestCall ()
 			{
-				Action _ = () => RequiresUnreferencedCodeMethod ();
+				Action _ = () => MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static void TestCallWithClosure (int p = 0)
 			{
 				Action _ = () => {
 					p++;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestReflectionAccess ()
 			{
 				Action _ = () => {
-					typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-						.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+					typeof (RequiresInCompilerGeneratedCode)
+						.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 						.Invoke (null, new object[] { });
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static void TestLdftn ()
 			{
 				Action _ = () => {
-					var action = new Action (RequiresUnreferencedCodeMethod);
+					var action = new Action (MethodWithRequires);
 				};
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static void TestDynamicallyAccessedMethod ()
 			{
 				Action _ = () => {
-					typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+					typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				};
 			}
 
@@ -735,17 +735,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class SuppressInLambda
 		{
-			// RequiresUnreferencedCode doesn't propagate into lambdas
+			// Requires doesn't propagate into lambdas
 
 			// C# currently doesn't allow attributes on lambdas
-			// - This would be useful as a workaround for the limitation as RUC could be applied to the lambda directly
+			// - This would be useful as a workaround for the limitation as Requires could be applied to the lambda directly
 			// - Would be useful for testing - have to use the CompilerGeneratedCode = true trick instead
 
 			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestCall ()
 			{
-				Action _ = () => RequiresUnreferencedCodeMethod ();
+				Action _ = () => MethodWithRequires ();
 			}
 
 			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
@@ -753,7 +753,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestCallWithReflectionAnalysisWarning ()
 			{
-				// This should not produce warning because the RUC
+				// This should not produce warning because the Requires
 				Action<Type> _ = (t) => t.RequiresPublicMethods ();
 			}
 
@@ -763,7 +763,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			{
 				Action _ = () => {
 					p++;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 				};
 			}
 
@@ -773,8 +773,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void TestReflectionAccess ()
 			{
 				Action _ = () => {
-					typeof (RequiresUnreferencedCodeInCompilerGeneratedCode)
-						.GetMethod ("RequiresUnreferencedCodeMethod", System.Reflection.BindingFlags.NonPublic)
+					typeof (RequiresInCompilerGeneratedCode)
+						.GetMethod ("MethodWithRequires", System.Reflection.BindingFlags.NonPublic)
 						.Invoke (null, new object[] { });
 				};
 			}
@@ -784,7 +784,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void TestLdftn ()
 			{
 				Action _ = () => {
-					var action = new Action (RequiresUnreferencedCodeMethod);
+					var action = new Action (MethodWithRequires);
 				};
 			}
 
@@ -794,7 +794,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static void TestDynamicallyAccessedMethod ()
 			{
 				Action _ = () => {
-					typeof (TypeWithRUCMethod).RequiresNonPublicMethods ();
+					typeof (TypeWithMethodWithRequires).RequiresNonPublicMethods ();
 				};
 			}
 
@@ -843,7 +843,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class WarnInComplex
 		{
-			[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true)]
+			[ExpectedWarning ("IL2026", "--MethodWithRequires--", CompilerGeneratedCode = true)]
 			static async void TestIteratorLocalFunctionInAsync ()
 			{
 				await MethodAsync ();
@@ -853,16 +853,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				IEnumerable<int> LocalFunction ()
 				{
 					yield return 0;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 					yield return 1;
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--TypeWithMethodWithRequires.MethodWithRequires--", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
 			static IEnumerable<int> TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ()
 			{
 				yield return 1;
-				MethodWithGenericWhichRequiresMethods<TypeWithRUCMethod> ();
+				MethodWithGenericWhichRequiresMethods<TypeWithMethodWithRequires> ();
 			}
 
 			public static void Test ()
@@ -885,7 +885,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				IEnumerable<int> LocalFunction ()
 				{
 					yield return 0;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 					yield return 1;
 				}
 			}
@@ -901,7 +901,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				IEnumerable<int> LocalFunction ()
 				{
 					yield return 0;
-					RequiresUnreferencedCodeMethod ();
+					MethodWithRequires ();
 					yield return 1;
 				}
 			}
@@ -909,7 +909,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static IEnumerable<int> TestDynamicallyAccessedMethodViaGenericMethodParameterInIterator ()
 			{
-				MethodWithGenericWhichRequiresMethods<TypeWithRUCMethod> ();
+				MethodWithGenericWhichRequiresMethods<TypeWithMethodWithRequires> ();
 				yield return 0;
 			}
 
@@ -924,35 +924,35 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class StateMachinesOnlyReferencedViaReflection
 		{
-			[RequiresUnreferencedCode ("RUC to suppress")]
+			[RequiresUnreferencedCode ("Requires to suppress")]
 			static IEnumerable<int> TestIteratorOnlyReferencedViaReflectionWhichShouldSuppress ()
 			{
 				yield return 0;
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
-			[RequiresUnreferencedCode ("RUC to suppress")]
+			[RequiresUnreferencedCode ("Requires to suppress")]
 			static async void TestAsyncOnlyReferencedViaReflectionWhichShouldSuppress ()
 			{
 				await MethodAsync ();
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
 			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true)]
 			static IEnumerable<int> TestIteratorOnlyReferencedViaReflectionWhichShouldWarn ()
 			{
 				yield return 0;
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
 			[ExpectedWarning ("IL2026", CompilerGeneratedCode = true)]
 			static async void TestAsyncOnlyReferencedViaReflectionWhichShouldWarn ()
 			{
 				await MethodAsync ();
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
-			[ExpectedWarning ("IL2026", "RUC to suppress", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "Requires to suppress", ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				// This is not a 100% reliable test, since in theory it can be marked in any order and so it could happen that the
@@ -964,64 +964,64 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class ComplexCases
 		{
-			public class AsyncBodyCallingRUCMethod
+			public class AsyncBodyCallingMethodWithRequires
 			{
 				[RequiresUnreferencedCode ("")]
-				static Task<object> MethodWithRUCAsync (Type type)
+				static Task<object> MethodWithRequiresAsync (Type type)
 				{
 					return Task.FromResult (new object ());
 				}
 
 				[RequiresUnreferencedCode ("ParentSuppression")]
-				static async Task<object> AsyncMethodCallingRUC (Type type)
+				static async Task<object> AsyncMethodCallingRequires (Type type)
 				{
 					using (var diposable = await GetDisposableAsync ()) {
-						return await MethodWithRUCAsync (type);
+						return await MethodWithRequiresAsync (type);
 					}
 				}
 
 				[ExpectedWarning ("IL2026", "ParentSuppression")]
 				public static void Test ()
 				{
-					AsyncMethodCallingRUC (typeof (object));
+					AsyncMethodCallingRequires (typeof (object));
 				}
 			}
 
-			public class GenericAsyncBodyCallingRUCMethod
+			public class GenericAsyncBodyCallingMethodWithRequires
 			{
 				[RequiresUnreferencedCode ("")]
-				static ValueTask<TValue> MethodWithRUCAsync<TValue> ()
+				static ValueTask<TValue> MethodWithRequiresAsync<TValue> ()
 				{
 					return ValueTask.FromResult (default (TValue));
 				}
 
 				[RequiresUnreferencedCode ("ParentSuppression")]
-				static async Task<T> AsyncMethodCallingRUC<T> ()
+				static async Task<T> AsyncMethodCallingRequires<T> ()
 				{
 					using (var disposable = await GetDisposableAsync ()) {
-						return await MethodWithRUCAsync<T> ();
+						return await MethodWithRequiresAsync<T> ();
 					}
 				}
 
 				[ExpectedWarning ("IL2026", "ParentSuppression")]
 				public static void Test ()
 				{
-					AsyncMethodCallingRUC<object> ();
+					AsyncMethodCallingRequires<object> ();
 				}
 			}
 
-			public class GenericAsyncEnumerableBodyCallingRUCWithAnnotations
+			public class GenericAsyncEnumerableBodyCallingRequiresWithAnnotations
 			{
-				class RUCOnCtor
+				class RequiresOnCtor
 				{
 					[RequiresUnreferencedCode ("")]
-					public RUCOnCtor ()
+					public RequiresOnCtor ()
 					{
 					}
 				}
 
 				[RequiresUnreferencedCode ("ParentSuppression")]
-				static IAsyncEnumerable<TValue> AsyncEnumMethodCallingRUC<
+				static IAsyncEnumerable<TValue> AsyncEnumMethodCallingRequires<
 					[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicProperties)] TValue> ()
 				{
 					return CreateAsync ();
@@ -1030,7 +1030,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 					static async IAsyncEnumerable<TValue> CreateAsync ()
 					{
 						await MethodAsync ();
-						new RUCOnCtor ();
+						new RequiresOnCtor ();
 						yield return default (TValue);
 					}
 				}
@@ -1038,7 +1038,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2026", "ParentSuppression")]
 				public static void Test ()
 				{
-					AsyncEnumMethodCallingRUC<object> ();
+					AsyncEnumMethodCallingRequires<object> ();
 				}
 			}
 
@@ -1052,15 +1052,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			return await Task.FromResult (0);
 		}
 
-		[RequiresUnreferencedCode ("--RequiresUnreferencedCodeMethod--")]
-		static void RequiresUnreferencedCodeMethod ()
+		[RequiresUnreferencedCode ("--MethodWithRequires--")]
+		static void MethodWithRequires ()
 		{
 		}
 
-		class TypeWithRUCMethod
+		class TypeWithMethodWithRequires
 		{
-			[RequiresUnreferencedCode ("--TypeWithRUCMethod.RequiresUnreferencedCodeMethod--")]
-			static void RequiresUnreferencedCodeMethod ()
+			[RequiresUnreferencedCode ("--TypeWithMethodWithRequires.MethodWithRequires--")]
+			static void MethodWithRequires ()
 			{
 			}
 		}

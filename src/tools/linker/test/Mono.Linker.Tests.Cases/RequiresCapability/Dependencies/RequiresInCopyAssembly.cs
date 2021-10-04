@@ -9,9 +9,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability.Dependencies
 {
-	public class RequiresUnreferencedCodeInCopyAssembly
+	public class RequiresInCopyAssembly
 	{
-		public RequiresUnreferencedCodeInCopyAssembly ()
+		public RequiresInCopyAssembly ()
 		{
 		}
 
