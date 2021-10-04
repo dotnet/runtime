@@ -43,8 +43,8 @@ namespace System.IO
                         // Some devices (such as /dev/tty) are reported as seekable by macOS but pread is unable to handle them and returns ENXIO.
                         // Historically we were able to handle /dev/tty using read so we need to fallback to read for that case.
                         Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        // We want to discover more errors that could make pread fail and add unit tests for them.
-                        Debug.Assert(errorInfo.Error == Interop.Error.ENXIO, $"Unexpected error: {errorInfo.Error}");
+                        AssertPReadPWriteKnownErrors(errorInfo.Error);
+
                         if (errorInfo.Error == Interop.Error.ENXIO)
                         {
                             handle.SupportsRandomAccess = false;
@@ -121,8 +121,7 @@ namespace System.IO
                             // Some devices (such as /dev/tty) are reported as seekable by macOS but pwrite is unable to handle them and returns ENXIO.
                             // Historically we were able to handle /dev/tty using write so we need to fallback to write for that case.
                             Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                            // We want to discover more errors that could make pwrite fail and add unit tests for them.
-                            Debug.Assert(errorInfo.Error == Interop.Error.ENXIO, $"Unexpected error: {errorInfo.Error}");
+                            AssertPReadPWriteKnownErrors(errorInfo.Error);
 
                             if (errorInfo.Error == Interop.Error.ENXIO)
                             {
@@ -162,6 +161,13 @@ namespace System.IO
             }
 #endif
             return byteCount;
+        }
+
+        private static void AssertPReadPWriteKnownErrors(Interop.Error error)
+        {
+            // We want to discover more errors that could make pread/pwrite fail and add unit tests for them.
+            Debug.Assert(error == Interop.Error.EBADF || error == Interop.Error.ENXIO,
+                $"Unexpected error: {error}");
         }
 
         internal static unsafe void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)

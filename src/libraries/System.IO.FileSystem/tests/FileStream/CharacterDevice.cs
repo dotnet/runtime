@@ -17,7 +17,10 @@ namespace System.IO.Tests
         public void CharacterDevice_FileStream_Write(string devicePath, FileOptions fileOptions)
         {
             FileStreamOptions options = new() { Options = fileOptions, Access = FileAccess.Write };
-            VerifyDeviceIsReachable(devicePath, options);
+            if (IsDeviceUnreachable(devicePath, options))
+            {
+                return;
+            }
 
             using FileStream fs = new(devicePath, options);
             fs.Write(Encoding.UTF8.GetBytes("foo"));
@@ -28,7 +31,10 @@ namespace System.IO.Tests
         public async Task CharacterDevice_FileStream_WriteAsync(string devicePath, FileOptions fileOptions)
         {
             FileStreamOptions options = new() { Options = fileOptions, Access = FileAccess.Write };
-            VerifyDeviceIsReachable(devicePath, options);
+            if (IsDeviceUnreachable(devicePath, options))
+            {
+                return;
+            }
 
             using FileStream fs = new(devicePath, options);
             await fs.WriteAsync(Encoding.UTF8.GetBytes("foo"));
@@ -38,7 +44,10 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public void CharacterDevice_WriteAllBytes(string devicePath)
         {
-            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Access = FileAccess.Write });
+            if (IsDeviceUnreachable(devicePath, new FileStreamOptions{ Access = FileAccess.Write }))
+            {
+                return;
+            }
 
             File.WriteAllBytes(devicePath, Encoding.UTF8.GetBytes("foo"));
         }
@@ -47,7 +56,10 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public async Task CharacterDevice_WriteAllBytesAsync(string devicePath)
         {
-            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Options = FileOptions.Asynchronous, Access = FileAccess.Write });
+            if (IsDeviceUnreachable(devicePath, new FileStreamOptions{ Options = FileOptions.Asynchronous, Access = FileAccess.Write }))
+            {
+                return;
+            }
 
             await File.WriteAllBytesAsync(devicePath, Encoding.UTF8.GetBytes("foo"));
         }
@@ -56,7 +68,10 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public void CharacterDevice_WriteAllText(string devicePath)
         {
-            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Access = FileAccess.Write });
+            if (IsDeviceUnreachable(devicePath, new FileStreamOptions{ Access = FileAccess.Write }))
+            {
+                return;
+            }
 
             File.WriteAllText(devicePath, "foo");
         }
@@ -65,26 +80,31 @@ namespace System.IO.Tests
         [MemberData(nameof(DevicePath_TestData))]
         public async Task CharacterDevice_WriteAllTextAsync(string devicePath)
         {
-            VerifyDeviceIsReachable(devicePath, new FileStreamOptions{ Options = FileOptions.Asynchronous, Access = FileAccess.Write });
+            if (IsDeviceUnreachable(devicePath, new FileStreamOptions{ Options = FileOptions.Asynchronous, Access = FileAccess.Write }))
+            {
+                return;
+            }
 
             await File.WriteAllTextAsync(devicePath, "foo");
         }
 
-        private static void VerifyDeviceIsReachable(string devicePath, FileStreamOptions? options)
+        private static bool IsDeviceUnreachable(string devicePath, FileStreamOptions? options)
         {
             if (!File.Exists(devicePath))
             {
-                throw new SkipTestException("Device does not exists");
+                return true;
             }
 
             try
             {
                 File.Open(devicePath, options).Dispose();
             }
-            catch (IOException ex)
+            catch (IOException)
             {
-                throw new SkipTestException($"Device failed to open: {ex.Message}");
+                return true;
             }
+
+            return false;
         }
 
         private static string[] DevicePaths = { "/dev/tty", "/dev/console", "/dev/null", "/dev/zero" };
@@ -93,7 +113,7 @@ namespace System.IO.Tests
         {
             foreach (string devicePath in DevicePaths)
             {
-                foreach (FileOptions options in Enum.GetValues<FileOptions>())
+                foreach (FileOptions options in new[] { FileOptions.None, FileOptions.Asynchronous })
                 {
                     yield return new object[] { devicePath, options};
                 }
