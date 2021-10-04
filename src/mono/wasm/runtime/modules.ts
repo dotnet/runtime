@@ -1,17 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/* eslint-disable @typescript-eslint/triple-slash-reference */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 /// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
 import { t_ModuleExtension } from "./exports";
 import { MonoConfig, t_RuntimeHelpers } from "./types";
 
-export var Module: t_Module & t_ModuleExtension;
-export var MONO: any;
-export var BINDING: any;
+export let Module: t_Module & t_ModuleExtension;
+export let MONO: any;
+export let BINDING: any;
 
-export function setLegacyModules(mono: any, binding: any, module: t_Module & t_ModuleExtension) {
+export function setLegacyModules(
+    mono: any,
+    binding: any,
+    module: t_Module & t_ModuleExtension
+): void {
     Module = module;
     MONO = mono;
     BINDING = binding;

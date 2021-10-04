@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { JSHandle, MonoArray } from "./types";
+import { JSHandle, MonoArray, MonoObject, MonoString } from "./types";
 import { Module } from "./modules";
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error } from "./method-calls";
@@ -9,8 +9,13 @@ import { _js_to_mono_obj } from "./js-to-cs";
 
 // Creates a new typed array from pinned array address from pinned_array allocated on the heap to the typed array.
 // 	 adress of managed pinned array -> copy from heap -> typed array memory
-function typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number) {
-
+function typed_array_from(
+    pinned_array: MonoArray,
+    begin: number,
+    end: number,
+    bytes_per_element: number,
+    type: number
+) {
     // typed array
     let newTypedArray: TypedArray | null = null;
 
@@ -39,21 +44,32 @@ function typed_array_from(pinned_array: MonoArray, begin: number, end: number, b
         case 14:
             newTypedArray = new Float64Array(end - begin);
             break;
-        case 15:  // This is a special case because the typed array is also byte[]
+        case 15: // This is a special case because the typed array is also byte[]
             newTypedArray = new Uint8ClampedArray(end - begin);
             break;
         default:
             throw new Error("Unknown array type " + type);
     }
 
-    typedarray_copy_from(newTypedArray, pinned_array, begin, end, bytes_per_element);
+    typedarray_copy_from(
+        newTypedArray,
+        pinned_array,
+        begin,
+        end,
+        bytes_per_element
+    );
     return newTypedArray;
 }
 
 // Copy the existing typed array to the heap pointed to by the pinned array address
 // 	 typed array memory -> copy to heap -> address of managed pinned array
-function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number) {
-
+function typedarray_copy_to(
+    typed_array: TypedArray,
+    pinned_array: MonoArray,
+    begin: number,
+    end: number,
+    bytes_per_element: number
+) {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
@@ -62,41 +78,62 @@ function typedarray_copy_to(typed_array: TypedArray, pinned_array: MonoArray, be
     // you need to use a view. A view provides a context — that is, a data type, starting offset,
     // and number of elements — that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-    if (has_backing_array_buffer(typed_array) && typed_array.BYTES_PER_ELEMENT) {
+    if (
+        has_backing_array_buffer(typed_array) &&
+        typed_array.BYTES_PER_ELEMENT
+    ) {
         // Some sanity checks of what is being asked of us
         // lets play it safe and throw an error here instead of assuming to much.
         // Better safe than sorry later
         if (bytes_per_element !== typed_array.BYTES_PER_ELEMENT)
-            throw new Error("Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT '" + typed_array.BYTES_PER_ELEMENT + "' sizeof managed element: '" + bytes_per_element + "'");
+            throw new Error(
+                "Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT '" +
+                    typed_array.BYTES_PER_ELEMENT +
+                    "' sizeof managed element: '" +
+                    bytes_per_element +
+                    "'"
+            );
 
         // how much space we have to work with
         let num_of_bytes = (end - begin) * bytes_per_element;
         // how much typed buffer space are we talking about
         const view_bytes = typed_array.length * typed_array.BYTES_PER_ELEMENT;
         // only use what is needed.
-        if (num_of_bytes > view_bytes)
-            num_of_bytes = view_bytes;
+        if (num_of_bytes > view_bytes) num_of_bytes = view_bytes;
 
         // offset index into the view
         const offset = begin * bytes_per_element;
 
         // Create a view over the heap pointed to by the pinned array address
-        const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>pinned_array + offset, num_of_bytes);
+        const heapBytes = new Uint8Array(
+            Module.HEAPU8.buffer,
+            <any>pinned_array + offset,
+            num_of_bytes
+        );
         // Copy the bytes of the typed array to the heap.
-        heapBytes.set(new Uint8Array(typed_array.buffer, typed_array.byteOffset, num_of_bytes));
+        heapBytes.set(
+            new Uint8Array(
+                typed_array.buffer,
+                typed_array.byteOffset,
+                num_of_bytes
+            )
+        );
 
         return num_of_bytes;
-    }
-    else {
+    } else {
         throw new Error("Object '" + typed_array + "' is not a typed array");
     }
-
 }
 
 // Copy the pinned array address from pinned_array allocated on the heap to the typed array.
 // 	 adress of managed pinned array -> copy from heap -> typed array memory
-function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number) {
-
+function typedarray_copy_from(
+    typed_array: TypedArray,
+    pinned_array: MonoArray,
+    begin: number,
+    end: number,
+    bytes_per_element: number
+) {
     // JavaScript typed arrays are array-like objects and provide a mechanism for accessing
     // raw binary data. (...) To achieve maximum flexibility and efficiency, JavaScript typed arrays
     // split the implementation into buffers and views. A buffer (implemented by the ArrayBuffer object)
@@ -105,65 +142,128 @@ function typedarray_copy_from(typed_array: TypedArray, pinned_array: MonoArray, 
     // you need to use a view. A view provides a context — that is, a data type, starting offset,
     // and number of elements — that turns the data into an actual typed array.
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-    if (has_backing_array_buffer(typed_array) && typed_array.BYTES_PER_ELEMENT) {
+    if (
+        has_backing_array_buffer(typed_array) &&
+        typed_array.BYTES_PER_ELEMENT
+    ) {
         // Some sanity checks of what is being asked of us
         // lets play it safe and throw an error here instead of assuming to much.
         // Better safe than sorry later
         if (bytes_per_element !== typed_array.BYTES_PER_ELEMENT)
-            throw new Error("Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT '" + typed_array.BYTES_PER_ELEMENT + "' sizeof managed element: '" + bytes_per_element + "'");
+            throw new Error(
+                "Inconsistent element sizes: TypedArray.BYTES_PER_ELEMENT '" +
+                    typed_array.BYTES_PER_ELEMENT +
+                    "' sizeof managed element: '" +
+                    bytes_per_element +
+                    "'"
+            );
 
         // how much space we have to work with
         let num_of_bytes = (end - begin) * bytes_per_element;
         // how much typed buffer space are we talking about
         const view_bytes = typed_array.length * typed_array.BYTES_PER_ELEMENT;
         // only use what is needed.
-        if (num_of_bytes > view_bytes)
-            num_of_bytes = view_bytes;
+        if (num_of_bytes > view_bytes) num_of_bytes = view_bytes;
 
         // Create a new view for mapping
-        const typedarrayBytes = new Uint8Array(typed_array.buffer, 0, num_of_bytes);
+        const typedarrayBytes = new Uint8Array(
+            typed_array.buffer,
+            0,
+            num_of_bytes
+        );
         // offset index into the view
         const offset = begin * bytes_per_element;
         // Set view bytes to value from HEAPU8
-        typedarrayBytes.set(Module.HEAPU8.subarray(<any>pinned_array + offset, <any>pinned_array + offset + num_of_bytes));
+        typedarrayBytes.set(
+            Module.HEAPU8.subarray(
+                <any>pinned_array + offset,
+                <any>pinned_array + offset + num_of_bytes
+            )
+        );
         return num_of_bytes;
-    }
-    else {
+    } else {
         throw new Error("Object '" + typed_array + "' is not a typed array");
     }
 }
 
-export function mono_wasm_typed_array_copy_to(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr) {
+export function mono_wasm_typed_array_copy_to(
+    js_handle: JSHandle,
+    pinned_array: MonoArray,
+    begin: number,
+    end: number,
+    bytes_per_element: number,
+    is_exception: Int32Ptr
+): MonoObject {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
-        return wrap_error(is_exception, "ERR07: Invalid JS object handle '" + js_handle + "'");
+        return wrap_error(
+            is_exception,
+            "ERR07: Invalid JS object handle '" + js_handle + "'"
+        );
     }
 
-    const res = typedarray_copy_to(js_obj, pinned_array, begin, end, bytes_per_element);
+    const res = typedarray_copy_to(
+        js_obj,
+        pinned_array,
+        begin,
+        end,
+        bytes_per_element
+    );
     // returns num_of_bytes boxed
     return _js_to_mono_obj(false, res);
 }
 
-export function mono_wasm_typed_array_from(pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, type: number, is_exception: Int32Ptr) {
-    const res = typed_array_from(pinned_array, begin, end, bytes_per_element, type);
+export function mono_wasm_typed_array_from(
+    pinned_array: MonoArray,
+    begin: number,
+    end: number,
+    bytes_per_element: number,
+    type: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    is_exception: Int32Ptr
+): MonoObject {
+    const res = typed_array_from(
+        pinned_array,
+        begin,
+        end,
+        bytes_per_element,
+        type
+    );
     // returns JS typed array like Int8Array, to be wraped with JSObject proxy
     return _js_to_mono_obj(true, res);
 }
 
-export function mono_wasm_typed_array_copy_from(js_handle: JSHandle, pinned_array: MonoArray, begin: number, end: number, bytes_per_element: number, is_exception: Int32Ptr) {
+export function mono_wasm_typed_array_copy_from(
+    js_handle: JSHandle,
+    pinned_array: MonoArray,
+    begin: number,
+    end: number,
+    bytes_per_element: number,
+    is_exception: Int32Ptr
+): MonoObject | MonoString {
     const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!js_obj) {
-        return wrap_error(is_exception, "ERR08: Invalid JS object handle '" + js_handle + "'");
+        return wrap_error(
+            is_exception,
+            "ERR08: Invalid JS object handle '" + js_handle + "'"
+        );
     }
 
-    const res = typedarray_copy_from(js_obj, pinned_array, begin, end, bytes_per_element);
+    const res = typedarray_copy_from(
+        js_obj,
+        pinned_array,
+        begin,
+        end,
+        bytes_per_element
+    );
     // returns num_of_bytes boxed
     return _js_to_mono_obj(false, res);
 }
 
-export function has_backing_array_buffer(js_obj: any) {
+export function has_backing_array_buffer(js_obj: TypedArray): boolean {
     return typeof SharedArrayBuffer !== "undefined"
-        ? js_obj.buffer instanceof ArrayBuffer || js_obj.buffer instanceof SharedArrayBuffer
+        ? js_obj.buffer instanceof ArrayBuffer ||
+              js_obj.buffer instanceof SharedArrayBuffer
         : js_obj.buffer instanceof ArrayBuffer;
 }
 
@@ -171,7 +271,11 @@ export function has_backing_array_buffer(js_obj: any) {
 //  and it is copied to that location. returns the address of the allocation.
 export function mono_wasm_load_bytes_into_heap(bytes: Uint8Array): VoidPtr {
     const memoryOffset = Module._malloc(bytes.length);
-    const heapBytes = new Uint8Array(Module.HEAPU8.buffer, <any>memoryOffset, bytes.length);
+    const heapBytes = new Uint8Array(
+        Module.HEAPU8.buffer,
+        <any>memoryOffset,
+        bytes.length
+    );
     heapBytes.set(bytes);
     return memoryOffset;
 }

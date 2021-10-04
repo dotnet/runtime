@@ -2,17 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRootBuffer } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull } from "./types";
+import {
+    MonoClass,
+    MonoMethod,
+    MonoObject,
+    coerceNull,
+    VoidPtrNull,
+} from "./types";
 import { BINDING, MONO, runtimeHelpers } from "./modules";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import {
+    js_string_to_mono_string,
+    js_string_to_mono_string_interned,
+} from "./strings";
 import cwraps from "./cwraps";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
 const _method_descriptions = new Map<MonoMethod, string>();
 
-export function find_method(klass: MonoClass, name: string, n: number) {
+export function find_method(
+    klass: MonoClass,
+    name: string,
+    n: number
+): MonoMethod {
     const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
     if (result) {
         _method_descriptions.set(result, name);
@@ -20,21 +33,36 @@ export function find_method(klass: MonoClass, name: string, n: number) {
     return result;
 }
 
-export function get_method(method_name: string) {
+export function get_method(method_name: string): MonoMethod {
     const res = find_method(runtimeHelpers.wasm_runtime_class, method_name, -1);
     if (!res)
-        throw "Can't find method " + runtimeHelpers.runtime_namespace + "." + runtimeHelpers.runtime_classname + ":" + method_name;
+        throw (
+            "Can't find method " +
+            runtimeHelpers.runtime_namespace +
+            "." +
+            runtimeHelpers.runtime_classname +
+            ":" +
+            method_name
+        );
     return res;
 }
 
-export function bind_runtime_method(method_name: string, signature: ArgsMarshalString) {
+export function bind_runtime_method(
+    method_name: string,
+    signature: ArgsMarshalString
+): Function {
     const method = get_method(method_name);
     return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
 }
 
-
-function _create_named_function(name: string, argumentNames: string[], body: string, closure: any) {
-    let result = null, closureArgumentList = null, closureArgumentNames = null;
+function _create_named_function(
+    name: string,
+    argumentNames: string[],
+    body: string,
+    closure: any
+): Function {
+    let closureArgumentList: Array<any> | null = null;
+    let closureArgumentNames: string[] | null = null;
 
     if (closure) {
         closureArgumentNames = Object.keys(closure);
@@ -43,15 +71,27 @@ function _create_named_function(name: string, argumentNames: string[], body: str
             closureArgumentList[i] = closure[closureArgumentNames[i]];
     }
 
-    const constructor = _create_rebindable_named_function(name, argumentNames, body, closureArgumentNames);
-    result = constructor.apply(null, closureArgumentList);
+    const constructor = _create_rebindable_named_function(
+        name,
+        argumentNames,
+        body,
+        closureArgumentNames
+    );
+    // eslint-disable-next-line prefer-spread
+    const result = constructor.apply(null, closureArgumentList);
 
     return result;
 }
 
-function _create_rebindable_named_function(name: string, argumentNames: string[], body: string, closureArgNames: string[] | null) {
+function _create_rebindable_named_function(
+    name: string,
+    argumentNames: string[],
+    body: string,
+    closureArgNames: string[] | null
+) {
     const strictPrefix = "\"use strict\";\r\n";
-    let uriPrefix = "", escapedFunctionIdentifier = "";
+    let uriPrefix = "",
+        escapedFunctionIdentifier = "";
 
     if (name) {
         uriPrefix = "//# sourceURL=https://mono-wasm.invalid/" + name + "\r\n";
@@ -60,7 +100,10 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
         escapedFunctionIdentifier = "unnamed";
     }
 
-    let rawFunctionText = "function " + escapedFunctionIdentifier + "(" +
+    let rawFunctionText =
+        "function " +
+        escapedFunctionIdentifier +
+        "(" +
         argumentNames.join(", ") +
         ") {\r\n" +
         body +
@@ -69,11 +112,13 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
     const lineBreakRE = /\r(\n?)/g;
 
     rawFunctionText =
-        uriPrefix + strictPrefix +
+        uriPrefix +
+        strictPrefix +
         rawFunctionText.replace(lineBreakRE, "\r\n    ") +
         `    return ${escapedFunctionIdentifier};\r\n`;
 
-    let result = null, keys = null;
+    let result = null,
+        keys = null;
 
     if (closureArgNames) {
         keys = closureArgNames.concat([rawFunctionText]);
@@ -85,29 +130,48 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
     return result;
 }
 
-export function _create_primitive_converters() {
+export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
-    result.set("s", { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }], size: 0, needs_root: true });
-    // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri, 
+    result.set("s", {
+        steps: [{ convert: js_string_to_mono_string.bind(BINDING) }],
+        size: 0,
+        needs_root: true,
+    });
+    result.set("S", {
+        steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }],
+        size: 0,
+        needs_root: true,
+    });
+    // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }], size: 0, needs_root: true });
-    result.set("u", { steps: [{ convert: _js_to_mono_uri.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", {
+        steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }],
+        size: 0,
+        needs_root: true,
+    });
+    result.set("u", {
+        steps: [{ convert: _js_to_mono_uri.bind(BINDING, false) }],
+        size: 0,
+        needs_root: true,
+    });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-    result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
+    result.set("j", {
+        steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }],
+        size: 8,
+    });
 
     result.set("i", { steps: [{ indirect: "i32" }], size: 8 });
     result.set("l", { steps: [{ indirect: "i64" }], size: 8 });
     result.set("f", { steps: [{ indirect: "float" }], size: 8 });
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
-
-    return result;
 }
 
-function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+function _create_converter_for_marshal_string(
+    args_marshal: ArgsMarshalString
+): Converter {
     const steps = [];
     let size = 0;
     let is_result_definitely_unmarshaled = false,
@@ -130,13 +194,11 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
             throw new Error("! must be at the end of the signature");
 
         const conv = primitiveConverters.get(key);
-        if (!conv)
-            throw new Error("Unknown parameter type " + key);
+        if (!conv) throw new Error("Unknown parameter type " + key);
 
         const localStep = Object.create(conv.steps[0]);
         localStep.size = conv.size;
-        if (conv.needs_root)
-            needs_root_buffer = true;
+        if (conv.needs_root) needs_root_buffer = true;
         localStep.needs_root = conv.needs_root;
         localStep.key = args_marshal[i];
         steps.push(localStep);
@@ -144,15 +206,19 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
     }
 
     return {
-        steps: steps, size: size, args_marshal: args_marshal,
+        steps: steps,
+        size: size,
+        args_marshal: args_marshal,
         is_result_definitely_unmarshaled: is_result_definitely_unmarshaled,
         is_result_possibly_unmarshaled: is_result_possibly_unmarshaled,
         result_unmarshaled_if_argc: result_unmarshaled_if_argc,
-        needs_root_buffer: needs_root_buffer
+        needs_root_buffer: needs_root_buffer,
     };
 }
 
-function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+function _get_converter_for_marshal_string(
+    args_marshal: ArgsMarshalString
+): Converter {
     let converter = _signature_converters.get(args_marshal);
     if (!converter) {
         converter = _create_converter_for_marshal_string(args_marshal);
@@ -162,9 +228,11 @@ function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Con
     return converter;
 }
 
-export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
+export function _compile_converter_for_marshal_string(
+    args_marshal: ArgsMarshalString
+): Converter {
     const converter = _get_converter_for_marshal_string(args_marshal);
-    if (typeof (converter.args_marshal) !== "string")
+    if (typeof converter.args_marshal !== "string")
         throw new Error("Corrupt converter for '" + args_marshal + "'");
 
     if (converter.compiled_function && converter.compiled_variadic_function)
@@ -177,10 +245,10 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
     let argumentNames = ["buffer", "rootBuffer", "method"];
 
     // worst-case allocation size instead of allocating dynamically, plus padding
-    const bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
+    const bufferSizeBytes = converter.size + args_marshal.length * 4 + 16;
 
     // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
-    const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
+    const indirectBaseOffset = (((args_marshal.length * 4 + 7) / 8) | 0) * 8;
 
     let closure: any = {};
     let indirectLocalOffset = 0;
@@ -203,13 +271,14 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
         if (step.convert) {
             closure[closureKey] = step.convert;
-            body.push(`var ${valueKey} = ${closureKey}(${argKey}, method, ${i});`);
+            body.push(
+                `var ${valueKey} = ${closureKey}(${argKey}, method, ${i});`
+            );
         } else {
             body.push(`var ${valueKey} = ${argKey};`);
         }
 
-        if (step.needs_root)
-            body.push(`rootBuffer.set (${i}, ${valueKey});`);
+        if (step.needs_root) body.push(`rootBuffer.set (${i}, ${valueKey});`);
 
         if (step.indirect) {
             let heapArrayName = null;
@@ -225,19 +294,34 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
                     heapArrayName = "HEAPF32";
                     break;
                 case "double":
-                    body.push(`Module.HEAPF64[indirect64 + ${(indirectLocalOffset / 8)}] = ${valueKey};`);
+                    body.push(
+                        `Module.HEAPF64[indirect64 + ${
+                            indirectLocalOffset / 8
+                        }] = ${valueKey};`
+                    );
                     break;
                 case "i64":
-                    body.push(`Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`);
+                    body.push(
+                        `Module.setValue (indirectStart + ${indirectLocalOffset}, ${valueKey}, 'i64');`
+                    );
                     break;
                 default:
-                    throw new Error("Unimplemented indirect type: " + step.indirect);
+                    throw new Error(
+                        "Unimplemented indirect type: " + step.indirect
+                    );
             }
 
             if (heapArrayName)
-                body.push(`Module.${heapArrayName}[indirect32 + ${(indirectLocalOffset / 4)}] = ${valueKey};`);
+                body.push(
+                    `Module.${heapArrayName}[indirect32 + ${
+                        indirectLocalOffset / 4
+                    }] = ${valueKey};`
+                );
 
-            body.push(`Module.HEAP32[buffer32 + ${i}] = indirectStart + ${indirectLocalOffset};`, "");
+            body.push(
+                `Module.HEAP32[buffer32 + ${i}] = indirectStart + ${indirectLocalOffset};`,
+                ""
+            );
             indirectLocalOffset += step.size!;
         } else {
             body.push(`Module.HEAP32[buffer32 + ${i}] = ${valueKey};`, "");
@@ -247,45 +331,59 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
     body.push("return buffer;");
 
-    var bodyJs = body.join("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
+    let bodyJs = body.join("\r\n"),
+        compiledFunction = null,
+        compiledVariadicFunction = null;
     try {
-        compiledFunction = _create_named_function("converter_" + converterName, argumentNames, bodyJs, closure);
+        compiledFunction = _create_named_function(
+            "converter_" + converterName,
+            argumentNames,
+            bodyJs,
+            closure
+        );
         converter.compiled_function = compiledFunction;
     } catch (exc) {
         converter.compiled_function = undefined;
-        console.warn("compiling converter failed for", bodyJs, "with error", exc);
+        console.warn(
+            "compiling converter failed for",
+            bodyJs,
+            "with error",
+            exc
+        );
         throw exc;
     }
 
     argumentNames = ["existingBuffer", "rootBuffer", "method", "args"];
     closure = {
-        converter: compiledFunction
+        converter: compiledFunction,
     };
-    body = [
-        "return converter(",
-        "  existingBuffer, rootBuffer, method,"
-    ];
+    body = ["return converter(", "  existingBuffer, rootBuffer, method,"];
 
     for (let i = 0; i < converter.steps.length; i++) {
         body.push(
-            "  args[" + i +
-            (
-                (i == converter.steps.length - 1)
-                    ? "]"
-                    : "], "
-            )
+            "  args[" + i + (i == converter.steps.length - 1 ? "]" : "], ")
         );
     }
 
     body.push(");");
 
-    var bodyJs = body.join("\r\n");
+    bodyJs = body.join("\r\n");
     try {
-        compiledVariadicFunction = _create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
+        compiledVariadicFunction = _create_named_function(
+            "variadic_converter_" + converterName,
+            argumentNames,
+            bodyJs,
+            closure
+        );
         converter.compiled_variadic_function = compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = undefined;
-        console.warn("compiling converter failed for", bodyJs, "with error", exc);
+        console.warn(
+            "compiling converter failed for",
+            bodyJs,
+            "with error",
+            exc
+        );
         throw exc;
     }
 
@@ -296,36 +394,62 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 }
 
 function _maybe_produce_signature_warning(converter: Converter) {
-    if (converter.has_warned_about_signature)
-        return;
+    if (converter.has_warned_about_signature) return;
 
-    console.warn("MONO_WASM: Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
+    console.warn(
+        "MONO_WASM: Deprecated raw return value signature: '" +
+            converter.args_marshal +
+            "'. End the signature with '!' instead of 'm'."
+    );
     converter.has_warned_about_signature = true;
 }
 
-export function _decide_if_result_is_marshaled(converter: Converter, argc: number) {
-    if (!converter)
-        return true;
+export function _decide_if_result_is_marshaled(
+    converter: Converter,
+    argc: number
+): boolean {
+    if (!converter) return true;
 
     if (
         converter.is_result_possibly_unmarshaled &&
-        (argc === converter.result_unmarshaled_if_argc)
+        argc === converter.result_unmarshaled_if_argc
     ) {
         if (argc < converter.result_unmarshaled_if_argc)
-            throw new Error(["Expected >= ", converter.result_unmarshaled_if_argc, "argument(s) but got", argc, "for signature " + converter.args_marshal].join(" "));
+            throw new Error(
+                [
+                    "Expected >= ",
+                    converter.result_unmarshaled_if_argc,
+                    "argument(s) but got",
+                    argc,
+                    "for signature " + converter.args_marshal,
+                ].join(" ")
+            );
 
         _maybe_produce_signature_warning(converter);
         return false;
     } else {
         if (argc < converter.steps.length)
-            throw new Error(["Expected", converter.steps.length, "argument(s) but got", argc, "for signature " + converter.args_marshal].join(" "));
+            throw new Error(
+                [
+                    "Expected",
+                    converter.steps.length,
+                    "argument(s) but got",
+                    argc,
+                    "for signature " + converter.args_marshal,
+                ].join(" ")
+            );
 
         return !converter.is_result_definitely_unmarshaled;
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string) {
-    if (typeof (args_marshal) !== "string")
+export function mono_bind_method(
+    method: MonoMethod,
+    this_arg: MonoObject | null,
+    args_marshal: ArgsMarshalString,
+    friendly_name: string
+): Function {
+    if (typeof args_marshal !== "string")
         throw new Error("args_marshal argument invalid, expected string");
     this_arg = coerceNull(this_arg);
 
@@ -337,18 +461,17 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         library_mono: MONO,
         binding_support: BINDING,
         method: method,
-        this_arg: this_arg
+        this_arg: this_arg,
     };
 
     const converterKey = "converter_" + converter.name;
 
-    if (converter)
-        closure[converterKey] = converter;
+    if (converter) closure[converterKey] = converter;
 
     const argumentNames = [];
     const body = [
         "var resultRoot = library_mono.mono_wasm_new_root (), exceptionRoot = library_mono.mono_wasm_new_root ();",
-        ""
+        "",
     ];
 
     if (converter) {
@@ -363,17 +486,11 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
             const argName = "arg" + i;
             argumentNames.push(argName);
             body.push(
-                "    " + argName +
-                (
-                    (i == converter.steps.length - 1)
-                        ? ""
-                        : ", "
-                )
+                "    " + argName + (i == converter.steps.length - 1 ? "" : ", ")
             );
         }
 
         body.push(");");
-
     } else {
         body.push("var argsRootBuffer = null, buffer = 0;");
     }
@@ -381,7 +498,9 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     if (converter.is_result_definitely_unmarshaled) {
         body.push("var is_result_marshaled = false;");
     } else if (converter.is_result_possibly_unmarshaled) {
-        body.push(`var is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`);
+        body.push(
+            `var is_result_marshaled = arguments.length !== ${converter.result_unmarshaled_if_argc};`
+        );
     } else {
         body.push("var is_result_marshaled = true;");
     }
@@ -440,8 +559,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
 
     let displayName = "managed_" + (friendly_name || method);
 
-    if (this_arg)
-        displayName += "_with_this_" + this_arg;
+    if (this_arg) displayName += "_with_this_" + this_arg;
 
     return _create_named_function(displayName, argumentNames, bodyJs, closure);
 }
@@ -464,15 +582,15 @@ type _ExtraArgsMarshalOperators = "!" | "";
 
 // TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
 // blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
-// Take the marshaling enums and convert to all the valid strings for type checking. 
-export type ArgsMarshalString = ""
+// Take the marshaling enums and convert to all the valid strings for type checking.
+export type ArgsMarshalString =
+    | ""
     | `${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
 
-
-type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64"
+type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64";
 
 export type Converter = {
     steps: {
@@ -494,4 +612,4 @@ export type Converter = {
     scratchRootBuffer?: WasmRootBuffer;
     scratchBuffer?: VoidPtr;
     has_warned_about_signature?: boolean;
-}
+};

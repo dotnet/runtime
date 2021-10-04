@@ -16,15 +16,17 @@ const _scratch_root_free_instances: WasmRoot<any>[] = [];
  * Once you are done using the root buffer, you must call its release() method.
  * For small numbers of roots, it is preferable to use the mono_wasm_new_root and mono_wasm_new_roots APIs instead.
  */
-export function mono_wasm_new_root_buffer(capacity: number, name?: string): WasmRootBuffer {
-    if (capacity <= 0)
-        throw new Error("capacity >= 1");
+export function mono_wasm_new_root_buffer(
+    capacity: number,
+    name?: string
+): WasmRootBuffer {
+    if (capacity <= 0) throw new Error("capacity >= 1");
 
     capacity = capacity | 0;
 
     const capacityBytes = capacity * 4;
     const offset = Module._malloc(capacityBytes);
-    if ((<any>offset % 4) !== 0)
+    if (<any>offset % 4 !== 0)
         throw new Error("Malloc returned an unaligned offset");
 
     _zero_region(offset, capacityBytes);
@@ -36,15 +38,17 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
  * Creates a root buffer object representing an existing allocation in the native heap and registers
  *  the allocation with the GC. The caller is responsible for managing the lifetime of the allocation.
  */
-export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity: number, name?: string): WasmRootBuffer {
-    if (capacity <= 0)
-        throw new Error("capacity >= 1");
+export function mono_wasm_new_root_buffer_from_pointer(
+    offset: VoidPtr,
+    capacity: number,
+    name?: string
+): WasmRootBuffer {
+    if (capacity <= 0) throw new Error("capacity >= 1");
 
     capacity = capacity | 0;
 
     const capacityBytes = capacity * 4;
-    if ((<any>offset % 4) !== 0)
-        throw new Error("Unaligned offset");
+    if (<any>offset % 4 !== 0) throw new Error("Unaligned offset");
 
     _zero_region(offset, capacityBytes);
 
@@ -58,7 +62,9 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
  * The result object has get() and set(value) methods, along with a .value property.
  * When you are done using the root you must call its .release() method.
  */
-export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(value: T | undefined = undefined): WasmRoot<T> {
+export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(
+    value: T | undefined = undefined
+): WasmRoot<T> {
     let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
@@ -71,7 +77,7 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
     }
 
     if (value !== undefined) {
-        if (typeof (value) !== "number")
+        if (typeof value !== "number")
             throw new Error("value must be an address in the managed heap");
 
         result.set(value);
@@ -88,19 +94,23 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
  * mono_wasm_new_roots([a, b, ...]) returns an array of new roots initialized with each element.
  * Each root must be released with its release method, or using the mono_wasm_release_roots API.
  */
-export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(count_or_values: number | T[]): WasmRoot<T>[] {
+export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(
+    count_or_values: number | T[]
+): WasmRoot<T>[] {
     let result;
 
     if (Array.isArray(count_or_values)) {
         result = new Array(count_or_values.length);
-        for (var i = 0; i < result.length; i++)
+        for (let i = 0; i < result.length; i++)
             result[i] = mono_wasm_new_root(count_or_values[i]);
     } else if ((count_or_values | 0) > 0) {
         result = new Array(count_or_values);
-        for (var i = 0; i < result.length; i++)
+        for (let i = 0; i < result.length; i++)
             result[i] = mono_wasm_new_root();
     } else {
-        throw new Error("count_or_values must be either an array or a number greater than 0");
+        throw new Error(
+            "count_or_values must be either an array or a number greater than 0"
+        );
     }
 
     return result;
@@ -113,25 +123,22 @@ export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(co
  *  even if you are not sure all of your roots have been created yet.
  * @param {... WasmRoot} roots
  */
-export function mono_wasm_release_roots(...args: WasmRoot<any>[]) {
+export function mono_wasm_release_roots(...args: WasmRoot<any>[]): void {
     for (let i = 0; i < args.length; i++) {
-        if (!args[i])
-            continue;
+        if (!args[i]) continue;
 
         args[i].release();
     }
 }
 
 function _zero_region(byteOffset: VoidPtr, sizeBytes: number) {
-    if (((<any>byteOffset % 4) === 0) && ((sizeBytes % 4) === 0))
+    if (<any>byteOffset % 4 === 0 && sizeBytes % 4 === 0)
         Module.HEAP32.fill(0, <any>byteOffset / 4, sizeBytes / 4);
-    else
-        Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
+    else Module.HEAP8.fill(0, <any>byteOffset, sizeBytes);
 }
 
 function _mono_wasm_release_scratch_index(index: number) {
-    if (index === undefined)
-        return;
+    if (index === undefined) return;
 
     _scratch_root_buffer!.set(index, <any>0);
     _scratch_root_free_indices![_scratch_root_free_indices_count] = index;
@@ -140,7 +147,10 @@ function _mono_wasm_release_scratch_index(index: number) {
 
 function _mono_wasm_claim_scratch_index() {
     if (!_scratch_root_buffer || !_scratch_root_free_indices) {
-        _scratch_root_buffer = mono_wasm_new_root_buffer(maxScratchRoots, "js roots");
+        _scratch_root_buffer = mono_wasm_new_root_buffer(
+            maxScratchRoots,
+            "js roots"
+        );
 
         _scratch_root_free_indices = new Int32Array(maxScratchRoots);
         _scratch_root_free_indices_count = maxScratchRoots;
@@ -151,11 +161,11 @@ function _mono_wasm_claim_scratch_index() {
     if (_scratch_root_free_indices_count < 1)
         throw new Error("Out of scratch root space");
 
-    const result = _scratch_root_free_indices[_scratch_root_free_indices_count - 1];
+    const result =
+        _scratch_root_free_indices[_scratch_root_free_indices_count - 1];
     _scratch_root_free_indices_count--;
     return result;
 }
-
 
 export class WasmRootBuffer {
     private __count: number;
@@ -165,32 +175,41 @@ export class WasmRootBuffer {
     private __handle: number;
     private __ownsAllocation: boolean;
 
-    constructor(offset: VoidPtr, capacity: number, ownsAllocation: boolean, name?: string) {
+    constructor(
+        offset: VoidPtr,
+        capacity: number,
+        ownsAllocation: boolean,
+        name?: string
+    ) {
         const capacityBytes = capacity * 4;
 
         this.__offset = offset;
-        this.__offset32 = (<number><any>offset / 4) | 0;
+        this.__offset32 = (<number>(<any>offset) / 4) | 0;
         this.__count = capacity;
         this.length = capacity;
-        this.__handle = cwraps.mono_wasm_register_root(offset, capacityBytes, name || "noname");
+        this.__handle = cwraps.mono_wasm_register_root(
+            offset,
+            capacityBytes,
+            name || "noname"
+        );
         this.__ownsAllocation = ownsAllocation;
     }
 
-    _throw_index_out_of_range() {
+    _throw_index_out_of_range(): void {
         throw new Error("index out of range");
     }
 
-    _check_in_range(index: number) {
-        if ((index >= this.__count) || (index < 0))
+    _check_in_range(index: number): void {
+        if (index >= this.__count || index < 0)
             this._throw_index_out_of_range();
     }
 
     get_address(index: number): NativePointer {
         this._check_in_range(index);
-        return <any>this.__offset + (index * 4);
+        return <any>this.__offset + index * 4;
     }
 
-    get_address_32(index: number) {
+    get_address_32(index: number): number {
         this._check_in_range(index);
         return this.__offset32 + index;
     }
@@ -200,36 +219,45 @@ export class WasmRootBuffer {
         return <any>Module.HEAP32[this.get_address_32(index)];
     }
 
-    set(index: number, value: ManagedPointer) {
+    set(index: number, value: ManagedPointer): ManagedPointer {
         Module.HEAP32[this.get_address_32(index)] = <any>value;
         return value;
     }
 
-    _unsafe_get(index: number) {
+    _unsafe_get(index: number): number {
         return Module.HEAP32[this.__offset32 + index];
     }
 
-    _unsafe_set(index: number, value: ManagedPointer | NativePointer) {
+    _unsafe_set(index: number, value: ManagedPointer | NativePointer): void {
         Module.HEAP32[this.__offset32 + index] = <any>value;
     }
 
-    clear() {
-        if (this.__offset)
-            _zero_region(this.__offset, this.__count * 4);
+    clear(): void {
+        if (this.__offset) _zero_region(this.__offset, this.__count * 4);
     }
 
-    release() {
+    release(): void {
         if (this.__offset && this.__ownsAllocation) {
             cwraps.mono_wasm_deregister_root(this.__offset);
             _zero_region(this.__offset, this.__count * 4);
             Module._free(this.__offset);
         }
 
-        this.__handle = (<any>this.__offset) = this.__count = this.__offset32 = 0;
+        this.__handle =
+            (<any>this.__offset) =
+            this.__count =
+            this.__offset32 =
+                0;
     }
 
-    toString() {
-        return "[root buffer @" + this.get_address(0) + ", size " + this.__count + "]";
+    toString(): string {
+        return (
+            "[root buffer @" +
+            this.get_address(0) +
+            ", size " +
+            this.__count +
+            "]"
+        );
     }
 }
 
@@ -238,7 +266,7 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     private __index: number;
 
     constructor(buffer: WasmRootBuffer, index: number) {
-        this.__buffer = buffer;//TODO
+        this.__buffer = buffer; //TODO
         this.__index = index;
     }
 
@@ -255,7 +283,7 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
         return <any>result;
     }
 
-    set(value: T) {
+    set(value: T): T {
         this.__buffer._unsafe_set(this.__index, value);
         return value;
     }
@@ -272,11 +300,11 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
         return this.get();
     }
 
-    clear() {
+    clear(): void {
         this.set(<any>0);
     }
 
-    release() {
+    release(): void {
         const maxPooledInstances = 128;
         if (_scratch_root_free_instances.length > maxPooledInstances) {
             _mono_wasm_release_scratch_index(this.__index);
@@ -288,7 +316,7 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
         }
     }
 
-    toString() {
+    toString(): string {
         return "[root @" + this.get_address() + "]";
     }
 }

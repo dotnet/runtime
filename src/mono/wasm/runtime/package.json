@@ -8,7 +8,8 @@
   "version": "1.0.0",
   "scripts": {
     "rollup": "rollup -c",
-    "lint": "eslint ./**/*.ts ./**/*.js"
+    "lint": "eslint \"./**/*.ts\" \"./**/*.js\"",
+    "format": "prettier-eslint \"./*.ts\" --write"
   },
   "keywords": [
     "dotnet",
@@ -19,9 +20,11 @@
   "license": "MIT",
   "devDependencies": {
     "@rollup/plugin-typescript": "8.2.5",
-    "@typescript-eslint/eslint-plugin": "^4.31.2",
-    "@typescript-eslint/parser": "^4.31.2",
-    "eslint": "^7.32.0",
+    "@typescript-eslint/eslint-plugin": "4.31.2",
+    "@typescript-eslint/parser": "4.31.2",
+    "eslint": "7.32.0",
+    "prettier-eslint": "13.0.0",
+    "prettier-eslint-cli": "^5.0.1",
     "rollup": "2.56.3",
     "rollup-plugin-terser": "7.0.2",
     "tslib": "2.3.1",

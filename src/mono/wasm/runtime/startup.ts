@@ -2,36 +2,71 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { BINDING, Module, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtrNull, MonoConfig, MonoString, wasm_type_symbol } from "./types";
+import {
+    AssetEntry,
+    CharPtrNull,
+    MonoConfig,
+    MonoString,
+    MonoStringNull,
+    wasm_type_symbol,
+} from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
-import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
+import {
+    mono_wasm_init_aot_profiler,
+    mono_wasm_init_coverage_profiler,
+} from "./profiler";
 import { t_ModuleExtension } from "./exports";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
-import { set_bind_runtime_method } from "./corebindings";
-import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
+import {
+    bind_runtime_method,
+    get_method,
+    _create_primitive_converters,
+} from "./method-binding";
 import { conv_string } from "./strings";
 
-export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any) {
+export function mono_wasm_invoke_js_blazor(
+    exceptionMessage: Int32Ptr,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    callInfo: any,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    arg0: any,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    arg1: any,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    arg2: any
+): MonoString {
     try {
         const blazorExports = (<any>globalThis).Blazor;
         if (!blazorExports) {
             throw new Error("The blazor.webassembly.js library is not loaded.");
         }
 
-        return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
+        return blazorExports._internal.invokeJSFromDotNet(
+            callInfo,
+            arg0,
+            arg1,
+            arg2
+        );
     } catch (ex: any) {
         const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
+        const exceptionSystemString =
+            cwraps.mono_wasm_string_from_js(exceptionJsString);
         Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
+        return MonoStringNull;
     }
 }
 
 // This is for back-compat only and will eventually be removed
-export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, asyncHandleLongPtr: number, functionName: MonoString, argsJson: MonoString, treatResultAsVoid: boolean) {
+export function mono_wasm_invoke_js_marshalled(
+    exceptionMessage: Int32Ptr,
+    asyncHandleLongPtr: number,
+    functionName: MonoString,
+    argsJson: MonoString,
+    treatResultAsVoid: boolean
+): MonoString {
     try {
         // Passing a .NET long into JS via Emscripten is tricky. The method here is to pass
         // as pointer to the long, then combine two reads from the HEAPU32 array.
@@ -39,7 +74,9 @@ export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, async
         // because we'll never exceed Number.MAX_SAFE_INTEGER (2^53 - 1) in this case.
         //var u32Index = $1 >> 2;
         const u32Index = asyncHandleLongPtr >> 2;
-        const asyncHandleJsNumber = Module.HEAPU32[u32Index + 1] * 4294967296 + Module.HEAPU32[u32Index];
+        const asyncHandleJsNumber =
+            Module.HEAPU32[u32Index + 1] * 4294967296 +
+            Module.HEAPU32[u32Index];
 
         // var funcNameJsString = UTF8ToString (functionName);
         // var argsJsonJsString = argsJson && UTF8ToString (argsJson);
@@ -48,64 +85,104 @@ export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, async
 
         const dotNetExports = (<any>globalThis).DotNet;
         if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
+            throw new Error(
+                "The Microsoft.JSInterop.js library is not loaded."
+            );
         }
 
         if (asyncHandleJsNumber) {
-            dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return 0;
+            dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(
+                asyncHandleJsNumber,
+                funcNameJsString,
+                argsJsonJsString,
+                treatResultAsVoid
+            );
+            return MonoStringNull;
         } else {
-            const resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return resultJson === null ? 0 : cwraps.mono_wasm_string_from_js(resultJson);
+            const resultJson =
+                dotNetExports.jsCallDispatcher.invokeJSFromDotNet(
+                    funcNameJsString,
+                    argsJsonJsString,
+                    treatResultAsVoid
+                );
+            return resultJson === null
+                ? MonoStringNull
+                : cwraps.mono_wasm_string_from_js(resultJson);
         }
     } catch (ex: any) {
         const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
+        const exceptionSystemString =
+            cwraps.mono_wasm_string_from_js(exceptionJsString);
         Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
+        return MonoStringNull;
     }
 }
 
 // This is for back-compat only and will eventually be removed
-export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, funcName: MonoString, arg0: any, arg1: any, arg2: any) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_invoke_js_unmarshalled(
+    exceptionMessage: Int32Ptr,
+    funcName: MonoString,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    arg0: any,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    arg1: any,
+    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+    arg2: any
+): MonoString {
     try {
         // Get the function you're trying to invoke
         const funcNameJsString = conv_string(funcName);
         const dotNetExports = (<any>globalThis).DotNet;
         if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
+            throw new Error(
+                "The Microsoft.JSInterop.js library is not loaded."
+            );
         }
-        const funcInstance = dotNetExports.jsCallDispatcher.findJSFunction(funcNameJsString);
+        const funcInstance =
+            dotNetExports.jsCallDispatcher.findJSFunction(funcNameJsString);
 
         return funcInstance.call(null, arg0, arg1, arg2);
     } catch (ex: any) {
         const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
+        const exceptionSystemString =
+            cwraps.mono_wasm_string_from_js(exceptionJsString);
         Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
+        return MonoStringNull;
     }
 }
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
-export function mono_wasm_setenv(name: string, value: string) {
+export function mono_wasm_setenv(name: string, value: string): void {
     cwraps.mono_wasm_setenv(name, value);
 }
 
-export function mono_wasm_set_runtime_options(options: string[]) {
+export function mono_wasm_set_runtime_options(options: string[]): void {
     const argv = Module._malloc(options.length * 4);
     let aindex = 0;
     for (let i = 0; i < options.length; ++i) {
-        Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(options[i]), "i32");
+        Module.setValue(
+            <any>argv + aindex * 4,
+            cwraps.mono_wasm_strdup(options[i]),
+            "i32"
+        );
         aindex += 1;
     }
     cwraps.mono_wasm_parse_runtime_options(options.length, argv);
 }
 
-function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: string, blob: ArrayBuffer) {
+function _handle_loaded_asset(
+    ctx: MonoInitContext,
+    asset: AssetEntry,
+    url: string,
+    blob: ArrayBuffer
+) {
     const bytes = new Uint8Array(blob);
     if (ctx.tracing)
-        console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
+        console.log(
+            `MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`
+        );
 
     const virtualName: string = asset.virtual_path || asset.name;
     let offset: VoidPtr | null = null;
@@ -114,63 +191,90 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
         case "resource":
         case "assembly":
             ctx.loaded_files.push({ url: url, file: virtualName });
+        // falls through
         case "heap":
         case "icu":
             offset = mono_wasm_load_bytes_into_heap(bytes);
             ctx.loaded_assets[virtualName] = [offset, bytes.length];
             break;
 
-        case "vfs":
+        case "vfs": {
             // FIXME
-            var lastSlash = virtualName.lastIndexOf("/");
-            var parentDirectory = (lastSlash > 0)
-                ? virtualName.substr(0, lastSlash)
-                : null;
-            var fileName = (lastSlash > 0)
-                ? virtualName.substr(lastSlash + 1)
-                : virtualName;
-            if (fileName.startsWith("/"))
-                fileName = fileName.substr(1);
+            const lastSlash = virtualName.lastIndexOf("/");
+            let parentDirectory =
+                lastSlash > 0 ? virtualName.substr(0, lastSlash) : null;
+            let fileName =
+                lastSlash > 0 ? virtualName.substr(lastSlash + 1) : virtualName;
+            if (fileName.startsWith("/")) fileName = fileName.substr(1);
             if (parentDirectory) {
                 if (ctx.tracing)
-                    console.log("MONO_WASM: Creating directory '" + parentDirectory + "'");
+                    console.log(
+                        "MONO_WASM: Creating directory '" +
+                            parentDirectory +
+                            "'"
+                    );
 
-                const pathRet = ctx.createPath(
-                    "/", parentDirectory, true, true // fixme: should canWrite be false?
+                ctx.createPath(
+                    "/",
+                    parentDirectory,
+                    true,
+                    true // fixme: should canWrite be false?
                 );
             } else {
                 parentDirectory = "/";
             }
 
             if (ctx.tracing)
-                console.log("MONO_WASM: Creating file '" + fileName + "' in directory '" + parentDirectory + "'");
+                console.log(
+                    "MONO_WASM: Creating file '" +
+                        fileName +
+                        "' in directory '" +
+                        parentDirectory +
+                        "'"
+                );
 
             if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
-                const fileRet = ctx.createDataFile(
-                    parentDirectory, fileName,
-                    bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
+                ctx.createDataFile(
+                    parentDirectory,
+                    fileName,
+                    bytes,
+                    true /* canRead */,
+                    true /* canWrite */,
+                    true /* canOwn */
                 );
             }
             break;
+        }
 
         default:
-            throw new Error(`Unrecognized asset behavior:${asset.behavior}, for asset ${asset.name}`);
+            throw new Error(
+                `Unrecognized asset behavior:${asset.behavior}, for asset ${asset.name}`
+            );
     }
 
     if (asset.behavior === "assembly") {
-        const hasPpdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
+        const hasPpdb = cwraps.mono_wasm_add_assembly(
+            virtualName,
+            offset!,
+            bytes.length
+        );
 
         if (!hasPpdb) {
-            const index = ctx.loaded_files.findIndex(element => element.file == virtualName);
+            const index = ctx.loaded_files.findIndex(
+                (element) => element.file == virtualName
+            );
             ctx.loaded_files.splice(index, 1);
         }
-    }
-    else if (asset.behavior === "icu") {
+    } else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
             console.error("Error loading ICU asset", asset.name);
-    }
-    else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
+    } else if (asset.behavior === "resource") {
+        cwraps.mono_wasm_add_satellite_assembly(
+            virtualName,
+            asset.culture!,
+            offset!,
+            bytes.length
+        );
     }
 }
 
@@ -213,17 +317,20 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
 //      "invariant": operate in invariant globalization mode.
 //      "auto" (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
 //    diagnostic_tracing: (optional) enables diagnostic log messages during startup
-export function mono_load_runtime_and_bcl_args(args: MonoConfig) {
+export function mono_load_runtime_and_bcl_args(args: MonoConfig): void {
     try {
         return _load_assets_and_runtime(args);
     } catch (exc: any) {
-        console.error("error in mono_load_runtime_and_bcl_args:", exc.toString());
+        console.error(
+            "error in mono_load_runtime_and_bcl_args:",
+            exc.toString()
+        );
         throw exc;
     }
 }
 
 function _apply_configuration_from_args(args: MonoConfig) {
-    for (const k in (args.environment_variables || {}))
+    for (const k in args.environment_variables || {})
         mono_wasm_setenv(k, args.environment_variables![k]);
 
     if (args.runtime_options)
@@ -236,46 +343,66 @@ function _apply_configuration_from_args(args: MonoConfig) {
         mono_wasm_init_coverage_profiler(args.coverage_profiler_options);
 }
 
-function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Promise<Response> {
-    if (typeof (args.fetch_file_cb) === "function")
-        return args.fetch_file_cb;
+function _get_fetch_file_cb_from_args(
+    args: MonoConfig
+): (asset: string) => Promise<Response> {
+    if (typeof args.fetch_file_cb === "function") return args.fetch_file_cb;
 
     if (ENVIRONMENT_IS_NODE) {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const fs = require("fs");
         return function (asset) {
             console.debug("MONO_WASM: Loading... " + asset);
             const binary = fs.readFileSync(asset);
-            const resolve_func2 = function (resolve: Function, reject: Function) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const resolve_func2 = function (
+                resolve: (data: any) => void,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                reject: (reason: any) => void
+            ) {
                 resolve(new Uint8Array(binary));
             };
 
-            const resolve_func1 = function (resolve: Function, reject: Function) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const resolve_func1 = function (
+                resolve: (data: any) => void,
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                reject: (reason: any) => void
+            ) {
                 const response = {
                     ok: true,
                     url: asset,
                     arrayBuffer: function () {
                         return new Promise(resolve_func2);
-                    }
+                    },
                 };
                 resolve(response);
             };
 
             return new Promise(resolve_func1);
         };
-    } else if (typeof (fetch) === "function") {
+    } else if (typeof fetch === "function") {
         return function (asset) {
             return fetch(asset, { credentials: "same-origin" });
         };
     } else {
-        throw new Error("No fetch_file_cb was provided and this environment does not expose 'fetch'.");
+        throw new Error(
+            "No fetch_file_cb was provided and this environment does not expose 'fetch'."
+        );
     }
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    ctx.loaded_files.forEach(value => runtimeHelpers.loaded_files.push(value.url));
+    ctx.loaded_files.forEach((value) =>
+        runtimeHelpers.loaded_files.push(value.url)
+    );
     if (ctx.tracing) {
-        console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
-        console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
+        console.log(
+            "MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets)
+        );
+        console.log(
+            "MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files)
+        );
     }
 
     console.debug("MONO_WASM: Initializing mono runtime");
@@ -302,23 +429,22 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
     let tz;
     try {
         tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch { }
+    } catch {
+        // swallow
+    }
     mono_wasm_setenv("TZ", tz || "UTC");
     mono_wasm_runtime_ready();
     args.loaded_cb();
 }
 
-
-export function mono_bindings_init(binding_asm?: string) {
+export function mono_bindings_init(binding_asm?: string): void {
     if (binding_asm) {
         BINDING.BINDING_ASM = binding_asm;
     }
-
 }
 
-export function bindings_lazy_init() {
-    if (runtimeHelpers.mono_wasm_bindings_is_ready)
-        return;
+export function bindings_lazy_init(): void {
+    if (runtimeHelpers.mono_wasm_bindings_is_ready) return;
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
 
     // please keep System.Runtime.InteropServices.JavaScript.Runtime.MappedType in sync
@@ -342,16 +468,32 @@ export function bindings_lazy_init() {
 
     runtimeHelpers._box_buffer = Module._malloc(16);
     runtimeHelpers._unbox_buffer = Module._malloc(16);
-    runtimeHelpers._class_int32 = cwraps.mono_wasm_find_corlib_class("System", "Int32");
-    runtimeHelpers._class_uint32 = cwraps.mono_wasm_find_corlib_class("System", "UInt32");
-    runtimeHelpers._class_double = cwraps.mono_wasm_find_corlib_class("System", "Double");
-    runtimeHelpers._class_boolean = cwraps.mono_wasm_find_corlib_class("System", "Boolean");
-
-    set_bind_runtime_method(bind_runtime_method);
+    runtimeHelpers._class_int32 = cwraps.mono_wasm_find_corlib_class(
+        "System",
+        "Int32"
+    );
+    runtimeHelpers._class_uint32 = cwraps.mono_wasm_find_corlib_class(
+        "System",
+        "UInt32"
+    );
+    runtimeHelpers._class_double = cwraps.mono_wasm_find_corlib_class(
+        "System",
+        "Double"
+    );
+    runtimeHelpers._class_boolean = cwraps.mono_wasm_find_corlib_class(
+        "System",
+        "Boolean"
+    );
+    runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
     const BINDING_ASM = BINDING.BINDING_ASM;
-    const binding_fqn_asm = BINDING_ASM.substring(BINDING_ASM.indexOf("[") + 1, BINDING_ASM.indexOf("]")).trim();
-    const binding_fqn_class = BINDING_ASM.substring(BINDING_ASM.indexOf("]") + 1).trim();
+    const binding_fqn_asm = BINDING_ASM.substring(
+        BINDING_ASM.indexOf("[") + 1,
+        BINDING_ASM.indexOf("]")
+    ).trim();
+    const binding_fqn_class = BINDING_ASM.substring(
+        BINDING_ASM.indexOf("]") + 1
+    ).trim();
 
     const binding_module = cwraps.mono_wasm_assembly_load(binding_fqn_asm);
     if (!binding_module)
@@ -361,12 +503,21 @@ export function bindings_lazy_init() {
         runtimeHelpers.runtime_classname = binding_fqn_class;
         if (binding_fqn_class.indexOf(".") != -1) {
             const idx = binding_fqn_class.lastIndexOf(".");
-            runtimeHelpers.runtime_namespace = binding_fqn_class.substring(0, idx);
-            runtimeHelpers.runtime_classname = binding_fqn_class.substring(idx + 1);
+            runtimeHelpers.runtime_namespace = binding_fqn_class.substring(
+                0,
+                idx
+            );
+            runtimeHelpers.runtime_classname = binding_fqn_class.substring(
+                idx + 1
+            );
         }
     }
 
-    runtimeHelpers.wasm_runtime_class = cwraps.mono_wasm_assembly_find_class(binding_module, runtimeHelpers.runtime_namespace, runtimeHelpers.runtime_classname);
+    runtimeHelpers.wasm_runtime_class = cwraps.mono_wasm_assembly_find_class(
+        binding_module,
+        runtimeHelpers.runtime_namespace,
+        runtimeHelpers.runtime_classname
+    );
     if (!runtimeHelpers.wasm_runtime_class)
         throw "Can't find " + binding_fqn_class + " class";
 
@@ -377,16 +528,16 @@ export function bindings_lazy_init() {
     _create_primitive_converters();
 }
 function _load_assets_and_runtime(args: MonoConfig) {
-    if (args.enable_debugging)
-        args.debug_level = args.enable_debugging;
+    if (args.enable_debugging) args.debug_level = args.enable_debugging;
     if (args.assembly_list)
         throw new Error("Invalid args (assembly_list was replaced by assets)");
     if (args.runtime_assets)
         throw new Error("Invalid args (runtime_assets was replaced by assets)");
     if (args.runtime_asset_sources)
-        throw new Error("Invalid args (runtime_asset_sources was replaced by remote_sources)");
-    if (!args.loaded_cb)
-        throw new Error("loaded_cb not provided");
+        throw new Error(
+            "Invalid args (runtime_asset_sources was replaced by remote_sources)"
+        );
+    if (!args.loaded_cb) throw new Error("loaded_cb not provided");
 
     const ctx: MonoInitContext = {
         tracing: args.diagnostic_tracing || false,
@@ -395,7 +546,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
         // dlls and pdbs, used by blazor and the debugger
         loaded_files: [],
         createPath: Module.FS_createPath,
-        createDataFile: Module.FS_createDataFile
+        createDataFile: Module.FS_createDataFile,
     };
 
     if (ctx.tracing)
@@ -419,11 +570,18 @@ function _load_assets_and_runtime(args: MonoConfig) {
         }
     };
 
-    const processFetchResponseBuffer = function (asset: AssetEntry, url: string, buffer: ArrayBuffer) {
+    const processFetchResponseBuffer = function (
+        asset: AssetEntry,
+        url: string,
+        buffer: ArrayBuffer
+    ) {
         try {
             _handle_loaded_asset(ctx, asset, url, buffer);
         } catch (exc) {
-            console.error(`Unhandled exception in processFetchResponseBuffer ${url}`, exc);
+            console.error(
+                `Unhandled exception in processFetchResponseBuffer ${url}`,
+                exc
+            );
             throw exc;
         } finally {
             onPendingRequestComplete();
@@ -440,16 +598,26 @@ function _load_assets_and_runtime(args: MonoConfig) {
                     attemptNextSource();
                     return;
                 } catch (exc) {
-                    console.error("MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset", asset.name, exc);
+                    console.error(
+                        "MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset",
+                        asset.name,
+                        exc
+                    );
                     throw exc;
                 }
             }
 
             try {
                 const bufferPromise = response.arrayBuffer();
-                bufferPromise.then((data) => processFetchResponseBuffer(asset, response.url, data));
+                bufferPromise.then((data) =>
+                    processFetchResponseBuffer(asset, response.url, data)
+                );
             } catch (exc) {
-                console.error("MONO_WASM: Unhandled exception in handleFetchResponse for asset", asset.name, exc);
+                console.error(
+                    "MONO_WASM: Unhandled exception in handleFetchResponse for asset",
+                    asset.name,
+                    exc
+                );
                 attemptNextSource();
             }
         };
@@ -458,11 +626,12 @@ function _load_assets_and_runtime(args: MonoConfig) {
             if (sourceIndex >= sourcesList.length) {
                 const msg = "MONO_WASM: Failed to load " + asset.name;
                 try {
-                    const isOk = asset.is_optional ||
-                        (asset.name.match(/\.pdb$/) && args.ignore_pdb_load_errors);
+                    const isOk =
+                        asset.is_optional ||
+                        (asset.name.match(/\.pdb$/) &&
+                            args.ignore_pdb_load_errors);
 
-                    if (isOk)
-                        console.debug(msg);
+                    if (isOk) console.debug(msg);
                     else {
                         console.error(msg);
                         throw new Error(msg);
@@ -476,19 +645,21 @@ function _load_assets_and_runtime(args: MonoConfig) {
             sourceIndex++;
 
             // HACK: Special-case because MSBuild doesn't allow "" as an attribute
-            if (sourcePrefix === "./")
-                sourcePrefix = "";
+            if (sourcePrefix === "./") sourcePrefix = "";
 
             let attemptUrl;
             if (sourcePrefix.trim() === "") {
                 if (asset.behavior === "assembly")
-                    attemptUrl = locateFile(args.assembly_root + "/" + asset.name);
+                    attemptUrl = locateFile(
+                        args.assembly_root + "/" + asset.name
+                    );
                 else if (asset.behavior === "resource") {
-                    const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
+                    const path =
+                        asset.culture !== ""
+                            ? `${asset.culture}/${asset.name}`
+                            : asset.name;
                     attemptUrl = locateFile(args.assembly_root + "/" + path);
-                }
-                else
-                    attemptUrl = asset.name;
+                } else attemptUrl = asset.name;
             } else {
                 attemptUrl = sourcePrefix + asset.name;
             }
@@ -499,7 +670,10 @@ function _load_assets_and_runtime(args: MonoConfig) {
                         console.log("Attempting to fetch '" + attemptUrl + "'");
                 } else {
                     if (ctx.tracing)
-                        console.log("Attempting to fetch '" + attemptUrl + "' for", asset.name);
+                        console.log(
+                            "Attempting to fetch '" + attemptUrl + "' for",
+                            asset.name
+                        );
                 }
                 const fetch_promise = fetch_file_cb(attemptUrl);
                 fetch_promise.then(handleFetchResponse);
@@ -514,9 +688,11 @@ function _load_assets_and_runtime(args: MonoConfig) {
 }
 
 // used from ASP.NET
-export function mono_wasm_load_data_archive(data: TypedArray, prefix: string) {
-    if (data.length < 8)
-        return false;
+export function mono_wasm_load_data_archive(
+    data: TypedArray,
+    prefix: string
+): boolean {
+    if (data.length < 8) return false;
 
     const dataview = new DataView(data.buffer);
     const magic = dataview.getUint32(0, true);
@@ -525,15 +701,13 @@ export function mono_wasm_load_data_archive(data: TypedArray, prefix: string) {
         return false;
     }
     const manifestSize = dataview.getUint32(4, true);
-    if (manifestSize == 0 || data.length < manifestSize + 8)
-        return false;
+    if (manifestSize == 0 || data.length < manifestSize + 8) return false;
 
     let manifest;
     try {
         const manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
         manifest = JSON.parse(manifestContent);
-        if (!(manifest instanceof Array))
-            return false;
+        if (!(manifest instanceof Array)) return false;
     } catch (exc) {
         return false;
     }
@@ -547,13 +721,13 @@ export function mono_wasm_load_data_archive(data: TypedArray, prefix: string) {
     // ..
 
     const folders = new Set<string>();
-    manifest.filter(m => {
+    manifest.filter((m) => {
         const file = m[0];
         const last = file.lastIndexOf("/");
         const directory = file.slice(0, last + 1);
         folders.add(directory);
     });
-    folders.forEach(folder => {
+    folders.forEach((folder) => {
         Module["FS_createPath"](prefix, folder, true, true);
     });
 
@@ -574,7 +748,9 @@ export function mono_wasm_load_data_archive(data: TypedArray, prefix: string) {
  * @param {string} configFilePath - relative path to the config file
  * @throws Will throw an error if the config file loading fails
  */
-export async function mono_wasm_load_config(configFilePath: string) {
+export async function mono_wasm_load_config(
+    configFilePath: string
+): Promise<void> {
     const module = Module as t_ModuleExtension;
     module.addRunDependency(configFilePath);
     try {
@@ -585,7 +761,8 @@ export async function mono_wasm_load_config(configFilePath: string) {
             config = await configRaw.json();
         } else if (ENVIRONMENT_IS_NODE) {
             config = require(configFilePath);
-        } else { // shell or worker
+        } else {
+            // shell or worker
             config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
         }
         runtimeHelpers.config = config;
@@ -598,13 +775,25 @@ export async function mono_wasm_load_config(configFilePath: string) {
     }
 }
 
-export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: number, assembly_len: number, pdb_ptr: number, pdb_len: number) {
+export function mono_wasm_asm_loaded(
+    assembly_name: CharPtr,
+    assembly_ptr: number,
+    assembly_len: number,
+    pdb_ptr: number,
+    pdb_len: number
+): void {
     // Only trigger this codepath for assemblies loaded after app is ready
-    if (runtimeHelpers.mono_wasm_runtime_is_ready !== true)
-        return;
+    if (runtimeHelpers.mono_wasm_runtime_is_ready !== true) return;
 
-    const assembly_name_str = assembly_name !== CharPtrNull ? Module.UTF8ToString(assembly_name).concat(".dll") : "";
-    const assembly_data = new Uint8Array(Module.HEAPU8.buffer, assembly_ptr, assembly_len);
+    const assembly_name_str =
+        assembly_name !== CharPtrNull
+            ? Module.UTF8ToString(assembly_name).concat(".dll")
+            : "";
+    const assembly_data = new Uint8Array(
+        Module.HEAPU8.buffer,
+        assembly_ptr,
+        assembly_len
+    );
     const assembly_b64 = toBase64StringImpl(assembly_data);
 
     let pdb_b64;
@@ -617,15 +806,15 @@ export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: numbe
         eventName: "AssemblyLoaded",
         assembly_name: assembly_name_str,
         assembly_b64,
-        pdb_b64
+        pdb_b64,
     });
 }
 
 type MonoInitContext = {
-    tracing: boolean,
-    pending_count: number,
-    loaded_files: { url: string, file: string }[],
-    loaded_assets: { [id: string]: [VoidPtr, number] },
-    createPath: Function,
-    createDataFile: Function
-}
+    tracing: boolean;
+    pending_count: number;
+    loaded_files: { url: string; file: string }[];
+    loaded_assets: { [id: string]: [VoidPtr, number] };
+    createPath: typeof Module.FS_createPath;
+    createDataFile: typeof Module.FS_createDataFile;
+};

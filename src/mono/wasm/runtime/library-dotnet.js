@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -11,7 +12,8 @@ var DotNetSupportLib = {
     // this will become globalThis.BINDING
     $BINDING: {},
     // this line will be executed on runtime, populating the objects with methods
-    $DOTNET__postset: "__dotnet_runtime.export_to_emscripten (MONO, BINDING, DOTNET, Module);",
+    $DOTNET__postset:
+    "__dotnet_runtime.export_to_emscripten (MONO, BINDING, DOTNET, Module);",
 };
 
 // the methods would be visible to EMCC linker

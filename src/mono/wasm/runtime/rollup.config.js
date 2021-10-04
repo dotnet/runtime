@@ -7,7 +7,7 @@ import { createHash } from "crypto";
 
 const outputFileName = "runtime.iffe.js";
 const isDebug = process.env.Configuration !== "Release";
-const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/\"/g, "") : "bin";
+const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(), writeOnChangePlugin()];
 
 export default defineConfig({

@@ -12,14 +12,17 @@ import { AOTProfilerOptions, CoverageProfilerOptions } from "./types";
 // send_to defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
 // DumpAotProfileData stores the data into Module.aot_profile_data.
 //
-export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions) {
-    if (options == null)
-        options = {};
+export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
+    if (options == null) options = {};
     if (!("write_at" in options))
         options.write_at = "Interop/Runtime::StopProfile";
     if (!("send_to" in options))
         options.send_to = "Interop/Runtime::DumpAotProfileData";
-    const arg = "aot:write-at-method=" + options.write_at + ",send-to-method=" + options.send_to;
+    const arg =
+        "aot:write-at-method=" +
+        options.write_at +
+        ",send-to-method=" +
+        options.send_to;
     Module.ccall("mono_wasm_load_profiler_aot", null, ["string"], [arg]);
 }
 
@@ -28,13 +31,18 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions) {
 // write_at defaults to 'WebAssembly.Runtime::StopProfile'.
 // send_to defaults to 'WebAssembly.Runtime::DumpCoverageProfileData'.
 // DumpCoverageProfileData stores the data into Module.coverage_profile_data.
-export function mono_wasm_init_coverage_profiler(options: CoverageProfilerOptions) {
-    if (options == null)
-        options = {};
+export function mono_wasm_init_coverage_profiler(
+    options: CoverageProfilerOptions
+): void {
+    if (options == null) options = {};
     if (!("write_at" in options))
         options.write_at = "WebAssembly.Runtime::StopProfile";
     if (!("send_to" in options))
         options.send_to = "WebAssembly.Runtime::DumpCoverageProfileData";
-    const arg = "coverage:write-at-method=" + options.write_at + ",send-to-method=" + options.send_to;
+    const arg =
+        "coverage:write-at-method=" +
+        options.write_at +
+        ",send-to-method=" +
+        options.send_to;
     Module.ccall("mono_wasm_load_profiler_coverage", null, ["string"], [arg]);
 }

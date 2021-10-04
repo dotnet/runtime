@@ -5,21 +5,34 @@
 // https://github.com/sq/JSIL/blob/1d57d5427c87ab92ffa3ca4b82429cd7509796ba/JSIL.Libraries/Includes/Bootstrap/Core/Classes/System.Convert.js#L149
 // Thanks to Katelyn Gadd @kg
 
-export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) :                 string{
+export function toBase64StringImpl(
+    inArray: Uint8Array,
+    offset?: number,
+    length?: number
+): string {
     const reader = _makeByteReader(inArray, offset, length);
     let result = "";
-    let ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0;
-    let bits = 0, equalsCount = 0, sum = 0;
-    const mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
-    const shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
+    let ch1: number | null = 0,
+        ch2: number | null = 0,
+        ch3: number | null = 0;
+    let bits = 0,
+        equalsCount = 0,
+        sum = 0;
+    const mask1 = (1 << 24) - 1,
+        mask2 = (1 << 18) - 1,
+        mask3 = (1 << 12) - 1,
+        mask4 = (1 << 6) - 1;
+    const shift1 = 18,
+        shift2 = 12,
+        shift3 = 6,
+        shift4 = 0;
 
     for (;;) {
         ch1 = reader.read();
         ch2 = reader.read();
         ch3 = reader.read();
 
-        if (ch1 === null)
-            break;
+        if (ch1 === null) break;
         if (ch2 === null) {
             ch2 = 0;
             equalsCount += 1;
@@ -55,6 +68,7 @@ export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?
     return result;
 }
 
+// eslint-disable-next-line
 const _base64Table = [
     "A", "B", "C", "D",
     "E", "F", "G", "H",
@@ -76,41 +90,42 @@ const _base64Table = [
     "+", "/"
 ];
 
-function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
-    read: () => number | null
+function _makeByteReader(
+    bytes: Uint8Array,
+    index?: number,
+    count?: number
+): {
+    read: () => number | null;
 } {
-    let position = (typeof (index) === "number") ? index : 0;
+    let position = typeof index === "number" ? index : 0;
     let endpoint: number;
 
-    if (typeof (count) === "number")
-        endpoint = (position + count);
-    else
-        endpoint = (bytes.length - position);
+    if (typeof count === "number") endpoint = position + count;
+    else endpoint = bytes.length - position;
 
     const result = {
         read: function () {
-            if (position >= endpoint)
-                return null;
+            if (position >= endpoint) return null;
 
             const nextByte = bytes[position];
             position += 1;
             return nextByte;
-        }
+        },
     };
 
     Object.defineProperty(result, "eof", {
         get: function () {
-            return (position >= endpoint);
+            return position >= endpoint;
         },
         configurable: true,
-        enumerable: true
+        enumerable: true,
     });
 
     return result;
 }
 
 // FIXME: improve
-export function _base64_to_uint8(base64String: string):Uint8Array {
+export function _base64_to_uint8(base64String: string): Uint8Array {
     const byteCharacters = atob(base64String);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
