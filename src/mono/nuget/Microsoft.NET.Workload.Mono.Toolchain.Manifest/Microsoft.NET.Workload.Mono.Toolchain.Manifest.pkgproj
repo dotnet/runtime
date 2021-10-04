@@ -20,6 +20,12 @@
       <PackageFile Include="$(WorkloadManifestPath)" TargetPath="data" />
       <PackageFile Include="$(WorkloadManifestTargetsPath)" TargetPath="data" />
     </ItemGroup>
+
+    <ItemGroup>
+      <File Include="localize/**/*">
+        <TargetPath>data/localize</TargetPath>
+      </File>
+    </ItemGroup>
   </Target>
 
   <!-- Running this target ensures we have the fully evaluated PackageVersion -->
