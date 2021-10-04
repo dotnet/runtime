@@ -10,13 +10,16 @@ namespace WebAssemblyInfo
     class WasmReader
     {
         readonly BinaryReader reader;
+        public UInt32 Version { get; private set; }
+        public string Path {  get; private set; }
 
         public WasmReader(string path)
         {
             if (Program.Verbose)
                 Console.WriteLine($"Reading wasm file: {path}");
 
-            var stream = File.Open(path, FileMode.Open);
+            Path = path;
+            var stream = File.Open(Path, FileMode.Open);
             reader = new BinaryReader(stream);
         }
 
@@ -36,9 +39,9 @@ namespace WebAssemblyInfo
                     throw new FileLoadException("not wasm file, module magic is wrong");
             }
 
-            var version = reader.ReadUInt32();
+            Version = reader.ReadUInt32();
             if (Program.Verbose)
-                Console.WriteLine($"WebAssembly binary format version: {version}");
+                Console.WriteLine($"WebAssembly binary format version: {Version}");
 
             while (reader.BaseStream.Position < reader.BaseStream.Length)
                 ReadSection();
@@ -61,20 +64,27 @@ namespace WebAssemblyInfo
             DataCount
         }
 
+        struct SectionInfo
+        {
+            public SectionId id;
+            public UInt32 size;
+        }
+        List<SectionInfo> sections = new();
+
         void ReadSection()
         {
-            SectionId id = (SectionId)reader.ReadByte();
-            UInt32 size = ReadU32();
+            var section = new SectionInfo() { id = (SectionId)reader.ReadByte(), size = ReadU32() };
+            sections.Add (section);
 
             if (Program.Verbose)
-                Console.Write($"Section: {id,9} size: {size,12}");
+                Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
 
             var begin = reader.BaseStream.Position;
 
-            switch (id)
+            switch (section.id)
             {
                 case SectionId.Custom:
-                    ReadCustomSection(size);
+                    ReadCustomSection(section.size);
                     break;
                 case SectionId.Type:
                     ReadTypeSection();
@@ -89,7 +99,8 @@ namespace WebAssemblyInfo
                     ReadImportSection();
                     break;
                 case SectionId.Code:
-                    ReadCodeSection();
+                    if (Program.AotStats || Program.Disassemble)
+                        ReadCodeSection();
                     break;
                 default:
                     break;
@@ -98,7 +109,7 @@ namespace WebAssemblyInfo
             if (Program.Verbose)
                 Console.WriteLine();
 
-            reader.BaseStream.Seek(begin + size, SeekOrigin.Begin);
+            reader.BaseStream.Seek(begin + section.size, SeekOrigin.Begin);
         }
 
         Code[]? funcsCode;
@@ -455,7 +466,7 @@ namespace WebAssemblyInfo
             }
         }
 
-        string moduleName = "<Unknown>";
+        string moduleName = "";
         readonly NameMap functionNames = new();
         readonly Dictionary<string, UInt32> nameToFunction = new();
         readonly NameMap globalNames = new();
@@ -832,6 +843,17 @@ namespace WebAssemblyInfo
             }
 
             return false;
+        }
+
+        public void PrintSummary ()
+        {
+            var name = string.IsNullOrEmpty(moduleName) ? null : $" name: {moduleName}";
+            Console.WriteLine($"Module:{name} path: {Path}");
+            Console.WriteLine($"  size: {reader.BaseStream.Length:N0}");
+            Console.WriteLine($"  binary format version: {Version}");
+            Console.WriteLine($"  sections: {sections.Count}");
+            foreach (var section in sections)
+                Console.WriteLine($"    id: {section.id} size: {section.size:N0}");
         }
     }
 }

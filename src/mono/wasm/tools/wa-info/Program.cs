@@ -17,8 +17,8 @@ namespace WebAssemblyInfo
         static internal Regex? AssemblyFilter;
         static internal Regex? FunctionFilter;
         static internal Regex? TypeFilter;
-        static bool AotStats;
-        static bool Disassemble;
+        public static bool AotStats;
+        public static bool Disassemble;
 
         readonly static Dictionary<string, AssemblyReader> assemblies = new();
 
@@ -30,6 +30,12 @@ namespace WebAssemblyInfo
             {
                 var reader = new WasmReader(file);
                 reader.Parse();
+
+                if (!Disassemble && !AotStats)
+                {
+                    reader.PrintSummary();
+                    continue;
+                }
 
                 if (Disassemble)
                     reader.PrintFunctions();
