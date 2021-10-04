@@ -5,7 +5,6 @@
 		// Linker diagnostic ids.
 		RequiresUnreferencedCode = 2026,
 		RequiresUnreferencedCodeAttributeMismatch = 2046,
-		CorrectnessOfCOMCannotBeGuaranteed = 2050,
 		MakeGenericType = 2055,
 		MakeGenericMethod = 2060,
 		RequiresUnreferencedCodeOnStaticConstructor = 2116,
