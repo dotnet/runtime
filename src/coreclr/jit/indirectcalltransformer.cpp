@@ -808,7 +808,7 @@ private:
             // We know this call can devirtualize or we would not have set up GDV here.
             // So impDevirtualizeCall should succeed in devirtualizing.
             //
-            assert(!call->IsVirtual())
+            assert(!call->IsVirtual());
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
