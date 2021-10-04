@@ -232,7 +232,7 @@ namespace Microsoft.Interop
                 {
                     yield return nestedCountElement;
                 }
-                foreach (TypePositionInfo? nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
+                foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
                 {
                     yield return nestedElements;
                 }
