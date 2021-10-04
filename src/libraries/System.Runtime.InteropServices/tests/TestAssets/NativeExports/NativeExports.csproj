@@ -22,7 +22,7 @@
 
   <!-- Calculate -->
   <Target Name="GetCompilerForDNNE"
-          Condition="'$(TargetsWindows)' != 'true'">
+          Condition="'$(TargetOS)' != 'windows'">
     <PropertyGroup>
       <NativeCompiler>$(Compiler)</NativeCompiler>
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
@@ -38,7 +38,12 @@
 
   <Target Name="GetLinuxCrossBuildArgumentsForDNNE"
           DependsOnTargets="GetCompilerForDNNE"
-          Condition="'$(CrossBuild)' == 'true' and '$(TargetsLinux)' == 'true'">
+          Condition="'$(CrossBuild)' == 'true' and (
+            '$(TargetOS)' == 'Linux' or 
+            '$(TargetOS)' == 'NetBSD' or 
+            '$(TargetOS)' == 'FreeBSD' or 
+            '$(TargetOS)' == 'illumos' or 
+            '$(TargetOS)' == 'Solaris')">
     <Exec Command="cmake -P &quot;$(RepositoryEngineeringDir)/native/output-toolchain-info.cmake&quot;"
           EchoOff="true"
           ConsoleToMsBuild="true"
@@ -66,12 +71,12 @@
   </Target>
 
   <Target Name="GetAppleCrossBuildArgumentsForDNNE"
-          Condition="'$(TargetsOSX)' == 'true'
-                    or '$(TargetstvOS)' == 'true'
-                    or '$(TargetsiOS)' == 'true'
-                    or '$(TargetstvOSSimulator)' == 'true'
-                    or '$(TargetsiOSSimulator)' == 'true'
-                    or '$(TargetsMacCatalyst)' == 'true'">
+          Condition="'$(TargetOS)' == 'OSX' or 
+            '$(TargetOS)' == 'MacCatalyst' or 
+            '$(TargetOS)' == 'iOS' or 
+            '$(TargetOS)' == 'iOSSimulator' or 
+            '$(TargetOS)' == 'tvOS' or 
+            '$(TargetOS)' == 'tvOSSimulator'">
     <PropertyGroup Condition="'$(TargetsMacCatalyst)' == 'true'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-ios14.2-macabi</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-ios13.5-macabi</TargetTriple>
