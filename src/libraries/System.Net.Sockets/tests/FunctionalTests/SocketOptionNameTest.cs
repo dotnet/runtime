@@ -569,7 +569,7 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1)));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1)));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -585,7 +585,7 @@ namespace System.Net.Sockets.Tests
             using (socket2)
             {
                 var optionValue = new byte[4];
-                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -600,7 +600,7 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionLength: 4));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionLength: 4));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -615,7 +615,7 @@ namespace System.Net.Sockets.Tests
             using (socket1)
             using (socket2)
             {
-                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue: 1));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue: 1));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -631,7 +631,7 @@ namespace System.Net.Sockets.Tests
             using (socket2)
             {
                 var optionValue = new byte[4];
-                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -647,7 +647,7 @@ namespace System.Net.Sockets.Tests
             using (socket2)
             {
                 bool optionValue = true;
-                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption((SocketOptionLevel)(-1), (SocketOptionName)(-1), optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -663,7 +663,7 @@ namespace System.Net.Sockets.Tests
             using (socket2)
             {
                 var optionValue = new byte[4];
-                SocketException se = Assert.Throws<SocketException>(() => socket1.GetRawSocketOption(-1, -1, optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetRawSocketOption(SOL_SOCKET, -1, optionValue));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
@@ -679,13 +679,15 @@ namespace System.Net.Sockets.Tests
             using (socket2)
             {
                 var optionValue = new byte[4];
-                SocketException se = Assert.Throws<SocketException>(() => socket1.SetRawSocketOption(-1, -1, optionValue));
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetRawSocketOption(SOL_SOCKET, -1, optionValue));
                 Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
                             se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
 
                 Assert.True(socket1.Connected, "Connected");
             }
         }
+
+        private static int SOL_SOCKET = OperatingSystem.IsLinux() ? 1 : (int)SocketOptionLevel.Socket;
     }
 
     [Collection("NoParallelTests")]
