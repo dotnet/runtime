@@ -966,14 +966,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         assert(*simdBaseJitType == CORINFO_TYPE_UNDEF);
         if (sig->numArgs == 0)
         {
-            const SIMDIntrinsicInfo* hwAccelIntrinsicInfo = &(simdIntrinsicInfoArray[SIMDIntrinsicHWAccel]);
-            if ((strcmp(eeGetMethodName(methodHnd, nullptr), hwAccelIntrinsicInfo->methodName) == 0) &&
-                JITtype2varType(sig->retType) == hwAccelIntrinsicInfo->retType)
-            {
-                // Sanity check
-                assert(hwAccelIntrinsicInfo->argCount == 0 && hwAccelIntrinsicInfo->isInstMethod == false);
-                return hwAccelIntrinsicInfo;
-            }
             return nullptr;
         }
         else
@@ -1933,28 +1925,19 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
     {
         // The user disabled support for the baseline ISA so
         // don't emit any SIMD intrinsics as they all require
-        // this at a minimum. We will, however, return false
-        // for IsHardwareAccelerated as that will help with
-        // dead code elimination.
+        // this at a minimum.
 
-        return (intrinsicInfo->id == SIMDIntrinsicHWAccel) ? gtNewIconNode(0, TYP_INT) : nullptr;
+        return nullptr;
     }
 
     SIMDIntrinsicID simdIntrinsicID = intrinsicInfo->id;
     var_types       simdBaseType;
     var_types       simdType;
 
-    if (simdBaseJitType != CORINFO_TYPE_UNDEF)
-    {
-        simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-        simdType     = getSIMDTypeForSize(size);
-    }
-    else
-    {
-        assert(simdIntrinsicID == SIMDIntrinsicHWAccel);
-        simdBaseType = TYP_UNKNOWN;
-        simdType     = TYP_UNKNOWN;
-    }
+    assert(simdBaseJitType != CORINFO_TYPE_UNDEF);
+    simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    simdType     = getSIMDTypeForSize(size);
+
     bool      instMethod = intrinsicInfo->isInstMethod;
     var_types callType   = JITtype2varType(sig->retType);
     if (callType == TYP_STRUCT)
@@ -2400,13 +2383,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             hiAsg->gtFlags |= ((simdTree->gtFlags | dstAddrHi->gtFlags) & GTF_ALL_EFFECT);
 
             retVal = gtNewOperNode(GT_COMMA, simdType, loAsg, hiAsg);
-        }
-        break;
-
-        case SIMDIntrinsicHWAccel:
-        {
-            GenTreeIntCon* intConstTree = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, 1);
-            retVal                      = intConstTree;
         }
         break;
 

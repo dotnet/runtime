@@ -3707,6 +3707,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
             }
 
+            if (ni == NI_System_Numerics_Vector_get_IsHardwareAccelerated)
+            {
+                return gtNewIconNode(IsBaselineSimdIsaSupported());
+            }
+
 #ifdef FEATURE_HW_INTRINSICS
             if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
@@ -5013,6 +5018,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             result = NI_System_Numerics_BitOperations_PopCount;
         }
+    }
+    else if ((strcmp(namespaceName, "System.Numerics") == 0) && (strcmp(className, "Vector") == 0) &&
+             (strcmp(methodName, "get_IsHardwareAccelerated") == 0))
+    {
+        result = NI_System_Numerics_Vector_get_IsHardwareAccelerated;
     }
 #ifdef FEATURE_HW_INTRINSICS
     else if (strcmp(namespaceName, "System.Numerics") == 0)
