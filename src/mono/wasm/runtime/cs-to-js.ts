@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_wasm_new_root, WasmRoot } from './roots';
+import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
     GCHandle, JSHandle, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString
-} from './types';
-import { Module, runtimeHelpers } from './modules'
-import { conv_string } from './strings';
-import corebindings from './corebindings';
-import cwraps from './cwraps';
-import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from './gc-handles';
-import { mono_method_get_call_signature, call_method, wrap_error } from './method-calls';
-import { _js_to_mono_obj } from './js-to-cs';
-import { _are_promises_supported, _create_cancelable_promise } from './cancelable-promise';
+} from "./types";
+import { Module, runtimeHelpers } from "./modules";
+import { conv_string } from "./strings";
+import corebindings from "./corebindings";
+import cwraps from "./cwraps";
+import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, _js_owned_object_finalized, _js_owned_object_registry, _lookup_js_owned_object, _register_js_owned_object, _use_finalization_registry } from "./gc-handles";
+import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
+import { _js_to_mono_obj } from "./js-to-cs";
+import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
 
 const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
@@ -23,7 +23,7 @@ export function unbox_mono_obj(mono_obj: MonoObject) {
     if (mono_obj === MonoObjectNull)
         return undefined;
 
-    var root = mono_wasm_new_root(mono_obj);
+    const root = mono_wasm_new_root(mono_obj);
     try {
         return _unbox_mono_obj_root(root);
     } finally {
@@ -33,8 +33,8 @@ export function unbox_mono_obj(mono_obj: MonoObject) {
 
 function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     // we don't need in-flight reference as we already have it rooted here
-    var js_handle = corebindings._get_cs_owned_object_js_handle(root.value, 0);
-    var js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
+    const js_handle = corebindings._get_cs_owned_object_js_handle(root.value, 0);
+    const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     return js_obj;
 }
 
@@ -91,7 +91,7 @@ export function _unbox_mono_obj_root(root: WasmRoot<any>) {
     if (root.value === 0)
         return undefined;
 
-    var type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, runtimeHelpers._unbox_buffer);
+    const type = cwraps.mono_wasm_try_unbox_primitive_and_get_type(root.value, runtimeHelpers._unbox_buffer);
     switch (type) {
         case 1: // int
             return Module.HEAP32[<any>runtimeHelpers._unbox_buffer / 4];
@@ -114,7 +114,7 @@ export function mono_array_to_js_array(mono_array: MonoArray) {
     if (mono_array === MonoArrayNull)
         return null;
 
-    var arrayRoot = mono_wasm_new_root(mono_array);
+    const arrayRoot = mono_wasm_new_root(mono_array);
     try {
         return _mono_array_root_to_js_array(arrayRoot);
     } finally {
@@ -130,12 +130,12 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>) {
     if (arrayRoot.value === MonoArrayNull)
         return null;
 
-    let elemRoot = mono_wasm_new_root<MonoObject>();
+    const elemRoot = mono_wasm_new_root<MonoObject>();
 
     try {
-        var len = cwraps.mono_wasm_array_length(arrayRoot.value);
+        const len = cwraps.mono_wasm_array_length(arrayRoot.value);
         var res = new Array(len);
-        for (var i = 0; i < len; ++i) {
+        for (let i = 0; i < len; ++i) {
             elemRoot.value = cwraps.mono_wasm_array_get(arrayRoot.value, i);
 
             if (is_nested_array(elemRoot.value))
@@ -161,7 +161,7 @@ export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>) {
 
 export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_listener_callback?: () => void) {
     // see if we have js owned instance for this gc_handle already
-    var result = _lookup_js_owned_object(gc_handle);
+    let result = _lookup_js_owned_object(gc_handle);
 
     // If the function for this gc_handle was already collected (or was never created)
     if (!result) {
@@ -211,35 +211,35 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
 }
 
 export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr) {
-    var argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(core_name);
+    const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(core_name);
     try {
-        var js_name = conv_string(nameRoot.value);
+        const js_name = conv_string(nameRoot.value);
         if (!js_name) {
             return wrap_error(is_exception, "Invalid name @" + nameRoot.value);
         }
 
-        var coreObj = (<any>globalThis)[js_name];
+        const coreObj = (<any>globalThis)[js_name];
         if (coreObj === null || typeof coreObj === "undefined") {
             return wrap_error(is_exception, "JavaScript host object '" + js_name + "' not found.");
         }
 
         try {
-            var js_args = _mono_array_root_to_js_array(argsRoot);
+            const js_args = _mono_array_root_to_js_array(argsRoot);
 
             // This is all experimental !!!!!!
-            var allocator = function (constructor: Function, js_args: any[] | null) {
+            const allocator = function (constructor: Function, js_args: any[] | null) {
                 // Not sure if we should be checking for anything here
-                var argsList = new Array();
+                let argsList = [];
                 argsList[0] = constructor;
                 if (js_args)
                     argsList = argsList.concat(js_args);
-                var tempCtor = constructor.bind.apply(constructor, <any>argsList);
-                var js_obj = new tempCtor();
+                const tempCtor = constructor.bind.apply(constructor, <any>argsList);
+                const js_obj = new tempCtor();
                 return js_obj;
             };
 
-            var js_obj = allocator(coreObj, js_args);
-            var js_handle = mono_wasm_get_js_handle(js_obj);
+            const js_obj = allocator(coreObj, js_args);
+            const js_handle = mono_wasm_get_js_handle(js_obj);
             // returns boxed js_handle int, because on exception we need to return String on same method signature
             // here we don't have anything to in-flight reference, as the JSObject doesn't exist yet
             return _js_to_mono_obj(false, js_handle);
@@ -263,7 +263,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
     const gc_handle = corebindings._get_js_owned_object_gc_handle(root.value);
 
     // see if we have js owned instance for this gc_handle already
-    var result = _lookup_js_owned_object(gc_handle);
+    let result = _lookup_js_owned_object(gc_handle);
 
     // If the promise for this gc_handle was already collected (or was never created)
     if (!result) {
@@ -299,7 +299,7 @@ function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>) {
 
     // this could be JSObject proxy of a js native object
     // we don't need in-flight reference as we already have it rooted here
-    var js_handle = corebindings._try_get_cs_owned_object_js_handle(root.value, 0);
+    const js_handle = corebindings._try_get_cs_owned_object_js_handle(root.value, 0);
     if (js_handle) {
         if (js_handle === JSHandleDisposed) {
             throw new Error("Cannot access a disposed JSObject at " + root.value);
@@ -312,7 +312,7 @@ function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>) {
     const gc_handle = corebindings._get_js_owned_object_gc_handle(root.value);
 
     // see if we have js owned instance for this gc_handle already
-    var result = _lookup_js_owned_object(gc_handle);
+    let result = _lookup_js_owned_object(gc_handle);
 
     // If the JS object for this gc_handle was already collected (or was never created)
     if (!result) {

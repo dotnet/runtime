@@ -1,19 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { WasmRootBuffer } from './roots';
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull } from './types';
-import { BINDING, MONO, runtimeHelpers } from './modules';
-import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from './js-to-cs';
-import { js_string_to_mono_string, js_string_to_mono_string_interned } from './strings';
-import cwraps from './cwraps';
+import { WasmRootBuffer } from "./roots";
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull } from "./types";
+import { BINDING, MONO, runtimeHelpers } from "./modules";
+import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
+import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
+import cwraps from "./cwraps";
 
 const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
 const _method_descriptions = new Map<MonoMethod, string>();
 
 export function find_method(klass: MonoClass, name: string, n: number) {
-    var result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
+    const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
     if (result) {
         _method_descriptions.set(result, name);
     }
@@ -21,37 +21,37 @@ export function find_method(klass: MonoClass, name: string, n: number) {
 }
 
 export function get_method(method_name: string) {
-    var res = find_method(runtimeHelpers.wasm_runtime_class, method_name, -1);
+    const res = find_method(runtimeHelpers.wasm_runtime_class, method_name, -1);
     if (!res)
         throw "Can't find method " + runtimeHelpers.runtime_namespace + "." + runtimeHelpers.runtime_classname + ":" + method_name;
     return res;
-};
+}
 
 export function bind_runtime_method(method_name: string, signature: ArgsMarshalString) {
-    var method = get_method(method_name);
+    const method = get_method(method_name);
     return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
-};
+}
 
 
 function _create_named_function(name: string, argumentNames: string[], body: string, closure: any) {
-    var result = null, closureArgumentList = null, closureArgumentNames = null;
+    let result = null, closureArgumentList = null, closureArgumentNames = null;
 
     if (closure) {
         closureArgumentNames = Object.keys(closure);
         closureArgumentList = new Array(closureArgumentNames.length);
-        for (var i = 0, l = closureArgumentNames.length; i < l; i++)
+        for (let i = 0, l = closureArgumentNames.length; i < l; i++)
             closureArgumentList[i] = closure[closureArgumentNames[i]];
     }
 
-    var constructor = _create_rebindable_named_function(name, argumentNames, body, closureArgumentNames);
+    const constructor = _create_rebindable_named_function(name, argumentNames, body, closureArgumentNames);
     result = constructor.apply(null, closureArgumentList);
 
     return result;
 }
 
 function _create_rebindable_named_function(name: string, argumentNames: string[], body: string, closureArgNames: string[] | null) {
-    var strictPrefix = "\"use strict\";\r\n";
-    var uriPrefix = "", escapedFunctionIdentifier = "";
+    const strictPrefix = "\"use strict\";\r\n";
+    let uriPrefix = "", escapedFunctionIdentifier = "";
 
     if (name) {
         uriPrefix = "//# sourceURL=https://mono-wasm.invalid/" + name + "\r\n";
@@ -60,20 +60,20 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
         escapedFunctionIdentifier = "unnamed";
     }
 
-    var rawFunctionText = "function " + escapedFunctionIdentifier + "(" +
+    let rawFunctionText = "function " + escapedFunctionIdentifier + "(" +
         argumentNames.join(", ") +
         ") {\r\n" +
         body +
         "\r\n};\r\n";
 
-    var lineBreakRE = /\r(\n?)/g;
+    const lineBreakRE = /\r(\n?)/g;
 
     rawFunctionText =
         uriPrefix + strictPrefix +
         rawFunctionText.replace(lineBreakRE, "\r\n    ") +
         `    return ${escapedFunctionIdentifier};\r\n`;
 
-    var result = null, keys = null;
+    let result = null, keys = null;
 
     if (closureArgNames) {
         keys = closureArgNames.concat([rawFunctionText]);
@@ -86,37 +86,37 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
 }
 
 export function _create_primitive_converters() {
-    var result = primitiveConverters;
-    result.set('m', { steps: [{}], size: 0 });
-    result.set('s', { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
-    result.set('S', { steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }], size: 0, needs_root: true });
+    const result = primitiveConverters;
+    result.set("m", { steps: [{}], size: 0 });
+    result.set("s", { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert: js_string_to_mono_string_interned.bind(BINDING) }], size: 0, needs_root: true });
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri, 
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set('o', { steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }], size: 0, needs_root: true });
-    result.set('u', { steps: [{ convert: _js_to_mono_uri.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert: _js_to_mono_obj.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("u", { steps: [{ convert: _js_to_mono_uri.bind(BINDING, false) }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-    result.set('j', { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: 'i32' }], size: 8 });
+    result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
 
-    result.set('i', { steps: [{ indirect: 'i32' }], size: 8 });
-    result.set('l', { steps: [{ indirect: 'i64' }], size: 8 });
-    result.set('f', { steps: [{ indirect: 'float' }], size: 8 });
-    result.set('d', { steps: [{ indirect: 'double' }], size: 8 });
+    result.set("i", { steps: [{ indirect: "i32" }], size: 8 });
+    result.set("l", { steps: [{ indirect: "i64" }], size: 8 });
+    result.set("f", { steps: [{ indirect: "float" }], size: 8 });
+    result.set("d", { steps: [{ indirect: "double" }], size: 8 });
 
     return result;
 }
 
 function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
-    var steps = [];
-    var size = 0;
-    var is_result_definitely_unmarshaled = false,
+    const steps = [];
+    let size = 0;
+    let is_result_definitely_unmarshaled = false,
         is_result_possibly_unmarshaled = false,
         result_unmarshaled_if_argc = -1,
         needs_root_buffer = false;
 
-    for (var i = 0; i < args_marshal.length; ++i) {
-        var key = args_marshal[i];
+    for (let i = 0; i < args_marshal.length; ++i) {
+        const key = args_marshal[i];
 
         if (i === args_marshal.length - 1) {
             if (key === "!") {
@@ -129,11 +129,11 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
         } else if (key === "!")
             throw new Error("! must be at the end of the signature");
 
-        var conv = primitiveConverters.get(key);
+        const conv = primitiveConverters.get(key);
         if (!conv)
             throw new Error("Unknown parameter type " + key);
 
-        var localStep = Object.create(conv.steps[0]);
+        const localStep = Object.create(conv.steps[0]);
         localStep.size = conv.size;
         if (conv.needs_root)
             needs_root_buffer = true;
@@ -153,7 +153,7 @@ function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): 
 }
 
 function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
-    var converter = _signature_converters.get(args_marshal);
+    let converter = _signature_converters.get(args_marshal);
     if (!converter) {
         converter = _create_converter_for_marshal_string(args_marshal);
         _signature_converters.set(args_marshal, converter);
@@ -163,27 +163,27 @@ function _get_converter_for_marshal_string(args_marshal: ArgsMarshalString): Con
 }
 
 export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
-    var converter = _get_converter_for_marshal_string(args_marshal);
+    const converter = _get_converter_for_marshal_string(args_marshal);
     if (typeof (converter.args_marshal) !== "string")
         throw new Error("Corrupt converter for '" + args_marshal + "'");
 
     if (converter.compiled_function && converter.compiled_variadic_function)
         return converter;
 
-    var converterName = args_marshal.replace("!", "_result_unmarshaled");
+    const converterName = args_marshal.replace("!", "_result_unmarshaled");
     converter.name = converterName;
 
-    var body = [];
-    var argumentNames = ["buffer", "rootBuffer", "method"];
+    let body = [];
+    let argumentNames = ["buffer", "rootBuffer", "method"];
 
     // worst-case allocation size instead of allocating dynamically, plus padding
-    var bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
+    const bufferSizeBytes = converter.size + (args_marshal.length * 4) + 16;
 
     // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
-    var indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
+    const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
-    var closure: any = {};
-    var indirectLocalOffset = 0;
+    let closure: any = {};
+    let indirectLocalOffset = 0;
 
     body.push(
         `if (!buffer) buffer = Module._malloc (${bufferSizeBytes});`,
@@ -194,11 +194,11 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
     );
 
     for (let i = 0; i < converter.steps.length; i++) {
-        var step = converter.steps[i];
-        var closureKey = "step" + i;
-        var valueKey = "value" + i;
+        const step = converter.steps[i];
+        const closureKey = "step" + i;
+        const valueKey = "value" + i;
 
-        var argKey = "arg" + i;
+        const argKey = "arg" + i;
         argumentNames.push(argKey);
 
         if (step.convert) {
@@ -212,7 +212,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
             body.push(`rootBuffer.set (${i}, ${valueKey});`);
 
         if (step.indirect) {
-            var heapArrayName = null;
+            let heapArrayName = null;
 
             switch (step.indirect) {
                 case "u32":
@@ -326,27 +326,27 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
 
 export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string) {
     if (typeof (args_marshal) !== "string")
-        throw new Error('args_marshal argument invalid, expected string');
+        throw new Error("args_marshal argument invalid, expected string");
     this_arg = coerceNull(this_arg);
 
-    var converter: Converter | null = null;
+    let converter: Converter | null = null;
 
     converter = _compile_converter_for_marshal_string(args_marshal);
 
-    var closure: any = {
+    const closure: any = {
         library_mono: MONO,
         binding_support: BINDING,
         method: method,
         this_arg: this_arg
     };
 
-    var converterKey = "converter_" + converter.name;
+    const converterKey = "converter_" + converter.name;
 
     if (converter)
         closure[converterKey] = converter;
 
-    var argumentNames = [];
-    var body = [
+    const argumentNames = [];
+    const body = [
         "var resultRoot = library_mono.mono_wasm_new_root (), exceptionRoot = library_mono.mono_wasm_new_root ();",
         ""
     ];
@@ -359,8 +359,8 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
             "    scratchBuffer, argsRootBuffer, method,"
         );
 
-        for (var i = 0; i < converter.steps.length; i++) {
-            var argName = "arg" + i;
+        for (let i = 0; i < converter.steps.length; i++) {
+            const argName = "arg" + i;
             argumentNames.push(argName);
             body.push(
                 "    " + argName +
@@ -431,14 +431,14 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         "return result;"
     );
 
-    var bodyJs = body.join("\r\n");
+    const bodyJs = body.join("\r\n");
 
     if (friendly_name) {
-        var escapeRE = /[^A-Za-z0-9_]/g;
+        const escapeRE = /[^A-Za-z0-9_]/g;
         friendly_name = friendly_name.replace(escapeRE, "_");
     }
 
-    var displayName = "managed_" + (friendly_name || method);
+    let displayName = "managed_" + (friendly_name || method);
 
     if (this_arg)
         displayName += "_with_this_" + this_arg;
@@ -465,7 +465,7 @@ type _ExtraArgsMarshalOperators = "!" | "";
 // TODO make this more efficient so we can add more parameters (currently it only checks up to 4). One option is to add a
 // blank to the ArgsMarshal enum but that doesn't solve the TS limit of number of options in 1 type
 // Take the marshaling enums and convert to all the valid strings for type checking. 
-export type ArgsMarshalString = ``
+export type ArgsMarshalString = ""
     | `${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`

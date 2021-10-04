@@ -8,7 +8,7 @@
   "version": "1.0.0",
   "scripts": {
     "rollup": "rollup -c",
-    "lint": "eslint src/**/*.ts"
+    "lint": "eslint ./**/*.ts ./**/*.js"
   },
   "keywords": [
     "dotnet",

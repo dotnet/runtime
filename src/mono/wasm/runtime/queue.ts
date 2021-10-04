@@ -39,7 +39,7 @@ export class Queue<T> {
         if (this.queue.length == 0) return undefined;
 
         // store the item at the front of the queue
-        var item = this.queue[this.offset];
+        const item = this.queue[this.offset];
 
         // for GC's sake
         this.queue[this.offset] = <any>null;
@@ -63,7 +63,7 @@ export class Queue<T> {
 
     drain(onEach: (item: T) => void) {
         while (this.getLength()) {
-            var item = this.dequeue()!;
+            const item = this.dequeue()!;
             onEach(item);
         }
     }

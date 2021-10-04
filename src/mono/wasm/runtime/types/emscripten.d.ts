@@ -22,11 +22,11 @@ declare interface CharPtrPtr extends NativePointer {
     __brand: "CharPtrPtr"
 }
 
-declare var ENVIRONMENT_IS_WEB: boolean;
-declare var ENVIRONMENT_IS_SHELL: boolean;
-declare var ENVIRONMENT_IS_NODE: boolean;
-declare var ENVIRONMENT_IS_WORKER: boolean;
-declare var LibraryManager: any;
+declare let ENVIRONMENT_IS_WEB: boolean;
+declare let ENVIRONMENT_IS_SHELL: boolean;
+declare let ENVIRONMENT_IS_NODE: boolean;
+declare let ENVIRONMENT_IS_WORKER: boolean;
+declare let LibraryManager: any;
 
 declare function autoAddDeps(a: object, b: string): void;
 declare function mergeInto(a: object, b: object): void;
@@ -34,7 +34,7 @@ declare function mergeInto(a: object, b: object): void;
 // TODO, what's wrong with EXPORTED_RUNTIME_METHODS ?
 declare function locateFile(path: string, prefix?: string): string;
 
-declare var Module: t_Module;
+declare let Module: t_Module;
 
 declare interface t_Module {
     HEAP8: Int8Array,

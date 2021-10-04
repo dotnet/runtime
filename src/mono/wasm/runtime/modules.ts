@@ -18,7 +18,7 @@ export function setLegacyModules(mono: any, binding: any, module: t_Module & t_M
 }
 
 let monoConfig: MonoConfig;
-let runtime_is_ready: boolean = false;
+let runtime_is_ready = false;
 
 export const runtimeHelpers: t_RuntimeHelpers = <any>{
     namespace: "System.Runtime.InteropServices.JavaScript",
@@ -39,4 +39,4 @@ export const runtimeHelpers: t_RuntimeHelpers = <any>{
         MONO.config = value;
         Module.config = value;
     },
-}
+};

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from './cwraps'
-import { Module } from './modules'
+import cwraps from "./cwraps";
+import { Module } from "./modules";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -22,8 +22,8 @@ export function mono_wasm_new_root_buffer(capacity: number, name?: string): Wasm
 
     capacity = capacity | 0;
 
-    var capacityBytes = capacity * 4;
-    var offset = Module._malloc(capacityBytes);
+    const capacityBytes = capacity * 4;
+    const offset = Module._malloc(capacityBytes);
     if ((<any>offset % 4) !== 0)
         throw new Error("Malloc returned an unaligned offset");
 
@@ -42,7 +42,7 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
 
     capacity = capacity | 0;
 
-    var capacityBytes = capacity * 4;
+    const capacityBytes = capacity * 4;
     if ((<any>offset % 4) !== 0)
         throw new Error("Unaligned offset");
 
@@ -59,13 +59,13 @@ export function mono_wasm_new_root_buffer_from_pointer(offset: VoidPtr, capacity
  * When you are done using the root you must call its .release() method.
  */
 export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(value: T | undefined = undefined): WasmRoot<T> {
-    var result: WasmRoot<T>;
+    let result: WasmRoot<T>;
 
     if (_scratch_root_free_instances.length > 0) {
         result = _scratch_root_free_instances.pop()!;
     } else {
-        var index = _mono_wasm_claim_scratch_index();
-        var buffer = _scratch_root_buffer;
+        const index = _mono_wasm_claim_scratch_index();
+        const buffer = _scratch_root_buffer;
 
         result = new WasmRoot(buffer!, index);
     }
@@ -89,7 +89,7 @@ export function mono_wasm_new_root<T extends ManagedPointer | NativePointer>(val
  * Each root must be released with its release method, or using the mono_wasm_release_roots API.
  */
 export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(count_or_values: number | T[]): WasmRoot<T>[] {
-    var result;
+    let result;
 
     if (Array.isArray(count_or_values)) {
         result = new Array(count_or_values.length);
@@ -114,7 +114,7 @@ export function mono_wasm_new_roots<T extends ManagedPointer | NativePointer>(co
  * @param {... WasmRoot} roots
  */
 export function mono_wasm_release_roots(...args: WasmRoot<any>[]) {
-    for (var i = 0; i < args.length; i++) {
+    for (let i = 0; i < args.length; i++) {
         if (!args[i])
             continue;
 
@@ -144,14 +144,14 @@ function _mono_wasm_claim_scratch_index() {
 
         _scratch_root_free_indices = new Int32Array(maxScratchRoots);
         _scratch_root_free_indices_count = maxScratchRoots;
-        for (var i = 0; i < maxScratchRoots; i++)
+        for (let i = 0; i < maxScratchRoots; i++)
             _scratch_root_free_indices[i] = maxScratchRoots - i - 1;
     }
 
     if (_scratch_root_free_indices_count < 1)
         throw new Error("Out of scratch root space");
 
-    var result = _scratch_root_free_indices[_scratch_root_free_indices_count - 1];
+    const result = _scratch_root_free_indices[_scratch_root_free_indices_count - 1];
     _scratch_root_free_indices_count--;
     return result;
 }
@@ -251,7 +251,7 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     get(): T {
-        var result = this.__buffer._unsafe_get(this.__index);
+        const result = this.__buffer._unsafe_get(this.__index);
         return <any>result;
     }
 
