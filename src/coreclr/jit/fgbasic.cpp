@@ -3539,6 +3539,10 @@ void Compiler::fgFindBasicBlocks()
 //
 void Compiler::fgFixEntryFlowForOSR()
 {
+    // Ensure lookup IL->BB lookup table is valid
+    //
+    fgInitBBLookup();
+
     // Remember the original entry block in case this method is tail recursive.
     //
     fgEntryBB = fgLookupBB(0);
@@ -3561,10 +3565,6 @@ void Compiler::fgFixEntryFlowForOSR()
 
     JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
             fgFirstBB->bbNum, osrEntry->bbNum);
-
-    // rebuild lookup table... we may be able to avoid this by leaving room up front.
-    //
-    fgInitBBLookup();
 }
 
 /*****************************************************************************
