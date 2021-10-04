@@ -69,30 +69,5 @@ namespace ILLink.RoslynAnalyzer
 
 			return sb.ToString ();
 		}
-
-		public static bool IsInterface (this ISymbol symbol)
-		{
-			if (symbol is not INamedTypeSymbol namedTypeSymbol)
-				return false;
-
-			var typeSymbol = namedTypeSymbol as ITypeSymbol;
-			return typeSymbol.TypeKind == TypeKind.Interface;
-		}
-
-		public static bool IsSubclassOf (this ISymbol symbol, string ns, string type)
-		{
-			if (symbol is not ITypeSymbol typeSymbol)
-				return false;
-
-			while (typeSymbol != null) {
-				if (typeSymbol.ContainingNamespace.Name == ns &&
-					typeSymbol.ContainingType.Name == type)
-					return true;
-
-				typeSymbol = typeSymbol.ContainingType;
-			}
-
-			return false;
-		}
 	}
 }

@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		[UnconditionalSuppressMessage ("trim", "IL2026")]
 		static void Main ()
 		{
-			Call_SomeMethodReturningAutoLayoutClass ();
 			Call_SomeMethodTakingInterface ();
 			Call_SomeMethodTakingObject ();
 			Call_SomeMethodTakingArray ();
@@ -39,7 +38,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingInterface (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingInterface (IFoo foo);
 
@@ -48,7 +46,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingObject (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingObject ([MarshalAs (UnmanagedType.IUnknown)] object obj);
 
@@ -57,7 +54,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingArray (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingArray (Array array);
 
@@ -65,7 +61,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingStringBuilder (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingStringBuilder (StringBuilder str);
 
@@ -73,7 +68,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingCriticalHandle (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingCriticalHandle (MyCriticalHandle handle);
 
@@ -82,7 +76,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingSafeHandle (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingSafeHandle (TestSafeHandle handle);
 
@@ -90,7 +83,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingExplicitLayout (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingExplicitLayout (ExplicitLayout _class);
 
@@ -98,7 +90,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingSequentialLayout (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingSequentialLayout (SequentialLayout _class);
 
@@ -107,24 +98,14 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			SomeMethodTakingAutoLayout (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingAutoLayout (AutoLayout _class);
 
-		[ExpectedWarning ("IL2050")]
-		static void Call_SomeMethodReturningAutoLayoutClass ()
-		{
-			SomeMethodReturningAutoLayout ();
-		}
-
-		[DllImport ("Foo")]
-		static extern AutoLayout SomeMethodReturningAutoLayout ();
 
 		static void Call_SomeMethodTakingString ()
 		{
 			SomeMethodTakingString (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void SomeMethodTakingString (String str);
 
@@ -133,7 +114,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			GetInterface ();
 		}
-
 		[DllImport ("Foo")]
 		static extern IFoo GetInterface ();
 
@@ -142,7 +122,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			CanSuppressWarningOnParameter (null);
 		}
-
 		[DllImport ("Foo")]
 		static extern void CanSuppressWarningOnParameter ([MarshalAs (UnmanagedType.IUnknown)] object obj);
 
@@ -151,7 +130,6 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		{
 			CanSuppressWarningOnReturnType ();
 		}
-
 		[DllImport ("Foo")]
 		static extern IFoo CanSuppressWarningOnReturnType ();
 
