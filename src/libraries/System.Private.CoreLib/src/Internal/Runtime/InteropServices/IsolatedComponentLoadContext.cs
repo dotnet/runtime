@@ -17,6 +17,7 @@ namespace Internal.Runtime.InteropServices
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]
     internal sealed class IsolatedComponentLoadContext : AssemblyLoadContext
     {

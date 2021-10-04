@@ -18,6 +18,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
@@ -55,6 +56,7 @@ namespace Internal.Runtime.InteropServices
         [UnsupportedOSPlatform("android")]
         [UnsupportedOSPlatform("browser")]
         [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
         [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
         public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
