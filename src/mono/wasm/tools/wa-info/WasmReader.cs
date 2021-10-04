@@ -768,6 +768,8 @@ namespace WebAssemblyInfo
                     if (!Program.FunctionFilter.Match(name).Success)
                         continue;
                 }
+                else
+                    name = FunctionName(FunctionOffset(idx));
 
                 PrintFunction(idx, name);
             }
@@ -777,6 +779,9 @@ namespace WebAssemblyInfo
         {
             if (functions == null || functionTypes == null || funcsCode == null)
                 return;
+
+            if (string.IsNullOrEmpty(name))
+                name = $"idx:{idx}";
 
             Console.WriteLine($"{functionTypes[functions[idx].TypeIdx].ToString(name)}\n{funcsCode[idx].ToString(this)}");
         }
