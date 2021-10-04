@@ -615,11 +615,9 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
     // Start by determining if we have an HFA/HVA with a single element.
     if (GlobalJitOptions::compFeatureHfa)
     {
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
         // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
         // as if they are not HFA types.
-        if (!isVarArg)
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        if (!(TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg))
         {
             switch (structSize)
             {
@@ -810,13 +808,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
             // as if they are not HFA/HVA types.
             var_types hfaType;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-            if (isVarArg)
+            if (TargetArchitecture::IsArm64 && TargetOS::IsWindows && isVarArg)
             {
                 hfaType = TYP_UNDEF;
             }
             else
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
             {
                 hfaType = GetHfaType(clsHnd);
             }
@@ -1028,14 +1024,14 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-    if (callConvIsInstanceMethodCallConv(callConv) && !isNativePrimitiveStructType(clsHnd))
+#endif
+    if (TargetOS::IsWindows && !TargetArchitecture::IsArm32 && callConvIsInstanceMethodCallConv(callConv) &&
+        !isNativePrimitiveStructType(clsHnd))
     {
         canReturnInRegister = false;
         howToReturnStruct   = SPK_ByReference;
         useType             = TYP_UNKNOWN;
     }
-#endif
 
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
@@ -1749,6 +1745,13 @@ void Compiler::compShutdown()
     }
 #endif // LOOP_HOIST_STATS
 
+#if TRACK_ENREG_STATS
+    if (JitConfig.JitEnregStats() != 0)
+    {
+        s_enregisterStats.Dump(fout);
+    }
+#endif // TRACK_ENREG_STATS
+
 #if MEASURE_PTRTAB_SIZE
 
     fprintf(fout, "\n");
@@ -2170,7 +2173,7 @@ VarName Compiler::compVarName(regNumber reg, bool isFloatReg)
             /* If the variable is not in a register, or not in the register we're looking for, quit. */
             /* Also, if it is a compiler generated variable (i.e. slot# > info.compVarScopesCount), don't bother. */
             if ((varDsc->lvRegister != 0) && (varDsc->GetRegNum() == reg) &&
-                (varDsc->IsFloatRegType() || !isFloatReg) && (varDsc->lvSlotNum < info.compVarScopesCount))
+                (varDsc->lvSlotNum < info.compVarScopesCount))
             {
                 /* check if variable in that register is live */
                 if (VarSetOps::IsMember(this, compCurLife, varDsc->lvVarIndex))
@@ -2209,8 +2212,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
             static int index = 0;                               // for circular index into the name array
 
             index = (index + 1) % 2; // circular reuse of index
-            sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg, isFloatReg),
-                      VarNameToStr(varName));
+            sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "%s'%s'", getRegName(reg), VarNameToStr(varName));
 
             return nameVarReg[index];
         }
@@ -2219,7 +2221,7 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
     /* no debug info required or no variable in that register
        -> return standard name */
 
-    return getRegName(reg, isFloatReg);
+    return getRegName(reg);
 }
 
 const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
@@ -2259,22 +2261,6 @@ const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
     assert(size == 1 || size == 2);
 
     return sizeNames[reg][size - 1];
-}
-
-const char* Compiler::compFPregVarName(unsigned fpReg, bool displayVar)
-{
-    const int   NAME_VAR_REG_BUFFER_LEN = 4 + 256 + 1;
-    static char nameVarReg[2][NAME_VAR_REG_BUFFER_LEN]; // to avoid overwriting the buffer when have 2 consecutive calls
-                                                        // before printing
-    static int index = 0;                               // for circular index into the name array
-
-    index = (index + 1) % 2; // circular reuse of index
-
-    /* no debug info required or no variable in that register
-       -> return standard name */
-
-    sprintf_s(nameVarReg[index], NAME_VAR_REG_BUFFER_LEN, "ST(%d)", fpReg);
-    return nameVarReg[index];
 }
 
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
@@ -2683,9 +2669,19 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspOrder = false;
+
+    // Optionally suppress inliner compiler instance dumping.
+    //
     if (compIsForInlining())
     {
-        verbose = impInlineInfo->InlinerCompiler->verbose;
+        if (JitConfig.JitDumpInlinePhases() > 0)
+        {
+            verbose = impInlineInfo->InlinerCompiler->verbose;
+        }
+        else
+        {
+            verbose = false;
+        }
     }
     else
     {
@@ -2842,6 +2838,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 }
             }
         }
+    }
+
+    // Optionally suppress dumping Tier0 jit requests.
+    //
+    if (verboseDump && jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+    {
+        verboseDump = (JitConfig.JitDumpTier0() > 0);
     }
 
     if (verboseDump)
@@ -3183,7 +3186,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (verbose)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
-        printf("Generating code for %s %s\n", Target::g_tgtPlatformName, Target::g_tgtCPUName);
+        printf("Generating code for %s %s\n", Target::g_tgtPlatformName(), Target::g_tgtCPUName);
         printf(""); // in our logic this causes a flush
     }
 
@@ -4486,6 +4489,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             assert(lvaStubArgumentVar == BAD_VAR_NUM);
             lvaStubArgumentVar                  = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
             lvaTable[lvaStubArgumentVar].lvType = TYP_I_IMPL;
+            // TODO-CQ: there is no need to mark it as doNotEnreg. There are no stores for this local
+            // before codegen so liveness and LSRA mark it as "liveIn" and always allocate a stack slot for it.
+            // However, it would be better to process it like other argument locals and keep it in
+            // a reg for the whole method without spilling to the stack when possible.
+            lvaSetVarDoNotEnregister(lvaStubArgumentVar DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
         }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
@@ -4657,7 +4665,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if defined(DEBUG) && defined(TARGET_XARCH)
         if (opts.compStackCheckOnRet)
         {
-            lvaReturnSpCheck                  = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+            lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
+            lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
             lvaTable[lvaReturnSpCheck].lvType = TYP_I_IMPL;
         }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
@@ -5178,13 +5187,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering = new (this, CMK_LSRA) Lowering(this, m_pLinearScan); // PHASE_LOWERING
     m_pLowering->Run();
 
-#if !defined(OSX_ARM64_ABI)
-    // Set stack levels; this information is necessary for x86
-    // but on other platforms it is used only in asserts.
-    // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
-    StackLevelSetter stackLevelSetter(this);
-    stackLevelSetter.Run();
-#endif // !OSX_ARM64_ABI
+    if (!compMacOsArm64Abi())
+    {
+        // Set stack levels; this information is necessary for x86
+        // but on other platforms it is used only in asserts.
+        // TODO: do not run it in release on other platforms, see https://github.com/dotnet/runtime/issues/42673.
+        StackLevelSetter stackLevelSetter(this);
+        stackLevelSetter.Run();
+    }
 
     // We can not add any new tracked variables after this point.
     lvaTrackedFixed = true;
@@ -5528,11 +5538,32 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     // Match OS for compMatchedVM
     CORINFO_EE_INFO* eeInfo = eeGetEEInfo();
-#ifdef TARGET_UNIX
-    info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
-#else
-    info.compMatchedVM        = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    noway_assert(TargetOS::OSSettingConfigured);
 #endif
+
+    if (TargetOS::IsMacOS)
+    {
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_MACOS);
+    }
+    else if (TargetOS::IsUnix)
+    {
+        if (TargetArchitecture::IsX64)
+        {
+            // MacOS x64 uses the Unix jit variant in crossgen2, not a special jit
+            info.compMatchedVM =
+                info.compMatchedVM && ((eeInfo->osType == CORINFO_UNIX) || (eeInfo->osType == CORINFO_MACOS));
+        }
+        else
+        {
+            info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_UNIX);
+        }
+    }
+    else if (TargetOS::IsWindows)
+    {
+        info.compMatchedVM = info.compMatchedVM && (eeInfo->osType == CORINFO_WINNT);
+    }
 
     // If we are not compiling for a matched VM, then we are getting JIT flags that don't match our target
     // architecture. The two main examples here are an ARM targeting altjit hosted on x86 and an ARM64
@@ -5994,6 +6025,18 @@ void Compiler::compCompileFinish()
         printf("****** DONE compiling %s\n", info.compFullName);
         printf(""); // in our logic this causes a flush
     }
+
+#if TRACK_ENREG_STATS
+    for (unsigned i = 0; i < lvaCount; ++i)
+    {
+        const LclVarDsc* varDsc = lvaGetDesc(i);
+
+        if (varDsc->lvRefCnt() != 0)
+        {
+            s_enregisterStats.RecordLocal(varDsc);
+        }
+    }
+#endif // TRACK_ENREG_STATS
 
     // Only call _DbgBreakCheck when we are jitting, not when we are ngen-ing
     // For ngen the int3 or breakpoint instruction will be right at the
@@ -9693,3 +9736,236 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
     }
 }
 #endif // defined(DEBUG)
+
+#if TRACK_ENREG_STATS
+Compiler::EnregisterStats Compiler::s_enregisterStats;
+
+void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
+{
+    m_totalNumberOfVars++;
+    if (varDsc->TypeGet() == TYP_STRUCT)
+    {
+        m_totalNumberOfStructVars++;
+    }
+    if (!varDsc->lvDoNotEnregister)
+    {
+        m_totalNumberOfEnregVars++;
+        if (varDsc->TypeGet() == TYP_STRUCT)
+        {
+            m_totalNumberOfStructEnregVars++;
+        }
+    }
+    else
+    {
+        switch (varDsc->GetDoNotEnregReason())
+        {
+            case DoNotEnregisterReason::AddrExposed:
+                m_addrExposed++;
+                break;
+            case DoNotEnregisterReason::DontEnregStructs:
+                m_dontEnregStructs++;
+                break;
+            case DoNotEnregisterReason::NotRegSizeStruct:
+                m_notRegSizeStruct++;
+                break;
+            case DoNotEnregisterReason::LocalField:
+                m_localField++;
+                break;
+            case DoNotEnregisterReason::VMNeedsStackAddr:
+                m_VMNeedsStackAddr++;
+                break;
+            case DoNotEnregisterReason::LiveInOutOfHandler:
+                m_liveInOutHndlr++;
+                break;
+            case DoNotEnregisterReason::BlockOp:
+                m_blockOp++;
+                break;
+            case DoNotEnregisterReason::IsStructArg:
+                m_structArg++;
+                break;
+            case DoNotEnregisterReason::DepField:
+                m_depField++;
+                break;
+            case DoNotEnregisterReason::NoRegVars:
+                m_noRegVars++;
+                break;
+            case DoNotEnregisterReason::MinOptsGC:
+                m_minOptsGC++;
+                break;
+#if !defined(TARGET_64BIT)
+            case DoNotEnregisterReason::LongParamField:
+                m_longParamField++;
+                break;
+#endif
+#ifdef JIT32_GCENCODER
+            case DoNotEnregisterReason::PinningRef:
+                m_PinningRef++;
+                break;
+#endif
+            case DoNotEnregisterReason::LclAddrNode:
+                m_lclAddrNode++;
+                break;
+
+            case DoNotEnregisterReason::CastTakesAddr:
+                m_castTakesAddr++;
+                break;
+
+            case DoNotEnregisterReason::StoreBlkSrc:
+                m_storeBlkSrc++;
+                break;
+
+            case DoNotEnregisterReason::OneAsgRetyping:
+                m_oneAsgRetyping++;
+                break;
+
+            case DoNotEnregisterReason::SwizzleArg:
+                m_swizzleArg++;
+                break;
+
+            case DoNotEnregisterReason::BlockOpRet:
+                m_blockOpRet++;
+                break;
+
+            case DoNotEnregisterReason::ReturnSpCheck:
+                m_returnSpCheck++;
+                break;
+
+            default:
+                unreached();
+                break;
+        }
+
+        if (varDsc->GetDoNotEnregReason() == DoNotEnregisterReason::AddrExposed)
+        {
+            // We can't `assert(IsAddressExposed())` because `fgAdjustForAddressExposedOrWrittenThis`
+            // does not clear `m_doNotEnregReason` on `this`.
+            switch (varDsc->GetAddrExposedReason())
+            {
+                case AddressExposedReason::PARENT_EXPOSED:
+                    m_parentExposed++;
+                    break;
+
+                case AddressExposedReason::TOO_CONSERVATIVE:
+                    m_tooConservative++;
+                    break;
+
+                case AddressExposedReason::ESCAPE_ADDRESS:
+                    m_escapeAddress++;
+                    break;
+
+                case AddressExposedReason::WIDE_INDIR:
+                    m_wideIndir++;
+                    break;
+
+                case AddressExposedReason::OSR_EXPOSED:
+                    m_osrExposed++;
+                    break;
+
+                case AddressExposedReason::STRESS_LCL_FLD:
+                    m_stressLclFld++;
+                    break;
+
+                case AddressExposedReason::COPY_FLD_BY_FLD:
+                    m_copyFldByFld++;
+                    break;
+
+                case AddressExposedReason::DISPATCH_RET_BUF:
+                    m_dispatchRetBuf++;
+                    break;
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+    }
+}
+
+void Compiler::EnregisterStats::Dump(FILE* fout) const
+{
+    const unsigned totalNumberOfNotStructVars =
+        s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfStructVars;
+    const unsigned totalNumberOfNotStructEnregVars =
+        s_enregisterStats.m_totalNumberOfEnregVars - s_enregisterStats.m_totalNumberOfStructEnregVars;
+    const unsigned notEnreg = s_enregisterStats.m_totalNumberOfVars - s_enregisterStats.m_totalNumberOfEnregVars;
+
+    fprintf(fout, "\nLocals enregistration statistics:\n");
+    if (m_totalNumberOfVars == 0)
+    {
+        fprintf(fout, "No locals to report.\n");
+        return;
+    }
+    fprintf(fout, "total number of locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
+            m_totalNumberOfVars, m_totalNumberOfEnregVars, m_totalNumberOfVars - m_totalNumberOfEnregVars,
+            (float)m_totalNumberOfEnregVars / m_totalNumberOfVars);
+
+    if (m_totalNumberOfStructVars != 0)
+    {
+        fprintf(fout, "total number of struct locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
+                m_totalNumberOfStructVars, m_totalNumberOfStructEnregVars,
+                m_totalNumberOfStructVars - m_totalNumberOfStructEnregVars,
+                (float)m_totalNumberOfStructEnregVars / m_totalNumberOfStructVars);
+    }
+
+    const unsigned numberOfPrimitiveLocals = totalNumberOfNotStructVars - totalNumberOfNotStructEnregVars;
+    if (numberOfPrimitiveLocals != 0)
+    {
+        fprintf(fout, "total number of primitive locals: %d, number of enregistered: %d, notEnreg: %d, ratio: %.2f\n",
+                totalNumberOfNotStructVars, totalNumberOfNotStructEnregVars, numberOfPrimitiveLocals,
+                (float)totalNumberOfNotStructEnregVars / totalNumberOfNotStructVars);
+    }
+
+    if (notEnreg == 0)
+    {
+        fprintf(fout, "All locals are enregistered.\n");
+        return;
+    }
+
+#define PRINT_STATS(stat, total)                                                                                       \
+    if (stat != 0)                                                                                                     \
+    {                                                                                                                  \
+        fprintf(fout, #stat " %d, ratio: %.2f\n", stat, (float)stat / total);                                          \
+    }
+
+    PRINT_STATS(m_addrExposed, notEnreg);
+    PRINT_STATS(m_dontEnregStructs, notEnreg);
+    PRINT_STATS(m_notRegSizeStruct, notEnreg);
+    PRINT_STATS(m_localField, notEnreg);
+    PRINT_STATS(m_VMNeedsStackAddr, notEnreg);
+    PRINT_STATS(m_liveInOutHndlr, notEnreg);
+    PRINT_STATS(m_blockOp, notEnreg);
+    PRINT_STATS(m_structArg, notEnreg);
+    PRINT_STATS(m_depField, notEnreg);
+    PRINT_STATS(m_noRegVars, notEnreg);
+    PRINT_STATS(m_minOptsGC, notEnreg);
+#if !defined(TARGET_64BIT)
+    PRINT_STATS(m_longParamField, notEnreg);
+#endif // !TARGET_64BIT
+#ifdef JIT32_GCENCODER
+    PRINT_STATS(m_PinningRef, notEnreg);
+#endif // JIT32_GCENCODER
+    PRINT_STATS(m_lclAddrNode, notEnreg);
+    PRINT_STATS(m_castTakesAddr, notEnreg);
+    PRINT_STATS(m_storeBlkSrc, notEnreg);
+    PRINT_STATS(m_oneAsgRetyping, notEnreg);
+    PRINT_STATS(m_swizzleArg, notEnreg);
+    PRINT_STATS(m_blockOpRet, notEnreg);
+    PRINT_STATS(m_returnSpCheck, notEnreg);
+
+    fprintf(fout, "\nAddr exposed details:\n");
+    if (m_addrExposed == 0)
+    {
+        fprintf(fout, "\nNo address exposed locals to report.\n");
+        return;
+    }
+
+    PRINT_STATS(m_parentExposed, m_addrExposed);
+    PRINT_STATS(m_tooConservative, m_addrExposed);
+    PRINT_STATS(m_escapeAddress, m_addrExposed);
+    PRINT_STATS(m_wideIndir, m_addrExposed);
+    PRINT_STATS(m_osrExposed, m_addrExposed);
+    PRINT_STATS(m_stressLclFld, m_addrExposed);
+    PRINT_STATS(m_copyFldByFld, m_addrExposed);
+    PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
+}
+#endif // TRACK_ENREG_STATS

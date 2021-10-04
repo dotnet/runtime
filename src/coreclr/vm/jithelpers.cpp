@@ -5543,7 +5543,7 @@ HCIMPL1_RAW(void, JIT_ReversePInvokeExitTrackTransitions, ReversePInvokeFrame* f
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackTransitions())
     {
-        ProfilerUnmanagedToManagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
+        ProfilerManagedToUnmanagedTransitionMD(frame->pMD, COR_PRF_TRANSITION_RETURN);
     }
 #endif
 }

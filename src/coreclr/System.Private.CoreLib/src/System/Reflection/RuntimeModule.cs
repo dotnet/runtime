@@ -53,7 +53,7 @@ namespace System.Reflection
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
                 if (!(typeArg is RuntimeType))
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
-                typeHandleArgs[i] = typeArg.GetTypeHandleInternal();
+                typeHandleArgs[i] = typeArg.TypeHandle;
             }
             return typeHandleArgs;
         }
@@ -393,9 +393,7 @@ namespace System.Reflection
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -406,9 +404,7 @@ namespace System.Reflection
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);

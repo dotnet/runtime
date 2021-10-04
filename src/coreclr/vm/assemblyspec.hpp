@@ -32,10 +32,10 @@ class AssemblySpec  : public BaseAssemblySpec
     DomainAssembly  *m_pParentAssembly;
 
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
-    AssemblyBinder *m_pFallbackLoadContextBinder;
+    AssemblyBinder *m_pFallbackBinder;
 
     // Flag to indicate if we should prefer the fallback load context binder for binding or not.
-    bool m_fPreferFallbackLoadContextBinder;
+    bool m_fPreferFallbackBinder;
 
     BOOL IsValidAssemblyName();
 
@@ -50,7 +50,7 @@ class AssemblySpec  : public BaseAssemblySpec
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
                 BOOL                fDoNotUtilizeExtraChecks,
-                AssemblyBinder      *pBindingContextForLoadedAssembly);
+                AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
 
@@ -60,8 +60,8 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
 
-        m_pFallbackLoadContextBinder = NULL;
-        m_fPreferFallbackLoadContextBinder = false;
+        m_pFallbackBinder = NULL;
+        m_fPreferFallbackBinder = false;
 
     }
 #endif //!DACCESS_COMPILE
@@ -71,15 +71,15 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT
         m_pParentAssembly = NULL;
 
-        m_pFallbackLoadContextBinder = NULL;
-        m_fPreferFallbackLoadContextBinder = false;
+        m_pFallbackBinder = NULL;
+        m_fPreferFallbackBinder = false;
 
     }
 
 
     DomainAssembly* GetParentAssembly();
 
-    AssemblyBinder* GetBindingContextFromParentAssembly(AppDomain *pDomain);
+    AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }
@@ -130,32 +130,32 @@ class AssemblySpec  : public BaseAssemblySpec
         m_pParentAssembly = pAssembly;
     }
 
-    void SetFallbackLoadContextBinderForRequestingAssembly(AssemblyBinder *pFallbackLoadContextBinder)
+    void SetFallbackBinderForRequestingAssembly(AssemblyBinder *pFallbackBinder)
     {
        LIMITED_METHOD_CONTRACT;
 
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        m_pFallbackBinder = pFallbackBinder;
     }
 
-    AssemblyBinder* GetFallbackLoadContextBinderForRequestingAssembly()
+    AssemblyBinder* GetFallbackBinderForRequestingAssembly()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackLoadContextBinder;
+        return m_pFallbackBinder;
     }
 
-    void SetPreferFallbackLoadContextBinder()
+    void SetPreferFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_fPreferFallbackLoadContextBinder = true;
+        m_fPreferFallbackBinder = true;
     }
 
-    bool GetPreferFallbackLoadContextBinder()
+    bool GetPreferFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_fPreferFallbackLoadContextBinder;
+        return m_fPreferFallbackBinder;
     }
 
     // Note that this method does not clone the fields!
@@ -174,8 +174,8 @@ class AssemblySpec  : public BaseAssemblySpec
         SetParentAssembly(pSource->GetParentAssembly());
 
         // Copy the details of the fallback load context binder
-        SetFallbackLoadContextBinderForRequestingAssembly(pSource->GetFallbackLoadContextBinderForRequestingAssembly());
-        m_fPreferFallbackLoadContextBinder = pSource->GetPreferFallbackLoadContextBinder();
+        SetFallbackBinderForRequestingAssembly(pSource->GetFallbackBinderForRequestingAssembly());
+        m_fPreferFallbackBinder = pSource->GetPreferFallbackBinder();
 
         m_dwHashAlg = pSource->m_dwHashAlg;
     }
@@ -185,10 +185,9 @@ class AssemblySpec  : public BaseAssemblySpec
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit,
                       mdAssemblyRef *pToken);
 
-    VOID Bind(
+    HRESULT Bind(
         AppDomain* pAppDomain,
-        BOOL fThrowOnFileNotFound,
-        CoreBindResult* pBindResult);
+        BINDER_SPACE::Assembly** ppAssembly);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);

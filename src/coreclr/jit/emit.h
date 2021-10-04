@@ -243,8 +243,8 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    weight_t igWeight;    // the block weight used for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
 #endif
 
 #ifdef DEBUG
@@ -1128,15 +1128,6 @@ protected:
             _idCallRegPtr = 1;
         }
 
-        bool idIsCallAddr() const
-        {
-            return _idCallAddr != 0;
-        }
-        void idSetIsCallAddr()
-        {
-            _idCallAddr = 1;
-        }
-
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
@@ -1348,7 +1339,7 @@ protected:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-    BasicBlock::weight_t getCurrentBlockWeight();
+    weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 

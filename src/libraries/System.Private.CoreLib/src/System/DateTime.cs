@@ -46,7 +46,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct DateTime : IComparable, ISpanFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IAdditionOperators<DateTime, TimeSpan, DateTime>,
           IAdditiveIdentity<DateTime, TimeSpan>,
           IComparisonOperators<DateTime, DateTime>,
@@ -54,7 +54,7 @@ namespace System
           ISpanParseable<DateTime>,
           ISubtractionOperators<DateTime, TimeSpan, DateTime>,
           ISubtractionOperators<DateTime, DateTime, TimeSpan>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         // Number of 100ns ticks per time unit
@@ -688,7 +688,7 @@ namespace System
 
         public bool Equals(DateTime value)
         {
-            return Ticks == value.Ticks;
+            return this == value;
         }
 
         // Compares two DateTime values for equality. Returns true if
@@ -697,7 +697,7 @@ namespace System
         //
         public static bool Equals(DateTime t1, DateTime t2)
         {
-            return t1.Ticks == t2.Ticks;
+            return t1 == t2;
         }
 
         public static DateTime FromBinary(long dateData)
@@ -1401,9 +1401,9 @@ namespace System
 
         public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.Ticks - d2.Ticks);
 
-        public static bool operator ==(DateTime d1, DateTime d2) => d1.Ticks == d2.Ticks;
+        public static bool operator ==(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) == 0;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => d1.Ticks != d2.Ticks;
+        public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
@@ -6,13 +6,23 @@
 
 PACKAGE=$1
 INSTALL_DESTINATION=$2
+[ "${InstallerTargetArchitecture}" == "x64" ] && X64_INSTALL_DESTINATION=$2 || X64_INSTALL_DESTINATION=$2/x64
 
 # A temporary fix for the permissions issue(s)
 chmod 755 $INSTALL_DESTINATION/dotnet
 
-# Add the installation directory to the system-wide paths
-# But first create the directory if it doesn't exist
-mkdir -p /etc/paths.d
-echo $INSTALL_DESTINATION | tee /etc/paths.d/dotnet
+mkdir -p /etc/dotnet
+# set install_location (legacy location) to x64 location (regardless of wether or not we're installing x64)
+echo $X64_INSTALL_DESTINATION | tee /etc/dotnet/install_location
+# set install_location_arch to point to this installed location
+echo $INSTALL_DESTINATION | tee /etc/dotnet/install_location_${InstallerTargetArchitecture}
+
+# if we're running on the native architecture
+if [[ "$(uname -m)" =~ ${UnameMachineRegex} && "$(sysctl -i -n sysctl.proc_translated)" != "1" ]]; then
+    # Add the installation directory to the system-wide paths
+    # But first create the directory if it doesn't exist
+    mkdir -p /etc/paths.d
+    echo $INSTALL_DESTINATION | tee /etc/paths.d/dotnet
+fi
 
 exit 0

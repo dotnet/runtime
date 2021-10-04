@@ -3467,7 +3467,7 @@ main_loop:
 					MonoObject *this_arg = del->target;
 
 					// replace the MonoDelegate* on the stack with 'this' pointer
-					if (m_class_is_valuetype (this_arg->vtable->klass)) {
+					if (m_class_is_valuetype (this_arg->vtable->klass) && m_class_is_valuetype (cmethod->method->klass)) {
 						gpointer unboxed = mono_object_unbox_internal (this_arg);
 						LOCAL_VAR (call_args_offset, gpointer) = unboxed;
 					} else {
@@ -5418,6 +5418,16 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_LDSFLD_W) {
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
+			INIT_VTABLE (vtable);
+			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
+			MonoClass *klass = frame->imethod->data_items [READ32 (ip + 6)];
+			stackval_from_data (m_class_get_byval_arg (klass), (stackval*)(locals + ip [1]), addr, FALSE);
+			ip += 8;
+			MINT_IN_BREAK;
+		}
+
 #define STSFLD(datatype, fieldtype) { \
 	MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [2]]; \
 	INIT_VTABLE (vtable); \
@@ -5441,6 +5451,16 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			gpointer addr = frame->imethod->data_items [ip [3]];
 			memcpy (addr, locals + ip [1], ip [4]);
 			ip += 5;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_STSFLD_W) {
+			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [READ32 (ip + 2)];
+			INIT_VTABLE (vtable);
+			gpointer addr = frame->imethod->data_items [READ32 (ip + 4)];
+			MonoClass *klass = frame->imethod->data_items [READ32 (ip + 6)];
+			stackval_to_data (m_class_get_byval_arg (klass), (stackval*)(locals + ip [1]), addr, FALSE);
+			ip += 8;
 			MINT_IN_BREAK;
 		}
 
@@ -7435,28 +7455,44 @@ interp_invalidate_transformed (void)
 }
 
 typedef struct {
-	InterpJitInfoFunc func;
-	gpointer user_data;
-} InterpJitInfoFuncUserData;
+	MonoJitInfo **jit_info_array;
+	gint size;
+	gint next;
+} InterpCopyJitInfoFuncUserData;
 
 static void
-interp_call_jit_info_func (gpointer imethod, gpointer user_data)
+interp_copy_jit_info_func (gpointer imethod, gpointer user_data)
 {
-	InterpJitInfoFuncUserData *data = (InterpJitInfoFuncUserData *)user_data;
-	data->func (((InterpMethod *)imethod)->jinfo, data->user_data);
+	InterpCopyJitInfoFuncUserData *data = (InterpCopyJitInfoFuncUserData*)user_data;
+	if (data->next < data->size)
+		data->jit_info_array [data->next++] = ((InterpMethod *)imethod)->jinfo;
 }
 
 static void
 interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 {
-	InterpJitInfoFuncUserData data = {func, user_data};
+	InterpCopyJitInfoFuncUserData copy_jit_info_data;
 
 	// FIXME: Enumerate all memory managers
 	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
 
-	jit_mm_lock (jit_mm);
-	mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_call_jit_info_func, &data);
-	jit_mm_unlock (jit_mm);
+	// Can't keep memory manager lock while iterating and calling callback since it might take other locks
+	// causing poential deadlock situations. Instead, create copy of interpreter imethod jinfo pointers into
+	// plain array and use pointers from array when when running callbacks.
+	copy_jit_info_data.size = mono_atomic_load_i32 (&(jit_mm->interp_code_hash.num_entries));
+	copy_jit_info_data.next = 0;
+	copy_jit_info_data.jit_info_array = (MonoJitInfo**) g_new (MonoJitInfo*, copy_jit_info_data.size);
+	if (copy_jit_info_data.jit_info_array) {
+		jit_mm_lock (jit_mm);
+		mono_internal_hash_table_apply (&jit_mm->interp_code_hash, interp_copy_jit_info_func, &copy_jit_info_data);
+		jit_mm_unlock (jit_mm);
+	}
+
+	if (copy_jit_info_data.jit_info_array) {
+		for (size_t i = 0; i < copy_jit_info_data.next; ++i)
+			func (copy_jit_info_data.jit_info_array [i], user_data);
+		g_free (copy_jit_info_data.jit_info_array);
+	}
 }
 
 static void

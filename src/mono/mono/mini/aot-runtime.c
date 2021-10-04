@@ -319,7 +319,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 		assembly = mono_get_corlib ()->assembly;
 	} else {
 		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+		mono_assembly_request_prepare_byname (&req, alc);
 		req.basedir = amodule->assembly->basedir;
 		assembly = mono_assembly_request_byname (&amodule->image_names [index], &req, &status);
 	}
@@ -2388,10 +2388,11 @@ load_container_amodule (MonoAssemblyLoadContext *alc)
 	MonoAssemblyOpenRequest req;
 	gchar *dll = g_strdup_printf (		"%s.dll", local_ref);
 	/*
-	 * Using INTERNAL avoids firing managed assembly load events
-	 * whose execution might require this module to be already loaded.
+	 * Don't fire managed assembly load events whose execution
+	 * might require this module to be already loaded.
 	 */
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_INTERNAL, alc);
+	mono_assembly_request_prepare_open (&req, alc);
+	req.request.no_managed_load_event = TRUE;
 	MonoAssembly *assm = mono_assembly_request_open (dll, &req, &status);
 	if (!assm) {
 		gchar *exe = g_strdup_printf ("%s.exe", local_ref);

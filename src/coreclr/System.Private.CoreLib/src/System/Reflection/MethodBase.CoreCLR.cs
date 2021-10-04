@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -36,6 +37,7 @@ namespace System.Reflection
             return RuntimeType.GetMethodBase(declaringType.GetRuntimeType(), handle.GetMethodInfo());
         }
 
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static MethodBase? GetCurrentMethod()
         {

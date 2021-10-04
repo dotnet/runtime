@@ -90,6 +90,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0033`__ | Rfc2898DeriveBytes.CryptDeriveKey is obsolete and is not supported. Use PasswordDeriveBytes.CryptDeriveKey instead. |
 |  __`SYSLIB0034`__ | CmsSigner(CspParameters) is obsolete and is not supported. Use an alternative constructor instead. |
 |  __`SYSLIB0035`__ | ComputeCounterSignature without specifying a CmsSigner is obsolete and is not supported. Use the overload that accepts a CmsSigner. |
+|  __`SYSLIB0036`__ | Regex.CompileToAssembly is obsolete and not supported. Use RegexGeneratorAttribute with the regular expression source generator instead. |
 
 ## Analyzer Warnings
 
@@ -138,3 +139,13 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1037`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
 |  __`SYSLIB1038`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
 |  __`SYSLIB1039`__ | *_`SYSLIB1032`-`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._* |
+|  __`SYSLIB1040`__ | Invalid RegexGenerator attribute |
+|  __`SYSLIB1041`__ | Multiple RegexGenerator attribute |
+|  __`SYSLIB1042`__ | Invalid RegexGenerator arguments |
+|  __`SYSLIB1043`__ | RegexGenerator method must have a valid signature |
+|  __`SYSLIB1044`__ | RegexGenerator only supports C# 10 and newer |
+|  __`SYSLIB1045`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1046`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1047`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1048`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |
+|  __`SYSLIB1049`__ | *_`SYSLIB1045`-`SYSLIB1049` reserved for System.Text.RegularExpressions.Generator._* |

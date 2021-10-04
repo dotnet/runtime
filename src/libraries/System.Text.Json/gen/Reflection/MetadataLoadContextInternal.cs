@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 namespace System.Text.Json.Reflection
 {
@@ -23,7 +24,7 @@ namespace System.Text.Json.Reflection
 
         public Type? Resolve(string fullyQualifiedMetadataName)
         {
-            INamedTypeSymbol? typeSymbol = _compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
+            INamedTypeSymbol? typeSymbol = _compilation.GetBestTypeByMetadataName(fullyQualifiedMetadataName);
             return typeSymbol.AsType(this);
         }
 

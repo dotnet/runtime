@@ -26,10 +26,13 @@ compiler="$4"
 majorVersion="$5"
 minorVersion="$6"
 
-source "$scriptroot/init-compiler.sh" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
+if [[ "$compiler" != "default" ]]; then
+    nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
+    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
 
-CCC_CC="$CC"
-CCC_CXX="$CXX"
+    CCC_CC="$CC"
+    CCC_CXX="$CXX"
+fi
 
 export CCC_CC CCC_CXX
 

@@ -10,7 +10,12 @@ namespace System.Text.RegularExpressions
     /// detailed information in the <see cref="Error"/> and <see cref="Offset"/> properties.
     /// </summary>
     [Serializable]
-    public sealed class RegexParseException : ArgumentException
+#if REGEXGENERATOR
+    internal
+#else
+    public
+#endif
+    sealed class RegexParseException : ArgumentException
     {
         /// <summary>Gets the error that happened during parsing.</summary>
         public RegexParseError Error { get; }

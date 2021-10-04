@@ -36,6 +36,8 @@
     <MonoStaticLibFileName>$(LibPrefix)$(MonoLibName)$(StaticLibExt)</MonoStaticLibFileName>
     <MonoFileName Condition="'$(TargetsBrowser)' == 'true'">$(MonoStaticLibFileName)</MonoFileName>
     <MonoFileName Condition="'$(MonoFileName)' == ''">$(MonoSharedLibFileName)</MonoFileName>
+    <MonoAotCrossFileName>mono-aot-cross$(ExeExt)</MonoAotCrossFileName>
+    <MonoAotCrossPdbFileName>mono-aot-cross.pdb</MonoAotCrossPdbFileName>
     <CoreClrTestConfig Condition="'$(CoreClrTestConfig)' == ''">$(Configuration)</CoreClrTestConfig>
     <LibrariesTestConfig Condition="'$(LibrariesTestConfig)' == ''">$(Configuration)</LibrariesTestConfig>
     <CoreClrTestCoreRoot>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'tests', 'coreclr', '$(TargetOS).$(Platform).$(CoreClrTestConfig)', 'Tests', 'Core_Root'))</CoreClrTestCoreRoot>
@@ -59,6 +61,8 @@
     <MonoCCompiler Condition="$(MonoCCompiler.StartsWith('-'))">$(MonoCCompiler.TrimStart('-'))</MonoCCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'clang'">clang++</MonoCxxCompiler>
     <MonoCxxCompiler Condition="'$(MonoCCompiler)' == 'gcc'">g++</MonoCxxCompiler>
+    <RepositoryEngineeringCommonDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common'))</RepositoryEngineeringCommonDir>
+    <CrossToolchainFile>$([MSBuild]::NormalizePath('$(RepositoryEngineeringCommonDir)', 'cross', 'toolchain.cmake'))</CrossToolchainFile>
   </PropertyGroup>
 
   <!-- default thread suspend for specific platforms -->
@@ -132,18 +136,23 @@
 
     <PropertyGroup>
       <EmsdkExt Condition="'$(OS)' != 'Windows_NT'">.sh</EmsdkExt>
-      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.bat</EmsdkExt>
+      <EmsdkExt Condition="'$(OS)' == 'Windows_NT'">.ps1</EmsdkExt>
       <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
       <WasmLocalPath>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'wasm'))</WasmLocalPath>
       <EmsdkLocalPath>emsdk</EmsdkLocalPath>
       <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+
+      <InstallCmd>./emsdk$(EmsdkExt) install $(EmscriptenVersion)</InstallCmd>
+      <ActivateCmd>./emsdk$(EmsdkExt) activate $(EmscriptenVersion)</ActivateCmd>
+      <InstallCmd Condition="'$(OS)' == 'Windows_NT'">powershell -NonInteractive -command &quot;&amp; $(InstallCmd); Exit $LastExitCode &quot;</InstallCmd>
+      <ActivateCmd Condition="'$(OS)' == 'Windows_NT'">powershell -NonInteractive -command &quot;&amp; $(ActivateCmd); Exit $LastExitCode &quot;</ActivateCmd>
     </PropertyGroup>
 
     <RemoveDir Directories="$(EMSDK_PATH)" />
     <Exec Command="git clone https://github.com/emscripten-core/emsdk.git emsdk"
           WorkingDirectory="$(WasmLocalPath)"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) install $(EmscriptenVersion) &amp;&amp; emsdk$(EmsdkExt) activate $(EmscriptenVersion)"
+    <Exec Command="git checkout $(EmscriptenVersion) &amp;&amp; $(InstallCmd) &amp;&amp; $(ActivateCmd)"
           WorkingDirectory="$(EMSDK_PATH)"
           IgnoreStandardErrorWarningFormat="true" />
   </Target>
@@ -222,7 +231,7 @@
 
     <!-- ARM Linux cross build options on CI -->
     <ItemGroup Condition="'$(TargetsAndroid)' != 'true' and '$(MonoCrossDir)' != '' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64')">
-      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="TARGET_BUILD_ARCH=arm64" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm'" Include="TARGET_BUILD_ARCH=arm" />
       <_MonoBuildEnv Condition="'$(Platform)' == 'arm64'" Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/aarch64-linux-gnu/pkgconfig" />
@@ -231,21 +240,21 @@
 
     <!-- x64 illumos cross build options -->
     <ItemGroup Condition="'$(TargetsIllumos)' == 'true' and '$(MonoCrossDir)' != ''">
-      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/lib/pkgconfig" />
     </ItemGroup>
 
     <!-- s390x Linux cross build options -->
     <ItemGroup Condition="'$(MonoCrossDir)' != '' and '$(TargetArchitecture)' == 's390x'">
-      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=s390x" />
       <_MonoBuildEnv Include="PKG_CONFIG_PATH=$(MonoCrossDir)/usr/lib/s390x-linux-gnu/pkgconfig" />
     </ItemGroup>
 
     <!-- x64 FreeBSD cross build options -->
     <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' and '$(MonoCrossDir)' != ''">
-      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$([MSBuild]::NormalizePath('$(RepositoryEngineeringDir)', 'common', 'cross', 'toolchain.cmake'))" />
+      <_MonoCMakeArgs Include="-DCMAKE_TOOLCHAIN_FILE=$(CrossToolchainFile)" />
       <_MonoBuildEnv Include="TARGET_BUILD_ARCH=x64" />
     </ItemGroup>
 
@@ -462,7 +471,7 @@
     <PropertyGroup>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))</EMSDK_PATH>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringDir)native/init-compiler.sh $(_CompilerTargetArch) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh &quot;$(RepositoryEngineeringCommonDir)native&quot; &quot;$(_CompilerTargetArch)&quot; &quot;$(MonoCCompiler)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
@@ -677,6 +686,8 @@
       <MonoAOTCMakeArgs Include="$(_MonoAOTCXXFLAGSOption)" />
       <!-- thread suspend -->
       <MonoAOTCMakeArgs Include="-DGC_SUSPEND=$(MonoThreadSuspend)" />
+      <!-- rename exe -->
+      <MonoAOTCMakeArgs Include="-DMONO_CROSS_COMPILE_EXECUTABLE_NAME=1" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -750,7 +761,8 @@
       <_MonoIncludeIcuFiles Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsMacCatalyst)' == 'true'">true</_MonoIncludeIcuFiles>
     </PropertyGroup>
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'">
-      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\mono-sgen$(ExeExt)</_MonoAotCrossFilePath>
+      <_MonoAotCrossFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossFileName)</_MonoAotCrossFilePath>
+      <_MonoAotCrossPdbFilePath>$(MonoObjCrossDir)out\bin\$(MonoAotCrossPdbFileName)</_MonoAotCrossPdbFilePath>
     </PropertyGroup>
 
     <!-- Copy Mono runtime files to artifacts directory -->
@@ -779,7 +791,10 @@
         <Destination>$(RuntimeBinDir)%(_MonoRuntimeComponentsSharedFilePath.Filename)%(_MonoRuntimeComponentsSharedFilePath.Extension)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\mono-aot-cross$(ExeExt)</Destination>
+        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\$(MonoAotCrossFileName)</Destination>
+      </_MonoRuntimeArtifacts>
+      <_MonoRuntimeArtifacts Include="$(_MonoAotCrossPdbFilePath)" Condition="Exists('$(_MonoAotCrossPdbFilePath)')">
+        <Destination>$(RuntimeBinDir)cross\$(PackageRID)\$(MonoAotCrossPdbFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\llc$(ExeExt)">
         <Destination>$(RuntimeBinDir)\llc$(ExeExt)</Destination>

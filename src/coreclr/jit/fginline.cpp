@@ -1404,8 +1404,11 @@ _Done:
     if (!getNeedsGSSecurityCookie() && InlineeCompiler->getNeedsGSSecurityCookie())
     {
         setNeedsGSSecurityCookie();
-        const unsigned dummy   = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
-        lvaTable[dummy].lvType = TYP_INT;
+        const unsigned dummy         = lvaGrabTempWithImplicitUse(false DEBUGARG("GSCookie dummy for inlinee"));
+        LclVarDsc*     gsCookieDummy = lvaGetDesc(dummy);
+        gsCookieDummy->lvType        = TYP_INT;
+        gsCookieDummy->lvIsTemp      = true; // It is not alive at all, set the flag to prevent zero-init.
+        lvaSetVarDoNotEnregister(dummy DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
     }
 
     // If there is non-NULL return, replace the GT_CALL with its return value expression,
