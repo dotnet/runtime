@@ -33,7 +33,7 @@ namespace WebAssemblyInfo
                 case Opcode.Loop:
                 case Opcode.If:
                     var str = $"{opStr}\n{BlockToString(Block, reader)}";
-                    return str + ((Block2 == null || Block2.Length < 1) ? "" : $"{BlockToString(Block2, reader)}");
+                    return str + ((Block2 == null || Block2.Length < 1) ? "" : $"else\n{BlockToString(Block2, reader)}");
                 case Opcode.Local_Get:
                 case Opcode.Local_Set:
                 case Opcode.Local_Tee:
