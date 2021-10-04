@@ -43,6 +43,9 @@ namespace WebAssemblyInfo
                     return $"{opStr} {GlobalName(Idx, reader)}";
                 case Opcode.Call:
                     return $"{opStr} {FunctionName(Idx, reader)}";
+                case Opcode.Call_Indirect:
+                    var table = Idx2 == 0 ? "" : $" table:{Idx2}";
+                    return $"{opStr} {FunctionType(Idx, reader)}{table}";
                 case Opcode.I32_Const:
                     return $"{opStr} {I32}";
                 case Opcode.I64_Const:
@@ -90,6 +93,14 @@ namespace WebAssemblyInfo
                 return $"[{idx.ToString()}]";
 
             return reader.FunctionName(idx);
+        }
+
+        static string FunctionType(UInt32 idx, WasmReader? reader)
+        {
+            if (reader == null)
+                return $"[{idx.ToString()}]";
+
+            return reader.FunctionType(idx);
         }
 
         static string GlobalName(UInt32 idx, WasmReader? reader)

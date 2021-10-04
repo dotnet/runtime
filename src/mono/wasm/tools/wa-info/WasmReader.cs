@@ -795,6 +795,10 @@ namespace WebAssemblyInfo
         {
             return functionNames[idx];
         }
+        public string FunctionType(UInt32 idx)
+        {
+            return functionTypes[idx].ToString();
+        }
 
         public string GlobalName(UInt32 idx)
         {
