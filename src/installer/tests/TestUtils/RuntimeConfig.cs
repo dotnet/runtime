@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class RuntimeConfig
     {
