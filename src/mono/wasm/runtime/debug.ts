@@ -1,20 +1,19 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module, MONO } from '../runtime'
+import { Module, runtimeHelpers } from './modules'
 import { toBase64StringImpl, _base64_to_uint8 } from './base64'
 import cwraps from './cwraps'
-import { mono_wasm_load_bytes_into_heap } from './init'
 
 var commands_received: any;
 var _call_function_res_cache: any = {}
 var _next_call_function_res_id = 0;
 var _debugger_buffer_len = -1;
-var _debugger_buffer: number;
-var _debugger_heap_bytes : Uint8Array;
+var _debugger_buffer: VoidPtr;
+var _debugger_heap_bytes: Uint8Array;
 
 export function mono_wasm_runtime_ready() {
-    MONO.mono_wasm_runtime_is_ready = true;
+    runtimeHelpers.mono_wasm_runtime_is_ready = true;
 
     // FIXME: where should this go?
     _next_call_function_res_id = 0;
@@ -53,7 +52,7 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
         _debugger_buffer = Module._malloc(_debugger_buffer_len);
     }
     //reset _debugger_heap_bytes because Module.HEAPU8.buffer can be reallocated 
-    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, _debugger_buffer, _debugger_buffer_len);
+    _debugger_heap_bytes = new Uint8Array(Module.HEAPU8.buffer, <any>_debugger_buffer, _debugger_buffer_len);
     _debugger_heap_bytes.set(_base64_to_uint8(command_parameters));
 }
 
@@ -111,7 +110,7 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}) {
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files() {
     cwraps.mono_wasm_set_is_debugger_attached(true);
-    return MONO.loaded_files;
+    return runtimeHelpers.loaded_files;
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {
