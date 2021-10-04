@@ -11,7 +11,7 @@ namespace WebAssemblyInfo
     {
         readonly BinaryReader reader;
         public UInt32 Version { get; private set; }
-        public string Path {  get; private set; }
+        public string Path { get; private set; }
 
         public WasmReader(string path)
         {
@@ -74,7 +74,7 @@ namespace WebAssemblyInfo
         void ReadSection()
         {
             var section = new SectionInfo() { id = (SectionId)reader.ReadByte(), size = ReadU32() };
-            sections.Add (section);
+            sections.Add(section);
 
             if (Program.Verbose)
                 Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
@@ -453,10 +453,14 @@ namespace WebAssemblyInfo
             return (instructions.ToArray(), b);
         }
 
+        List<string> customSectionNames = new();
+
         void ReadCustomSection(UInt32 size)
         {
             var start = reader.BaseStream.Position;
             var name = ReadString();
+            customSectionNames.Add(name);
+
             if (Program.Verbose)
                 Console.Write($" name: {name}");
 
@@ -854,15 +858,20 @@ namespace WebAssemblyInfo
             return false;
         }
 
-        public void PrintSummary ()
+        public void PrintSummary()
         {
-            var name = string.IsNullOrEmpty(moduleName) ? null : $" name: {moduleName}";
-            Console.WriteLine($"Module:{name} path: {Path}");
+            var moduleName = string.IsNullOrEmpty(this.moduleName) ? null : $" name: {this.moduleName}";
+            Console.WriteLine($"Module:{moduleName} path: {Path}");
             Console.WriteLine($"  size: {reader.BaseStream.Length:N0}");
             Console.WriteLine($"  binary format version: {Version}");
             Console.WriteLine($"  sections: {sections.Count}");
-            foreach (var section in sections)
-                Console.WriteLine($"    id: {section.id} size: {section.size:N0}");
+
+            int customSectionOffset = 0;
+            for (int i = 0; i < sections.Count; i++)
+            {
+                var sectionName = (sections[i].id == SectionId.Custom && customSectionOffset < customSectionNames.Count) ? $" name: {customSectionNames[customSectionOffset++]}" : "";
+                Console.WriteLine($"    id: {sections[i].id}{sectionName} size: {sections[i].size:N0}");
+            }
         }
     }
 }
