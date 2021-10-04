@@ -539,7 +539,10 @@ private:
             assert((likelihood >= 0) && (likelihood <= 100));
             JITDUMP("Likelihood of correct guess is %u\n", likelihood);
 
-            const bool isChainedGdv = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0;
+            const bool isChainedGdv = ((origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) != 0) &&
+                                      (origCall->GetGDVCandidatesCount() == 1);
+
+            // NOTE: calls with multiple GDV candidates don't support this opt yet.
 
             if (isChainedGdv)
             {
@@ -551,11 +554,11 @@ private:
             if (isChainedGdv)
             {
                 TransformForChainedGdv();
-            }
 
-            // Look ahead and see if there's another Gdv we might chain to this one.
-            //
-            ScoutForChainedGdv();
+                // Look ahead and see if there's another Gdv we might chain to this one.
+                //
+                ScoutForChainedGdv();
+            }
         }
 
     protected:
@@ -1029,8 +1032,6 @@ private:
             const unsigned maxStatementDup   = JitConfig.JitGuardedDevirtualizationChainStatements();
             unsigned       chainStatementDup = 0;
             unsigned       chainNodeDup      = 0;
-            unsigned       chainLikelihood   = 0;
-            GenTreeCall*   chainedCall       = nullptr;
 
             // Helper class to check a statement for uncloneable nodes and count
             // the total number of nodes
@@ -1090,8 +1091,6 @@ private:
                     GenTreeCall* const call = root->AsCall();
 
                     if (call->IsGuardedDevirtualizationCandidate() &&
-                        // TODO: for some reason multi-check GDV doesn't work well with GDV-Chain-opt
-                        (JitConfig.JitGuardedDevirtualizationCheckCount() == 1) &&
                         (call->GetInlineCandidateInfo()->likelihood >= gdvChainLikelihood))
                     {
                         JITDUMP("GDV call at [%06u] has likelihood %u >= %u; chaining (%u stmts, %u nodes to dup).\n",
