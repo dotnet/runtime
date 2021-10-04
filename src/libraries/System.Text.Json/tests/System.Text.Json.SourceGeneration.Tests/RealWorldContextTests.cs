@@ -640,6 +640,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void SerializeByteArray()
+        {
+            byte[] value = new byte[] { 1, 2, 3 };
+            const string expectedJson = "\"AQID\"";
+
+            string actualJson = JsonSerializer.Serialize(value, DefaultContext.ByteArray);
+            Assert.Equal(expectedJson, actualJson);
+
+            byte[] arr = JsonSerializer.Deserialize(actualJson, DefaultContext.ByteArray);
+            Assert.Equal(value, arr);
+        }
+
+        [Fact]
         public virtual void HandlesNestedTypes()
         {
             string json = @"{""MyInt"":5}";
