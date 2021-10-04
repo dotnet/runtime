@@ -2406,6 +2406,11 @@ HeapList* EEJitManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHeapLi
 #endif
 
     size_t reserveSize = initialRequestSize;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    reserveSize += JUMP_ALLOCATE_SIZE;
+#endif
+
     if (reserveSize < minReserveSize)
         reserveSize = minReserveSize;
     reserveSize = ALIGN_UP(reserveSize, VIRTUAL_ALLOC_RESERVE_GRANULARITY);

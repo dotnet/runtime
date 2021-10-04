@@ -3384,16 +3384,6 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         }
         break;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_ARM)
-        case GT_CNS_DBL:
-            // Currently we are not promoting structs with a single float field,
-            // https://github.com/dotnet/runtime/issues/4323
-
-            // TODO-CQ: can improve `GT_CNS_DBL` handling for supported platforms, but
-            // because it is only x86 nowadays it is not worth it.
-            unreached();
-#endif
-
         default:
             assert(varTypeIsEnregisterable(retVal));
             if (varTypeUsesFloatReg(ret) != varTypeUsesFloatReg(retVal))
@@ -3427,24 +3417,7 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     unsigned   lclNum = lclVar->GetLclNum();
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNum);
 
-    bool replacedInLowering = false;
-    if (varDsc->CanBeReplacedWithItsField(comp))
-    {
-        // We can replace the struct with its only field and keep the field on a register.
-        unsigned   fieldLclNum = varDsc->lvFieldLclStart;
-        LclVarDsc* fieldDsc    = comp->lvaGetDesc(fieldLclNum);
-        assert(varTypeIsSmallInt(fieldDsc->lvType)); // For a non-small type it had to be done in morph.
-
-        lclVar->SetLclNum(fieldLclNum);
-        JITDUMP("Replacing an independently promoted local var V%02u with its only field  V%02u for the return "
-                "[%06u]\n",
-                lclNum, fieldLclNum, comp->dspTreeID(ret));
-        lclVar->ChangeType(fieldDsc->lvType);
-        lclNum             = fieldLclNum;
-        varDsc             = comp->lvaGetDesc(lclNum);
-        replacedInLowering = true;
-    }
-    else if (varDsc->lvPromoted)
+    if (varDsc->lvPromoted)
     {
         // TODO-1stClassStructs: We can no longer independently promote
         // or enregister this struct, since it is referenced as a whole.
@@ -3481,16 +3454,6 @@ void Lowering::LowerRetSingleRegStructLclVar(GenTreeUnOp* ret)
     {
         const var_types lclVarType = varDsc->GetRegisterType(lclVar);
         assert(lclVarType != TYP_UNDEF);
-
-        if (varDsc->lvNormalizeOnLoad() && replacedInLowering)
-        {
-            // For a normalize-on-load var that we replaced late we need to insert a cast
-            // as morph would typically be responsible for this.
-            GenTreeCast* cast = comp->gtNewCastNode(TYP_INT, lclVar, false, lclVarType);
-            ret->gtOp1        = cast;
-            BlockRange().InsertBefore(ret, cast);
-            ContainCheckCast(cast);
-        }
 
         const var_types actualType = genActualType(lclVarType);
         lclVar->ChangeType(actualType);
