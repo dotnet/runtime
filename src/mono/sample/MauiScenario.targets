@@ -23,19 +23,19 @@
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
-        <MicrosoftNetCoreAppRefPackDir>$(Build.SourcesDirectory)/artifacts/packages/Release/Shipping/</MicrosoftNetCoreAppRefPackDir>
-        <MicrosoftNetCoreAppRuntimePackDir>$(Build.SourcesDirectory)/artifacts/packages/Release/Shipping/</MicrosoftNetCoreAppRuntimePackDir>
+        <MicrosoftNetCoreAppRefPackDir>./DownloadedPackages</MicrosoftNetCoreAppRefPackDir>
+        <MicrosoftNetCoreAppRuntimePackDir>./DownloadedPackages</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
     <ItemGroup>
-      <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+      <!-- <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
                              NuGetPackageVersion="$(ProductVersion)"
                              PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                            />
+                            /> -->
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
                             />
-      <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
+      <!-- <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
                                   TargetingPackVersion="$(ProductVersion)"
-                                   />
+                                   /> -->
     </ItemGroup>
   </Target>
 

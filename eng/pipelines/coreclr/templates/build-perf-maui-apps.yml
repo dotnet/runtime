@@ -19,18 +19,31 @@ parameters:
 
 
 steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      artifact: 'IntermediateArtifacts'
+      path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+      patterns: |
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+        
+      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
+      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+      # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
+
+  - task: CopyFiles@2
+    displayName: Flatten packages
+    inputs:
+      sourceFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+      contents: '*/Shipping/*.nupkg'
+      cleanTargetFolder: false
+      targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+      flattenFolders: true
+      
   # Download and CI install dotnet
   # Download latest MAUI
   # Update the manifests based on the gated source
   # Install the MAUI workload install maui (with proper feeds in the nuget.config)
   # Create MAUI Sample app (Do we want this here or lower?)
-
-  - script: |
-      ./build.sh -ci -arch arm64 -os Android -s mono+libs+host+packs -c Release /p:CrossBuild=false
-      find . -name "*Microsoft.NETCore.App.Runtime.Mono.*"
-    displayName: Build Dotnet Android
-    workingDirectory: $(Build.SourcesDirectory)
-    condition: succeededOrFailed()
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
       ./dotnet.sh workload update --from-rollback-file ./rollback.json
