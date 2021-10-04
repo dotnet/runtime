@@ -108,7 +108,7 @@ PEImage::~PEImage()
 
     if (m_pLayoutLock)
         delete m_pLayoutLock;
-    if(m_hFile!=INVALID_HANDLE_VALUE && m_bOwnHandle)
+    if(m_hFile!=INVALID_HANDLE_VALUE)
         CloseHandle(m_hFile);
 
     for (unsigned int i=0;i<COUNTOF(m_pLayouts);i++)
@@ -168,7 +168,7 @@ ULONG PEImage::Release()
             if(m_bInHashMap)
             {
                 PEImageLocator locator(this);
-                PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetIDHash(), &locator);
+                PEImage* deleted = (PEImage *)s_Images->DeleteValue(GetPathHash(), &locator);
                 _ASSERTE(deleted == this);
             }
         }
@@ -244,23 +244,6 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
     CHECK_OK;
 }
 
-BOOL PEImage::PathEquals(const SString &p1, const SString &p2)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
-    return p1.Equals(p2);
-#else
-    return p1.EqualsCaseInsensitive(p2);
-#endif
-}
-
 #ifndef TARGET_UNIX
 /* static */
 void PEImage::GetPathFromDll(HINSTANCE hMod, SString &result)
@@ -299,15 +282,25 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     // This is the value stored in the table
     PEImage *pImage = (PEImage *) u2;
 
+    if (pLocator->m_bIsInBundle != pImage->IsInBundle())
+    {
+        return false;
+    }
 
     BOOL ret = FALSE;
     HRESULT hr;
     EX_TRY
     {
         SString path(SString::Literal, pLocator->m_pPath);
-        BOOL isInBundle = pLocator->m_bIsInBundle;
-        if (PathEquals(path, pImage->GetPath()) && (isInBundle == pImage->IsInBundle()))
+
+#ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
+        if (pImage->GetPath().Equals(path))
+#else
+        if (pImage->GetPath().EqualsCaseInsensitive(path))
+#endif
+        {
             ret = TRUE;
+        }
     }
     EX_CATCH_HRESULT(hr); //<TODO>ignores failure!</TODO>
     return ret;
@@ -782,18 +775,16 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 PEImage::PEImage():
     m_path(),
     m_refCount(1),
-    m_bundleFileLocation(),
     m_bInHashMap(FALSE),
+    m_bundleFileLocation(),
+    m_hFile(INVALID_HANDLE_VALUE),
+    m_dwPEKind(0),
+    m_dwMachine(0),
 #ifdef METADATATRACKER_DATA
     m_pMDTracker(NULL),
 #endif // METADATATRACKER_DATA
     m_pMDImport(NULL),
-    m_pNativeMDImport(NULL),
-    m_hFile(INVALID_HANDLE_VALUE),
-    m_bOwnHandle(true),
-    m_dwPEKind(0),
-    m_dwMachine(0),
-    m_fCachedKindAndMachine(FALSE)
+    m_pNativeMDImport(NULL)
 {
     CONTRACTL
     {
@@ -836,7 +827,7 @@ PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask)
 
 #ifndef DACCESS_COMPILE
 
-void   PEImage::SetLayout(DWORD dwLayout, PEImageLayout* pLayout)
+void PEImage::SetLayout(DWORD dwLayout, PEImageLayout* pLayout)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(dwLayout < IMAGE_COUNT);
@@ -860,7 +851,7 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask)
 
     if (pRetVal==NULL)
     {
-        _ASSERTE(HasID());
+        _ASSERTE(HasPath());
 
         BOOL bIsMappedLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_MAPPED) != 0);
         BOOL bIsFlatLayoutSuitable = ((imageLayoutMask & PEImageLayout::LAYOUT_FLAT) != 0);
@@ -1174,30 +1165,6 @@ void PEImage::LoadNoFile()
     }
 }
 
-
-void PEImage::LoadNoMetaData()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (HasLoadedLayout())
-        return;
-
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    if (m_pLayouts[IMAGE_LOADED]!=NULL)
-        return;
-    if (m_pLayouts[IMAGE_FLAT]!=NULL)
-    {
-        m_pLayouts[IMAGE_FLAT]->AddRef();
-        SetLayout(IMAGE_LOADED,m_pLayouts[IMAGE_FLAT]);
-    }
-    else
-    {
-        _ASSERTE(!m_path.IsEmpty());
-        SetLayout(IMAGE_LOADED,PEImageLayout::LoadFlat(this));
-    }
-}
-
-
 #endif //DACCESS_COMPILE
 
 //-------------------------------------------------------------------------------
@@ -1269,7 +1236,6 @@ void PEImage::SetFileHandle(HANDLE hFile)
     if (m_hFile == INVALID_HANDLE_VALUE)
     {
         m_hFile = hFile;
-        m_bOwnHandle = false;
     }
 }
 

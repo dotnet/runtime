@@ -26,7 +26,6 @@ class SimpleRWLock;
 // --------------------------------------------------------------------------------
 
 class Crst;
-class Thread;
 
 // --------------------------------------------------------------------------------
 // PEImage is a PE file loaded by our "simulated LoadLibrary" mechanism.  A PEImage
@@ -56,34 +55,27 @@ typedef DPTR(class PEImage)                PTR_PEImage;
 
 class PEImage final
 {
-public:
-    // ------------------------------------------------------------
-    // Public constants
-    // ------------------------------------------------------------
-
-    BOOL IsOpened();
-    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask);
-    BOOL HasLoadedLayout();
-    PTR_PEImageLayout GetLoadedLayout();
 
 public:
     // ------------------------------------------------------------
     // Public API
     // ------------------------------------------------------------
 
+    // initialize static data (i.e. locks, unique instance cache, etc..)
     static void Startup();
 
-public:
     ~PEImage();
     PEImage();
 
+    BOOL Equals(PEImage* pImage);
+
+    ULONG AddRef();
+    ULONG Release();
+
 #ifndef DACCESS_COMPILE
-    static PTR_PEImage LoadFlat(
-        const void *flat,
-        COUNT_T size);
+    static PTR_PEImage LoadFlat(const void *flat, COUNT_T size);
 #ifndef TARGET_UNIX
-    static PTR_PEImage LoadImage(
-        HMODULE hMod);
+    static PTR_PEImage LoadImage(HMODULE hMod);
 #endif // !TARGET_UNIX
     static PTR_PEImage OpenImage(
         LPCWSTR pPath,
@@ -94,22 +86,25 @@ public:
     void AddToHashMap();
 
     void   Load();
-    void   SetLoadedHMODULE(HMODULE hMod);
-    void   LoadNoMetaData();
     void   LoadNoFile();
     void   LoadFromMapped();
+    void   SetLoadedHMODULE(HMODULE hMod);
 #endif
 
-    BOOL   HasID();
-    ULONG GetIDHash();
+    BOOL IsOpened();
+    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask);
 
-    // Refcount above images.
-    ULONG AddRef();
-    ULONG Release();
+    BOOL HasLoadedLayout();
+    PTR_PEImageLayout GetLoadedLayout();
 
-    // Accessors
-    const SString &GetPath();
+    BOOL  HasPath();
+    ULONG GetPathHash();
+    const SString& GetPath();
     const SString& GetPathToLoad();
+#ifndef TARGET_UNIX
+    static void GetPathFromDll(HINSTANCE hMod, SString& result);
+#endif // !TARGET_UNIX
+
     BOOL IsFile();
     BOOL IsInBundle() const;
     HANDLE GetFileHandle();
@@ -122,9 +117,6 @@ public:
 
     LPCWSTR GetPathForErrorMessages();
 
-    // Equality
-    BOOL Equals(PEImage *pImage);
-
     void GetMVID(GUID *pMvid);
     BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
@@ -134,44 +126,40 @@ public:
     BOOL HasContents() ;
     BOOL IsPtrInImage(PTR_CVOID data);
 
+    BOOL HasNTHeaders();
+    BOOL HasCorHeader();
+    BOOL HasReadyToRunHeader();
+    BOOL HasDirectoryEntry(int entry);
+    BOOL Has32BitNTHeaders();
+
+    void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
+
+    BOOL IsILOnly();
+    BOOL IsReferenceAssembly();
+    BOOL IsComponentAssembly();
+
+    PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL);
+    mdToken GetEntryPointToken();
+    DWORD GetCorHeaderFlags();
+
+    PTR_CVOID GetMetadata(COUNT_T* pSize = NULL);
+
     // Check utilites
     static CHECK CheckStartup();
     static CHECK CheckCanonicalFullPath(const SString& path);
+    static CHECK CheckLayoutFormat(PEDecoder* pe);
 
     CHECK CheckFormat();
     CHECK CheckILFormat();
     CHECK CheckUniqueInstance();
 
-    PTR_CVOID GetMetadata(COUNT_T *pSize = NULL);
-
-#ifndef TARGET_UNIX
-    static void GetPathFromDll(HINSTANCE hMod, SString &result);
-#endif // !TARGET_UNIX
-    static BOOL PathEquals(const SString &p1, const SString &p2);
+    void VerifyIsAssembly();
 
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     const SString &GetModuleFileNameHintForDAC();
 #endif
-
-    BOOL HasNTHeaders();
-    BOOL HasCorHeader();
-    BOOL HasReadyToRunHeader();
-    BOOL IsReferenceAssembly();
-    BOOL IsComponentAssembly();
-    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL);
-    BOOL HasDirectoryEntry(int entry);
-    mdToken GetEntryPointToken();
-    DWORD GetCorHeaderFlags();
-    BOOL IsILOnly();
-    BOOL IsDll();
-    WORD GetSubsystem();
-    BOOL IsFileLocked();
-
-    BOOL Has32BitNTHeaders();
-
-    void VerifyIsAssembly();
 
 private:
 #ifndef DACCESS_COMPILE
@@ -183,6 +171,8 @@ private:
 
     // Create the flat layout
     PTR_PEImageLayout CreateLayoutFlat(BOOL bPermitWriteableSections);
+
+    void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
 #endif
     // Get an existing layout corresponding to the mask, no AddRef
     PTR_PEImageLayout GetExistingLayoutInternal(DWORD imageLayoutMask);
@@ -219,28 +209,83 @@ private:
 
     void DECLSPEC_NORETURN ThrowFormat(HRESULT hr);
 
-    static CHECK CheckLayoutFormat(PEDecoder *pe);
+public:
+    class IJWFixupData
+    {
+    private:
+        Crst            m_lock;
+        void* m_base;
+        DWORD           m_flags;
+        PTR_LoaderHeap  m_DllThunkHeap;
+
+        // the fixup for the next iteration in FixupVTables
+        // we use it to make sure that we do not try to fix up the same entry twice
+        // if there was a pass that was aborted in the middle
+        COUNT_T         m_iNextFixup;
+        COUNT_T         m_iNextMethod;
+
+        enum {
+            e_FIXED_UP = 0x1
+        };
+
+    public:
+        IJWFixupData(void* pBase);
+        ~IJWFixupData();
+        void* GetBase() { LIMITED_METHOD_CONTRACT; return m_base; }
+        Crst* GetLock() { LIMITED_METHOD_CONTRACT; return &m_lock; }
+        BOOL IsFixedUp() { LIMITED_METHOD_CONTRACT; return m_flags & e_FIXED_UP; }
+        void SetIsFixedUp() { LIMITED_METHOD_CONTRACT; m_flags |= e_FIXED_UP; }
+        PTR_LoaderHeap  GetThunkHeap();
+        void MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
+        BOOL IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
+    };
+
+    static IJWFixupData* GetIJWData(void* pBase);
+    static PTR_LoaderHeap GetDllThunkHeap(void* pBase);
+    static void UnloadIJWModule(void* pBase);
+
+private:
 
     // ------------------------------------------------------------
-    // Instance members
+    // Static fields
     // ------------------------------------------------------------
 
-    SString     m_path;
-    LONG        m_refCount;
+    static CrstStatic   s_hashLock;
+    static PtrHashMap* s_Images;
 
-    BundleFileLocation m_bundleFileLocation; // If this image is located within a single-file bundle, 
-                                             // the location within the bundle. If m_bundleFileLocation is valid,
-                                             // it takes precedence over m_path for loading.
+//@TODO:workaround: Remove this when we have one PEImage per mapped image,
+//@TODO:workaround: and move the lock there
+// This is for IJW thunk initialization, as it is no longer guaranteed
+// that the initialization will occur under the loader lock.
+    static CrstStatic   s_ijwHashLock;
+    static PtrHashMap* s_ijwFixupDataHash;
+
+    // ------------------------------------------------------------
+    // Instance fields
+    // ------------------------------------------------------------
+
+    SString   m_path;
+    LONG      m_refCount;
+
+    // means this is a unique (deduped) instance.
+    BOOL      m_bInHashMap;
+
+    // If this image is located within a single-file bundle, the location within the bundle.
+    // If m_bundleFileLocation is valid, it takes precedence over m_path for loading.
+    BundleFileLocation m_bundleFileLocation;
+
+    // valid handle if we tried to open the file/path and succeeded.
+    HANDLE m_hFile;
+
+    DWORD m_dwPEKind;
+    DWORD m_dwMachine;
 
     // This variable will have the data of module name.
     // It is only used by DAC to remap fusion loaded modules back to
     // disk IL. This really is a workaround. The real fix is for fusion loader
     // hook (public API on hosting) to take an additional file name hint.
     // We are piggy backing on the fact that module name is the same as file name!!!
-    //
-    SString     m_sModuleFileNameHintUsedByDac; // This is only used by DAC
-
-protected:
+    SString   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
 
     enum
     {
@@ -252,11 +297,6 @@ protected:
 
     SimpleRWLock *m_pLayoutLock;
     PTR_PEImageLayout m_pLayouts[IMAGE_COUNT] ;
-    BOOL      m_bInHashMap;
-#ifndef DACCESS_COMPILE
-    void   SetLayout(DWORD dwLayout, PTR_PEImageLayout pLayout);
-#endif // DACCESS_COMPILE
-
 
 #ifdef METADATATRACKER_DATA
     class MetaDataTracker   *m_pMDTracker;
@@ -264,75 +304,6 @@ protected:
 
     IMDInternalImport* m_pMDImport;
     IMDInternalImport* m_pNativeMDImport;
-
-
-private:
-
-
-    // ------------------------------------------------------------
-    // Static members
-    // ------------------------------------------------------------
-
-    static CrstStatic   s_hashLock;
-
-    static PtrHashMap   *s_Images;
-
-    HANDLE m_hFile;
-    bool   m_bOwnHandle;
-
-    //@TODO:workaround: Remove this when we have one PEImage per mapped image,
-    //@TODO:workaround: and move the lock there
-    // This is for IJW thunk initialization, as it is no longer guaranteed
-    // that the initialization will occur under the loader lock.
-    static CrstStatic   s_ijwHashLock;
-    static PtrHashMap   *s_ijwFixupDataHash;
-
-public:
-        class IJWFixupData
-        {
-        private:
-            Crst            m_lock;
-            void           *m_base;
-            DWORD           m_flags;
-            PTR_LoaderHeap  m_DllThunkHeap;
-
-            // the fixup for the next iteration in FixupVTables
-            // we use it to make sure that we do not try to fix up the same entry twice
-            // if there was a pass that was aborted in the middle
-            COUNT_T         m_iNextFixup;
-            COUNT_T         m_iNextMethod;
-
-            enum {
-                e_FIXED_UP = 0x1
-            };
-
-        public:
-            IJWFixupData(void *pBase);
-            ~IJWFixupData();
-            void *GetBase() { LIMITED_METHOD_CONTRACT; return m_base; }
-            Crst *GetLock() { LIMITED_METHOD_CONTRACT; return &m_lock; }
-            BOOL IsFixedUp() { LIMITED_METHOD_CONTRACT; return m_flags & e_FIXED_UP; }
-            void SetIsFixedUp() { LIMITED_METHOD_CONTRACT; m_flags |= e_FIXED_UP; }
-            PTR_LoaderHeap  GetThunkHeap();
-            void MarkMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
-            BOOL IsMethodFixedUp(COUNT_T iFixup, COUNT_T iMethod);
-        };
-
-        static IJWFixupData *GetIJWData(void *pBase);
-        static PTR_LoaderHeap GetDllThunkHeap(void *pBase);
-        static void UnloadIJWModule(void *pBase);
-
-private:
-    DWORD m_dwPEKind;
-    DWORD m_dwMachine;
-    BOOL  m_fCachedKindAndMachine;
-
-
-
-public:
-    void CachePEKindAndMachine();
-    void GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
-
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)

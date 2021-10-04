@@ -243,19 +243,6 @@ inline BOOL PEImage::IsILOnly()
     return GetLayout(PEImageLayout::LAYOUT_ANY)->IsILOnly();
 }
 
-inline WORD PEImage::GetSubsystem()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->GetSubsystem();
-}
-
-inline BOOL PEImage::IsDll()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->IsDll();
-}
-
 inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
 {
     WRAPPER_NO_CONTRACT;
@@ -359,14 +346,7 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
 }
 #endif
 
-inline BOOL PEImage::IsFileLocked()
-{
-    WRAPPER_NO_CONTRACT;
-    return (m_pLayouts[IMAGE_FLAT])!=NULL || (m_pLayouts[IMAGE_MAPPED])!=NULL ;
-}
-
 #ifndef DACCESS_COMPILE
-
 
 inline void PEImage::AddToHashMap()
 {
@@ -379,7 +359,7 @@ inline void PEImage::AddToHashMap()
     CONTRACTL_END;
 
     _ASSERTE(s_hashLock.OwnedByCurrentThread());
-    s_Images->InsertValue(GetIDHash(),this);
+    s_Images->InsertValue(GetPathHash(),this);
     m_bInHashMap=TRUE;
 }
 
@@ -391,19 +371,18 @@ inline BOOL PEImage::Has32BitNTHeaders()
     return GetLayout(PEImageLayout::LAYOUT_ANY)->Has32BitNTHeaders();
 }
 
-inline BOOL PEImage::HasID()
+inline BOOL PEImage::HasPath()
 {
     LIMITED_METHOD_CONTRACT;
-
 
     return !GetPath().IsEmpty();
 }
 
-inline ULONG PEImage::GetIDHash()
+inline ULONG PEImage::GetPathHash()
 {
     CONTRACT(ULONG)
     {
-        PRECONDITION(HasID());
+        PRECONDITION(HasPath());
         MODE_ANY;
         GC_NOTRIGGER;
         THROWS;
@@ -417,7 +396,7 @@ inline ULONG PEImage::GetIDHash()
 #endif
 }
 
-inline void PEImage::CachePEKindAndMachine()
+inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
 {
     CONTRACTL
     {
@@ -427,29 +406,20 @@ inline void PEImage::CachePEKindAndMachine()
     }
     CONTRACTL_END;
 
-    // Do nothing if we have cached the information already
-    if(m_fCachedKindAndMachine)
-        return;
+    // first check if we have a valid PE kind
+    if (VolatileLoad(&m_dwPEKind) == 0)
+    {
+        // Compute result into a local variables first
+        DWORD dwPEKind, dwMachine;
+        GetLayout(PEImageLayout::LAYOUT_ANY)->GetPEKindAndMachine(&dwPEKind, &dwMachine);
 
-    // Compute result into a local variables first
-    DWORD dwPEKind, dwMachine;
-    GetLayout(PEImageLayout::LAYOUT_ANY)->GetPEKindAndMachine(&dwPEKind, &dwMachine);
+        // Write the final results - first machine, then kind.
+        m_dwMachine = dwMachine;
+        VolatileStore(&m_dwPEKind, dwPEKind);
+    }
 
-    // Write the final result into the lock-free cache.
-    m_dwPEKind = dwPEKind;
-    m_dwMachine = dwMachine;
-    MemoryBarrier();
-    m_fCachedKindAndMachine = TRUE;
-}
-
-inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
-{
-    WRAPPER_NO_CONTRACT;
-    CachePEKindAndMachine();
-    if (pdwKind)
-        *pdwKind = m_dwPEKind;
-    if (pdwMachine)
-        *pdwMachine = m_dwMachine;
+    *pdwKind = m_dwPEKind;
+    *pdwMachine = m_dwMachine;
 }
 
 #endif  // PEIMAGE_INL_

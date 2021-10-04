@@ -363,28 +363,13 @@ inline BOOL PEAssembly::IsReadyToRun()
     }
 }
 
-inline WORD PEAssembly::GetSubsystem()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsDynamic())
-        return 0;
-
-    return GetLoadedLayout()->GetSubsystem();
-}
-
-inline mdToken PEAssembly::GetEntryPointToken(
-#ifdef _DEBUG
-            BOOL bAssumeLoaded
-#endif //_DEBUG
-            )
+inline mdToken PEAssembly::GetEntryPointToken()
 {
     WRAPPER_NO_CONTRACT;
 
     if (IsDynamic())
         return mdTokenNil;
 
-    _ASSERTE (!bAssumeLoaded || HasLoadedPEImage ());
     return GetPEImage()->GetEntryPointToken();
 }
 
@@ -399,16 +384,6 @@ inline BOOL PEAssembly::IsILOnly()
         return FALSE;
 
     return GetPEImage()->IsILOnly();
-}
-
-inline BOOL PEAssembly::IsDll()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsDynamic())
-        return TRUE;
-
-    return GetPEImage()->IsDll();
 }
 
 inline PTR_VOID PEAssembly::GetRvaField(RVA field)

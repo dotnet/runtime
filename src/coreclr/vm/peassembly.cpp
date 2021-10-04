@@ -730,10 +730,8 @@ void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
 
     if (IsDynamic())
     {
-        if (pdwKind)
-            *pdwKind = 0;
-        if (pdwMachine)
-            *pdwMachine = 0;
+        *pdwKind = 0;
+        *pdwMachine = 0;
         return;
     }
 

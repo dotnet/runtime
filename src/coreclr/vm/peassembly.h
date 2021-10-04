@@ -199,16 +199,9 @@ public:
     // ------------------------------------------------------------
 
     BOOL IsReadyToRun();
-    WORD GetSubsystem();
-
-    mdToken GetEntryPointToken(
-#ifdef _DEBUG
-        BOOL bAssumeLoaded = FALSE
-#endif //_DEBUG
-    );
+    mdToken GetEntryPointToken();
 
     BOOL IsILOnly();
-    BOOL IsDll();
     TADDR GetIL(RVA il);
 
     PTR_VOID GetRvaField(RVA field);
