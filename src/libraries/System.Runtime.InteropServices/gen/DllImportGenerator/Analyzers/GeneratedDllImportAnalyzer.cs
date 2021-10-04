@@ -76,7 +76,7 @@ namespace Microsoft.Interop.Analyzers
                 // declaration, since Roslyn would error on inconsistent partial declarations.
                 foreach (SyntaxReference reference in methodSymbol.DeclaringSyntaxReferences)
                 {
-                    SyntaxNode? syntax = reference.GetSyntax(context.CancellationToken);
+                    SyntaxNode syntax = reference.GetSyntax(context.CancellationToken);
                     if (syntax is MethodDeclarationSyntax methodSyntax && !methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
                     {
                         // Must be marked partial
@@ -89,7 +89,7 @@ namespace Microsoft.Interop.Analyzers
                 {
                     foreach (SyntaxReference reference in typeSymbol.DeclaringSyntaxReferences)
                     {
-                        SyntaxNode? syntax = reference.GetSyntax(context.CancellationToken);
+                        SyntaxNode syntax = reference.GetSyntax(context.CancellationToken);
                         if (syntax is TypeDeclarationSyntax typeSyntax && !typeSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
                         {
                             // Must be marked partial

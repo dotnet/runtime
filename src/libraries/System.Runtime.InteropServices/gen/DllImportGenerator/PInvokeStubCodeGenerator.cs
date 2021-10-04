@@ -73,7 +73,7 @@ namespace Microsoft.Interop
             BoundGenerator nativeRetMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), new Forwarder());
             BoundGenerator managedRetMarshaller = new(new TypePositionInfo(SpecialTypeInfo.Void, NoMarshallingInfo.Instance), new Forwarder());
 
-            foreach (TypePositionInfo? argType in argTypes)
+            foreach (TypePositionInfo argType in argTypes)
             {
                 BoundGenerator generator = CreateGenerator(argType);
                 allMarshallers.Add(generator);
@@ -266,7 +266,7 @@ namespace Microsoft.Interop
             var tryStatements = new List<StatementSyntax>();
             var guaranteedUnmarshalStatements = new List<StatementSyntax>();
             var cleanupStatements = new List<StatementSyntax>();
-            InvocationExpressionSyntax? invoke = InvocationExpression(IdentifierName(dllImportName));
+            InvocationExpressionSyntax invoke = InvocationExpression(IdentifierName(dllImportName));
 
             // Handle GuaranteedUnmarshal first since that stage producing statements affects multiple other stages.
             GenerateStatementsForStage(Stage.GuaranteedUnmarshal, guaranteedUnmarshalStatements);
@@ -328,7 +328,7 @@ namespace Microsoft.Interop
 
                 if (!invokeReturnsVoid && (stage is Stage.Setup or Stage.Cleanup))
                 {
-                    IEnumerable<StatementSyntax>? retStatements = _retMarshaller.Generator.Generate(_retMarshaller.TypeInfo, this);
+                    IEnumerable<StatementSyntax> retStatements = _retMarshaller.Generator.Generate(_retMarshaller.TypeInfo, this);
                     statementsToUpdate.AddRange(retStatements);
                 }
 
@@ -347,7 +347,7 @@ namespace Microsoft.Interop
                     // Generate code for each parameter for the current stage in declaration order.
                     foreach (BoundGenerator marshaller in _paramMarshallers)
                     {
-                        IEnumerable<StatementSyntax>? generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
+                        IEnumerable<StatementSyntax> generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                         statementsToUpdate.AddRange(generatedStatements);
                     }
                 }
@@ -359,7 +359,7 @@ namespace Microsoft.Interop
                         Comment($"//"),
                         Comment($"// {stage}"),
                         Comment($"//"));
-                    StatementSyntax? firstStatementInStage = statementsToUpdate[initialCount];
+                    StatementSyntax firstStatementInStage = statementsToUpdate[initialCount];
                     newLeadingTrivia = newLeadingTrivia.AddRange(firstStatementInStage.GetLeadingTrivia());
                     statementsToUpdate[initialCount] = firstStatementInStage.WithLeadingTrivia(newLeadingTrivia);
                 }
@@ -372,9 +372,9 @@ namespace Microsoft.Interop
                 // Generate code for each parameter for the current stage
                 foreach (BoundGenerator marshaller in _paramMarshallers)
                 {
-                    IEnumerable<StatementSyntax>? generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
+                    IEnumerable<StatementSyntax> generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                     // Collect all the fixed statements. These will be used in the Invoke stage.
-                    foreach (StatementSyntax? statement in generatedStatements)
+                    foreach (StatementSyntax statement in generatedStatements)
                     {
                         if (statement is not FixedStatementSyntax fixedStatement)
                             continue;
@@ -412,7 +412,7 @@ namespace Microsoft.Interop
                 if (_setLastError)
                 {
                     // Marshal.SetLastSystemError(0);
-                    ExpressionStatementSyntax? clearLastError = ExpressionStatement(
+                    ExpressionStatementSyntax clearLastError = ExpressionStatement(
                         InvocationExpression(
                             MemberAccessExpression(
                                 SyntaxKind.SimpleMemberAccessExpression,
@@ -422,7 +422,7 @@ namespace Microsoft.Interop
                                 Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(SuccessErrorCode)))))));
 
                     // <lastError> = Marshal.GetLastSystemError();
-                    ExpressionStatementSyntax? getLastError = ExpressionStatement(
+                    ExpressionStatementSyntax getLastError = ExpressionStatement(
                         AssignmentExpression(
                             SyntaxKind.SimpleAssignmentExpression,
                             IdentifierName(LastErrorIdentifier),
@@ -439,7 +439,7 @@ namespace Microsoft.Interop
                 {
                     fixedStatements.Reverse();
                     invokeStatement = fixedStatements.First().WithStatement(invokeStatement);
-                    foreach (FixedStatementSyntax? fixedStatement in fixedStatements.Skip(1))
+                    foreach (FixedStatementSyntax fixedStatement in fixedStatements.Skip(1))
                     {
                         invokeStatement = fixedStatement.WithStatement(Block(invokeStatement));
                     }

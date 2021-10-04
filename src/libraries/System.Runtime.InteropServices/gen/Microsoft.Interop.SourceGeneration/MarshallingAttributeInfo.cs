@@ -265,7 +265,7 @@ namespace Microsoft.Interop
 
             // If we aren't overriding the marshalling at usage time,
             // then fall back to the information on the element type itself.
-            foreach (AttributeData? typeAttribute in type.GetAttributes())
+            foreach (AttributeData typeAttribute in type.GetAttributes())
             {
                 INamedTypeSymbol attributeClass = typeAttribute.AttributeClass!;
 
@@ -616,7 +616,7 @@ namespace Microsoft.Interop
                 : ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard;
 
             bool hasInt32Constructor = false;
-            foreach (IMethodSymbol? ctor in nativeType.Constructors)
+            foreach (IMethodSymbol ctor in nativeType.Constructors)
             {
                 if (ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallingVariant) && (valueProperty is null or { GetMethod: not null }))
                 {
@@ -713,7 +713,7 @@ namespace Microsoft.Interop
                 bool hasAccessibleDefaultConstructor = false;
                 if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
                 {
-                    foreach (IMethodSymbol? ctor in named.InstanceConstructors)
+                    foreach (IMethodSymbol ctor in named.InstanceConstructors)
                     {
                         if (ctor.Parameters.Length == 0)
                         {

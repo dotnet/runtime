@@ -19,7 +19,7 @@ namespace Microsoft.Interop
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            TypeSyntax? type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))
@@ -77,7 +77,7 @@ namespace Microsoft.Interop
                                                         .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
                     }
 
-                    ExpressionSyntax? safeHandleCreationExpression = ((SafeHandleMarshallingInfo)info.MarshallingAttributeInfo).AccessibleDefaultConstructor
+                    ExpressionSyntax safeHandleCreationExpression = ((SafeHandleMarshallingInfo)info.MarshallingAttributeInfo).AccessibleDefaultConstructor
                         ? ObjectCreationExpression(info.ManagedType.Syntax, ArgumentList(), initializer: null)
                         : CastExpression(
                             info.ManagedType.Syntax,

@@ -250,7 +250,7 @@ namespace Microsoft.Interop
             BlockSyntax stubCode)
         {
             // Create stub function
-            MethodDeclarationSyntax? stubMethod = MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
+            MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
@@ -264,7 +264,7 @@ namespace Microsoft.Interop
                 .AddMembers(stubMethod);
 
             // Add type to the remaining containing types (skipping the first which was handled above)
-            foreach (TypeDeclarationSyntax? typeDecl in stub.StubContainingTypes.Skip(1))
+            foreach (TypeDeclarationSyntax typeDecl in stub.StubContainingTypes.Skip(1))
             {
                 containingType = CreateTypeDeclarationWithoutTrivia(typeDecl)
                     .WithMembers(SingletonList(containingType));
@@ -392,7 +392,7 @@ namespace Microsoft.Interop
             AttributeData? lcidConversionAttr = null;
             AttributeData? suppressGCTransitionAttribute = null;
             AttributeData? unmanagedCallConvAttribute = null;
-            foreach (AttributeData? attr in symbol.GetAttributes())
+            foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
                     && attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
@@ -466,9 +466,9 @@ namespace Microsoft.Interop
 
             const string innerPInvokeName = "__PInvoke__";
 
-            BlockSyntax? code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
+            BlockSyntax code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
 
-            LocalFunctionStatementSyntax? dllImport = CreateTargetFunctionAsLocalStatement(
+            LocalFunctionStatementSyntax dllImport = CreateTargetFunctionAsLocalStatement(
                 stubGenerator,
                 dllImportStub.StubContext.Options,
                 dllImportStub.DllImportData,
@@ -494,7 +494,7 @@ namespace Microsoft.Interop
             string stubMethodName)
         {
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
-            LocalFunctionStatementSyntax? localDllImport = LocalFunctionStatement(returnType, stubTargetName)
+            LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
                     Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.StaticKeyword),
@@ -531,44 +531,44 @@ namespace Microsoft.Interop
 
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.BestFitMapping))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.BestFitMapping));
-                ExpressionSyntax? value = CreateBoolExpressionSyntax(targetDllImportData.BestFitMapping);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.BestFitMapping));
+                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.BestFitMapping);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CallingConvention))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.CallingConvention));
-                ExpressionSyntax? value = CreateEnumExpressionSyntax(targetDllImportData.CallingConvention);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CallingConvention));
+                ExpressionSyntax value = CreateEnumExpressionSyntax(targetDllImportData.CallingConvention);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.CharSet))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.CharSet));
-                ExpressionSyntax? value = CreateEnumExpressionSyntax(targetDllImportData.CharSet);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.CharSet));
+                ExpressionSyntax value = CreateEnumExpressionSyntax(targetDllImportData.CharSet);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.ExactSpelling))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.ExactSpelling));
-                ExpressionSyntax? value = CreateBoolExpressionSyntax(targetDllImportData.ExactSpelling);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.ExactSpelling));
+                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.ExactSpelling);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.PreserveSig))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.PreserveSig));
-                ExpressionSyntax? value = CreateBoolExpressionSyntax(targetDllImportData.PreserveSig);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.PreserveSig));
+                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.PreserveSig);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.SetLastError))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.SetLastError));
-                ExpressionSyntax? value = CreateBoolExpressionSyntax(targetDllImportData.SetLastError);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
+                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.SetLastError);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
             if (targetDllImportData.IsUserDefined.HasFlag(DllImportMember.ThrowOnUnmappableChar))
             {
-                NameEqualsSyntax? name = NameEquals(nameof(DllImportAttribute.ThrowOnUnmappableChar));
-                ExpressionSyntax? value = CreateBoolExpressionSyntax(targetDllImportData.ThrowOnUnmappableChar);
+                NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.ThrowOnUnmappableChar));
+                ExpressionSyntax value = CreateBoolExpressionSyntax(targetDllImportData.ThrowOnUnmappableChar);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
 

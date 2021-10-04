@@ -153,7 +153,7 @@ namespace Microsoft.Interop.Analyzers
                         }));
 
                 // Remove existing leading trivia - it will be on the GeneratedDllImport method
-                MethodDeclarationSyntax? updatedDeclaration = methodSyntax.WithLeadingTrivia();
+                MethodDeclarationSyntax updatedDeclaration = methodSyntax.WithLeadingTrivia();
 
                 // #endif
                 updatedDeclaration = updatedDeclaration.WithTrailingTrivia(

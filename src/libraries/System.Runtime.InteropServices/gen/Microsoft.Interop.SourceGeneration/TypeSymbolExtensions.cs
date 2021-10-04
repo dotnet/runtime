@@ -24,7 +24,7 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            foreach (IFieldSymbol? field in type.GetMembers().OfType<IFieldSymbol>())
+            foreach (IFieldSymbol field in type.GetMembers().OfType<IFieldSymbol>())
             {
                 if (!field.IsStatic)
                 {
@@ -97,7 +97,7 @@ namespace Microsoft.Interop
             bool hasNativeMarshallingAttribute = false;
             bool hasGeneratedMarshallingAttribute = false;
             // [TODO]: Match attributes on full name or symbol, not just on type name.
-            foreach (AttributeData? attr in type.GetAttributes())
+            foreach (AttributeData attr in type.GetAttributes())
             {
                 if (attr.AttributeClass is null)
                 {
@@ -147,7 +147,7 @@ namespace Microsoft.Interop
 
         public static bool IsAutoLayout(this INamedTypeSymbol type, ITypeSymbol structLayoutAttributeType)
         {
-            foreach (AttributeData? attr in type.GetAttributes())
+            foreach (AttributeData attr in type.GetAttributes())
             {
                 if (SymbolEqualityComparer.Default.Equals(structLayoutAttributeType, attr.AttributeClass))
                 {

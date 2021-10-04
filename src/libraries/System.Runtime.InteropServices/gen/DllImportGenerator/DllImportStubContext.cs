@@ -46,7 +46,7 @@ namespace Microsoft.Interop
         {
             get
             {
-                foreach (TypePositionInfo? typeInfo in ElementTypeInformation)
+                foreach (TypePositionInfo typeInfo in ElementTypeInformation)
                 {
                     if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
                         && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
@@ -84,7 +84,7 @@ namespace Microsoft.Interop
             }
 
             // Determine containing type(s)
-            ImmutableArray<TypeDeclarationSyntax>.Builder? containingTypes = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
+            ImmutableArray<TypeDeclarationSyntax>.Builder containingTypes = ImmutableArray.CreateBuilder<TypeDeclarationSyntax>();
             INamedTypeSymbol currType = method.ContainingType;
             while (!(currType is null))
             {
@@ -104,7 +104,7 @@ namespace Microsoft.Interop
 
             (ImmutableArray<TypePositionInfo> typeInfos, IMarshallingGeneratorFactory generatorFactory) = GenerateTypeInformation(method, dllImportData, diagnostics, env);
 
-            ImmutableArray<AttributeListSyntax>.Builder? additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
+            ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
             // Define additional attributes for the stub definition.
             if (env.TargetFrameworkVersion >= new Version(5, 0) && !MethodIsSkipLocalsInit(env, method))
@@ -152,10 +152,10 @@ namespace Microsoft.Interop
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 
             // Determine parameter and return types
-            ImmutableArray<TypePositionInfo>.Builder? typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
+            ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();
             for (int i = 0; i < method.Parameters.Length; i++)
             {
-                IParameterSymbol? param = method.Parameters[i];
+                IParameterSymbol param = method.Parameters[i];
                 MarshallingInfo marshallingInfo = marshallingAttributeParser.ParseMarshallingInfo(param.Type, param.GetAttributes());
                 var typeInfo = TypePositionInfo.CreateForParameter(param, marshallingInfo, env.Compilation);
                 typeInfo = typeInfo with

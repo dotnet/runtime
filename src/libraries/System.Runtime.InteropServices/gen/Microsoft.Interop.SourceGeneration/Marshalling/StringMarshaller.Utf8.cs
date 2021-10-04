@@ -47,7 +47,7 @@ namespace Microsoft.Interop
 
         public override ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            TypeSyntax? type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))
@@ -67,7 +67,7 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Marshal:
                     if (info.RefKind != RefKind.Out)
                     {
-                        foreach (StatementSyntax? statement in GenerateConditionalAllocationSyntax(
+                        foreach (StatementSyntax statement in GenerateConditionalAllocationSyntax(
                             info,
                             context,
                             StackAllocBytesThreshold))

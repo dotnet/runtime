@@ -195,7 +195,7 @@ namespace Microsoft.Interop
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
             }
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateCleanupStatements(info, subContext))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, subContext))
             {
                 yield return statement;
             }
@@ -204,7 +204,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateMarshalStatements(info, subContext, nativeTypeConstructorArguments))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, subContext, nativeTypeConstructorArguments))
             {
                 yield return statement;
             }
@@ -237,7 +237,7 @@ namespace Microsoft.Interop
 
             yield return GenerateValuePropertyAssignment(info, context, subContext);
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
             {
                 yield return statement;
             }
@@ -259,7 +259,7 @@ namespace Microsoft.Interop
                         VariableDeclarator(subContext.GetIdentifiers(info).native)
                         .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.DefaultLiteralExpression))))));
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateSetupStatements(info, subContext))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateSetupStatements(info, subContext))
             {
                 yield return statement;
             }
@@ -320,7 +320,7 @@ namespace Microsoft.Interop
                                             ))))))))));
             }
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
             {
                 yield return statement;
             }
@@ -353,7 +353,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context)
         {
-            foreach (ArgumentSyntax? arg in _innerMarshaller.GetNativeTypeConstructorArguments(info, context))
+            foreach (ArgumentSyntax arg in _innerMarshaller.GetNativeTypeConstructorArguments(info, context))
             {
                 yield return arg;
             }
@@ -405,7 +405,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
             {
                 yield return statement;
             }
@@ -488,7 +488,7 @@ namespace Microsoft.Interop
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
             }
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateCleanupStatements(info, subContext))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, subContext))
             {
                 yield return statement;
             }
@@ -497,7 +497,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
         {
             var subContext = new CustomNativeTypeWithValuePropertyStubContext(context);
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateMarshalStatements(info, subContext, nativeTypeConstructorArguments))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, subContext, nativeTypeConstructorArguments))
             {
                 yield return statement;
             }
@@ -544,7 +544,7 @@ namespace Microsoft.Interop
                         VariableDeclarator(subContext.GetIdentifiers(info).native)
                         .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.DefaultLiteralExpression))))));
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateSetupStatements(info, subContext))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateSetupStatements(info, subContext))
             {
                 yield return statement;
             }
@@ -572,7 +572,7 @@ namespace Microsoft.Interop
                 yield return GenerateValuePropertyAssignment(info, context, subContext);
             }
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, subContext))
             {
                 yield return statement;
             }
@@ -627,13 +627,13 @@ namespace Microsoft.Interop
             // from the native data so we can safely run any cleanup functionality in the marshaller.
             if (!context.AdditionalTemporaryStateLivesAcrossStages)
             {
-                foreach (StatementSyntax? statement in GenerateUnmarshallerCollectionInitialization(info, context))
+                foreach (StatementSyntax statement in GenerateUnmarshallerCollectionInitialization(info, context))
                 {
                     yield return statement;
                 }
             }
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
             {
                 yield return statement;
             }
@@ -683,12 +683,12 @@ namespace Microsoft.Interop
             // and set the unmanaged collection length before we marshal back the native data.
             // This ensures that the marshaller object has enough state to successfully set up the ManagedValues
             // and NativeValueStorage spans when the actual collection value is unmarshalled from native to the marshaller.
-            foreach (StatementSyntax? statement in GenerateUnmarshallerCollectionInitialization(info, context))
+            foreach (StatementSyntax statement in GenerateUnmarshallerCollectionInitialization(info, context))
             {
                 yield return statement;
             }
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
             {
                 yield return statement;
             }
@@ -696,7 +696,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<ArgumentSyntax> GetNativeTypeConstructorArguments(TypePositionInfo info, StubCodeContext context)
         {
-            foreach (ArgumentSyntax? arg in _innerMarshaller.GetNativeTypeConstructorArguments(info, context))
+            foreach (ArgumentSyntax arg in _innerMarshaller.GetNativeTypeConstructorArguments(info, context))
             {
                 yield return arg;
             }
@@ -741,7 +741,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
         {
             string nativeIdentifier = context.GetIdentifiers(info).native;
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
             {
                 yield return statement;
             }
@@ -832,7 +832,7 @@ namespace Microsoft.Interop
                             IdentifierName(nativeIdentifier),
                             IdentifierName(ManualTypeMarshallingHelper.ManagedValuesPropertyName)))));
 
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
             {
                 yield return statement;
             }
@@ -961,7 +961,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
             yield return GenerateContentsMarshallingStatement(info, context, useManagedSpanForLength: false);
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateCleanupStatements(info, context))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateCleanupStatements(info, context))
             {
                 yield return statement;
             }
@@ -969,7 +969,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context, IEnumerable<ArgumentSyntax> nativeTypeConstructorArguments)
         {
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateMarshalStatements(info, context, nativeTypeConstructorArguments))
             {
                 yield return statement;
             }
@@ -996,7 +996,7 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
             yield return GenerateContentsMarshallingStatement(info, context, useManagedSpanForLength: false);
-            foreach (StatementSyntax? statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
+            foreach (StatementSyntax statement in _innerMarshaller.GenerateUnmarshalStatements(info, context))
             {
                 yield return statement;
             }

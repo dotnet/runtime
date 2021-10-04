@@ -91,13 +91,13 @@ namespace Microsoft.Interop
                 // for single-dimensional zero-based arrays.
 
                 // ref <elementType> <byRefIdentifier> = <managedIdentifer> == null ? ref *(<elementType*)0 : ref MemoryMarshal.GetArrayDataReference(<managedIdentifer>);
-                PrefixUnaryExpressionSyntax? nullRef =
+                PrefixUnaryExpressionSyntax nullRef =
                     PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression,
                         CastExpression(
                             PointerType(arrayElementType),
                             LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0))));
 
-                InvocationExpressionSyntax? getArrayDataReference =
+                InvocationExpressionSyntax getArrayDataReference =
                     InvocationExpression(
                         MemberAccessExpression(
                             SyntaxKind.SimpleMemberAccessExpression,
