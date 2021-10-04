@@ -220,7 +220,7 @@
   </Choose>
 
   <PropertyGroup>
-    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')))">true</SkipLocalsInit>
+    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SkipLocalsInit>
   </PropertyGroup>
 
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->
