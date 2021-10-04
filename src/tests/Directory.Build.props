@@ -89,11 +89,6 @@
     <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
   </PropertyGroup>
 
-  <!-- Which tests can we build? Default: Build managed tests for this target.
-    At the command-line, the user can specify:
-    +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
-   -->
-
   <!-- Language settings -->
   <PropertyGroup>
     <RunAnalyzers>false</RunAnalyzers>

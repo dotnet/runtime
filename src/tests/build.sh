@@ -121,7 +121,7 @@ build_Tests()
     buildArgs+=("/p:NUMBER_OF_PROCESSORS=${__NumProc}")
     buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-    # Disable warnAsError - coreclr issue 19922
+    # Disable warnAsError - https://github.com/dotnet/runtime/issues/11077
     nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
     echo "Building tests via $nextCommand"
     eval $nextCommand
@@ -153,11 +153,13 @@ usage_list+=("-tree:xxx - build all tests in a given subtree");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
-usage_list+=("-allTargets: Build managed tests for all target platforms.")
+usage_list+=("-allTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
 usage_list+=("-runtests: run tests after building them.")
 usage_list+=("-excludemonofailures: Mark the build as running on Mono runtime so that mono-specific issues are honored.")
+
+usage_list+=("-log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step.")
 
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"

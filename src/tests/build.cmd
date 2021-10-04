@@ -346,8 +346,9 @@ echo test ^<xxx^>: Only build test project ^<xxx^> ^(relative or absolute projec
 echo dir ^<xxx^>: Build all test projects in the folder ^<xxx^> ^(relative or absolute folder under src\tests^)
 echo tree ^<xxx^>: Build all test projects in the subtree ^<xxx^> ^(relative or absolute folder under src\tests^)
 echo rebuild: Clean up all test artifacts prior to building tests
-echo allTargets: Build managed tests for all target platforms.
+echo allTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true)
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
+echo log: base file name to use for log files (used in lab pipelines that build tests in multiple steps to retain logs for each step)
 exit /b 1
 
 REM Exit_Failure:
