@@ -1272,8 +1272,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             GenTreeBoundsChk* arrBndsChk = op1->AsBoundsChk();
             assertion.assertionKind      = assertionKind;
             assertion.op1.kind           = O1K_ARR_BND;
-            assertion.op1.bnd.vnIdx      = vnStore->VNConservativeNormalValue(arrBndsChk->gtIndex->gtVNPair);
-            assertion.op1.bnd.vnLen      = vnStore->VNConservativeNormalValue(arrBndsChk->gtArrLen->gtVNPair);
+            assertion.op1.bnd.vnIdx      = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
+            assertion.op1.bnd.vnLen      = vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair);
             goto DONE_ASSERTION;
         }
     }
@@ -4443,9 +4443,9 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 #endif
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
-        if (curAssertion->op1.bnd.vnLen == vnStore->VNConservativeNormalValue(arrBndsChk->gtArrLen->gtVNPair))
+        if (curAssertion->op1.bnd.vnLen == vnStore->VNConservativeNormalValue(arrBndsChk->GetArrayLength()->gtVNPair))
         {
-            ValueNum vnCurIdx = vnStore->VNConservativeNormalValue(arrBndsChk->gtIndex->gtVNPair);
+            ValueNum vnCurIdx = vnStore->VNConservativeNormalValue(arrBndsChk->GetIndex()->gtVNPair);
 
             // Do we have the exact same lower bound 'vnIdx'?
             //       a[i] followed by a[i]
@@ -4459,7 +4459,7 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
             // Are we using zero as the index?
             // It can always be considered as redundant with any previous value
             //       a[*] followed by a[0]
-            else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChk->gtIndex->TypeGet()))
+            else if (vnCurIdx == vnStore->VNZeroForType(arrBndsChk->GetIndex()->TypeGet()))
             {
                 isRedundant = true;
 #ifdef DEBUG
