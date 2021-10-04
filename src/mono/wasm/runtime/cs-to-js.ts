@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
-    GCHandle, JSHandle, JSHandleDisposed, MonoArray,
+    GCHandle, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString
 } from "./types";
 import { Module, runtimeHelpers } from "./modules";
@@ -19,7 +19,7 @@ const delegate_invoke_symbol = Symbol.for("wasm delegate_invoke");
 const delegate_invoke_signature_symbol = Symbol.for("wasm delegate_invoke_signature");
 
 // this is only used from Blazor
-export function unbox_mono_obj(mono_obj: MonoObject) {
+export function unbox_mono_obj(mono_obj: MonoObject): any {
     if (mono_obj === MonoObjectNull)
         return undefined;
 
@@ -38,7 +38,7 @@ function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     return js_obj;
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: number) {
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: number): any {
     if (root.value === undefined)
         throw new Error(`Expected a root but got ${root}`);
 
@@ -70,14 +70,11 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
         case 18:
             throw new Error("Marshalling of primitive arrays are not supported.  Use the corresponding TypedArray instead.");
         case 20: // clr .NET DateTime
-            var dateValue = corebindings._get_date_value(root.value);
-            return new Date(dateValue);
+            return new Date(corebindings._get_date_value(root.value));
         case 21: // clr .NET DateTimeOffset
-            var dateoffsetValue = corebindings._object_to_string(root.value);
-            return dateoffsetValue;
+            return corebindings._object_to_string(root.value);
         case 22: // clr .NET Uri
-            var uriValue = corebindings._object_to_string(root.value);
-            return uriValue;
+            return corebindings._object_to_string(root.value);
         case 23: // clr .NET SafeHandle/JSObject
             return _unbox_cs_owned_root_as_js_object(root);
         case 30:
@@ -87,7 +84,7 @@ export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot
     }
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot<any>) {
+export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
 
@@ -110,7 +107,7 @@ export function _unbox_mono_obj_root(root: WasmRoot<any>) {
     }
 }
 
-export function mono_array_to_js_array(mono_array: MonoArray) {
+export function mono_array_to_js_array(mono_array: MonoArray): any[] | null {
     if (mono_array === MonoArrayNull)
         return null;
 
@@ -126,7 +123,7 @@ function is_nested_array(ele: MonoObject) {
     return corebindings._is_simple_array(ele);
 }
 
-export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>) {
+export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>): any[] | null {
     if (arrayRoot.value === MonoArrayNull)
         return null;
 
@@ -134,7 +131,7 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>) {
 
     try {
         const len = cwraps.mono_wasm_array_length(arrayRoot.value);
-        var res = new Array(len);
+        const res = new Array(len);
         for (let i = 0; i < len; ++i) {
             elemRoot.value = cwraps.mono_wasm_array_get(arrayRoot.value, i);
 
@@ -143,14 +140,13 @@ export function _mono_array_root_to_js_array(arrayRoot: WasmRoot<MonoArray>) {
             else
                 res[i] = _unbox_mono_obj_root(elemRoot);
         }
+        return res;
     } finally {
         elemRoot.release();
     }
-
-    return res;
 }
 
-export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>) {
+export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>): Function | null {
     if (root.value === MonoObjectNull)
         return null;
 
@@ -159,17 +155,17 @@ export function _wrap_delegate_root_as_function(root: WasmRoot<MonoObject>) {
     return _wrap_delegate_gc_handle_as_function(gc_handle);
 }
 
-export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_listener_callback?: () => void) {
+export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_listener_callback?: () => void): Function {
     // see if we have js owned instance for this gc_handle already
     let result = _lookup_js_owned_object(gc_handle);
 
     // If the function for this gc_handle was already collected (or was never created)
     if (!result) {
         // note that we do not implement function/delegate roundtrip
-        result = function () {
+        result = function (...args: any[]) {
             const delegateRoot = mono_wasm_new_root(get_js_owned_object_by_gc_handle(gc_handle));
             try {
-                const res = call_method(result[delegate_invoke_symbol], delegateRoot.value, result[delegate_invoke_signature_symbol], arguments);
+                const res = call_method(result[delegate_invoke_symbol], delegateRoot.value, result[delegate_invoke_signature_symbol], args);
                 if (after_listener_callback) {
                     after_listener_callback();
                 }
@@ -210,7 +206,7 @@ export function _wrap_delegate_gc_handle_as_function(gc_handle: GCHandle, after_
     return result;
 }
 
-export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr) {
+export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: MonoArray, is_exception: Int32Ptr): MonoObject {
     const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(core_name);
     try {
         const js_name = conv_string(nameRoot.value);
@@ -233,6 +229,7 @@ export function mono_wasm_create_cs_owned_object(core_name: MonoString, args: Mo
                 argsList[0] = constructor;
                 if (js_args)
                     argsList = argsList.concat(js_args);
+                // eslint-disable-next-line prefer-spread
                 const tempCtor = constructor.bind.apply(constructor, <any>argsList);
                 const js_obj = new tempCtor();
                 return js_obj;
