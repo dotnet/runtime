@@ -6,12 +6,12 @@
 // Thanks to Katelyn Gadd @kg
 
 export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?: number) {
-    var reader = _makeByteReader(inArray, offset, length);
-    var result = "";
-    var ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0
-    var bits = 0, equalsCount = 0, sum = 0;
-    var mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
-    var shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
+    const reader = _makeByteReader(inArray, offset, length);
+    let result = '';
+    let ch1: number | null = 0, ch2: number | null = 0, ch3: number | null = 0;
+    let bits = 0, equalsCount = 0, sum = 0;
+    const mask1 = (1 << 24) - 1, mask2 = (1 << 18) - 1, mask3 = (1 << 12) - 1, mask4 = (1 << 6) - 1;
+    const shift1 = 18, shift2 = 12, shift3 = 6, shift4 = 0;
 
     while (true) {
         ch1 = reader.read();
@@ -43,9 +43,9 @@ export function toBase64StringImpl(inArray: Uint8Array, offset?: number, length?
         }
 
         if (equalsCount === 2) {
-            result += "==";
+            result += '==';
         } else if (equalsCount === 1) {
-            result += "=";
+            result += '=';
         } else {
             bits = (sum & mask4) >> shift4;
             result += _base64Table[bits];
@@ -74,31 +74,31 @@ const _base64Table = [
     '4', '5', '6', '7',
     '8', '9',
     '+', '/'
-]
+];
 
 function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
     read: () => number | null
 } {
-    var position = (typeof (index) === "number") ? index : 0;
-    var endpoint: number;
+    let position = (typeof (index) === 'number') ? index : 0;
+    let endpoint: number;
 
-    if (typeof (count) === "number")
+    if (typeof (count) === 'number')
         endpoint = (position + count);
     else
         endpoint = (bytes.length - position);
 
-    var result = {
+    const result = {
         read: function () {
             if (position >= endpoint)
                 return null;
 
-            var nextByte = bytes[position];
+            const nextByte = bytes[position];
             position += 1;
             return nextByte;
         }
     };
 
-    Object.defineProperty(result, "eof", {
+    Object.defineProperty(result, 'eof', {
         get: function () {
             return (position >= endpoint);
         },
