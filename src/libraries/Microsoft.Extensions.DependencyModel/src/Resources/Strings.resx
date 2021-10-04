@@ -136,6 +136,6 @@
     <value>Target with name {0} not found</value>
   </data>
   <data name="DuplicateItem" xml:space="preserve">
-    <value>An item with the same key '{0}' has already been added from collection '{1}'</value>
+    <value>An item with the same key has already been added. Key: {0}</value>
   </data>
 </root>

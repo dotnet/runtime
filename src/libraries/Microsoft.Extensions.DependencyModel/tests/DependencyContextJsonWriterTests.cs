@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -66,7 +67,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                             {
                                 new RuntimeLibrary(
                                         "package",
-                                        "PackageName",
+                                        "DuplicatePackageName",
                                         "1.2.3",
                                         "HASH",
                                         new [] {
@@ -89,7 +90,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 
                                 new RuntimeLibrary(
                                         "package",
-                                        "PackageName",
+                                        "DuplicatePackageName",
                                         "1.2.3",
                                         "HASH",
                                         new [] {
@@ -116,7 +117,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                                 new RuntimeFallbacks("win8-x64", new [] { "win7-x64"}),
                             });
 
-            Assert.Throws<System.ArgumentException>(() => Save(context));
+            ArgumentException ex = Assert.Throws<ArgumentException>(() => Save(context));
+            Assert.Contains("DuplicatePackageName", ex.Message);
         }
 
         [Fact]
