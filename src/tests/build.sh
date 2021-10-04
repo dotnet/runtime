@@ -121,8 +121,7 @@ build_Tests()
     buildArgs+=("/p:NUMBER_OF_PROCESSORS=${__NumProc}")
     buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
-    # Disable warnAsError - https://github.com/dotnet/runtime/issues/11077
-    nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs --warnAsError false ${buildArgs[@]}"
+    nextCommand="\"$__RepoRootDir/eng/common/msbuild.sh\" $__ArcadeScriptArgs ${buildArgs[@]}"
     echo "Building tests via $nextCommand"
     eval $nextCommand
 
