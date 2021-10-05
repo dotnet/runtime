@@ -3018,9 +3018,10 @@ struct GenTreeOp : public GenTreeUnOp
 
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
     bool IsValidLongMul();
+#endif
+
 #if !defined(TARGET_64BIT) && defined(DEBUG)
     void DebugCheckLongMul();
-#endif
 #endif
 
 #if DEBUGGABLE_GENTREE
