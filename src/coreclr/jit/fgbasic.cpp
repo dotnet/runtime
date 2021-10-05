@@ -3535,7 +3535,7 @@ void Compiler::fgFindBasicBlocks()
 //    If the OSR entry is within a try we will eventually need add
 //    suitable step blocks to reach the OSR entry without jumping into
 //    the middle of the try. But we defer that until after importation.
-//    See fgRemoveEmptyBlocks.
+//    See fgPostImportationCleanup.
 //
 void Compiler::fgFixEntryFlowForOSR()
 {

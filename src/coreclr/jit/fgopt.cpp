@@ -1218,7 +1218,7 @@ void Compiler::fgInitBlockVarSets()
 }
 
 //------------------------------------------------------------------------
-// fgRemoveEmptyBlocks: clean up flow graph after importation
+// fgPostImportationCleanups: clean up flow graph after importation
 //
 // Notes:
 //
@@ -1229,9 +1229,49 @@ void Compiler::fgInitBlockVarSets()
 //  Update the end of try and handler regions where trailing blocks were not imported.
 //  Update the start of try regions that were partially imported (OSR)
 //
-void Compiler::fgRemoveEmptyBlocks()
+//  For OSR, add "step blocks" and conditional logic to ensure the path from
+//  method entry to the OSR logical entry point always flows through the first
+//  block of any enclosing try.
+//
+//  In particular, given a method like
+//
+//  S0;
+//  try {
+//      S1;
+//      try {
+//          S2;
+//          for (...) {}  // OSR logical entry here
+//      }
+//  }
+//
+//  Where the Sn are arbitrary hammocks of code, the OSR logical entry point
+//  would be in the middle of a nested try. We can't branch there directly
+//  from the OSR method entry. So we transform the flow to:
+//
+//  _firstCall = 0;
+//  goto pt1;
+//  S0;
+//  pt1:
+//  try {
+//      if (_firstCall == 0) goto pt2;
+//      S1;
+//      pt2:
+//      try {
+//          if (_firstCall == 0) goto pp;
+//          S2;
+//          pp:
+//          _firstCall = 1;
+//          for (...)
+//      }
+//  }
+//
+//  where the "state variable" _firstCall guides execution appropriately
+//  from OSR method entry, and flow always enters the try blocks at the
+//  first block of the try.
+//
+void Compiler::fgPostImportationCleanup()
 {
-    JITDUMP("\n*************** In fgRemoveEmptyBlocks\n");
+    JITDUMP("\n*************** In fgPostImportationCleanup\n");
 
     BasicBlock* cur;
     BasicBlock* nxt;
@@ -1596,7 +1636,7 @@ void Compiler::fgRemoveEmptyBlocks()
     }
 
     // Renumber the basic blocks
-    JITDUMP("\nRenumbering the basic blocks for fgRemoveEmptyBlocks\n");
+    JITDUMP("\nRenumbering the basic blocks for fgPostImporterCleanup\n");
     fgRenumberBlocks();
 
 #ifdef DEBUG
