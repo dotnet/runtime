@@ -9,7 +9,7 @@ public class Runtime_59871
     public static int Main()
     {
         Foo(new Runtime_59871());
-		return 100;
+        return 100;
     }
 
     static DateTime Foo(Runtime_59871 p)

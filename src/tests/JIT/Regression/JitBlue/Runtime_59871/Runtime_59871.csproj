@@ -3,7 +3,7 @@
     <OutputType>Exe</OutputType>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
-	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
