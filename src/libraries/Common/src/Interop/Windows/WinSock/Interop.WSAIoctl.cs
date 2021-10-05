@@ -22,7 +22,7 @@ internal static partial class Interop
             [In] IntPtr shouldBeNull,
             [In] IntPtr shouldBeNull2);
 
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, EntryPoint = "WSAIoctl", SetLastError = true)]
         internal static partial SocketError WSAIoctl_Blocking(
             SafeSocketHandle socketHandle,
             int ioControlCode,

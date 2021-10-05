@@ -10,11 +10,11 @@ internal static partial class Interop
     {
 #if DLLIMPORTGENERATOR_ENABLED
         [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "SetNamedSecurityInfoW", CallingConvention = CallingConvention.Winapi,
-            SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static partial uint SetSecurityInfoByName(
 #else
         [DllImport(Interop.Libraries.Advapi32, EntryPoint = "SetNamedSecurityInfoW", CallingConvention = CallingConvention.Winapi,
-            SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
+            CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern /*DWORD*/ uint SetSecurityInfoByName(
 #endif
             string name,

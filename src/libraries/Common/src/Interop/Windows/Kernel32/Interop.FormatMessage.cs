@@ -16,10 +16,10 @@ internal static partial class Interop
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         private static unsafe partial int FormatMessage(
 #else
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true, ExactSpelling = true)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", BestFitMapping = true, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         private static extern unsafe int FormatMessage(
 #endif
             int dwFlags,

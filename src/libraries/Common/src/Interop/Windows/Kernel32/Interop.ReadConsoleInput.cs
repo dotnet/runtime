@@ -32,9 +32,7 @@ internal static partial class Interop
 
     internal static partial class Kernel32
     {
-
-        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "ReadConsoleInputW")]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "ReadConsoleInputW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool ReadConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
-
     }
 }

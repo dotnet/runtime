@@ -13,10 +13,10 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static partial int RegSetValueEx(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
 #endif
             SafeRegistryHandle hKey,
@@ -27,10 +27,10 @@ internal static partial class Interop
             int cbData);
 
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static partial int RegSetValueEx(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
 #endif
             SafeRegistryHandle hKey,
@@ -41,10 +41,10 @@ internal static partial class Interop
             int cbData);
 
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static partial int RegSetValueEx(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
 #endif
             SafeRegistryHandle hKey,
@@ -55,10 +55,10 @@ internal static partial class Interop
             int cbData);
 
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static partial int RegSetValueEx(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
 #endif
             SafeRegistryHandle hKey,
@@ -69,10 +69,10 @@ internal static partial class Interop
             int cbData);
 
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static partial int RegSetValueEx(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
 #endif
             SafeRegistryHandle hKey,

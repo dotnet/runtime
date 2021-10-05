@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [GeneratedDllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial int GetAddrInfoW(
             string pNameName,
             string? pServiceName,

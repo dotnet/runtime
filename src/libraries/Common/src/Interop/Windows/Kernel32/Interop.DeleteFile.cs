@@ -13,10 +13,10 @@ internal static partial class Interop
         /// WARNING: This method does not implicitly handle long paths. Use DeleteFile.
         /// </summary>
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "DeleteFileW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "DeleteFileW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static partial bool DeleteFilePrivate(string path);
 #else
-        [DllImport(Libraries.Kernel32, EntryPoint = "DeleteFileW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "DeleteFileW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool DeleteFilePrivate(string path);
 #endif
 

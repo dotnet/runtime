@@ -9,10 +9,10 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Interop.Libraries.Advapi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Interop.Libraries.Advapi32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static partial bool RevertToSelf();
 #else
-        [DllImport(Interop.Libraries.Advapi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Advapi32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern bool RevertToSelf();
 #endif
     }
