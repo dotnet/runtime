@@ -45,6 +45,7 @@ steps:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono*.nupkg
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/
         overwriteExistingFiles: true
+        cleanDestinationFolder: false
 
   # Rename files for clarity between versions
   - script: |
