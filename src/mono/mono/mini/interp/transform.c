@@ -2634,6 +2634,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
 		interp_generate_platform_not_supported_throw (td);
+	} else if (in_corlib &&
+			!strncmp ("System.Numerics", klass_name_space, 15) &&
+			!strcmp ("Vector", klass_name) &&
+			!strcmp (tm, "get_IsHardwareAccelerated")) {
+		*op = MINT_LDC_I4_0;
 	}
 
 	return FALSE;
