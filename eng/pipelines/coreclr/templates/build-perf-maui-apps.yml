@@ -49,10 +49,10 @@ steps:
 
   # Rename files for clarity between versions
   - script: |
-      mv Microsoft.NETCore.App.Runtime.Mono.android-arm.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-arm
-      mv Microsoft.NETCore.App.Runtime.Mono.android-arm64.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-arm64
-      mv Microsoft.NETCore.App.Runtime.Mono.android-x64.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-x64
-      mv Microsoft.NETCore.App.Runtime.Mono.android-x86.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-x86
+      mv Microsoft.NETCore.App.Runtime.Mono.android-arm.*/ Microsoft.NETCore.App.Runtime.Mono.android-arm
+      mv Microsoft.NETCore.App.Runtime.Mono.android-arm64.*/ Microsoft.NETCore.App.Runtime.Mono.android-arm64
+      mv Microsoft.NETCore.App.Runtime.Mono.android-x64.*/ Microsoft.NETCore.App.Runtime.Mono.android-x64
+      mv Microsoft.NETCore.App.Runtime.Mono.android-x86.*/ Microsoft.NETCore.App.Runtime.Mono.android-x86
     displayName: Rename Folders
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
 
