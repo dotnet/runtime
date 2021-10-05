@@ -286,21 +286,32 @@
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 
-    <CallTarget Targets="_GenerateRunV8Script" Condition="'$(WasmGenerateRunV8Script)' == 'true'" />
+    <CallTarget Targets="_GenerateRunV8Script" Condition="'('$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' != 'true') or $(WasmGenerateRunV8Script)' == 'true'" />
+    <CallTarget Targets="_GenerateRunNodeScript" Condition="('$(WasmGenerateRunScript)' == 'true' and '$(ForNode)' == 'true') or '$(WasmGenerateRunNodeScript)' == 'true'" />
 
     <WriteLinesToFile File="$(WasmAppDir)\.stamp" Lines="" Overwrite="true" />
+
   </Target>
 
   <Target Name="_GenerateRunV8Script">
     <PropertyGroup>
-      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == ''">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
+      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == '' and '$(OS)' != 'Windows_NT'">$(WasmAppDir)run-v8.sh</WasmRunV8ScriptPath>
+      <WasmRunV8ScriptPath Condition="'$(WasmRunV8ScriptPath)' == '' and '$(OS)' == 'Windows_NT'">$(WasmAppDir)run-v8.cmd</WasmRunV8ScriptPath>
     </PropertyGroup>
 
     <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunV8ScriptPath)." />
     <WriteLinesToFile
       File="$(WasmRunV8ScriptPath)"
       Lines="v8 --expose_wasm runtime.js -- ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
-      Overwrite="true">
+      Overwrite="true"
+      Condition="'$(OS)' != 'Windows_NT'">
+    </WriteLinesToFile>
+
+    <WriteLinesToFile
+      File="$(WasmRunV8ScriptPath)"
+      Lines="v8 --expose_wasm runtime.js -- %RUNTIME_ARGS% --run $(WasmMainAssemblyFileName) %*"
+      Overwrite="true"
+      Condition="'$(OS)' == 'Windows_NT'">
     </WriteLinesToFile>
 
     <ItemGroup>
@@ -308,6 +319,34 @@
     </ItemGroup>
 
     <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunV8ScriptPath)" />
+  </Target>
+
+  <Target Name="_GenerateRunNodeScript">
+    <PropertyGroup>
+      <WasmRunNodeScriptPath Condition="'$(WasmRunNodeScriptPath)' == '' and '$(OS)' != 'Windows_NT'">$(WasmAppDir)run-node.sh</WasmRunNodeScriptPath>
+      <WasmRunNodeScriptPath Condition="'$(WasmRunNodeScriptPath)' == '' and '$(OS)' == 'Windows_NT'">$(WasmAppDir)run-node.cmd</WasmRunNodeScriptPath>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmMainAssemblyFileName)' == ''" Text="%24(WasmMainAssemblyFileName) property needs to be set for generating $(WasmRunNodeScriptPath)." />
+    <WriteLinesToFile
+      File="$(WasmRunNodeScriptPath)"
+      Lines="node --trace-warnings runtime.js ${RUNTIME_ARGS} --run $(WasmMainAssemblyFileName) $*"
+      Overwrite="true"
+      Condition="'$(OS)' != 'Windows_NT'">
+    </WriteLinesToFile>
+
+    <WriteLinesToFile
+      File="$(WasmRunNodeScriptPath)"
+      Lines="node --trace-warnings runtime.js %RUNTIME_ARGS% --run $(WasmMainAssemblyFileName) %*"
+      Overwrite="true"
+      Condition="'$(OS)' == 'Windows_NT'">
+    </WriteLinesToFile>
+
+    <ItemGroup>
+      <FileWrites Include="$(WasmRunNodeScriptPath)" />
+    </ItemGroup>
+
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod a+x $(WasmRunNodeScriptPath)" />
   </Target>
 
   <Target Name="_WasmResolveReferences" Condition="'$(WasmResolveAssembliesBeforeBuild)' == 'true'">
@@ -328,5 +367,43 @@
     <ItemGroup>
       <WasmAssembliesFinal Include="@(_WasmAssembliesInternal)" LlvmBitCodeFile="" />
     </ItemGroup>
+  </Target>
+
+  <!-- Setup NPM packages for NodeJS publish/builds -->
+  <Target Name="_NodePrep" AfterTargets="_AfterWasmBuildApp" Condition="'$(ForNode)' == 'true'">
+    <!-- If package.json is in the directory copy it to new output directory -->
+    <Copy SourceFiles="package.json"
+        DestinationFolder="$(WasmAppDir)"
+        SkipUnchangedFiles="true" 
+        Condition="Exists('package.json')"/>
+
+    <!-- Otherwise copy the default template into the output directory -->
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)\template-package.json"
+        DestinationFiles="$(WasmAppDir)\package.json"
+        SkipUnchangedFiles="true" 
+        Condition="!Exists('package.json')"/>
+    
+    <!-- npm install via emsdk npm if not on CI -->
+    <Exec Command="npm install"
+        EnvironmentVariables="@(EmscriptenEnvVars)"
+        WorkingDirectory="$(WasmAppDir)"
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ContinuousIntegrationBuild)' != 'true'"/>
+
+    <!-- however, if we are on ci, then use npm ci to be more consistent. It needs a package-lock.json though, so we copy one over as well -->
+    <Copy SourceFiles="package-lock.json"
+        DestinationFolder="$(WasmAppDir)"
+        SkipUnchangedFiles="true" 
+        Condition="Exists('package-lock.json') and '$(ContinuousIntegrationBuild)' == 'true'"/>
+    <Copy SourceFiles="$(MSBuildThisFileDirectory)\template-package-lock.json"
+        DestinationFiles="$(WasmAppDir)\package-lock.json"
+        SkipUnchangedFiles="true" 
+        Condition="!Exists('package-lock.json') and '$(ContinuousIntegrationBuild)' == 'true'"/>
+    
+    <Exec Command="npm ci"
+        EnvironmentVariables="@(EmscriptenEnvVars)"
+        WorkingDirectory="$(WasmAppDir)"
+        IgnoreStandardErrorWarningFormat="true" 
+        Condition="'$(ContinuousIntegrationBuild)' == 'true'"/>
   </Target>
 </Project>

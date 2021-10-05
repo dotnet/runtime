@@ -183,7 +183,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
     // ensure the indirect values are 8-byte aligned so that aligned loads and stores will work
     const indirectBaseOffset = ((((args_marshal.length * 4) + 7) / 8) | 0) * 8;
 
-    let closure: any = {};
+    let closure: any = { Module: Module };
     let indirectLocalOffset = 0;
 
     body.push(
@@ -260,6 +260,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
     argumentNames = ["existingBuffer", "rootBuffer", "method", "args"];
     closure = {
+        Module: Module,
         converter: compiledFunction
     };
     body = [
@@ -335,6 +336,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
     converter = _compile_converter_for_marshal_string(args_marshal);
 
     const closure: any = {
+        Module: Module,
         library_mono: MONO,
         binding_support: BINDING,
         method: method,

@@ -47,7 +47,8 @@
         Creator=$(Creator);
         HelixAccessToken=$(HelixAccessToken);
         HelixTargetQueues=$(HelixTargetQueues);
-        BuildTargetFramework=$(BuildTargetFramework)
+        BuildTargetFramework=$(BuildTargetFramework);
+        ForNode=$(ForNode)
       </_PropertiesToPass>
     </PropertyGroup>
 
@@ -111,7 +112,7 @@
 
     <ItemGroup>
       <_ProjectsToBuild Include="$(RepoRoot)\src\tests\Common\testenvironment.proj">
-        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
+        <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows);ForNode=$(ForNode)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
 
@@ -130,11 +131,11 @@
     <ItemGroup>
       <_Scenario Include="$(Scenarios.Split(','))" />
       <_ProjectsToBuild Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>Scenario=%(_Scenario.Identity)</AdditionalProperties>
+        <AdditionalProperties>Scenario=%(_Scenario.Identity);ForNode=$(ForNode)</AdditionalProperties>
       </_ProjectsToBuild>
     </ItemGroup>
 
-    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true" />
+    <MSBuild Projects="@(_ProjectsToBuild)" Targets="CreateOneScenarioTestEnvFile" StopOnFirstFailure="true"/>
   </Target>
 
   <Target Name="_CollectRuntimeInputs">

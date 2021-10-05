@@ -25,7 +25,7 @@
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
-      <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+      <WasmGenerateRunScript>true</WasmGenerateRunScript>
       <WasmSkipMissingAssemblies>true</WasmSkipMissingAssemblies>
     </PropertyGroup>
 
@@ -41,6 +41,12 @@
     <Message Importance="High" Text="AppDir: $(AppDir)" />
     <Message Importance="High" Text="TestBinDir: $(TestBinDir)" />
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
+
+    <PropertyGroup>
+      <_RunEnvironment Condition="'$(TargetOS)' == 'Browser' and '$(ForNode)' == 'true'">NodeJS</_RunEnvironment>
+      <_RunEnvironment Condition="'$(TargetOS)' == 'Browser' and '$(ForNode)' != 'true'">V8</_RunEnvironment> 
+    </PropertyGroup>
+    <Message Importance="High" Text="Environment: $(_RunEnvironment)" Condition="'$(_RunEnvironment)' != ''"/>
   </Target>
 
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.targets" />

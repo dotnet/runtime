@@ -297,7 +297,7 @@ else
   __Command+=" dotnet"
 fi
 
-$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
+$__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) /p:ForNode=$(ForNode) || exit $?
 
    ]]>
       </BashCLRTestPreCommands>
@@ -358,14 +358,21 @@ fi
 
 $(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Browser' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'Browser' And '$(ForNode)' == 'true'">
+      <![CDATA[
+cd WasmApp
+./run-node.sh
+CLRTestExitCode=$?
+      ]]>
+      </BashCLRTestLaunchCmds>
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'Browser' And '$(ForNode)' != 'true' ">
       <![CDATA[
 cd WasmApp
 ./run-v8.sh
 CLRTestExitCode=$?
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And '$(TargetOS)' == 'Android' ">
       <![CDATA[
 # run Android app
 __Command=""

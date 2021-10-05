@@ -25,9 +25,14 @@ namespace Wasm.Build.Tests
                     .WithRunHosts(RunHost.V8)
                     .UnwrapItemsAsArrays().ToList();
 
+        [BuildAndRun(host: RunHost.V8, aot: false, parameters: false)]
+        [BuildAndRun(host: RunHost.V8, aot: false, parameters: true)]
+        [BuildAndRun(host: RunHost.V8, aot: true,  parameters: false)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: false)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: false, parameters: true)]
+        [BuildAndRun(host: RunHost.NodeJS, aot: true,  parameters: false)]
         [Theory]
-        [MemberData(nameof(NonNativeDebugRebuildData))]
-        public void NoOpRebuild(BuildArgs buildArgs, RunHost host, string id)
+        public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
 

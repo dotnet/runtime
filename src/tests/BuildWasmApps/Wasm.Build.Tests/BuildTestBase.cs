@@ -148,6 +148,7 @@ namespace Wasm.Build.Tests
             (string testCommand, string extraXHarnessArgs) = host switch
             {
                 RunHost.V8 => ("wasm test", "--js-file=runtime.js --engine=V8 -v trace"),
+                RunHost.NodeJS => ("wasm test", "--js-file=runtime.js --engine=NodeJS -v trace"),
                 _          => ("wasm test-browser", $"-v trace -b {host}")
             };
 
@@ -253,7 +254,7 @@ namespace Wasm.Build.Tests
               <PropertyGroup>
                 <TargetFramework>{s_targetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
-                <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
+                <WasmGenerateRunScript>true</WasmGenerateRunScript>
                 <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##
               </PropertyGroup>

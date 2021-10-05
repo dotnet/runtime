@@ -66,13 +66,12 @@
       <_EmccCommonFlags Include="-s ALLOW_MEMORY_GROWTH=1" />
       <_EmccCommonFlags Include="-s NO_EXIT_RUNTIME=1" />
       <_EmccCommonFlags Include="-s FORCE_FILESYSTEM=1" />
-      <_EmccCommonFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency']&quot;" />
+      <_EmccCommonFlags Include="-s EXPORTED_RUNTIME_METHODS=&quot;['print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency','MONO','BINDING']&quot;" />
       <_EmccCommonFlags Include="-s EXPORTED_FUNCTIONS=&quot;['_free','_malloc']&quot;" />
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
 
       <_EmccCommonFlags Include="-s STRICT_JS=1" />      
-
-      <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(WasmEnableES6)' != 'false'" />
+      <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(ForNode)' == 'true' or '$(WasmEnableES6)' != 'false'"/>
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
     </ItemGroup>
 
