@@ -7504,21 +7504,35 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     while (retBlock->bbJumpKind != BBJ_RETURN)
                     {
 #ifdef DEBUG
-                        assert(retBlock->firstStmt() == retBlock->lastStmt());
-                        asgNode = retBlock->firstStmt()->GetRootNode();
-                        if (!asgNode->OperIs(GT_NOP))
+                        Statement* nonEmptyStmt = nullptr;
+                        for (Statement* const stmt : retBlock->Statements())
                         {
-                            assert(asgNode->OperIs(GT_ASG));
-
-                            GenTree* rhs = asgNode->gtGetOp2();
-                            while (rhs->OperIs(GT_CAST))
+                            // Ignore NOP statements
+                            if (!stmt->GetRootNode()->OperIs(GT_NOP))
                             {
-                                assert(!rhs->gtOverflow());
-                                rhs = rhs->gtGetOp1();
+                                // Only a single non-NOP statement is allowed
+                                assert(nonEmptyStmt == nullptr);
+                                nonEmptyStmt = stmt;
                             }
+                        }
 
-                            assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
-                            lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        if (nonEmptyStmt != nullptr)
+                        {
+                            asgNode = nonEmptyStmt->GetRootNode();
+                            if (!asgNode->OperIs(GT_NOP))
+                            {
+                                assert(asgNode->OperIs(GT_ASG));
+
+                                GenTree* rhs = asgNode->gtGetOp2();
+                                while (rhs->OperIs(GT_CAST))
+                                {
+                                    assert(!rhs->gtOverflow());
+                                    rhs = rhs->gtGetOp1();
+                                }
+
+                                assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
+                                lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                            }
                         }
 #endif
                         retBlock = retBlock->GetUniqueSucc();
