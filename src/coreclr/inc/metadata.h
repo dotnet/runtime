@@ -1379,6 +1379,22 @@ public:
 
     }
 
+    FORCEINLINE HRESULT EnumCustomAttributeByNameNoThrow(mdToken     tkParent,     // [IN] token to scope the search
+                                                      LPCSTR      szName)       // [IN] CustomAttribute's name to scope the search
+    {
+        CONTRACTL {
+            NOTHROW;
+        } CONTRACTL_END;
+
+        _ASSERTE(!m_fAcquired);
+        HRESULT hr = m_pInternalImport->EnumCustomAttributeByNameInit(tkParent, szName, &m_hEnum);
+        if (SUCCEEDED(hr))
+        {
+            m_fAcquired = TRUE;
+        }
+        return hr;
+    }
+
     FORCEINLINE ULONG EnumGetCount()
     {
         CONTRACTL {

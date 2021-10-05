@@ -153,7 +153,7 @@ namespace Generics
     };
 
     // Check for legal instantiations.  Returns true if the instantiation is legal.
-    BOOL CheckInstantiation(Instantiation inst);
+    BOOL CheckInstantiation(Module* pModule, mdToken tkGeneric, Instantiation inst);
 
     BOOL GetExactInstantiationsOfMethodAndItsClassFromCallInformation(
         /* in */  MethodDesc *pRepMethod,

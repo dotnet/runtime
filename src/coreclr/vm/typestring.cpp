@@ -322,7 +322,7 @@ HRESULT TypeNameBuilder::AddByRef()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!CheckParseState(ParseStateNAME | ParseStateGENARGS | ParseStatePTRARR))
+    if (!CheckParseState(ParseStateNAME | ParseStateGENARGS | ParseStatePTRARR | ParseStateBYREF))
         return Fail();
 
     m_parseState = ParseStateBYREF;

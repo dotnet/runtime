@@ -1118,6 +1118,12 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
             th = ClassLoader::LoadArrayTypeThrowing(th);
             break;
 
+        case CORINFO_TOKENKIND_ClassNotVoid:
+            // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
+            if (et == ELEMENT_TYPE_VOID)
+                COMPlusThrow(kInvalidProgramException);
+            break;
+
         default:
             // Disallow ELEMENT_TYPE_BYREF and ELEMENT_TYPE_VOID
             if (et == ELEMENT_TYPE_BYREF || et == ELEMENT_TYPE_VOID)
@@ -2106,6 +2112,18 @@ unsigned ComputeGCLayout(MethodTable * pMT, BYTE* gcPtrs)
                     result++;
                 }
                 else if (gcPtrs[fieldStartIndex] != TYPE_GC_REF)
+                {
+                    COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
+                }
+            }
+            else if (pFD->GetFieldType() == ELEMENT_TYPE_BYREF)
+            {
+                if (gcPtrs[fieldStartIndex] == TYPE_GC_NONE)
+                {
+                    gcPtrs[fieldStartIndex] = TYPE_GC_BYREF;
+                    result++;
+                }
+                else if (gcPtrs[fieldStartIndex] != TYPE_GC_BYREF)
                 {
                     COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
                 }
@@ -7338,9 +7356,50 @@ getMethodInfoHelper(
 
         if (!fILIntrinsic)
         {
-            getMethodInfoILMethodHeaderHelper(header, methInfo);
-            pLocalSig = header->LocalVarSig;
-            cbLocalSig = header->cbLocalVarSig;
+            bool checkForConvertToThrow = false;
+            if (ftn->HasClassOrMethodInstantiation())
+            {
+                for (int instForm = 0; instForm <= 1; instForm++)
+                {
+                    Instantiation inst = instForm == 0 ? ftn->GetMethodInstantiation() : ftn->GetClassInstantiation();
+                    for (DWORD instArg = 0; instArg < inst.GetNumArgs(); instArg++)
+                    {
+                        TypeHandle instType = inst[instArg];
+                        if (instType.IsByRefLike() || instType.IsTypeDesc())
+                        {
+                            checkForConvertToThrow = true;
+                            break;
+                        }
+                    }
+
+                    if (checkForConvertToThrow)
+                        break;
+                }
+            }
+
+            if (checkForConvertToThrow)
+            {
+                const void* pb;
+                ULONG cb;
+                if (ftn->GetModule()->GetCustomAttribute(ftn->GetMemberDef(), WellKnownAttribute::GenericParameterSupportsOnlyNonByRefLikeAttribute, &pb, &cb) == S_OK)
+                {
+                    static const BYTE justThrow[] = { CEE_LDNULL, CEE_THROW };
+
+                    methInfo->ILCode = const_cast<BYTE*>(justThrow);
+                    methInfo->ILCodeSize = sizeof(justThrow);
+                    methInfo->maxStack = 1;
+                    methInfo->EHcount = 0;
+                    methInfo->options = (CorInfoOptions)0;
+                    fILIntrinsic = true;
+                }
+            }
+
+            if (!fILIntrinsic)
+            {
+                getMethodInfoILMethodHeaderHelper(header, methInfo);
+                pLocalSig = header->LocalVarSig;
+                cbLocalSig = header->cbLocalVarSig;
+            }
         }
     }
     else
@@ -9112,7 +9171,6 @@ CorInfoType CEEInfo::getFieldTypeInternal (CORINFO_FIELD_HANDLE fieldHnd,
     CorElementType type   = field->GetFieldType();
 
     // <REVISIT_TODO>TODO should not burn the time to do this for anything but Value Classes</REVISIT_TODO>
-    _ASSERTE(type != ELEMENT_TYPE_BYREF);
 
     if (type == ELEMENT_TYPE_I)
     {

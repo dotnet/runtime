@@ -1247,6 +1247,19 @@ protected:
         return GetMDImport()->GetCustomAttributeByName(parentToken, GetWellKnownAttributeName(attribute), ppData, pcbData);
     }
 
+    // Return NULL if the attribute definitely isn't present, or return the attribute name string if it does.
+    LPCSTR HasCustomAttributes(mdToken parentToken,
+                               WellKnownAttribute attribute)
+    {
+        if (IsReadyToRun())
+        {
+            if (!GetReadyToRunInfo()->MayHaveCustomAttribute(attribute, parentToken))
+                return NULL;
+        }
+
+        return GetWellKnownAttributeName(attribute);
+    }
+
     IMDInternalImport *GetMDImport() const
     {
         WRAPPER_NO_CONTRACT;

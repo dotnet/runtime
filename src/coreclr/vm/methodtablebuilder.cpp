@@ -1424,6 +1424,21 @@ MethodTableBuilder::BuildMethodTableThrowing(
         {
             bmtFP->fIsByRefLikeType = true;
         }
+
+        // Make struct ByRefLike if it has ByRef or ByRefLike generic arguments
+        //
+        // The behavior of this is that Generic structures with ByRef/ByRefLike generic
+        // arguments will be ByRefLike, but since we only check this on structs, normal
+        // classes will not be marked as ByRefLike.
+        //
+        // HACKATHON todo... should we allow a means to not do this, for nested structs in classes, and enums?
+        //
+        Instantiation inst = bmtGenerics->GetInstantiation();
+        for (DWORD j = 0; j < bmtGenerics->GetNumGenericArgs(); j++)
+        {
+            if (inst[j].IsByRefLike() || inst[j].IsByRef())
+                bmtFP->fIsByRefLikeType = true;
+        }
     }
 
     // Check to see if the class is an enumeration. No fancy checks like the one immediately
@@ -3935,6 +3950,27 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 break;
             }
 
+        case ELEMENT_TYPE_BYREF:
+            {
+                dwLog2FieldSize = LOG2_PTRSIZE;
+                if (fIsStatic)
+                {
+                    // Byref-like types cannot be used for static fields
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_STATICFIELD);
+                }
+                if (!bmtFP->fIsByRefLikeType)
+                {
+                    // Non-byref-like types cannot contain byref-like instance fields
+                    BuildMethodTableThrowException(IDS_CLASSLOAD_BYREFLIKE_INSTANCEFIELD);
+                }
+                break;
+            }
+
+        case ELEMENT_TYPE_TYPEDBYREF:
+            {
+                goto IS_VALUETYPE;
+            }
+
         // Class type variable (method type variables aren't allowed in fields)
         // These only occur in open types used for verification/reflection.
         case ELEMENT_TYPE_VAR:
@@ -4042,7 +4078,10 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                         pByValueClass = (MethodTable *)-1;
                     }
                 } // If 'this' is a value class
-
+            }
+            // TypeReference shares the rest of the code here
+IS_VALUETYPE:
+            {
                 // It's not self-referential so try to load it
                 if (pByValueClass == NULL)
                 {

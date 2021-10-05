@@ -56,6 +56,12 @@ bool Compiler::eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 FORCEINLINE
+bool Compiler::eeIsClass(CORINFO_CLASS_HANDLE clsHnd)
+{
+    return info.compCompHnd->asCorInfoType(clsHnd) == CORINFO_TYPE_CLASS;
+}
+
+FORCEINLINE
 bool Compiler::eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn)
 {
     return info.compCompHnd->isJitIntrinsic(ftn);

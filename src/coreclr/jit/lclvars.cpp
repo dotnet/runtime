@@ -1368,13 +1368,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
             }
         }
 
-        // Disallow byrefs to byref like objects (ArgTypeHandle)
-        // techncally we could get away with just not setting them
-        if (varDsc->lvVerTypeInfo.IsByRef() && verIsByRefLike(DereferenceByRef(varDsc->lvVerTypeInfo)))
-        {
-            varDsc->lvVerTypeInfo = typeInfo();
-        }
-
         // we don't want the EE to assert in lvaSetStruct on bad sigs, so change
         // the JIT type to avoid even trying to call back
         if (varTypeIsStruct(type) && varDsc->lvVerTypeInfo.IsDead())

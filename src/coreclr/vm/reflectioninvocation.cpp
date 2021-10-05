@@ -1659,7 +1659,7 @@ void QCALLTYPE ReflectionInvocation::PrepareMethod(MethodDesc *pMD, TypeHandle *
             COMPlusThrow(kArgumentException, W("Argument_InvalidGenericInstantiation"));
 
         // Check we've got a reasonable looking instantiation.
-        if (!Generics::CheckInstantiation(Instantiation(pInstantiation, cInstantiation)))
+        if (!Generics::CheckInstantiation(pMD->GetModule(), pMD->GetMemberDef(), Instantiation(pInstantiation, cInstantiation)))
             COMPlusThrow(kArgumentException, W("Argument_InvalidGenericInstantiation"));
         for (ULONG i = 0; i < cInstantiation; i++)
             if (pInstantiation[i].ContainsGenericVariables())

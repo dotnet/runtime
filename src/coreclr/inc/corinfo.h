@@ -1516,6 +1516,9 @@ enum CorInfoTokenKind
 
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+    // token comes from an instruction that allows a ByRef but not void
+    CORINFO_TOKENKIND_ClassNotVoid = 0x1000 | CORINFO_TOKENKIND_Class,
 };
 
 struct CORINFO_RESOLVED_TOKEN

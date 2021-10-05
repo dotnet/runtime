@@ -16062,7 +16062,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // get the class handle and make a ICON node out of it
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16551,7 +16551,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Get the Class index */
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16719,7 +16719,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16817,7 +16817,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16845,12 +16845,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     assertImp(genActualType(op1->gtType) == TYP_I_IMPL || op1->gtType == TYP_BYREF);
 
-                    op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
+                    switch (info.compCompHnd->asCorInfoType(clsHnd))
+                    {
+                        case CORINFO_TYPE_CLASS:
+                            lclTyp = TYP_REF;
+                            opcode = CEE_STIND_REF;
+                            break;
+
+                        case CORINFO_TYPE_BYREF:
+                            lclTyp = TYP_BYREF;
+                            opcode = CEE_STIND_REF;
+                            break;
+
+                        case CORINFO_TYPE_PTR:
+                            lclTyp = TYP_I_IMPL;
+                            opcode = CEE_STIND_I;
+                            break;
+
+                        default:
+                            noway_assert(!"Unexpected corinfo type in cpobj");
+                            break;
+                    }
+
+                    op1 = gtNewOperNode(GT_IND, lclTyp, op1);
                     op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
 
                     impPushOnStack(op1, typeInfo());
-                    opcode = CEE_STIND_REF;
-                    lclTyp = TYP_REF;
                     goto STIND_POST_VERIFY;
                 }
 
@@ -16863,7 +16883,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16871,9 +16891,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     lclTyp = TYP_STRUCT;
                 }
-                else
+                else if (eeIsClass(resolvedToken.hClass))
                 {
                     lclTyp = TYP_REF;
+                }
+                else
+                {
+                    lclTyp = TYP_I_IMPL;
                 }
 
                 if (tiVerificationNeeded)
@@ -16915,6 +16939,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto STIND_POST_VERIFY;
                 }
 
+                if (lclTyp == TYP_I_IMPL)
+                {
+                    opcode = CEE_STIND_I;
+                    goto STIND_POST_VERIFY;
+                }
+
                 CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
                 if (impIsPrimitive(jitTyp))
                 {
@@ -16949,7 +16979,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 oper = GT_MKREFANY;
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16964,7 +16994,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     typeInfo tiPtr   = impStackTop().seTypeInfo;
                     typeInfo tiInstr = verMakeTypeInfo(resolvedToken.hClass);
 
-                    Verify(!verIsByRefLike(tiInstr), "mkrefany of byref-like class");
                     Verify(!tiPtr.IsReadonlyByRef(), "readonly byref used with mkrefany");
                     Verify(typeInfo::AreEquivalent(tiPtr.DereferenceByRef(), tiInstr), "type mismatch");
                 }
@@ -16990,7 +17019,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 oper = GT_OBJ;
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -17026,9 +17055,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     lclTyp = TYP_STRUCT;
                 }
-                else
+                else if (eeIsClass(resolvedToken.hClass))
                 {
                     lclTyp = TYP_REF;
+                    opcode = CEE_LDIND_REF;
+                    goto LDIND_POST_VERIFY;
+                }
+                else if (info.compCompHnd->asCorInfoType(clsHnd) == CORINFO_TYPE_BYREF)
+                {
+                    lclTyp = TYP_BYREF;
+                    opcode = CEE_LDIND_REF;
+                    goto LDIND_POST_VERIFY;
+                }
+                else
+                {
+                    lclTyp = TYP_I_IMPL;
                     opcode = CEE_LDIND_REF;
                     goto LDIND_POST_VERIFY;
                 }

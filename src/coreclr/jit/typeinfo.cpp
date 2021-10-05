@@ -289,7 +289,7 @@ bool typeInfo::tiMergeToCommonParent(COMP_HANDLE CompHnd, typeInfo* pDest, const
 
     // Remember the pre-state, so we can tell if it changed.
     *changed              = false;
-    DWORD destFlagsBefore = pDest->m_flags;
+    uint64_t destFlagsBefore = pDest->m_flags;
 
     // This bit is only set if both pDest and pSrc have it set
     pDest->m_flags &= (pSrc->m_flags | ~TI_FLAG_THIS_PTR);
@@ -398,7 +398,11 @@ void typeInfo::Dump() const
     flagsStr[6] = ((m_flags & TI_FLAG_GENERIC_TYPE_VAR) != 0) ? 'G' : '-';
     flagsStr[7] = '\0';
 
-    printf("[%s(%X) {%s}]", tiType2Str(m_bits.type), m_cls, flagsStr);
+    uint32_t byRefDepth = (uint32_t)(m_flags >> 32);
+    if (byRefDepth > 0)
+        printf("[%s(%X) {%s} ByRef Depth{%d}]", tiType2Str(m_bits.type), m_cls, flagsStr, (int)byRefDepth);
+    else
+        printf("[%s(%X) {%s}]", tiType2Str(m_bits.type), m_cls, flagsStr);
 }
 #endif // VERBOSE_VERIFY
 #endif // DEBUG

@@ -37,6 +37,8 @@ enum class WellKnownAttribute : DWORD
     WinRTMarshalingBehaviorAttribute,
     PreserveBaseOverridesAttribute,
     ObjectiveCTrackedTypeAttribute,
+    GenericParameterSupportsAnyTypeAttribute,
+    GenericParameterSupportsOnlyNonByRefLikeAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -107,6 +109,10 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.CompilerServices.PreserveBaseOverridesAttribute";
         case WellKnownAttribute::ObjectiveCTrackedTypeAttribute:
             return "System.Runtime.InteropServices.ObjectiveC.ObjectiveCTrackedTypeAttribute";
+        case WellKnownAttribute::GenericParameterSupportsAnyTypeAttribute:
+            return "System.Runtime.CompilerServices.GenericParameterSupportsAnyTypeAttribute";
+        case WellKnownAttribute::GenericParameterSupportsOnlyNonByRefLikeAttribute:
+            return "System.Runtime.CompilerServices.GenericParameterSupportsOnlyNonByRefLikeAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings
