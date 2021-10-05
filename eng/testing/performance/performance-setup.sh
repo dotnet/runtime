@@ -255,9 +255,9 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
-cleaned_branch_name = "main"
+cleaned_branch_name="main"
 if [[ $branch == *"refs/heads/release"* ]]; then
-    cleaned_branch_name = ${branch/refs\/heads\//}
+    cleaned_branch_name=${branch/refs\/heads\//}
 fi
 common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
