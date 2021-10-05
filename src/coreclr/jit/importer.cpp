@@ -9557,18 +9557,14 @@ DONE_CALL:
                 // Make the call its own tree (spill the stack if needed).
                 impAppendTree(call, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
 
+                // Propagate retExpr as the placeholder for the call.
+                // TODO: Still using the widened type.
+                call = gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
                 for (UINT8 i = 0; i < max(1, origCall->GetGDVCandidatesCount()); i++)
                 {
-                    // TODO: Still using the widened type.
-                    GenTree* retExpr =
-                        gtNewInlineCandidateReturnExpr(call, genActualType(callRetTyp), compCurBB->bbFlags);
-
-                    // Link the retExpr to the call so if necessary we can manipulate it later.
-                    InlineCandidateInfo* inlineInfo = origCall->GetInlineCandidateInfo(i);
-                    inlineInfo->retExpr             = retExpr;
+                    // Save link to retExpr to all gdv candidates just in case.
+                    origCall->GetInlineCandidateInfo(i)->retExpr = call;
                 }
-                // Propagate retExpr as the placeholder for the call.
-                call = origCall->GetInlineCandidateInfo()->retExpr;
             }
             else
             {

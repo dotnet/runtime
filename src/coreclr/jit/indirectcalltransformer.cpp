@@ -671,90 +671,87 @@ private:
             // so any struct copy we induce here should be cheap.
 
             assert(origCall->GetGDVCandidatesCount() > 0);
-            for (UINT8 candidateId = 0; candidateId < origCall->GetGDVCandidatesCount(); candidateId++)
+            InlineCandidateInfo* const inlineInfo = origCall->GetInlineCandidateInfo(0);
+            GenTree* const             retExpr    = inlineInfo->retExpr;
+
+            // Sanity check the ret expr if non-null: it should refer to the original call.
+            if (retExpr != nullptr)
             {
-                InlineCandidateInfo* const inlineInfo = origCall->GetInlineCandidateInfo(candidateId);
-                GenTree* const             retExpr    = inlineInfo->retExpr;
+                assert(retExpr->AsRetExpr()->gtInlineCandidate == origCall);
+            }
 
-                // Sanity check the ret expr if non-null: it should refer to the original call.
-                if (retExpr != nullptr)
+            if (origCall->TypeGet() != TYP_VOID)
+            {
+                // If there's a spill temp already associated with this inline candidate,
+                // use that instead of allocating a new temp.
+                //
+
+                if (returnTemp == BAD_VAR_NUM)
                 {
-                    assert(retExpr->AsRetExpr()->gtInlineCandidate == origCall);
+                    returnTemp = inlineInfo->preexistingSpillTemp;
                 }
 
-                if (origCall->TypeGet() != TYP_VOID)
+                if (returnTemp != BAD_VAR_NUM)
                 {
-                    // If there's a spill temp already associated with this inline candidate,
-                    // use that instead of allocating a new temp.
+                    JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", returnTemp);
+
+                    // We will be introducing multiple defs for this temp, so make sure
+                    // it is no longer marked as single def.
                     //
-
-                    if (returnTemp == BAD_VAR_NUM)
-                    {
-                        returnTemp = inlineInfo->preexistingSpillTemp;
-                    }
-
-                    if (returnTemp != BAD_VAR_NUM)
-                    {
-                        JITDUMP("Reworking call(s) to return value via a existing return temp V%02u\n", returnTemp);
-
-                        // We will be introducing multiple defs for this temp, so make sure
-                        // it is no longer marked as single def.
-                        //
-                        // Otherwise, we could make an incorrect type deduction. Say the
-                        // original call site returns a B, but after we devirtualize along the
-                        // GDV happy path we see that method returns a D. We can't then assume that
-                        // the return temp is type D, because we don't know what type the fallback
-                        // path returns. So we have to stick with the current type for B as the
-                        // return type.
-                        //
-                        // Note local vars always live in the root method's symbol table. So we
-                        // need to use the root compiler for lookup here.
-                        //
-                        LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(returnTemp);
-
-                        if (returnTempLcl->lvSingleDef == 1)
-                        {
-                            // In this case it's ok if we already updated the type assuming single def,
-                            // we just don't want any further updates.
-                            //
-                            JITDUMP("Return temp V%02u is no longer a single def temp\n", returnTemp);
-                            returnTempLcl->lvSingleDef = 0;
-                        }
-                    }
-                    else
-                    {
-                        returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
-                        JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
-                    }
-
-                    if (varTypeIsStruct(origCall))
-                    {
-                        compiler->lvaSetStruct(returnTemp, origCall->gtRetClsHnd, false);
-                    }
-
-                    GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
-
-                    JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
-                            returnTemp);
-
-                    retExpr->ReplaceWith(tempTree, compiler);
-                }
-                else if (retExpr != nullptr)
-                {
-                    // We still oddly produce GT_RET_EXPRs for some void
-                    // returning calls. Just bash the ret expr to a NOP.
+                    // Otherwise, we could make an incorrect type deduction. Say the
+                    // original call site returns a B, but after we devirtualize along the
+                    // GDV happy path we see that method returns a D. We can't then assume that
+                    // the return temp is type D, because we don't know what type the fallback
+                    // path returns. So we have to stick with the current type for B as the
+                    // return type.
                     //
-                    // Todo: consider bagging creation of these RET_EXPRs. The only possible
-                    // benefit they provide is stitching back larger trees for failed inlines
-                    // of void-returning methods. But then the calls likely sit in commas and
-                    // the benefit of a larger tree is unclear.
-                    JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
-                    retExpr->gtBashToNOP();
+                    // Note local vars always live in the root method's symbol table. So we
+                    // need to use the root compiler for lookup here.
+                    //
+                    LclVarDsc* const returnTempLcl = compiler->impInlineRoot()->lvaGetDesc(returnTemp);
+
+                    if (returnTempLcl->lvSingleDef == 1)
+                    {
+                        // In this case it's ok if we already updated the type assuming single def,
+                        // we just don't want any further updates.
+                        //
+                        JITDUMP("Return temp V%02u is no longer a single def temp\n", returnTemp);
+                        returnTempLcl->lvSingleDef = 0;
+                    }
                 }
                 else
                 {
-                    // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
+                    returnTemp = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt return temp"));
+                    JITDUMP("Reworking call(s) to return value via a new temp V%02u\n", returnTemp);
                 }
+
+                if (varTypeIsStruct(origCall))
+                {
+                    compiler->lvaSetStruct(returnTemp, origCall->gtRetClsHnd, false);
+                }
+
+                GenTree* tempTree = compiler->gtNewLclvNode(returnTemp, origCall->TypeGet());
+
+                JITDUMP("Bashing GT_RET_EXPR [%06u] to refer to temp V%02u\n", compiler->dspTreeID(retExpr),
+                        returnTemp);
+
+                retExpr->ReplaceWith(tempTree, compiler);
+            }
+            else if (retExpr != nullptr)
+            {
+                // We still oddly produce GT_RET_EXPRs for some void
+                // returning calls. Just bash the ret expr to a NOP.
+                //
+                // Todo: consider bagging creation of these RET_EXPRs. The only possible
+                // benefit they provide is stitching back larger trees for failed inlines
+                // of void-returning methods. But then the calls likely sit in commas and
+                // the benefit of a larger tree is unclear.
+                JITDUMP("Bashing GT_RET_EXPR [%06u] for VOID return to NOP\n", compiler->dspTreeID(retExpr));
+                retExpr->gtBashToNOP();
+            }
+            else
+            {
+                // We do not produce GT_RET_EXPRs for CTOR calls, so there is nothing to patch.
             }
         }
 
