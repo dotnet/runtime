@@ -114,7 +114,7 @@ namespace System.Globalization
         /// <summary>
         /// This is used to convert CurrentEra(0) to an appropriate era value.
         /// </summary>
-        internal virtual int CurrentEraValue
+        internal int CurrentEraValue
         {
             get
             {
@@ -638,7 +638,7 @@ namespace System.Globalization
             return year >= GetYear(MinSupportedDateTime) && year <= GetYear(MaxSupportedDateTime);
         }
 
-        internal virtual bool IsValidMonth(int year, int month, int era)
+        internal bool IsValidMonth(int year, int month, int era)
         {
             return IsValidYear(year, era) && month >= 1 && month <= GetMonthsInYear(year, era);
         }

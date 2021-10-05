@@ -374,21 +374,17 @@ namespace System.IO
             bool asDirectory,
             long creationTime = -1,
             long lastAccessTime = -1,
-            long lastWriteTime = -1,
-            long changeTime = -1,
-            uint fileAttributes = 0)
+            long lastWriteTime = -1)
         {
+            Interop.Kernel32.FILE_BASIC_INFO basicInfo;
+            basicInfo.CreationTime = creationTime;
+            basicInfo.LastAccessTime = lastAccessTime;
+            basicInfo.LastWriteTime = lastWriteTime;
+            basicInfo.ChangeTime = -1;
+            basicInfo.FileAttributes = 0;
+
             using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
             {
-                var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
-                {
-                    CreationTime = creationTime,
-                    LastAccessTime = lastAccessTime,
-                    LastWriteTime = lastWriteTime,
-                    ChangeTime = changeTime,
-                    FileAttributes = fileAttributes
-                };
-
                 if (!Interop.Kernel32.SetFileInformationByHandle(handle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
                 {
                     throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);

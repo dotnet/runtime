@@ -563,7 +563,7 @@ namespace System
             return CreateValidateOffset(dateResult, offset);
         }
 
-        public TimeSpan Subtract(DateTimeOffset value) => _dateTime.Subtract(value._dateTime);
+        public TimeSpan Subtract(DateTimeOffset value) => new TimeSpan(UtcTicks - value.UtcTicks);
 
         public DateTimeOffset Subtract(TimeSpan value) => Add(ClockDateTime.Subtract(value));
 
