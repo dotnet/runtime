@@ -777,6 +777,9 @@ namespace WebAssemblyInfo
         }
         public string FunctionType(UInt32 idx)
         {
+            if (functionTypes == null)
+                return string.Empty;
+
             return functionTypes[idx].ToString();
         }
 

@@ -184,7 +184,7 @@ namespace WebAssemblyInfo
                 Console.WriteLine(ToString().Indent("    "));
         }
 
-        public bool EnsureCodeReaded (WasmReader? reader)
+        public bool EnsureCodeReaded(WasmReader? reader)
         {
             if (Instructions == null)
             {
