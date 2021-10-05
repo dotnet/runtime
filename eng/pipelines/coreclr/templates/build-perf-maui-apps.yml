@@ -74,16 +74,6 @@ steps:
         overwriteExistingFiles: true
         cleanDestinationFolder: false
 
-  # Rename files for clarity between versions
-  - script: |
-      ls
-      mv Microsoft.NETCore.App.Runtime.Mono.android-arm.*/ Microsoft.NETCore.App.Runtime.Mono.android-arm
-      mv Microsoft.NETCore.App.Runtime.Mono.android-arm64.*/ Microsoft.NETCore.App.Runtime.Mono.android-arm64
-      mv Microsoft.NETCore.App.Runtime.Mono.android-x64.*/ Microsoft.NETCore.App.Runtime.Mono.android-x64
-      mv Microsoft.NETCore.App.Runtime.Mono.android-x86.*/ Microsoft.NETCore.App.Runtime.Mono.android-x86
-    displayName: Rename Folders
-    workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
-
   # Download and CI install dotnet
   # Download latest MAUI
   # Update the manifests based on the gated source
