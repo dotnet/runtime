@@ -24,7 +24,7 @@ export function mono_wasm_add_event_listener(js_handle: JSHandle, name: MonoStri
             ? undefined
             : prevent_timer_throttling;
 
-        const listener = _wrap_delegate_gc_handle_as_function(listener_gc_handle, throttling) as ListenerEstension;
+        const listener = _wrap_delegate_gc_handle_as_function(listener_gc_handle, throttling) as ListenerExtension;
         if (!listener)
             throw new Error("ERR10: Invalid listener gc_handle");
 
@@ -56,7 +56,7 @@ export function mono_wasm_remove_event_listener(js_handle: JSHandle, name: MonoS
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
         if (!obj)
             throw new Error("ERR11: Invalid JS object handle");
-        const listener = _lookup_js_owned_object(listener_gc_handle) as ListenerEstension;
+        const listener = _lookup_js_owned_object(listener_gc_handle) as ListenerExtension;
         // Removing a nonexistent listener should not be treated as an error
         if (!listener)
             return MonoStringNull;
@@ -84,6 +84,6 @@ export function mono_wasm_remove_event_listener(js_handle: JSHandle, name: MonoS
     }
 }
 
-type ListenerEstension = Function & {
+type ListenerExtension = Function & {
     [listener_registration_count_symbol]: number
 }
