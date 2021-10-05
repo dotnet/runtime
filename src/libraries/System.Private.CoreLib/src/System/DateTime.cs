@@ -461,17 +461,9 @@ namespace System
             GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
-            if (m > 0)
-            {
-                int q = (int)((uint)(m - 1) / 12);
-                y += q;
-                m -= q * 12;
-            }
-            else
-            {
-                y += m / 12 - 1;
-                m = 12 + m % 12;
-            }
+            int q = m > 0 ? (int)((uint)(m - 1) / 12) : m / 12 - 1;
+            y += q;
+            m -= q * 12;
             if (y < 1 || y > 9999) ThrowDateArithmetic(2);
             uint[] daysTo = IsLeapYear(y) ? s_daysToMonth366 : s_daysToMonth365;
             uint daysToMonth = daysTo[m - 1];
@@ -688,7 +680,7 @@ namespace System
 
         public bool Equals(DateTime value)
         {
-            return Ticks == value.Ticks;
+            return this == value;
         }
 
         // Compares two DateTime values for equality. Returns true if
@@ -697,7 +689,7 @@ namespace System
         //
         public static bool Equals(DateTime t1, DateTime t2)
         {
-            return t1.Ticks == t2.Ticks;
+            return t1 == t2;
         }
 
         public static DateTime FromBinary(long dateData)
@@ -1401,9 +1393,9 @@ namespace System
 
         public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.Ticks - d2.Ticks);
 
-        public static bool operator ==(DateTime d1, DateTime d2) => d1.Ticks == d2.Ticks;
+        public static bool operator ==(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) == 0;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => d1.Ticks != d2.Ticks;
+        public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 

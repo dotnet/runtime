@@ -366,7 +366,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int DebugId { get; }
         public string Name { get; }
         public List<FieldTypeClass> FieldsList { get; set; }
-        public MonoBinaryReader PropertiesBinaryReader { get; set; }
+        public byte[] PropertiesBuffer { get; set; }
         public List<int> TypeParamsOrArgsForGenericType { get; set; }
 
         public TypeInfoWithDebugInformation(TypeInfo typeInfo, int debugId, string name)
@@ -1212,18 +1212,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (typeInfo == null)
                 return null;
 
-            if (typeInfo.PropertiesBinaryReader != null)
+            if (typeInfo.PropertiesBuffer != null)
             {
-                typeInfo.PropertiesBinaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
-                return typeInfo.PropertiesBinaryReader;
+                var retDebuggerCmd = new MemoryStream(typeInfo.PropertiesBuffer);
+                var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+                return retDebuggerCmdReader;
             }
 
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(typeId);
 
-            typeInfo.PropertiesBinaryReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
-            return typeInfo.PropertiesBinaryReader;
+            var reader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
+            typeInfo.PropertiesBuffer = reader.ReadBytes((int)reader.BaseStream.Length);
+            reader.BaseStream.Position = 0;
+            return reader;
         }
 
         public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int typeId, CancellationToken token)

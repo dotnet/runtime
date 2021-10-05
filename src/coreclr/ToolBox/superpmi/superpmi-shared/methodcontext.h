@@ -109,9 +109,9 @@ public:
 
     void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
 
-    void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags);
+    void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
-    void repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags);
+    void repCompileMethod(CORINFO_METHOD_INFO* info, unsigned* flags, CORINFO_OS* os);
 
     void recGetMethodClass(CORINFO_METHOD_HANDLE methodHandle, CORINFO_CLASS_HANDLE classHandle);
     void dmpGetMethodClass(DWORDLONG key, DWORDLONG value);

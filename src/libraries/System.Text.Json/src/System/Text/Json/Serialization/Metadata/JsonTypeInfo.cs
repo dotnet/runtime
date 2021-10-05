@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -12,7 +13,9 @@ namespace System.Text.Json.Serialization.Metadata
     /// <summary>
     /// Provides JSON serialization-related metadata about a type.
     /// </summary>
+    /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
     [DebuggerDisplay("ConverterStrategy.{ConverterStrategy}, {Type.Name}")]
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public partial class JsonTypeInfo
     {
         internal const string JsonObjectTypeName = "System.Text.Json.Nodes.JsonObject";

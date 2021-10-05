@@ -177,6 +177,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                                     return true;
                                 }
+                            case "mono_wasm_fire_debugger_agent_message":
                             case "_mono_wasm_fire_debugger_agent_message":
                                 {
                                     try {
