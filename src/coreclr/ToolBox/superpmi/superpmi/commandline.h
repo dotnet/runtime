@@ -21,6 +21,7 @@ public:
             , reproName(nullptr)
             , breakOnError(false)
             , breakOnAssert(false)
+            , breakOnException(false)
             , applyDiff(false)
             , parallel(false)
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
@@ -55,6 +56,7 @@ public:
         char* reproName;
         bool  breakOnError;
         bool  breakOnAssert;
+        bool  breakOnException;
         bool  applyDiff;
         bool  parallel;        // User specified to use /parallel mode.
         bool  useCoreDisTools; // Use CoreDisTools library instead of Msvcdis

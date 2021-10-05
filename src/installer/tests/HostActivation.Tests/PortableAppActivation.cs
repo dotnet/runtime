@@ -526,7 +526,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .MultilevelLookup(false)
                     .Start();
 
-                WaitForPopupFromProcess(command.Process);
+                WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
                 var result = command.WaitForExit(true)
@@ -559,7 +559,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .MultilevelLookup(false)
                     .Start();
 
-                WaitForPopupFromProcess(command.Process);
+                WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
                 var expectedErrorCode = Constants.ErrorCode.CoreHostLibMissingFailure.ToString("x");
@@ -601,7 +601,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     .MultilevelLookup(false)
                     .Start();
 
-                WaitForPopupFromProcess(command.Process);
+                WindowsUtils.WaitForPopupFromProcess(command.Process);
                 command.Process.Kill();
 
                 command.WaitForExit(true)
@@ -688,50 +688,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             return storeoutputDirectory;
         }
-
-#if WINDOWS
-        private delegate bool EnumThreadWindowsDelegate(IntPtr hWnd, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        private static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWindowsDelegate plfn, IntPtr lParam);
-
-        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 60000)
-        {
-            IntPtr windowHandle = IntPtr.Zero;
-            int timeRemaining = timeout;
-            while (timeRemaining > 0)
-            {
-                foreach (ProcessThread thread in process.Threads)
-                {
-                    // We take the last window we find. There really should only be one at most anyways.
-                    EnumThreadWindows(thread.Id,
-                        (hWnd, lParam) => {
-                            windowHandle = hWnd;
-                            return true;
-                        },
-                        IntPtr.Zero);
-                }
-
-                if (windowHandle != IntPtr.Zero)
-                {
-                    break;
-                }
-
-                System.Threading.Thread.Sleep(100);
-                timeRemaining -= 100;
-            }
-
-            // Do not fail if the window could be detected, sometimes the check is fragile and doesn't work.
-            // Not worth the trouble trying to figure out why (only happens rarely in the CI system).
-            // We will rely on product tracing in the failure case.
-            return windowHandle;
-        }
-#else
-        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 60000)
-        {
-            throw new PlatformNotSupportedException();
-        }
-#endif
 
         public class SharedTestState : IDisposable
         {

@@ -289,7 +289,7 @@ inline
 ds_ipc_mode_t
 ipc_socket_set_default_umask (void)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && defined(__APPLE__)
+#if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__))
 	// This will set the default permission bit to 600
 	return umask (~(S_IRUSR | S_IWUSR));
 #else
@@ -302,7 +302,7 @@ inline
 void
 ipc_socket_reset_umask (ds_ipc_mode_t mode)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && defined(__APPLE__)
+#if defined(DS_IPC_PAL_AF_UNIX) && (defined(__APPLE__) || defined(__FreeBSD__))
 	umask (mode);
 #endif
 }
@@ -412,7 +412,7 @@ inline
 int
 ipc_socket_set_permission (ds_ipc_socket_t s)
 {
-#if defined(DS_IPC_PAL_AF_UNIX) && !defined(__APPLE__)
+#if defined(DS_IPC_PAL_AF_UNIX) && !(defined(__APPLE__) || defined(__FreeBSD__))
 	int result_fchmod;
 	DS_ENTER_BLOCKING_PAL_SECTION;
 	do {

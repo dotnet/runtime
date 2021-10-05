@@ -2541,6 +2541,30 @@ namespace System.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void TimeZoneInfo_LocalZoneWithInvariantMode()
+        {
+            string hostTZId = TimeZoneInfo.Local.Id;
+
+            ProcessStartInfo psi = new ProcessStartInfo() {  UseShellExecute = false };
+            psi.Environment.Add("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", PlatformDetection.IsInvariantGlobalization ? "0" : "1");
+
+            RemoteExecutor.Invoke((tzId, hostIsRunningInInvariantMode) =>
+            {
+                bool hostInvariantMode = bool.Parse(hostIsRunningInInvariantMode);
+
+                if (!hostInvariantMode)
+                {
+                    // If hostInvariantMode is false, means the child process should enable the globalization invariant mode.
+                    // We validate here that by trying to create a culture which should throws in such mode.
+                    Assert.Throws<CultureNotFoundException>(() => CultureInfo.GetCultureInfo("en-US"));
+                }
+
+                Assert.Equal(tzId, TimeZoneInfo.Local.Id);
+
+            }, hostTZId, PlatformDetection.IsInvariantGlobalization.ToString(), new RemoteInvokeOptions { StartInfo =  psi}).Dispose();
+        }
+
         [Fact]
         public static void TimeZoneInfo_DaylightDeltaIsNoMoreThan12Hours()
         {
@@ -2639,8 +2663,9 @@ namespace System.Tests
             }
         }
 
-        public static bool SupportIanaNamesConversion => PlatformDetection.IsNotBrowser && PlatformDetection.ICUVersion.Major >= 52;
+        public static bool SupportIanaNamesConversion => PlatformDetection.IsNotMobile && PlatformDetection.ICUVersion.Major >= 52;
         public static bool SupportIanaNamesConversionAndRemoteExecution => SupportIanaNamesConversion && RemoteExecutor.IsSupported;
+        public static bool DoesNotSupportIanaNamesConversion => !SupportIanaNamesConversion;
 
         // This test is executed using the remote execution because it needs to run before creating the time zone cache to ensure testing with that state.
         // There are already other tests that test after creating the cache.
@@ -2660,7 +2685,6 @@ namespace System.Tests
         }
 
         [ConditionalFact(nameof(SupportIanaNamesConversion))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58440", TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
         public static void IsIanaIdTest()
         {
             bool expected = !s_isWindows;
@@ -2672,9 +2696,16 @@ namespace System.Tests
                 Assert.True((expected || tzi.Id.Equals("Utc", StringComparison.OrdinalIgnoreCase)) == tzi.HasIanaId, $"`{tzi.Id}` has wrong IANA Id indicator");
             }
 
-            string timeZoneIdNotIANAId = PlatformDetection.IsiOS || PlatformDetection.IstvOS ? "America/Buenos_Aires" : "Pacific Standard Time";
-            Assert.False(TimeZoneInfo.FindSystemTimeZoneById(timeZoneIdNotIANAId).HasIanaId, $" should not be IANA Id.");
+            Assert.False(TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time").HasIanaId, $" should not be IANA Id.");
             Assert.True(TimeZoneInfo.FindSystemTimeZoneById("America/Los_Angeles").HasIanaId, $"'America/Los_Angeles' should be IANA Id");
+        }
+
+        [ConditionalFact(nameof(DoesNotSupportIanaNamesConversion))]
+        public static void UnsupportedImplicitConversionTest()
+        {
+            string nonNativeTzName = s_isWindows ? "America/Los_Angeles" : "Pacific Standard Time";
+
+            Assert.Throws<TimeZoneNotFoundException>(() => TimeZoneInfo.FindSystemTimeZoneById(nonNativeTzName));
         }
 
         [ConditionalTheory(nameof(SupportIanaNamesConversion))]
@@ -2693,7 +2724,6 @@ namespace System.Tests
         [InlineData("Argentina Standard Time", "America/Buenos_Aires")]
         [InlineData("Newfoundland Standard Time", "America/St_Johns")]
         [InlineData("Iran Standard Time", "Asia/Tehran")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS/MacCatalyst/tvOS.")]
         public static void IdsConversionsTest(string windowsId, string ianaId)
         {
             Assert.True(TimeZoneInfo.TryConvertIanaIdToWindowsId(ianaId, out string winId));
@@ -2728,7 +2758,6 @@ namespace System.Tests
         [InlineData("GMT Standard Time", "Europe/Dublin", "ie")]
         [InlineData("W. Europe Standard Time", "Europe/Rome", "it")]
         [InlineData("New Zealand Standard Time", "Pacific/Auckland", "nz")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on iOS/MacCatalyst/tvOS.")]
         public static void IdsConversionsWithRegionTest(string windowsId, string ianaId, string region)
         {
             Assert.True(TimeZoneInfo.TryConvertWindowsIdToIanaId(windowsId, region, out string ianaConvertedId));

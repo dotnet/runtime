@@ -15,6 +15,7 @@ public:
     // Added to help us track the original icjc and be able to easily indirect to it.
     ICorJitCompiler* original_ICorJitCompiler;
     HANDLE           hFile;
+    CORINFO_OS       currentOs;
 };
 
 #endif
