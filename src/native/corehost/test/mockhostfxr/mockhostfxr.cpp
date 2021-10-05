@@ -18,7 +18,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const p
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
-    const pal::string_t dotnet_folder = get_directory(dotnet_root);
+    const pal::string_t dotnet_folder = get_filename(dotnet_root);
 
     if (pal::strcmp(dotnet_folder.c_str(), _X("mockhostfxrFrameworkMissingFailure")) == 0)
     {
@@ -38,7 +38,7 @@ SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_bundle_startupinfo(const int argc, 
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_bundle_startupinfo"));
 
-    const pal::string_t dotnet_folder = get_directory(dotnet_root);
+    const pal::string_t dotnet_folder = get_filename(dotnet_root);
 
     if (pal::strcmp(dotnet_folder.c_str(), _X("mockhostfxrBundleVersionFailure")) == 0)
     {
