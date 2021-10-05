@@ -171,6 +171,26 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //------------------------------------------------------------------------
+// LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
+//
+// Currently only performs containment checks.
+//
+// Arguments:
+//    mul - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerMul(GenTreeOp* mul)
+{
+    assert(mul->OperIsMul());
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //
 // Arguments:

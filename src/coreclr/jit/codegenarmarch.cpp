@@ -295,11 +295,9 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForIndir(treeNode->AsIndir());
             break;
 
-#ifdef TARGET_ARM
         case GT_MUL_LONG:
-            genCodeForMulLong(treeNode->AsMultiRegOp());
+            genCodeForMulLong(treeNode->AsOp());
             break;
-#endif // TARGET_ARM
 
 #ifdef TARGET_ARM64
 
@@ -3464,6 +3462,33 @@ void CodeGen::genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg
         emit->emitIns_R_R_R_I(INS_add, attr, targetReg, baseReg, indexReg, scale, INS_OPTS_LSL);
 #endif
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForMulLong: Generates code for int*int->long multiplication.
+//
+// Arguments:
+//    mul - the GT_MUL_LONG node
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genCodeForMulLong(GenTreeOp* mul)
+{
+    assert(mul->OperIs(GT_MUL_LONG));
+
+    genConsumeOperands(mul);
+
+    regNumber   srcReg1 = mul->gtGetOp1()->GetRegNum();
+    regNumber   srcReg2 = mul->gtGetOp2()->GetRegNum();
+    instruction ins     = mul->IsUnsigned() ? INS_umull : INS_smull;
+#ifdef TARGET_ARM
+    GetEmitter()->emitIns_R_R_R_R(ins, EA_4BYTE, mul->GetRegNum(), mul->AsMultiRegOp()->gtOtherReg, srcReg1, srcReg2);
+#else
+    GetEmitter()->emitIns_R_R_R(ins, EA_4BYTE, mul->GetRegNum(), srcReg1, srcReg2);
+#endif
+
+    genProduceReg(mul);
 }
 
 //------------------------------------------------------------------------
