@@ -376,8 +376,7 @@ bool is_emulating_x64()
         is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
         if (!isWow64Process2Func)
         {
-            // Loading kernel32.dll failed, log the error and continue.
-            trace::info(_X("Could not load 'kernel32.dll': %s"), GetLastError());
+            // Could not find IsWow64Process2.
             FreeLibrary(kernel32);
             return false;
         }
@@ -393,6 +392,9 @@ bool is_emulating_x64()
         // Check if we are running an x64 process on a non-x64 windows machine.
         return pProcessMachine != pNativeMachine && pProcessMachine == IMAGE_FILE_MACHINE_AMD64;
     }
+
+    // Loading kernel32.dll failed, log the error and continue.
+    trace::info(_X("Could not load 'kernel32.dll': %s"), GetLastError());
 
     return false;
 }
