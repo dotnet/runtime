@@ -57,6 +57,7 @@ set __DoCrossgen2=
 set __CompositeBuildMode=
 set __TestBuildMode=
 set __CreatePdb=
+set __CreatePerfmap=
 set __CopyNativeTestBinaries=0
 set __CopyNativeProjectsAfterCombinedTestBuild=true
 set __SkipGenerateLayout=0
@@ -117,6 +118,8 @@ if /i "%1" == "buildagainstpackages"  (echo error: Remove /BuildAgainstPackages 
 if /i "%1" == "crossgen2"             (set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "composite"             (set __CompositeBuildMode=1&set __DoCrossgen2=1&set __TestBuildMode=crossgen2&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pdb"                   (set __CreatePdb=1&shift&goto Arg_Loop)
+if /i "%1" == "perfmap"               (set __CreatePerfmap=1&shift&goto Arg_Loop)
+if /i "%1" == "targetsNonWindows"     (set __TargetsWindows=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "-priority"             (set __Priority=%2&shift&set processedArgs=!processedArgs! %1=%2&shift&goto Arg_Loop)
 if /i "%1" == "allTargets"            (set "__BuildNeedTargetArg=/p:CLRTestBuildAllTargets=%1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
