@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -151,10 +152,48 @@ namespace WebAssemblyInfo
     {
         public LocalsBlock[] Locals;
         public Instruction[] Instructions;
+        public UInt32 Idx;
         public UInt32 Size;
+        public long Offset;
+
+        public void ReadCode(WasmReader reader)
+        {
+            reader.Reader.BaseStream.Seek(Offset, SeekOrigin.Begin);
+
+            if (Program.Verbose2)
+                Console.WriteLine($"  code[{Idx}]: {Size} bytes");
+
+            var vecSize = reader.ReadU32();
+            Locals = new LocalsBlock[vecSize];
+
+            if (Program.Verbose2)
+                Console.WriteLine($"    locals blocks count {vecSize}");
+
+            for (var j = 0; j < vecSize; j++)
+            {
+                Locals[j].Count = reader.ReadU32();
+                reader.ReadValueType(ref Locals[j].Type);
+
+                //Console.WriteLine($"    locals count: {funcsCode[i].Locals[j].Count} type: {funcsCode[i].Locals[j].Type}");
+            }
+
+            // read expr
+            (Instructions, _) = reader.ReadBlock();
+
+            if (Program.Verbose2)
+                Console.WriteLine(ToString().Indent("    "));
+        }
 
         public string ToString(WasmReader? reader)
         {
+            if (Instructions == null)
+            {
+                if (reader == null)
+                    return string.Empty;
+
+                ReadCode(reader);
+            }
+
             StringBuilder sb = new();
 
             foreach (LocalsBlock lb in Locals)

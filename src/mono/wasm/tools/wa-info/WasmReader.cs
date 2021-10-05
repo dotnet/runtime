@@ -9,7 +9,7 @@ namespace WebAssemblyInfo
 {
     class WasmReader
     {
-        readonly BinaryReader reader;
+        public readonly BinaryReader Reader;
         public UInt32 Version { get; private set; }
         public string Path { get; private set; }
 
@@ -20,7 +20,7 @@ namespace WebAssemblyInfo
 
             Path = path;
             var stream = File.Open(Path, FileMode.Open);
-            reader = new BinaryReader(stream);
+            Reader = new BinaryReader(stream);
         }
 
         public void Parse()
@@ -31,7 +31,7 @@ namespace WebAssemblyInfo
         void ReadModule()
         {
             byte[] magicWasm = { 0x0, 0x61, 0x73, 0x6d };
-            var magicBytes = reader.ReadBytes(4);
+            var magicBytes = Reader.ReadBytes(4);
 
             for (int i = 0; i < magicWasm.Length; i++)
             {
@@ -39,11 +39,11 @@ namespace WebAssemblyInfo
                     throw new FileLoadException("not wasm file, module magic is wrong");
             }
 
-            Version = reader.ReadUInt32();
+            Version = Reader.ReadUInt32();
             if (Program.Verbose)
                 Console.WriteLine($"WebAssembly binary format version: {Version}");
 
-            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            while (Reader.BaseStream.Position < Reader.BaseStream.Length)
                 ReadSection();
         }
 
@@ -73,13 +73,13 @@ namespace WebAssemblyInfo
 
         void ReadSection()
         {
-            var section = new SectionInfo() { id = (SectionId)reader.ReadByte(), size = ReadU32() };
+            var section = new SectionInfo() { id = (SectionId)Reader.ReadByte(), size = ReadU32() };
             sections.Add(section);
 
             if (Program.Verbose)
                 Console.Write($"Reading section: {section.id,9} size: {section.size,12}");
 
-            var begin = reader.BaseStream.Position;
+            var begin = Reader.BaseStream.Position;
 
             switch (section.id)
             {
@@ -109,7 +109,7 @@ namespace WebAssemblyInfo
             if (Program.Verbose)
                 Console.WriteLine();
 
-            reader.BaseStream.Seek(begin + section.size, SeekOrigin.Begin);
+            Reader.BaseStream.Seek(begin + section.size, SeekOrigin.Begin);
         }
 
         Code[]? funcsCode;
@@ -125,43 +125,19 @@ namespace WebAssemblyInfo
 
             funcsCode = new Code[count];
 
-            for (int i = 0; i < count; i++)
+            for (uint i = 0; i < count; i++)
             {
-                var size = ReadU32();
-                var pos = reader.BaseStream.Position;
-
-                if (Program.Verbose2)
-                    Console.WriteLine($"  code[{i}]: {size} bytes");
-
-                var vecSize = ReadU32();
-                funcsCode[i].Locals = new LocalsBlock[vecSize];
-
-                if (Program.Verbose2)
-                    Console.WriteLine($"    locals blocks count {vecSize}");
-
-                for (var j = 0; j < vecSize; j++)
-                {
-                    funcsCode[i].Locals[j].Count = ReadU32();
-                    ReadValueType(ref funcsCode[i].Locals[j].Type);
-
-                    //Console.WriteLine($"    locals count: {funcsCode[i].Locals[j].Count} type: {funcsCode[i].Locals[j].Type}");
-                }
-
-                // read expr
-                (funcsCode[i].Instructions, _) = ReadBlock();
-
-                if (Program.Verbose2)
-                    Console.WriteLine(funcsCode[i].ToString().Indent("    "));
-
-                funcsCode[i].Size = (UInt32)(reader.BaseStream.Position - pos + 4);
-                reader.BaseStream.Seek(pos + size, SeekOrigin.Begin);
+                funcsCode[i].Idx = i;
+                funcsCode[i].Size = ReadU32();
+                funcsCode[i].Offset = Reader.BaseStream.Position;
+                Reader.BaseStream.Seek(funcsCode[i].Offset + funcsCode[i].Size, SeekOrigin.Begin);
             }
         }
 
         BlockType ReadBlockType()
         {
             BlockType blockType = new();
-            byte b = reader.ReadByte();
+            byte b = Reader.ReadByte();
 
             switch (b)
             {
@@ -175,12 +151,12 @@ namespace WebAssemblyInfo
                 case (byte)ReferenceType.ExternRef:
                 case (byte)ReferenceType.FuncRef:
                     blockType.Kind = BlockTypeKind.ValueType;
-                    reader.BaseStream.Seek(-1, SeekOrigin.Current);
+                    Reader.BaseStream.Seek(-1, SeekOrigin.Current);
                     ReadValueType(ref blockType.ValueType);
                     break;
                 default:
                     blockType.Kind = BlockTypeKind.TypeIdx;
-                    reader.BaseStream.Seek(-1, SeekOrigin.Current);
+                    Reader.BaseStream.Seek(-1, SeekOrigin.Current);
                     blockType.TypeIdx = (UInt32)ReadI64();
                     break;
             }
@@ -204,7 +180,7 @@ namespace WebAssemblyInfo
 
             for (int i = 0; i < count; i++)
             {
-                Console.Write($" {reader.ReadByte():x}");
+                Console.Write($" {Reader.ReadByte():x}");
             }
 
             Console.WriteLine();
@@ -232,7 +208,7 @@ namespace WebAssemblyInfo
                     break;
                 case Opcode.Memory_Size:
                 case Opcode.Memory_Grow:
-                    op = (Opcode)reader.ReadByte();
+                    op = (Opcode)Reader.ReadByte();
                     if (op != Opcode.Unreachable)
                         throw new Exception($"0x00 expected after opcode: {opcode}, got {op} instead");
                     break;
@@ -265,13 +241,13 @@ namespace WebAssemblyInfo
                     instruction.I32 = ReadI32();
                     break;
                 case Opcode.F32_Const:
-                    instruction.F32 = reader.ReadSingle();
+                    instruction.F32 = Reader.ReadSingle();
                     break;
                 case Opcode.I64_Const:
                     instruction.I64 = ReadI64();
                     break;
                 case Opcode.F64_Const:
-                    instruction.F64 = reader.ReadDouble();
+                    instruction.F64 = Reader.ReadDouble();
                     break;
                 case Opcode.I32_Load:
                 case Opcode.I64_Load:
@@ -435,13 +411,13 @@ namespace WebAssemblyInfo
             return instruction;
         }
 
-        (Instruction[], Opcode) ReadBlock(Opcode end = Opcode.End)
+        public (Instruction[], Opcode) ReadBlock(Opcode end = Opcode.End)
         {
             List<Instruction> instructions = new();
             Opcode b;
             do
             {
-                b = (Opcode)reader.ReadByte();
+                b = (Opcode)Reader.ReadByte();
                 if (b == Opcode.End || b == end)
                     break;
 
@@ -457,7 +433,7 @@ namespace WebAssemblyInfo
 
         void ReadCustomSection(UInt32 size)
         {
-            var start = reader.BaseStream.Position;
+            var start = Reader.BaseStream.Position;
             var name = ReadString();
             customSectionNames.Add(name);
 
@@ -466,7 +442,7 @@ namespace WebAssemblyInfo
 
             if (name == "name")
             {
-                ReadCustomNameSection(size - (UInt32)(reader.BaseStream.Position - start));
+                ReadCustomNameSection(size - (UInt32)(Reader.BaseStream.Position - start));
             }
         }
 
@@ -479,16 +455,16 @@ namespace WebAssemblyInfo
 
         void ReadCustomNameSection(UInt32 size)
         {
-            var start = reader.BaseStream.Position;
+            var start = Reader.BaseStream.Position;
 
             if (Program.Verbose2)
                 Console.WriteLine();
 
-            while (reader.BaseStream.Position - start < size)
+            while (Reader.BaseStream.Position - start < size)
             {
-                var id = (CustomSubSectionId)reader.ReadByte();
+                var id = (CustomSubSectionId)Reader.ReadByte();
                 UInt32 subSectionSize = ReadU32();
-                var subSectionStart = reader.BaseStream.Position;
+                var subSectionStart = Reader.BaseStream.Position;
 
                 switch (id)
                 {
@@ -515,7 +491,7 @@ namespace WebAssemblyInfo
                         break;
                 }
 
-                reader.BaseStream.Seek(subSectionStart + subSectionSize, SeekOrigin.Begin);
+                Reader.BaseStream.Seek(subSectionStart + subSectionSize, SeekOrigin.Begin);
             }
         }
 
@@ -585,7 +561,7 @@ namespace WebAssemblyInfo
             for (int i = 0; i < count; i++)
             {
                 exports[i].Name = ReadString();
-                exports[i].Desc = (ExportDesc)reader.ReadByte();
+                exports[i].Desc = (ExportDesc)Reader.ReadByte();
                 exports[i].Idx = ReadU32();
 
                 if (Program.Verbose2)
@@ -611,7 +587,7 @@ namespace WebAssemblyInfo
             {
                 imports[i].Module = ReadString();
                 imports[i].Name = ReadString();
-                imports[i].Desc = (ImportDesc)reader.ReadByte();
+                imports[i].Desc = (ImportDesc)Reader.ReadByte();
                 imports[i].Idx = ReadU32();
 
                 if (Program.Verbose2)
@@ -621,7 +597,7 @@ namespace WebAssemblyInfo
 
         string ReadString()
         {
-            return Encoding.UTF8.GetString(reader.ReadBytes((int)ReadU32()));
+            return Encoding.UTF8.GetString(Reader.ReadBytes((int)ReadU32()));
         }
 
         Function[]? functions;
@@ -641,7 +617,7 @@ namespace WebAssemblyInfo
             functionTypes = new FunctionType[count];
             for (int i = 0; i < count; i++)
             {
-                var b = reader.ReadByte();
+                var b = Reader.ReadByte();
                 if (b != 0x60)
                     throw new FileLoadException("Expected 0x60 for function type");
 
@@ -665,9 +641,9 @@ namespace WebAssemblyInfo
             }
         }
 
-        void ReadValueType(ref ValueType vt)
+        public void ReadValueType(ref ValueType vt)
         {
-            var b = reader.ReadByte();
+            var b = Reader.ReadByte();
             vt.IsRefenceType = b <= 0x70;
             vt.value = b;
         }
@@ -687,13 +663,13 @@ namespace WebAssemblyInfo
             }
         }
 
-        UInt32 ReadU32()
+        public UInt32 ReadU32()
         {
             UInt32 value = 0;
             var offset = 0;
             do
             {
-                var b = reader.ReadByte();
+                var b = Reader.ReadByte();
                 value |= (UInt32)(b & 0x7f) << offset;
 
                 if ((b & 0x80) == 0)
@@ -713,7 +689,7 @@ namespace WebAssemblyInfo
 
             do
             {
-                b = reader.ReadByte();
+                b = Reader.ReadByte();
                 value |= (Int32)(b & 0x7f) << offset;
 
                 if ((b & 0x80) == 0)
@@ -736,7 +712,7 @@ namespace WebAssemblyInfo
 
             do
             {
-                b = reader.ReadByte();
+                b = Reader.ReadByte();
                 value |= (Int64)(b & 0x7f) << offset;
 
                 if ((b & 0x80) == 0)
@@ -862,7 +838,7 @@ namespace WebAssemblyInfo
         {
             var moduleName = string.IsNullOrEmpty(this.moduleName) ? null : $" name: {this.moduleName}";
             Console.WriteLine($"Module:{moduleName} path: {Path}");
-            Console.WriteLine($"  size: {reader.BaseStream.Length:N0}");
+            Console.WriteLine($"  size: {Reader.BaseStream.Length:N0}");
             Console.WriteLine($"  binary format version: {Version}");
             Console.WriteLine($"  sections: {sections.Count}");
 
