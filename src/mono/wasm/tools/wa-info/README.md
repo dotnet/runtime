@@ -38,29 +38,30 @@ Summary of the module and sections
 ```
 > wa-info.exe dotnet.wasm
 Module: path: dotnet.wasm
-  size: 103,347,170
+  size: 74,502,446
   binary format version: 1
   sections: 17
-    id: Type size: 4,836
-    id: Import size: 3,810
-    id: Function size: 169,878
+    id: Type size: 5,237
+    id: Import size: 4,315
+    id: Function size: 163,566
     id: Table size: 9
     id: Memory size: 7
     id: Global size: 19
-    id: Export size: 7,444
-    id: Element size: 454,314
-    id: Code size: 62,014,120
-    id: Data size: 10,905,780
-    id: Custom size: 22,098,422
-    id: Custom size: 3,578,734
-    id: Custom size: 1,241,745
-    id: Custom size: 120,526
-    id: Custom size: 224,404
-    id: Custom size: 1,877,737
-    id: Custom size: 645,314
-```
+    id: Export size: 7,213
+    id: Element size: 428,929
+    id: Code size: 34,177,740
+    id: Data size: 9,520,741
+    id: Custom name: name size: 21,544,785
+    id: Custom name: .debug_info size: 4,035,679
+    id: Custom name: .debug_loc size: 1,436,083
+    id: Custom name: .debug_ranges size: 140,966
+    id: Custom name: .debug_abbrev size: 240,230
+    id: Custom name: .debug_line size: 2,060,872
+    id: Custom name: .debug_str size: 735,984
+    ```
 
 Disassemble function
+
 *note: build the app with `-p:WasmNativeDebugSymbols=true -p:WasmNativeStrip=false` to preserve name custom section*
 ```
 > wa-info.exe -d -f ves_icall_RuntimeFieldInfo_GetValueInternal$ dotnet.wasm
