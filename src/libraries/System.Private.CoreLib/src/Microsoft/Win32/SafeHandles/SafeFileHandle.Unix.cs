@@ -94,8 +94,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             // If DeleteOnClose was requested when constructed, delete the file now.
             // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
-            // We delete the file before releasing the lock to detect the removal
-            // in TryInit.
+            // We delete the file before releasing the lock to detect the removal in Init.
             if (_deleteOnClose)
             {
                 // Since we still have the file open, this will end up deleting
