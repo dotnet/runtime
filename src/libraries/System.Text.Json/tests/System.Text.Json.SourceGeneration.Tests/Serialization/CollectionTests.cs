@@ -9,8 +9,6 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {

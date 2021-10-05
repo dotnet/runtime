@@ -159,7 +159,6 @@ System.Text.Json.Utf8JsonReader</PackageDescription>
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonObjectConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Node\JsonValueConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\JsonObjectConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\Object\KeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectDefaultConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.cs" />

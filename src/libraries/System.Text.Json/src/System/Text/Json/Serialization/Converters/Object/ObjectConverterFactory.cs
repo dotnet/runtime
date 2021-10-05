@@ -38,15 +38,11 @@ namespace System.Text.Json.Serialization.Converters
             Justification = "The ctor is marked RequiresUnreferencedCode.")]
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            if (typeToConvert.IsKeyValuePair())
-            {
-                return CreateKeyValuePairConverter(typeToConvert);
-            }
-
             JsonConverter converter;
             Type converterType;
 
-            if (!typeToConvert.TryGetDeserializationConstructor(_useDefaultConstructorInUnannotatedStructs, out ConstructorInfo? constructor))
+            bool useDefaultCtorInUnannotatedStructs = typeToConvert.IsKeyValuePair() ? false : _useDefaultConstructorInUnannotatedStructs;
+            if (!typeToConvert.TryGetDeserializationConstructor(useDefaultCtorInUnannotatedStructs, out ConstructorInfo? constructor))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<JsonConstructorAttribute>(typeToConvert);
             }
@@ -96,23 +92,6 @@ namespace System.Text.Json.Serialization.Converters
                     culture: null)!;
 
             converter.ConstructorInfo = constructor!;
-            return converter;
-        }
-
-        private JsonConverter CreateKeyValuePairConverter(Type type)
-        {
-            Debug.Assert(type.IsKeyValuePair());
-
-            Type keyType = type.GetGenericArguments()[0];
-            Type valueType = type.GetGenericArguments()[1];
-
-            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(KeyValuePairConverter<,>).MakeGenericType(new Type[] { keyType, valueType }),
-                BindingFlags.Instance | BindingFlags.Public,
-                binder: null,
-                args: null,
-                culture: null)!;
-
             return converter;
         }
     }
