@@ -181,6 +181,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void ImplicitOperators_FromNullableValues()
         {
+            #pragma warning disable xUnit2002
             Assert.NotNull((JsonValue?)(byte?)42);
             Assert.NotNull((JsonValue?)(short?)42);
             Assert.NotNull((JsonValue?)(int?)42);
@@ -194,6 +195,7 @@ namespace System.Text.Json.Nodes.Tests
             Assert.NotNull((JsonValue?)(float?)42);
             Assert.NotNull((JsonValue?)(double?)42);
             Assert.NotNull((JsonValue?)(decimal?)42);
+            #pragma warning restore xUnit2002
             Assert.NotNull((JsonValue?)(DateTime?)new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc));
             Assert.NotNull((JsonValue?)(DateTimeOffset?)new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)));
             Assert.NotNull((JsonValue?)(Guid?)new Guid("1B33498A-7B7D-4DDA-9C13-F6AA4AB449A6"));
