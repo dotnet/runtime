@@ -58,7 +58,7 @@ Module: path: dotnet.wasm
     id: Custom name: .debug_abbrev size: 240,230
     id: Custom name: .debug_line size: 2,060,872
     id: Custom name: .debug_str size: 735,984
-    ```
+```
 
 Disassemble function
 
