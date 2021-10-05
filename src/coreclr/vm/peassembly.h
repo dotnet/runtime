@@ -88,8 +88,6 @@ class PEAssembly final
     // ------------------------------------------------------------
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
 
-    // friend class Assembly;
-
 public:
 
     // ------------------------------------------------------------
