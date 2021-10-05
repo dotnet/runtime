@@ -416,7 +416,6 @@ private:
     void OpenImporter();
     void OpenEmitter();
 
-
 private:
 
  // ------------------------------------------------------------
