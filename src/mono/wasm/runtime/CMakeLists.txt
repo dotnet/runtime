@@ -7,10 +7,7 @@ add_executable(dotnet corebindings.c driver.c pinvoke.c)
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
 target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp -DCORE_BINDINGS -DGEN_PINVOKE=1)
 
-set_source_files_properties(corebindings.c PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
-set_source_files_properties(driver.c PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
-set_source_files_properties(pinvoke.c PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
-
+set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
 
 target_link_libraries(dotnet
     ${ICU_LIB_DIR}/libicuuc.a
