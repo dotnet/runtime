@@ -27,7 +27,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    SocketException se = Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+                    Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
                 }
             }
         }
@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    SocketException se = Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+                    Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
                 }
             }
         }
@@ -60,7 +60,7 @@ namespace System.Net.Sockets.Tests
             {
                 socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(groupIp, interfaceIndex));
 
-                SocketException se = Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership));
+                Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership));
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.Net.Sockets.Tests
             int interfaceIndex = 31415;
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
             {
-                SocketException se = Assert.Throws<SocketException>(() =>
+                Assert.Throws<SocketException>(() =>
                     s.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, IPAddress.HostToNetworkOrder(interfaceIndex)));
             }
         }
@@ -222,7 +222,7 @@ namespace System.Net.Sockets.Tests
             int interfaceIndex = 31415;
             using (Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
             {
-                SocketException se = Assert.Throws<SocketException>(() =>
+                Assert.Throws<SocketException>(() =>
                                                s.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.MulticastInterface, interfaceIndex));
             }
         }

@@ -3693,15 +3693,15 @@ namespace System.Net.Sockets
         private void UpdateStatusAfterSocketOptionErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
         {
             // Don't disconnect socket for unknown options.
-            bool noDisconnect = error == SocketError.ProtocolOption;
-            UpdateStatusAfterSocketErrorAndThrowException(error, callerName, noDisconnect);
+            bool disconnectOnFailure = error != SocketError.ProtocolOption;
+            UpdateStatusAfterSocketErrorAndThrowException(error, disconnectOnFailure, callerName);
         }
 
-        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null, bool noDisconnect = false)
+        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, bool disconnectOnFailure = true, [CallerMemberName] string? callerName = null)
         {
             // Update the internal state of this socket according to the error before throwing.
             var socketException = new SocketException((int)error);
-            UpdateStatusAfterSocketError(socketException, noDisconnect);
+            UpdateStatusAfterSocketError(socketException, disconnectOnFailure);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException, memberName: callerName);
             throw socketException;
         }
@@ -3709,18 +3709,18 @@ namespace System.Net.Sockets
         // UpdateStatusAfterSocketError(socketException) - updates the status of a connected socket
         // on which a failure occurred. it'll go to winsock and check if the connection
         // is still open and if it needs to update our internal state.
-        internal void UpdateStatusAfterSocketError(SocketException socketException, bool noDisconnect = false)
+        internal void UpdateStatusAfterSocketError(SocketException socketException, bool disconnectOnFailure = true)
         {
-            UpdateStatusAfterSocketError(socketException.SocketErrorCode, noDisconnect);
+            UpdateStatusAfterSocketError(socketException.SocketErrorCode, disconnectOnFailure);
         }
 
-        internal void UpdateStatusAfterSocketError(SocketError errorCode, bool noDisconnect = false)
+        internal void UpdateStatusAfterSocketError(SocketError errorCode, bool disconnectOnFailure = true)
         {
             // If we already know the socket is disconnected
             // we don't need to do anything else.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode},noDisconnect:{noDisconnect}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}, disconnectOnFailure:{disconnectOnFailure}");
 
-            if (!noDisconnect && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
+            if (disconnectOnFailure && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
                     errorCode != SocketError.TimedOut)))
             {
