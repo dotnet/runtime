@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Configuration
         /// Generates a human-readable view of the configuration showing where each value came from.
         /// </summary>
         /// <param name="root">Configuration root</param>
-        /// <param name="valueProcessing">
+        /// <param name="processValue">
         /// Function for processing the value e.g. hiding secrets
         /// Parameters:
         ///   Key: Key of the current configuration section
@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
         ///   returns: Value is used to assign as the Value of the configuration section
         /// </param>
         /// <returns> The debug view. </returns>
-        public static string GetDebugView(this IConfigurationRoot root, Func<string, string, string, IConfigurationProvider, string> valueProcessing = null)
+        public static string GetDebugView(this IConfigurationRoot root, Func<string, string, string, IConfigurationProvider, string> processValue = null)
         {
             void RecurseChildren(
                 StringBuilder stringBuilder,
@@ -40,8 +40,8 @@ namespace Microsoft.Extensions.Configuration
 
                     if (valueAndProvider.Provider != null)
                     {
-                        var value = valueProcessing != null
-                            ? valueProcessing(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider)
+                        var value = processValue != null
+                            ? processValue(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider)
                             : valueAndProvider.Value;
 
                         stringBuilder
