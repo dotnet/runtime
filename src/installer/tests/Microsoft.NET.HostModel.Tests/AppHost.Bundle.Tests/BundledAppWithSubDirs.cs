@@ -69,7 +69,7 @@ namespace AppHost.Bundle.Tests
                 Directory.CreateDirectory(dotnetWithMockHostFxr);
                 string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
 
-                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "hostfxrFrameworkMissingFailure")
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrBundleVersionFailure")
                     .RemoveHostFxr()
                     .AddMockHostFxr(new Version(5, 0, 0));
                 var dotnet = dotnetBuilder.Build();
@@ -87,7 +87,8 @@ namespace AppHost.Bundle.Tests
                     .WaitForExit(true)
                     .Should().Fail()
                     .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
-                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}");
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining("apphost_version=");
             }
         }
 
