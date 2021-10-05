@@ -2527,48 +2527,48 @@
         <ExcludeList Include = "$(XunitTestBinBase)/baseservices/threading/paramthreadstart/ThreadStartBool_1/**">
             <Issue>https://github.com/dotnet/runtime/issues/41193</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/HandleRef/HandleRefTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41519</Issue>
-        </ExcludeList>
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackStressTest_TargetUnix/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/API/NativeLibraryTests/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/NativeLibrary/Callback/CallbackTests/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/ICustomMarshaler/ConflictingNames/SameNameDifferentAssembly/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/HandleRef/HandleRefTest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Miscellaneous/MultipleAssembliesWithSamePInvoke/MAWSPITest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Pointer/NonBlittablePointer/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Vector2_3_4/Vector2_3_4/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/RuntimeHandles/RuntimeHandlesTest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/PInvoke/Primitives/Int/PInvokeIntTest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/SetLastError/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/SuppressGCTransition/SuppressGCTransitionTest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallConv/UnmanagedCallConvTest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
+        <!--<ExcludeList Include = "$(XunitTestBinBase)/Interop/UnmanagedCallersOnly/UnmanagedCallersOnlyTest/**">-->
+            <!--<Issue>https://github.com/dotnet/runtime/issues/41519</Issue>-->
+        <!--</ExcludeList>-->
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CodeGenBringUpTests/LocallocLarge_d/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
         </ExcludeList>
