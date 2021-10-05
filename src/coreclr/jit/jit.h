@@ -529,6 +529,8 @@ const bool dspGCtbls = true;
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
+#define ISMETHOD(name) !strcmp(JitTls::GetCompiler()->info.compMethodName, name)
+#define ISMETHODHASH(hash) !strcmp(JitTls::GetCompiler()->info.compMethodHash, hash)
 #else // !DEBUG
 #define JITDUMP(...)
 #define JITDUMPEXEC(x)
@@ -542,6 +544,8 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)
 #define DISPBLOCK(b)
 #define VERBOSE 0
+#define ISMETHOD(name)
+#define ISMETHODHASH(hash)
 #endif // !DEBUG
 
 /*****************************************************************************
