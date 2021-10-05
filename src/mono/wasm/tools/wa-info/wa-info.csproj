@@ -7,15 +7,21 @@
     <ToolCommandName>wa-info</ToolCommandName>
     <PackAsTool>true</PackAsTool>
     <Version>0.0.2</Version>
+    <Company>Microsoft Corporation</Company>
+    <Copyright>2021 Microsoft Corporation</Copyright>
     <Authors>Radek Doulik</Authors>
     <PackageOutputPath>nupkg</PackageOutputPath>
-    <PackageDescription>A tool to inspect WebAssembly binary format files</PackageDescription>
+    <PackageDescription>wa-info is a tool that can disassemble the wasm functions code, show wasm binary format file summary information, show dotnet/wasm AOT stats and more</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <RepositoryUrl>https://github.com/radekdoulik/wa-info</RepositoryUrl>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Mono.Options" Version="6.12.0.148" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="LICENSE" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
