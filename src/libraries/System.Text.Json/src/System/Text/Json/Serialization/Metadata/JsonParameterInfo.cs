@@ -18,8 +18,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         private protected bool MatchingPropertyCanBeNull { get; private set; }
 
-        internal abstract object? ClrDefaultValue { get; }
-
         // The default value of the parameter. This is `DefaultValue` of the `ParameterInfo`, if specified, or the CLR `default` for the `ParameterType`.
         public object? DefaultValue { get; private protected set; }
 
@@ -79,14 +77,12 @@ namespace System.Text.Json.Serialization.Metadata
         // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
         public static JsonParameterInfo CreateIgnoredParameterPlaceholder(JsonParameterInfoValues parameterInfo, JsonPropertyInfo matchingProperty)
         {
-            JsonParameterInfo jsonParameterInfo = matchingProperty.ConverterBase.CreateJsonParameterInfo();
+            JsonParameterInfo jsonParameterInfo = new JsonParameterInfo<sbyte>();
             jsonParameterInfo.ClrInfo = parameterInfo;
             jsonParameterInfo.RuntimePropertyType = matchingProperty.RuntimePropertyType!;
             jsonParameterInfo.NameAsUtf8Bytes = matchingProperty.NameAsUtf8Bytes!;
-            jsonParameterInfo.InitializeDefaultValue(matchingProperty);
+            jsonParameterInfo.DefaultValue = parameterInfo.DefaultValue;
             return jsonParameterInfo;
         }
-
-        protected abstract void InitializeDefaultValue(JsonPropertyInfo matchingProperty);
     }
 }

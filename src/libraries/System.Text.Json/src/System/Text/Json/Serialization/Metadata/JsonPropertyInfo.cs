@@ -42,16 +42,14 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Create a property that is ignored at run-time.
         internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(
-            JsonConverter converter,
             MemberInfo memberInfo,
             Type memberType,
             bool isVirtual,
             JsonSerializerOptions options)
         {
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
+            JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
 
             jsonPropertyInfo.Options = options;
-            jsonPropertyInfo.ConverterBase = converter;
             jsonPropertyInfo.MemberInfo = memberInfo;
             jsonPropertyInfo.IsIgnored = true;
             jsonPropertyInfo.DeclaredPropertyType = memberType;
