@@ -1,28 +1,30 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { bind_runtime_method } from "./method-binding";
+
 export type GCHandle = {
     __brand: "GCHandle"
 }
 export type JSHandle = {
     __brand: "JSHandle"
 }
-export interface MonoString extends ManagedPointer{
+export interface MonoObject extends ManagedPointer {
+    __brandMonoObject: "MonoObject"
+}
+export interface MonoString extends MonoObject {
     __brand: "MonoString"
 }
-export interface MonoClass extends ManagedPointer{
+export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
 }
-export interface MonoMethod extends ManagedPointer{
+export interface MonoMethod extends ManagedPointer {
     __brand: "MonoMethod"
 }
-export interface MonoObject extends ManagedPointer{
-    __brand: "MonoObject"
-}
-export interface MonoArray extends ManagedPointer{
+export interface MonoArray extends MonoObject {
     __brand: "MonoArray"
 }
-export interface MonoAssembly extends ManagedPointer{
+export interface MonoAssembly extends MonoObject {
     __brand: "MonoAssembly"
 }
 export const MonoMethodNull: MonoMethod = <MonoMethod><any>0;
@@ -36,7 +38,7 @@ export const JSHandleNull: JSHandle = <JSHandle><any>0;
 export const VoidPtrNull: VoidPtr = <VoidPtr><any>0;
 export const CharPtrNull: CharPtr = <CharPtr><any>0;
 
-export function coerceNull<T extends ManagedPointer|NativePointer>(ptr:T|null|undefined):T {
+export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
     return (<any>ptr | <any>0) as any;
 }
 
@@ -107,6 +109,7 @@ export type t_RuntimeHelpers = {
     runtime_namespace: string;
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
+    bind_runtime_method: typeof bind_runtime_method;
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;

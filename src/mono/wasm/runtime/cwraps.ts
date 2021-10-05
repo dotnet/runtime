@@ -100,10 +100,10 @@ const wrapped_c_functions: t_Cwraps = <any>{};
 for (const sig of fn_signatures) {
     const wf: any = wrapped_c_functions;
     // lazy init on first run
-    wf[sig[0]] = function () {
+    wf[sig[0]] = function (...args: any[]) {
         const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3]);
         wf[sig[0]] = fce;
-        return fce.apply(undefined, arguments);
+        return fce(...args);
     };
 }
 

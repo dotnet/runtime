@@ -26,16 +26,16 @@ function _verify_args_for_method_call(args_marshal: ArgsMarshalString, args: any
     return has_args_marshal && has_args;
 }
 
-export function _get_buffer_for_method_call(converter: Converter) {
+export function _get_buffer_for_method_call(converter: Converter): VoidPtr | undefined {
     if (!converter)
-        return 0;
+        return VoidPtrNull;
 
     const result = converter.scratchBuffer;
     converter.scratchBuffer = VoidPtrNull;
     return result;
 }
 
-export function _get_args_root_buffer_for_method_call(converter: Converter) {
+export function _get_args_root_buffer_for_method_call(converter: Converter): WasmRootBuffer | undefined {
     if (!converter)
         return undefined;
 
@@ -107,7 +107,7 @@ m: raw mono object. Don't use it unless you know what you're doing
 
 to suppress marshaling of the return value, place '!' at the end of args_marshal, i.e. 'ii!' instead of 'ii'
 */
-export function call_method(method: MonoMethod, this_arg: MonoObject | undefined, args_marshal: ArgsMarshalString, args: ArrayLike<any>) {
+export function call_method(method: MonoMethod, this_arg: MonoObject | undefined, args_marshal: ArgsMarshalString, args: ArrayLike<any>): any {
     // HACK: Sometimes callers pass null or undefined, coerce it to 0 since that's what wasm expects
     this_arg = coerceNull(this_arg);
 
@@ -139,7 +139,7 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
 
 
 export function _handle_exception_for_call(converter: Converter | undefined, buffer: VoidPtr, resultRoot: WasmRoot<MonoString>, exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer?: WasmRootBuffer
-) {
+): void {
     const exc = _convert_exception_for_method_call(resultRoot.value, exceptionRoot.value);
     if (!exc)
         return;
@@ -149,7 +149,7 @@ export function _handle_exception_for_call(converter: Converter | undefined, buf
 }
 
 function _handle_exception_and_produce_result_for_call(converter: Converter | undefined, buffer: VoidPtr, resultRoot: WasmRoot<MonoString>, exceptionRoot: WasmRoot<MonoObject>, argsRootBuffer: WasmRootBuffer | undefined, is_result_marshaled: boolean
-) {
+): any {
     _handle_exception_for_call(converter, buffer, resultRoot, exceptionRoot, argsRootBuffer);
 
     let result: any = resultRoot.value;
@@ -161,7 +161,7 @@ function _handle_exception_and_produce_result_for_call(converter: Converter | un
     return result;
 }
 
-export function _teardown_after_call(converter: Converter | undefined, buffer: VoidPtr, resultRoot: WasmRoot<any>, exceptionRoot: WasmRoot<any>, argsRootBuffer?: WasmRootBuffer) {
+export function _teardown_after_call(converter: Converter | undefined, buffer: VoidPtr, resultRoot: WasmRoot<any>, exceptionRoot: WasmRoot<any>, argsRootBuffer?: WasmRootBuffer): void {
     _release_args_root_buffer_from_method_call(converter, argsRootBuffer);
     _release_buffer_from_method_call(converter, buffer);
 
@@ -177,7 +177,7 @@ function _call_method_with_converted_args(method: MonoMethod, this_arg: MonoObje
     return _handle_exception_and_produce_result_for_call(converter, buffer, resultRoot, exceptionRoot, argsRootBuffer, is_result_marshaled);
 }
 
-export function call_static_method(fqn: string, args: any[], signature: ArgsMarshalString) {
+export function call_static_method(fqn: string, args: any[], signature: ArgsMarshalString): any {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const method = mono_method_resolve(fqn);
@@ -188,7 +188,7 @@ export function call_static_method(fqn: string, args: any[], signature: ArgsMars
     return call_method(method, undefined, signature, args);
 }
 
-export function mono_bind_static_method(fqn: string, signature: ArgsMarshalString) {
+export function mono_bind_static_method(fqn: string, signature: ArgsMarshalString): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const method = mono_method_resolve(fqn);
@@ -199,7 +199,7 @@ export function mono_bind_static_method(fqn: string, signature: ArgsMarshalStrin
     return mono_bind_method(method, null, signature, fqn);
 }
 
-export function mono_bind_assembly_entry_point(assembly: string, signature: ArgsMarshalString) {
+export function mono_bind_assembly_entry_point(assembly: string, signature: ArgsMarshalString): Function {
     bindings_lazy_init();// TODO remove this once Blazor does better startup
 
     const asm = cwraps.mono_wasm_assembly_load(assembly);
@@ -226,11 +226,11 @@ export function mono_bind_assembly_entry_point(assembly: string, signature: Args
     };
 }
 
-export function mono_call_assembly_entry_point(assembly: string, args: any[], signature: ArgsMarshalString) {
+export function mono_call_assembly_entry_point(assembly: string, args: any[], signature: ArgsMarshalString): any {
     return mono_bind_assembly_entry_point(assembly, signature)(...args);
 }
 
-export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr) {
+export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr): any {
     const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(method_name);
     try {
         const js_name = conv_string(nameRoot.value);
@@ -245,12 +245,11 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
 
         const js_args = _mono_array_root_to_js_array(argsRoot);
 
-        var res;
         try {
             const m = obj[js_name];
             if (typeof m === "undefined")
                 throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
-            var res = m.apply(obj, js_args);
+            const res = m.apply(obj, js_args);
             return _js_to_mono_obj(true, res);
         } catch (ex) {
             return wrap_error(is_exception, ex);
@@ -261,7 +260,7 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
     }
 }
 
-export function mono_wasm_get_object_property(js_handle: JSHandle, property_name: MonoString, is_exception: Int32Ptr) {
+export function mono_wasm_get_object_property(js_handle: JSHandle, property_name: MonoString, is_exception: Int32Ptr): any {
     const nameRoot = mono_wasm_new_root(property_name);
     try {
         const js_name = conv_string(nameRoot.value);
@@ -286,7 +285,7 @@ export function mono_wasm_get_object_property(js_handle: JSHandle, property_name
     }
 }
 
-export function mono_wasm_set_object_property(js_handle: JSHandle, property_name: MonoString, value: MonoObject, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr) {
+export function mono_wasm_set_object_property(js_handle: JSHandle, property_name: MonoString, value: MonoObject, createIfNotExist: boolean, hasOwnProperty: boolean, is_exception: Int32Ptr): MonoObject {
     const valueRoot = mono_wasm_new_root(value), nameRoot = mono_wasm_new_root(property_name);
     try {
 
@@ -311,11 +310,11 @@ export function mono_wasm_set_object_property(js_handle: JSHandle, property_name
         else {
             result = false;
             if (!createIfNotExist) {
-                if (!js_obj.hasOwnProperty(property))
-                    return false;
+                if (!Object.prototype.hasOwnProperty.call(js_obj, property))
+                    return _box_js_bool(false);
             }
             if (hasOwnProperty === true) {
-                if (js_obj.hasOwnProperty(property)) {
+                if (Object.prototype.hasOwnProperty.call(js_obj, property)) {
                     js_obj[property] = js_value;
                     result = true;
                 }
@@ -332,7 +331,7 @@ export function mono_wasm_set_object_property(js_handle: JSHandle, property_name
     }
 }
 
-export function mono_wasm_get_by_index(js_handle: JSHandle, property_index: number, is_exception: Int32Ptr) {
+export function mono_wasm_get_by_index(js_handle: JSHandle, property_index: number, is_exception: Int32Ptr): MonoObject {
     const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
     if (!obj) {
         return wrap_error(is_exception, "ERR03: Invalid JS object handle '" + js_handle + "' while getting [" + property_index + "]");
@@ -346,7 +345,7 @@ export function mono_wasm_get_by_index(js_handle: JSHandle, property_index: numb
     }
 }
 
-export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: number, value: MonoObject, is_exception: Int32Ptr) {
+export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: number, value: MonoObject, is_exception: Int32Ptr): MonoString | true {
     const valueRoot = mono_wasm_new_root(value);
     try {
         const obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
@@ -358,7 +357,7 @@ export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: numb
 
         try {
             obj[property_index] = js_value;
-            return true;
+            return true;// TODO check
         } catch (ex) {
             return wrap_error(is_exception, ex);
         }
@@ -367,7 +366,7 @@ export function mono_wasm_set_by_index(js_handle: JSHandle, property_index: numb
     }
 }
 
-export function mono_wasm_get_global_object(global_name: MonoString, is_exception: Int32Ptr) {
+export function mono_wasm_get_global_object(global_name: MonoString, is_exception: Int32Ptr): MonoObject {
     const nameRoot = mono_wasm_new_root(global_name);
     try {
         const js_name = conv_string(nameRoot.value);
@@ -392,7 +391,8 @@ export function mono_wasm_get_global_object(global_name: MonoString, is_exceptio
     }
 }
 
-export function wrap_error(is_exception: Int32Ptr | null, ex: any) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
     let res = "unknown exception";
     if (ex) {
         res = ex.toString();
@@ -400,7 +400,7 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any) {
     if (is_exception) {
         Module.setValue(is_exception, 1, "i32");
     }
-    return js_string_to_mono_string(res);
+    return js_string_to_mono_string(res)!;
 }
 
 export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: MonoObject): ArgsMarshalString {
@@ -412,7 +412,7 @@ export function mono_method_get_call_signature(method: MonoMethod, mono_obj?: Mo
     }
 }
 
-export function mono_method_resolve(fqn: string) {
+export function mono_method_resolve(fqn: string): MonoMethod {
     const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
     fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
 
