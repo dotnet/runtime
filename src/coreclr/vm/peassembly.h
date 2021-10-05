@@ -65,9 +65,11 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
 //    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
 //    or static imports in umnanaged code.
+//    These get their PEImage loaded directly in PEImage::LoadImage(HMODULE hMod)
 //
-// 2. Fusion loads - these are the most common case.  A path is obtained from fusion and
-//    the result is loaded via PEImage.
+// 2. Assemblies loaded directly or indirectly by the managed code - these are the most
+//    common case.  A path is obtained from assembly binding and the result is loaded
+//    via PEImage:
 //      a. Display name loads - these are metadata-based binds
 //      b. Path loads - these are loaded from an explicit path
 //
@@ -79,20 +81,14 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // --------------------------------------------------------------------------------
 
-class PEAssembly
+class PEAssembly final
 {
     // ------------------------------------------------------------
     // SOS support
     // ------------------------------------------------------------
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEAssembly)
 
-    friend class DomainFile;
-    friend class DomainAssembly;
-    friend class Assembly;
-    friend class COMDynamicWrite;
-    friend class AssemblyNative;
-    friend class Module;
-    friend class ClrDataAccess;
+    // friend class Assembly;
 
 public:
 
@@ -380,14 +376,6 @@ private:
     // Loader access API
     // ------------------------------------------------------------
 
-    // For use inside LoadLibrary callback
-    void SetLoadedHMODULE(HMODULE hMod);
-
-    // Helper for creating metadata for CreateDynamic
-    static void DefineEmitScope(
-        GUID   iid,
-        void** ppEmit);
-
     // Private helper for crufty exception handling reasons
     static PEAssembly* DoOpenSystem();
 
@@ -436,15 +424,24 @@ private:
     // IID_IMDInternalImportENC
     BOOL                     m_MDImportIsRW_Debugger_Use_Only;
 
+    union
+    {
 #ifndef DACCESS_COMPILE
-    IMDInternalImport* m_pMDImport;
+        IMDInternalImport* m_pMDImport;
 #else
-    IMDInternalImport* m_pMDImport_UseAccessor;
+        // NB: m_pMDImport_UseAccessor appears to be never assigned a value, but its purpose is just
+        //     to be a placeholder that has the same type and offset as m_pMDImport.
+        // 
+        //     The field has a different name so it would be an error to use directly.
+        //     Only GetMDInternalRWAddress is supposed to use it via (TADDR)m_pMDImport_UseAccessor,
+        //     which at that point will match the m_pMDImport on the debuggee side.
+        //     See more scary comments in GetMDInternalRWAddress.
+        IMDInternalImport* m_pMDImport_UseAccessor;
 #endif
+    };
 
     IMetaDataImport2* m_pImporter;
     IMetaDataEmit* m_pEmitter;
-    SimpleRWLock* m_pMetadataLock;
 
     Volatile<LONG>           m_refCount;
     bool                     m_isSystem;

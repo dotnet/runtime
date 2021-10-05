@@ -61,7 +61,7 @@ inline Assembly* DomainAssembly::GetAssembly()
 inline ULONG DomainAssembly::HashIdentity()
 {
     WRAPPER_NO_CONTRACT;
-    return GetPEAssebmly()->HashIdentity();
+    return GetPEAssembly()->HashIdentity();
 }
 
 inline BOOL DomainAssembly::IsCollectible()

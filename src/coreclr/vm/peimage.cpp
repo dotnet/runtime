@@ -24,6 +24,27 @@ PtrHashMap *PEImage::s_Images = NULL;
 CrstStatic  PEImage::s_ijwHashLock;
 PtrHashMap *PEImage::s_ijwFixupDataHash;
 
+#ifndef TARGET_UNIX
+namespace
+{
+    void static GetPathFromDll(HINSTANCE hMod, SString& result)
+    {
+        CONTRACTL
+        {
+            PRECONDITION(CheckPointer(hMod));
+            PRECONDITION(CheckValue(result));
+            THROWS;
+            GC_NOTRIGGER;
+            MODE_ANY;
+            INJECT_FAULT(COMPlusThrowOM(););
+        }
+        CONTRACTL_END;
+
+        WszGetModuleFileName(hMod, result);
+    }
+}
+#endif // !TARGET_UNIX
+
 /* static */
 void PEImage::Startup()
 {
@@ -58,22 +79,6 @@ CHECK PEImage::CheckStartup()
 {
     WRAPPER_NO_CONTRACT;
     CHECK(s_Images != NULL);
-    CHECK_OK;
-}
-
-/* static */
-CHECK PEImage::CheckLayoutFormat(PEDecoder *pe)
-{
-    CONTRACT_CHECK
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_CHECK_END;
-
-    CHECK(pe->IsILOnly());
     CHECK_OK;
 }
 
@@ -243,27 +248,6 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
 
     CHECK_OK;
 }
-
-#ifndef TARGET_UNIX
-/* static */
-void PEImage::GetPathFromDll(HINSTANCE hMod, SString &result)
-{
-    CONTRACTL
-    {
-        PRECONDITION(CheckStartup());
-        PRECONDITION(CheckPointer(hMod));
-        PRECONDITION(CheckValue(result));
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACTL_END;
-
-    WszGetModuleFileName(hMod, result);
-
-}
-#endif // !TARGET_UNIX
 
 /* static */
 BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
@@ -1109,18 +1093,6 @@ void PEImage::Load()
                 SetLayout(IMAGE_LOADED,PEImageLayout::Load(this,TRUE));
         }
     }
-}
-
-void PEImage::SetLoadedHMODULE(HMODULE hMod)
-{
-    WRAPPER_NO_CONTRACT;
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    if(m_pLayouts[IMAGE_LOADED])
-    {
-        _ASSERTE(m_pLayouts[IMAGE_LOADED]->GetBase()==hMod);
-        return;
-    }
-    SetLayout(IMAGE_LOADED,PEImageLayout::CreateFromHMODULE(hMod,this,TRUE));
 }
 
 void PEImage::LoadFromMapped()

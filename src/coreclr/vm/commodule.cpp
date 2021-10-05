@@ -651,12 +651,12 @@ void QCALLTYPE COMModule::GetScopeName(QCall::ModuleHandle pModule, QCall::Strin
 
     BEGIN_QCALL;
 
-    LPCSTR    szName = NULL;
     if (!pModule->GetMDImport()->IsValidToken(pModule->GetMDImport()->GetModuleFromScope()))
     {
         ThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
+    LPCSTR    szName = NULL;
     IfFailThrow(pModule->GetMDImport()->GetScopeProps(&szName, 0));
     retString.Set(szName);
 

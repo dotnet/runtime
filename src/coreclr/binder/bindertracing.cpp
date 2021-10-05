@@ -147,7 +147,7 @@ namespace
         DomainAssembly *parentAssembly = spec->GetParentAssembly();
         if (parentAssembly != nullptr)
         {
-            PEAssembly *pPEAssembly = parentAssembly->GetPEAssebmly();
+            PEAssembly *pPEAssembly = parentAssembly->GetPEAssembly();
             _ASSERTE(pPEAssembly != nullptr);
             pPEAssembly->GetDisplayName(request.RequestingAssembly);
 

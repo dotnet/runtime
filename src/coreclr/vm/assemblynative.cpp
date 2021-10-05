@@ -157,7 +157,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     // Set the caller's assembly to be CoreLib
     DomainAssembly *pCallersAssembly = SystemDomain::System()->SystemAssembly()->GetDomainAssembly();
-    PEAssembly *pParentAssembly = pCallersAssembly->GetPEAssebmly();
+    PEAssembly *pParentAssembly = pCallersAssembly->GetPEAssembly();
 
     // Initialize the AssemblySpec
     AssemblySpec spec;
@@ -351,7 +351,7 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
     BEGIN_QCALL;
 
     {
-        retString.Set(pAssembly->GetPEAssebmly()->GetPath());
+        retString.Set(pAssembly->GetPEAssembly()->GetPath());
     }
 
     END_QCALL;
@@ -449,7 +449,7 @@ FCIMPL1(FC_BOOL_RET, AssemblyNative::IsDynamic, AssemblyBaseObject* pAssemblyUNS
     if (refAssembly == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    FC_RETURN_BOOL(refAssembly->GetDomainAssembly()->GetPEAssebmly()->IsDynamic());
+    FC_RETURN_BOOL(refAssembly->GetDomainAssembly()->GetPEAssembly()->IsDynamic());
 }
 FCIMPLEND
 
@@ -461,7 +461,7 @@ void QCALLTYPE AssemblyNative::GetVersion(QCall::AssemblyHandle pAssembly, INT32
 
     UINT16 major=0xffff, minor=0xffff, build=0xffff, revision=0xffff;
 
-    pAssembly->GetPEAssebmly()->GetVersion(&major, &minor, &build, &revision);
+    pAssembly->GetPEAssembly()->GetVersion(&major, &minor, &build, &revision);
 
     *pMajorVersion = major;
     *pMinorVersion = minor;
@@ -478,7 +478,7 @@ void QCALLTYPE AssemblyNative::GetPublicKey(QCall::AssemblyHandle pAssembly, QCa
     BEGIN_QCALL;
 
     DWORD cbPublicKey = 0;
-    const void *pbPublicKey = pAssembly->GetPEAssebmly()->GetPublicKey(&cbPublicKey);
+    const void *pbPublicKey = pAssembly->GetPEAssembly()->GetPublicKey(&cbPublicKey);
     retPublicKey.SetByteArray((BYTE *)pbPublicKey, cbPublicKey);
 
     END_QCALL;
@@ -499,7 +499,7 @@ void QCALLTYPE AssemblyNative::GetLocale(QCall::AssemblyHandle pAssembly, QCall:
 
     BEGIN_QCALL;
 
-    LPCUTF8 pLocale = pAssembly->GetPEAssebmly()->GetLocale();
+    LPCUTF8 pLocale = pAssembly->GetPEAssembly()->GetLocale();
     if(pLocale)
     {
         retString.Set(pLocale);
@@ -519,7 +519,7 @@ BOOL QCALLTYPE AssemblyNative::GetCodeBase(QCall::AssemblyHandle pAssembly, QCal
     StackSString codebase;
 
     {
-        ret = pAssembly->GetPEAssebmly()->GetCodeBase(codebase);
+        ret = pAssembly->GetPEAssembly()->GetCodeBase(codebase);
     }
 
     retString.Set(codebase);
@@ -534,7 +534,7 @@ INT32 QCALLTYPE AssemblyNative::GetHashAlgorithm(QCall::AssemblyHandle pAssembly
 
     INT32 retVal=0;
     BEGIN_QCALL;
-    retVal = pAssembly->GetPEAssebmly()->GetHashAlgId();
+    retVal = pAssembly->GetPEAssembly()->GetHashAlgId();
     END_QCALL;
     return retVal;
 }
@@ -545,7 +545,7 @@ INT32 QCALLTYPE AssemblyNative::GetFlags(QCall::AssemblyHandle pAssembly)
 
     INT32 retVal=0;
     BEGIN_QCALL;
-    retVal = pAssembly->GetPEAssebmly()->GetFlags();
+    retVal = pAssembly->GetPEAssembly()->GetFlags();
     END_QCALL;
     return retVal;
 }
@@ -639,9 +639,9 @@ void QCALLTYPE AssemblyNative::GetModules(QCall::AssemblyHandle pAssembly, BOOL 
     mdFile mdFile;
     while (pAssembly->GetMDImport()->EnumNext(&phEnum, &mdFile))
     {
-        DomainFile *pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile, !fLoadIfNotFound);
-
-        if (pModule) {
+        if (fLoadIfNotFound)
+        {
+            DomainFile* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
             modules.Append(pModule);
         }
     }
@@ -1065,7 +1065,7 @@ void QCALLTYPE AssemblyNative::GetFullName(QCall::AssemblyHandle pAssembly, QCal
     BEGIN_QCALL;
 
     StackSString name;
-    pAssembly->GetPEAssebmly()->GetDisplayName(name);
+    pAssembly->GetPEAssembly()->GetDisplayName(name);
     retString.Set(name);
 
     END_QCALL;
@@ -1136,7 +1136,7 @@ void QCALLTYPE AssemblyNative::GetImageRuntimeVersion(QCall::AssemblyHandle pAss
     BEGIN_QCALL;
 
     // Retrieve the PEAssembly from the assembly.
-    PEAssembly* pPEAssembly = pAssembly->GetPEAssebmly();
+    PEAssembly* pPEAssembly = pAssembly->GetPEAssembly();
     PREFIX_ASSUME(pPEAssembly!=NULL);
 
     LPCSTR pszVersion = NULL;
@@ -1253,7 +1253,7 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
 
     _ASSERTE(pAssembly != NULL);
 
-    AssemblyBinder* pAssemblyBinder = pAssembly->GetPEAssebmly()->GetAssemblyBinder();
+    AssemblyBinder* pAssemblyBinder = pAssembly->GetPEAssembly()->GetAssemblyBinder();
 
     if (!pAssemblyBinder->IsDefault())
     {
@@ -1284,7 +1284,7 @@ BOOL QCALLTYPE AssemblyNative::InternalTryGetRawMetadata(
     _ASSERTE(lengthRef != nullptr);
 
     static_assert_no_msg(sizeof(*lengthRef) == sizeof(COUNT_T));
-    metadata = assembly->GetPEAssebmly()->GetLoadedMetadata(reinterpret_cast<COUNT_T *>(lengthRef));
+    metadata = assembly->GetPEAssembly()->GetLoadedMetadata(reinterpret_cast<COUNT_T *>(lengthRef));
     *blobRef = reinterpret_cast<UINT8 *>(const_cast<PTR_VOID>(metadata));
     _ASSERTE(*lengthRef >= 0);
 

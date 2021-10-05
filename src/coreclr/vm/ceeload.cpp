@@ -3485,7 +3485,7 @@ Module *Module::GetModuleIfLoaded(mdFile kFile)
 
 #ifndef DACCESS_COMPILE
 
-DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile, BOOL bindOnly/*=FALSE*/)
+DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
 {
     CONTRACT(DomainFile *)
     {
@@ -3495,34 +3495,28 @@ DomainFile *Module::LoadModule(AppDomain *pDomain, mdFile kFile, BOOL bindOnly/*
         MODE_ANY;
         PRECONDITION(TypeFromToken(kFile) == mdtFile
                      || TypeFromToken(kFile) == mdtModuleRef);
-        POSTCONDITION(CheckPointer(RETVAL, bindOnly ? NULL_OK : NULL_NOT_OK));
     }
     CONTRACT_END;
 
-    if (bindOnly)
+    LPCSTR psModuleName=NULL;
+    if (TypeFromToken(kFile) == mdtModuleRef)
     {
-        RETURN  NULL;
+        // This is a moduleRef
+        IfFailThrow(GetMDImport()->GetModuleRefProps(kFile, &psModuleName));
     }
     else
     {
-        LPCSTR psModuleName=NULL;
-        if (TypeFromToken(kFile) == mdtModuleRef)
-        {
-            // This is a moduleRef
-            IfFailThrow(GetMDImport()->GetModuleRefProps(kFile, &psModuleName));
-        }
-        else
-        {
-           // This is mdtFile
-           IfFailThrow(GetAssembly()->GetManifestImport()->GetFileProps(kFile,
-                                      &psModuleName,
-                                      NULL,
-                                      NULL,
-                                      NULL));
-        }
-        SString name(SString::Utf8, psModuleName);
-        EEFileLoadException::Throw(name, COR_E_MULTIMODULEASSEMBLIESDIALLOWED, NULL);
+        // This is mdtFile
+        IfFailThrow(GetAssembly()->GetManifestImport()->GetFileProps(kFile,
+                                    &psModuleName,
+                                    NULL,
+                                    NULL,
+                                    NULL));
     }
+
+    SString name(SString::Utf8, psModuleName);
+    EEFileLoadException::Throw(name, COR_E_MULTIMODULEASSEMBLIESDIALLOWED, NULL);
+    RETURN NULL;
 }
 #endif // !DACCESS_COMPILE
 

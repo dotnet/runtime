@@ -128,74 +128,6 @@ void PEAssembly::EnsureLoaded()
     RETURN;
 }
 
-void PEAssembly::SetLoadedHMODULE(HMODULE hMod)
-{
-    CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(hMod));
-        POSTCONDITION(HasLoadedPEImage());
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    // See if the image is an internal PEImage.
-    GetPEImage()->SetLoadedHMODULE(hMod);
-
-    RETURN;
-}
-
-/* static */
-void PEAssembly::DefineEmitScope(
-    GUID   iid,
-    void **ppEmit)
-{
-    CONTRACT_VOID
-    {
-        PRECONDITION(CheckPointer(ppEmit));
-        POSTCONDITION(CheckPointer(*ppEmit));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
-    }
-    CONTRACT_END;
-
-    SafeComHolder<IMetaDataDispenserEx> pDispenser;
-
-    // Get the Dispenser interface.
-    MetaDataGetDispenser(
-        CLSID_CorMetaDataDispenser,
-        IID_IMetaDataDispenserEx,
-        (void **)&pDispenser);
-    if (pDispenser == NULL)
-    {
-        ThrowOutOfMemory();
-    }
-
-    // Set the option on the dispenser turn on duplicate check for TypeDef and moduleRef
-    VARIANT varOption;
-    V_VT(&varOption) = VT_UI4;
-    V_I4(&varOption) = MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType | MDDupAssemblyRef | MDDupPermission | MDDupFile;
-    IfFailThrow(pDispenser->SetOption(MetaDataCheckDuplicatesFor, &varOption));
-
-    // Set minimal MetaData size
-    V_VT(&varOption) = VT_UI4;
-    V_I4(&varOption) = MDInitialSizeMinimal;
-    IfFailThrow(pDispenser->SetOption(MetaDataInitialSize, &varOption));
-
-    // turn on the thread safety!
-    V_I4(&varOption) = MDThreadSafetyOn;
-    IfFailThrow(pDispenser->SetOption(MetaDataThreadSafetyOptions, &varOption));
-
-    IfFailThrow(pDispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, iid, (IUnknown **)ppEmit));
-
-    RETURN;
-} // PEAssembly::DefineEmitScope
-
 // ------------------------------------------------------------
 // Identity
 // ------------------------------------------------------------
@@ -781,7 +713,6 @@ PEAssembly::PEAssembly(
     m_pMDImport = NULL;
     m_pImporter = NULL;
     m_pEmitter = NULL;
-    m_pMetadataLock = ::new SimpleRWLock(PREEMPTIVE, LOCK_TYPE_DEFAULT);
     m_refCount = 1;
     m_isSystem = isSystem;
     m_pHostAssembly = nullptr;
@@ -900,9 +831,6 @@ PEAssembly::~PEAssembly()
 
     if (m_PEImage != NULL)
         m_PEImage->Release();
-
-    if (m_pMetadataLock)
-        delete m_pMetadataLock;
 
     if (m_pHostAssembly != NULL)
         m_pHostAssembly->Release();
@@ -1259,12 +1187,7 @@ TADDR PEAssembly::GetMDInternalRWAddress()
         // 3) ASSUMPTION: We are assuming that no pointer adjustment is required to convert between
         //    IMDInternalImport*, IMDInternalImportENC* and MDInternalRW*. Ideally I was hoping to do this with a
         //    static_cast<> but the compiler complains that the ENC<->RW is an unrelated conversion.
-
-        // TODO: we used to return "m_pMDImport_UseAccessor" here, - a field that was never initialized to anything.
-        //       we should verify whether this codepath is actually reachable.
-        // return (TADDR)m_pMDImport_UseAccessor;
-        UNREACHABLE();
-        return 0;
+        return (TADDR)m_pMDImport_UseAccessor;
     }
 }
 #endif

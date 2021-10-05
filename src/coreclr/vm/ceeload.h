@@ -1431,7 +1431,7 @@ public:
 
     DomainAssembly * LoadAssembly(mdAssemblyRef kAssemblyRef);
     Module *GetModuleIfLoaded(mdFile kFile);
-    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile, BOOL bindOnly = FALSE);
+    DomainFile *LoadModule(AppDomain *pDomain, mdFile kFile);
     PTR_Module LookupModule(mdToken kFile); //wrapper over GetModuleIfLoaded, takes modulerefs as well
     DWORD GetAssemblyRefFlags(mdAssemblyRef tkAssemblyRef);
 

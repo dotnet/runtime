@@ -62,8 +62,55 @@
 #ifndef DACCESS_COMPILE
 
 volatile uint32_t g_cAssemblies = 0;
-
 static CrstStatic g_friendAssembliesCrst;
+
+namespace
+{
+    static void DefineEmitScope(GUID iid, void** ppEmit)
+    {
+        CONTRACT_VOID
+        {
+            PRECONDITION(CheckPointer(ppEmit));
+            POSTCONDITION(CheckPointer(*ppEmit));
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+            INJECT_FAULT(COMPlusThrowOM(););
+        }
+        CONTRACT_END;
+
+        SafeComHolder<IMetaDataDispenserEx> pDispenser;
+
+        // Get the Dispenser interface.
+        MetaDataGetDispenser(
+            CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx,
+            (void**)&pDispenser);
+        if (pDispenser == NULL)
+        {
+            ThrowOutOfMemory();
+        }
+
+        // Set the option on the dispenser turn on duplicate check for TypeDef and moduleRef
+        VARIANT varOption;
+        V_VT(&varOption) = VT_UI4;
+        V_I4(&varOption) = MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType | MDDupAssemblyRef | MDDupPermission | MDDupFile;
+        IfFailThrow(pDispenser->SetOption(MetaDataCheckDuplicatesFor, &varOption));
+
+        // Set minimal MetaData size
+        V_VT(&varOption) = VT_UI4;
+        V_I4(&varOption) = MDInitialSizeMinimal;
+        IfFailThrow(pDispenser->SetOption(MetaDataInitialSize, &varOption));
+
+        // turn on the thread safety!
+        V_I4(&varOption) = MDThreadSafetyOn;
+        IfFailThrow(pDispenser->SetOption(MetaDataThreadSafetyOptions, &varOption));
+
+        IfFailThrow(pDispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, iid, (IUnknown**)ppEmit));
+
+        RETURN;
+    }
+}
 
 void Assembly::Initialize()
 {
@@ -388,7 +435,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
     // not be ready to be hashed!
 
     SafeComHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-    PEAssembly::DefineEmitScope(
+    DefineEmitScope(
         IID_IMetaDataAssemblyEmit,
         &pAssemblyEmit);
 
@@ -957,14 +1004,14 @@ Module * Assembly::FindModuleByTypeRef(
             }
 
 #ifndef DACCESS_COMPILE
-            DomainFile * pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType, loadFlag!=Loader::Load);
-            if (pActualDomainFile == NULL)
+            if (loadFlag == Loader::Load)
             {
-                RETURN NULL;
+                DomainFile* pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType);
+                RETURN(pActualDomainFile->GetModule());
             }
             else
             {
-                RETURN(pActualDomainFile->GetModule());
+                RETURN NULL;
             }
 
 #else //DACCESS_COMPILE
@@ -1648,7 +1695,7 @@ MethodDesc* Assembly::GetEntryPoint()
     Module *pModule = NULL;
     switch(TypeFromToken(mdEntry)) {
     case mdtFile:
-        pModule = m_pManifest->LoadModule(::GetAppDomain(), mdEntry, FALSE)->GetModule();
+        pModule = m_pManifest->LoadModule(::GetAppDomain(), mdEntry)->GetModule();
 
         mdEntry = pModule->GetEntryPointToken();
         if ( (TypeFromToken(mdEntry) != mdtMethodDef) ||

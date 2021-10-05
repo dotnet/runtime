@@ -88,7 +88,6 @@ public:
     void   Load();
     void   LoadNoFile();
     void   LoadFromMapped();
-    void   SetLoadedHMODULE(HMODULE hMod);
 #endif
 
     BOOL IsOpened();
@@ -101,9 +100,6 @@ public:
     ULONG GetPathHash();
     const SString& GetPath();
     const SString& GetPathToLoad();
-#ifndef TARGET_UNIX
-    static void GetPathFromDll(HINSTANCE hMod, SString& result);
-#endif // !TARGET_UNIX
 
     BOOL IsFile();
     BOOL IsInBundle() const;
@@ -147,7 +143,6 @@ public:
     // Check utilites
     static CHECK CheckStartup();
     static CHECK CheckCanonicalFullPath(const SString& path);
-    static CHECK CheckLayoutFormat(PEDecoder* pe);
 
     CHECK CheckFormat();
     CHECK CheckILFormat();
@@ -214,7 +209,7 @@ public:
     {
     private:
         Crst            m_lock;
-        void* m_base;
+        void*           m_base;
         DWORD           m_flags;
         PTR_LoaderHeap  m_DllThunkHeap;
 

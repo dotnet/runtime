@@ -90,7 +90,7 @@ class DomainFile
     PEAssembly *GetPEAssembly()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return m_pPEAssembly;
+        return PTR_PEAssembly(m_pPEAssembly);
     }
 
     IMDInternalImport *GetMDImport()
@@ -299,9 +299,6 @@ class DomainFile
     void SetProfilerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|= PROFILER_NOTIFIED; }
     void SetDebuggerNotified() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NOTIFIED; }
     void SetShouldNotifyDebugger() { LIMITED_METHOD_CONTRACT; m_notifyflags|=DEBUGGER_NEEDNOTIFICATION; }
-#ifndef DACCESS_COMPILE
-    void UpdatePEFileWorker(PTR_PEAssembly pFile);
-#endif
 
     // ------------------------------------------------------------
     // Instance data
@@ -416,12 +413,6 @@ public:
     // ------------------------------------------------------------
     // Public API
     // ------------------------------------------------------------
-
-    PEAssembly *GetPEAssebmly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return PTR_PEAssembly(m_pPEAssembly);
-    }
 
     LoaderAllocator *GetLoaderAllocator()
     {

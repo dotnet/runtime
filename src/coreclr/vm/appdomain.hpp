@@ -2374,7 +2374,7 @@ private:
         static key_t GetKey(element_t const & elem)
         {
             STATIC_CONTRACT_WRAPPER;
-            return elem->GetPEAssebmly()->GetHostAssembly();
+            return elem->GetPEAssembly()->GetHostAssembly();
         }
 
         static BOOL Equals(key_t key1, key_t key2)
