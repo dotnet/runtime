@@ -18,8 +18,8 @@ namespace System.Text.Json
         // needs to be expanded\doubled because it is not large enough to write the current property or element.
         // We check for flush after each JSON property and element is written to the buffer.
         // Once the buffer is expanded to contain the largest single element\property, a 90% thresold
-        // means the buffer may be expanded a maximum of 4 times: 1-(1\(2^4))==.9375.
-        private const float FlushThreshold = .9f;
+        // means the buffer may be expanded a maximum of 4 times: 1-(1/(2^4))==.9375.
+        private const float FlushThreshold = .90f;
 
         /// <summary>
         /// Converts the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
@@ -329,8 +329,18 @@ namespace System.Text.Json
                         try
                         {
                             isFinalBlock = WriteCore(converter, writer, value, options, ref state);
-                            await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-                            bufferWriter.Clear();
+
+                            if (state.SuppressFlush)
+                            {
+                                Debug.Assert(!isFinalBlock);
+                                Debug.Assert(state.PendingTask is not null);
+                                state.SuppressFlush = false;
+                            }
+                            else
+                            {
+                                await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
+                                bufferWriter.Clear();
+                            }
                         }
                         finally
                         {

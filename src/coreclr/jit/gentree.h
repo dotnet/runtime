@@ -1945,6 +1945,8 @@ public:
     template <typename T>
     void BashToConst(T value, var_types type = TYP_UNDEF);
 
+    void BashToZeroConst(var_types type);
+
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
     static void ReportOperBashing(FILE* fp);
@@ -5182,20 +5184,39 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
-    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+    GenTreeHWIntrinsic(var_types      type,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize,
+                       bool           isSimdAsHWIntrinsic)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
+
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
+        }
     }
 
-    GenTreeHWIntrinsic(
-        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+    GenTreeHWIntrinsic(var_types      type,
+                       GenTree*       op1,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize,
+                       bool           isSimdAsHWIntrinsic)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
+
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        }
+
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
         }
     }
 
@@ -5204,13 +5225,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                        GenTree*       op2,
                        NamedIntrinsic hwIntrinsicID,
                        CorInfoType    simdBaseJitType,
-                       unsigned       simdSize)
+                       unsigned       simdSize,
+                       bool           isSimdAsHWIntrinsic)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
+
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        }
+
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
         }
     }
 
@@ -5224,6 +5252,11 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                     // false otherwise
     bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
                                           // MemoryStore semantics, false otherwise
+
+    bool IsSimdAsHWIntrinsic() const
+    {
+        return (gtFlags & GTF_SIMDASHW_OP) != 0;
+    }
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()

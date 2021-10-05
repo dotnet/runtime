@@ -688,7 +688,7 @@ namespace System
 
         public bool Equals(DateTime value)
         {
-            return Ticks == value.Ticks;
+            return this == value;
         }
 
         // Compares two DateTime values for equality. Returns true if
@@ -697,7 +697,7 @@ namespace System
         //
         public static bool Equals(DateTime t1, DateTime t2)
         {
-            return t1.Ticks == t2.Ticks;
+            return t1 == t2;
         }
 
         public static DateTime FromBinary(long dateData)
@@ -1401,9 +1401,9 @@ namespace System
 
         public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.Ticks - d2.Ticks);
 
-        public static bool operator ==(DateTime d1, DateTime d2) => d1.Ticks == d2.Ticks;
+        public static bool operator ==(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) == 0;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => d1.Ticks != d2.Ticks;
+        public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 

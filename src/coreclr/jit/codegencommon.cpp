@@ -6283,6 +6283,15 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
                 continue;
             }
 
+            // We currently don't expect to see multi-reg args in OSR methods, as struct
+            // promotion is disabled and so any struct arg just uses the spilled location
+            // on the original frame.
+            //
+            // If we ever enable promotion we'll need to generalize what follows to copy each
+            // field from the original frame to its OSR home.
+            //
+            assert(!varDsc->lvIsMultiRegArg);
+
             if (!VarSetOps::IsMember(compiler, compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
             {
                 JITDUMP("---OSR--- V%02u (reg) not live at entry\n", varNum);
@@ -6302,7 +6311,8 @@ void CodeGen::genZeroInitFrame(int untrLclHi, int untrLclLo, regNumber initReg, 
             }
 
             // Note we are always reading from the original frame here
-            const var_types lclTyp  = genActualType(varDsc->lvType);
+            //
+            const var_types lclTyp  = varDsc->GetActualRegisterType();
             const emitAttr  size    = emitTypeSize(lclTyp);
             const int       stkOffs = patchpointInfo->Offset(lclNum) + fieldOffset;
 
