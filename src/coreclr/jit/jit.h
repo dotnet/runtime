@@ -530,7 +530,7 @@ const bool dspGCtbls = true;
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
 #define ISMETHOD(name) !strcmp(JitTls::GetCompiler()->info.compMethodName, name)
-#define ISMETHODHASH(hash) !strcmp(JitTls::GetCompiler()->info.compMethodHash, hash)
+#define ISMETHODHASH(hash) (JitTls::GetCompiler()->impInlineRoot()->info.compMethodHash() == hash)
 #else // !DEBUG
 #define JITDUMP(...)
 #define JITDUMPEXEC(x)
