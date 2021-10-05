@@ -1545,19 +1545,30 @@ void Compiler::fgRemoveEmptyBlocks()
                     tryEntry     = nextTryEntry;
                 }
 
-                // Transform the method entry flow
+                // Transform the method entry flow, if necessary.
+                //
+                // Note even if the OSR is in a nested try, if it's a mutual protect try
+                // it can be reached directly from "outside".
                 //
                 assert(fgFirstBB->bbJumpDest == osrEntry);
                 assert(fgFirstBB->bbJumpKind == BBJ_ALWAYS);
-                assert(entryJumpTarget != osrEntry);
 
-                fgFirstBB->bbJumpDest = entryJumpTarget;
-                fgRemoveRefPred(osrEntry, fgFirstBB);
-                fgAddRefPred(entryJumpTarget, fgFirstBB);
+                if (entryJumpTarget != osrEntry)
+                {
+                    fgFirstBB->bbJumpDest = entryJumpTarget;
+                    fgRemoveRefPred(osrEntry, fgFirstBB);
+                    fgAddRefPred(entryJumpTarget, fgFirstBB);
 
-                JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB
-                        " via step blocks.\n",
-                        fgFirstBB->bbNum, fgOSREntryBB->bbNum);
+                    JITDUMP("OSR: redirecting flow from method entry " FMT_BB " to OSR entry " FMT_BB
+                            " via step blocks.\n",
+                            fgFirstBB->bbNum, fgOSREntryBB->bbNum);
+                }
+                else
+                {
+                    JITDUMP("OSR: leaving direct flow from method entry " FMT_BB " to OSR entry " FMT_BB
+                            ", no step blocks needed.\n",
+                            fgFirstBB->bbNum, fgOSREntryBB->bbNum);
+                }
             }
             else
             {
