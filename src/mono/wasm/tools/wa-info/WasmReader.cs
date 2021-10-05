@@ -825,6 +825,9 @@ namespace WebAssemblyInfo
                 return false;
 
             var code = funcsCode[idx - imports.Length];
+            if (!code.EnsureCodeReaded(this))
+                return false;
+
             foreach (var inst in code.Instructions)
             {
                 if (inst.Opcode == Opcode.Call && inst.Idx == calledIdx)

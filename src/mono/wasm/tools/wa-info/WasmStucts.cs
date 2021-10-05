@@ -156,7 +156,7 @@ namespace WebAssemblyInfo
         public UInt32 Size;
         public long Offset;
 
-        public void ReadCode(WasmReader reader)
+        void ReadCode(WasmReader reader)
         {
             reader.Reader.BaseStream.Seek(Offset, SeekOrigin.Begin);
 
@@ -184,15 +184,22 @@ namespace WebAssemblyInfo
                 Console.WriteLine(ToString().Indent("    "));
         }
 
-        public string ToString(WasmReader? reader)
+        public bool EnsureCodeReaded (WasmReader? reader)
         {
             if (Instructions == null)
             {
                 if (reader == null)
-                    return string.Empty;
+                    return false;
 
                 ReadCode(reader);
             }
+
+            return true;
+        }
+
+        public string ToString(WasmReader? reader)
+        {
+            EnsureCodeReaded(reader);
 
             StringBuilder sb = new();
 
