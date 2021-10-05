@@ -42,7 +42,7 @@ steps:
   #Unzip the nuget packages to make the actual runtimes accessible
   - task: ExtractFiles@1
     inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono*.nupkg
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/
         overwriteExistingFiles: true
 
@@ -78,7 +78,7 @@ steps:
 
 
   - script: |
-      ../dotnet.sh build -bl:MauiAndroid.binlog -f net6.0-android -o AndroidBuildOutput
+      ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
     condition: succeededOrFailed()
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
@@ -90,7 +90,7 @@ steps:
       artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting #
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting # TODO Make the APK
         includeRootFolder: true #
         displayName: Maui Android App #
         artifactName: MauiAndroidApp #
