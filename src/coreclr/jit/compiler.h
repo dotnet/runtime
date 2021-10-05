@@ -5361,6 +5361,8 @@ public:
     // rather than the "use" SSA number recorded in the tree "lcl".
     inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
 
+    inline bool PreciseRefCountsRequired();
+
     // Performs SSA conversion.
     void fgSsaBuild();
 
