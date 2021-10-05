@@ -535,9 +535,26 @@ private:
                 return;
             }
 
-            likelihood = origCall->GetInlineCandidateInfo()->likelihood;
-            assert((likelihood >= 0) && (likelihood <= 100));
-            JITDUMP("Likelihood of correct guess is %u\n", likelihood);
+            assert(origCall->GetGDVCandidatesCount() > 0);
+
+            // likelihood field is only used by ScoutForChainedGdv that only supports monomorphic calls for now,
+            // hence, we only take likelihood of the first candidate here
+            likelihood = origCall->GetInlineCandidateInfo(0)->likelihood;
+
+            JITDUMP("\nLikelihoods of GDV candidates:");
+            assert(likelihood <= 100);
+            for (UINT8 candidateId = 0; candidateId < origCall->GetGDVCandidatesCount(); candidateId++)
+            {
+                const UINT32 currentLikelihood = origCall->GetInlineCandidateInfo(candidateId)->likelihood;
+                JITDUMP("\n\tCandidate %u - %u%%", candidateId, currentLikelihood);
+                if (candidateId > 0)
+                {
+                    const UINT32 prevLikelihood = origCall->GetInlineCandidateInfo(candidateId - 1)->likelihood;
+                    assert(prevLikelihood >= currentLikelihood);
+                    JITDUMP(" (relative likelihood %0.1f%%)", currentLikelihood * 100.0 / prevLikelihood);
+                }
+            }
+            JITDUMP("\n\n");
 
             const bool multipleCandidates = origCall->GetGDVCandidatesCount() > 1;
             const bool isChainedGdv =
