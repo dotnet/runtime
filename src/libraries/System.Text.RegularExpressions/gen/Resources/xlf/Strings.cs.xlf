@@ -14,12 +14,12 @@
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
         <source>(?({0}) ) malformed.</source>
-        <target state="new">(?({0}) ) malformed.</target>
+        <target state="translated">Odkaz (?({0}) ) byl poškozen.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReferenceNoPlaceholder">
         <source>Alternation has malformed reference.</source>
-        <target state="new">Alternation has malformed reference.</target>
+        <target state="translated">Alternace má nesprávně vytvořený odkaz.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReferenceNoPlaceholder">
         <source>Alternation has a reference to undefined group.</source>
-        <target state="new">Alternation has a reference to undefined group.</target>
+        <target state="translated">Alternace obsahuje odkaz na nedefinovanou skupinu.</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -84,27 +84,27 @@
       </trans-unit>
       <trans-unit id="Generic">
         <source>Regular expression parser error '{0}' at offset {1}.</source>
-        <target state="new">Regular expression parser error '{0}' at offset {1}.</target>
+        <target state="translated">Chyba analyzátoru regulárního výrazu {0} na posunu {1}.</target>
         <note />
       </trans-unit>
       <trans-unit id="IllegalDefaultRegexMatchTimeoutInAppDomain">
         <source>AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</source>
-        <target state="new">AppDomain data '{0}' contains the invalid value or object '{1}' for specifying a default matching timeout for System.Text.RegularExpressions.Regex.</target>
+        <target state="translated">Data domény aplikace {0} obsahují neplatnou hodnotu nebo objekt {1} pro určení výchozího časového limitu porovnávání pro třídu System.Text.RegularExpressions.Regex.</target>
         <note />
       </trans-unit>
       <trans-unit id="InsufficientClosingParentheses">
         <source>Not enough )'s.</source>
-        <target state="new">Not enough )'s.</target>
+        <target state="translated">Nedostatek uzavíracích závorek ).</target>
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOpeningParentheses">
         <source>Too many )'s.</source>
-        <target state="new">Too many )'s.</target>
+        <target state="translated">Příliš mnoho zavíracích závorek ).</target>
         <note />
       </trans-unit>
       <trans-unit id="InsufficientOrInvalidHexDigits">
         <source>Insufficient hexadecimal digits.</source>
-        <target state="new">Insufficient hexadecimal digits.</target>
+        <target state="translated">Nedostatek šestnáctkových číslic.</target>
         <note />
       </trans-unit>
       <trans-unit id="InternalError_ScanRegex">
@@ -114,37 +114,37 @@
       </trans-unit>
       <trans-unit id="InvalidEmptyArgument">
         <source>Argument {0} cannot be zero-length.</source>
-        <target state="new">Argument {0} cannot be zero-length.</target>
+        <target state="translated">Argument {0} nemůže mít nulovou délku.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidGroupingConstruct">
         <source>Unrecognized grouping construct.</source>
-        <target state="new">Unrecognized grouping construct.</target>
+        <target state="translated">Nerozpoznaný seskupovací konstrukt.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
         <source>C# LangVersion of 10 or greater is required</source>
-        <target state="new">C# LangVersion of 10 or greater is required</target>
+        <target state="translated">Je požadována verze jazyku C# LangVersion 10 nebo vyšší.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
         <source>The specified regex is invalid. '{0}'</source>
-        <target state="new">The specified regex is invalid. '{0}'</target>
+        <target state="translated">Zadaný regulární výraz je neplatný. {0}</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeMessage">
         <source>The RegexGeneratorAttribute is malformed</source>
-        <target state="new">The RegexGeneratorAttribute is malformed</target>
+        <target state="translated">Atribut RegexGeneratorAttribute je nesprávný.</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexGeneratorAttributeTitle">
         <source>Invalid RegexGenerator usage</source>
-        <target state="new">Invalid RegexGenerator usage</target>
+        <target state="translated">Neplatné použití RegexGenerator</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidUnicodePropertyEscape">
         <source>Incomplete \\p{X} character escape.</source>
-        <target state="new">Incomplete \\p{X} character escape.</target>
+        <target state="translated">Neúplné uvození znaků \\p{X}.</target>
         <note />
       </trans-unit>
       <trans-unit id="LengthNotNegative">
@@ -154,37 +154,37 @@
       </trans-unit>
       <trans-unit id="MakeException">
         <source>Invalid pattern '{0}' at offset {1}. {2}</source>
-        <target state="new">Invalid pattern '{0}' at offset {1}. {2}</target>
+        <target state="translated">Neplatný vzor {0} u posunu {1}. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="new">Malformed \\k&lt;...&gt; named back reference.</target>
+        <target state="translated">Chybně naformátovaný pojmenovaný zpětný odkaz \\k&lt;...&gt;.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
         <source>Malformed \\p{X} character escape.</source>
-        <target state="new">Malformed \\p{X} character escape.</target>
+        <target state="translated">Chybně formátovaná řídicí sekvence znaků \\p{X}.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingControlCharacter">
         <source>Missing control character.</source>
-        <target state="new">Missing control character.</target>
+        <target state="translated">Řídicí znak chybí.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleRegexGeneratorAttributesMessage">
         <source>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</source>
-        <target state="new">Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</target>
+        <target state="translated">Na stejnou metodu se uplatnilo několik RegexGeneratorAttributes, ale je povolena jenom jedna.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesized">
         <source>Nested quantifier '{0}'.</source>
-        <target state="new">Nested quantifier '{0}'.</target>
+        <target state="translated">Vnořený kvantifikátor {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="NestedQuantifiersNotParenthesizedNoPlaceholder">
         <source>Nested quantifier no parenthesized.</source>
-        <target state="new">Nested quantifier no parenthesized.</target>
+        <target state="translated">Vnořený kvantifikátor neobsahuje žádné závorky.</target>
         <note />
       </trans-unit>
       <trans-unit id="NoResultOnFailed">
@@ -204,7 +204,7 @@
       </trans-unit>
       <trans-unit id="PlatformNotSupported_CompileToAssembly">
         <source>This platform does not support writing compiled regular expressions to an assembly.</source>
-        <target state="new">This platform does not support writing compiled regular expressions to an assembly.</target>
+        <target state="translated">Tato platforma nepodporuje zápis zkompilovaných regulárních výrazů do sestavení.</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
@@ -224,12 +224,12 @@
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
         <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="new">Regex method must be partial, parameterless, non-generic, and return Regex</target>
+        <target state="translated">Metoda regulárního výrazu musí být částečná, bez parametrů, negenerická a musí vracet regulární výraz.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">
         <source>Replacement pattern error.</source>
-        <target state="new">Replacement pattern error.</target>
+        <target state="translated">Chyba vzorku pro náhradu.</target>
         <note />
       </trans-unit>
       <trans-unit id="ReversedCharacterRange">
@@ -244,22 +244,22 @@
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRange">
         <source>Cannot include class \\{0} in character range.</source>
-        <target state="new">Cannot include class \\{0} in character range.</target>
+        <target state="translated">Do rozsahu znaků nejde zahrnout třídu \\{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="ShorthandClassInCharacterRangeNoPlaceholder">
         <source>Cannot include class in character range.</source>
-        <target state="new">Cannot include class in character range.</target>
+        <target state="translated">Do rozsahu znaků nejde zahrnout třídu.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReference">
         <source>Reference to undefined group name '{0}'.</source>
-        <target state="new">Reference to undefined group name '{0}'.</target>
+        <target state="translated">Odkaz na nedefinovaný název skupiny {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNamedReferenceNoPlaceholder">
         <source>Reference to undefined group name.</source>
-        <target state="new">Reference to undefined group name.</target>
+        <target state="translated">Odkaz na nedefinovaný název skupiny.</target>
         <note />
       </trans-unit>
       <trans-unit id="UndefinedNumberedReference">
@@ -269,12 +269,12 @@
       </trans-unit>
       <trans-unit id="UndefinedNumberedReferenceNoPlaceholder">
         <source>Reference to undefined group number.</source>
-        <target state="new">Reference to undefined group number.</target>
+        <target state="translated">Odkaz na nedefinované číslo skupiny.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnescapedEndingBackslash">
         <source>Illegal \\ at end of pattern.</source>
-        <target state="new">Illegal \\ at end of pattern.</target>
+        <target state="translated">Znak \\ na konci vzorku je neplatný.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnexpectedOpcode">
@@ -284,27 +284,27 @@
       </trans-unit>
       <trans-unit id="UnrecognizedControlCharacter">
         <source>Unrecognized control character.</source>
-        <target state="new">Unrecognized control character.</target>
+        <target state="translated">Nerozpoznaný řídicí znak.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedEscape">
         <source>Unrecognized escape sequence \\{0}.</source>
-        <target state="new">Unrecognized escape sequence \\{0}.</target>
+        <target state="translated">Nerozpoznaná řídicí sekvence \\{0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodeProperty">
         <source>Unknown property '{0}'.</source>
-        <target state="new">Unknown property '{0}'.</target>
+        <target state="translated">Neznámá vlastnost {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnrecognizedUnicodePropertyNoPlaceholder">
         <source>Unknown property Unicode property.</source>
-        <target state="new">Unknown property Unicode property.</target>
+        <target state="translated">Neznámá vlastnost Unicode vlastnosti.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnterminatedBracket">
         <source>Unterminated [] set.</source>
-        <target state="new">Unterminated [] set.</target>
+        <target state="translated">Nedokončená [] sada.</target>
         <note />
       </trans-unit>
       <trans-unit id="UnterminatedComment">
