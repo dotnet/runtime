@@ -38,11 +38,20 @@ steps:
       cleanTargetFolder: false
       targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
       flattenFolders: true
+  
+  - script: |
+      for file in *.nupkg
+        do     
+          mv -v "$file" "${file%.nupkg}.zip" 
+        done
+    displayName: Update File Extensions
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+    
 
   #Unzip the nuget packages to make the actual runtimes accessible
   - task: ExtractFiles@1
     inputs:
-        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono*.nupkg
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono*.zip
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/
         overwriteExistingFiles: true
         cleanDestinationFolder: false
