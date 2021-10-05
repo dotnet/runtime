@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.Build.NoTargets">
   <PropertyGroup>
-    <CreateSymbolsArchive Condition="'$(DotNetBuildFromSource)' != 'true'">true</CreateSymbolsArchive>
+	<!-- When KeepNativeSymbols is set, debug symbols are kept in the .so files. So when it is true, we don't need a symbols archive. -->
+    <CreateSymbolsArchive Condition="'$(KeepNativeSymbols)' != 'true'">true</CreateSymbolsArchive>
   </PropertyGroup>
 
   <ItemGroup>
