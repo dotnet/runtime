@@ -6,6 +6,8 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
+    <Language>C#</Language>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -844,13 +846,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Import Project="$(RepoRoot)/src/tests/Common/tests.targets" />
   <Import Project="$(RepoRoot)/src/tests/Common/publishdependency.targets" />
 
-  <Target Name="CreateTestOverlay">
-    <PropertyGroup>
-      <Language>C#</Language>
-      <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    </PropertyGroup>
-    <CallTarget Targets="CopyDependencyToCoreRoot" />
-  </Target>
+  <Target Name="CreateTestOverlay" DependsOnTargets="CopyDependencyToCoreRoot" />
 
   <Target Name="Clean">
     <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(MSBuildThisFileDirectory)../$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />

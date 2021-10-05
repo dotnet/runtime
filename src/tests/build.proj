@@ -100,11 +100,11 @@
 
   <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
   <Target Name="CopyNativeTestBinaries"
-      DependsOnTargets="ResolveDisabledProjects"
+      DependsOnTargets="CopyAllNativeTestProjectBinaries"
+      AfterTargets="ResolveDisabledProjects"
       Condition="'$(__CopyNativeTestBinaries)' == '1'">
 
-    <Message Importance="High" Text="$(MsgPrefix)Copying native binaries for test group $(__TestGroupToBuild)" />
-    <CallTarget Targets="CopyAllNativeTestProjectBinaries" />
+    <Message Importance="High" Text="$(MsgPrefix)Copied native binaries for test group $(__TestGroupToBuild)" />
   </Target>
 
   <Target Name="CheckTestBuildStep"
@@ -112,21 +112,14 @@
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
 
   <Target Name="GenerateLayout"
-      DependsOnTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)">
-
-    <CallTarget Targets="CreateTestOverlay" />
-  </Target>
+      DependsOnTargets="CreateTestOverlay"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
 
   <Target Name="BuildTestWrappers"
-      DependsOnTargets="ManagedBuild;RestorePackages"
-      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and !$(MonoAot) and !$(MonoFullAot) and ('$(__BuildTestWrappersOnly)' == '1' or ('$(__SkipTestWrappers)' != '1' and '$(__SkipManaged)' != '1'))" >
-
-    <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj" />
-
-    <CallTarget Targets="CreateAllWrappers" />
-  </Target>
+      DependsOnTargets="CreateAllWrappers"
+      AfterTargets="ManagedBuild;RestorePackages"
+      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and !$(MonoAot) and !$(MonoFullAot) and ('$(__BuildTestWrappersOnly)' == '1' or ('$(__SkipTestWrappers)' != '1' and '$(__SkipManaged)' != '1'))" />
 
   <Target Name="CrossgenFramework"
       DependsOnTargets="GenerateLayout"
@@ -173,23 +166,17 @@
   </Target>
 
   <Target Name="CreateAndroidApps"
-      DependsOnTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and $(RunWithAndroid)" >
-
-    <CallTarget Targets="BuildAllAndroidApp" />
-  </Target>
+      DependsOnTargets="BuildAllAndroidApp"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and $(RunWithAndroid)" />
 
   <Target Name="CreateIosApps"
-      DependsOnTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator')" >
-
-    <CallTarget Targets="BuildAlliOSApp" />
-  </Target>
+      DependsOnTargets="BuildAlliOSApp"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator')" />
 
   <Target Name="BuildMonoAot"
-      DependsOnTargets="ManagedBuild"
-      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" >
-
-    <CallTarget Targets="MonoAotCompileTests" />
-  </Target>
+      DependsOnTargets="MonoAotCompileTests"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
 </Project>
