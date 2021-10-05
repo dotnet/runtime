@@ -130,12 +130,17 @@ namespace System.IO
         public static FileStream Open(string path, FileMode mode, FileAccess access, FileShare share)
             => new FileStream(path, mode, access, share);
 
-        // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
-        // ToUniversalTime treats this as local.
         internal static DateTimeOffset GetUtcDateTimeOffset(DateTime dateTime)
-            => dateTime.Kind == DateTimeKind.Unspecified
-                ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
-                : dateTime.ToUniversalTime();
+        {
+            // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
+            // ToUniversalTime treats this as local.
+            if (dateTime.Kind != DateTimeKind.Local)
+            {
+                return new DateTimeOffset(dateTime.Ticks, default);
+            }
+
+            return dateTime.ToUniversalTime();
+        }
 
         public static void SetCreationTime(string path, DateTime creationTime)
             => FileSystem.SetCreationTime(Path.GetFullPath(path), creationTime, asDirectory: false);

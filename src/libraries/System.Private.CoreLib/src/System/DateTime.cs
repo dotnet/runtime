@@ -140,7 +140,7 @@ namespace System
         //               savings time hour and it is in daylight savings time. This allows distinction of these
         //               otherwise ambiguous local times and prevents data loss when round tripping from Local to
         //               UTC time.
-        private readonly ulong _dateData;
+        internal readonly ulong _dateData;
 
         // Constructs a DateTime from a tick count. The ticks
         // argument specifies the date as the number of 100-nanosecond intervals
@@ -219,7 +219,7 @@ namespace System
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
-                _dateData = ticks | ((ulong)kind << KindShift);
+                _dateData = ticks | ((ulong)(uint)kind << KindShift);
             }
             else
             {
@@ -281,7 +281,7 @@ namespace System
                 ulong ticks = DateToTicks(year, month, day) + TimeToTicks(hour, minute, second);
                 ticks += (uint)millisecond * (uint)TicksPerMillisecond;
                 Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
-                _dateData = ticks | ((ulong)kind << KindShift);
+                _dateData = ticks | ((ulong)(uint)kind << KindShift);
             }
             else
             {
@@ -321,7 +321,7 @@ namespace System
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
                 ulong ticks = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
-                _dateData = ticks | ((ulong)kind << KindShift);
+                _dateData = ticks | ((ulong)(uint)kind << KindShift);
             }
             else
             {
@@ -331,9 +331,11 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private void ValidateLeapSecond()
         {
-            if (!IsValidTimeWithLeapSeconds(Year, Month, Day, Hour, Minute, Kind))
+            GetDate(out int year, out int month, out int day);
+            if (!IsValidTimeWithLeapSeconds(year, month, day, Hour, Minute, Kind))
             {
                 ThrowHelper.ThrowArgumentOutOfRange_BadHourMinuteSecond();
             }
@@ -385,11 +387,11 @@ namespace System
 
         // Returns the DateTime resulting from adding a fractional number of
         // time units to this DateTime.
-        private DateTime Add(double value, int scale)
+        private static DateTime Add(DateTime date, double value, int scale)
         {
             double millis_double = value * scale + (value >= 0 ? 0.5 : -0.5);
             if (millis_double <= -MaxMillis || millis_double >= MaxMillis) ThrowOutOfRange();
-            return AddTicks((long)millis_double * TicksPerMillisecond);
+            return date.AddTicks((long)millis_double * TicksPerMillisecond);
 
             static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
         }
@@ -402,7 +404,7 @@ namespace System
         //
         public DateTime AddDays(double value)
         {
-            return Add(value, MillisPerDay);
+            return Add(this, value, MillisPerDay);
         }
 
         // Returns the DateTime resulting from adding a fractional number of
@@ -413,7 +415,7 @@ namespace System
         //
         public DateTime AddHours(double value)
         {
-            return Add(value, MillisPerHour);
+            return Add(this, value, MillisPerHour);
         }
 
         // Returns the DateTime resulting from the given number of
@@ -424,7 +426,7 @@ namespace System
         //
         public DateTime AddMilliseconds(double value)
         {
-            return Add(value, 1);
+            return Add(this, value, 1);
         }
 
         // Returns the DateTime resulting from adding a fractional number of
@@ -435,7 +437,7 @@ namespace System
         //
         public DateTime AddMinutes(double value)
         {
-            return Add(value, MillisPerMinute);
+            return Add(this, value, MillisPerMinute);
         }
 
         // Returns the DateTime resulting from adding the given number of
@@ -455,10 +457,11 @@ namespace System
         // or equal to d that denotes a valid day in month m1 of year
         // y1.
         //
-        public DateTime AddMonths(int months)
+        public DateTime AddMonths(int months) => AddMonths(this, months);
+        private static DateTime AddMonths(DateTime date, int months)
         {
             if (months < -120000 || months > 120000) throw new ArgumentOutOfRangeException(nameof(months), SR.ArgumentOutOfRange_DateTimeBadMonths);
-            GetDate(out int year, out int month, out int day);
+            date.GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
             int q = m > 0 ? (int)((uint)(m - 1) / 12) : m / 12 - 1;
@@ -470,7 +473,7 @@ namespace System
             int days = (int)(daysTo[m] - daysToMonth);
             if (d > days) d = days;
             uint n = DaysToYear((uint)y) + daysToMonth + (uint)d - 1;
-            return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
+            return new DateTime(n * (ulong)TicksPerDay + date.UTicks % TicksPerDay | date.InternalKind);
         }
 
         // Returns the DateTime resulting from adding a fractional number of
@@ -481,7 +484,7 @@ namespace System
         //
         public DateTime AddSeconds(double value)
         {
-            return Add(value, MillisPerSecond);
+            return Add(this, value, MillisPerSecond);
         }
 
         // Returns the DateTime resulting from adding the given number of
@@ -516,13 +519,14 @@ namespace System
         // DateTime becomes 2/28. Otherwise, the month, day, and time-of-day
         // parts of the result are the same as those of this DateTime.
         //
-        public DateTime AddYears(int value)
+        public DateTime AddYears(int value) => AddYears(this, value);
+        private static DateTime AddYears(DateTime date, int value)
         {
             if (value < -10000 || value > 10000)
             {
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_DateTimeBadYears);
             }
-            GetDate(out int year, out int month, out int day);
+            date.GetDate(out int year, out int month, out int day);
             int y = year + value;
             if (y < 1 || y > 9999) ThrowDateArithmetic(0);
             uint n = DaysToYear((uint)y);
@@ -538,7 +542,7 @@ namespace System
                 n += s_daysToMonth365[m];
             }
             n += (uint)d;
-            return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
+            return new DateTime(n * (ulong)TicksPerDay + date.UTicks % TicksPerDay | date.InternalKind);
         }
 
         // Compares two DateTime values, returning an integer that indicates
@@ -625,7 +629,7 @@ namespace System
 
             ticks += (uint)millisecond * (uint)TicksPerMillisecond;
 
-            Debug.Assert(ticks <= MaxTicks, "Input parameters validated already");
+            Debug.Assert(ticks < TicksPerDay, "Input parameters validated already");
 
             return ticks;
         }
@@ -802,7 +806,7 @@ namespace System
         public static DateTime SpecifyKind(DateTime value, DateTimeKind kind)
         {
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
-            return new DateTime(value.UTicks | ((ulong)kind << KindShift));
+            return new DateTime(value.UTicks | ((ulong)(uint)kind << KindShift));
         }
 
         public long ToBinary()
@@ -838,21 +842,15 @@ namespace System
         // corresponds to this DateTime with the time-of-day part set to
         // zero (midnight).
         //
-        public DateTime Date
-        {
-            get
-            {
-                ulong ticks = UTicks;
-                return new DateTime((ticks - ticks % TicksPerDay) | InternalKind);
-            }
-        }
+        public DateTime Date => GetDate(_dateData);
+        private static DateTime GetDate(ulong data) => new DateTime(((data & TicksMask) / TicksPerDay * TicksPerDay) | (data & FlagsMask));
 
         // Returns a given date part of this DateTime. This method is used
         // to compute the year, day-of-year, month, or day part.
-        private int GetDatePart(int part)
+        private static int GetDatePart(ulong dateData, int part)
         {
             // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
+            uint n = (uint)((dateData & TicksMask) / TicksPerDay);
             // y400 = number of whole 400-year periods since 1/1/0001
             uint y400 = n / DaysPer400Years;
             // n = day number within 400-year period
@@ -897,10 +895,11 @@ namespace System
         // Exactly the same as GetDatePart, except computing all of
         // year/month/day rather than just one of them. Used when all three
         // are needed rather than redoing the computations for each.
-        internal void GetDate(out int year, out int month, out int day)
+        internal void GetDate(out int year, out int month, out int day) => GetDate(_dateData, out year, out month, out day);
+        private static void GetDate(ulong dateData, out int year, out int month, out int day)
         {
             // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
+            uint n = (uint)((dateData & TicksMask) / TicksPerDay);
             // y400 = number of whole 400-year periods since 1/1/0001
             uint y400 = n / DaysPer400Years;
             // n = day number within 400-year period
@@ -977,7 +976,7 @@ namespace System
         // Returns the day-of-month part of this DateTime. The returned
         // value is an integer between 1 and 31.
         //
-        public int Day => GetDatePart(DatePartDay);
+        public int Day => GetDatePart(_dateData, DatePartDay);
 
         // Returns the day-of-week part of this DateTime. The returned value
         // is an integer between 0 and 6, where 0 indicates Sunday, 1 indicates
@@ -989,7 +988,7 @@ namespace System
         // Returns the day-of-year part of this DateTime. The returned value
         // is an integer between 1 and 366.
         //
-        public int DayOfYear => GetDatePart(DatePartDayOfYear);
+        public int DayOfYear => GetDatePart(_dateData, DatePartDayOfYear);
 
         // Returns the hash code for this DateTime.
         //
@@ -1031,7 +1030,7 @@ namespace System
         // Returns the month part of this DateTime. The returned value is an
         // integer between 1 and 12.
         //
-        public int Month => GetDatePart(DatePartMonth);
+        public int Month => GetDatePart(_dateData, DatePartMonth);
 
         // Returns a DateTime representing the current date and time. The
         // resolution of the returned value depends on the system timer.
@@ -1079,7 +1078,7 @@ namespace System
         // Returns the year part of this DateTime. The returned value is an
         // integer between 1 and 9999.
         //
-        public int Year => GetDatePart(DatePartYear);
+        public int Year => GetDatePart(_dateData, DatePartYear);
 
         // Checks whether a given year is a leap year. This method returns true if
         // year is a leap year, or false if not.

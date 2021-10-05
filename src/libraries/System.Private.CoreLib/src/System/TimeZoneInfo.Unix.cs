@@ -1263,13 +1263,13 @@ namespace System
             // utc base offset delta increment
             TimeSpan adjustment = TimeSpan.Zero;
 
-            if (utcOffset > MaxOffset)
+            if (utcOffset.Ticks > MaxOffsetTicks)
             {
-                adjustment = MaxOffset - utcOffset;
+                adjustment = new TimeSpan(MaxOffsetTicks) - utcOffset;
             }
-            else if (utcOffset < MinOffset)
+            else if (utcOffset.Ticks < MinOffsetTicks)
             {
-                adjustment = MinOffset - utcOffset;
+                adjustment = new TimeSpan(MinOffsetTicks) - utcOffset;
             }
 
             if (adjustment != TimeSpan.Zero)

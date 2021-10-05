@@ -332,12 +332,14 @@ namespace System.Globalization
             }
         }
 
-        public static DateTimeFormatInfo GetInstance(IFormatProvider? provider) =>
-            provider == null ? CurrentInfo :
-            provider is CultureInfo cultureProvider && !cultureProvider._isInherited ? cultureProvider.DateTimeFormat :
-            provider is DateTimeFormatInfo info ? info :
-            provider.GetFormat(typeof(DateTimeFormatInfo)) is DateTimeFormatInfo info2 ? info2 :
-            CurrentInfo; // Couldn't get anything, just use currentInfo as fallback
+        public static DateTimeFormatInfo GetInstance(IFormatProvider? provider) => provider switch
+        {
+            null => CurrentInfo,
+            CultureInfo { _isInherited: false, _dateTimeInfo: { } info } => info,
+            DateTimeFormatInfo info => info,
+            _ => provider.GetFormat(typeof(DateTimeFormatInfo)) as DateTimeFormatInfo ??
+                CurrentInfo // Couldn't get anything, just use currentInfo as fallback
+        };
 
         public object? GetFormat(Type? formatType)
         {

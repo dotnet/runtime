@@ -41,7 +41,6 @@ namespace System.Buffers.Text
             { var unused = destination[MinimumBytesNeeded - 1]; }
 
             value.GetDate(out int year, out int month, out int day);
-            value.GetTime(out int hour, out int minute, out int second);
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)month, destination, 0);
             destination[2] = Utf8Constants.Slash;
@@ -51,6 +50,8 @@ namespace System.Buffers.Text
 
             FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 6);
             destination[10] = Utf8Constants.Space;
+
+            value.GetTime(out int hour, out int minute, out int second);
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 11);
             destination[13] = Utf8Constants.Colon;

@@ -21,9 +21,6 @@ namespace System.Buffers.Text
                 return false;
             }
 
-            value.GetDate(out int year, out int month, out int day);
-            value.GetTime(out int hour, out int minute, out int second);
-
             uint dayAbbrev = s_dayAbbreviations[(int)value.DayOfWeek];
 
             destination[0] = (byte)dayAbbrev;
@@ -33,6 +30,8 @@ namespace System.Buffers.Text
             destination[2] = (byte)dayAbbrev;
             destination[3] = Utf8Constants.Comma;
             destination[4] = Utf8Constants.Space;
+
+            value.GetDate(out int year, out int month, out int day);
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 5);
             destination[7] = Utf8Constants.Space;
@@ -47,6 +46,8 @@ namespace System.Buffers.Text
 
             FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 12);
             destination[16] = Utf8Constants.Space;
+
+            value.GetTime(out int hour, out int minute, out int second);
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 17);
             destination[19] = Utf8Constants.Colon;

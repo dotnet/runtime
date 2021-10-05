@@ -537,7 +537,7 @@ namespace System
                 TransitionTime transition;
 
                 DateTime timeOfDay = GetNextDateTimeValue(TimeOfDayFormat);
-                timeOfDay = new DateTime(1, 1, 1, timeOfDay.Hour, timeOfDay.Minute, timeOfDay.Second, timeOfDay.Millisecond);
+                timeOfDay = DateTime.UnsafeCreate(timeOfDay.TimeOfDay.Ticks);
 
                 int month = GetNextInt32Value();
 

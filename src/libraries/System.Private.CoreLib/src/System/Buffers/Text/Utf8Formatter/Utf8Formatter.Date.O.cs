@@ -51,7 +51,6 @@ namespace System.Buffers.Text
             { _ = destination[MinimumBytesNeeded - 1]; }
 
             value.GetDate(out int year, out int month, out int day);
-            value.GetTimePrecise(out int hour, out int minute, out int second, out int ticks);
 
             FormattingHelpers.WriteFourDecimalDigits((uint)year, destination, 0);
             destination[4] = Utf8Constants.Minus;
@@ -61,6 +60,8 @@ namespace System.Buffers.Text
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 8);
             destination[10] = TimeMarker;
+
+            value.GetTimePrecise(out int hour, out int minute, out int second, out int ticks);
 
             FormattingHelpers.WriteTwoDecimalDigits((uint)hour, destination, 11);
             destination[13] = Utf8Constants.Colon;
