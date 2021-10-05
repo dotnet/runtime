@@ -350,6 +350,54 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     return true;
 }
 
+#if defined(_WIN32)
+bool is_running_in_wow64()
+{
+    BOOL fWow64Process = FALSE;
+    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
+    {
+        return false;
+    }
+    return (fWow64Process != FALSE);
+}
+
+typedef BOOL (WINAPI* is_wow64_process2)(
+  HANDLE hProcess,
+  USHORT *pProcessMachine,
+  USHORT *pNativeMachine
+);
+
+bool is_emulating_x64()
+{
+    USHORT pProcessMachine, pNativeMachine;
+    auto kernel32 = LoadLibraryEx("kernel32.dll", NULL, 0);
+    if (kernel32)
+    {
+        is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
+        if (!isWow64Process2Func)
+        {
+            // Loading kernel32.dll failed, log the error and continue.
+            trace::info(_X("Could not load 'kernel32.dll': %s"), GetLastError());
+            FreeLibrary(kernel32);
+            return false;
+        }
+
+        auto is_running_in_wow64 = isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine);
+        if (!is_running_in_wow64)
+        {
+            // IsWow64Process2 failed, log the error and continue.
+            trace::info(_X("Call to IsWow64Process2 failed: %s"), GetLastError());
+            return false;
+        }
+
+        // Check if we are running an x64 process on a non-x64 windows machine.
+        return pProcessMachine != pNativeMachine && pProcessMachine == IMAGE_FILE_MACHINE_AMD64;
+    }
+
+    return false;
+}
+#endif
+
 bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::string_t* recv)
 {
     *dotnet_root_env_var_name = _X("DOTNET_ROOT_");
@@ -358,9 +406,15 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
         return true;
 
 #if defined(WIN32)
-    if (pal::is_running_in_wow64())
+    if (is_running_in_wow64())
     {
         *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
+        if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
+            return true;
+    }
+    else if (is_emulating_x64())
+    {
+        *dotnet_root_env_var_name = _X("DOTNET_ROOT_x64");
         if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
             return true;
     }

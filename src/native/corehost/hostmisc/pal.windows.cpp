@@ -276,10 +276,8 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
     //  ***************************
 
-    USHORT pProcessMachine, pNativeMachine;
     const pal::char_t* program_files_dir;
-    auto is_running_in_wow64 = IsWow64Process2(GetCurrentProcess(), &pProcessMachine, &pNativeMachine);
-    if (is_running_in_wow64)
+    if (is_running_in_wow64())
     {
         program_files_dir = _X("ProgramFiles(x86)");
     }
@@ -294,12 +292,9 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
-    if (!is_running_in_wow64 &&
-        pProcessMachine != pNativeMachine &&
-        pNativeMachine == IMAGE_FILE_MACHINE_ARM64)
+    if (is_emulating_x64())
     {
-        // We are running an x64 process in a windows arm64 machine.
-        // Install location for x64 should be %ProgramFiles%\dotnet\x64.
+        // Install location for emulated x64 should be %ProgramFiles%\dotnet\x64.
         append_path(recv, _X("x64"));
     }
 
@@ -780,16 +775,6 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
     ::readdir(path, _X("*"), true, list);
-}
-
-bool pal::is_running_in_wow64()
-{
-    BOOL fWow64Process = FALSE;
-    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
-    {
-        return false;
-    }
-    return (fWow64Process != FALSE);
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

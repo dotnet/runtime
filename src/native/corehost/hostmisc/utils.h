@@ -21,6 +21,11 @@
 
 #define RUNTIME_STORE_DIRECTORY_NAME _X("store")
 
+#if defined(_WIN32)
+bool is_running_in_wow64();
+bool is_emulating_x64();
+#endif
+
 bool ends_with(const pal::string_t& value, const pal::string_t& suffix, bool match_case);
 bool starts_with(const pal::string_t& value, const pal::string_t& prefix, bool match_case);
 pal::string_t strip_executable_ext(const pal::string_t& filename);

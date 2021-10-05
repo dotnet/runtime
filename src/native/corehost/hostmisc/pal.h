@@ -309,8 +309,6 @@ namespace pal
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 
-    bool is_running_in_wow64();
-
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
 }
 
