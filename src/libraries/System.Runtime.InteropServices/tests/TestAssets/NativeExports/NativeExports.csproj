@@ -20,9 +20,13 @@
     <ProjectReference Include="..\SharedTypes\SharedTypes.csproj" />
   </ItemGroup>
 
-  <!-- Calculate -->
-  <Target Name="GetCompilerForDNNE"
-          Condition="'$(TargetOS)' != 'windows'">
+  <Target Name="GetLinuxCrossBuildArgumentsForDNNE"
+          Condition="'$(CrossBuild)' == 'true' and (
+            '$(TargetOS)' == 'Linux' or
+            '$(TargetOS)' == 'NetBSD' or
+            '$(TargetOS)' == 'FreeBSD' or
+            '$(TargetOS)' == 'illumos' or
+            '$(TargetOS)' == 'Solaris')">
     <PropertyGroup>
       <NativeCompiler>$(Compiler)</NativeCompiler>
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
@@ -34,16 +38,6 @@
           StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
     </Exec>
-  </Target>
-
-  <Target Name="GetLinuxCrossBuildArgumentsForDNNE"
-          DependsOnTargets="GetCompilerForDNNE"
-          Condition="'$(CrossBuild)' == 'true' and (
-            '$(TargetOS)' == 'Linux' or
-            '$(TargetOS)' == 'NetBSD' or
-            '$(TargetOS)' == 'FreeBSD' or
-            '$(TargetOS)' == 'illumos' or
-            '$(TargetOS)' == 'Solaris')">
     <Exec Command="cmake -P &quot;$(RepositoryEngineeringDir)/native/output-toolchain-info.cmake&quot;"
           EchoOff="true"
           ConsoleToMsBuild="true"
@@ -83,19 +77,34 @@
     <PropertyGroup Condition="'$(TargetOS)' == 'OSX'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
       <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.13</TargetTriple>
+      <XCodeSdkName>macosx</XCodeSdkName>
     </PropertyGroup>
 
     <Error Condition="'$(TargetTriple)' == ''" Text="A target triple was not specified for the native components build. Update the 'GetAppleCrossBuildArgumentsForDNNE' target to specify a triple." />
+    <Error Condition="'$(XCodeSdkName)' == ''" Text="The name of the XCode SDK for the target platform, as passed to xcrun to locate the sdk, must be specified." />
+
+    <Exec Command="xcrun --sdk $(XCodeSdkName) --show-sdk-path"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="SysRootIncludePath" />
+    </Exec>
+
+    <Exec Command="xcrun --sdk $(XCodeSdkName) --find clang"
+          EchoOff="true"
+          ConsoleToMsBuild="true"
+          StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="DnneCompilerCommand" />
+    </Exec>
 
     <PropertyGroup>
       <DnneLinkerUserFlags>-target $(TargetTriple)</DnneLinkerUserFlags>
-      <DnneCompilerUserFlags>-target $(TargetTriple)</DnneCompilerUserFlags>
+      <DnneCompilerUserFlags>-isysroot &quot;$(SysRootIncludePath)&quot; -target $(TargetTriple)</DnneCompilerUserFlags>
     </PropertyGroup>
   </Target>
 
   <Target Name="GetBuildArgumentsForDNNE"
           DependsOnTargets="ResolveFrameworkReferences;
-                            GetCompilerForDNNE;
                             GetLinuxCrossBuildArgumentsForDNNE;
                             GetAppleCrossBuildArgumentsForDNNE"
           BeforeTargets="DnneBuildNativeExports">
