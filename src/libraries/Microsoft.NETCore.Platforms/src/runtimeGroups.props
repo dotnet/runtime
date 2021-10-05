@@ -216,6 +216,14 @@
       <Versions>9</Versions>
     </RuntimeGroup>
 
+    <RuntimeGroup Include="rocky">
+      <Parent>rhel</Parent>
+      <Architectures>x64;arm64</Architectures>
+      <Versions>8;9</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+      <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
+    </RuntimeGroup>
+
     <RuntimeGroup Include="sles">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
