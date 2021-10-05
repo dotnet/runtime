@@ -18,8 +18,10 @@
         AddFrameworkFilesToPackage
     </GetSharedFrameworkFilesForReadyToRunDependsOn>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <!-- Disable crossgen on FreeBSD, NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
-    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' Or '$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+    <!-- Disable crossgen on NetBSD, illumos and Solaris for now. This can be revisited when we have full support. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='NetBSD' Or '$(TargetOS)'=='illumos' Or '$(TargetOS)'=='Solaris'">false</PublishReadyToRun>
+    <!-- Disable crossgen on FreeBSD when cross building from Linux. -->
+    <PublishReadyToRun Condition="'$(TargetOS)'=='FreeBSD' and '$(CrossBuild)'=='true'">false</PublishReadyToRun>
     <HostJsonTargetPath>tools/</HostJsonTargetPath>
     <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
   </PropertyGroup>
