@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             if (typeToConvert.IsKeyValuePair())
             {
-                return CreateKeyValuePairConverter(typeToConvert, options);
+                return CreateKeyValuePairConverter(typeToConvert);
             }
 
             JsonConverter converter;
@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
-        private JsonConverter CreateKeyValuePairConverter(Type type, JsonSerializerOptions options)
+        private JsonConverter CreateKeyValuePairConverter(Type type)
         {
             Debug.Assert(type.IsKeyValuePair());
 
@@ -112,8 +112,6 @@ namespace System.Text.Json.Serialization.Converters
                 binder: null,
                 args: null,
                 culture: null)!;
-
-            converter.Initialize(options);
 
             return converter;
         }
