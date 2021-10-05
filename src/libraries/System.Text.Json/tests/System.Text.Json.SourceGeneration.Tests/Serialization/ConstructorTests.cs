@@ -125,6 +125,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(Parameterized_Class_With_ComplexTuple))]
         [JsonSerializable(typeof(Parameterized_Person_Simple))]
+        [JsonSerializable(typeof(SmallType_IgnoredProp_Bind_ParamWithDefaultValue))]
+        [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_ParamWithDefaultValue))]
         internal sealed partial class ConstructorTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -241,6 +243,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(JsonElement))]
         [JsonSerializable(typeof(Parameterized_Class_With_ComplexTuple))]
         [JsonSerializable(typeof(Parameterized_Person_Simple))]
+        [JsonSerializable(typeof(SmallType_IgnoredProp_Bind_ParamWithDefaultValue))]
+        [JsonSerializable(typeof(LargeType_IgnoredProp_Bind_ParamWithDefaultValue))]
         internal sealed partial class ConstructorTestsContext_Default : JsonSerializerContext
         {
         }

@@ -797,23 +797,28 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
 private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPropertyName}{CtorParamInitMethodNameSuffix}()
 {{
     {JsonParameterInfoValuesTypeRef}[] {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];
-    {JsonParameterInfoValuesTypeRef} info;
 ");
 
                 for (int i = 0; i < paramCount; i++)
                 {
                     ParameterInfo reflectionInfo = parameters[i].ParameterInfo;
 
+                    string parameterTypeRef = reflectionInfo.ParameterType.GetCompilableName();
+
+                    object? defaultValue = reflectionInfo.GetDefaultValue();
+                    string defaultValueAsStr = defaultValue == null
+                        ? $"default({parameterTypeRef})"
+                        : GetParamDefaultValueAsString(defaultValue);
+
                     sb.Append(@$"
-    {InfoVarName} = new()
+    {parametersVarName}[{i}] = new()
     {{
         Name = ""{reflectionInfo.Name!}"",
-        ParameterType = typeof({reflectionInfo.ParameterType.GetCompilableName()}),
+        ParameterType = typeof({parameterTypeRef}),
         Position = {reflectionInfo.Position},
         HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)},
-        DefaultValue = {GetParamDefaultValueAsString(reflectionInfo.DefaultValue)}
+        DefaultValue = {defaultValueAsStr}
     }};
-    {parametersVarName}[{i}] = {InfoVarName};
 ");
                 }
 

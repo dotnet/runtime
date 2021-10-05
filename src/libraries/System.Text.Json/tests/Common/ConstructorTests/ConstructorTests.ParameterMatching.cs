@@ -1216,5 +1216,48 @@ namespace System.Text.Json.Serialization.Tests
 
             public TypeWithUri(Uri myUri = default) => MyUri = myUri;
         }
+
+        [Fact]
+        public async Task SmallObject_DefaultParamValueUsed_WhenMatchingPropIgnored()
+        {
+            string json = @"{""Prop"":20}";
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<SmallType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
+            Assert.Equal(5, obj.Prop);
+        }
+
+        public class SmallType_IgnoredProp_Bind_ParamWithDefaultValue
+        {
+            [JsonIgnore]
+            public int Prop { get; set; }
+
+            public SmallType_IgnoredProp_Bind_ParamWithDefaultValue(int prop = 5)
+                => Prop = prop;
+        }
+
+
+        [Fact]
+        public async Task LargeObject_DefaultParamValueUsed_WhenMatchingPropIgnored()
+        {
+            string json = @"{""Prop"":20}";
+            var obj = await JsonSerializerWrapperForString.DeserializeWrapper<LargeType_IgnoredProp_Bind_ParamWithDefaultValue>(json);
+            Assert.Equal(5, obj.Prop);
+        }
+
+        public class LargeType_IgnoredProp_Bind_ParamWithDefaultValue
+        {
+            public int W { get; set; }
+
+            public int X { get; set; }
+
+            public int Y { get; set; }
+
+            public int Z { get; set; }
+
+            [JsonIgnore]
+            public int Prop { get; set; }
+
+            public LargeType_IgnoredProp_Bind_ParamWithDefaultValue(int w, int x, int y, int z, int prop = 5)
+                => Prop = prop;
+        }
     }
 }
