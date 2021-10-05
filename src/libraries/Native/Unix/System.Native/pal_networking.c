@@ -2013,7 +2013,7 @@ int32_t SystemNative_GetSockOpt(
     int optLevel, optName;
     if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, &optLevel, &optName))
     {
-        return Error_ENOTSUP;
+        return Error_ENOPROTOOPT;
     }
 
     socklen_t optLen = (socklen_t)*optionLen;
@@ -2160,7 +2160,7 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     int optLevel, optName;
     if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, &optLevel, &optName))
     {
-        return Error_ENOTSUP;
+        return Error_ENOPROTOOPT;
     }
 
     int err = setsockopt(fd, optLevel, optName, optionValue, (socklen_t)optionLen);
