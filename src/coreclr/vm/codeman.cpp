@@ -4216,10 +4216,10 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
     if (currentPC == NULL)
         return NULL;
 
-    if (scanFlag == ScanReaderLock)
-        return FindCodeRangeWithLock(currentPC);
+    //if (scanFlag == ScanReaderLock)
+    return FindCodeRangeWithLock(currentPC);
 
-    return GetRangeSection(currentPC);
+    //return GetRangeSection(currentPC);
 }
 
 //**************************************************************************
