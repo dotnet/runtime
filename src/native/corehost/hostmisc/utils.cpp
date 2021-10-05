@@ -370,19 +370,17 @@ typedef BOOL (WINAPI* is_wow64_process2)(
 bool is_emulating_x64()
 {
     USHORT pProcessMachine, pNativeMachine;
-    auto kernel32 = LoadLibraryEx("kernel32.dll", NULL, 0);
+    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (kernel32)
     {
         is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
         if (!isWow64Process2Func)
         {
             // Could not find IsWow64Process2.
-            FreeLibrary(kernel32);
             return false;
         }
 
-        auto is_running_in_wow64 = isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine);
-        if (!is_running_in_wow64)
+        if (!isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine))
         {
             // IsWow64Process2 failed, log the error and continue.
             trace::info(_X("Call to IsWow64Process2 failed: %s"), GetLastError());
@@ -411,12 +409,6 @@ bool get_dotnet_root_from_env(pal::string_t* dotnet_root_env_var_name, pal::stri
     if (is_running_in_wow64())
     {
         *dotnet_root_env_var_name = _X("DOTNET_ROOT(x86)");
-        if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
-            return true;
-    }
-    else if (is_emulating_x64())
-    {
-        *dotnet_root_env_var_name = _X("DOTNET_ROOT_x64");
         if (get_file_path_from_env(dotnet_root_env_var_name->c_str(), recv))
             return true;
     }
