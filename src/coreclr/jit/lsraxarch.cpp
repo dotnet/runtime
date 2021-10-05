@@ -2362,7 +2362,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     tgtPrefUse = BuildUse(op2);
                     srcCount += 1;
 
-                    if (op1->isContained())
+                    if (op1->isContained() || op1->IsRegOptional())
                     {
                         // op2 = ([op1] * op2) + op3
                         srcCount += BuildOperandUses(op1);
@@ -2380,7 +2380,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     tgtPrefUse = BuildUse(op3);
                     srcCount += 1;
 
-                    if (op1->isContained())
+                    if (op1->isContained() || op1->IsRegOptional())
                     {
                         // op3 = ([op1] * op2) + op3
                         srcCount += BuildOperandUses(op1);
@@ -2396,10 +2396,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 else
                 {
                     assert(resultOpNum == 0);
-                    if (op1->isContained())
+                    if (op1->isContained() || op1->IsRegOptional())
                     {
                         // In the case that result is writtent into destination that is different from any of the
-                        // source operands, we set op2 to be tgtPrefUse when op1 is contained. 
+                        // source operands, we set op2 to be tgtPrefUse when op1 is contained.
 
                         tgtPrefUse = BuildUse(op2);
                         srcCount += 1;
