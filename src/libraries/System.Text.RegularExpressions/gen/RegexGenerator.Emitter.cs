@@ -736,7 +736,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine("int runtextpos = base.runtextpos;");
             writer.WriteLine("int runtextend = base.runtextend;");
             writer.WriteLine("int originalruntextpos = runtextpos;");
-            writer.WriteLine("ref byte byteStr = ref global::System.Runtime.CompilerServices.Unsafe.NullRef<byte>();");
+            writer.WriteLine("global::System.ReadOnlySpan<byte> byteSpan;");
             writer.WriteLine("char ch;");
             hasTimeout = EmitLoopTimeoutCounterIfNeeded(writer, rm);
 
@@ -1297,7 +1297,7 @@ namespace System.Text.RegularExpressions.Generator
                     bool useMultiCharReads = !caseInsensitive && byteStr.Length >= sizeof(uint);
                     if (useMultiCharReads)
                     {
-                        writer.WriteLine($"byteStr = ref global::System.Runtime.InteropServices.MemoryMarshal.GetReference(global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal}));");
+                        writer.WriteLine($"byteSpan = global::System.Runtime.InteropServices.MemoryMarshal.AsBytes({textSpanLocal});");
                     }
 
                     writer.Write("if (");
@@ -1323,27 +1323,23 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         while (byteStr.Length >= sizeof(ulong))
                         {
-                            ulong little = BinaryPrimitives.ReadUInt64LittleEndian(byteStr);
-                            ulong big = BinaryPrimitives.ReadUInt64BigEndian(byteStr);
                             EmitOr();
-                            writer.Write($"global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<ulong>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}ul : 0x{big:X}ul)");
-                            textSpanPos += sizeof(ulong) / 2;
+                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(byteSpan.Slice({textSpanPos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteStr):X}ul");
+                            textSpanPos += sizeof(ulong) / sizeof(char);
                             byteStr = byteStr.Slice(sizeof(ulong));
                         }
 
                         while (byteStr.Length >= sizeof(uint))
                         {
-                            uint little = BinaryPrimitives.ReadUInt32LittleEndian(byteStr);
-                            uint big = BinaryPrimitives.ReadUInt32BigEndian(byteStr);
                             EmitOr();
-                            writer.Write($"global::System.Runtime.CompilerServices.Unsafe.ReadUnaligned<uint>(ref global::System.Runtime.CompilerServices.Unsafe.Add(ref byteStr, {textSpanPos * 2})) != (global::System.BitConverter.IsLittleEndian ? 0x{little:X}u : 0x{big:X}u)");
-                            textSpanPos += sizeof(uint) / 2;
+                            writer.Write($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(byteSpan.Slice({textSpanPos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteStr):X}u");
+                            textSpanPos += sizeof(uint) / sizeof(char);
                             byteStr = byteStr.Slice(sizeof(uint));
                         }
                     }
 
                     // Emit remaining comparisons character by character.
-                    for (int i = (str.Length * 2 - byteStr.Length) / 2; i < str.Length; i++)
+                    for (int i = (str.Length * sizeof(char) - byteStr.Length) / sizeof(char); i < str.Length; i++)
                     {
                         EmitOr();
                         writer.Write($"{ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos}]", caseInsensitive)} != {Literal(str[i])}");
