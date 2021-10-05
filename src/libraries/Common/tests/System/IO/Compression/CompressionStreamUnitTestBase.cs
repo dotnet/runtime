@@ -320,7 +320,7 @@ namespace System.IO.Compression
                     }
                     else
                     {
-                        Assert.Equal(data2[i], (byte)0);
+                        Assert.Equal((byte)0, data2[i]);
                     }
                 }
             });

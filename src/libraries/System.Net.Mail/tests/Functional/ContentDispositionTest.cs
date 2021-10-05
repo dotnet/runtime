@@ -261,7 +261,7 @@ namespace System.Net.Mime.Tests
             cd.Parameters["creation-date"] = ValidDateTimeLocal;
 
             Assert.Equal(DateTimeKind.Local, cd.CreationDate.Kind);
-            Assert.Equal(cd.Parameters["creation-date"], ValidDateTimeLocal);
+            Assert.Equal(ValidDateTimeLocal, cd.Parameters["creation-date"]);
         }
 
         [Fact]

@@ -108,16 +108,16 @@ namespace System.Security.Cryptography.Xml.Tests
             dsaKeyValue.LoadXml(xmlDoc.DocumentElement);
 
             var parameters = dsaKeyValue.Key.ExportParameters(false);
-            Assert.Equal(Convert.ToBase64String(parameters.P), pValue);
-            Assert.Equal(Convert.ToBase64String(parameters.Q), qValue);
-            Assert.Equal(Convert.ToBase64String(parameters.G), gValue);
-            Assert.Equal(Convert.ToBase64String(parameters.Y), yValue);
+            Assert.Equal(pValue, Convert.ToBase64String(parameters.P));
+            Assert.Equal(qValue, Convert.ToBase64String(parameters.Q));
+            Assert.Equal(gValue, Convert.ToBase64String(parameters.G));
+            Assert.Equal(yValue, Convert.ToBase64String(parameters.Y));
 
             // Not all providers support round-tripping the seed value.
             // Seed and PGenCounter are round-tripped together.
             if (parameters.Seed != null)
             {
-                Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
+                Assert.Equal(seedValue, Convert.ToBase64String(parameters.Seed));
                 Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
             }
         }
