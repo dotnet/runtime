@@ -24,7 +24,7 @@ steps:
       artifact: 'IntermediateArtifacts'
       path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
       patterns: |
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*.nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-*!(symbols).nupkg
         
       # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
       # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
@@ -38,7 +38,23 @@ steps:
       cleanTargetFolder: false
       targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
       flattenFolders: true
-      
+
+  #Unzip the nuget packages to make the actual runtimes accessible
+  - task: ExtractFiles@1
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/
+        overwriteExistingFiles: true
+
+  # Rename files for clarity between versions
+  - script: |
+      mv Microsoft.NETCore.App.Runtime.Mono.android-arm.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-arm
+      mv Microsoft.NETCore.App.Runtime.Mono.android-arm64.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-arm64
+      mv Microsoft.NETCore.App.Runtime.Mono.android-x64.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-x64
+      mv Microsoft.NETCore.App.Runtime.Mono.android-x86.*!(nupkg) Microsoft.NETCore.App.Runtime.Mono.android-x86
+    displayName: Rename Folders
+    workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
+
   # Download and CI install dotnet
   # Download latest MAUI
   # Update the manifests based on the gated source
