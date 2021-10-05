@@ -4710,6 +4710,7 @@ struct GenTreeCall final : public GenTree
     void ClearGuardedDevirtualizationCandidate()
     {
         gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
+        SetGDVCandidatesCount(0);
     }
 
     void SetGuardedDevirtualizationCandidate()

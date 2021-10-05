@@ -6909,7 +6909,6 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 {
                     JITDUMP("Disabling GDV for [%06u] because of in-box struct return\n");
                     call->ClearGuardedDevirtualizationCandidate();
-                    call->SetGDVCandidatesCount(0);
                     if (call->IsVirtualStub())
                     {
                         JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
@@ -20574,7 +20573,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
             dspTreeID(call));
 
     call->ClearGuardedDevirtualizationCandidate();
-    call->SetGDVCandidatesCount(0);
 
     // If we have a stub address, restore it back into the union that it shares
     // with the candidate info.
@@ -21970,8 +21968,9 @@ void Compiler::considerGuardedDevirtualization(
 
     // See if there's a likely guess for the class.
     //
-    const unsigned likelihoodThreshold = isInterface ? 25 : 30;
-    unsigned       numberOfClasses     = 0;
+    const unsigned primaryLikelihoodThreshold   = isInterface ? 25 : 30;
+    const unsigned secondaryLikelihoodThreshold = isInterface ? 10 : 15;
+    unsigned       numberOfClasses              = 0;
 
     bool doRandomDevirt = false;
 
@@ -22022,12 +22021,13 @@ void Compiler::considerGuardedDevirtualization(
 
     assert(call->GetGDVCandidatesCount() == 0);
 
-    INDEBUG(CORINFO_SIG_INFO prevSig = {});
-
     for (UINT i = 0; i < numberOfClasses; i++)
     {
-        if (call->GetGDVCandidatesCount() >= (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount())
+        const UINT8 maxCandidates = (UINT8)JitConfig.JitGuardedDevirtualizationCheckCount();
+        if (call->GetGDVCandidatesCount() >= maxCandidates)
         {
+            JITDUMP("Reaching the JitGuardedDevirtualizationCheckCount=%u limit, other candidates are ignored.",
+                    maxCandidates);
             break;
         }
 
@@ -22038,11 +22038,13 @@ void Compiler::considerGuardedDevirtualization(
         //
         // For now we will guess if the likelihood is at least 25%/30% (intfc/virt), as studies
         // have shown this transformation should pay off even if we guess wrong sometimes.
+        // And smaller likelihoods for secondary guesses - 10%/15% (intfc/virt).
         //
-        if ((likelyClasses[i].likelihood < likelihoodThreshold / (i + 1)))
+        const UINT32 currentThreshold =
+            call->GetGDVCandidatesCount() == 0 ? primaryLikelihoodThreshold : secondaryLikelihoodThreshold;
+        if ((likelyClasses[i].likelihood < currentThreshold))
         {
-            JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind,
-                    likelihoodThreshold / (i + 1));
+            JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", callKind, currentThreshold);
             break;
         }
 

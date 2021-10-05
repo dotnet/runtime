@@ -531,7 +531,7 @@ private:
             if (!origCall->IsInlineCandidate())
             {
                 JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(), compiler->dspTreeID(origCall));
-                ClearFlag();
+                origCall->ClearGuardedDevirtualizationCandidate();
                 return;
             }
 
@@ -551,6 +551,7 @@ private:
             }
 
             Transform();
+            origCall->ClearGuardedDevirtualizationCandidate();
 
             if (isChainedGdv)
             {
@@ -588,11 +589,10 @@ private:
         }
 
         //------------------------------------------------------------------------
-        // ClearFlag: clear guarded devirtualization candidate flag from the original call.
+        // ClearFlag: not used
         //
         virtual void ClearFlag() override
         {
-            origCall->ClearGuardedDevirtualizationCandidate();
         }
 
         //------------------------------------------------------------------------
@@ -790,7 +790,7 @@ private:
             GenTreeCall* call   = compiler->gtCloneCandidateCall(origCall);
             call->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
-            call->SetGDVCandidatesCount(0);
+            call->ClearGuardedDevirtualizationCandidate();
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
