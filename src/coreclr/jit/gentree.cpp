@@ -19797,23 +19797,17 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
 //
 // Return Value:
-//     The operand number overwritten or lastUse. 0 is the default value, where the result is written into a destination that is not one of the source operands.
+//     The operand number overwritten or lastUse. 0 is the default value, where the result is written into
+//      a destination that is not one of the source operands.
 //
 unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, GenTree* op2, GenTree* op3)
 {
     // only FMA intrinsic node should call into this function
     assert(HWIntrinsicInfo::lookupIsa(gtHWIntrinsicId) == InstructionSet_FMA);
-    if (!use->OperIs(GT_STORE_LCL_VAR))
+    if (use->OperIs(GT_STORE_LCL_VAR))
     {
-        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
-            return 1;
-        else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
-            return 3;
-        else
-            return 2;
-    }
-    else
-    {
+        // For store_lcl_var, check if any op is overwritten
+
         GenTreeLclVarCommon* overwritten       = use->AsLclVarCommon();
         unsigned             overwrittenLclNum = overwritten->GetLclNum();
         if (op1->IsLocal() && op1->AsLclVarCommon()->GetLclNum() == overwrittenLclNum)
@@ -19829,7 +19823,17 @@ unsigned GenTreeHWIntrinsic::GetResultOpNumForFMA(GenTree* use, GenTree* op1, Ge
             return 3;
         }
     }
+    else
+    {
+        // For LclVar, check if any op is lastUse
 
+        if (op1->OperIs(GT_LCL_VAR) && op1->IsLastUse(0))
+            return 1;
+        else if (op3->OperIs(GT_LCL_VAR) && op3->IsLastUse(0))
+            return 3;
+        else
+            return 2;
+    }
     return 0;
 }
 #endif // TARGET_XARCH && FEATURE_HW_INTRINSICS

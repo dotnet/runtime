@@ -2156,19 +2156,20 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
+            assert(op3->isContained() || op3->IsRegOptional());
             // op1 = (op1 * op2) + [op3]
             // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            op1Reg = op1->GetRegNum();
-            op2Reg = op2->GetRegNum();
+            op1Reg        = op1->GetRegNum();
+            op2Reg        = op2->GetRegNum();
+            isCommutative = copiesUpperBits;
         }
-        isCommutative = copiesUpperBits;
     }
     else if (resultOpNum == 3)
     {
         // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
         ins    = _232form;
         op1Reg = op3->GetRegNum();
-        if (op1->isContained())
+        if (op1->isContained() || op1->IsRegOptional())
         {
             // op3 = ([op1] * op2) + op3
             op2Reg = op2->GetRegNum();
@@ -2176,6 +2177,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
+            assert(op2->isContained() || op2->IsRegOptional());
             // op3 = (op1 * [op2]) + op3
             op2Reg = op1->GetRegNum();
             op3    = op2;
@@ -2183,7 +2185,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     }
     else if (resultOpNum == 2)
     {
-        if (op1->isContained())
+        if (op1->isContained() || op1->IsRegOptional())
         {
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
@@ -2194,16 +2196,18 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
         }
         else
         {
+            assert(op3->isContained() || op3->IsRegOptional());
             // op2 = (op1 * op2) + [op3]
             // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-            op1Reg = op2->GetRegNum();
-            op2Reg = op1->GetRegNum();
+            op1Reg        = op2->GetRegNum();
+            op2Reg        = op1->GetRegNum();
+            isCommutative = copiesUpperBits;
         }
     }
     else
     {
         assert(resultOpNum == 0);
-        if (op1->isContained())
+        if (op1->isContained() || op1->IsRegOptional())
         {
             // op2 = ([op1] * op2) + op3
             // 132 form: XMM1 = (XMM1 * [XMM3]) + XMM2
@@ -2225,12 +2229,13 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
             }
             else
             {
+                assert(op3->isContained() || op3->IsRegOptional());
                 // op1 = (op1 * op2) + [op3]
                 // 213 form: XMM1 = (XMM2 * XMM1) + [XMM3]
-                op1Reg = op1->GetRegNum();
-                op2Reg = op2->GetRegNum();
+                op1Reg        = op1->GetRegNum();
+                op2Reg        = op2->GetRegNum();
+                isCommutative = copiesUpperBits;
             }
-            isCommutative = copiesUpperBits;
         }
     }
 
