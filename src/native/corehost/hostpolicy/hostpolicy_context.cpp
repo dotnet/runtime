@@ -90,12 +90,12 @@ namespace
         {
             if (strcmp(entrypointName, "corehost_resolve_component_dependencies") == 0)
             {
-                return corehost_resolve_component_dependencies;
+                return (void*)corehost_resolve_component_dependencies;
             }
 
             if (strcmp(entrypointName, "corehost_set_error_writer") == 0)
             {
-                return corehost_set_error_writer;
+                return (void*)corehost_set_error_writer;
             }
         }
 
