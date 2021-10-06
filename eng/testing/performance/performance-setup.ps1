@@ -58,7 +58,7 @@ function Verify-Robocopy {
 	[Parameter(Mandatory)]
 	[string]$Source
 	if ($LASTEXITCODE -ne 0 -or !$?) {
-		Write-Output "Failed to copy $Source: exit code $LASTEXITCODE"
+		Write-Output "Failed to copy ${Source}: exit code $LASTEXITCODE"
 		exit $LASTEXITCODE
 	}
 }

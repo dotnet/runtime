@@ -292,7 +292,8 @@ else
 	if [ "$?" -ne "0" ]; then
 		echo "git clone failed with code $?"
 		exit 1
-
+	fi
+	
     docs_directory=$performance_directory/docs
     verified_mv $docs_directory $workitem_directory
 fi
