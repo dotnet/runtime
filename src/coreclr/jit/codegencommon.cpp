@@ -1666,7 +1666,6 @@ AGAIN:
 
     rv1 = op1;
     rv2 = op2;
-    assert(cns == 0);
 
 FOUND_AM:
 
