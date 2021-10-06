@@ -3944,7 +3944,10 @@ namespace System.Xml.Serialization
 
                         if (member.Mapping.ChoiceIdentifier != null)
                         {
-                            WriteArrayLocalDecl($"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]", member.ChoiceArrayName, "null", member.Mapping.ChoiceIdentifier.Mapping.TypeDesc); Writer.Write("int c");
+                            WriteArrayLocalDecl($"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]",
+                                                member.ChoiceArrayName, "null",
+                                                member.Mapping.ChoiceIdentifier.Mapping.TypeDesc);
+                            Writer.Write("int c");
                             Writer.Write(member.ChoiceArrayName);
                             Writer.WriteLine(" = 0;");
                         }
