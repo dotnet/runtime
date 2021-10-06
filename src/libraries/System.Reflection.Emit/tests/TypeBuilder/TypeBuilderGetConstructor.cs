@@ -8,16 +8,7 @@ namespace System.Reflection.Emit.Tests
     public class TypeBuilderGetConstructor
     {
         [Fact]
-        public void GetConstructor_DeclaringTypeOfConstructorWithoutGenericParameters_ThrowsArgumentException()
-        {
-            TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
-
-            ConstructorBuilder ctor = type.DefineDefaultConstructor(MethodAttributes.PrivateScope | MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
-            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(type.AsType(), ctor));
-        }
-
-        [Fact]
-        public void GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinition()
+        public void GetConstructor_DeclaringTypeOfConstructorGenericTypeDefinition()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
             type.DefineGenericParameters("T");
@@ -41,14 +32,12 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetConstructor_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])));
+            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])));
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinitionOfType_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
@@ -67,7 +56,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/2389", TestRuntimes.Mono)]
         public void GetConstructor_TypeNotGeneric_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);

@@ -67,7 +67,7 @@ namespace System.Reflection.Emit
         public static MethodInfo GetMethod(Type type, MethodInfo method)
         {
             if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             // The following checks establishes invariants that more simply put require type to be generic and
             // method to be a generic method definition declared on the generic type definition of type.
@@ -91,10 +91,10 @@ namespace System.Reflection.Emit
             if (type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (type is not TypeBuilderInstantiation)
+            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
 
-            return MethodOnTypeBuilderInstantiation.GetMethod(method, (type as TypeBuilderInstantiation)!);
+            return MethodOnTypeBuilderInstantiation.GetMethod(method, typeBuilderInstantiation);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
@@ -102,22 +102,22 @@ namespace System.Reflection.Emit
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             if (type is not TypeBuilder && type is not TypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
-                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(type));
+                throw new ArgumentException(SR.Argument_ConstructorNeedGenericDeclaringType, nameof(constructor));
 
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
                 throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
-            if (type is TypeBuilder && type.IsGenericTypeDefinition)
+            if (type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (type is not TypeBuilderInstantiation)
+            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
 
-            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, (type as TypeBuilderInstantiation)!);
+            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, typeBuilderInstantiation);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
@@ -125,7 +125,7 @@ namespace System.Reflection.Emit
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
             if (type is not TypeBuilder and not TypeBuilderInstantiation)
-                throw new ArgumentException(SR.Argument_MustBeTypeBuilder);
+                throw new ArgumentException(SR.Argument_MustBeTypeBuilder, nameof(type));
 
             if (!field.DeclaringType!.IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_FieldNeedGenericDeclaringType, nameof(field));
@@ -134,13 +134,13 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
             // TypeBuilder G<T> ==> TypeBuilderInstantiation G<T>
-            if (type is TypeBuilder && type.IsGenericTypeDefinition)
+            if (type.IsGenericTypeDefinition)
                 type = type.MakeGenericType(type.GetGenericArguments());
 
-            if (type is not TypeBuilderInstantiation)
+            if (type is not TypeBuilderInstantiation typeBuilderInstantiation)
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
 
-            return FieldOnTypeBuilderInstantiation.GetField(field, (type as TypeBuilderInstantiation)!);
+            return FieldOnTypeBuilderInstantiation.GetField(field, typeBuilderInstantiation);
         }
         #endregion
 
