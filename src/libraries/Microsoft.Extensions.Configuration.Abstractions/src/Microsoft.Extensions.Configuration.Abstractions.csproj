@@ -24,10 +24,4 @@ Microsoft.Extensions.Configuration.IConfigurationSection</PackageDescription>
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Collections" />
-  </ItemGroup>
-
 </Project>
