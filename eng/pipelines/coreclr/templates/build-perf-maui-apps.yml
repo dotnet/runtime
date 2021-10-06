@@ -98,7 +98,7 @@ steps:
 
 
   - script: |
-      chmod -R -a+r
+      chmod -R -a+r .
       ls -laR
       ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
     condition: succeededOrFailed()
