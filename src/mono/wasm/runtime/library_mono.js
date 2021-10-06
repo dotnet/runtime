@@ -1301,15 +1301,15 @@ var MonoSupportLib = {
 					try {
 						if (asset.name === attemptUrl) {
 							if (ctx.tracing)
-								console.log ("Attempting to fetch '" + attemptUrl + "'");
+								console.log ("Attempting to fetch '%s'", attemptUrl);
 						} else {
 							if (ctx.tracing)
-								console.log ("Attempting to fetch '" + attemptUrl + "' for", asset.name);
+								console.log ("Attempting to fetch '%s' for '%s'", attemptUrl, asset.name);
 						}
 						var fetch_promise = fetch_file_cb (attemptUrl);
 						fetch_promise.then (handleFetchResponse);
 					} catch (exc) {
-						console.error ("MONO_WASM: Error fetching " + attemptUrl, exc);
+						console.error ("MONO_WASM: Error fetching '%s'\n%s", attemptUrl, exc);
 						attemptNextSource ();
 					}
 				};
