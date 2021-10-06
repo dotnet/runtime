@@ -3313,7 +3313,7 @@ const CodeGen::GenConditionDesc CodeGen::GenConditionDesc::map[32]
     { EJ_lo }, // NC
 
     { EJ_eq },                // FEQ
-    { EJ_gt, GT_AND, EJ_lo }, // FNE
+    { EJ_ne },                // FNE
     { EJ_lo },                // FLT
     { EJ_ls },                // FLE
     { EJ_ge },                // FGE
