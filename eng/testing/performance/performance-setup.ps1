@@ -39,7 +39,7 @@ function Verified-Move-Item {
     
     Move-Item -Path $Path -Destination $Destination
     if (!$?) {
-        Write-Output "Failed to move $Source to $Destination"
+        Write-Output "Failed to move $Path to $Destination"
         exit 1
     }
 }
