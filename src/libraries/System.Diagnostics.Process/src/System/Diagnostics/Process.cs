@@ -1236,7 +1236,7 @@ namespace System.Diagnostics
                 {
                     if (arg is null)
                     {
-                        throw new ArgumentNullException(nameof(startInfo.ArgumentList));
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
                     }
                 }
             }
