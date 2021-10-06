@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonConverter converter;
             Type converterType;
 
-            bool useDefaultCtorInUnannotatedStructs = typeToConvert.IsKeyValuePair() ? false : _useDefaultConstructorInUnannotatedStructs;
+            bool useDefaultCtorInUnannotatedStructs = !typeToConvert.IsKeyValuePair() && _useDefaultConstructorInUnannotatedStructs;
             if (!typeToConvert.TryGetDeserializationConstructor(useDefaultCtorInUnannotatedStructs, out ConstructorInfo? constructor))
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute<JsonConstructorAttribute>(typeToConvert);
