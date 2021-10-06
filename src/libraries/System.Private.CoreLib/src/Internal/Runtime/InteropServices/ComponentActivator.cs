@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Runtime.Versioning;
 
 namespace Internal.Runtime.InteropServices
 {
@@ -14,6 +15,11 @@ namespace Internal.Runtime.InteropServices
     {
         private const string TrimIncompatibleWarningMessage = "Native hosting is not trim compatible and this warning will be seen if trimming is enabled.";
 
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
 
@@ -47,6 +53,11 @@ namespace Internal.Runtime.InteropServices
         /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("maccatalyst")]
+        [UnsupportedOSPlatform("tvos")]
         [UnmanagedCallersOnly]
         public static unsafe int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
                                                                    IntPtr typeNameNative,
@@ -142,6 +153,10 @@ namespace Internal.Runtime.InteropServices
         }
 
         [RequiresUnreferencedCode(TrimIncompatibleWarningMessage, Url = "https://aka.ms/dotnet-illink/nativehost")]
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
             IsolatedComponentLoadContext? alc;
