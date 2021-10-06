@@ -9,10 +9,10 @@ internal static partial class Interop
     {
         [SuppressGCTransition]
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        [GeneratedDllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
         internal static partial bool SetThreadErrorMode(
 #else
-        [DllImport(Libraries.Kernel32, SetLastError = true, ExactSpelling = true)]
+        [DllImport(Libraries.Kernel32, ExactSpelling = true, SetLastError = true)]
         internal static extern bool SetThreadErrorMode(
 #endif
             uint dwNewMode,

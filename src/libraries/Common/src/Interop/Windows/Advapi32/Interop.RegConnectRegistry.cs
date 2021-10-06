@@ -15,10 +15,10 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, EntryPoint = "RegConnectRegistryW")]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegConnectRegistryW", CharSet = CharSet.Unicode)]
         internal static partial int RegConnectRegistry(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegConnectRegistryW")]
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegConnectRegistryW", CharSet = CharSet.Unicode, BestFitMapping = false)]
         internal static extern int RegConnectRegistry(
 #endif
             string machineName,

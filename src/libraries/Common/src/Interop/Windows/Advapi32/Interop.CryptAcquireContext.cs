@@ -21,10 +21,10 @@ internal static partial class Interop
         }
 
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW", CharSet = CharSet.Unicode, SetLastError = true)]
         public static partial bool CryptAcquireContext(
 #else
-        [DllImport(Libraries.Advapi32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CryptAcquireContextW")]
+        [DllImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern bool CryptAcquireContext(
 #endif
             out SafeProvHandle phProv,

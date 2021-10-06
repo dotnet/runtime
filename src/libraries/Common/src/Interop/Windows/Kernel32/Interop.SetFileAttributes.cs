@@ -12,10 +12,10 @@ internal static partial class Interop
         /// WARNING: This method does not implicitly handle long paths. Use SetFileAttributes.
         /// </summary>
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "SetFileAttributesW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "SetFileAttributesW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static partial bool SetFileAttributesPrivate(
 #else
-        [DllImport(Libraries.Kernel32, EntryPoint = "SetFileAttributesW", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "SetFileAttributesW", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetFileAttributesPrivate(
 #endif
             string name,
