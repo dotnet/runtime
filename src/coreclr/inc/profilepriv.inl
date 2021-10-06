@@ -500,10 +500,11 @@ inline BOOL IsProfilerTrackingCacheSearches(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CACHE_SEARCHES);
 }
 
-inline HRESULT JITCachedFunctionSearchStartedHelper(EEToProfInterfaceImpl *profInterface, BOOL *pAllTrue, FunctionID functionId, BOOL *pbUseCachedFunction)
+inline HRESULT JITCachedFunctionSearchStartedHelper(EEToProfInterfaceImpl *profInterface, BOOL *pAllTrue, FunctionID functionId)
 {
-    HRESULT hr = profInterface->JITCachedFunctionSearchStarted(functionId, pbUseCachedFunction);
-    *pAllTrue = *pAllTrue && *pbUseCachedFunction;
+    BOOL fUseCachedFunction = TRUE;
+    HRESULT hr = profInterface->JITCachedFunctionSearchStarted(functionId, &fUseCachedFunction);
+    *pAllTrue = *pAllTrue && fUseCachedFunction;
     return hr;
 }
 
@@ -511,12 +512,11 @@ inline void ProfControlBlock::JITCachedFunctionSearchStarted(FunctionID function
 {
     LIMITED_METHOD_CONTRACT;
 
-    *pbUseCachedFunction = TRUE;
     BOOL allTrue = TRUE;
     DoProfilerCallback(ProfilerCallbackType::Active,
                        IsProfilerTrackingCacheSearches,
                        &JITCachedFunctionSearchStartedHelper,
-                       &allTrue, functionId, pbUseCachedFunction);
+                       &allTrue, functionId);
 
     // If any reject it, consider it rejected.
     *pbUseCachedFunction = allTrue;
@@ -537,10 +537,11 @@ inline void ProfControlBlock::JITCachedFunctionSearchFinished(FunctionID functio
                        functionId, result);
 }
 
-inline HRESULT JITInliningHelper(EEToProfInterfaceImpl *profInterface, BOOL *pAllTrue, FunctionID callerId, FunctionID calleeId, BOOL *pfShouldInline)
+inline HRESULT JITInliningHelper(EEToProfInterfaceImpl *profInterface, BOOL *pAllTrue, FunctionID callerId, FunctionID calleeId)
 {
-    HRESULT hr = profInterface->JITInlining(callerId, calleeId, pfShouldInline);
-    *pAllTrue = *pAllTrue && *pfShouldInline;
+    BOOL fShouldInline = TRUE;
+    HRESULT hr = profInterface->JITInlining(callerId, calleeId, &fShouldInline);
+    *pAllTrue = *pAllTrue && fShouldInline;
     return hr;
 }
 
@@ -553,7 +554,7 @@ inline HRESULT ProfControlBlock::JITInlining(FunctionID callerId, FunctionID cal
     HRESULT hr =  DoProfilerCallback(ProfilerCallbackType::Active,
                                      IsProfilerTrackingJITInfo,
                                      &JITInliningHelper,
-                                     &allTrue, callerId, calleeId, pfShouldInline);
+                                     &allTrue, callerId, calleeId);
 
     // If any reject it, consider it rejected.
     *pfShouldInline = allTrue;
