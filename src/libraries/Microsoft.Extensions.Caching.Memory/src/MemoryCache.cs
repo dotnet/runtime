@@ -313,11 +313,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 return false;
             }
 
-            long newSize = 0L;
             for (int i = 0; i < 100; i++)
             {
                 long sizeRead = Interlocked.Read(ref _cacheSize);
-                newSize = sizeRead + entry.Size;
+                long newSize = sizeRead + entry.Size;
 
                 if (newSize < 0 || newSize > _options.SizeLimit)
                 {
@@ -336,7 +335,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void TriggerOvercapacityCompaction()
         {
-            _logger.LogDebug("Overcapacity compaction triggered");
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("Overcapacity compaction triggered");
 
             // Spawn background thread for compaction
             ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s).OvercapacityCompaction(), this);
@@ -346,7 +346,8 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             long currentSize = Interlocked.Read(ref _cacheSize);
 
-            _logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
 
             double? lowWatermark = _options.SizeLimit * (1 - _options.CompactionPercentage);
             if (currentSize > lowWatermark)
@@ -354,7 +355,8 @@ namespace Microsoft.Extensions.Caching.Memory
                 Compact(currentSize - (long)lowWatermark, entry => entry.Size);
             }
 
-            _logger.LogDebug($"Overcapacity compaction executed. New size {Interlocked.Read(ref _cacheSize)}");
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug($"Overcapacity compaction executed. New size {Interlocked.Read(ref _cacheSize)}");
         }
 
         /// Remove at least the given percentage (0.10 for 10%) of the total entries (or estimated memory?), according to the following policy:
