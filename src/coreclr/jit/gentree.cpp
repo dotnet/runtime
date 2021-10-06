@@ -3203,7 +3203,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // we have already found either a non-ADD op1 or a non-constant op2.
         gtWalkOp(&op1, &op2, nullptr, true);
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
         // gtWalkOp on both operands of the original GT_ADD.
         // This is not done for ARMARCH. Though the stated reason is that we don't try to create a
