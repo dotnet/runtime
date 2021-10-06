@@ -606,7 +606,7 @@ namespace System.Text.RegularExpressions
                         // An Empty will match anything, and thus branches after that would only be used
                         // if we backtracked into it and advanced passed the Empty after trying the Empty...
                         // but if the alternation is atomic, such backtracking won't happen.
-                        for (int i = 0; i < branches.Count - 1; i++)
+                        for (int i = 1; i < branches.Count - 1; i++)
                         {
                             if (branches[i].Type == Empty)
                             {
@@ -638,7 +638,7 @@ namespace System.Text.RegularExpressions
                                 continue;
                             }
 
-                            // Find the contiguous range of nodes from this point that are similarly one, multie, or concat of those.
+                            // Find the contiguous range of nodes from this point that are similarly one, multi, or concat of those.
                             int endExclusive = start + 1;
                             while (endExclusive < branches.Count && branches[endExclusive].FindBranchOneOrMultiStart() is not null)
                             {
@@ -671,11 +671,8 @@ namespace System.Text.RegularExpressions
                                             RegexNode nextChild = branches[next];
                                             if (nextChild.FindBranchOneOrMultiStart()!.FirstCharOfOneOrMulti() == c)
                                             {
-                                                for (int move = next; move > compare; move--)
-                                                {
-                                                    branches[move] = branches[move - 1];
-                                                }
-                                                branches[compare++] = nextChild;
+                                                branches.RemoveAt(next);
+                                                branches.Insert(compare++, nextChild);
                                                 reordered = true;
                                             }
                                         }
@@ -1018,7 +1015,8 @@ namespace System.Text.RegularExpressions
                     return this;
                 }
 
-                Span<char> scratchChar = new char[1];
+                Span<char> scratchChar = stackalloc char[1];
+                ReadOnlySpan<char> startingSpan = stackalloc char[0];
                 for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
                     // Process the first branch to get the maximum possible common string.
@@ -1029,7 +1027,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     RegexOptions startingNodeOptions = startingNode.Options;
-                    ReadOnlySpan<char> startingSpan = startingNode.Str.AsSpan();
+                    startingSpan = startingNode.Str.AsSpan();
                     if (startingNode.Type == One)
                     {
                         scratchChar[0] = startingNode.Ch;
