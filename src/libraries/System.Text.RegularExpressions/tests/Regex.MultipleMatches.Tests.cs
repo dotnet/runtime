@@ -2,21 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public class RegexMultipleMatchTests
     {
-
-        [Fact]
-        public void Matches_MultipleCapturingGroups()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Matches_MultipleCapturingGroups(RegexEngine engine)
         {
             string[] expectedGroupValues = { "abracadabra", "abra", "cad" };
             string[] expectedGroupCaptureValues = { "abracad", "abra" };
 
             // Another example - given by Brad Merril in an article on RegularExpressions
-            Regex regex = new Regex(@"(abra(cad)?)+");
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(abra(cad)?)+");
             string input = "abracadabra1abracadabra2abracadabra3";
             Match match = regex.Match(input);
             while (match.Success)
@@ -291,22 +292,14 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        public static IEnumerable<object[]> Matches_TestData_WithEngine =>
+            RegexHelpers.PrependEngines(Matches_TestData());
+
         [Theory]
-        [MemberData(nameof(Matches_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Matches_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
-        public void Matches(string pattern, string input, RegexOptions options, CaptureData[] expected)
+        [MemberData(nameof(Matches_TestData_WithEngine))]
+        public async Task Matches(RegexEngine engine, string pattern, string input, RegexOptions options, CaptureData[] expected)
         {
-            if (options == RegexOptions.None)
-            {
-                Regex regexBasic = new Regex(pattern);
-                VerifyMatches(regexBasic.Matches(input), expected);
-                VerifyMatches(regexBasic.Match(input), expected);
-
-                VerifyMatches(Regex.Matches(input, pattern), expected);
-                VerifyMatches(Regex.Match(input, pattern), expected);
-            }
-
-            Regex regexAdvanced = new Regex(pattern, options);
+            Regex regexAdvanced = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             VerifyMatches(regexAdvanced.Matches(input), expected);
             VerifyMatches(regexAdvanced.Match(input), expected);
 

@@ -178,7 +178,7 @@ while (allRuntimeArguments !== undefined && allRuntimeArguments.length > 0) {
 		allRuntimeArguments = allRuntimeArguments.slice (1);
 	} else if (allRuntimeArguments [0].startsWith ("--runtime-arg=")) {
 		var arg = allRuntimeArguments [0].substring ("--runtime-arg=".length);
-		runtime_args = allRuntimeArguments.push (arg);
+		runtime_args.push (arg);
 		allRuntimeArguments = allRuntimeArguments.slice (1);
 	} else if (allRuntimeArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
@@ -274,6 +274,7 @@ var Module = {
 					try {
 						bytes = read (asset, 'binary');
 					} catch (exc) {
+						console.log('v8 file read failed ' + asset + ' ' + exc)
 						error = exc;
 					}
 					var response = { ok: (bytes && !error), url: asset,

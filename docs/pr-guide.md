@@ -66,6 +66,7 @@ Validation may fail for several reasons:
 
 ### Additional information:
   * You can list the available pipelines by adding a comment like `/azp list` or get the available commands by adding a comment like `azp help`.
+  * In the rare case the license/cla check fails to register a response, it can be rerun by issuing a GET request to `https://cla.dotnetfoundation.org/check/dotnet/runtime?pullRequest={pr_number}`. A successful response may be a redirect to `https://github.com`.
   * Reach out to the infrastructure team for assistance on [Teams channel](https://teams.microsoft.com/l/channel/19%3ab27b36ecd10a46398da76b02f0411de7%40thread.skype/Infrastructure?groupId=014ca51d-be57-47fa-9628-a15efcc3c376&tenantId=72f988bf-86f1-41af-91ab-2d7cd011db47) (for corpnet users) or on [Gitter](https://gitter.im/dotnet/community) in other cases.
 
 ## What to do if you determine the failure is unrelated

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,36 +16,6 @@ namespace Wasm.Build.Tests
         {
         }
 
-        // TODO: invariant case?
-
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", false)]
-        [InlineData("Debug", true)] // just aot
-        [InlineData("Release", false)] // should re-link
-        [InlineData("Release", true)]
-        public void PublishTemplateProject(string config, bool aot)
-        {
-            string id = $"blazorwasm_{config}_aot_{aot}_{Path.GetRandomFileName()}";
-            InitBlazorWasmProjectDir(id);
-
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
-                    .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput("new blazorwasm")
-                    .EnsureSuccessful();
-
-            string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-            new DotNetCommand(s_buildEnv)
-                    .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput("publish", $"-bl:{publishLogPath}", aot ? "-p:RunAOTCompilation=true" : "", $"-p:Configuration={config}")
-                    .EnsureSuccessful();
-
-            //TODO: validate the build somehow?
-            // compare dotnet.wasm?
-            // relinking - dotnet.wasm should be smaller
-            //
-            // playwright?
-        }
-
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
@@ -54,6 +23,7 @@ namespace Wasm.Build.Tests
         {
             CommandResult res = PublishForRequiresWorkloadTest(config, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
             res.EnsureSuccessful();
+            AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: true);
 
             Assert.Contains("but the native references won't be linked in", res.Output);
         }
@@ -71,7 +41,7 @@ namespace Wasm.Build.Tests
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsNotUsingWorkloads))]
         [InlineData("Debug")]
         [InlineData("Release")]
-        public void AOT_And_NativeRef_FailsBecauseItRequireWorkload(string config)
+        public void AOT_And_NativeRef_FailBecauseTheyRequireWorkload(string config)
         {
             CommandResult res = PublishForRequiresWorkloadTest(config,
                                     extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>",
@@ -84,18 +54,13 @@ namespace Wasm.Build.Tests
         private CommandResult PublishForRequiresWorkloadTest(string config, string extraItems="", string extraProperties="")
         {
             string id = $"needs_workload_{config}_{Path.GetRandomFileName()}";
-            InitBlazorWasmProjectDir(id);
-
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
-                    .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput("new blazorwasm")
-                    .EnsureSuccessful();
+            CreateBlazorWasmTemplateProject(id);
 
             if (IsNotUsingWorkloads)
             {
                 // no packs installed, so no need to update the paths for runtime pack etc
-                File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.props"), "<Project />");
-                File.WriteAllText(Path.Combine(_projectDir!, "Directory.Build.targets"), "<Project />");
+                File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Local.Directory.Build.props"), Path.Combine(_projectDir!, "Directory.Build.props"), overwrite: true);
+                File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Local.Directory.Build.targets"), Path.Combine(_projectDir!, "Directory.Build.targets"), overwrite: true);
             }
 
             AddItemsPropertiesToProject(Path.Combine(_projectDir!, $"{id}.csproj"),
@@ -114,6 +79,7 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/59538")]
         public void Net50Projects_NativeReference(string config)
             => BuildNet50Project(config, aot: false, expectError: true, @"<NativeFileReference Include=""native-lib.o"" />");
 
@@ -127,6 +93,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [MemberData(nameof(Net50TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/59538")]
         public void Net50Projects_AOT(string config, bool aot, bool expectError)
             => BuildNet50Project(config, aot: aot, expectError: expectError);
 
@@ -136,7 +103,7 @@ namespace Wasm.Build.Tests
             InitBlazorWasmProjectDir(id);
 
             string directoryBuildTargets = @"<Project>
-                <Target Name=""PrintAllProjects"" BeforeTargets=""Build"">
+            <Target Name=""PrintAllProjects"" BeforeTargets=""Build"">
                     <Message Text=""** UsingBrowserRuntimeWorkload: '$(UsingBrowserRuntimeWorkload)'"" Importance=""High"" />
                 </Target>
             </Project>";
@@ -152,11 +119,11 @@ namespace Wasm.Build.Tests
 
             string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
             CommandResult result = new DotNetCommand(s_buildEnv)
-                            .WithWorkingDirectory(_projectDir!)
-                            .ExecuteWithCapturedOutput("publish",
-                                                       $"-bl:{publishLogPath}",
-                                                       (aot ? "-p:RunAOTCompilation=true" : ""),
-                                                       $"-p:Configuration={config}");
+                                            .WithWorkingDirectory(_projectDir!)
+                                            .ExecuteWithCapturedOutput("publish",
+                                                                       $"-bl:{publishLogPath}",
+                                                                       (aot ? "-p:RunAOTCompilation=true" : ""),
+                                                                       $"-p:Configuration={config}");
 
             if (expectError)
             {
@@ -167,6 +134,11 @@ namespace Wasm.Build.Tests
             {
                 result.EnsureSuccessful();
                 Assert.Contains("** UsingBrowserRuntimeWorkload: 'false'", result.Output);
+
+                string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: "net5.0");
+                AssertBlazorBootJson(config, isPublish: true, binFrameworkDir: binFrameworkDir);
+                // dotnet.wasm here would be from 5.0 nuget like:
+                // /Users/radical/.nuget/packages/microsoft.netcore.app.runtime.browser-wasm/5.0.9/runtimes/browser-wasm/native/dotnet.wasm
             }
         }
     }

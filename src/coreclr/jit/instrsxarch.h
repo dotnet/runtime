@@ -686,11 +686,11 @@ INST1(nop,              "nop",              IUM_RD, 0x000090,                   
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
 
-
 INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     )
 INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None )
 
-INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None)
+INST1(cwde,             "cwde",             IUM_RD, 0x000098,                                                            INS_FLAGS_None )
+INST1(cdq,              "cdq",              IUM_RD, 0x000099,                                                            INS_FLAGS_None )
 INST1(idiv,             "idiv",             IUM_RD, 0x0038F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
 INST1(imulEAX,          "imul",             IUM_RD, 0x0028F6,                                                            Writes_OF      | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF     )
 INST1(div,              "div",              IUM_RD, 0x0030F6,                                                            Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Undefined_CF  )
@@ -729,14 +729,11 @@ INST1(setge,            "setge",            IUM_WR, 0x0F009D,                   
 INST1(setle,            "setle",            IUM_WR, 0x0F009E,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 INST1(setg,             "setg",             IUM_WR, 0x0F009F,                                                            Reads_OF       | Reads_SF      | Reads_ZF  )
 
-#ifdef TARGET_AMD64
-// A jump with rex prefix. This is used for register indirect
-// tail calls.
-INST1(rex_jmp,          "rex.jmp",          IUM_RD, 0x0020FE,                                                            INS_FLAGS_None)
-#endif
-
-INST1(i_jmp,            "jmp",              IUM_RD, 0x0020FE,                                                            INS_FLAGS_None )
-
+// Indirect jump used for tailcalls. We differentiate between func-internal
+// indirect jump (e.g. used for switch) and tailcall indirect jumps because the
+// x64 unwinder might require the latter to be rex.w prefixed.
+INST1(tail_i_jmp,       "tail.jmp",         IUM_RD, 0x0020FF,                                                            INS_FLAGS_None )
+INST1(i_jmp,            "jmp",              IUM_RD, 0x0020FF,                                                            INS_FLAGS_None )
 INST0(jmp,              "jmp",              IUM_RD, 0x0000EB,                                                            INS_FLAGS_None )
 INST0(jo,               "jo",               IUM_RD, 0x000070,                                                            Reads_OF )
 INST0(jno,              "jno",              IUM_RD, 0x000071,                                                            Reads_OF )

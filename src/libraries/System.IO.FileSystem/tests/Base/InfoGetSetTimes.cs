@@ -12,23 +12,6 @@ namespace System.IO.Tests
         protected abstract void InvokeCreate(T item);
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/30108")]
-        public void DoesntExistThenCreate_ReturnsDefaultValues()
-        {
-            T item = GetMissingItem();
-            InvokeCreate(item);
-
-            Assert.All(TimeFunctions(), (function) =>
-            {
-                Assert.Equal(
-                    function.Kind == DateTimeKind.Local
-                        ? DateTime.FromFileTime(0).Ticks
-                        : DateTime.FromFileTimeUtc(0).Ticks,
-                    function.Getter(item).Ticks);
-            });
-        }
-
-        [Fact]
         public void ExistsThenDelete_ReturnsDefaultValues()
         {
             // Because we haven't hit the property the item should be in

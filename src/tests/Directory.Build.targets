@@ -85,7 +85,7 @@
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
-    <_CopyNativeProjectBinaries>$(CopyNativeProjectBinaries)</_CopyNativeProjectBinaries>
+    <_CopyNativeProjectBinaries Condition="'$(__CopyNativeTestBinaries)' != '1'">$(__CopyNativeProjectsAfterCombinedTestBuild)</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_WillCLRTestProjectBuild)' != 'true'">false</_CopyNativeProjectBinaries>
     <_CopyNativeProjectBinaries Condition="'$(_CopyNativeProjectBinaries)' == ''">true</_CopyNativeProjectBinaries>
   </PropertyGroup>
@@ -378,14 +378,10 @@
           Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
           TargetDir="MonoAOTCompiler/"/>
 
+        <!-- MonoTargetsTasks always builds in Debug -->
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="JsonToItemsTaskFactory/"/>
-
-        <!-- RuntimeConfigParser always builds in Debug -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\RuntimeConfigParser\Debug\$(NetCoreAppToolCurrent)\**"
-          TargetDir="RuntimeConfigParser/"/>
+          Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="MonoTargetsTasks/"/>
 
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"

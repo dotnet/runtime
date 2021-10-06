@@ -17,14 +17,14 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
-        bool TryGet(string key, out string value);
+        bool TryGet(string key, out string? value);
 
         /// <summary>
         /// Sets a configuration value for the specified key.
         /// </summary>
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
-        void Set(string key, string value);
+        void Set(string key, string? value);
 
         /// <summary>
         /// Returns a change token if this provider supports change tracking, null otherwise.
@@ -45,6 +45,6 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="earlierKeys">The child keys returned by the preceding providers for the same parent path.</param>
         /// <param name="parentPath">The parent path.</param>
         /// <returns>The child keys.</returns>
-        IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string parentPath);
+        IEnumerable<string> GetChildKeys(IEnumerable<string> earlierKeys, string? parentPath);
     }
 }

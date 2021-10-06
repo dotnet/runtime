@@ -9,7 +9,7 @@
 # Notes:
 #
 # Universal script to setup and run the xunit console runner. The script relies
-# on run.proj and the bash and batch wrappers. All test excludes will also
+# on build.proj and the bash and batch wrappers. All test excludes will also
 # come from issues.targets. If there is a jit stress or gc stress exclude,
 # please add GCStressIncompatible or JitOptimizationSensitive to the test's
 # ilproj or csproj.
@@ -58,7 +58,7 @@ from coreclr_arguments import *
 ################################################################################
 
 description = ("""Universal script to setup and run the xunit console runner. The script relies
-on run.proj and the bash and batch wrappers. All test excludes will also
+on build.proj and the bash and batch wrappers. All test excludes will also
 come from issues.targets. If there is a jit stress or gc stress exclude,
 please add GCStressIncompatible or JitOptimizationSensitive to the test's
 ilproj or csproj.
@@ -579,8 +579,8 @@ def call_msbuild(args):
 
     command =   [args.dotnetcli_script_path,
                  "msbuild",
-                 os.path.join(args.coreclr_tests_src_dir, "run.proj"),
-                 "/p:Runtests=true",
+                 os.path.join(args.coreclr_tests_src_dir, "build.proj"),
+                 "/t:RunTests",
                  "/clp:showcommandline"]
 
     command += common_msbuild_arguments

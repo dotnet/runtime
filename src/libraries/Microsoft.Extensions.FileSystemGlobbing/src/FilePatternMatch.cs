@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics.Hashing;
 
 namespace Microsoft.Extensions.FileSystemGlobbing
@@ -27,16 +28,16 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// If the matcher searched for "src/Project/**/*.cs" and the pattern matcher found "src/Project/Interfaces/IFile.cs",
         /// then <see cref="Stem" /> = "Interfaces/IFile.cs" and <see cref="Path" /> = "src/Project/Interfaces/IFile.cs".
         /// </remarks>
-        public string Stem { get; }
+        public string? Stem { get; }
 
         /// <summary>
         /// Initializes new instance of <see cref="FilePatternMatch" />
         /// </summary>
         /// <param name="path">The path to the file matched, relative to the beginning of the matching search pattern.</param>
         /// <param name="stem">The subpath to the file matched, relative to the first wildcard in the matching search pattern.</param>
-        public FilePatternMatch(string path, string stem)
+        public FilePatternMatch(string path, string? stem)
         {
-            Path = path;
+            Path = path ?? throw new ArgumentNullException(nameof(path));
             Stem = stem;
         }
 
@@ -56,10 +57,8 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// </summary>
         /// <param name="obj">The object to be compared</param>
         /// <returns>True when <see cref="Equals(FilePatternMatch)" /></returns>
-        public override bool Equals(object obj)
-        {
-            return Equals((FilePatternMatch) obj);
-        }
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
+            obj is FilePatternMatch match && Equals(match);
 
         /// <summary>
         /// Gets a hash for the file pattern match.
@@ -68,7 +67,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         public override int GetHashCode() =>
             HashHelpers.Combine(GetHashCode(Path), GetHashCode(Stem));
 
-        private static int GetHashCode(string value) =>
+        private static int GetHashCode(string? value) =>
             value != null ? StringComparer.OrdinalIgnoreCase.GetHashCode(value) : 0;
     }
 }

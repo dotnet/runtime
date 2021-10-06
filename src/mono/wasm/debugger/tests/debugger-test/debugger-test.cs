@@ -782,3 +782,28 @@ public class LoopClass
     }
 }
 
+public class SteppingInto
+{
+    static int currentCount = 0;
+    static MyIncrementer incrementer = new MyIncrementer();
+    public static void MethodToStep()
+    {
+        currentCount = incrementer.Increment(currentCount);
+    }
+}
+
+public class MyIncrementer
+{
+    private Func<DateTime> todayFunc = () => DateTime.Now;
+
+    public int Increment(int count)
+    {
+        var today = todayFunc();
+        if (today.DayOfWeek == DayOfWeek.Sunday)
+        {
+            return count + 2;
+        }
+
+        return count + 1;
+    }
+}

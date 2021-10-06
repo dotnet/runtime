@@ -8451,7 +8451,7 @@ bool CEEInfo::isIntrinsicType(CORINFO_CLASS_HANDLE classHnd)
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,
-                                     bool * isRelative) 
+                                     bool * isRelative)
 {
     CONTRACTL {
         NOTHROW;
@@ -8550,14 +8550,11 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
         // safely devirtualize.
         if (info->context != nullptr)
         {
-            TypeHandle OwnerClsHnd = GetTypeFromContext(info->context);
-            MethodTable* pOwnerMT = OwnerClsHnd.GetMethodTable();
-
             // If the derived class is a shared class, make sure the
             // owner class is too.
             if (pObjMT->IsSharedByGenericInstantiations())
             {
-                pOwnerMT = pOwnerMT->GetCanonicalMethodTable();
+                MethodTable* pCanonBaseMT = pBaseMT->GetCanonicalMethodTable();
 
                 // Check to see if the derived class implements multiple variants of a matching interface.
                 // If so, we cannot predict exactly which implementation is in use here.
@@ -8565,7 +8562,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 int canonicallyMatchingInterfacesFound = 0;
                 while (it.Next())
                 {
-                    if (it.GetInterface(pObjMT)->GetCanonicalMethodTable() == pOwnerMT)
+                    if (it.GetInterface(pObjMT)->GetCanonicalMethodTable() == pCanonBaseMT)
                     {
                         canonicallyMatchingInterfacesFound++;
                         if (canonicallyMatchingInterfacesFound > 1)
@@ -8578,7 +8575,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
                 }
             }
 
-            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD, FALSE /* throwOnConflict */);
+            pDevirtMD = pObjMT->GetMethodDescForInterfaceMethod(TypeHandle(pBaseMT), pBaseMD, FALSE /* throwOnConflict */);
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
@@ -9911,6 +9908,17 @@ void InlinedCallFrame::GetEEInfo(CORINFO_EE_INFO::InlinedCallFrameInfo *pInfo)
 #endif // TARGET_ARM
 }
 
+CORINFO_OS getClrVmOs()
+{
+#ifdef TARGET_OSX
+    return CORINFO_MACOS;
+#elif defined(TARGET_UNIX)
+    return CORINFO_UNIX;
+#else
+    return CORINFO_WINNT;
+#endif
+}
+
 /*********************************************************************/
 // Return details about EE internal data structures
 void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
@@ -9956,12 +9964,7 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->osPageSize = GetOsPageSize();
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
-
-#ifdef TARGET_UNIX
-    pEEInfoOut->osType = CORINFO_UNIX;
-#else
-    pEEInfoOut->osType = CORINFO_WINNT;
-#endif
+    pEEInfoOut->osType = getClrVmOs();
 
     EE_TO_JIT_TRANSITION();
 }
@@ -10783,6 +10786,12 @@ void CEEJitInfo::WriteCode(EEJitManager * jitMgr)
         THROWS;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
+#ifdef FEATURE_INTERPRETER
+    // TODO: the InterpterCEEInfo doesn't support features about W^X.
+    // see also #53173
+    if (m_pCodeHeap == nullptr) return;
+#endif
 
     WriteCodeBytes();
 

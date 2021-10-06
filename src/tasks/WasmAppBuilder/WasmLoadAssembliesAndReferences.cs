@@ -90,7 +90,7 @@ public class WasmLoadAssembliesAndReferences : Task
     }
 }
 
-internal class SearchPathsAssemblyResolver : MetadataAssemblyResolver
+internal sealed class SearchPathsAssemblyResolver : MetadataAssemblyResolver
 {
     private readonly string[] _searchPaths;
 

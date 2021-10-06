@@ -11,7 +11,10 @@ namespace System.IO.Tests
     public class EnumerableTests : FileSystemTest
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/24295", TestPlatforms.AnyUnix)]
+        // we don't guarantee thread safety of enumerators in general, but on Windows we
+        // currently are thread safe, and this test will help ensure that if we change that
+        // it's a conscious decision. Discussed in https://github.com/dotnet/runtime/issues/24295.
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void FileEnumeratorIsThreadSafe()
         {
             string directory = Directory.CreateDirectory(GetTestFilePath()).FullName;
