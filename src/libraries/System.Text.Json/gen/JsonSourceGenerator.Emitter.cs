@@ -797,6 +797,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
 private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPropertyName}{CtorParamInitMethodNameSuffix}()
 {{
     {JsonParameterInfoValuesTypeRef}[] {parametersVarName} = new {JsonParameterInfoValuesTypeRef}[{paramCount}];
+    {JsonParameterInfoValuesTypeRef} info;
 ");
 
                 for (int i = 0; i < paramCount; i++)
@@ -806,12 +807,10 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     string parameterTypeRef = reflectionInfo.ParameterType.GetCompilableName();
 
                     object? defaultValue = reflectionInfo.GetDefaultValue();
-                    string defaultValueAsStr = defaultValue == null
-                        ? $"default({parameterTypeRef})"
-                        : GetParamDefaultValueAsString(defaultValue);
+                    string defaultValueAsStr = GetParamDefaultValueAsString(defaultValue, parameterTypeRef);
 
                     sb.Append(@$"
-    {parametersVarName}[{i}] = new()
+    {InfoVarName} = new()
     {{
         Name = ""{reflectionInfo.Name!}"",
         ParameterType = typeof({parameterTypeRef}),
@@ -819,6 +818,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
         HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)},
         DefaultValue = {defaultValueAsStr}
     }};
+    {parametersVarName}[{i}] = {InfoVarName};
 ");
                 }
 
@@ -1318,12 +1318,12 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
 
         private static string ToCSharpKeyword(bool value) => value.ToString().ToLowerInvariant();
 
-        private static string GetParamDefaultValueAsString(object? value)
+        private static string GetParamDefaultValueAsString(object? value, string objectTypeAsStr)
         {
             switch (value)
             {
                 case null:
-                    return "null";
+                    return $"default({objectTypeAsStr})";
                 case bool boolVal:
                     return ToCSharpKeyword(boolVal);
                 default:

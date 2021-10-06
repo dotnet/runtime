@@ -523,5 +523,10 @@ namespace System.Text.Json.Serialization.Metadata
         internal string? ClrName { get; set; }
 
         internal bool IsVirtual { get; set; }
+
+        /// <summary>
+        /// Default value used for parameterized ctor invocation.
+        /// </summary>
+        internal abstract object? DefaultValue { get; }
     }
 }

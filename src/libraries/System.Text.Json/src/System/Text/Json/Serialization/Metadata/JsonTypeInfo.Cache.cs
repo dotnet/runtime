@@ -646,7 +646,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            InitializeConstructorParameters(array);
+            InitializeConstructorParameters(array, sourceGenMode: true);
             Debug.Assert(ParameterCache != null);
         }
     }
