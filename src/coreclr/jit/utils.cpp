@@ -24,19 +24,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "opcode.h"
 
 /*****************************************************************************/
-// Define the string platform name based on compilation #ifdefs. This is the
-// same code for all platforms, hence it is here instead of in the targetXXX.cpp
-// files.
-
-#ifdef TARGET_UNIX
-// Should we distinguish Mac? Can we?
-// Should we distinguish flavors of Unix? Can we?
-const char* Target::g_tgtPlatformName = "Unix";
-#else  // !TARGET_UNIX
-const char* Target::g_tgtPlatformName = "Windows";
-#endif // !TARGET_UNIX
-
-/*****************************************************************************/
 
 #define DECLARE_DATA
 
@@ -134,7 +121,7 @@ const char* varTypeName(var_types vt)
  *  Return the name of the given register.
  */
 
-const char* getRegName(regNumber reg, bool isFloat)
+const char* getRegName(regNumber reg)
 {
     // Special-case REG_NA; it's not in the regNames array, but we might want to print it.
     if (reg == REG_NA)
@@ -142,27 +129,21 @@ const char* getRegName(regNumber reg, bool isFloat)
         return "NA";
     }
 
+    static const char* const regNames[] = {
 #if defined(TARGET_ARM64)
-    static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, xname, wname) xname,
-#include "register.h"
-    };
-    assert(reg < ArrLen(regNames));
-    return regNames[reg];
 #else
-    static const char* const regNames[] = {
 #define REGDEF(name, rnum, mask, sname) sname,
+#endif
 #include "register.h"
     };
     assert(reg < ArrLen(regNames));
     return regNames[reg];
-#endif
 }
 
-const char* getRegName(unsigned reg,
-                       bool     isFloat) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
+const char* getRegName(unsigned reg) // this is for gcencode.cpp and disasm.cpp that dont use the regNumber type
 {
-    return getRegName((regNumber)reg, isFloat);
+    return getRegName((regNumber)reg);
 }
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_GC_TABLES
 
@@ -1933,7 +1914,7 @@ double FloatingPointUtils::convertUInt64ToDouble(unsigned __int64 uIntVal)
         uint64_t adjHex = 0x43F0000000000000UL;
         d               = (double)s64 + *(double*)&adjHex;
 #else
-        d                             = (double)uIntVal;
+        d = (double)uIntVal;
 #endif
     }
     else
@@ -1981,7 +1962,7 @@ unsigned __int64 FloatingPointUtils::convertDoubleToUInt64(double d)
 
     u64 = UINT64(INT64(d));
 #else
-    u64                               = UINT64(d);
+    u64   = UINT64(d);
 #endif // TARGET_XARCH
 
     return u64;
@@ -2433,15 +2414,18 @@ T GetUnsignedMagic(T d, bool* increment /*out*/, int* preShift /*out*/, int* pos
     }
 }
 
-uint32_t GetUnsigned32Magic(uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/)
+uint32_t GetUnsigned32Magic(
+    uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
-    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, 32);
+    assert(bits <= 32);
+    return GetUnsignedMagic<uint32_t>(d, increment, preShift, postShift, bits);
 }
 
 #ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
     uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits)
 {
+    assert(bits <= 64);
     return GetUnsignedMagic<uint64_t>(d, increment, preShift, postShift, bits);
 }
 #endif
@@ -2607,24 +2591,21 @@ bool CastFromIntOverflows(int32_t fromValue, var_types toType, bool fromUnsigned
 {
     switch (toType)
     {
-        case TYP_BYTE:
-            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_BOOL:
+        case TYP_BYTE:
         case TYP_UBYTE:
-            return (uint8_t)fromValue != fromValue;
         case TYP_SHORT:
-            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_USHORT:
-            return (uint16_t)fromValue != fromValue;
         case TYP_INT:
-            return fromUnsigned && (fromValue < 0);
         case TYP_UINT:
-        case TYP_ULONG:
-            return !fromUnsigned && (fromValue < 0);
         case TYP_LONG:
+        case TYP_ULONG:
+            return fromUnsigned ? !FitsIn(toType, static_cast<uint32_t>(fromValue)) : !FitsIn(toType, fromValue);
+
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return false;
+
         default:
             unreached();
     }
@@ -2634,26 +2615,21 @@ bool CastFromLongOverflows(int64_t fromValue, var_types toType, bool fromUnsigne
 {
     switch (toType)
     {
-        case TYP_BYTE:
-            return ((int8_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_BOOL:
+        case TYP_BYTE:
         case TYP_UBYTE:
-            return (uint8_t)fromValue != fromValue;
         case TYP_SHORT:
-            return ((int16_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_USHORT:
-            return (uint16_t)fromValue != fromValue;
         case TYP_INT:
-            return ((int32_t)fromValue != fromValue) || (fromUnsigned && fromValue < 0);
         case TYP_UINT:
-            return (uint32_t)fromValue != fromValue;
         case TYP_LONG:
-            return fromUnsigned && (fromValue < 0);
         case TYP_ULONG:
-            return !fromUnsigned && (fromValue < 0);
+            return fromUnsigned ? !FitsIn(toType, static_cast<uint64_t>(fromValue)) : !FitsIn(toType, fromValue);
+
         case TYP_FLOAT:
         case TYP_DOUBLE:
             return false;
+
         default:
             unreached();
     }

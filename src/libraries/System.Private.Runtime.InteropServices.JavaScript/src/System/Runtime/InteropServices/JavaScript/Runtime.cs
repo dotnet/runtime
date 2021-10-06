@@ -180,5 +180,75 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             return new Uri(uri);
         }
+
+        public static void CancelPromise(int promiseJSHandle)
+        {
+            var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException(res);
+        }
+
+        public static Task<object> WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out JSObject webSocket, out int promiseJSHandle)
+        {
+            var res = Interop.Runtime.WebSocketOpen(uri, subProtocols, onClosed, out int webSocketJSHandle, out promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+            webSocket = new JSObject((IntPtr)webSocketJSHandle);
+
+            return (Task<object>)res;
+        }
+
+        public static unsafe Task<object>? WebSocketSend(JSObject webSocket, ArraySegment<byte> buffer, int messageType, bool endOfMessage, out int promiseJSHandle)
+        {
+            fixed (byte* messagePtr = buffer.Array)
+            {
+                var res = Interop.Runtime.WebSocketSend(webSocket.JSHandle, (IntPtr)messagePtr, buffer.Offset, buffer.Count, messageType, endOfMessage, out promiseJSHandle, out int exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+
+                if (res == null)
+                {
+                    return null;
+                }
+
+                return (Task<object>)res;
+            }
+        }
+
+        public static unsafe Task<object>? WebSocketReceive(JSObject webSocket, ArraySegment<byte> buffer, ReadOnlySpan<int> response, out int promiseJSHandle)
+        {
+            fixed (int* responsePtr = response)
+            fixed (byte* bufferPtr = buffer.Array)
+            {
+                var res = Interop.Runtime.WebSocketReceive(webSocket.JSHandle, (IntPtr)bufferPtr, buffer.Offset, buffer.Count, (IntPtr)responsePtr, out promiseJSHandle, out int exception);
+                if (exception != 0)
+                    throw new JSException((string)res);
+                if (res == null)
+                {
+                    return null;
+                }
+                return (Task<object>)res;
+            }
+        }
+
+        public static Task<object>? WebSocketClose(JSObject webSocket, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle)
+        {
+            var res = Interop.Runtime.WebSocketClose(webSocket.JSHandle, code, reason, waitForCloseReceived, out promiseJSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException((string)res);
+
+            if (res == null)
+            {
+                return null;
+            }
+            return (Task<object>)res;
+        }
+
+        public static void WebSocketAbort(JSObject webSocket)
+        {
+            var res = Interop.Runtime.WebSocketAbort(webSocket.JSHandle, out int exception);
+            if (exception != 0)
+                throw new JSException(res);
+        }
     }
 }

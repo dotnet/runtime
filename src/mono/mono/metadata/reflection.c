@@ -1977,7 +1977,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 		if (!assembly) {
 			/* then we must load the assembly ourselve - see #60439 */
 			MonoAssemblyByNameRequest req;
-			mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+			mono_assembly_request_prepare_byname (&req, alc);
 			req.requesting_assembly = NULL;
 			req.basedir = image ? image->assembly->basedir : NULL;
 			assembly = mono_assembly_request_byname (&info->assembly, &req, NULL);

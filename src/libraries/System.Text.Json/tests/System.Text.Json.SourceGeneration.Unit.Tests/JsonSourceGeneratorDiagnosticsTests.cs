@@ -190,5 +190,38 @@ public class Program
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, Array.Empty<string>());
             CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
         }
+
+        [Fact]
+        public void WarnOnClassesWithInitOnlyProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithInitOnlyProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            string[] expectedWarningDiagnostics = new string[] { "The type 'Location' defines init-only properties, deserialization of which is currently not supported in source generation mode." };
+
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+        }
+
+        [Fact]
+        public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithInaccessibleJsonIncludeProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            string[] expectedWarningDiagnostics = new string[]
+            {
+                "The member 'Location.Id' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.",
+                "The member 'Location.Address2' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.",
+                "The member 'Location.Country' has been annotated with the JsonIncludeAttribute but is not visible to the source generator."
+            };
+
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Info, Array.Empty<string>());
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Warning, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(generatorDiags, DiagnosticSeverity.Error, Array.Empty<string>());
+        }
     }
 }

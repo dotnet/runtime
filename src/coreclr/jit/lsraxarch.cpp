@@ -1213,13 +1213,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         regMaskTP ctrlExprCandidates = RBM_NONE;
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
+        // computed into appropriate registers.
         if (call->IsFastTailCall())
         {
-            assert(!ctrlExpr->isContained());
-            // Fast tail call - make sure that call target is always computed in RAX
-            // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
-            ctrlExprCandidates = RBM_RAX;
+            // Fast tail call - make sure that call target is always computed in volatile registers
+            // that will not be restored in the epilog sequence.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
@@ -1236,17 +1235,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
 #endif // TARGET_X86
 
-#if FEATURE_VARARG
         // If it is a fast tail call, it is already preferenced to use RAX.
         // Therefore, no need set src candidates on call tgt again.
-        if (call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
+        if (compFeatureVarArg() && call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
         {
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required
             // by Amd64 ABI.
             ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
         }
-#endif // !FEATURE_VARARG
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
@@ -1381,7 +1378,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     if (size >= XMM_REGSIZE_BYTES)
                     {
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                        SetContainsAVXFlags();
+                        SetContainsAVXFlags(size);
                     }
                     break;
 
@@ -2197,7 +2194,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 {
                     // If the index is not a constant or op1 is in register,
                     // we will use the SIMD temp location to store the vector.
-                    compiler->getSIMDInitTempVarNum();
+                    var_types requiredSimdTempType = (intrinsicId == NI_Vector128_GetElement) ? TYP_SIMD16 : TYP_SIMD32;
+                    compiler->getSIMDInitTempVarNum(requiredSimdTempType);
                 }
                 break;
             }

@@ -66,16 +66,4 @@
     <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
     <Right>lib/net462/System.Drawing.Common.dll</Right>
   </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Drawing.ColorTranslator</Target>
-    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
-    <Right>lib/net6.0/System.Drawing.Common.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Drawing.SystemColors</Target>
-    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
-    <Right>lib/net6.0/System.Drawing.Common.dll</Right>
-  </Suppression>
 </Suppressions>

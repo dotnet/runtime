@@ -406,7 +406,7 @@ namespace DebuggerTests
         public async Task JSEvaluate()
         {
             var bp_loc = "/other.js";
-            var line = 76;
+            var line = 78;
             var col = 1;
 
             await SetBreakpoint(bp_loc, line, col);

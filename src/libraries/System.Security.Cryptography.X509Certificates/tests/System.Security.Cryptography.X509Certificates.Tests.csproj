@@ -58,6 +58,8 @@
     <Compile Include="CertificateCreation\DSAX509SignatureGenerator.cs" />
     <Compile Include="CertificateCreation\EccTestData.cs" />
     <Compile Include="CertificateCreation\ECDsaX509SignatureGeneratorTests.cs" />
+    <Compile Include="$(CommonPath)Internal\Cryptography\PemEnumerator.cs"
+             Link="Common\Internal\Cryptography\PemEnumerator.cs" />
     <Compile Include="CertificateCreation\PrivateKeyAssociationTests.cs" />
     <Compile Include="CertificateCreation\RSAPkcs1X509SignatureGeneratorTests.cs" />
     <Compile Include="CertificateCreation\RSAPssX509SignatureGeneratorTests.cs" />

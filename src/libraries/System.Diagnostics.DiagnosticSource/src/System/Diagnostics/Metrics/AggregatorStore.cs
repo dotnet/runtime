@@ -201,7 +201,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal class MultiSizeLabelNameDictionary<TAggregator> where TAggregator : Aggregator
+    internal sealed class MultiSizeLabelNameDictionary<TAggregator> where TAggregator : Aggregator
     {
         private TAggregator? NoLabelAggregator;
         private FixedSizeLabelNameDictionary<StringSequence1, ObjectSequence1, TAggregator>? Label1;
@@ -406,7 +406,7 @@ namespace System.Diagnostics.Metrics
     }
 
     [System.Security.SecurityCritical] // using SecurityCritical type ReadOnlySpan
-    internal class LabelInstructionInterpretter<TObjectSequence, TAggregator>
+    internal sealed class LabelInstructionInterpretter<TObjectSequence, TAggregator>
         where TObjectSequence : struct, IObjectSequence, IEquatable<TObjectSequence>
         where TAggregator : Aggregator
     {
@@ -477,7 +477,7 @@ namespace System.Diagnostics.Metrics
         }
     }
 
-    internal class FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator> :
+    internal sealed class FixedSizeLabelNameDictionary<TStringSequence, TObjectSequence, TAggregator> :
         ConcurrentDictionary<TStringSequence, ConcurrentDictionary<TObjectSequence, TAggregator>>
         where TAggregator : Aggregator
         where TStringSequence : IStringSequence, IEquatable<TStringSequence>

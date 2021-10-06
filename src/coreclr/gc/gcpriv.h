@@ -2024,6 +2024,8 @@ protected:
     void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
     void clear_gen0_bricks();
+    PER_HEAP
+    void check_gen0_bricks();
 #ifdef BACKGROUND_GC
     PER_HEAP
     void rearrange_small_heap_segments();

@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 using Internal.Text;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
@@ -26,9 +27,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private EcmaModule _module;
         private NativeDebugDirectoryEntryNode _nativeEntry;
+        private PerfMapDebugDirectoryEntryNode _perfMapEntry;
+
         private bool _insertDeterministicEntry;
 
-        public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName)
+        public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName, bool shouldAddNiPdb, bool shouldGeneratePerfmap)
         {
             _module = sourceModule;
             _insertDeterministicEntry = sourceModule == null; // Mark module as deterministic if generating composite image
@@ -37,7 +40,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 pdbNameRoot = sourceModule.Assembly.GetName().Name;
             }
-            _nativeEntry = new NativeDebugDirectoryEntryNode(pdbNameRoot + ".ni.pdb");
+
+            if (shouldAddNiPdb)
+            {
+                _nativeEntry = new NativeDebugDirectoryEntryNode(pdbNameRoot + ".ni.pdb");
+            }
+
+            if (shouldGeneratePerfmap)
+            {
+                _perfMapEntry = new PerfMapDebugDirectoryEntryNode(pdbNameRoot + ".ni.r2rmap");
+            }
         }
 
         public override ObjectNodeSection Section => ObjectNodeSection.TextSection;
@@ -52,7 +64,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
-        public int Size => (GetNumDebugDirectoryEntriesInModule() + 1 + (_insertDeterministicEntry ? 1 : 0)) * ImageDebugDirectorySize;
+        public int Size => (GetNumDebugDirectoryEntriesInModule()
+            + (_nativeEntry is not null ? 1 : 0)
+            + (_perfMapEntry is not null ? 1 : 0)
+            + (_insertDeterministicEntry ? 1 : 0)) * ImageDebugDirectorySize;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -83,48 +98,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             builder.RequireInitialPointerAlignment();
             builder.AddSymbol(this);
 
-            ImmutableArray<DebugDirectoryEntry> entries = default(ImmutableArray<DebugDirectoryEntry>);
+            ImmutableArray<DebugDirectoryEntry> entries = ImmutableArray<DebugDirectoryEntry>.Empty;
             if (_module != null)
                 entries = _module.PEReader.ReadDebugDirectory();
 
             int numEntries = GetNumDebugDirectoryEntriesInModule();
 
-            // First, write the native debug directory entry
-            {
-                var entry = _nativeEntry;
+            // Reuse the module's PDB entry
+            DebugDirectoryEntry pdbEntry = entries.Where(s => s.Type == DebugDirectoryEntryType.CodeView).FirstOrDefault();
 
-                builder.EmitUInt(0 /* Characteristics */);
-                if (numEntries > 0)
-                {
-                    builder.EmitUInt(entries[0].Stamp);
-                    builder.EmitUShort(entries[0].MajorVersion);
-                }
-                else
-                {
-                    builder.EmitUInt(0);
-                    builder.EmitUShort(0);
-                }
-                // Make sure the "is portable pdb" indicator (MinorVersion == 0x504d) is clear
-                // for the NGen debug directory entry since this debug directory can be copied
-                // from an existing entry which could be a portable pdb.
-                builder.EmitUShort(0 /* MinorVersion */);
-                builder.EmitInt((int)DebugDirectoryEntryType.CodeView);
-                builder.EmitInt(entry.Size);
-                builder.EmitReloc(entry, RelocType.IMAGE_REL_BASED_ADDR32NB);
-                builder.EmitReloc(entry, RelocType.IMAGE_REL_FILE_ABSOLUTE);
-            }
+            // NI PDB entry
+            _nativeEntry?.EmitHeader(ref builder, pdbEntry.Stamp, pdbEntry.MajorVersion);
+
+            _perfMapEntry?.EmitHeader(ref builder);
 
             // If generating a composite image, emit the deterministic marker
             if (_insertDeterministicEntry)
             {
-                builder.EmitUInt(0 /* Characteristics */);
-                builder.EmitUInt(0);
-                builder.EmitUShort(0);
-                builder.EmitUShort(0);
-                builder.EmitInt((int)DebugDirectoryEntryType.Reproducible);
-                builder.EmitInt(0);
-                builder.EmitUInt(0);
-                builder.EmitUInt(0);
+                DeterministicDebugDirectoryEntry.EmitHeader(ref builder);
             }
 
             // Second, copy existing entries from input module
