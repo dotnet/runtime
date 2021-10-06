@@ -3030,7 +3030,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
 
         addr->gtFlags |= GTF_ADDRMODE_NO_CSE;
-#ifdef TARGET_XARCH
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
         // addrmodeCount is the count of items that we used to form
         // an addressing mode.  The maximum value is 4 when we have
         // all of these:   { base, idx, cns, mul }
@@ -3161,27 +3161,6 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
                 }
             }
         }
-#elif defined TARGET_ARM64
-        if (base)
-        {
-            *pCostEx += base->GetCostEx();
-            *pCostSz += base->GetCostSz();
-        }
-
-        if (idx)
-        {
-            *pCostEx += idx->GetCostEx();
-            *pCostSz += idx->GetCostSz();
-        }
-
-        if (cns != 0)
-        {
-            if (cns >= (4096 * genTypeSize(type)))
-            {
-                *pCostEx += 1;
-                *pCostSz += 4;
-            }
-        }
 #else
 #error "Unknown TARGET"
 #endif
@@ -3224,7 +3203,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         // we have already found either a non-ADD op1 or a non-constant op2.
         gtWalkOp(&op1, &op2, nullptr, true);
 
-#if defined(TARGET_XARCH)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM)
         // For XARCH we will fold GT_ADDs in the op2 position into the addressing mode, so we call
         // gtWalkOp on both operands of the original GT_ADD.
         // This is not done for ARMARCH. Though the stated reason is that we don't try to create a

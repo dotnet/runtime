@@ -1441,7 +1441,7 @@ AGAIN:
 
         cns += op2->AsIntConCommon()->IconValue();
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARM)
         if (cns == 0)
 #endif
         {
@@ -1461,7 +1461,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#if SCALED_ADDR_MODES && !defined(TARGET_ARM)
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1505,7 +1505,7 @@ AGAIN:
 
     switch (op1->gtOper)
     {
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARM)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
@@ -1568,7 +1568,7 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
+#endif // !TARGET_ARM
 
         case GT_NOP:
 
@@ -1587,7 +1587,7 @@ AGAIN:
     noway_assert(op2);
     switch (op2->gtOper)
     {
-#if !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARM)
         // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
         case GT_ADD:
 
@@ -1646,7 +1646,7 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
+#endif // !TARGET_ARM
 
         case GT_NOP:
 
