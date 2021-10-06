@@ -13,7 +13,7 @@ namespace DllImportGenerator.IntegrationTests
     {
         public partial class FunctionPointer
         {
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_after_gc")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_managed_callback_after_gc")]
             public static unsafe partial void InvokeAfterGC(delegate* <void> cb);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_after_gc")]
@@ -22,7 +22,7 @@ namespace DllImportGenerator.IntegrationTests
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_after_gc")]
             public static unsafe partial void InvokeAfterGC(delegate* unmanaged[Stdcall]<void> cb);
 
-            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_blittable_args")]
+            [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_managed_callback_blittable_args")]
             public static unsafe partial int InvokeWithBlittableArgument(delegate* <int, int, int> cb, int a, int b);
 
             [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "invoke_callback_blittable_args")]

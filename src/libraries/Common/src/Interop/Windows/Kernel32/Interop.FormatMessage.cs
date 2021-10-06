@@ -15,13 +15,10 @@ internal static partial class Interop
         private const int FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100;
         private const int ERROR_INSUFFICIENT_BUFFER = 0x7A;
 
-#if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        private static unsafe partial int FormatMessage(
-#else
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+                                                // Disabled since FormatMessage is a QCall in some scenarios and DllImportGenerator doesn't support QCalls.
         [DllImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", BestFitMapping = true, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         private static extern unsafe int FormatMessage(
-#endif
             int dwFlags,
             IntPtr lpSource,
             uint dwMessageId,
@@ -29,6 +26,7 @@ internal static partial class Interop
             void* lpBuffer,
             int nSize,
             IntPtr arguments);
+#pragma warning restore DLLIMPORTGENANALYZER015
 
         /// <summary>
         ///     Returns a string message for the specified Win32 error code.

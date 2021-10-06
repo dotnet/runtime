@@ -15,10 +15,11 @@ internal static partial class Interop
         internal static partial uint GetLongPathNameW(
 #else
         [DllImport(Libraries.Kernel32, BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        internal static extern uint GetLongPathNameW(
 #endif
+        internal static extern uint GetLongPathNameW(
             ref char lpszShortPath,
             ref char lpszLongPath,
             uint cchBuffer);
+
     }
 }

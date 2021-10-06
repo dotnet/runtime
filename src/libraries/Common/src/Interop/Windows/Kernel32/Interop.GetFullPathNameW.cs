@@ -16,8 +16,8 @@ internal static partial class Interop
         internal static partial uint GetFullPathNameW(
 #else
         [DllImport(Libraries.Kernel32, BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
-        internal static extern uint GetFullPathNameW(
 #endif
+        internal static extern uint GetFullPathNameW(
             ref char lpFileName,
             uint nBufferLength,
             ref char lpBuffer,

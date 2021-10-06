@@ -8,12 +8,9 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-#if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static partial bool CloseHandle(IntPtr handle);
-#else
+#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+                                                // Disabled since CloseHandle is a QCall in some scenarios and DllImportGenerator doesn't support QCalls.
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern bool CloseHandle(IntPtr handle);
-#endif
     }
 }
