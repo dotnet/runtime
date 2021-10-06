@@ -97,7 +97,7 @@ namespace System.Collections.Generic
                 {
                     Debug.Assert(sortedSet.root != null);
                     this.count = sortedSet.count;
-                    root = sortedSet.root.DeepClone();
+                    root = sortedSet.root.DeepClone(this.count);
                 }
                 return;
             }
@@ -1676,13 +1676,36 @@ namespace System.Collections.Generic
 
             public void ColorRed() => Color = NodeColor.Red;
 
-            public Node DeepClone()
+            public Node DeepClone(int count)
             {
-                Node newNode = ShallowClone();
-                newNode.Left = Left?.DeepClone();
-                newNode.Right = Right?.DeepClone();
+#if DEBUG
+                Debug.Assert(count == GetCount());
+#endif
+                Node newRoot = ShallowClone();
 
-                return newNode;
+                var pendingNodes = new Stack<(Node source, Node target)>(2 * Log2(count) + 2);
+                pendingNodes.Push((this, newRoot));
+
+                while (pendingNodes.TryPop(out var next))
+                {
+                    Node clonedNode;
+
+                    if (next.source.Left is Node left)
+                    {
+                        clonedNode = left.ShallowClone();
+                        next.target.Left = clonedNode;
+                        pendingNodes.Push((left, clonedNode));
+                    }
+
+                    if (next.source.Right is Node right)
+                    {
+                        clonedNode = right.ShallowClone();
+                        next.target.Right = clonedNode;
+                        pendingNodes.Push((right, clonedNode));
+                    }
+                }
+
+                return newRoot;
             }
 
             /// <summary>
