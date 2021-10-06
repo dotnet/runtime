@@ -16,6 +16,15 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Generates a human-readable view of the configuration showing where each value came from.
         /// </summary>
+        /// <returns> The debug view. </returns>
+        public static string GetDebugView(this IConfigurationRoot root)
+        {
+            return GetDebugView(root, null);
+        }
+
+        /// <summary>
+        /// Generates a human-readable view of the configuration showing where each value came from.
+        /// </summary>
         /// <param name="root">Configuration root</param>
         /// <param name="processValue">
         /// Function for processing the value e.g. hiding secrets
@@ -27,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         ///   returns: Value is used to assign as the Value of the configuration section
         /// </param>
         /// <returns> The debug view. </returns>
-        public static string GetDebugView(this IConfigurationRoot root, Func<string, string, string, IConfigurationProvider, string> processValue = null)
+        public static string GetDebugView(this IConfigurationRoot root, Func<string, string, string, IConfigurationProvider, string> processValue)
         {
             void RecurseChildren(
                 StringBuilder stringBuilder,
