@@ -593,16 +593,6 @@ namespace System.Collections.Specialized
                 return new OrderedDictionaryEnumerator(_objects, _isKeys == true ? OrderedDictionaryEnumerator.Keys : OrderedDictionaryEnumerator.Values);
             }
 
-            int IList.Add(object? value)
-            {
-                throw new NotSupportedException(SR.OrderedDictionaryKeyValueCollection_ReadOnly);
-            }
-
-            void IList.Clear()
-            {
-                throw new NotSupportedException(SR.OrderedDictionaryKeyValueCollection_ReadOnly);
-            }
-
             bool IList.Contains(object? value)
             {
                 if (_isKeys)
@@ -669,21 +659,6 @@ namespace System.Collections.Specialized
                 return -1;
             }
 
-            void IList.Insert(int index, object? value)
-            {
-                throw new NotSupportedException(SR.OrderedDictionaryKeyValueCollection_ReadOnly);
-            }
-
-            void IList.Remove(object? value)
-            {
-                throw new NotSupportedException(SR.OrderedDictionaryKeyValueCollection_ReadOnly);
-            }
-
-            void IList.RemoveAt(int index)
-            {
-                throw new NotSupportedException(SR.OrderedDictionaryKeyValueCollection_ReadOnly);
-            }
-
             bool IList.IsFixedSize => true;
             bool IList.IsReadOnly => true;
 
@@ -694,7 +669,37 @@ namespace System.Collections.Specialized
                     object o = _objects[index]!;
                     return _isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value;
                 }
-                set => throw new NotSupportedException(SR.OrderedDictionaryKeyValueCollection_ReadOnly);
+                set => throw new NotSupportedException(GetReadOnlyMessage());
+            }
+
+            void IList.Insert(int index, object? value)
+            {
+                throw new NotSupportedException(GetReadOnlyMessage());
+            }
+
+            void IList.Remove(object? value)
+            {
+                throw new NotSupportedException(GetReadOnlyMessage());
+            }
+
+            void IList.RemoveAt(int index)
+            {
+                throw new NotSupportedException(GetReadOnlyMessage());
+            }
+
+            int IList.Add(object? value)
+            {
+                throw new NotSupportedException(GetReadOnlyMessage());
+            }
+
+            void IList.Clear()
+            {
+                throw new NotSupportedException(GetReadOnlyMessage());
+            }
+
+            private string GetReadOnlyMessage()
+            {
+                return _isKeys ? SR.OrderedDictionaryKeys_ReadOnly : SR.OrderedDictionaryValues_ReadOnly;
             }
         }
     }

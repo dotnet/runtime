@@ -96,7 +96,10 @@
   <data name="Serialization_InvalidOnDeser" xml:space="preserve">
     <value>OnDeserialization method was called while the object was not being deserialized.</value>
   </data>
-  <data name="OrderedDictionaryKeyValueCollection_ReadOnly" xml:space="preserve">
-    <value>The OrderedDictionaryKeyValueCollection is read-only and cannot be modified.</value>
+  <data name="OrderedDictionaryKeys_ReadOnly" xml:space="preserve">
+    <value>The OrderedDictionary.Keys is read-only and cannot be modified.</value>
+  </data>
+  <data name="OrderedDictionaryValues_ReadOnly" xml:space="preserve">
+    <value>The OrderedDictionary.Values is read-only and cannot be modified.</value>
   </data>
 </root>
