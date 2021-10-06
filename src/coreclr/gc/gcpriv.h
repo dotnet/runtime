@@ -2039,11 +2039,11 @@ protected:
 #endif //!USE_REGIONS
     PER_HEAP_ISOLATED
     void distribute_free_regions();
+#ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED
     void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED
     void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
-
     PER_HEAP
     void switch_one_quantum();
     PER_HEAP
@@ -2052,6 +2052,7 @@ protected:
     void switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size);
     PER_HEAP
     void reset_write_watch (BOOL concurrent_p);
+#endif //BACKGROUND_GC
     PER_HEAP
     void adjust_ephemeral_limits();
     PER_HEAP

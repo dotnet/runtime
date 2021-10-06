@@ -28,10 +28,6 @@
 #error this source file should not be compiled with DACCESS_COMPILE!
 #endif //DACCESS_COMPILE
 
-#if defined(DOUBLY_LINKED_FL) && !defined(BACKGROUND_GC)
-#error DOUBLY_LINKED_FL should only be used with BACKGROUND_GC
-#endif //DACCESS_COMPILE
-
 // We just needed a simple random number generator for testing.
 class gc_rand
 {
@@ -8522,14 +8518,12 @@ void gc_heap::get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t
         sizes[card_bundle_table_element] = size_card_bundle_of (start, end);
     }
 #endif //CARD_BUNDLE
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef BACKGROUND_GC
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && defined (BACKGROUND_GC)
     if (gc_can_use_concurrent)
     {
         sizes[software_write_watch_table_element] = SoftwareWriteWatch::GetTableByteSize(start, end);
     }
-#endif //BACKGROUND_GC
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && BACKGROUND_GC
     sizes[seg_mapping_table_element] = size_seg_mapping_table_of (start, end);
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
@@ -8825,14 +8819,12 @@ uint32_t* gc_heap::make_card_table (uint8_t* start, uint8_t* end)
 #endif
 #endif //CARD_BUNDLE
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef BACKGROUND_GC
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && defined (BACKGROUND_GC)
     if (gc_can_use_concurrent)
     {
         SoftwareWriteWatch::InitializeUntranslatedTable(mem + card_table_element_layout[software_write_watch_table_element], start);
     }
-#endif
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && BACKGROUND_GC
 
     seg_mapping_table = (seg_mapping*)(mem + card_table_element_layout[seg_mapping_table_element]);
     seg_mapping_table = (seg_mapping*)((uint8_t*)seg_mapping_table -
@@ -9055,8 +9047,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
         }
 #endif //BACKGROUND_GC
 
-#ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
-#ifdef BACKGROUND_GC
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && defined(BACKGROUND_GC)
         if (gc_can_use_concurrent)
         {
             // The current design of software write watch requires that the runtime is suspended during resize. Suspending
@@ -9106,8 +9097,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
             }
         }
         else
-#endif
-#endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
+#endif //FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP && BACKGROUND_GC
         {
             g_gc_card_table = translated_ct;
 
@@ -9221,7 +9211,7 @@ void gc_heap::copy_brick_card_range (uint8_t* la, uint32_t* old_card_table,
             assert (old_brick_table == 0);
         }
     }
-#endif
+#endif //BACKGROUND_GC
 
     // n way merge with all of the card table ever used in between
     uint32_t* ct = card_table_next (&card_table[card_word (card_of(lowest_address))]);
@@ -9363,7 +9353,7 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
     if (!gc_heap::seg_table->ensure_space_for_insert ()
 #ifdef BACKGROUND_GC
         || (is_bgc_in_progress() && !commit_mark_array_new_seg(__this, seg))
-#endif
+#endif //BACKGROUND_GC
         )
     {
         leave_spin_lock(&gc_heap::gc_lock);
@@ -12404,6 +12394,7 @@ void gc_heap::update_card_table_bundle()
 }
 #endif //CARD_BUNDLE
 
+#ifdef BACKGROUND_GC
 // static
 void gc_heap::reset_write_watch_for_gc_heap(void* base_address, size_t region_size)
 {
@@ -12526,6 +12517,7 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         }
     }
 }
+#endif //BACKGROUND_GC
 
 #endif //WRITE_WATCH
 
@@ -18023,7 +18015,6 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
                             dprintf (3333, ("SFA: %Ix->%Ix(%d)", free_list, (free_list + free_list_size),
                                 (generation_set_bgc_mark_bit_p (gen) ? 1 : 0)));
                         }
-
                         adjust_limit (free_list, free_list_size, gen);
                         generation_allocate_end_seg_p (gen) = FALSE;
 
@@ -18077,6 +18068,7 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
                         dprintf (3, ("h%d: remove with no undo %Id = %Id",
                             heap_number, free_list_size, gen2_removed_no_undo));
                     }
+
                     if (record_free_list_allocated_p)
                     {
                         generation_set_bgc_mark_bit_p (gen) = should_set_bgc_mark_bit (free_list);
@@ -18258,6 +18250,7 @@ finished:
 
                 set_plug_bgc_mark_bit (old_loc);
             }
+
             generation_last_free_list_allocated (gen) = old_loc;
 #endif //DOUBLY_LINKED_FL
 
