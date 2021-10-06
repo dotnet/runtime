@@ -1,3 +1,6 @@
+# The purpose of this pipeline is to run the trimming tests. These tests ensure trimming is
+# done correctly and also that our APIs are trimming safe.
+
 trigger:
   batch: true
   branches:
