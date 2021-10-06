@@ -13,7 +13,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     [PlatformSpecific(TestPlatforms.AnyUnix)]
-    public class CharacterDevice : FileSystemTest
+    public class DevicesPipesAndSockets : FileSystemTest
     {
         [Theory]
         [MemberData(nameof(DevicePath_FileOptions_TestData))]
