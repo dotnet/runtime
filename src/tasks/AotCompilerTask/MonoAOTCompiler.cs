@@ -191,11 +191,15 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// </summary>
     public string? CacheFilePath { get; set; }
 
+    [Required]
+    public string IntermediateOutputPath { get; set; } = string.Empty;
+
     [Output]
     public string[]? FileWrites { get; private set; }
 
     private List<string> _fileWrites = new();
 
+    private IList<ITaskItem>? _assembliesToCompile;
     private ConcurrentDictionary<string, ITaskItem> compiledAssemblies = new();
 
     private MonoAotMode parsedAotMode;
@@ -207,7 +211,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     private int _numCompiled;
     private int _totalNumAssemblies;
 
-    public override bool Execute()
+    private bool ProcessAndValidateArguments()
     {
         if (!File.Exists(CompilerBinaryPath))
         {
@@ -230,6 +234,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
         }
 
+        if (!Directory.Exists(IntermediateOutputPath))
+            Directory.CreateDirectory(IntermediateOutputPath);
+
         if (AotProfilePath != null)
         {
             foreach (var path in AotProfilePath)
@@ -246,7 +253,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         {
             if (string.IsNullOrEmpty(LLVMPath))
                 // prevent using some random llc/opt from PATH (installed with clang)
-                throw new ArgumentException($"'{nameof(LLVMPath)}' is required when '{nameof(UseLLVM)}' is true.", nameof(LLVMPath));
+                throw new LogAsErrorException($"'{nameof(LLVMPath)}' is required when '{nameof(UseLLVM)}' is true.");
 
             if (!Directory.Exists(LLVMPath))
             {
@@ -270,7 +277,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 Log.LogWarning($"'{nameof(OutputType)}=Normal' is deprecated, use 'ObjectFile' instead.");
                 parsedOutputType = MonoAotOutputType.ObjectFile; break;
             default:
-                throw new ArgumentException($"'{nameof(OutputType)}' must be one of: '{nameof(MonoAotOutputType.ObjectFile)}', '{nameof(MonoAotOutputType.AsmOnly)}', '{nameof(MonoAotOutputType.Library)}'. Received: '{OutputType}'.", nameof(OutputType));
+                throw new LogAsErrorException($"'{nameof(OutputType)}' must be one of: '{nameof(MonoAotOutputType.ObjectFile)}', '{nameof(MonoAotOutputType.AsmOnly)}', '{nameof(MonoAotOutputType.Library)}'. Received: '{OutputType}'.");
         }
 
         switch (LibraryFormat)
@@ -280,13 +287,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             case "So": parsedLibraryFormat = MonoAotLibraryFormat.So; break;
             default:
                 if (parsedOutputType == MonoAotOutputType.Library)
-                    throw new ArgumentException($"'{nameof(LibraryFormat)}' must be one of: '{nameof(MonoAotLibraryFormat.Dll)}', '{nameof(MonoAotLibraryFormat.Dylib)}', '{nameof(MonoAotLibraryFormat.So)}'. Received: '{LibraryFormat}'.", nameof(LibraryFormat));
+                    throw new LogAsErrorException($"'{nameof(LibraryFormat)}' must be one of: '{nameof(MonoAotLibraryFormat.Dll)}', '{nameof(MonoAotLibraryFormat.Dylib)}', '{nameof(MonoAotLibraryFormat.So)}'. Received: '{LibraryFormat}'.");
                 break;
         }
 
         if (parsedAotMode == MonoAotMode.LLVMOnly && !UseLLVM)
         {
-            throw new ArgumentException($"'{nameof(UseLLVM)}' must be true when '{nameof(Mode)}' is {nameof(MonoAotMode.LLVMOnly)}.", nameof(UseLLVM));
+            throw new LogAsErrorException($"'{nameof(UseLLVM)}' must be true when '{nameof(Mode)}' is {nameof(MonoAotMode.LLVMOnly)}.");
         }
 
         switch (AotModulesTableLanguage)
@@ -294,32 +301,69 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             case "C": parsedAotModulesTableLanguage = MonoAotModulesTableLanguage.C; break;
             case "ObjC": parsedAotModulesTableLanguage = MonoAotModulesTableLanguage.ObjC; break;
             default:
-                throw new ArgumentException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.", nameof(AotModulesTableLanguage));
+                throw new LogAsErrorException($"'{nameof(AotModulesTableLanguage)}' must be one of: '{nameof(MonoAotModulesTableLanguage.C)}', '{nameof(MonoAotModulesTableLanguage.ObjC)}'. Received: '{AotModulesTableLanguage}'.");
         }
 
         if (!string.IsNullOrEmpty(AotModulesTablePath))
         {
             // AOT modules for static linking, needs the aot modules table
             UseStaticLinking = true;
-
-            if (!GenerateAotModulesTable(Assemblies, Profilers, AotModulesTablePath))
-                return false;
         }
 
         if (UseDirectIcalls && !UseStaticLinking)
         {
-            throw new ArgumentException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.", nameof(UseDirectIcalls));
+            throw new LogAsErrorException($"'{nameof(UseDirectIcalls)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
         if (UseDirectPInvoke && !UseStaticLinking)
         {
-            throw new ArgumentException($"'{nameof(UseDirectPInvoke)}' can only be used with '{nameof(UseStaticLinking)}=true'.", nameof(UseDirectPInvoke));
+            throw new LogAsErrorException($"'{nameof(UseDirectPInvoke)}' can only be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
         if (UseStaticLinking && (parsedOutputType == MonoAotOutputType.Library))
         {
-            throw new ArgumentException($"'{nameof(OutputType)}=Library' can not be used with '{nameof(UseStaticLinking)}=true'.", nameof(OutputType));
+            throw new LogAsErrorException($"'{nameof(OutputType)}=Library' can not be used with '{nameof(UseStaticLinking)}=true'.");
         }
+
+        foreach (var asmItem in Assemblies)
+        {
+            string? fullPath = asmItem.GetMetadata("FullPath");
+            if (!File.Exists(fullPath))
+                throw new LogAsErrorException($"Could not find {fullPath} to AOT");
+        }
+
+        return !Log.HasLoggedErrors;
+    }
+
+    public override bool Execute()
+    {
+        try
+        {
+            return ExecuteInternal();
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
+        finally
+        {
+            if (_cache != null && _cache.Save(CacheFilePath!))
+                _fileWrites.Add(CacheFilePath!);
+            FileWrites = _fileWrites.ToArray();
+        }
+    }
+
+    private bool ExecuteInternal()
+    {
+        if (!ProcessAndValidateArguments())
+            return false;
+
+        _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(Assemblies);
+        _assembliesToCompile = FilterAssemblies(_assembliesToCompile);
+
+        if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
+            return false;
 
         string? monoPaths = null;
         if (AdditionalAssemblySearchPaths != null)
@@ -327,60 +371,137 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         _cache = new FileCache(CacheFilePath, Log);
 
-        //FIXME: check the nothing changed at all case
+        List<PrecompileArguments> argsList = new();
+        foreach (var assemblyItem in _assembliesToCompile)
+            argsList.Add(GetPrecompileArgumentsFor(assemblyItem, monoPaths));
 
-        _totalNumAssemblies = Assemblies.Length;
-        int allowedParallelism = Math.Min(Assemblies.Length, Environment.ProcessorCount);
-        if (BuildEngine is IBuildEngine9 be9)
-            allowedParallelism = be9.RequestCores(allowedParallelism);
-
-        if (DisableParallelAot || allowedParallelism == 1)
+        _totalNumAssemblies = _assembliesToCompile.Count;
+        if (CheckAllUpToDate(argsList))
         {
-            foreach (var assemblyItem in Assemblies)
-            {
-                if (!PrecompileLibrarySerial(assemblyItem, monoPaths))
-                    return !Log.HasLoggedErrors;
-            }
+            Log.LogMessage(MessageImportance.High, "Everything is up-to-date, nothing to precompile");
+
+            _fileWrites.AddRange(argsList.SelectMany(args => args.ProxyFiles).Select(pf => pf.TargetFile));
+            foreach (var args in argsList)
+                compiledAssemblies.GetOrAdd(args.AOTAssembly.ItemSpec, args.AOTAssembly);
         }
         else
         {
+            int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
+            if (BuildEngine is IBuildEngine9 be9)
+                allowedParallelism = be9.RequestCores(allowedParallelism);
+
             ParallelLoopResult result = Parallel.ForEach(
-                                                    Assemblies,
-                                                    new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                    (assemblyItem, state) => PrecompileLibraryParallel(assemblyItem, monoPaths, state));
+                                            argsList,
+                                            new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                            (args, state) => PrecompileLibraryParallel(args, state));
 
-            if (!result.IsCompleted)
+            Log.LogMessage(MessageImportance.High, $"result: {result.IsCompleted}");
+            if (result.IsCompleted)
             {
-                if (!Log.HasLoggedErrors)
-                    Log.LogError("Unknown failure occured while compiling");
-
-                return false;
+                int numUnchanged = _totalNumAssemblies - _numCompiled;
+                if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+                    Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+            }
+            else if (!Log.HasLoggedErrors)
+            {
+                Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
             }
         }
 
-        int numUnchanged = _totalNumAssemblies - _numCompiled;
-        if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
-            Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
-
-        if (_cache.Save(CacheFilePath!))
-            _fileWrites.Add(CacheFilePath!);
-
-        CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, Assemblies).ToArray();
-        FileWrites = _fileWrites.ToArray();
-
+        CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
         return !Log.HasLoggedErrors;
     }
 
-    private bool PrecompileLibrary(ITaskItem assemblyItem, string? monoPaths)
+    private bool CheckAllUpToDate(IList<PrecompileArguments> argsList)
     {
-        string assembly = assemblyItem.ItemSpec;
+        foreach (var args in argsList)
+        {
+            // compare original assembly vs it's outputs.. all it's outputs!
+            string assemblyPath = args.AOTAssembly.GetMetadata("FullPath");
+            if (args.ProxyFiles.Any(pf => IsNewerThanOutput(assemblyPath, pf.TargetFile)))
+                return false;
+        }
+
+        return true;
+
+        static bool IsNewerThanOutput(string inFile, string outFile)
+            => !File.Exists(inFile) || !File.Exists(outFile) ||
+                    (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
+    }
+
+    private IList<ITaskItem> FilterAssemblies(IEnumerable<ITaskItem> assemblies)
+    {
+        List<ITaskItem> filteredAssemblies = new();
+        foreach (var asmItem in assemblies)
+        {
+            if (ShouldSkip(asmItem))
+            {
+                if (parsedAotMode == MonoAotMode.LLVMOnly)
+                    throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {asmItem.ItemSpec}");
+
+                Log.LogMessage(MessageImportance.Low, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
+                continue;
+            }
+
+            string assemblyPath = asmItem.GetMetadata("FullPath");
+            using var assemblyFile = File.OpenRead(assemblyPath);
+            using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
+            if (!reader.HasMetadata)
+            {
+                Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
+                continue;
+            }
+
+            filteredAssemblies.Add(asmItem);
+        }
+
+        return filteredAssemblies;
+
+        static bool ShouldSkip(ITaskItem asmItem)
+            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
+    }
+
+    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(IList<ITaskItem> assemblies)
+    {
+        string firstAsmDir = Path.GetDirectoryName(assemblies.First().GetMetadata("FullPath")) ?? string.Empty;
+        bool allInSameDir = assemblies.All(asm => Path.GetDirectoryName(asm.GetMetadata("FullPath")) == firstAsmDir);
+        if (allInSameDir)
+            return assemblies;
+
+        // Copy to aot-in
+
+        string aotInPath = Path.Combine(IntermediateOutputPath, "aot-in");
+        Directory.CreateDirectory(aotInPath);
+
+        List<ITaskItem> newAssemblies = new();
+        foreach (var asmItem in assemblies)
+        {
+            string asmPath = asmItem.GetMetadata("FullPath");
+            string newPath = Path.Combine(aotInPath, Path.GetFileName(asmPath));
+
+            // FIXME: delete files not in originalAssemblies though
+            // FIXME: or .. just delete the whole dir?
+            if (Utils.CopyIfDifferent(asmPath, newPath, useHash: true))
+                Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
+            _fileWrites.Add(newPath);
+
+            ITaskItem newAsm = new TaskItem(newPath);
+            asmItem.CopyMetadataTo(newAsm);
+            newAssemblies.Add(newAsm);
+        }
+
+        return newAssemblies;
+    }
+
+    private PrecompileArguments GetPrecompileArgumentsFor(ITaskItem assemblyItem, string? monoPaths)
+    {
+        string assembly = assemblyItem.GetMetadata("FullPath");
         string assemblyDir = Path.GetDirectoryName(assembly)!;
         var aotAssembly = new TaskItem(assembly);
         var aotArgs = new List<string>();
         var processArgs = new List<string>();
         bool isDedup = assembly == DedupAssembly;
         List<ProxyFile> proxyFiles = new(capacity: 5);
-        string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
 
         var a = assemblyItem.GetMetadata("AotArguments");
         if (a != null)
@@ -567,38 +688,20 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         // values, which wont work.
         processArgs.Add($"\"--aot={string.Join(",", aotArgs)}\"");
 
-        string paths = "";
         if (isDedup)
         {
-            StringBuilder sb = new StringBuilder();
-            HashSet<string> allPaths = new HashSet<string>();
-            foreach (var aItem in Assemblies)
-            {
-                string filename = aItem.ItemSpec;
-                processArgs.Add(filename);
-                string dir = Path.GetDirectoryName(filename)!;
-                if (!allPaths.Contains(dir))
-                {
-                    allPaths.Add(dir);
-                    if (sb.Length > 0)
-                        sb.Append(Path.PathSeparator);
-                    sb.Append(dir);
-                }
-            }
-            if (sb.Length > 0)
-                sb.Append(Path.PathSeparator);
-            sb.Append(monoPaths);
-            paths = sb.ToString();
+            foreach (var aItem in _assembliesToCompile!)
+                processArgs.Add(aItem.ItemSpec);
         }
         else
         {
-            paths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
             processArgs.Add('"' + assemblyFilename + '"');
         }
 
+        monoPaths = $"{assemblyDir}{Path.PathSeparator}{monoPaths}";
         var envVariables = new Dictionary<string, string>
         {
-            {"MONO_PATH", paths},
+            {"MONO_PATH", monoPaths },
             {"MONO_ENV_OPTIONS", string.Empty} // we do not want options to be provided out of band to the cross compilers
         };
 
@@ -609,16 +712,26 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             sw.WriteLine(responseFileContent);
         }
 
-        string workingDir = assemblyDir;
+        return new PrecompileArguments(ResponseFilePath: responseFilePath,
+                                        EnvironmentVariables: envVariables,
+                                        WorkingDir: assemblyDir,
+                                        AOTAssembly: aotAssembly,
+                                        ProxyFiles: proxyFiles);
+    }
 
+    private bool PrecompileLibrary(PrecompileArguments args)
+    {
+        string assembly = args.AOTAssembly.GetMetadata("FullPath");
         try
         {
+            string msgPrefix = $"[{Path.GetFileName(assembly)}] ";
+
             // run the AOT compiler
             (int exitCode, string output) = Utils.TryRunProcess(Log,
                                                                 CompilerBinaryPath,
-                                                                $"--response=\"{responseFilePath}\"",
-                                                                envVariables,
-                                                                workingDir,
+                                                                $"--response=\"{args.ResponseFilePath}\"",
+                                                                args.EnvironmentVariables,
+                                                                args.WorkingDir,
                                                                 silent: true,
                                                                 debugMessageImportance: MessageImportance.Low,
                                                                 label: Path.GetFileName(assembly));
@@ -627,9 +740,9 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             // Log the command in a compact format which can be copy pasted
             {
                 StringBuilder envStr = new StringBuilder(string.Empty);
-                foreach (KeyValuePair<string, string> kvp in envVariables)
+                foreach (KeyValuePair<string, string> kvp in args.EnvironmentVariables)
                     envStr.Append($"{kvp.Key}={kvp.Value} ");
-                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {workingDir}: {envStr}{CompilerBinaryPath} {responseFileContent}");
+                Log.LogMessage(importance, $"{msgPrefix}Exec (with response file contents expanded) in {args.WorkingDir}: {envStr}{CompilerBinaryPath} {File.ReadAllText(args.ResponseFilePath)}");
             }
 
             Log.LogMessage(importance, output);
@@ -648,11 +761,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         finally
         {
-            File.Delete(responseFilePath);
+            File.Delete(args.ResponseFilePath);
         }
 
         bool copied = false;
-        foreach (var proxyFile in proxyFiles)
+        foreach (var proxyFile in args.ProxyFiles)
         {
             copied |= proxyFile.CopyOutputFileIfChanged();
             _fileWrites.Add(proxyFile.TargetFile);
@@ -660,60 +773,38 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
 
         if (copied)
         {
-            string copiedFiles = string.Join(", ", proxyFiles.Select(tf => Path.GetFileName(tf.TargetFile)));
+            string copiedFiles = string.Join(", ", args.ProxyFiles.Select(tf => Path.GetFileName(tf.TargetFile)));
             int count = Interlocked.Increment(ref _numCompiled);
             Log.LogMessage(MessageImportance.High, $"[{count}/{_totalNumAssemblies}] {Path.GetFileName(assembly)} -> {copiedFiles}");
         }
 
-        compiledAssemblies.GetOrAdd(aotAssembly.ItemSpec, aotAssembly);
+        compiledAssemblies.GetOrAdd(args.AOTAssembly.ItemSpec, args.AOTAssembly);
         return true;
     }
 
-    private bool PrecompileLibrarySerial(ITaskItem assemblyItem, string? monoPaths)
+    private void PrecompileLibraryParallel(PrecompileArguments args, ParallelLoopState state)
     {
         try
         {
-            if (PrecompileLibrary(assemblyItem, monoPaths))
-                return true;
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError($"Precompile failed for {assemblyItem}: {laee.Message}");
-        }
-        catch (Exception ex)
-        {
-            if (Log.HasLoggedErrors)
-                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {assemblyItem}: {ex}");
-            else
-                Log.LogError($"Precompile failed for {assemblyItem}: {ex}");
-        }
-
-        return false;
-    }
-
-    private void PrecompileLibraryParallel(ITaskItem assemblyItem, string? monoPaths, ParallelLoopState state)
-    {
-        try
-        {
-            if (PrecompileLibrary(assemblyItem, monoPaths))
+            if (PrecompileLibrary(args))
                 return;
         }
         catch (LogAsErrorException laee)
         {
-            Log.LogError($"Precompile failed for {assemblyItem}: {laee.Message}");
+            Log.LogError($"Precompiling failed for {args.AOTAssembly}: {laee.Message}");
         }
         catch (Exception ex)
         {
             if (Log.HasLoggedErrors)
-                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {assemblyItem}: {ex}");
+                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {args.AOTAssembly}: {ex}");
             else
-                Log.LogError($"Precompile failed for {assemblyItem}: {ex}");
+                Log.LogError($"Precompiling failed for {args.AOTAssembly}: {ex}");
         }
 
         state.Break();
     }
 
-    private bool GenerateAotModulesTable(ITaskItem[] assemblies, string[]? profilers, string outputFile)
+    private bool GenerateAotModulesTable(IEnumerable<ITaskItem> assemblies, string[]? profilers, string outputFile)
     {
         var symbols = new List<string>();
         foreach (var asm in assemblies)
@@ -831,21 +922,37 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
     }
 
-    private IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, ITaskItem[] items)
+    private static IList<ITaskItem> ConvertAssembliesDictToOrderedList(ConcurrentDictionary<string, ITaskItem> dict, IList<ITaskItem> originalAssemblies)
     {
-        List<ITaskItem> outItems = new(items.Length);
-        foreach (ITaskItem item in items)
+        List<ITaskItem> outItems = new(originalAssemblies.Count);
+        foreach (ITaskItem item in originalAssemblies)
         {
-            if (!dict.TryGetValue(item.ItemSpec, out ITaskItem? dictItem))
-                throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
-
-            outItems.Add(dictItem);
+            if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
+                outItems.Add(dictItem);
         }
         return outItems;
     }
+
+    internal sealed class PrecompileArguments
+    {
+        public PrecompileArguments(string ResponseFilePath, IDictionary<string, string> EnvironmentVariables, string WorkingDir, ITaskItem AOTAssembly, IList<ProxyFile> ProxyFiles)
+        {
+            this.ResponseFilePath  = ResponseFilePath;
+            this.EnvironmentVariables  = EnvironmentVariables;
+            this.WorkingDir  = WorkingDir;
+            this.AOTAssembly  = AOTAssembly;
+            this.ProxyFiles  = ProxyFiles;
+        }
+
+        public string                       ResponseFilePath     { get; private set; }
+        public IDictionary<string, string>  EnvironmentVariables { get; private set; }
+        public string                       WorkingDir           { get; private set; }
+        public ITaskItem                    AOTAssembly          { get; private set; }
+        public IList<ProxyFile>             ProxyFiles           { get; private set; }
+    }
 }
 
-internal class FileCache
+internal sealed class FileCache
 {
     private CompilerCache? _newCache;
     private CompilerCache? _oldCache;
@@ -871,7 +978,7 @@ internal class FileCache
         }
 
         _oldCache ??= new();
-        _newCache = new();
+        _newCache = new(_oldCache.FileHashes);
     }
 
     public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
@@ -913,7 +1020,7 @@ internal class FileCache
     public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
 }
 
-internal class ProxyFile
+internal sealed class ProxyFile
 {
     public string TargetFile { get; }
     public string TempFile   { get; }
@@ -931,24 +1038,28 @@ internal class ProxyFile
         if (!_cache.Enabled)
             return true;
 
-        if (!File.Exists(TempFile))
-            throw new LogAsErrorException($"Could not find output file {TempFile}");
-
-        if (!_cache.ShouldCopy(this, out string? cause))
+        try
         {
-            _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
-            return false;
+            if (!_cache.ShouldCopy(this, out string? cause))
+            {
+                _cache.Log.LogMessage(MessageImportance.Low, $"Skipping copying over {TargetFile} as the contents are unchanged");
+                return false;
+            }
+
+            if (File.Exists(TargetFile))
+                File.Delete(TargetFile);
+
+            File.Copy(TempFile, TargetFile);
+
+            _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
+            return true;
         }
-
-        if (File.Exists(TargetFile))
-            File.Delete(TargetFile);
-
-        File.Copy(TempFile, TargetFile);
-        File.Delete(TempFile);
-
-        _cache.Log.LogMessage(MessageImportance.Low, $"Copying {TempFile} to {TargetFile} because {cause}");
-        return true;
+        finally
+        {
+            File.Delete(TempFile);
+        }
     }
+
 }
 
 public enum MonoAotMode
@@ -982,8 +1093,12 @@ public enum MonoAotModulesTableLanguage
     ObjC
 }
 
-internal class CompilerCache
+internal sealed class CompilerCache
 {
+    public CompilerCache() => FileHashes = new();
+    public CompilerCache(IDictionary<string, string> oldHashes)
+        => FileHashes = new(oldHashes);
+
     [JsonPropertyName("file_hashes")]
-    public ConcurrentDictionary<string, string> FileHashes { get; set; } = new();
+    public ConcurrentDictionary<string, string> FileHashes { get; set; }
 }

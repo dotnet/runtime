@@ -12,9 +12,6 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task ReadSimpleObjectAsync()
         {
             async Task RunTestAsync<T>(byte[] testData)
@@ -37,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
             // Simple models can be deserialized.
             tasks[0] = Task.Run(async () => await RunTestAsync<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_data));
             // Complex models can be deserialized.
-            tasks[1] = Task.Run(async () => await RunTestAsync<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_data));
+            tasks[1] = Task.Run(async () => await RunTestAsync<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_data));
             tasks[2] = Task.Run(async () => await RunTestAsync<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_data));
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
             tasks[3] = Task.Run(async () => await RunTestAsync<Person_Class>(Person_Class.s_data));
@@ -62,9 +59,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task ReadSimpleObjectWithTrailingTriviaAsync()
         {
             async Task RunTestAsync<T>(string testData)
@@ -89,7 +83,7 @@ namespace System.Text.Json.Serialization.Tests
             // Simple models can be deserialized.
             tasks[0] = Task.Run(async () => await RunTestAsync<Parameterized_IndexViewModel_Immutable>(Parameterized_IndexViewModel_Immutable.s_json));
             // Complex models can be deserialized.
-            tasks[1] = Task.Run(async () => await RunTestAsync<ClassWithConstructor_SimpleAndComplexParameters>(ClassWithConstructor_SimpleAndComplexParameters.s_json));
+            tasks[1] = Task.Run(async () => await RunTestAsync<ObjWCtorMixedParams>(ObjWCtorMixedParams.s_json));
             tasks[2] = Task.Run(async () => await RunTestAsync<Parameterized_Class_With_ComplexTuple>(Parameterized_Class_With_ComplexTuple.s_json));
             // JSON that doesn't bind to ctor args are matched with properties or ignored (as appropriate).
             tasks[3] = Task.Run(async () => await RunTestAsync<Person_Class>(Person_Class.s_json));
@@ -157,9 +151,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task ExerciseStreamCodePaths()
         {
             static string GetPropertyName(int index) =>

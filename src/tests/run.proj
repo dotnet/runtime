@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
+    <Language>C#</Language>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -186,6 +187,7 @@ $(_XunitEpilog)
       <IsMobile>false</IsMobile>
       <IsMobile Condition=" '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator' ">true</IsMobile>
     </PropertyGroup>
+
     <PropertyGroup>
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' and '$(IsMobile)'=='false' ">
         <![CDATA[
@@ -579,8 +581,19 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AllTestScripts Include="%(TestDirectories.Identity)\**\*.sh" />
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
-      <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
-      <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
+
+      <TestAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
+      <TestAssemblies Include="%(TestAssemblyPaths.Identity)" Condition="Exists(%(TestAssemblyPaths.Identity))" />
+      <TestDirsWithDuplicates Include="$([System.IO.Path]::GetDirectoryName('%(TestAssemblies.Identity)'))" />
+    </ItemGroup>
+    <RemoveDuplicates Inputs="@(TestDirsWithDuplicates)">
+      <Output TaskParameter="Filtered" ItemName="TestDirs" />
+    </RemoveDuplicates>
+    <ItemGroup>
+      <TestsAndAssociatedAssemblies Include="%(TestDirs.Identity)/*.dll" />
+      <CoreRootDlls Include="$(CORE_ROOT)/*.dll" Exclude="$(CORE_ROOT)/xunit.performance.api.dll" />
+      <AllDlls Condition="'$(MonoFullAot)' == 'true'" Include="@(TestsAndAssociatedAssemblies);@(CoreRootDlls)" />
+      <AllDlls Condition="'$(MonoFullAot)' != 'true'" Include="@(TestsAndAssociatedAssemblies)" />
     </ItemGroup>
 
     <PropertyGroup Condition="'$(CROSSCOMPILE)' == ''">
@@ -594,6 +607,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </PropertyGroup>
 
     <ItemGroup>
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=10000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=4400" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-trampolines=21000" />
       <MonoAotOption Include="llvm" />
       <MonoAotOption Include="llvm-path=$(MonoLlvmPath)" />
       <MonoAotOption Condition="'$(__MonoToolPrefix)' != ''" Include="tool-prefix=$(__MonoToolPrefix)" />
@@ -613,18 +633,21 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     </ItemGroup>
     <PropertyGroup>
       <MonoAotOptions>@(MonoAotOption->'%(Identity)', ',')</MonoAotOptions>
-      <MonoPath Condition="'$(CROSSCOMPILE)' != ''">$(CORE_ROOT)</MonoPath>
+      <MonoPath>$(CORE_ROOT)</MonoPath>
     </PropertyGroup>
+
+    <Message Importance="High" Text="Mono AOT options: $(MonoAotOptions)" />
+    <Message Importance="High" Text="Mono AOT MONO_PATH: $(MonoPath)" />
 
     <ItemGroup>
       <AotProject Include="../mono/msbuild/aot-compile.proj">
-        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(TestDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
+        <Properties>_AotCompiler=$(AotCompiler);_TestDll=%(AllDlls.Identity);_MonoPath=$(MonoPath);_MonoAotOptions=$(MonoAotOptions)</Properties>
       </AotProject>
     </ItemGroup>
     <MSBuild
       Projects="@(AotProject)"
       Targets="AotCompile"
-      Condition="@(TestDlls->Count()) &gt; 0"
+      Condition="@(AllDlls->Count()) &gt; 0"
       BuildInParallel="true"
       />
   </Target>
@@ -823,37 +846,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Import Project="$(RepoRoot)/src/tests/Common/tests.targets" />
   <Import Project="$(RepoRoot)/src/tests/Common/publishdependency.targets" />
 
-  <Target Name="CreateTestOverlay">
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;OutputRid=$(OutputRid);RuntimeIdentifier=$(OutputRid)" />
-  </Target>
-
-  <Target Name="Build">
-
-    <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj"
-             Condition=" '$(BuildWrappers)'=='true' " />
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="BuildAllAndroidApp"
-             Condition=" '$(RunWithAndroid)'=='true' " />
-
-    <!-- Default for building -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateAllWrappers"
-             Properties="_CMDDIR=%(TestDirectories.Identity)"
-             Condition=" '$(BuildWrappers)'=='true' " />
-
-    <!-- Execution -->
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestOverlay"
-             Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
-
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
-             Condition=" '$(RunTests)'=='true' "/>
-  </Target>
+  <Target Name="CreateTestOverlay" DependsOnTargets="CopyDependencyToCoreRoot" />
 
   <Target Name="Clean">
     <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(MSBuildThisFileDirectory)../$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />

@@ -25,8 +25,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Depend
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyInjection", "..\Microsoft.Extensions.DependencyInjection\src\Microsoft.Extensions.DependencyInjection.csproj", "{2E4D0EB0-E34B-4D47-A7F1-E35C696066E8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.csproj", "{D902BAF8-7431-4017-BD56-F4EABE38D7F9}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{9BCECFDA-BF6E-4BD8-BFE2-A25C61F57874}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{6A02D298-6899-4DD0-BFF4-40702BC30BCD}"
@@ -68,8 +66,6 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj", "{83BE9E3B-ADB4-4E32-94A2-C827B7885A6B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "..\System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj", "{BF5E5B5A-AC50-4FF1-AADB-0DFC1AA8E429}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.csproj", "{AD117F41-062A-4158-A17D-3375820A53FA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\ref\System.Text.Json.csproj", "{8C8B3A3F-A9C1-4E72-BA3F-DE8A8FE5B040}"
 EndProject
@@ -139,10 +135,6 @@ Global
 		{2E4D0EB0-E34B-4D47-A7F1-E35C696066E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2E4D0EB0-E34B-4D47-A7F1-E35C696066E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2E4D0EB0-E34B-4D47-A7F1-E35C696066E8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D902BAF8-7431-4017-BD56-F4EABE38D7F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D902BAF8-7431-4017-BD56-F4EABE38D7F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D902BAF8-7431-4017-BD56-F4EABE38D7F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D902BAF8-7431-4017-BD56-F4EABE38D7F9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9BCECFDA-BF6E-4BD8-BFE2-A25C61F57874}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9BCECFDA-BF6E-4BD8-BFE2-A25C61F57874}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9BCECFDA-BF6E-4BD8-BFE2-A25C61F57874}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -227,10 +219,6 @@ Global
 		{BF5E5B5A-AC50-4FF1-AADB-0DFC1AA8E429}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF5E5B5A-AC50-4FF1-AADB-0DFC1AA8E429}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF5E5B5A-AC50-4FF1-AADB-0DFC1AA8E429}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AD117F41-062A-4158-A17D-3375820A53FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AD117F41-062A-4158-A17D-3375820A53FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AD117F41-062A-4158-A17D-3375820A53FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AD117F41-062A-4158-A17D-3375820A53FA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8C8B3A3F-A9C1-4E72-BA3F-DE8A8FE5B040}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8C8B3A3F-A9C1-4E72-BA3F-DE8A8FE5B040}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8C8B3A3F-A9C1-4E72-BA3F-DE8A8FE5B040}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -269,7 +257,6 @@ Global
 		{EF05AB17-527F-40BC-B4D1-AAE510267F4E} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{1F272F82-E9D1-454A-8E3C-6BEAF02219D4} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{2E4D0EB0-E34B-4D47-A7F1-E35C696066E8} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
-		{D902BAF8-7431-4017-BD56-F4EABE38D7F9} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{6A02D298-6899-4DD0-BFF4-40702BC30BCD} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{E09FB553-28C4-4C1C-8E86-CFAB3374A656} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{974792E2-0311-446A-BABF-18B3A8DDDEC5} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
@@ -280,7 +267,6 @@ Global
 		{5DCD1587-CC45-4105-8FFE-E4A43C60DA8D} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{EB05EC17-2C21-47EC-A39D-90ABBA053318} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{BF5E5B5A-AC50-4FF1-AADB-0DFC1AA8E429} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
-		{AD117F41-062A-4158-A17D-3375820A53FA} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 		{C9F3D8F9-8646-432E-82FC-2E4E8411CFFE} = {F3BAE0A3-1AF5-4F38-ADBE-6FEC99664322}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

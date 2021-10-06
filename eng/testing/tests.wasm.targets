@@ -1,6 +1,8 @@
 <Project>
   <!-- We need to set this in order to get extensibility on xunit category traits and other arguments we pass down to xunit via MSBuild properties -->
   <PropertyGroup>
+    <IsWasmProject Condition="'$(IsWasmProject)' == ''">true</IsWasmProject>
+    <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
@@ -55,10 +57,20 @@
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
   <PropertyGroup>
-      <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmTriggerPublishApp</BundleTestWasmAppDependsOn>
+    <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+  </PropertyGroup>
 
-      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOn)' == 'local'">WasmBuildApp</BundleTestWasmAppDependsOn>
-      <BundleTestWasmAppDependsOn Condition="'$(BuildAOTTestsOnHelix)' == 'true'">$(BundleTestWasmAppDependsOn);_BundleAOTTestWasmAppForHelix</BundleTestWasmAppDependsOn>
+  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
+    <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' != 'true'">
+    <WasmBuildOnlyAfterPublish>true</WasmBuildOnlyAfterPublish>
+
+    <!-- wasm's publish targets will trigger publish, so we shouldn't do that -->
+    <PublishTestAsSelfContainedDependsOn />
+    <WasmNestedPublishAppDependsOn>PrepareForWasmBuildApp;$(WasmNestedPublishAppDependsOn)</WasmNestedPublishAppDependsOn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -79,6 +91,8 @@
       <_MainAssemblyPath Condition="'%(WasmAssembliesToBundle.FileName)' == $(AssemblyName) and '%(WasmAssembliesToBundle.Extension)' == '.dll'">%(WasmAssembliesToBundle.Identity)</_MainAssemblyPath>
       <RuntimeConfigFilePath>$([System.IO.Path]::ChangeExtension($(_MainAssemblyPath), '.runtimeconfig.json'))</RuntimeConfigFilePath>
     </PropertyGroup>
+
+    <Error Text="Item WasmAssembliesToBundle is empty. This is likely an authoring error." Condition="@(WasmAssembliesToBundle->Count()) == 0" />
 
     <ItemGroup>
       <BundleFiles Include="$(WasmMainJSPath)"                  TargetDir="publish" />
@@ -154,7 +168,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll"/>
+      <WasmAssembliesToBundle Include="$(PublishDir)\**\*.dll" Condition="'$(BuildAOTTestsOnHelix)' == 'true'" />
       <WasmFilesToIncludeInFileSystem Include="@(ContentWithTargetPath)" />
 
       <_CopyLocalPaths

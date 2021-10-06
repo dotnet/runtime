@@ -71,7 +71,7 @@ void DacDbiArrayList<T>::Dealloc()
 
     if (m_pList != NULL)
     {
-        delete [] m_pList;
+        DeleteDbiArrayMemory(m_pList, m_nEntries);
         m_pList = NULL;
     }
     m_nEntries = 0;

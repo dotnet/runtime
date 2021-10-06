@@ -213,7 +213,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 
 // clang-format on
 
-#if defined(HOST_X86) && !defined(TARGET_UNIX)
+#if defined(HOST_X86) && !defined(HOST_UNIX)
 
 // While debugging in an Debugger, the "int 3" will cause the program to break
 // Outside, the exception handler will just filter out the "int 3".

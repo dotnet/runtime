@@ -6,7 +6,6 @@ trigger:
   batch: true
   branches:
     include:
-    - main
     - release/*.*
   paths:
     include:
@@ -23,6 +22,14 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+
+schedules:
+  - cron: "0 8,20 * * *" # run at 8:00 and 20:00 (UTC) which is 00:00 and 12:00 (PST).
+    displayName: Runtime default schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
 
 pr:
   branches:
@@ -94,6 +101,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
+    container: debian-11-gcc11-amd64-20210916125744-f42d766
     jobParameters:
       testGroup: innerloop
       compilerName: gcc
@@ -791,11 +799,27 @@ jobs:
     - FreeBSD_x64
     jobParameters:
       testScope: innerloop
-      testBuildPlatforms:
-      - Linux_x64
-      - windows_x64
-      - OSX_x64
       liveRuntimeBuildConfig: release
+
+#
+# Libraries Build that only run when coreclr is changed
+# Only do this on PR builds since we use the Release builds for these test runs in CI
+# and those are already built above
+#
+
+- ${{ if eq(variables['isFullMatrix'], false) }}:
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/libraries/build-job.yml
+      buildConfig: Debug
+      platforms:
+        - Linux_arm
+        - Linux_musl_arm
+        - Linux_musl_arm64
+      jobParameters:
+        liveRuntimeBuildConfig: release
+        condition: >-
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
 
 #
 # Libraries Build that only run when libraries is changed
@@ -1070,6 +1094,31 @@ jobs:
           eq(variables['isFullMatrix'], true))
 
 #
+# Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
+# Only when Mono is changed
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    helixQueueGroup: pr
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: innerloop
+      liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      liveRuntimeBuildConfig: release
+      runtimeVariant: llvmfullaot
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
 # Libraries Release Test Execution against a release mono runtime.
 # Only when libraries or mono changed
 #
@@ -1090,8 +1139,6 @@ jobs:
       runtimeDisplayName: mono
       testScope: innerloop
       liveRuntimeBuildConfig: release
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1119,8 +1166,6 @@ jobs:
       runtimeDisplayName: mono_interpreter
       testScope: innerloop
       liveRuntimeBuildConfig: release
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1145,8 +1190,6 @@ jobs:
       isFullMatrix: ${{ variables.isFullMatrix }}
       testScope: innerloop
       liveRuntimeBuildConfig: release
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1175,8 +1218,6 @@ jobs:
       isFullMatrix: ${{ variables.isFullMatrix }}
       testScope: innerloop
       liveRuntimeBuildConfig: release
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1189,7 +1230,7 @@ jobs:
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: Release
+    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
     # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
     - Linux_arm
@@ -1201,8 +1242,6 @@ jobs:
     jobParameters:
       testScope: innerloop
       liveRuntimeBuildConfig: checked
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1225,8 +1264,6 @@ jobs:
     jobParameters:
       testScope: innerloop
       liveRuntimeBuildConfig: checked
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1243,8 +1280,6 @@ jobs:
     jobParameters:
       testScope: innerloop
       liveRuntimeBuildConfig: checked
-      dependsOnTestBuildConfiguration: ${{ variables.debugOnPrReleaseOnRolling }}
-      dependsOnTestArchitecture: x64
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),

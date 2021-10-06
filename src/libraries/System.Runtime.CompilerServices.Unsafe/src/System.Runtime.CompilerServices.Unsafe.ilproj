@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);netcoreapp3.1;netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <!-- Make sure that the DebuggableAttribute is set properly. -->
     <DebugOptimization>IMPL</DebugOptimization>
     <DebugOptimization Condition="'$(Configuration)' == 'Release'">OPT</DebugOptimization>
@@ -17,12 +17,11 @@ System.Runtime.CompilerServices.Unsafe</PackageDescription>
     <ExtraMacros>#define netcoreapp</ExtraMacros>
     <CoreAssembly>System.Runtime</CoreAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <PropertyGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETStandard'">
     <CoreAssembly>netstandard</CoreAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net461'">
+  <PropertyGroup Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">
     <CoreAssembly>mscorlib</CoreAssembly>
-    <ExtraMacros>#define $(TargetFramework)</ExtraMacros>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
@@ -30,7 +29,7 @@ System.Runtime.CompilerServices.Unsafe</PackageDescription>
   <ItemGroup>
     <!-- mscorlib is passed in as an explicit reference from C# targets but not via the IL SDK. -->
     <Reference Include="$(CoreAssembly)"
-               Condition="'$(TargetFramework)' != 'netstandard2.0'" />
+               Condition="'$(TargetFrameworkIdentifier)' != '.NETStandard'" />
   </ItemGroup>
 
   <Target Name="GenerateVersionFile"

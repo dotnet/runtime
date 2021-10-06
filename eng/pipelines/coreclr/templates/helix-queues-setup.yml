@@ -36,7 +36,7 @@ jobs:
 
     # Android x64
     - ${{ if in(parameters.platform, 'Android_x64') }}:
-      - Ubuntu.1804.Amd64.Android.Open
+      - Ubuntu.1804.Amd64.Android.29.Open
 
     # Browser wasm
     - ${{ if eq(parameters.platform, 'Browser_wasm') }}:
@@ -66,23 +66,23 @@ jobs:
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.312.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200602002622-e06dc59
+        - (Alpine.314.Amd64.Open)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.312.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-20200602002622-e06dc59
+        - (Alpine.314.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
 
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'Linux_musl_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.313.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
+        - (Alpine.314.Arm32.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm32v7-20210910135806-8a6f4f3
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.313.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-helix-arm32v7-20210414141857-1ea6b0a
+        - (Alpine.314.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm32v7-20210910135806-8a6f4f3
 
     # Linux musl arm64
     - ${{ if eq(parameters.platform, 'Linux_musl_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Alpine.312.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm64v8-20200602002604-25f8a3e
+        - (Alpine.314.Arm64.Open)Ubuntu.1804.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.312.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.12-helix-arm64v8-20200602002604-25f8a3e
+        - (Alpine.314.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-arm64v8-20210910135810-8a6f4f3
 
     # Linux x64
     - ${{ if eq(parameters.platform, 'Linux_x64') }}:
@@ -91,14 +91,12 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
         - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
-        - Ubuntu.1604.Amd64.Open
         - Ubuntu.1804.Amd64.Open
         - (Centos.8.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - RedHat.7.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Debian.10.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
         - (Debian.11.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
-        - Ubuntu.1604.Amd64
         - Ubuntu.1804.Amd64
         - (Centos.8.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - (Fedora.34.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20210728124700-4f64125

@@ -99,6 +99,14 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
             continue;
         }
 
+        // If the finally's block jumps back to itself, then it is not empty.
+        if ((firstBlock->bbJumpKind == BBJ_ALWAYS) && firstBlock->bbJumpDest == firstBlock)
+        {
+            JITDUMP("EH#%u finally has basic block that jumps to itself; skipping.\n", XTnum);
+            XTnum++;
+            continue;
+        }
+
         // Limit for now to finallys that contain only a GT_RETFILT.
         bool isEmpty = true;
 
