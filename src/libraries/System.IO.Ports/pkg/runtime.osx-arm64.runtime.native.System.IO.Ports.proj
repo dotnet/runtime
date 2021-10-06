@@ -1,0 +1,6 @@
+<Project>
+  <Import Project="runtime.native.System.IO.Ports.props" />
+  <PropertyGroup>
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+</Project>
