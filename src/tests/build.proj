@@ -182,10 +182,6 @@
       />
   </Target>
 
-  <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
-  </Target>
-
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" Condition="'$(RunWithAndroid)'=='true'"/>
 
   <Target Name="BuildAndroidApp">

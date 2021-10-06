@@ -1,4 +1,8 @@
 <Project>
+  <Target Name="CreateAllWrappers" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+  </Target>
+
   <Target Name="CreateXunitWrapper" DependsOnTargets="CreateXunitFacts">
 
     <PropertyGroup>
