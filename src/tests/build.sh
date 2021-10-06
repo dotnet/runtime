@@ -297,13 +297,9 @@ __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen2=0
-<<<<<<< HEAD
+__DoCrossgen2=
 __CompositeBuildMode=
-=======
-__CompositeBuildMode=0
-__CreatePerfmap=0
->>>>>>> e59349c5396 (Add R2RTest support for the perfmap-format-version Crossgen2 option)
+__CreatePerfmap=
 __TestBuildMode=
 __BuildTestProject="%3B"
 __BuildTestDir="%3B"
