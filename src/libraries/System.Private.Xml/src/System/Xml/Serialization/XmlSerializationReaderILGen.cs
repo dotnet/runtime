@@ -2179,8 +2179,7 @@ namespace System.Xml.Serialization
 
                         if (member.Mapping.ChoiceIdentifier != null)
                         {
-                            WriteArrayLocalDecl(
-                                $"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]",
+                            WriteArrayLocalDecl($"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]",
                                                 member.ChoiceArrayName, "null",
                                                 member.Mapping.ChoiceIdentifier.Mapping.TypeDesc);
                             ilg.Ldc(0);
@@ -2641,8 +2640,7 @@ namespace System.Xml.Serialization
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
                 string castString = $"({arrayTypeFullName}[])";
-                init =
-                    $"{init}{a} = {castString}EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName)});";
+                init = $"{init}{a} = {castString}EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName)});";
                 string arraySource = RaCodeGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
                 if (multiRef)
                 {
