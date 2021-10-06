@@ -4148,13 +4148,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
             break;
 
-        case GT_INDEX_ADDR:
-            // Evaluate the array first, then the index....
-            assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Arr(), isLIR);
-            fgSetTreeSeqHelper(tree->AsIndexAddr()->Index(), isLIR);
-            break;
-
         default:
 #ifdef DEBUG
             gtDispTree(tree);

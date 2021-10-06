@@ -9071,14 +9071,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
 #endif
                 break;
 
-            case GT_NOP:
-
-                if (tree->gtFlags & GTF_NOP_DEATH)
-                {
-                    chars += printf("[NOP_DEATH]");
-                }
-                break;
-
             case GT_NO_OP:
                 break;
 

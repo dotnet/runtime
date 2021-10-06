@@ -4178,6 +4178,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 return gtSetListOrder(tree, isListCallArgs, callArgsInRegs);
             }
 
+            case GT_INDEX_ADDR:
+                costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
+                costSz = 9; // jump to cold section
+                break;
+
             case GT_ASG:
                 /* Assignments need a bit of special handling */
                 /* Process the target */
@@ -4806,23 +4811,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             costSz += tree->AsDynBlk()->gtDynamicSize->GetCostSz();
         }
         break;
-
-        case GT_INDEX_ADDR:
-            costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
-            costSz = 9; // jump to cold section
-
-            level = gtSetEvalOrder(tree->AsIndexAddr()->Index());
-            costEx += tree->AsIndexAddr()->Index()->GetCostEx();
-            costSz += tree->AsIndexAddr()->Index()->GetCostSz();
-
-            lvl2 = gtSetEvalOrder(tree->AsIndexAddr()->Arr());
-            if (level < lvl2)
-            {
-                level = lvl2;
-            }
-            costEx += tree->AsIndexAddr()->Arr()->GetCostEx();
-            costSz += tree->AsIndexAddr()->Arr()->GetCostSz();
-            break;
 
         default:
             JITDUMP("unexpected operator in this tree:\n");
@@ -6003,7 +5991,7 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* c
 {
     compQmarkUsed = true;
     cond->gtFlags |= GTF_RELOP_QMARK;
-    GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon, this);
+    GenTreeQmark* result = new (this, GT_QMARK) GenTreeQmark(type, cond, colon);
 #ifdef DEBUG
     if (compQmarkRationalized)
     {
@@ -6013,8 +6001,7 @@ GenTreeQmark* Compiler::gtNewQmarkNode(var_types type, GenTree* cond, GenTree* c
     return result;
 }
 
-GenTreeQmark::GenTreeQmark(var_types type, GenTree* cond, GenTree* colonOp, Compiler* comp)
-    : GenTreeOp(GT_QMARK, type, cond, colonOp)
+GenTreeQmark::GenTreeQmark(var_types type, GenTree* cond, GenTree* colonOp) : GenTreeOp(GT_QMARK, type, cond, colonOp)
 {
     // These must follow a specific form.
     assert(cond != nullptr && cond->TypeGet() == TYP_INT);
@@ -7895,8 +7882,7 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_QMARK:
-                copy =
-                    new (this, GT_QMARK) GenTreeQmark(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2, this);
+                copy = new (this, GT_QMARK) GenTreeQmark(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsOp()->gtOp2);
                 break;
 
             case GT_OBJ:
