@@ -825,7 +825,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack(retType);
             op1 = impSIMDPopStack(retType);
 
-            retNode = gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode =
+                gtNewSimdNarrowNode(retType, op1, op2, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
             break;
         }
 
@@ -917,7 +918,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_WidenUpper:
         case NI_Vector128_WidenUpper:
         {
-            assert(sig->numArgs == 2);
+            assert(sig->numArgs == 1);
 
             op1 = impSIMDPopStack(retType);
 
