@@ -529,6 +529,7 @@ const bool dspGCtbls = true;
     if (JitTls::GetCompiler()->verbose)                                                                                \
         JitTls::GetCompiler()->fgTableDispBasicBlock(b);
 #define VERBOSE JitTls::GetCompiler()->verbose
+// Development-time only macros, simplify guards for specified IL methods one wants to debug/add log messages for
 #define ISMETHOD(name) (strcmp(JitTls::GetCompiler()->impInlineRoot()->info.compMethodName, name) == 0)
 #define ISMETHODHASH(hash) (JitTls::GetCompiler()->impInlineRoot()->info.compMethodHash() == hash)
 #else // !DEBUG
@@ -544,8 +545,6 @@ const bool dspGCtbls = true;
 #define DISPTREERANGE(range, t)
 #define DISPBLOCK(b)
 #define VERBOSE 0
-#define ISMETHOD(name)
-#define ISMETHODHASH(hash)
 #endif // !DEBUG
 
 /*****************************************************************************
