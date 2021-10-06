@@ -275,12 +275,12 @@ public:
     BOOL IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE);
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
 
-    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
-    static void DoProfilerCallbackHelper(ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, HRESULT *pHR, Args... args)
+    template<typename ConditionFunc, typename CallbackFunc, typename... Args>
+    static void DoProfilerCallbackHelper(ProfilerInfo *pProfilerInfo, ConditionFunc condition, CallbackFunc callback, HRESULT *pHR, Args... args)
     {
         if (condition(pProfilerInfo))
         {
-            HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
+            HRESULT innerHR = callback(pProfilerInfo->pProfInterface, args...);
             if (FAILED(innerHR))
             {
                 *pHR = innerHR;
@@ -288,13 +288,13 @@ public:
         }
     }
 
-    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
-    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
+    template<typename ConditionFunc, typename CallbackFunc, typename... Args>
+    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, CallbackFunc callback, Args... args)
     {
         HRESULT hr = S_OK;
         IterateProfilers(callbackType,
-                         &DoProfilerCallbackHelper<ConditionFunc, CallbackFunc, Data, Args...>,
-                         condition, additionalData, callback, &hr, args...);
+                         &DoProfilerCallbackHelper<ConditionFunc, CallbackFunc, Args...>,
+                         condition, callback, &hr, args...);
         return hr;
     }
 
