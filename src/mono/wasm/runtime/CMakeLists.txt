@@ -5,7 +5,10 @@ project(mono-wasm-runtime C)
 add_executable(dotnet corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
-target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DCORE_BINDINGS -DGEN_PINVOKE=1)
+target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp -DCORE_BINDINGS -DGEN_PINVOKE=1)
+
+set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
+
 target_link_libraries(dotnet
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
