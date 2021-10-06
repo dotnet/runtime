@@ -91,7 +91,6 @@ steps:
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.targets ./Directory.Build.targets
-      ls -laR
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
     condition: succeededOrFailed()
@@ -99,7 +98,6 @@ steps:
 
   - script: |
       chmod -R a+r .
-      ls -laR
       ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
     condition: succeededOrFailed()
     displayName: Build MAUI Android
@@ -112,7 +110,7 @@ steps:
       artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting # TODO Make the APK
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk #
         includeRootFolder: true #
         displayName: Maui Android App #
         artifactName: MauiAndroidApp #
