@@ -9,8 +9,8 @@
     </PropertyGroup>
 
     <!--
-      Repo configuration. Upstreams, but also more: the TPN in Core-Setup serves many repos outside
-      its graph, because Core-Setup produces the installer that ends up placing the single TPN file
+      Repo configuration. Upstreams, but also more: the TPN in dotnet/runtime serves many repos outside
+      its graph, because dotnet/runtime produces the installer that ends up placing the single TPN file
       in the dotnet home directory.
     -->
     <ItemGroup>
