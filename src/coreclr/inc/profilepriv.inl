@@ -88,7 +88,7 @@ inline void ProfilerInfo::Init()
     inUse = FALSE;
 }
 
-inline HRESULT AnyProfilerPassesConditionHelper(BOOL *pAnyPassed, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT AnyProfilerPassesConditionHelper(BOOL *pAnyPassed, EEToProfInterfaceImpl *profInterface)
 {
     *pAnyPassed = TRUE;
     return S_OK;
@@ -223,33 +223,19 @@ inline void ProfControlBlock::UpdateGlobalEventMask()
 {
     while (true)
     {
-        DWORD originalEventMask = globalEventMask.m_eventMask;
-        DWORD qwEventMask = 0;
+        UINT64 originalEventMask = globalEventMask.m_eventMask;
+        UINT64 qwEventMask = 0;
 
         IterateProfilers(ProfilerCallbackType::ActiveOrInitializing,
-                          &UpdateGlobalEventMaskHelper,
+                        [](ProfilerInfo *pProfilerInfo, UINT64 *pEventMask)
+                          {
+                              *pEventMask |= pProfilerInfo->eventMask.m_eventMask;
+                          },
                           &qwEventMask);
 
         // We are relying on the memory barrier introduced by InterlockedCompareExchange64 to observer any
         // change to the global event mask.
-        if ((UINT64)InterlockedCompareExchange((DWORD *)&(globalEventMask.m_eventMask), qwEventMask, originalEventMask) == originalEventMask)
-        {
-            break;
-        }
-    }
-
-    while (true)
-    {
-        DWORD originalEventMaskHigh = globalEventMask.m_eventMaskHigh;
-        DWORD qwEventMaskHigh = 0;
-
-        IterateProfilers(ProfilerCallbackType::ActiveOrInitializing,
-                          &UpdateGlobalEventMaskHighHelper,
-                          &qwEventMaskHigh);
-        
-        // We are relying on the memory barrier introduced by InterlockedCompareExchange64 to observer any
-        // change to the global event mask.
-        if ((UINT64)InterlockedCompareExchange((DWORD *)&(globalEventMask.m_eventMaskHigh), qwEventMaskHigh, originalEventMaskHigh) == originalEventMaskHigh)
+        if ((UINT64)InterlockedCompareExchange64((LONG64 *)&(globalEventMask.m_eventMask), (LONG64)qwEventMask, (LONG64)originalEventMask) == originalEventMask)
         {
             break;
         }
@@ -326,7 +312,7 @@ inline BOOL IsProfilerTrackingThreads(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_THREADS);
 }
 
-inline HRESULT ThreadCreatedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID threadID)
+inline HRESULT ThreadCreatedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ThreadID threadID)
 {
     return profInterface->ThreadCreated(threadID);
 }
@@ -342,7 +328,7 @@ inline void ProfControlBlock::ThreadCreated(ThreadID threadID)
                        threadID);
 }
 
-inline HRESULT ThreadDestroyedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID threadID)
+inline HRESULT ThreadDestroyedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ThreadID threadID)
 {
     return profInterface->ThreadDestroyed(threadID);
 }
@@ -358,7 +344,7 @@ inline void ProfControlBlock::ThreadDestroyed(ThreadID threadID)
                        threadID);
 }
 
-inline HRESULT ThreadAssignedToOSThreadHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID managedThreadId, DWORD osThreadId)
+inline HRESULT ThreadAssignedToOSThreadHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ThreadID managedThreadId, DWORD osThreadId)
 {
     return profInterface->ThreadAssignedToOSThread(managedThreadId, osThreadId);
 }
@@ -374,7 +360,7 @@ inline void ProfControlBlock::ThreadAssignedToOSThread(ThreadID managedThreadId,
                        managedThreadId, osThreadId);
 }
 
-inline HRESULT ThreadNameChangedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID managedThreadId, ULONG cchName, WCHAR name[])
+inline HRESULT ThreadNameChangedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ThreadID managedThreadId, ULONG cchName, WCHAR name[])
 {
     return profInterface->ThreadNameChanged(managedThreadId, cchName, name);
 }
@@ -390,7 +376,7 @@ inline void ProfControlBlock::ThreadNameChanged(ThreadID managedThreadId, ULONG 
                        managedThreadId, cchName, name);
 }
 
-inline HRESULT ShutdownHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT ShutdownHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->Shutdown();
 }
@@ -418,7 +404,7 @@ inline BOOL IsProfilerTrackingJITInfo(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_JIT_COMPILATION);
 }
 
-inline HRESULT JITCompilationFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
+inline HRESULT JITCompilationFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
     return profInterface->JITCompilationFinished(functionId, hrStatus, fIsSafeToBlock);
 }
@@ -434,7 +420,7 @@ inline void ProfControlBlock::JITCompilationFinished(FunctionID functionId, HRES
                        functionId, hrStatus, fIsSafeToBlock);
 }
 
-inline HRESULT JITCompilationStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL fIsSafeToBlock)
+inline HRESULT JITCompilationStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, BOOL fIsSafeToBlock)
 {
     return profInterface->JITCompilationStarted(functionId, fIsSafeToBlock);
 }
@@ -450,7 +436,7 @@ inline void ProfControlBlock::JITCompilationStarted(FunctionID functionId, BOOL 
                        functionId, fIsSafeToBlock);
 }
 
-inline HRESULT DynamicMethodJITCompilationStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL fIsSafeToBlock, LPCBYTE pILHeader, ULONG cbILHeader)
+inline HRESULT DynamicMethodJITCompilationStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, BOOL fIsSafeToBlock, LPCBYTE pILHeader, ULONG cbILHeader)
 {
     return profInterface->DynamicMethodJITCompilationStarted(functionId, fIsSafeToBlock, pILHeader, cbILHeader);
 }
@@ -466,7 +452,7 @@ inline void ProfControlBlock::DynamicMethodJITCompilationStarted(FunctionID func
                        functionId, fIsSafeToBlock, pILHeader, cbILHeader);
 }
 
-inline HRESULT DynamicMethodJITCompilationFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
+inline HRESULT DynamicMethodJITCompilationFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
     return profInterface->DynamicMethodJITCompilationFinished(functionId, hrStatus, fIsSafeToBlock);
 }
@@ -495,7 +481,7 @@ inline BOOL IsProfilerMonitoringDynamicFunctionUnloads(ProfilerInfo *pProfilerIn
     return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS);
 }
 
-inline HRESULT DynamicMethodUnloadedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
+inline HRESULT DynamicMethodUnloadedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId)
 {
     return profInterface->DynamicMethodUnloaded(functionId);
 }
@@ -524,7 +510,7 @@ inline BOOL IsProfilerTrackingCacheSearches(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CACHE_SEARCHES);
 }
 
-inline HRESULT JITCachedFunctionSearchStartedHelper(BOOL *pAllTrue, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL *pbUseCachedFunction)
+inline HRESULT JITCachedFunctionSearchStartedHelper(BOOL *pAllTrue, EEToProfInterfaceImpl *profInterface, FunctionID functionId, BOOL *pbUseCachedFunction)
 {
     HRESULT hr = profInterface->JITCachedFunctionSearchStarted(functionId, pbUseCachedFunction);
     *pAllTrue = *pAllTrue && *pbUseCachedFunction;
@@ -547,7 +533,7 @@ inline void ProfControlBlock::JITCachedFunctionSearchStarted(FunctionID function
     *pbUseCachedFunction = allTrue;
 }
 
-inline HRESULT JITCachedFunctionSearchFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, COR_PRF_JIT_CACHE result)
+inline HRESULT JITCachedFunctionSearchFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, COR_PRF_JIT_CACHE result)
 {
     return profInterface->JITCachedFunctionSearchFinished(functionId, result);
 }
@@ -563,7 +549,7 @@ inline void ProfControlBlock::JITCachedFunctionSearchFinished(FunctionID functio
                        functionId, result);
 }
 
-inline HRESULT JITInliningHelper(BOOL *pAllTrue, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID callerId, FunctionID calleeId, BOOL *pfShouldInline)
+inline HRESULT JITInliningHelper(BOOL *pAllTrue, EEToProfInterfaceImpl *profInterface, FunctionID callerId, FunctionID calleeId, BOOL *pfShouldInline)
 {
     HRESULT hr = profInterface->JITInlining(callerId, calleeId, pfShouldInline);
     *pAllTrue = *pAllTrue && *pfShouldInline;
@@ -675,7 +661,7 @@ inline BOOL IsProfilerTrackingModuleLoads(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_MODULE_LOADS);
 }
 
-inline HRESULT ModuleLoadStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId)
+inline HRESULT ModuleLoadStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ModuleID moduleId)
 {
     return profInterface->ModuleLoadStarted(moduleId);
 }
@@ -691,7 +677,7 @@ inline void ProfControlBlock::ModuleLoadStarted(ModuleID moduleId)
                        moduleId);
 }
 
-inline HRESULT ModuleLoadFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId, HRESULT hrStatus)
+inline HRESULT ModuleLoadFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ModuleID moduleId, HRESULT hrStatus)
 {
     return profInterface->ModuleLoadFinished(moduleId, hrStatus);
 }
@@ -707,7 +693,7 @@ inline void ProfControlBlock::ModuleLoadFinished(ModuleID moduleId, HRESULT hrSt
                        moduleId, hrStatus);
 }
 
-inline HRESULT ModuleUnloadStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId)
+inline HRESULT ModuleUnloadStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ModuleID moduleId)
 {
     return profInterface->ModuleUnloadStarted(moduleId);
 }
@@ -723,7 +709,7 @@ inline void ProfControlBlock::ModuleUnloadStarted(ModuleID moduleId)
                        moduleId);
 }
 
-inline HRESULT ModuleUnloadFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId, HRESULT hrStatus)
+inline HRESULT ModuleUnloadFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ModuleID moduleId, HRESULT hrStatus)
 {
     return profInterface->ModuleUnloadFinished(moduleId, hrStatus);
 }
@@ -739,7 +725,7 @@ inline void ProfControlBlock::ModuleUnloadFinished(ModuleID moduleId, HRESULT hr
                        moduleId, hrStatus);
 }
 
-inline HRESULT ModuleAttachedToAssemblyHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId, AssemblyID AssemblyId)
+inline HRESULT ModuleAttachedToAssemblyHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ModuleID moduleId, AssemblyID AssemblyId)
 {
     return profInterface->ModuleAttachedToAssembly(moduleId, AssemblyId);
 }
@@ -768,7 +754,7 @@ inline BOOL IsProfilerTrackingInMemorySymbolsUpdatesEnabled(ProfilerInfo *pProfi
     return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED);
 }
 
-inline HRESULT ModuleInMemorySymbolsUpdatedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ModuleID moduleId)
+inline HRESULT ModuleInMemorySymbolsUpdatedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ModuleID moduleId)
 {
     return profInterface->ModuleInMemorySymbolsUpdated(moduleId);
 }
@@ -797,7 +783,7 @@ inline BOOL IsProfilerTrackingClasses(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CLASS_LOADS);
 }
 
-inline HRESULT ClassLoadStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId)
+inline HRESULT ClassLoadStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ClassID classId)
 {
     return profInterface->ClassLoadStarted(classId);
 }
@@ -813,7 +799,7 @@ inline void ProfControlBlock::ClassLoadStarted(ClassID classId)
                        classId);
 }
 
-inline HRESULT ClassLoadFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId, HRESULT hrStatus)
+inline HRESULT ClassLoadFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ClassID classId, HRESULT hrStatus)
 {
     return profInterface->ClassLoadFinished(classId, hrStatus);
 }
@@ -829,7 +815,7 @@ inline void ProfControlBlock::ClassLoadFinished(ClassID classId, HRESULT hrStatu
                        classId, hrStatus);
 }
 
-inline HRESULT ClassUnloadStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId)
+inline HRESULT ClassUnloadStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ClassID classId)
 {
     return profInterface->ClassUnloadStarted(classId);
 }
@@ -845,7 +831,7 @@ inline void ProfControlBlock::ClassUnloadStarted(ClassID classId)
                        classId);
 }
 
-inline HRESULT ClassUnloadFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID classId, HRESULT hrStatus)
+inline HRESULT ClassUnloadFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ClassID classId, HRESULT hrStatus)
 {
     return profInterface->ClassUnloadFinished(classId, hrStatus);
 }
@@ -874,7 +860,7 @@ inline BOOL IsProfilerTrackingAppDomainLoads(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_APPDOMAIN_LOADS);
 }
 
-inline HRESULT AppDomainCreationStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId)
+inline HRESULT AppDomainCreationStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AppDomainID appDomainId)
 {
     return profInterface->AppDomainCreationStarted(appDomainId);
 }
@@ -890,7 +876,7 @@ inline void ProfControlBlock::AppDomainCreationStarted(AppDomainID appDomainId)
                        appDomainId);
 }
 
-inline HRESULT AppDomainCreationFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId, HRESULT hrStatus)
+inline HRESULT AppDomainCreationFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AppDomainID appDomainId, HRESULT hrStatus)
 {
     return profInterface->AppDomainCreationFinished(appDomainId, hrStatus);
 }
@@ -906,7 +892,7 @@ inline void ProfControlBlock::AppDomainCreationFinished(AppDomainID appDomainId,
                        appDomainId, hrStatus);
 }
 
-inline HRESULT AppDomainShutdownStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId)
+inline HRESULT AppDomainShutdownStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AppDomainID appDomainId)
 {
     return profInterface->AppDomainShutdownStarted(appDomainId);
 }
@@ -922,7 +908,7 @@ inline void ProfControlBlock::AppDomainShutdownStarted(AppDomainID appDomainId)
                        appDomainId);
 }
 
-inline HRESULT AppDomainShutdownFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AppDomainID appDomainId, HRESULT hrStatus)
+inline HRESULT AppDomainShutdownFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AppDomainID appDomainId, HRESULT hrStatus)
 {
     return profInterface->AppDomainShutdownFinished(appDomainId, hrStatus);
 }
@@ -951,7 +937,7 @@ inline BOOL IsProfilerTrackingAssemblyLoads(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_ASSEMBLY_LOADS);
 }
 
-inline HRESULT AssemblyLoadStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId)
+inline HRESULT AssemblyLoadStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AssemblyID assemblyId)
 {
     return profInterface->AssemblyLoadStarted(assemblyId);
 }
@@ -967,7 +953,7 @@ inline void ProfControlBlock::AssemblyLoadStarted(AssemblyID assemblyId)
                        assemblyId);
 }
 
-inline HRESULT AssemblyLoadFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId, HRESULT hrStatus)
+inline HRESULT AssemblyLoadFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AssemblyID assemblyId, HRESULT hrStatus)
 {
     return profInterface->AssemblyLoadFinished(assemblyId, hrStatus);
 }
@@ -983,7 +969,7 @@ inline void ProfControlBlock::AssemblyLoadFinished(AssemblyID assemblyId, HRESUL
                        assemblyId, hrStatus);
 }
 
-inline HRESULT AssemblyUnloadStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId)
+inline HRESULT AssemblyUnloadStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AssemblyID assemblyId)
 {
     return profInterface->AssemblyUnloadStarted(assemblyId);
 }
@@ -999,7 +985,7 @@ inline void ProfControlBlock::AssemblyUnloadStarted(AssemblyID assemblyId)
                        assemblyId);
 }
 
-inline HRESULT AssemblyUnloadFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, AssemblyID assemblyId, HRESULT hrStatus)
+inline HRESULT AssemblyUnloadFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, AssemblyID assemblyId, HRESULT hrStatus)
 {
     return profInterface->AssemblyUnloadFinished(assemblyId, hrStatus);
 }
@@ -1028,7 +1014,7 @@ inline BOOL IsProfilerTrackingTransitions(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CODE_TRANSITIONS);
 }
 
-inline HRESULT UnmanagedToManagedTransitionHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
+inline HRESULT UnmanagedToManagedTransitionHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
 {
     return profInterface->UnmanagedToManagedTransition(functionId, reason);
 }
@@ -1044,7 +1030,7 @@ inline void ProfControlBlock::UnmanagedToManagedTransition(FunctionID functionId
                        functionId, reason);
 }
 
-inline HRESULT ManagedToUnmanagedTransitionHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
+inline HRESULT ManagedToUnmanagedTransitionHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, COR_PRF_TRANSITION_REASON reason)
 {
     return profInterface->ManagedToUnmanagedTransition(functionId, reason);
 }
@@ -1073,7 +1059,7 @@ inline BOOL IsProfilerTrackingExceptions(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_EXCEPTIONS);
 }
 
-inline HRESULT ExceptionThrownHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID thrownObjectId)
+inline HRESULT ExceptionThrownHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ObjectID thrownObjectId)
 {
     return profInterface->ExceptionThrown(thrownObjectId);
 }
@@ -1089,7 +1075,7 @@ inline void ProfControlBlock::ExceptionThrown(ObjectID thrownObjectId)
                        thrownObjectId);
 }
 
-inline HRESULT ExceptionSearchFunctionEnterHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
+inline HRESULT ExceptionSearchFunctionEnterHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId)
 {
     return profInterface->ExceptionSearchFunctionEnter(functionId);
 }
@@ -1105,7 +1091,7 @@ inline void ProfControlBlock::ExceptionSearchFunctionEnter(FunctionID functionId
                        functionId);
 }
 
-inline HRESULT ExceptionSearchFunctionLeaveHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT ExceptionSearchFunctionLeaveHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->ExceptionSearchFunctionLeave();
 }
@@ -1120,7 +1106,7 @@ inline void ProfControlBlock::ExceptionSearchFunctionLeave()
                        &ExceptionSearchFunctionLeaveHelper);
 }
 
-inline HRESULT ExceptionSearchFilterEnterHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID funcId)
+inline HRESULT ExceptionSearchFilterEnterHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID funcId)
 {
     return profInterface->ExceptionSearchFilterEnter(funcId);
 }
@@ -1136,7 +1122,7 @@ inline void ProfControlBlock::ExceptionSearchFilterEnter(FunctionID funcId)
                        funcId);
 }
 
-inline HRESULT ExceptionSearchFilterLeaveHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT ExceptionSearchFilterLeaveHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->ExceptionSearchFilterLeave();
 }
@@ -1151,7 +1137,7 @@ inline void ProfControlBlock::ExceptionSearchFilterLeave()
                        &ExceptionSearchFilterLeaveHelper);
 }
 
-inline HRESULT ExceptionSearchCatcherFoundHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
+inline HRESULT ExceptionSearchCatcherFoundHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId)
 {
     return profInterface->ExceptionSearchCatcherFound(functionId);
 }
@@ -1167,7 +1153,7 @@ inline void ProfControlBlock::ExceptionSearchCatcherFound(FunctionID functionId)
                        functionId);
 }
 
-inline HRESULT ExceptionOSHandlerEnterHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID funcId)
+inline HRESULT ExceptionOSHandlerEnterHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID funcId)
 {
     return profInterface->ExceptionOSHandlerEnter(funcId);
 }
@@ -1183,7 +1169,7 @@ inline void ProfControlBlock::ExceptionOSHandlerEnter(FunctionID funcId)
                        funcId);
 }
 
-inline HRESULT ExceptionOSHandlerLeaveHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID funcId)
+inline HRESULT ExceptionOSHandlerLeaveHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID funcId)
 {
     return profInterface->ExceptionOSHandlerLeave(funcId);
 }
@@ -1199,7 +1185,7 @@ inline void ProfControlBlock::ExceptionOSHandlerLeave(FunctionID funcId)
                        funcId);
 }
 
-inline HRESULT ExceptionUnwindFunctionEnterHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
+inline HRESULT ExceptionUnwindFunctionEnterHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId)
 {
     return profInterface->ExceptionUnwindFunctionEnter(functionId);
 }
@@ -1215,7 +1201,7 @@ inline void ProfControlBlock::ExceptionUnwindFunctionEnter(FunctionID functionId
                        functionId);
 }
 
-inline HRESULT ExceptionUnwindFunctionLeaveHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT ExceptionUnwindFunctionLeaveHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->ExceptionUnwindFunctionLeave();
 }
@@ -1230,7 +1216,7 @@ inline void ProfControlBlock::ExceptionUnwindFunctionLeave()
                        &ExceptionUnwindFunctionLeaveHelper);
 }
 
-inline HRESULT ExceptionUnwindFinallyEnterHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId)
+inline HRESULT ExceptionUnwindFinallyEnterHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId)
 {
     return profInterface->ExceptionUnwindFinallyEnter(functionId);
 }
@@ -1246,7 +1232,7 @@ inline void ProfControlBlock::ExceptionUnwindFinallyEnter(FunctionID functionId)
                        functionId);
 }
 
-inline HRESULT ExceptionUnwindFinallyLeaveHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT ExceptionUnwindFinallyLeaveHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->ExceptionUnwindFinallyLeave();
 }
@@ -1261,7 +1247,7 @@ inline void ProfControlBlock::ExceptionUnwindFinallyLeave()
                        &ExceptionUnwindFinallyLeaveHelper);
 }
 
-inline HRESULT ExceptionCatcherEnterHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, ObjectID objectId)
+inline HRESULT ExceptionCatcherEnterHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, FunctionID functionId, ObjectID objectId)
 {
     return profInterface->ExceptionCatcherEnter(functionId, objectId);
 }
@@ -1277,7 +1263,7 @@ inline void ProfControlBlock::ExceptionCatcherEnter(FunctionID functionId, Objec
                        functionId, objectId);
 }
 
-inline HRESULT ExceptionCatcherLeaveHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT ExceptionCatcherLeaveHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->ExceptionCatcherLeave();
 }
@@ -1305,7 +1291,7 @@ inline BOOL IsProfilerTrackingCCW(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_CCW);
 }
 
-inline HRESULT COMClassicVTableCreatedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ClassID wrappedClassId, REFGUID implementedIID, void *pVTable, ULONG cSlots)
+inline HRESULT COMClassicVTableCreatedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ClassID wrappedClassId, REFGUID implementedIID, void *pVTable, ULONG cSlots)
 {
     return profInterface->COMClassicVTableCreated(wrappedClassId, implementedIID, pVTable, cSlots);
 }
@@ -1334,7 +1320,7 @@ inline BOOL IsProfilerTrackingSuspends(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_SUSPENDS);
 }
 
-inline HRESULT RuntimeSuspendStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, COR_PRF_SUSPEND_REASON suspendReason)
+inline HRESULT RuntimeSuspendStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, COR_PRF_SUSPEND_REASON suspendReason)
 {
     return profInterface->RuntimeSuspendStarted(suspendReason);
 }
@@ -1350,7 +1336,7 @@ inline void ProfControlBlock::RuntimeSuspendStarted(COR_PRF_SUSPEND_REASON suspe
                        suspendReason);
 }
 
-inline HRESULT RuntimeSuspendFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT RuntimeSuspendFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->RuntimeSuspendFinished();
 }
@@ -1365,7 +1351,7 @@ inline void ProfControlBlock::RuntimeSuspendFinished()
                        &RuntimeSuspendFinishedHelper);
 }
 
-inline HRESULT RuntimeSuspendAbortedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT RuntimeSuspendAbortedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->RuntimeSuspendAborted();
 }
@@ -1380,7 +1366,7 @@ inline void ProfControlBlock::RuntimeSuspendAborted()
                        &RuntimeSuspendAbortedHelper);
 }
 
-inline HRESULT RuntimeResumeStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT RuntimeResumeStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->RuntimeResumeStarted();
 }
@@ -1395,7 +1381,7 @@ inline void ProfControlBlock::RuntimeResumeStarted()
                        &RuntimeResumeStartedHelper);
 }
 
-inline HRESULT RuntimeResumeFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT RuntimeResumeFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->RuntimeResumeFinished();
 }
@@ -1410,7 +1396,7 @@ inline void ProfControlBlock::RuntimeResumeFinished()
                        &RuntimeResumeFinishedHelper);
 }
 
-inline HRESULT RuntimeThreadSuspendedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID suspendedThreadId)
+inline HRESULT RuntimeThreadSuspendedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ThreadID suspendedThreadId)
 {
     return profInterface->RuntimeThreadSuspended(suspendedThreadId);
 }
@@ -1426,7 +1412,7 @@ inline void ProfControlBlock::RuntimeThreadSuspended(ThreadID suspendedThreadId)
                        suspendedThreadId);
 }
 
-inline HRESULT RuntimeThreadResumedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ThreadID resumedThreadId)
+inline HRESULT RuntimeThreadResumedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ThreadID resumedThreadId)
 {
     return profInterface->RuntimeThreadResumed(resumedThreadId);
 }
@@ -1456,7 +1442,7 @@ inline BOOL IsProfilerTrackingAllocations(ProfilerInfo *pProfilerInfo)
                 || pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED));
 }
 
-inline HRESULT ObjectAllocatedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID objectId, ClassID classId)
+inline HRESULT ObjectAllocatedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ObjectID objectId, ClassID classId)
 {
     return profInterface->ObjectAllocated(objectId, classId);
 }
@@ -1486,7 +1472,7 @@ inline BOOL IsProfilerTrackingGC(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskSet(COR_PRF_MONITOR_GC);
 }
 
-inline HRESULT FinalizeableObjectQueuedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BOOL isCritical, ObjectID objectID)
+inline HRESULT FinalizeableObjectQueuedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, BOOL isCritical, ObjectID objectID)
 {
     return profInterface->FinalizeableObjectQueued(isCritical, objectID);
 }
@@ -1502,7 +1488,7 @@ inline void ProfControlBlock::FinalizeableObjectQueued(BOOL isCritical, ObjectID
                        isCritical, objectID);
 }
 
-inline HRESULT MovedReferenceHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BYTE *pbMemBlockStart, BYTE *pbMemBlockEnd, ptrdiff_t cbRelocDistance, void *pHeapId, BOOL fCompacting)
+inline HRESULT MovedReferenceHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, BYTE *pbMemBlockStart, BYTE *pbMemBlockEnd, ptrdiff_t cbRelocDistance, void *pHeapId, BOOL fCompacting)
 {
     return profInterface->MovedReference(pbMemBlockStart, pbMemBlockEnd, cbRelocDistance, pHeapId, fCompacting);
 }
@@ -1518,7 +1504,7 @@ inline void ProfControlBlock::MovedReference(BYTE *pbMemBlockStart, BYTE *pbMemB
                        pbMemBlockStart, pbMemBlockEnd, cbRelocDistance, pHeapId, fCompacting);
 }
 
-inline HRESULT EndMovedReferencesHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
+inline HRESULT EndMovedReferencesHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, void *pHeapId)
 {
     return profInterface->EndMovedReferences(pHeapId);
 }
@@ -1534,7 +1520,7 @@ inline void ProfControlBlock::EndMovedReferences(void *pHeapId)
                        pHeapId);
 }
 
-inline HRESULT RootReference2Helper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BYTE *objectId, EtwGCRootKind dwEtwRootKind, EtwGCRootFlags dwEtwRootFlags, void *rootID, void *pHeapId)
+inline HRESULT RootReference2Helper(void *additionalData, EEToProfInterfaceImpl *profInterface, BYTE *objectId, EtwGCRootKind dwEtwRootKind, EtwGCRootFlags dwEtwRootFlags, void *rootID, void *pHeapId)
 {
     return profInterface->RootReference2(objectId, dwEtwRootKind, dwEtwRootFlags, rootID, pHeapId);
 }
@@ -1550,7 +1536,7 @@ inline void ProfControlBlock::RootReference2(BYTE *objectId, EtwGCRootKind dwEtw
                        objectId, dwEtwRootKind, dwEtwRootFlags, rootID, pHeapId);
 }
 
-inline HRESULT EndRootReferences2Helper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
+inline HRESULT EndRootReferences2Helper(void *additionalData, EEToProfInterfaceImpl *profInterface, void *pHeapId)
 {
     return profInterface->EndRootReferences2(pHeapId);
 }
@@ -1566,7 +1552,7 @@ inline void ProfControlBlock::EndRootReferences2(void *pHeapId)
                        pHeapId);
 }
 
-inline HRESULT ConditionalWeakTableElementReferenceHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, BYTE *primaryObjectId, BYTE *secondaryObjectId, void *rootID, void *pHeapId)
+inline HRESULT ConditionalWeakTableElementReferenceHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, BYTE *primaryObjectId, BYTE *secondaryObjectId, void *rootID, void *pHeapId)
 {
     if (!profInterface->IsCallback5Supported())
     {
@@ -1587,7 +1573,7 @@ inline void ProfControlBlock::ConditionalWeakTableElementReference(BYTE *primary
                        primaryObjectId, secondaryObjectId, rootID, pHeapId);
 }
 
-inline HRESULT EndConditionalWeakTableElementReferencesHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
+inline HRESULT EndConditionalWeakTableElementReferencesHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, void *pHeapId)
 {
     if (!profInterface->IsCallback5Supported())
     {
@@ -1608,7 +1594,7 @@ inline void ProfControlBlock::EndConditionalWeakTableElementReferences(void *pHe
                        pHeapId);
 }
 
-inline HRESULT AllocByClassHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID objId, ClassID classId, void *pHeapId)
+inline HRESULT AllocByClassHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ObjectID objId, ClassID classId, void *pHeapId)
 {
     return profInterface->AllocByClass(objId, classId, pHeapId);
 }
@@ -1624,7 +1610,7 @@ inline void ProfControlBlock::AllocByClass(ObjectID objId, ClassID classId, void
                        objId, classId, pHeapId);
 }
 
-inline HRESULT EndAllocByClassHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, void *pHeapId)
+inline HRESULT EndAllocByClassHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, void *pHeapId)
 {
     return profInterface->EndAllocByClass(pHeapId);
 }
@@ -1640,7 +1626,7 @@ inline void ProfControlBlock::EndAllocByClass(void *pHeapId)
                        pHeapId);
 }
 
-inline HRESULT ObjectReferenceHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, ObjectID objId, ClassID classId, ULONG cNumRefs, ObjectID *arrObjRef)
+inline HRESULT ObjectReferenceHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, ObjectID objId, ClassID classId, ULONG cNumRefs, ObjectID *arrObjRef)
 {
     return profInterface->ObjectReference(objId, classId, cNumRefs, arrObjRef);
 }
@@ -1656,7 +1642,7 @@ inline HRESULT ProfControlBlock::ObjectReference(ObjectID objId, ClassID classId
                               objId, classId, cNumRefs, arrObjRef);
 }
 
-inline HRESULT HandleCreatedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, UINT_PTR handleId, ObjectID initialObjectId)
+inline HRESULT HandleCreatedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, UINT_PTR handleId, ObjectID initialObjectId)
 {
     return profInterface->HandleCreated(handleId, initialObjectId);
 }
@@ -1672,7 +1658,7 @@ inline void ProfControlBlock::HandleCreated(UINT_PTR handleId, ObjectID initialO
                        handleId, initialObjectId);
 }
 
-inline HRESULT HandleDestroyedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, UINT_PTR handleId)
+inline HRESULT HandleDestroyedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, UINT_PTR handleId)
 {
     return profInterface->HandleDestroyed(handleId);
 }
@@ -1725,7 +1711,7 @@ inline BOOL IsProfilerTrackingGCOrMovedObjects(ProfilerInfo *pProfilerInfo)
     return IsProfilerTrackingGC(pProfilerInfo) || IsProfilerTrackingMovedObjects(pProfilerInfo);
 }
 
-inline HRESULT GarbageCollectionStartedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
+inline HRESULT GarbageCollectionStartedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
     return profInterface->GarbageCollectionStarted(cGenerations, generationCollected, reason);
 }
@@ -1741,7 +1727,7 @@ inline void ProfControlBlock::GarbageCollectionStarted(int cGenerations, BOOL ge
                        cGenerations, generationCollected, reason);
 }
 
-inline HRESULT GarbageCollectionFinishedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface)
+inline HRESULT GarbageCollectionFinishedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface)
 {
     return profInterface->GarbageCollectionFinished();
 }
@@ -1770,7 +1756,7 @@ inline BOOL IsProfilerMonitoringEventPipe(ProfilerInfo *pProfilerInfo)
     return pProfilerInfo->eventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_EVENT_PIPE);
 }
 
-inline HRESULT EventPipeEventDeliveredHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface,
+inline HRESULT EventPipeEventDeliveredHelper(void *additionalData, EEToProfInterfaceImpl *profInterface,
                                              EventPipeProvider *provider,
                                              DWORD eventId,
                                              DWORD eventVersion,
@@ -1831,7 +1817,7 @@ inline void ProfControlBlock::EventPipeEventDelivered(EventPipeProvider *provide
                         stackFrames);
 }
 
-inline HRESULT EventPipeProviderCreatedHelper(void *additionalData, VolatilePtr<EEToProfInterfaceImpl> profInterface, EventPipeProvider *provider)
+inline HRESULT EventPipeProviderCreatedHelper(void *additionalData, EEToProfInterfaceImpl *profInterface, EventPipeProvider *provider)
 {
     return profInterface->EventPipeProviderCreated(provider);
 }
