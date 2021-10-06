@@ -154,28 +154,27 @@ namespace System.Text.RegularExpressions.Generator
 #if DEBUG
             writer.WriteLine("        /*");
             writer.WriteLine($"{rm.Code.Tree.ToString().Replace("*/", @"* /")}");
-            writer.WriteLine($"{rm.Code.ToString().Replace("*/", @"* /")}");
             writer.WriteLine("        */");
 #endif
-            writer.WriteLine($"        pattern = {patternExpression};");
-            writer.WriteLine($"        roptions = {optionsExpression};");
-            writer.WriteLine($"        internalMatchTimeout = {timeoutExpression};");
-            writer.WriteLine($"        factory = new RunnerFactory();");
+            writer.WriteLine($"        base.pattern = {patternExpression};");
+            writer.WriteLine($"        base.roptions = {optionsExpression};");
+            writer.WriteLine($"        base.internalMatchTimeout = {timeoutExpression};");
+            writer.WriteLine($"        base.factory = new RunnerFactory();");
             if (rm.Code.Caps is not null)
             {
-                writer.Write("        Caps = new global::System.Collections.Hashtable {");
+                writer.Write("        base.Caps = new global::System.Collections.Hashtable {");
                 AppendHashtableContents(writer, rm.Code.Caps);
                 writer.WriteLine(" };");
             }
             if (rm.Code.Tree.CapNames is not null)
             {
-                writer.Write("        CapNames = new global::System.Collections.Hashtable {");
+                writer.Write("        base.CapNames = new global::System.Collections.Hashtable {");
                 AppendHashtableContents(writer, rm.Code.Tree.CapNames);
                 writer.WriteLine(" };");
             }
             if (rm.Code.Tree.CapsList is not null)
             {
-                writer.Write("        capslist = new string[] {");
+                writer.Write("        base.capslist = new string[] {");
                 string separator = "";
                 foreach (string s in rm.Code.Tree.CapsList)
                 {
@@ -185,7 +184,7 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 writer.WriteLine(" };");
             }
-            writer.WriteLine($"        capsize = {rm.Code.CapSize};");
+            writer.WriteLine($"        base.capsize = {rm.Code.CapSize};");
             writer.WriteLine($"        base.InitializeReferences();");
             writer.WriteLine($"    }}");
             writer.WriteLine("    ");
@@ -842,90 +841,195 @@ namespace System.Text.RegularExpressions.Generator
             // implicit capture that happens for the whole match at the end.
             void EmitAtomicAlternate(RegexNode node)
             {
-                // Label to jump to when any branch completes successfully.
-                string doneAlternateLabel = DefineLabel();
-
-                // Save off runtextpos.  We'll need to reset this each time a branch fails.
-                string startingRunTextPosName = NextLocalName("startingRunTextPos");
-                writer.WriteLine($"int {startingRunTextPosName} = runtextpos;");
-                int startingTextSpanPos = textSpanPos;
-
-                // If the alternation's branches contain captures, save off the relevant
-                // state.  Note that this is only about subexpressions within the alternation,
-                // as the alternation is atomic, so we're not concerned about captures after
-                // the alternation.
-                bool hasStartingCrawlpos = (node.Options & RegexNode.HasCapturesFlag) != 0;
-                if (hasStartingCrawlpos)
-                {
-                    writer.WriteLine("int startingCrawlpos = base.Crawlpos();");
-                }
-                writer.WriteLine();
-
-                // A failure in a branch other than the last should jump to the next
-                // branch, not to the final done.
-                string postAlternateDoneLabel = doneLabel;
-
                 int childCount = node.ChildCount();
-                for (int i = 0; i < childCount - 1; i++)
+                Debug.Assert(childCount >= 2);
+
+                // If no child branch overlaps with another child branch, we can emit more streamlined code
+                // that avoids checking unnecessary branches, e.g. with abc|def|ghi if the next character in
+                // the input is 'a', we needn't try the def or ghi branches.  A simple, relatively common case
+                // of this is if every branch begins with a specific, unique character, in which case
+                // the whole alternation can be treated as a simple switch, so we special-case that.
+                var seenChars = new HashSet<char>();
+                bool allBranchesStartUnique = true;
+                for (int i = 0; i < childCount; i++)
                 {
-                    using var __ = EmitScope(writer, $"Branch {i}");
-
-                    string nextBranch = DefineLabel();
-                    doneLabel = nextBranch;
-
-                    // Emit the code for each branch.
-                    EmitNode(node.Child(i));
-
-                    // If we get here in the generated code, the branch completed successfully.
-                    // Before jumping to the end, we need to zero out textSpanPos, so that no
-                    // matter what the value is after the branch, whatever follows the alternate
-                    // will see the same textSpanPos.
-                    TransferTextSpanPosToRunTextPos();
-                    writer.WriteLine($"goto {doneAlternateLabel};");
-
-                    // Reset state for next branch and loop around to generate it.  This includes
-                    // setting runtextpos back to what it was at the beginning of the alternation,
-                    // updating textSpan to be the full length it was, and if there's a capture that
-                    // needs to be reset, uncapturing it.
-                    MarkLabel(nextBranch);
-                    writer.WriteLine($"runtextpos = {startingRunTextPosName};");
-                    LoadTextSpanLocal(writer);
-                    textSpanPos = startingTextSpanPos;
-                    if (hasStartingCrawlpos)
+                    if (node.Child(i).FindBranchOneOrMultiStart() is not RegexNode oneOrMulti ||
+                        !seenChars.Add(oneOrMulti.FirstCharOfOneOrMulti()))
                     {
-                        EmitUncaptureUntil();
+                        allBranchesStartUnique = false;
+                        break;
                     }
                 }
 
-                // If the final branch fails, that's like any other failure, and we jump to
-                // done (unless we have captures we need to unwind first, in which case we uncapture
-                // them and then jump to done).
-                using (EmitScope(writer, $"Branch {childCount - 1}"))
+                if (allBranchesStartUnique)
                 {
+                    // Note: This optimization does not exist with RegexOptions.Compiled.  Here we rely on the
+                    // C# compiler to lower the C# switch statement with appropriate optimizations.
+                    EmitSwitchedBranches();
+                }
+                else
+                {
+                    EmitAllBranches();
+                }
+
+                void EmitSwitchedBranches()
+                {
+                    EmitSpanLengthCheck(1);
+                    writer.WriteLine();
+
+                    using (EmitBlock(writer, $"switch ({ToLowerIfNeeded(hasTextInfo, options, $"{textSpanLocal}[{textSpanPos++}]", IsCaseInsensitive(node))})"))
+                    {
+                        int startingTextSpanPos = textSpanPos;
+                        for (int i = 0; i < childCount; i++)
+                        {
+                            textSpanPos = startingTextSpanPos;
+
+                            RegexNode child = node.Child(i);
+                            Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, child.Description());
+                            Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
+
+                            RegexNode childStart = child.FindBranchOneOrMultiStart();
+                            Debug.Assert(childStart is not null, child.Description());
+
+                            writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
+                            writer.Indent++;
+
+                            // Emit the code for the branch, without the first character that was already matched in the switch.
+                            switch (child.Type)
+                            {
+                                case RegexNode.Multi:
+                                    EmitNode(CloneMultiWithoutFirstChar(child));
+                                    break;
+
+                                case RegexNode.Concatenate:
+                                    var newConcat = new RegexNode(RegexNode.Concatenate, child.Options);
+                                    if (childStart.Type == RegexNode.Multi)
+                                    {
+                                        newConcat.AddChild(CloneMultiWithoutFirstChar(childStart));
+                                    }
+                                    int concatChildCount = child.ChildCount();
+                                    for (int j = 1; j < concatChildCount; j++)
+                                    {
+                                        newConcat.AddChild(child.Child(j));
+                                    }
+                                    EmitNode(newConcat.Reduce());
+                                    break;
+
+                                static RegexNode CloneMultiWithoutFirstChar(RegexNode node)
+                                {
+                                    Debug.Assert(node.Type is RegexNode.Multi);
+                                    Debug.Assert(node.Str!.Length >= 2);
+                                    return node.Str!.Length == 2 ?
+                                        new RegexNode(RegexNode.One, node.Options, node.Str![1]) :
+                                        new RegexNode(RegexNode.Multi, node.Options, node.Str!.Substring(1));
+                                }
+                            }
+
+                            // If we get here in the generated code, the branch completed successfully.
+                            // Before jumping to the end, we need to zero out textSpanPos, so that no
+                            // matter what the value is after the branch, whatever follows the alternate
+                            // will see the same textSpanPos.
+                            TransferTextSpanPosToRunTextPos();
+                            writer.WriteLine($"break;");
+                            writer.WriteLine();
+
+                            writer.Indent--;
+                        }
+
+                        // Default branch if the character didn't match the start of any branches.
+                        writer.WriteLine("default:");
+                        writer.Indent++;
+                        writer.WriteLine($"goto {doneLabel};");
+                        writer.Indent--;
+                    }
+                }
+
+                void EmitAllBranches()
+                {
+                    // Label to jump to when any branch completes successfully.
+                    string doneAlternateLabel = DefineLabel();
+
+                    // Save off runtextpos.  We'll need to reset this each time a branch fails.
+                    string startingRunTextPosName = NextLocalName("startingRunTextPos");
+                    writer.WriteLine($"int {startingRunTextPosName} = runtextpos;");
+                    int startingTextSpanPos = textSpanPos;
+
+                    // If the alternation's branches contain captures, save off the relevant
+                    // state.  Note that this is only about subexpressions within the alternation,
+                    // as the alternation is atomic, so we're not concerned about captures after
+                    // the alternation.
+                    bool hasStartingCrawlpos = (node.Options & RegexNode.HasCapturesFlag) != 0;
                     if (hasStartingCrawlpos)
                     {
-                        string uncapture = DefineLabel();
-                        doneLabel = uncapture;
-                        EmitNode(node.Child(childCount - 1));
-                        doneLabel = postAlternateDoneLabel;
+                        writer.WriteLine("int startingCrawlpos = base.Crawlpos();");
+                    }
+                    writer.WriteLine();
+
+                    // A failure in a branch other than the last should jump to the next
+                    // branch, not to the final done.
+                    string postAlternateDoneLabel = doneLabel;
+
+                    for (int i = 0; i < childCount - 1; i++)
+                    {
+                        using var __ = EmitScope(writer, $"Branch {i}");
+
+                        string nextBranch = DefineLabel();
+                        doneLabel = nextBranch;
+
+                        // Emit the code for each branch.
+                        EmitNode(node.Child(i));
+
+                        // If we get here in the generated code, the branch completed successfully.
+                        // Before jumping to the end, we need to zero out textSpanPos, so that no
+                        // matter what the value is after the branch, whatever follows the alternate
+                        // will see the same textSpanPos.
                         TransferTextSpanPosToRunTextPos();
                         writer.WriteLine($"goto {doneAlternateLabel};");
-                        MarkLabel(uncapture);
-                        EmitUncaptureUntil();
-                        writer.WriteLine($"goto {doneLabel};");
-                    }
-                    else
-                    {
-                        doneLabel = postAlternateDoneLabel;
-                        EmitNode(node.Child(childCount - 1));
-                        TransferTextSpanPosToRunTextPos();
-                    }
-                }
 
-                // Successfully completed the alternate.
-                MarkLabel(doneAlternateLabel);
-                writer.WriteLine(";");
-                Debug.Assert(textSpanPos == 0);
+                        // Reset state for next branch and loop around to generate it.  This includes
+                        // setting runtextpos back to what it was at the beginning of the alternation,
+                        // updating textSpan to be the full length it was, and if there's a capture that
+                        // needs to be reset, uncapturing it.
+                        MarkLabel(nextBranch);
+                        writer.WriteLine($"runtextpos = {startingRunTextPosName};");
+                        LoadTextSpanLocal(writer);
+                        textSpanPos = startingTextSpanPos;
+                        if (hasStartingCrawlpos)
+                        {
+                            EmitUncaptureUntil();
+                        }
+                    }
+
+                    // If the final branch fails, that's like any other failure, and we jump to
+                    // done (unless we have captures we need to unwind first, in which case we uncapture
+                    // them and then jump to done).
+                    using (EmitScope(writer, $"Branch {childCount - 1}"))
+                    {
+                        if (hasStartingCrawlpos)
+                        {
+                            string uncapture = DefineLabel();
+                            doneLabel = uncapture;
+                            EmitNode(node.Child(childCount - 1));
+                            doneLabel = postAlternateDoneLabel;
+                            TransferTextSpanPosToRunTextPos();
+                            writer.WriteLine($"goto {doneAlternateLabel};");
+                            MarkLabel(uncapture);
+                            EmitUncaptureUntil();
+                            writer.WriteLine($"goto {doneLabel};");
+                        }
+                        else
+                        {
+                            doneLabel = postAlternateDoneLabel;
+                            EmitNode(node.Child(childCount - 1));
+                            TransferTextSpanPosToRunTextPos();
+                        }
+                    }
+
+                    // Successfully completed the alternate.
+                    MarkLabel(doneAlternateLabel);
+                    writer.WriteLine(";");
+                    Debug.Assert(textSpanPos == 0);
+                }
             }
 
             // Emits the code for a Capture node.
@@ -1010,7 +1114,20 @@ namespace System.Text.RegularExpressions.Generator
             // Emits the code for the node.
             void EmitNode(RegexNode node, bool emitLengthChecksIfRequired = true)
             {
+                // Separate out several node types that, for conciseness, don't need a header and scope written into the source.
+                switch (node.Type)
+                {
+                    case RegexNode.Empty:
+                        return;
+
+                    case RegexNode.Atomic:
+                        EmitNode(node.Child(0));
+                        return;
+                }
+
+                // Put the node's code into its own scope
                 using var _ = EmitScope(writer, DescribeNode(node));
+
                 switch (node.Type)
                 {
                     case RegexNode.One:
@@ -1058,10 +1175,6 @@ namespace System.Text.RegularExpressions.Generator
                         {
                             EmitNodeRepeater(node);
                         }
-                        break;
-
-                    case RegexNode.Atomic:
-                        EmitNode(node.Child(0));
                         break;
 
                     case RegexNode.Alternate:
@@ -1113,10 +1226,6 @@ namespace System.Text.RegularExpressions.Generator
 
                     case RegexNode.Nothing:
                         writer.WriteLine($"goto {doneLabel};");
-                        break;
-
-                    case RegexNode.Empty:
-                        // Emit nothing.
                         break;
 
                     case RegexNode.UpdateBumpalong:
