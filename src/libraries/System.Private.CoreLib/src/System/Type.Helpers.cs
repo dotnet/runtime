@@ -18,7 +18,7 @@ namespace System
                     return true;
 
                 Type? underlyingType = UnderlyingSystemType;
-                if (underlyingType.IsRuntimeImplemented())
+                if (underlyingType is RuntimeType)
                 {
                     do
                     {
@@ -345,7 +345,7 @@ namespace System
             // For backward-compatibility, we need to special case for the types
             // whose UnderlyingSystemType are runtime implemented.
             Type toType = this.UnderlyingSystemType;
-            if (toType?.IsRuntimeImplemented() == true)
+            if (toType is RuntimeType)
                 return toType.IsAssignableFrom(c);
 
             // If c is a subclass of this class, then c can be cast to this type.

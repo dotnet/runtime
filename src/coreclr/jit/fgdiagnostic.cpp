@@ -2419,12 +2419,6 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
         return true;
     }
 
-    // For OSR, we allow the firstBB to branch to the middle of a try.
-    if (comp->opts.IsOSR() && (blockPred == comp->fgFirstBB))
-    {
-        return true;
-    }
-
     printf("Jump into the middle of try region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum, block->bbNum);
     assert(!"Jump into middle of try region");
     return false;
@@ -2823,7 +2817,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
     {
         // For instance method:
         assert(info.compThisArg != BAD_VAR_NUM);
-        bool compThisArgAddrExposedOK = !lvaTable[info.compThisArg].lvAddrExposed;
+        bool compThisArgAddrExposedOK = !lvaTable[info.compThisArg].IsAddressExposed();
 
 #ifndef JIT32_GCENCODER
         compThisArgAddrExposedOK = compThisArgAddrExposedOK || copiedForGenericsCtxt;
@@ -2834,7 +2828,7 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // written to or address-exposed.
         assert(compThisArgAddrExposedOK && !lvaTable[info.compThisArg].lvHasILStoreOp &&
                (lvaArg0Var == info.compThisArg ||
-                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].lvAddrExposed ||
+                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].IsAddressExposed() ||
                                                     lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
 }

@@ -42,11 +42,9 @@ class Module;
 class EditAndContinueModule;
 
 class PEFile;
-class PEModule;
 class PEAssembly;
 class SimpleRWLock;
 
-typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
@@ -78,9 +76,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 //
 // 4. Dynamic - these are not actual PE images at all, but are placeholders
 //    for reflection-based modules.
-//
-// PEFiles are segmented into two subtypes: PEAssembly and PEModule.  The formere
-// is a file to be loaded as an assembly, and the latter is to be loaded as a module.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // See code:Module for more on modules
@@ -120,7 +115,6 @@ private:
     // ------------------------------------------------------------
 
     friend class DomainFile;
-    friend class PEModule;
 
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
@@ -199,8 +193,6 @@ public:
 
     BOOL IsAssembly() const;
     PTR_PEAssembly AsAssembly();
-    BOOL IsModule() const;
-    PTR_PEModule AsModule();
     BOOL IsSystem() const;
     BOOL IsDynamic() const;
     BOOL IsResource() const;
@@ -346,7 +338,6 @@ protected:
     {
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
-        PEFILE_MODULE                 = 0x04,
     };
 
     // ------------------------------------------------------------
@@ -405,9 +396,6 @@ protected:
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
     int                      m_flags;
-
-    // AssemblyBinder that this PEFile is associated with
-    PTR_AssemblyBinder       m_pAssemblyBinder;
 
 public:
 
@@ -480,28 +468,17 @@ public:
     }
 
     // Returns the AssemblyBinder* instance associated with the PEFile
-    PTR_AssemblyBinder GetBinder();
+    // which owns the context into which the current PEFile was loaded.
+    PTR_AssemblyBinder GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
-    void SetupAssemblyLoadContext();
-
     void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
         m_pFallbackBinder = pFallbackBinder;
-        SetupAssemblyLoadContext();
     }
 
 #endif //!DACCESS_COMPILE
-
-    // Returns AssemblyBinder which owns the context into which the current PEFile was loaded.
-    PTR_AssemblyBinder GetAssemblyBinder()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_pAssemblyBinder != NULL);
-        return m_pAssemblyBinder;
-    }
 
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }

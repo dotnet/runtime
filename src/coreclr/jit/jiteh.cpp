@@ -4410,7 +4410,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             // The first block of a handler has an artificial extra refcount. Transfer that to the new block.
-            assert(block->bbRefs > 0);
+            noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
 
             HBtab->ebdHndBeg = bPrev;
@@ -4459,7 +4459,7 @@ void Compiler::fgExtendEHRegionBefore(BasicBlock* block)
 #endif // DEBUG
 
             // The first block of a filter has an artificial extra refcount. Transfer that to the new block.
-            assert(block->bbRefs > 0);
+            noway_assert(block->countOfInEdges() > 0);
             block->bbRefs--;
 
             HBtab->ebdFilter = bPrev;

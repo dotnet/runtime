@@ -598,7 +598,7 @@ mono_domain_fire_assembly_load (MonoAssemblyLoadContext *alc, MonoAssembly *asse
 	if (!MONO_BOOL (domain->domain))
 		goto leave; // This can happen during startup
 
-	if (!mono_runtime_get_no_exec () && assembly->context.kind != MONO_ASMCTX_INTERNAL)
+	if (!mono_runtime_get_no_exec () && !assembly->context.no_managed_load_event)
 		mono_domain_fire_assembly_load_event (domain, assembly, error_out);
 
 leave:
@@ -721,7 +721,7 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 		predicate_ud = aname;
 	}
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, alc);
 	req.request.predicate = predicate;
 	req.request.predicate_ud = predicate_ud;
 
@@ -767,7 +767,6 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 	MonoAssembly *ass = NULL;
 	MonoAssemblyName aname;
 	MonoAssemblyByNameRequest req;
-	MonoAssemblyContextKind asmctx;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
 	gboolean parsed;
 	char *name;
@@ -781,8 +780,7 @@ ves_icall_System_Reflection_Assembly_InternalLoad (MonoStringHandle name_handle,
 		g_assert_not_reached ();
 	
 	g_assert (alc);
-	asmctx = MONO_ASMCTX_DEFAULT;
-	mono_assembly_request_prepare_byname (&req, asmctx, alc);
+	mono_assembly_request_prepare_byname (&req, alc);
 	req.basedir = NULL;
 	/* Everything currently goes through this function, and the postload hook (aka the AppDomain.AssemblyResolve event)
 	 * is triggered under some scenarios. It's not completely obvious to me in what situations (if any) this should be disabled,

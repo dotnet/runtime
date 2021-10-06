@@ -415,16 +415,6 @@ namespace System.IO
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
             string pathToTargetFullPath = PathInternal.GetLinkTargetFullPath(path, pathToTarget);
-
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(pathToTargetFullPath, ref data, returnErrorOnNotFound: true);
-            if (errorCode == Interop.Errors.ERROR_SUCCESS &&
-                data.dwFileAttributes != -1 &&
-                isDirectory != ((data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0))
-            {
-                throw new IOException(SR.Format(SR.IO_InconsistentLinkType, path));
-            }
-
             Interop.Kernel32.CreateSymbolicLink(path, pathToTarget, isDirectory);
         }
 
@@ -502,42 +492,52 @@ namespace System.IO
                 success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.SymbolicLinkReparseBuffer rbSymlink);
                 Debug.Assert(success);
 
-                // We use PrintName(Offset|Length) instead of SubstituteName(Offset|Length) given that we don't want to return
-                // an NT path when the link wasn't created with such NT path.
-                // Unlike SubstituteName and GetFinalPathNameByHandle(), PrintName doesn't start with a prefix.
-                // Another nuance is that SubstituteName does not contain redundant path segments while PrintName does.
-                // PrintName can ONLY return a NT path if the link was created explicitly targeting a file/folder in such way.
-                //   e.g: mklink /D linkName \??\C:\path\to\target.
+                // We always use SubstituteName(Offset|Length) instead of PrintName(Offset|Length),
+                // the latter is just the display name of the reparse point and it can show something completely unrelated to the target.
 
                 if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK)
                 {
-                    int printNameOffset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.PrintNameOffset;
-                    int printNameLength = rbSymlink.PrintNameLength;
+                    int offset = sizeof(Interop.Kernel32.SymbolicLinkReparseBuffer) + rbSymlink.SubstituteNameOffset;
+                    int length = rbSymlink.SubstituteNameLength;
 
-                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
-                    Debug.Assert((rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) == 0 || !PathInternal.IsExtended(targetPath));
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(offset, length));
 
-                    if (returnFullPath && (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0)
+                    bool isRelative = (rbSymlink.Flags & Interop.Kernel32.SYMLINK_FLAG_RELATIVE) != 0;
+                    if (!isRelative)
                     {
-                        // Target path is relative and is for ResolveLinkTarget(), we need to append the link directory.
+                        // Absolute target is in NT format and we need to clean it up before return it to the user.
+                        if (targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()))
+                        {
+                            // We need to prepend the Win32 equivalent of UNC NT prefix.
+                            return Path.Join(PathInternal.UncPathPrefix.AsSpan(), targetPath.Slice(PathInternal.UncNTPathPrefix.Length));
+                        }
+
+                        return GetTargetPathWithoutNTPrefix(targetPath);
+                    }
+                    else if (returnFullPath)
+                    {
                         return Path.Join(Path.GetDirectoryName(linkPath.AsSpan()), targetPath);
                     }
-
-                    return targetPath.ToString();
+                    else
+                    {
+                        return targetPath.ToString();
+                    }
                 }
                 else if (rbSymlink.ReparseTag == Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                 {
                     success = MemoryMarshal.TryRead(bufferSpan, out Interop.Kernel32.MountPointReparseBuffer rbMountPoint);
                     Debug.Assert(success);
 
-                    int printNameOffset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.PrintNameOffset;
-                    int printNameLength = rbMountPoint.PrintNameLength;
+                    int offset = sizeof(Interop.Kernel32.MountPointReparseBuffer) + rbMountPoint.SubstituteNameOffset;
+                    int length = rbMountPoint.SubstituteNameLength;
 
-                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(printNameOffset, printNameLength));
+                    Span<char> targetPath = MemoryMarshal.Cast<byte, char>(bufferSpan.Slice(offset, length));
 
-                    // Unlike symlinks, mount point paths cannot be relative
+                    // Unlike symbolic links, mount point paths cannot be relative.
                     Debug.Assert(!PathInternal.IsPartiallyQualified(targetPath));
-                    return targetPath.ToString();
+                    // Mount points cannot point to a remote location.
+                    Debug.Assert(!targetPath.StartsWith(PathInternal.UncNTPathPrefix.AsSpan()));
+                    return GetTargetPathWithoutNTPrefix(targetPath);
                 }
 
                 return null;
@@ -545,6 +545,12 @@ namespace System.IO
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            static string GetTargetPathWithoutNTPrefix(ReadOnlySpan<char> targetPath)
+            {
+                Debug.Assert(targetPath.StartsWith(PathInternal.NTPathPrefix.AsSpan()));
+                return targetPath.Slice(PathInternal.NTPathPrefix.Length).ToString();
             }
         }
 

@@ -36,6 +36,9 @@ void CommandLine::DumpHelp(const char* program)
     printf(" -boa\n");
     printf("     Break on assert from the JIT\n");
     printf("\n");
+    printf(" -box\n");
+    printf("     Break on exception thrown, such as for missing data during replay\n");
+    printf("\n");
     printf(" -v[erbosity] messagetypes\n");
     printf("     Controls which types of messages SuperPMI logs. Specify a string of\n");
     printf("     characters representing message categories to enable, where:\n");
@@ -335,6 +338,10 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
             else if ((_strnicmp(&argv[i][1], "boa", 3) == 0))
             {
                 o->breakOnAssert = true;
+            }
+            else if ((_strnicmp(&argv[i][1], "box", 3) == 0))
+            {
+                o->breakOnException = true;
             }
             else if ((_strnicmp(&argv[i][1], "verbosity", argLen) == 0))
             {

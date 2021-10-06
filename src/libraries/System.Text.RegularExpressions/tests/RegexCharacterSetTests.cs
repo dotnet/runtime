@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Sdk;
 
@@ -51,25 +52,25 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"[a-z-[d-w-[m-o]]]", RegexOptions.None, new[] { 'a', 'b', 'c', 'm', 'n', 'n', 'o', 'x', 'y', 'z' })]
         [InlineData(@"\p{IsBasicLatin}-[\x00-\x7F]", RegexOptions.None, new char[0])]
         [InlineData(@"[0-9-[2468]]", RegexOptions.None, new[] { '0', '1', '3', '5', '7', '9' })]
-        public void SetInclusionsExpected(string set, RegexOptions options, char[] expectedIncluded)
+        public async Task SetInclusionsExpected(string set, RegexOptions options, char[] expectedIncluded)
         {
             bool hasBracket = set.Contains("[");
             if (hasBracket)
             {
-                ValidateSet(set, options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
+                await ValidateSetAsync(set, options, new HashSet<char>(expectedIncluded), null, validateEveryChar: true);
             }
             else
             {
-                ValidateSet($"[{set}]", options, new HashSet<char>(expectedIncluded), null);
-                ValidateSet($"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
+                await ValidateSetAsync($"[{set}]", options, new HashSet<char>(expectedIncluded), null);
+                await ValidateSetAsync($"[^{set}]", options, null, new HashSet<char>(expectedIncluded));
             }
         }
 
         [Theory]
         [InlineData(@"[^1234-[3456]]", RegexOptions.None, new[] { '1', '2', '3', '4', '5', '6' })]
-        public void SetExclusionsExpected(string set, RegexOptions options, char[] expectedExcluded)
+        public async Task SetExclusionsExpected(string set, RegexOptions options, char[] expectedExcluded)
         {
-            ValidateSet(set, options, null, new HashSet<char>(expectedExcluded), validateEveryChar: true);
+            await ValidateSetAsync(set, options, null, new HashSet<char>(expectedExcluded), validateEveryChar: true);
         }
 
         [Theory]
@@ -80,86 +81,86 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData('\u00FF')]
         [InlineData('\u0080')]
         [InlineData('\u0100')]
-        public void SingleExpected(char c)
+        public async Task SingleExpected(char c)
         {
             string s = $@"\u{(int)c:X4}";
             var set = new HashSet<char>() { c };
 
             // One
-            ValidateSet($"{s}", RegexOptions.None, set, null);
-            ValidateSet($"[{s}]", RegexOptions.None, set, null);
-            ValidateSet($"[^{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync($"{s}", RegexOptions.None, set, null);
+            await ValidateSetAsync($"[{s}]", RegexOptions.None, set, null);
+            await ValidateSetAsync($"[^{s}]", RegexOptions.None, null, set);
 
             // Positive lookahead
-            ValidateSet($"(?={s}){s}", RegexOptions.None, set, null);
-            ValidateSet($"(?=[^{s}])[^{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync($"(?={s}){s}", RegexOptions.None, set, null);
+            await ValidateSetAsync($"(?=[^{s}])[^{s}]", RegexOptions.None, null, set);
 
             // Negative lookahead
-            ValidateSet($"(?![^{s}]){s}", RegexOptions.None, set, null);
-            ValidateSet($"(?![{s}])[^{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync($"(?![^{s}]){s}", RegexOptions.None, set, null);
+            await ValidateSetAsync($"(?![{s}])[^{s}]", RegexOptions.None, null, set);
 
             // Concatenation
-            ValidateSet($"[{s}{s}]", RegexOptions.None, set, null);
-            ValidateSet($"[^{s}{s}{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync($"[{s}{s}]", RegexOptions.None, set, null);
+            await ValidateSetAsync($"[^{s}{s}{s}]", RegexOptions.None, null, set);
 
             // Alternation
-            ValidateSet($"{s}|{s}", RegexOptions.None, set, null);
-            ValidateSet($"[^{s}]|[^{s}]|[^{s}]", RegexOptions.None, null, set);
-            ValidateSet($"{s}|[^{s}]", RegexOptions.None, null, new HashSet<char>());
+            await ValidateSetAsync($"{s}|{s}", RegexOptions.None, set, null);
+            await ValidateSetAsync($"[^{s}]|[^{s}]|[^{s}]", RegexOptions.None, null, set);
+            await ValidateSetAsync($"{s}|[^{s}]", RegexOptions.None, null, new HashSet<char>());
         }
 
         [Fact]
-        public void AllEmptySets()
+        public async Task AllEmptySets()
         {
             var set = new HashSet<char>();
 
-            ValidateSet(@"[\u0000-\uFFFF]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
-            ValidateSet(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
+            await ValidateSetAsync(@"[\u0000-\uFFFF]", RegexOptions.None, null, set);
+            await ValidateSetAsync(@"[\u0000-\uFFFFa-z]", RegexOptions.None, null, set);
+            await ValidateSetAsync(@"[\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, null, set);
+            await ValidateSetAsync(@"[\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, null, set, validateEveryChar: true);
 
-            ValidateSet(@"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
-            ValidateSet(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
+            await ValidateSetAsync(@"[^\u0000-\uFFFF]", RegexOptions.None, set, null);
+            await ValidateSetAsync(@"[^\u0000-\uFFFFa-z]", RegexOptions.None, set, null);
+            await ValidateSetAsync(@"[^\u0000-\uFFFE\u0001-\uFFFF]", RegexOptions.None, set, null);
+            await ValidateSetAsync(@"[^\u0000-\u1000\u1001-\u2002\u2003-\uFFFF]", RegexOptions.None, set, null, validateEveryChar: true);
         }
 
         [Fact]
-        public void AllButOneSets()
+        public async Task AllButOneSets()
         {
-            ValidateSet(@"[\u0000-\uFFFE]", RegexOptions.None, null, new HashSet<char>() { '\uFFFF' });
-            ValidateSet(@"[\u0001-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { '\u0000' });
-            ValidateSet(@"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true);
+            await ValidateSetAsync(@"[\u0000-\uFFFE]", RegexOptions.None, null, new HashSet<char>() { '\uFFFF' });
+            await ValidateSetAsync(@"[\u0001-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { '\u0000' });
+            await ValidateSetAsync(@"[\u0000-ac-\uFFFF]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true);
         }
 
         [Fact]
-        public void DotInclusionsExpected()
+        public async Task DotInclusionsExpected()
         {
-            ValidateSet(".", RegexOptions.None, null, new HashSet<char>() { '\n' });
-            ValidateSet(".", RegexOptions.IgnoreCase, null, new HashSet<char>() { '\n' });
-            ValidateSet(".", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>() { '\n' }, validateEveryChar: true);
+            await ValidateSetAsync(".", RegexOptions.None, null, new HashSet<char>() { '\n' });
+            await ValidateSetAsync(".", RegexOptions.IgnoreCase, null, new HashSet<char>() { '\n' });
+            await ValidateSetAsync(".", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>() { '\n' }, validateEveryChar: true);
 
-            ValidateSet(".", RegexOptions.Singleline, null, new HashSet<char>());
-            ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase, null, new HashSet<char>());
-            ValidateSet(".", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>(), validateEveryChar: true);
+            await ValidateSetAsync(".", RegexOptions.Singleline, null, new HashSet<char>());
+            await ValidateSetAsync(".", RegexOptions.Singleline | RegexOptions.IgnoreCase, null, new HashSet<char>());
+            await ValidateSetAsync(".", RegexOptions.Singleline | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, null, new HashSet<char>(), validateEveryChar: true);
         }
 
         [Fact]
-        public void WhitespaceInclusionsExpected()
+        public async Task WhitespaceInclusionsExpected()
         {
             var whitespaceInclusions = ComputeIncludedSet(char.IsWhiteSpace);
-            ValidateSet(@"[\s]", RegexOptions.None, whitespaceInclusions, null);
-            ValidateSet(@"[^\s]", RegexOptions.None, null, whitespaceInclusions);
-            ValidateSet(@"[\S]", RegexOptions.None, null, whitespaceInclusions);
+            await ValidateSetAsync(@"[\s]", RegexOptions.None, whitespaceInclusions, null);
+            await ValidateSetAsync(@"[^\s]", RegexOptions.None, null, whitespaceInclusions);
+            await ValidateSetAsync(@"[\S]", RegexOptions.None, null, whitespaceInclusions);
         }
 
         [Fact]
-        public void DigitInclusionsExpected()
+        public async Task DigitInclusionsExpected()
         {
             var digitInclusions = ComputeIncludedSet(char.IsDigit);
-            ValidateSet(@"[\d]", RegexOptions.None, digitInclusions, null);
-            ValidateSet(@"[^\d]", RegexOptions.None, null, digitInclusions);
-            ValidateSet(@"[\D]", RegexOptions.None, null, digitInclusions);
+            await ValidateSetAsync(@"[\d]", RegexOptions.None, digitInclusions, null);
+            await ValidateSetAsync(@"[^\d]", RegexOptions.None, null, digitInclusions);
+            await ValidateSetAsync(@"[\D]", RegexOptions.None, null, digitInclusions);
         }
 
         [Theory]
@@ -167,11 +168,11 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\p{S}", new[] { UnicodeCategory.CurrencySymbol, UnicodeCategory.MathSymbol, UnicodeCategory.ModifierSymbol, UnicodeCategory.OtherSymbol })]
         [InlineData(@"\p{Lu}\p{Zl}", new[] { UnicodeCategory.UppercaseLetter, UnicodeCategory.LineSeparator })]
         [InlineData(@"\w", new[] { UnicodeCategory.LowercaseLetter, UnicodeCategory.UppercaseLetter, UnicodeCategory.TitlecaseLetter, UnicodeCategory.OtherLetter, UnicodeCategory.ModifierLetter, UnicodeCategory.NonSpacingMark, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.ConnectorPunctuation })]
-        public void UnicodeCategoryInclusionsExpected(string set, UnicodeCategory[] categories)
+        public async Task UnicodeCategoryInclusionsExpected(string set, UnicodeCategory[] categories)
         {
             var categoryInclusions = ComputeIncludedSet(c => Array.IndexOf(categories, char.GetUnicodeCategory(c)) >= 0);
-            ValidateSet($"[{set}]", RegexOptions.None, categoryInclusions, null);
-            ValidateSet($"[^{set}]", RegexOptions.None, null, categoryInclusions);
+            await ValidateSetAsync($"[{set}]", RegexOptions.None, categoryInclusions, null);
+            await ValidateSetAsync($"[^{set}]", RegexOptions.None, null, categoryInclusions);
         }
 
         [Theory]
@@ -282,7 +283,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\p{IsSpecials}", new[] { 0xFFF0, 0xFFFF })]
         [InlineData(@"\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF })]
         [InlineData(@"abx-z\p{IsRunic}\p{IsHebrew}", new[] { 0x0590, 0x05FF, 0x16A0, 0x16FF, 'a', 'a', 'b', 'b', 'x', 'x', 'y', 'z' })]
-        public void NamedBlocksInclusionsExpected(string set, int[] ranges)
+        public async Task NamedBlocksInclusionsExpected(string set, int[] ranges)
         {
             var included = new HashSet<char>();
             for (int i = 0; i < ranges.Length - 1; i += 2)
@@ -290,8 +291,8 @@ namespace System.Text.RegularExpressions.Tests
                 ComputeIncludedSet(c => c >= ranges[i] && c <= ranges[i + 1], included);
             }
 
-            ValidateSet($"[{set}]", RegexOptions.None, included, null);
-            ValidateSet($"[^{set}]", RegexOptions.None, null, included);
+            await ValidateSetAsync($"[{set}]", RegexOptions.None, included, null);
+            await ValidateSetAsync($"[^{set}]", RegexOptions.None, null, included);
         }
 
         [Theory]
@@ -325,19 +326,20 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("Zl", UnicodeCategory.LineSeparator)]
         [InlineData("Zp", UnicodeCategory.ParagraphSeparator)]
         [InlineData("Zs", UnicodeCategory.SpaceSeparator)]
-        public void UnicodeCategoriesInclusionsExpected(string generalCategory, UnicodeCategory unicodeCategory)
+        public async Task UnicodeCategoriesInclusionsExpected(string generalCategory, UnicodeCategory unicodeCategory)
         {
-            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 Regex r;
+
                 char[] allChars = Enumerable.Range(0, char.MaxValue + 1).Select(i => (char)i).ToArray();
                 int expectedInCategory = allChars.Count(c => char.GetUnicodeCategory(c) == unicodeCategory);
                 int expectedNotInCategory = allChars.Length - expectedInCategory;
 
-                r = new Regex(@$"\p{{{generalCategory}}}");
+                r = await RegexHelpers.GetRegexAsync(engine, @$"\p{{{generalCategory}}}");
                 Assert.Equal(expectedInCategory, r.Matches(string.Concat(allChars)).Count);
 
-                r = new Regex(@$"\P{{{generalCategory}}}");
+                r = await RegexHelpers.GetRegexAsync(engine, (@$"\P{{{generalCategory}}}"));
                 Assert.Equal(expectedNotInCategory, r.Matches(string.Concat(allChars)).Count);
             }
         }
@@ -375,13 +377,13 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void ValidateValidateSet()
+        public async Task ValidateValidateSet()
         {
-            Assert.Throws<XunitException>(() => ValidateSet("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null));
-            Assert.Throws<XunitException>(() => ValidateSet("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null, validateEveryChar: true));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync("[a]", RegexOptions.None, new HashSet<char>() { 'b' }, null, validateEveryChar: true));
 
-            Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }));
-            Assert.Throws<XunitException>(() => ValidateSet("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }));
+            await Assert.ThrowsAsync<XunitException>(() => ValidateSetAsync("[b]", RegexOptions.None, null, new HashSet<char>() { 'b' }, validateEveryChar: true));
         }
 
         [Fact]
@@ -423,13 +425,13 @@ namespace System.Text.RegularExpressions.Tests
             protected override void InitTrackCount() => throw new NotImplementedException();
         }
 
-        private static void ValidateSet(string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded, bool validateEveryChar = false)
+        private static async Task ValidateSetAsync(string regex, RegexOptions options, HashSet<char> included, HashSet<char> excluded, bool validateEveryChar = false)
         {
             Assert.True((included != null) ^ (excluded != null));
 
-            foreach (RegexOptions compiled in new[] { RegexOptions.None, RegexOptions.Compiled })
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                var r = new Regex(regex, options | compiled);
+                Regex r = await RegexHelpers.GetRegexAsync(engine, regex, options);
 
                 if (validateEveryChar)
                 {

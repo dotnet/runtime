@@ -359,10 +359,10 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         /// <summary>Used when dumping for debugging.</summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public override string ToString() => Dump(string.Empty);
 
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public string Dump(string indent)
         {
             var sb = new StringBuilder();

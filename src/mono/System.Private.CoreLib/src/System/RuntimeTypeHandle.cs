@@ -121,7 +121,7 @@ namespace System
             if (value == IntPtr.Zero)
                 throw new InvalidOperationException("Object fields may not be properly initialized");
 
-            return Type.GetTypeFromHandle(this).Module.ModuleHandle;
+            return Type.GetTypeFromHandle(this)!.Module.ModuleHandle;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

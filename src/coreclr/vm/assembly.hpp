@@ -227,8 +227,6 @@ public:
     PTR_BaseDomain GetDomain();
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
 
-    BOOL GetModuleZapFile(LPCWSTR name, SString &path);
-
 #ifdef LOGGING
     LPCWSTR GetDebugName()
     {

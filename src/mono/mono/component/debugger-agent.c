@@ -355,7 +355,9 @@ static int objref_id = 0;
 
 static int event_request_id = 0;
 
+#ifndef TARGET_WASM
 static int frame_id = 0;
+#endif
 
 static GPtrArray *event_requests;
 
@@ -3024,7 +3026,7 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 {
 	ComputeFramesUserData user_data;
 	GSList *tmp;
-	int i, findex, new_frame_count;
+	int findex, new_frame_count;
 	StackFrame **new_frames, *f;
 	MonoUnwindOptions opts = (MonoUnwindOptions)(MONO_UNWIND_DEFAULT | MONO_UNWIND_REG_LOCATIONS);
 
@@ -3083,6 +3085,8 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 	for (tmp = user_data.frames; tmp; tmp = tmp->next) {
 		f = (StackFrame *)tmp->data;
 
+#ifndef TARGET_WASM
+		int i;
 		/* 
 		 * Reuse the id for already existing stack frames, so invokes don't invalidate
 		 * the still valid stack frames.
@@ -3096,7 +3100,9 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 
 		if (i >= tls->frame_count)
 			f->id = mono_atomic_inc_i32 (&frame_id);
-
+#else //keep the same behavior that we have for wasm before start using debugger-agent			
+		f->id = findex+1;
+#endif
 		new_frames [findex ++] = f;
 	}
 
@@ -7012,7 +7018,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			break;
 		}
 		MonoAssemblyByNameRequest byname_req;
-		mono_assembly_request_prepare_byname (&byname_req, MONO_ASMCTX_DEFAULT, mono_alc_get_default ());
+		mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
 		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
 		g_free (lookup_name);
 		if (!assembly) {
