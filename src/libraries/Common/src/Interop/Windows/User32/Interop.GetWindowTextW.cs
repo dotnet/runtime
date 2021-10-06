@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class User32
     {
-        [GeneratedDllImport(Libraries.User32, ExactSpelling = true, SetLastError = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Libraries.User32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         public static unsafe partial int GetWindowTextW(IntPtr hWnd, char* lpString, int nMaxCount);
     }
 }

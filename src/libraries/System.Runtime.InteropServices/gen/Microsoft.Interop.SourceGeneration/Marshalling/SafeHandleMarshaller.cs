@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -20,7 +19,7 @@ namespace Microsoft.Interop
 
         public ParameterSyntax AsParameter(TypePositionInfo info)
         {
-            var type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))
@@ -78,8 +77,8 @@ namespace Microsoft.Interop
                                                         .WithInitializer(EqualsValueClause(LiteralExpression(SyntaxKind.FalseLiteralExpression))))));
                     }
 
-                    var safeHandleCreationExpression = ((SafeHandleMarshallingInfo)info.MarshallingAttributeInfo).AccessibleDefaultConstructor
-                        ? (ExpressionSyntax)ObjectCreationExpression(info.ManagedType.Syntax, ArgumentList(), initializer: null)
+                    ExpressionSyntax safeHandleCreationExpression = ((SafeHandleMarshallingInfo)info.MarshallingAttributeInfo).AccessibleDefaultConstructor
+                        ? ObjectCreationExpression(info.ManagedType.Syntax, ArgumentList(), initializer: null)
                         : CastExpression(
                             info.ManagedType.Syntax,
                             InvocationExpression(

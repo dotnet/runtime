@@ -9,10 +9,10 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "IsWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
+        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "IsWellKnownSid", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial int IsWellKnownSid(
 #else
-        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "IsWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
+        [DllImport(Interop.Libraries.Advapi32, EntryPoint = "IsWellKnownSid", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern int IsWellKnownSid(
 #endif
             byte[] sid,

@@ -20,7 +20,7 @@ internal static partial class Interop
             PC_VDISABLE         = 9,
         }
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PathConf", SetLastError = true, CharSet = CharSet.Ansi)]
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_PathConf", CharSet = CharSet.Ansi, SetLastError = true)]
         private static partial int PathConf(string path, PathConfName name);
     }
 }

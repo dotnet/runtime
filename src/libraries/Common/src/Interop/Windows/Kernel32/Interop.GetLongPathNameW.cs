@@ -7,15 +7,19 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-                                                // Disabled since GetFullPathNameW takes 'ref's into buffers (the ref parameters don't represent single characters).
         /// <summary>
         /// WARNING: This method does not implicitly handle long paths. Use GetFullPath/PathHelper.
         /// </summary>
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false, ExactSpelling = true)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        internal static partial uint GetLongPathNameW(
+#else
+        [DllImport(Libraries.Kernel32, BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+#endif
         internal static extern uint GetLongPathNameW(
             ref char lpszShortPath,
             ref char lpszLongPath,
             uint cchBuffer);
+
     }
 }

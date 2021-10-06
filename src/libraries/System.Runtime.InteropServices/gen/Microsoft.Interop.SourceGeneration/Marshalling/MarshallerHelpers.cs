@@ -120,16 +120,16 @@ namespace Microsoft.Interop
             EdgeMap edgeMap = new(elements.Count);
 
             int nextEdgeMapIndex = 0;
-            foreach (var element in elements)
+            foreach (T element in elements)
             {
                 elementIndexToEdgeMapNodeId.Add(keyFn(element), nextEdgeMapIndex++);
                 nodeIdToElement.Add(element);
             }
 
-            foreach (var element in elements)
+            foreach (T element in elements)
             {
                 U elementIndex = keyFn(element);
-                foreach (var dependentElementIndex in getDependentIndicesFn(element))
+                foreach (U dependentElementIndex in getDependentIndicesFn(element))
                 {
                     // Add an edge from the node for dependentElementIndex-> the node for elementIndex
                     // This way, elements that have no dependencies have no edges pointing to them.
@@ -232,7 +232,7 @@ namespace Microsoft.Interop
                 {
                     yield return nestedCountElement;
                 }
-                foreach (var nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
+                foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(nestedCollection.ElementMarshallingInfo))
                 {
                     yield return nestedElements;
                 }

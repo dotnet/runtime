@@ -50,7 +50,7 @@ namespace Microsoft.Interop
             // byte**
             // or
             // byte*
-            var type = info.IsByRef
+            TypeSyntax type = info.IsByRef
                 ? PointerType(AsNativeType(info))
                 : AsNativeType(info);
             return Parameter(Identifier(info.InstanceIdentifier))
@@ -71,7 +71,7 @@ namespace Microsoft.Interop
                     if (info.RefKind != RefKind.Out)
                     {
                         // <native> = (byte*)Marshal.StringToCoTaskMemAnsi(<managed>);
-                        var windowsBlock = Block(
+                        BlockSyntax windowsBlock = Block(
                             ExpressionStatement(
                                 AssignmentExpression(
                                     SyntaxKind.SimpleAssignmentExpression,

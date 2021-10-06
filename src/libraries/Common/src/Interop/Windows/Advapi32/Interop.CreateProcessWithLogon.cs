@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true, EntryPoint = "CreateProcessWithLogonW")]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CreateProcessWithLogonW", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial bool CreateProcessWithLogonW(
             string userName,
             string domain,

@@ -391,7 +391,7 @@ internal static partial class Interop
             out int pkgnum,
             out SafeFreeContextBuffer_SECURITY handle);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -403,7 +403,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -415,7 +415,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -427,7 +427,7 @@ internal static partial class Interop
             ref CredHandle handlePtr,
             out long timeStamp);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static unsafe partial int AcquireCredentialsHandleW(
             string? principal,
             string moduleName,
@@ -468,7 +468,7 @@ internal static partial class Interop
         internal static partial SECURITY_STATUS SspiFreeAuthIdentity(
             IntPtr authData);
 
-        [GeneratedDllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [GeneratedDllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static partial SECURITY_STATUS SspiEncodeStringsAsAuthIdentity(
             string userName,
             string domainName,
@@ -476,7 +476,7 @@ internal static partial class Interop
             out SafeSspiAuthDataHandle authData);
 
         // TODO: Switch to use GeneratedDllImport once we annotate blittable types used in interop in CoreLib (like Guid)
-        [DllImport(Interop.Libraries.SspiCli, ExactSpelling = true, CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport(Interop.Libraries.SspiCli, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         internal static extern SECURITY_STATUS SetCredentialsAttributesW(
             in CredHandle handlePtr,
             long ulAttribute,

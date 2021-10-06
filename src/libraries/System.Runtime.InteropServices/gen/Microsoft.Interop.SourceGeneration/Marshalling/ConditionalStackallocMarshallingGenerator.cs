@@ -55,14 +55,14 @@ namespace Microsoft.Interop
             string byteLenIdentifier = GetByteLengthIdentifier(info, context);
             string stackAllocPtrIdentifier = GetStackAllocIdentifier(info, context);
             // <native> = <allocationExpression>;
-            var allocationStatement = ExpressionStatement(
+            ExpressionStatementSyntax allocationStatement = ExpressionStatement(
                 AssignmentExpression(
                     SyntaxKind.SimpleAssignmentExpression,
                     IdentifierName(nativeIdentifier),
                     GenerateAllocationExpression(info, context, Identifier(byteLenIdentifier), out bool allocationRequiresByteLength)));
 
             // int <byteLenIdentifier> = <byteLengthExpression>;
-            var byteLenAssignment = LocalDeclarationStatement(
+            LocalDeclarationStatementSyntax byteLenAssignment = LocalDeclarationStatement(
                 VariableDeclaration(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
@@ -88,7 +88,7 @@ namespace Microsoft.Interop
             }
 
             // Code block for stackalloc if number of bytes is below threshold size
-            var marshalOnStack = Block(
+            BlockSyntax marshalOnStack = Block(
                 // byte* <stackAllocPtr> = stackalloc byte[<byteLen>];
                 LocalDeclarationStatement(
                     VariableDeclaration(
@@ -123,7 +123,7 @@ namespace Microsoft.Interop
             //       <marshalValueOnStackStatement>;
             //       <native> = (<nativeType>)<stackAllocPtr>;
             //   }
-            var allocBlock = IfStatement(
+            IfStatementSyntax allocBlock = IfStatement(
                 BinaryExpression(
                     SyntaxKind.GreaterThanExpression,
                     IdentifierName(byteLenIdentifier),

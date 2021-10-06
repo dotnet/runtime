@@ -8,10 +8,10 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
 #if DLLIMPORTGENERATOR_ENABLED
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "LookupPrivilegeValueW")]
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "LookupPrivilegeValueW", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static partial bool LookupPrivilegeValue(
 #else
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "LookupPrivilegeValueW")]
+        [DllImport(Libraries.Advapi32, EntryPoint = "LookupPrivilegeValueW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
         internal static extern bool LookupPrivilegeValue(
 #endif
             [MarshalAs(UnmanagedType.LPTStr)] string? lpSystemName, [MarshalAs(UnmanagedType.LPTStr)] string lpName, out LUID lpLuid);

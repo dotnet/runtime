@@ -68,7 +68,7 @@ namespace Microsoft.Interop
         {
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
-                var (managedIdentifier, nativeIdentifier) = context.GetIdentifiers(info);
+                (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
                 yield return FixedStatement(
                     VariableDeclaration(
                         PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),

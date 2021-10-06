@@ -265,7 +265,7 @@ namespace Microsoft.Interop
 
             // If we aren't overriding the marshalling at usage time,
             // then fall back to the information on the element type itself.
-            foreach (var typeAttribute in type.GetAttributes())
+            foreach (AttributeData typeAttribute in type.GetAttributes())
             {
                 INamedTypeSymbol attributeClass = typeAttribute.AttributeClass!;
 
@@ -326,7 +326,7 @@ namespace Microsoft.Interop
         {
             int? constSize = null;
             string? elementName = null;
-            foreach (var arg in marshalUsingData.NamedArguments)
+            foreach (KeyValuePair<string, TypedConstant> arg in marshalUsingData.NamedArguments)
             {
                 if (arg.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ConstantElementCount)
                 {
@@ -463,7 +463,7 @@ namespace Microsoft.Interop
             SizeAndParamIndexInfo arraySizeInfo = SizeAndParamIndexInfo.Unspecified;
 
             // All other data on attribute is defined as NamedArguments.
-            foreach (var namedArg in attrData.NamedArguments)
+            foreach (KeyValuePair<string, TypedConstant> namedArg in attrData.NamedArguments)
             {
                 switch (namedArg.Key)
                 {
@@ -611,12 +611,12 @@ namespace Microsoft.Interop
             bool isContiguousCollectionMarshaller = nativeType.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, contiguousCollectionMarshalerAttribute));
             IPropertySymbol? valueProperty = ManualTypeMarshallingHelper.FindValueProperty(nativeType);
 
-            var marshallingVariant = isContiguousCollectionMarshaller
+            ManualTypeMarshallingHelper.NativeTypeMarshallingVariant marshallingVariant = isContiguousCollectionMarshaller
                 ? ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.ContiguousCollection
                 : ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard;
 
             bool hasInt32Constructor = false;
-            foreach (var ctor in nativeType.Constructors)
+            foreach (IMethodSymbol ctor in nativeType.Constructors)
             {
                 if (ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallingVariant) && (valueProperty is null or { GetMethod: not null }))
                 {
@@ -705,7 +705,7 @@ namespace Microsoft.Interop
             out MarshallingInfo marshallingInfo)
         {
             // Check for an implicit SafeHandle conversion.
-            var conversion = _compilation.ClassifyCommonConversion(type, _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
+            CodeAnalysis.Operations.CommonConversion conversion = _compilation.ClassifyCommonConversion(type, _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
             if (conversion.Exists
                 && conversion.IsImplicit
                 && (conversion.IsReference || conversion.IsIdentity))
@@ -713,7 +713,7 @@ namespace Microsoft.Interop
                 bool hasAccessibleDefaultConstructor = false;
                 if (type is INamedTypeSymbol named && !named.IsAbstract && named.InstanceConstructors.Length > 0)
                 {
-                    foreach (var ctor in named.InstanceConstructors)
+                    foreach (IMethodSymbol ctor in named.InstanceConstructors)
                     {
                         if (ctor.Parameters.Length == 0)
                         {
@@ -786,7 +786,7 @@ namespace Microsoft.Interop
                 return false;
             }
 
-            foreach (var arg in attrData.NamedArguments)
+            foreach (KeyValuePair<string, TypedConstant> arg in attrData.NamedArguments)
             {
                 if (arg.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionLevel)
                 {

@@ -7,7 +7,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "WaitNamedPipeW")]
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "WaitNamedPipeW", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool WaitNamedPipe(string? name, int timeout);
     }

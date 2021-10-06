@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -103,7 +102,7 @@ namespace Microsoft.Interop.Analyzers
             var dllImportSyntax = (AttributeSyntax)dllImportAttr!.ApplicationSyntaxReference!.GetSyntax(cancellationToken);
 
             // Create GeneratedDllImport attribute based on the DllImport attribute
-            var generatedDllImportSyntax = GetGeneratedDllImportAttribute(
+            SyntaxNode generatedDllImportSyntax = GetGeneratedDllImportAttribute(
                 editor,
                 generator,
                 dllImportSyntax,
@@ -154,7 +153,7 @@ namespace Microsoft.Interop.Analyzers
                         }));
 
                 // Remove existing leading trivia - it will be on the GeneratedDllImport method
-                var updatedDeclaration = methodSyntax.WithLeadingTrivia();
+                MethodDeclarationSyntax updatedDeclaration = methodSyntax.WithLeadingTrivia();
 
                 // #endif
                 updatedDeclaration = updatedDeclaration.WithTrailingTrivia(
@@ -184,7 +183,7 @@ namespace Microsoft.Interop.Analyzers
         {
             unmanagedCallConvAttributeMaybe = null;
             // Create GeneratedDllImport based on the DllImport attribute
-            var generatedDllImportSyntax = generator.ReplaceNode(dllImportSyntax,
+            SyntaxNode generatedDllImportSyntax = generator.ReplaceNode(dllImportSyntax,
                 dllImportSyntax.Name,
                 generator.TypeExpression(generatedDllImportAttrType));
 
@@ -283,7 +282,7 @@ namespace Microsoft.Interop.Analyzers
         private static bool TryGetAttribute(IMethodSymbol method, INamedTypeSymbol attributeType, out AttributeData? attr)
         {
             attr = default;
-            foreach (var attrLocal in method.GetAttributes())
+            foreach (AttributeData attrLocal in method.GetAttributes())
             {
                 if (SymbolEqualityComparer.Default.Equals(attrLocal.AttributeClass, attributeType))
                 {

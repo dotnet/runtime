@@ -17,7 +17,7 @@ internal static partial class Interop
 
 #pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
                                                 // Disabled since FormatMessage is a QCall in some scenarios and DllImportGenerator doesn't support QCalls.
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "FormatMessageW", SetLastError = true, BestFitMapping = true, ExactSpelling = true)]
+        [DllImport(Libraries.Kernel32, EntryPoint = "FormatMessageW", BestFitMapping = true, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
         private static extern unsafe int FormatMessage(
             int dwFlags,
             IntPtr lpSource,
