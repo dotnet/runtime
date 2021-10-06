@@ -3280,9 +3280,7 @@ namespace System.Xml.Serialization
             if (structMapping.TypeDesc.IsRoot)
             {
                 Writer.Indent++;
-                Writer.WriteLine(
-                    $"return ReadTypedPrimitive(new System.Xml.XmlQualifiedName(\"{Soap.UrType}\", \"{XmlSchema.Namespace}\"));"
-                );
+                Writer.WriteLine($"return ReadTypedPrimitive(new System.Xml.XmlQualifiedName(\"{Soap.UrType}\", \"{XmlSchema.Namespace}\"));");
                 Writer.Indent--;
             }
             Writer.WriteLine("}");
@@ -3946,11 +3944,7 @@ namespace System.Xml.Serialization
 
                         if (member.Mapping.ChoiceIdentifier != null)
                         {
-                            WriteArrayLocalDecl(
-                                $"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]",
-                                                member.ChoiceArrayName, "null",
-                                                member.Mapping.ChoiceIdentifier.Mapping.TypeDesc);
-                            Writer.Write("int c");
+                            WriteArrayLocalDecl($"{member.Mapping.ChoiceIdentifier.Mapping!.TypeDesc!.CSharpName}[]", member.ChoiceArrayName, "null", member.Mapping.ChoiceIdentifier.Mapping.TypeDesc); Writer.Write("int c");
                             Writer.Write(member.ChoiceArrayName);
                             Writer.WriteLine(" = 0;");
                         }
@@ -4316,9 +4310,7 @@ namespace System.Xml.Serialization
                         {
                             WriteSourceBegin(member.ArraySource);
                             TypeDesc td = ((NullableMapping)e.Mapping).BaseMapping!.TypeDesc!;
-                            Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true,
-                                $"({td.CSharpName}){checkTypeSource}"
-                            ));
+                            Writer.Write(RaCodeGen.GetStringForCreateInstance(e.Mapping.TypeDesc.CSharpName, e.Mapping.TypeDesc.UseReflection, false, true, $"({td.CSharpName}){checkTypeSource}"));
                         }
                         else
                         {
@@ -4426,8 +4418,7 @@ namespace System.Xml.Serialization
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
                 bool arrayUseReflection = typeDesc.ArrayElementTypeDesc.UseReflection;
                 string castString = useReflection ? "" : $"({arrayTypeFullName}[])";
-                init =
-                    $"{init}{a} = {castString}EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection)});";
+                init = $"{init}{a} = {castString}EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName, arrayUseReflection)});";
                 string arraySource = RaCodeGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
                 if (multiRef)
                 {
