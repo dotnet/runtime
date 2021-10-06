@@ -97,5 +97,7 @@ function get_properties_test () {
 }
 
 function malloc_to_reallocate_test () {
-	var _debugger_buffer = Module._malloc(500000000);
+	for (var i = 0; i < 900; i++) {
+		var _debugger_buffer = Module._malloc(5000);
+	}
 }
