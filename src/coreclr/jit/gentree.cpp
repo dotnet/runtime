@@ -20932,8 +20932,6 @@ GenTree* Compiler::gtNewSimdNarrowNode(var_types   type,
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsic = NI_Illegal;
-
     GenTree* tmp1;
     GenTree* tmp2;
 
@@ -21455,6 +21453,294 @@ GenTree* Compiler::gtNewSimdUnOpNode(genTreeOps  op,
             unreached();
         }
     }
+}
+
+GenTree* Compiler::gtNewSimdWidenLowerNode(var_types   type,
+                                           GenTree*    op1,
+                                           CorInfoType simdBaseJitType,
+                                           unsigned    simdSize,
+                                           bool        isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+    GenTree* tmp1;
+
+#if defined(TARGET_XARCH)
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+        tmp1 = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                intrinsic = NI_AVX2_ConvertToVector256Int16;
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                intrinsic = NI_AVX2_ConvertToVector256Int32;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                intrinsic = NI_AVX2_ConvertToVector256Int64;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                intrinsic = NI_AVX_ConvertToVector256Double;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else if ((simdBaseType == TYP_FLOAT) || compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                intrinsic = NI_SSE41_ConvertToVector128Int16;
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                intrinsic = NI_SSE41_ConvertToVector128Int32;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                intrinsic = NI_SSE41_ConvertToVector128Int64;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                intrinsic = NI_SSE2_ConvertToVector128Double;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        tmp1 = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        if (varTypeIsSigned(simdBaseType))
+        {
+            tmp1 = gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackLow, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+#elif defined(TARGET_ARM64)
+    tmp1 = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector128_GetLower, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+    if (varTypeIsFloating(simdBaseType))
+    {
+        intrinsic = NI_AdvSimd_Arm64_ConvertToDouble;
+    }
+    else if (varTypeIsSigned(simdBaseType))
+    {
+        intrinsic = NI_AdvSimd_SignExtendWideningLower;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_ZeroExtendWideningLower;
+    }
+
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+}
+
+GenTree* Compiler::gtNewSimdWidenUpperNode(var_types   type,
+                                           GenTree*    op1,
+                                           CorInfoType simdBaseJitType,
+                                           unsigned    simdSize,
+                                           bool        isSimdAsHWIntrinsic)
+{
+    assert(IsBaselineSimdIsaSupportedDebugOnly());
+
+    assert(varTypeIsSIMD(type));
+    assert(getSIMDTypeForSize(simdSize) == type);
+
+    assert(op1 != nullptr);
+    assert(op1->TypeIs(type));
+
+    var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
+    assert(varTypeIsArithmetic(simdBaseType));
+
+    NamedIntrinsic intrinsic = NI_Illegal;
+
+#if defined(TARGET_XARCH)
+    GenTree* tmp1;
+
+    if (simdSize == 32)
+    {
+        assert(compIsaSupportedDebugOnly(InstructionSet_AVX));
+        assert(!varTypeIsIntegral(simdBaseType) || compIsaSupportedDebugOnly(InstructionSet_AVX2));
+
+        tmp1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(1), NI_AVX_ExtractVector128, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                intrinsic = NI_AVX2_ConvertToVector256Int16;
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                intrinsic = NI_AVX2_ConvertToVector256Int32;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                intrinsic = NI_AVX2_ConvertToVector256Int64;
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                intrinsic = NI_AVX_ConvertToVector256Double;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else if (varTypeIsFloating(simdBaseType))
+    {
+        assert(simdBaseType == TYP_FLOAT);
+        CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
+
+        GenTree* op1Dup;
+        op1 = impCloneExpr(op1, &op1Dup, clsHnd, (unsigned)CHECK_SPILL_ALL,
+                           nullptr DEBUGARG("Clone op1 for vector widen upper"));
+
+        tmp1 = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, NI_SSE_MoveHighToLow, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, NI_SSE2_ConvertToVector128Double, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else if (compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        tmp1 = gtNewSimdHWIntrinsicNode(type, op1, gtNewIconNode(8), NI_SSE2_ShiftRightLogical128BitLane, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+            {
+                intrinsic = NI_SSE41_ConvertToVector128Int16;
+                break;
+            }
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+            {
+                intrinsic = NI_SSE41_ConvertToVector128Int32;
+                break;
+            }
+
+            case TYP_INT:
+            case TYP_UINT:
+            {
+                intrinsic = NI_SSE41_ConvertToVector128Int64;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        assert(intrinsic != NI_Illegal);
+        return gtNewSimdHWIntrinsicNode(type, tmp1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+    else
+    {
+        tmp1 = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+
+        if (varTypeIsSigned(simdBaseType))
+        {
+            tmp1 = gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_CompareLessThan, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+        }
+
+        return gtNewSimdHWIntrinsicNode(type, op1, tmp1, NI_SSE2_UnpackHigh, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+    }
+#elif defined(TARGET_ARM64)
+    if (varTypeIsFloating(simdBaseType))
+    {
+        intrinsic = NI_AdvSimd_Arm64_ConvertToDoubleUpper;
+    }
+    else if (varTypeIsSigned(simdBaseType))
+    {
+        intrinsic = NI_AdvSimd_SignExtendWideningUpper;
+    }
+    else
+    {
+        intrinsic = NI_AdvSimd_ZeroExtendWideningUpper;
+    }
+
+    assert(intrinsic != NI_Illegal);
+    return gtNewSimdHWIntrinsicNode(type, op1, intrinsic, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
 }
 
 GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,

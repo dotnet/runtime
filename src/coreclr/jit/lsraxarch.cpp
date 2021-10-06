@@ -1975,16 +1975,6 @@ int LinearScan::BuildSIMD(GenTreeSIMD* simdTree)
         case SIMDIntrinsicConvertToInt32:
             break;
 
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
-            if (varTypeIsIntegral(simdTree->GetSimdBaseType()))
-            {
-                // We need an internal register different from targetReg.
-                setInternalRegsDelayFree = true;
-                buildInternalFloatRegisterDefForNode(simdTree);
-            }
-            break;
-
         case SIMDIntrinsicConvertToInt64:
             // We need an internal register different from targetReg.
             setInternalRegsDelayFree = true;

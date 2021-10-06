@@ -241,59 +241,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             result = INS_cvttsd2si;
             break;
 
-        case SIMDIntrinsicWidenLo:
-            // Some of these have multiple instruction implementations, with one instruction to widen the lo half,
-            // and another to widen the hi half.
-            switch (baseType)
-            {
-                case TYP_FLOAT:
-                    result = INS_cvtps2pd;
-                    break;
-                case TYP_INT:
-                case TYP_UINT:
-                    result = INS_punpckldq;
-                    break;
-                case TYP_SHORT:
-                case TYP_USHORT:
-                    result = INS_punpcklwd;
-                    break;
-                case TYP_BYTE:
-                case TYP_UBYTE:
-                    result = INS_punpcklbw;
-                    break;
-                default:
-                    assert(!"Invalid baseType for SIMDIntrinsicWidenLo");
-                    result = INS_invalid;
-                    break;
-            }
-            break;
-
-        case SIMDIntrinsicWidenHi:
-            switch (baseType)
-            {
-                case TYP_FLOAT:
-                    // For this case, we actually use the same instruction.
-                    result = INS_cvtps2pd;
-                    break;
-                case TYP_INT:
-                case TYP_UINT:
-                    result = INS_punpckhdq;
-                    break;
-                case TYP_SHORT:
-                case TYP_USHORT:
-                    result = INS_punpckhwd;
-                    break;
-                case TYP_BYTE:
-                case TYP_UBYTE:
-                    result = INS_punpckhbw;
-                    break;
-                default:
-                    assert(!"Invalid baseType for SIMDIntrinsicWidenHi");
-                    result = INS_invalid;
-                    break;
-            }
-            break;
-
         case SIMDIntrinsicShiftLeftInternal:
             switch (baseType)
             {
@@ -1167,98 +1114,6 @@ void CodeGen::genSIMDExtractUpperHalf(GenTreeSIMD* simdNode, regNumber srcReg, r
 }
 
 //--------------------------------------------------------------------------------
-// genSIMDIntrinsicWiden: Generate code for SIMD Intrinsic Widen operations
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Notes:
-//    The Widen intrinsics are broken into separate intrinsics for the two results.
-//
-void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
-{
-    assert((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenLo) ||
-           (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi));
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types simdType = simdNode->TypeGet();
-    SIMDLevel level    = compiler->getSIMDSupportLevel();
-
-    genConsumeOperands(simdNode);
-    regNumber   op1Reg   = op1->GetRegNum();
-    regNumber   srcReg   = op1Reg;
-    emitAttr    emitSize = emitActualTypeSize(simdType);
-    instruction widenIns = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
-    if (baseType == TYP_FLOAT)
-    {
-        if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi)
-        {
-            genSIMDExtractUpperHalf(simdNode, srcReg, targetReg);
-            srcReg = targetReg;
-        }
-        inst_RV_RV(widenIns, targetReg, srcReg, simdType);
-    }
-    else
-    {
-        // We will generate the following on AVX:
-        // vpermq   targetReg, op1Reg, 0xd4|0xe8
-        // vpxor    tmpReg, tmpReg
-        // vpcmpgt[b|w|d] tmpReg, targetReg             (if basetype is signed)
-        // vpunpck[l|h][bw|wd|dq] targetReg, tmpReg
-        regNumber tmpReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
-        assert(tmpReg != op1Reg);
-
-        if (level == SIMD_AVX2_Supported)
-        {
-            // permute op1Reg and put it into targetReg
-            unsigned ival = 0xd4;
-            if (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi)
-            {
-                ival = 0xe8;
-            }
-            assert((ival >= 0) && (ival <= 255));
-            GetEmitter()->emitIns_R_R_I(INS_vpermq, emitSize, targetReg, op1Reg, (int8_t)ival);
-        }
-        else
-        {
-            inst_Mov(simdType, targetReg, op1Reg, /* canSkip */ true);
-        }
-
-        genSIMDZero(simdType, baseType, tmpReg);
-        if (!varTypeIsUnsigned(baseType))
-        {
-            instruction compareIns = INS_invalid;
-
-            if (baseType == TYP_INT)
-            {
-                compareIns = INS_pcmpgtd;
-            }
-            else if (baseType == TYP_SHORT)
-            {
-                compareIns = INS_pcmpgtw;
-            }
-            else if (baseType == TYP_BYTE)
-            {
-                compareIns = INS_pcmpgtb;
-            }
-            else if ((baseType == TYP_LONG) && (compiler->getSIMDSupportLevel() >= SIMD_SSE4_Supported))
-            {
-                compareIns = INS_pcmpgtq;
-            }
-
-            assert(compareIns != INS_invalid);
-            inst_RV_RV(compareIns, tmpReg, targetReg, simdType, emitSize);
-        }
-        inst_RV_RV(widenIns, targetReg, tmpReg, simdType);
-    }
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
 // genSIMDIntrinsicBinOp: Generate code for SIMD Intrinsic binary operations
 // add, sub, mul, bit-wise And, AndNot and Or.
 //
@@ -1779,11 +1634,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt64:
             genSIMDIntrinsic64BitConvert(simdNode);
-            break;
-
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
-            genSIMDIntrinsicWiden(simdNode);
             break;
 
         case SIMDIntrinsicSub:

@@ -903,6 +903,28 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_WidenLower:
+        case NI_Vector128_WidenLower:
+        {
+            assert(sig->numArgs == 1);
+
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
+        case NI_Vector64_WidenUpper:
+        case NI_Vector128_WidenUpper:
+        {
+            assert(sig->numArgs == 2);
+
+            op1 = impSIMDPopStack(retType);
+
+            retNode = gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            break;
+        }
+
         case NI_Vector64_WithElement:
         case NI_Vector128_WithElement:
         {

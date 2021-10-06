@@ -3894,11 +3894,6 @@ void CodeGen::genSIMDIntrinsic(GenTreeSIMD* simdNode)
             genSIMDIntrinsicUnOp(simdNode);
             break;
 
-        case SIMDIntrinsicWidenLo:
-        case SIMDIntrinsicWidenHi:
-            genSIMDIntrinsicWiden(simdNode);
-            break;
-
         case SIMDIntrinsicSub:
         case SIMDIntrinsicBitwiseAnd:
         case SIMDIntrinsicBitwiseOr:
@@ -3990,12 +3985,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
             case SIMDIntrinsicSub:
                 result = INS_fsub;
                 break;
-            case SIMDIntrinsicWidenLo:
-                result = INS_fcvtl;
-                break;
-            case SIMDIntrinsicWidenHi:
-                result = INS_fcvtl2;
-                break;
             default:
                 assert(!"Unsupported SIMD intrinsic");
                 unreached();
@@ -4025,12 +4014,6 @@ instruction CodeGen::getOpForSIMDIntrinsic(SIMDIntrinsicID intrinsicId, var_type
                 break;
             case SIMDIntrinsicSub:
                 result = INS_sub;
-                break;
-            case SIMDIntrinsicWidenLo:
-                result = isUnsigned ? INS_uxtl : INS_sxtl;
-                break;
-            case SIMDIntrinsicWidenHi:
-                result = isUnsigned ? INS_uxtl2 : INS_sxtl2;
                 break;
             default:
                 assert(!"Unsupported SIMD intrinsic");
@@ -4207,41 +4190,6 @@ void CodeGen::genSIMDIntrinsicUnOp(GenTreeSIMD* simdNode)
     {
         GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, genGetSimdInsOpt(attr, baseType));
     }
-    genProduceReg(simdNode);
-}
-
-//--------------------------------------------------------------------------------
-// genSIMDIntrinsicWiden: Generate code for SIMD Intrinsic Widen operations
-//
-// Arguments:
-//    simdNode - The GT_SIMD node
-//
-// Notes:
-//    The Widen intrinsics are broken into separate intrinsics for the two results.
-//
-void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
-{
-    assert((simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenLo) ||
-           (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi));
-
-    GenTree*  op1       = simdNode->gtGetOp1();
-    var_types baseType  = simdNode->GetSimdBaseType();
-    regNumber targetReg = simdNode->GetRegNum();
-    assert(targetReg != REG_NA);
-    var_types simdType = simdNode->TypeGet();
-
-    genConsumeOperands(simdNode);
-    regNumber op1Reg   = op1->GetRegNum();
-    regNumber srcReg   = op1Reg;
-    emitAttr  emitSize = emitActualTypeSize(simdType);
-
-    instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-
-    emitAttr attr = (simdNode->gtSIMDIntrinsicID == SIMDIntrinsicWidenHi) ? EA_16BYTE : EA_8BYTE;
-    insOpts  opt  = genGetSimdInsOpt(attr, baseType);
-
-    GetEmitter()->emitIns_R_R(ins, attr, targetReg, op1Reg, opt);
-
     genProduceReg(simdNode);
 }
 

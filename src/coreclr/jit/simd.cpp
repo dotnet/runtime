@@ -1204,8 +1204,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
         case SIMDIntrinsicConvertToDouble:
         case SIMDIntrinsicConvertToInt32:
         case SIMDIntrinsicConvertToInt64:
-        case SIMDIntrinsicWidenHi:
-        case SIMDIntrinsicWidenLo:
             return true;
 
         default:
@@ -2355,39 +2353,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             JITDUMP("SIMD Conversion to Int64 is not supported on this platform\n");
             return nullptr;
 #endif
-        }
-        break;
-
-        case SIMDIntrinsicWiden:
-        {
-            GenTree* dstAddrHi = impSIMDPopStack(TYP_BYREF);
-            GenTree* dstAddrLo = impSIMDPopStack(TYP_BYREF);
-            op1                = impSIMDPopStack(simdType);
-            // op1 must have a valid class handle; the following method will assert it.
-            CORINFO_CLASS_HANDLE op1Handle = gtGetStructHandle(op1);
-            GenTree*             dupOp1    = fgInsertCommaFormTemp(&op1, op1Handle);
-
-            // Widen the lower half and assign it to dstAddrLo.
-            simdTree = gtNewSIMDNode(simdType, op1, nullptr, SIMDIntrinsicWidenLo, simdBaseJitType, size);
-            // TODO-1stClassStructs: With the introduction of ClassLayout it would be preferrable to use
-            // GT_OBJ instead of GT_BLK nodes to avoid losing information about the actual vector type.
-            GenTree* loDest = new (this, GT_BLK)
-                GenTreeBlk(GT_BLK, simdType, dstAddrLo, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
-            GenTree* loAsg = gtNewBlkOpNode(loDest, simdTree,
-                                            false, // not volatile
-                                            true); // copyBlock
-            loAsg->gtFlags |= ((simdTree->gtFlags | dstAddrLo->gtFlags) & GTF_ALL_EFFECT);
-
-            // Widen the upper half and assign it to dstAddrHi.
-            simdTree        = gtNewSIMDNode(simdType, dupOp1, nullptr, SIMDIntrinsicWidenHi, simdBaseJitType, size);
-            GenTree* hiDest = new (this, GT_BLK)
-                GenTreeBlk(GT_BLK, simdType, dstAddrHi, typGetBlkLayout(getSIMDTypeSizeInBytes(clsHnd)));
-            GenTree* hiAsg = gtNewBlkOpNode(hiDest, simdTree,
-                                            false, // not volatile
-                                            true); // copyBlock
-            hiAsg->gtFlags |= ((simdTree->gtFlags | dstAddrHi->gtFlags) & GTF_ALL_EFFECT);
-
-            retVal = gtNewOperNode(GT_COMMA, simdType, loAsg, hiAsg);
         }
         break;
 
