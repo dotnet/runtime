@@ -7874,10 +7874,8 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_FIELD:
-                copy = gtNewFieldRef(tree->TypeGet(), tree->AsField()->gtFldHnd, nullptr, tree->AsField()->gtFldOffset);
-                // copy = new (this, GT_FIELD) GenTreeField(tree->TypeGet(), tree->AsField()->GetFldObj(),
-                //                                          tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
-                copy->AsUnOp()->gtOp1 = tree->AsField()->GetFldObj();
+                copy = new (this, GT_FIELD) GenTreeField(tree->TypeGet(), tree->AsField()->GetFldObj(),
+                                                         tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
                 copy->AsField()->gtFldMayOverlap = tree->AsField()->gtFldMayOverlap;
 #ifdef FEATURE_READYTORUN
                 copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
