@@ -1049,7 +1049,7 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
 
         case GT_MUL:
         case GT_MULHI:
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
         case GT_MUL_LONG:
 #endif
             killMask = getKillSetForMul(tree->AsOp());

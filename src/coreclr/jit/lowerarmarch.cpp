@@ -224,6 +224,60 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //------------------------------------------------------------------------
+// LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
+//
+// For ARM64 recognized GT_MULs that can be turned into GT_MUL_LONGs, as
+// those are cheaper. Performs contaiment checks.
+//
+// Arguments:
+//    mul - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerMul(GenTreeOp* mul)
+{
+    assert(mul->OperIsMul());
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
+    {
+        GenTreeCast* op1 = mul->gtGetOp1()->AsCast();
+        GenTree*     op2 = mul->gtGetOp2();
+
+        mul->ClearOverflow();
+        mul->ClearUnsigned();
+        if (op1->IsUnsigned())
+        {
+            mul->SetUnsigned();
+        }
+
+        mul->gtOp1 = op1->CastOp();
+        BlockRange().Remove(op1);
+
+        if (op2->OperIs(GT_CAST))
+        {
+            mul->gtOp2 = op2->AsCast()->CastOp();
+            BlockRange().Remove(op2);
+        }
+        else
+        {
+            assert(op2->IsIntegralConst());
+            assert(FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue()));
+
+            op2->ChangeType(TYP_INT);
+        }
+
+        mul->ChangeOper(GT_MUL_LONG);
+    }
+#endif // TARGET_ARM64
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //
 // Arguments:

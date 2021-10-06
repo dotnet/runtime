@@ -7504,21 +7504,35 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     while (retBlock->bbJumpKind != BBJ_RETURN)
                     {
 #ifdef DEBUG
-                        assert(retBlock->firstStmt() == retBlock->lastStmt());
-                        asgNode = retBlock->firstStmt()->GetRootNode();
-                        if (!asgNode->OperIs(GT_NOP))
+                        Statement* nonEmptyStmt = nullptr;
+                        for (Statement* const stmt : retBlock->Statements())
                         {
-                            assert(asgNode->OperIs(GT_ASG));
-
-                            GenTree* rhs = asgNode->gtGetOp2();
-                            while (rhs->OperIs(GT_CAST))
+                            // Ignore NOP statements
+                            if (!stmt->GetRootNode()->OperIs(GT_NOP))
                             {
-                                assert(!rhs->gtOverflow());
-                                rhs = rhs->gtGetOp1();
+                                // Only a single non-NOP statement is allowed
+                                assert(nonEmptyStmt == nullptr);
+                                nonEmptyStmt = stmt;
                             }
+                        }
 
-                            assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
-                            lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        if (nonEmptyStmt != nullptr)
+                        {
+                            asgNode = nonEmptyStmt->GetRootNode();
+                            if (!asgNode->OperIs(GT_NOP))
+                            {
+                                assert(asgNode->OperIs(GT_ASG));
+
+                                GenTree* rhs = asgNode->gtGetOp2();
+                                while (rhs->OperIs(GT_CAST))
+                                {
+                                    assert(!rhs->gtOverflow());
+                                    rhs = rhs->gtGetOp1();
+                                }
+
+                                assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
+                                lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                            }
                         }
 #endif
                         retBlock = retBlock->GetUniqueSucc();
@@ -10962,19 +10976,17 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     // We are seeing this node again.
                     // Morph only the children of casts,
                     // so as to avoid losing them.
-                    assert(tree->gtIsValid64RsltMul());
                     tree = fgMorphLongMul(tree->AsOp());
 
                     goto DONE_MORPHING_CHILDREN;
                 }
 
                 tree = fgRecognizeAndMorphLongMul(tree->AsOp());
+                op1  = tree->AsOp()->gtGetOp1();
+                op2  = tree->AsOp()->gtGetOp2();
 
                 if (tree->Is64RsltMul())
                 {
-                    op1 = tree->AsOp()->gtGetOp1();
-                    op2 = tree->AsOp()->gtGetOp2();
-
                     goto DONE_MORPHING_CHILDREN;
                 }
                 else
@@ -11966,7 +11978,7 @@ DONE_MORPHING_CHILDREN:
             if (typ == TYP_LONG)
             {
                 // This must be GTF_MUL_64RSLT
-                assert(tree->gtIsValid64RsltMul());
+                INDEBUG(tree->AsOp()->DebugCheckLongMul());
                 return tree;
             }
 #endif // TARGET_64BIT
@@ -14138,6 +14150,47 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             }
             break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
+            switch (hw->gtHWIntrinsicId)
+            {
+                case NI_SSE_Xor:
+                case NI_SSE2_Xor:
+                case NI_AVX_Xor:
+                case NI_AVX2_Xor:
+                {
+                    // Transform XOR(X, 0) to X for vectors
+                    GenTree* op1 = hw->gtGetOp1();
+                    GenTree* op2 = hw->gtGetOp2();
+                    if (!gtIsActiveCSE_Candidate(tree))
+                    {
+                        if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op1);
+                            INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op2;
+                        }
+                        if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op2);
+                            INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op1;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+            break;
+        }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
         default:
             break;
     }
@@ -14472,17 +14525,15 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
 //------------------------------------------------------------------------------
 // fgRecognizeAndMorphLongMul : Check for and morph long multiplication with 32 bit operands.
 //
-// Recognizes the following tree: MUL(CAST(long <- int) or CONST, CAST(long <- int) or CONST),
-// where CONST must be an integer constant that fits in 32 bits. Note that if both operands are
-// constants, the original tree is returned unmodified, i. e. the caller is responsible for
-// folding or correct code generation (e. g. for overflow cases). May swap operands if the
-// first one is a constant and the second one is not.
+// Uses "GenTree::IsValidLongMul" to check for the long multiplication pattern. Will swap
+// operands if the first one is a constant and the second one is not, even for trees which
+// end up not being eligibile for long multiplication.
 //
 // Arguments:
 //    mul  -  GT_MUL tree to check for a long multiplication opportunity
 //
 // Return Value:
-//    The original tree unmodified if it is not eligible for long multiplication.
+//    The original tree, with operands possibly swapped, if it is not eligible for long multiplication.
 //    Tree with GTF_MUL_64RSLT set, side effect flags propagated, and children morphed if it is.
 //
 GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
@@ -14493,83 +14544,17 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
     GenTree* op1 = mul->gtGetOp1();
     GenTree* op2 = mul->gtGetOp2();
 
-    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
-
-    if (!(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp())) &&
-        !(op1->IsIntegralConst() && FitsIn<int32_t>(op1->AsIntConCommon()->IntegralValue())))
-    {
-        return mul;
-    }
-
-    if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
-        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
-    {
-        return mul;
-    }
-
-    // Let fgMorphSmpOp take care of folding.
-    if (op1->IsIntegralConst() && op2->IsIntegralConst())
-    {
-        return mul;
-    }
-
-    // We don't handle checked casts.
-    if (op1->gtOverflowEx() || op2->gtOverflowEx())
-    {
-        return mul;
-    }
-
-    // Move the constant operand to the right to make the logic below more straightfoward.
-    if (op2->OperIs(GT_CAST) && op1->IsIntegralConst())
+    // "IsValidLongMul" and decomposition do not handle constant op1.
+    if (op1->IsIntegralConst())
     {
         std::swap(op1, op2);
         mul->gtOp1 = op1;
         mul->gtOp2 = op2;
     }
 
-    // The operands must have the same extending behavior, since the instruction
-    // used to compute the result will sign/zero-extend both operands at once.
-    bool op1ZeroExtends = op1->IsUnsigned();
-    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
-    bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
-    if ((op1ZeroExtends != op2ZeroExtends) && !op2AnyExtensionIsSuitable)
+    if (!mul->IsValidLongMul())
     {
         return mul;
-    }
-
-    if (mul->gtOverflow())
-    {
-        auto getMaxValue = [mul](GenTree* op) -> int64_t {
-            if (op->OperIs(GT_CAST))
-            {
-                if (op->IsUnsigned())
-                {
-                    switch (op->AsCast()->CastOp()->TypeGet())
-                    {
-                        case TYP_UBYTE:
-                            return UINT8_MAX;
-                        case TYP_USHORT:
-                            return UINT16_MAX;
-                        default:
-                            return UINT32_MAX;
-                    }
-                }
-
-                return mul->IsUnsigned() ? static_cast<int64_t>(UINT64_MAX) : INT32_MIN;
-            }
-
-            return op->AsIntConCommon()->IntegralValue();
-        };
-
-        int64_t maxOp1 = getMaxValue(op1);
-        int64_t maxOp2 = getMaxValue(op2);
-
-        if (CheckedOps::MulOverflows(maxOp1, maxOp2, mul->IsUnsigned()))
-        {
-            return mul;
-        }
-
-        mul->ClearOverflow();
     }
 
     // MUL_LONG needs to do the work the casts would have done.
@@ -14579,6 +14564,8 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
         mul->SetUnsigned();
     }
 
+    // "IsValidLongMul" returned "true", so this GT_MUL cannot overflow.
+    mul->ClearOverflow();
     mul->Set64RsltMul();
 
     return fgMorphLongMul(mul);
@@ -14598,6 +14585,8 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
 //
 GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 {
+    INDEBUG(mul->DebugCheckLongMul());
+
     GenTree* op1 = mul->gtGetOp1();
     GenTree* op2 = mul->gtGetOp2();
 

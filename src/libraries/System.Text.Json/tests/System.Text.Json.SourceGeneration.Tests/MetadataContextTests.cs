@@ -24,6 +24,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(object[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -66,6 +67,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.ByteArray.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
@@ -103,6 +105,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass))]
     [JsonSerializable(typeof(RealWorldContextTests.MyNestedClass.MyNestedNestedClass))]
     [JsonSerializable(typeof(object[]))]
+    [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
@@ -168,6 +171,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.MyNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.MyNestedNestedClass.SerializeHandler);
             Assert.Null(MetadataContext.Default.ObjectArray.SerializeHandler);
+            Assert.Null(MetadataContext.Default.ByteArray.SerializeHandler);
             Assert.Null(MetadataContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataContext.Default.String.SerializeHandler);
             Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);

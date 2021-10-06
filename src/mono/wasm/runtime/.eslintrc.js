@@ -1,38 +1,39 @@
 module.exports = {
-    'env': {
-        'browser': true,
-        'es2021': true,
-        'node': true
+    "env": {
+        "browser": true,
+        "es2021": true,
+        "node": true
     },
-    'extends': [
-        'eslint:recommended',
-        'plugin:@typescript-eslint/recommended'
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended"
     ],
-    'parser': '@typescript-eslint/parser',
-    'parserOptions': {
-        'ecmaVersion': 12,
-        'sourceType': 'module'
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+        "ecmaVersion": 12,
+        "sourceType": "module"
     },
-    'plugins': [
-        '@typescript-eslint'
+    "plugins": [
+        "@typescript-eslint"
     ],
-    'rules': {
-        'indent': [
-            'error',
+    "ignorePatterns": ["node_modules/**/*.*", "bin/**/*.*"],
+    "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-non-null-assertion": "off",
+        "@typescript-eslint/ban-types": "off",
+        "indent": [
+            "error",
             4,
-            {SwitchCase: 1}
+            { SwitchCase: 1 }
         ],
-        'linebreak-style': [
-            'error',
-            'windows'
+        "linebreak-style": "off",
+        "quotes": [
+            "error",
+            "double"
         ],
-        'quotes': [
-            'error',
-            'single'
-        ],
-        'semi': [
-            'error',
-            'always'
+        "semi": [
+            "error",
+            "always"
         ]
     }
 };

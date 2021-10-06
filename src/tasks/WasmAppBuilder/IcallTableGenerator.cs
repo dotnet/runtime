@@ -276,7 +276,7 @@ public class IcallTableGenerator : Task
         return sb.ToString ();
     }
 
-    private class Icall : IComparable<Icall>
+    private sealed class Icall : IComparable<Icall>
     {
         public Icall (string name, string func, bool handles)
         {
@@ -298,7 +298,7 @@ public class IcallTableGenerator : Task
         }
     }
 
-    private class IcallClass
+    private sealed class IcallClass
     {
         public IcallClass (string name)
         {

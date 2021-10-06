@@ -124,6 +124,7 @@
     <Compile Include="FileStream\IsAsync.cs" />
     <Compile Include="FileStream\Name.cs" />
     <Compile Include="FileStream\CopyToAsync.cs" />
+    <Compile Include="FileStream\DeleteOnClose.cs" />
     <Compile Include="FileStream\FileStreamOptions.cs" />
     <Compile Include="FileStream\Flush.cs" />
     <Compile Include="FileStream\Dispose.cs" />

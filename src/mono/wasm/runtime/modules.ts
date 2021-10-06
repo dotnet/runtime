@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+/* eslint-disable no-var */
+/* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
@@ -11,6 +13,7 @@ export var Module: t_Module & t_ModuleExtension;
 export var MONO: any;
 export var BINDING: any;
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function setLegacyModules(mono: any, binding: any, module: t_Module & t_ModuleExtension) {
     Module = module;
     MONO = mono;
@@ -18,7 +21,7 @@ export function setLegacyModules(mono: any, binding: any, module: t_Module & t_M
 }
 
 let monoConfig: MonoConfig;
-let runtime_is_ready: boolean = false;
+let runtime_is_ready = false;
 
 export const runtimeHelpers: t_RuntimeHelpers = <any>{
     namespace: "System.Runtime.InteropServices.JavaScript",
@@ -39,4 +42,4 @@ export const runtimeHelpers: t_RuntimeHelpers = <any>{
         MONO.config = value;
         Module.config = value;
     },
-}
+};
