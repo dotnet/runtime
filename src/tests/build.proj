@@ -159,6 +159,7 @@
     <ItemGroup>
       <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.dll" />
       <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.ni.pdb" Condition="'$(__CreatePdb)' != ''" />
+      <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.ni.r2rmap" Condition="'$(__CreatePerfMap)' != ''" />
     </ItemGroup>
 
     <Move SourceFiles="@(CrossgenOutputFiles)" DestinationFolder="$(CORE_ROOT)" />
