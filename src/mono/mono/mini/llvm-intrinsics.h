@@ -123,19 +123,10 @@ INTRINS(SSE_PSRL_Q, x86_sse2_psrl_q, X86)
 INTRINS(SSE_PSLL_W, x86_sse2_psll_w, X86)
 INTRINS(SSE_PSLL_D, x86_sse2_psll_d, X86)
 INTRINS(SSE_PSLL_Q, x86_sse2_psll_q, X86)
-#if LLVM_API_VERSION < 700
-// These intrinsics were removed in LLVM 7 (bcaab53d479e7005ee69e06321bbb493f9b7f5e6).
-INTRINS(SSE_SQRT_PS, x86_sse_sqrt_ps, X86)
-INTRINS(SSE_SQRT_SS, x86_sse_sqrt_ss, X86)
-INTRINS(SSE_SQRT_PD, x86_sse2_sqrt_pd, X86)
-INTRINS(SSE_SQRT_SD, x86_sse2_sqrt_sd, X86)
-INTRINS(SSE_PMULUDQ, x86_sse2_pmulu_dq, X86)
-#else
 INTRINS_OVR(SSE_SQRT_PD, sqrt, Generic, sse_r8_t)
 INTRINS_OVR(SSE_SQRT_PS, sqrt, Generic, sse_r4_t)
 INTRINS_OVR(SSE_SQRT_SD, sqrt, Generic, LLVMDoubleType ())
 INTRINS_OVR(SSE_SQRT_SS, sqrt, Generic, LLVMFloatType ())
-#endif
 INTRINS(SSE_RCP_PS, x86_sse_rcp_ps, X86)
 INTRINS(SSE_RSQRT_PS, x86_sse_rsqrt_ps, X86)
 INTRINS(SSE_RCP_SS, x86_sse_rcp_ss, X86)
@@ -241,10 +232,6 @@ INTRINS(SSE_TESTZ, x86_sse41_ptestz, X86)
 INTRINS(SSE_PBLENDVB, x86_sse41_pblendvb, X86)
 INTRINS(SSE_BLENDVPS, x86_sse41_blendvps, X86)
 INTRINS(SSE_BLENDVPD, x86_sse41_blendvpd, X86)
-#if LLVM_API_VERSION < 700
-// Clang 7 and above use a sequence of IR operations to represent pmuldq.
-INTRINS(SSE_PMULDQ, x86_sse41_pmuldq, X86)
-#endif
 INTRINS(SSE_PHMINPOSUW, x86_sse41_phminposuw, X86)
 INTRINS(SSE_MPSADBW, x86_sse41_mpsadbw, X86)
 INTRINS(PCLMULQDQ, x86_pclmulqdq, X86)
@@ -254,8 +241,6 @@ INTRINS(AESNI_AESDECLAST, x86_aesni_aesdeclast, X86)
 INTRINS(AESNI_AESENC, x86_aesni_aesenc, X86)
 INTRINS(AESNI_AESENCLAST, x86_aesni_aesenclast, X86)
 INTRINS(AESNI_AESIMC, x86_aesni_aesimc, X86)
-#if LLVM_API_VERSION >= 800
-	// these intrinsics were renamed in LLVM 8
 INTRINS_OVR(SSE_SADD_SATI8, sadd_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_UADD_SATI8, uadd_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_SADD_SATI16, sadd_sat, Generic, v128_i2_t)
@@ -265,19 +250,8 @@ INTRINS_OVR(SSE_SSUB_SATI8, ssub_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_USUB_SATI8, usub_sat, Generic, v128_i1_t)
 INTRINS_OVR(SSE_SSUB_SATI16, ssub_sat, Generic, v128_i2_t)
 INTRINS_OVR(SSE_USUB_SATI16, usub_sat, Generic, v128_i2_t)
-#else
-INTRINS(SSE_SADD_SATI8, x86_sse2_padds_b, X86)
-INTRINS(SSE_UADD_SATI8, x86_sse2_paddus_b, X86)
-INTRINS(SSE_SADD_SATI16, x86_sse2_padds_w, X86)
-INTRINS(SSE_UADD_SATI16, x86_sse2_paddus_w, X86)
-
-INTRINS(SSE_SSUB_SATI8, x86_sse2_psubs_b, X86)
-INTRINS(SSE_USUB_SATI8, x86_sse2_psubus_b, X86)
-INTRINS(SSE_SSUB_SATI16, x86_sse2_psubs_w, X86)
-INTRINS(SSE_USUB_SATI16, x86_sse2_psubus_w, X86)
 #endif
-#endif
-#if defined(TARGET_WASM) && LLVM_API_VERSION >= 800
+#if defined(TARGET_WASM)
 INTRINS_OVR(WASM_ANYTRUE_V16, wasm_anytrue, Wasm, sse_i1_t)
 INTRINS_OVR(WASM_ANYTRUE_V8, wasm_anytrue, Wasm, sse_i2_t)
 INTRINS_OVR(WASM_ANYTRUE_V4, wasm_anytrue, Wasm, sse_i4_t)

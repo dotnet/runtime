@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -357,6 +358,10 @@ public class ApkBuilder
 
         string javaActivityPath = Path.Combine(javaSrcFolder, "MainActivity.java");
         string monoRunnerPath = Path.Combine(javaSrcFolder, "MonoRunner.java");
+
+        Regex checkNumerics = new Regex(@"\.(\d)");
+        if (!string.IsNullOrEmpty(ProjectName) && checkNumerics.IsMatch(ProjectName))
+            ProjectName = checkNumerics.Replace(ProjectName, @"_$1");
 
         string packageId = $"net.dot.{ProjectName}";
 

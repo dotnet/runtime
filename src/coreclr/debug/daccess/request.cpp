@@ -3765,7 +3765,7 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (g_gcDacGlobals->generation_table.IsValid())
     {
-        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        ULONG first = IsRegionGCEnabled() ? 0 : (*g_gcDacGlobals->max_gen);
         // enumerating the first to max + 2 gives you
         // the segment list for all the normal segments plus the pinned heap segment (max + 2)
         // this is the convention in the GC so it is repeated here

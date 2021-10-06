@@ -2757,6 +2757,9 @@ void Compiler::fgAddInternal()
 
         lvaInlinedPInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Pinvoke FrameVar"));
 
+        // Lowering::InsertPInvokeMethodProlog will create a call with this local addr as an argument.
+        lvaSetVarAddrExposed(lvaInlinedPInvokeFrameVar DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
         LclVarDsc* varDsc = &lvaTable[lvaInlinedPInvokeFrameVar];
         varDsc->lvType    = TYP_BLK;
         // Make room for the inlined frame.
@@ -2927,7 +2930,7 @@ void Compiler::fgFindOperOrder()
 
 //------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
-// and computing lvaOutgoingArgumentAreaSize.
+// and computing lvaOutgoingArgSpaceSize.
 //
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_ARR_BOUNDS_CHECK, and GT_SIMD_CHK.
@@ -2938,7 +2941,7 @@ void Compiler::fgFindOperOrder()
 //    Outgoing arg area size is computed here because we want to run it
 //    after optimization (in case calls are removed) and need to look at
 //    all possible calls in the method.
-
+//
 void Compiler::fgSimpleLowering()
 {
 #if FEATURE_FIXED_OUT_ARGS
@@ -3020,9 +3023,9 @@ void Compiler::fgSimpleLowering()
 
                         if (thisCallOutAreaSize > outgoingArgSpaceSize)
                         {
+                            JITDUMP("Bumping outgoingArgSpaceSize from %u to %u for call [%06d]\n",
+                                    outgoingArgSpaceSize, thisCallOutAreaSize, dspTreeID(tree));
                             outgoingArgSpaceSize = thisCallOutAreaSize;
-                            JITDUMP("Bumping outgoingArgSpaceSize to %u for call [%06d]\n", outgoingArgSpaceSize,
-                                    dspTreeID(tree));
                         }
                         else
                         {
@@ -3051,18 +3054,24 @@ void Compiler::fgSimpleLowering()
     // Finish computing the outgoing args area size
     //
     // Need to make sure the MIN_ARG_AREA_FOR_CALL space is added to the frame if:
-    // 1. there are calls to THROW_HEPLPER methods.
+    // 1. there are calls to THROW_HELPER methods.
     // 2. we are generating profiling Enter/Leave/TailCall hooks. This will ensure
     //    that even methods without any calls will have outgoing arg area space allocated.
+    // 3. We will be generating calls to PInvoke helpers. TODO: This shouldn't be required because
+    //    if there are any calls to PInvoke methods, there should be a call that we processed
+    //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
+    //    eliminated all the calls.
     //
     // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
     // the outgoing arg space if the method makes any calls.
     if (outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
-        if (compUsesThrowHelper || compIsProfilerHookNeeded())
+        if (compUsesThrowHelper || compIsProfilerHookNeeded() ||
+            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()))
         {
             outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook", outgoingArgSpaceSize);
+            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook or PInvoke helper",
+                    outgoingArgSpaceSize);
         }
     }
 
@@ -4015,22 +4024,9 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             return;
         }
 
-        /* Is this a unary operator?
-         * Although UNARY GT_IND has a special structure */
+        /* Is this a unary operator? */
 
-        if (oper == GT_IND)
-        {
-            /* Visit the indirection first - op2 may point to the
-             * jump Label for array-index-out-of-range */
-
-            fgSetTreeSeqHelper(op1, isLIR);
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
-
-        /* Now this is REALLY a unary operator */
-
-        if (!op2)
+        if (op2 == nullptr)
         {
             /* Visit the (only) operand and we're done */
 
@@ -4039,39 +4035,8 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             return;
         }
 
-        /*
-           For "real" ?: operators, we make sure the order is
-           as follows:
-
-               condition
-               1st operand
-               GT_COLON
-               2nd operand
-               GT_QMARK
-        */
-
-        if (oper == GT_QMARK)
-        {
-            noway_assert((tree->gtFlags & GTF_REVERSE_OPS) == 0);
-
-            fgSetTreeSeqHelper(op1, isLIR);
-            // Here, for the colon, the sequence does not actually represent "order of evaluation":
-            // one or the other of the branches is executed, not both.  Still, to make debugging checks
-            // work, we want the sequence to match the order in which we'll generate code, which means
-            // "else" clause then "then" clause.
-            fgSetTreeSeqHelper(op2->AsColon()->ElseNode(), isLIR);
-            fgSetTreeSeqHelper(op2, isLIR);
-            fgSetTreeSeqHelper(op2->AsColon()->ThenNode(), isLIR);
-
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
-
-        if (oper == GT_COLON)
-        {
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
-        }
+        // By the time execution order is being set, all QMARKs must have been rationalized.
+        assert(compQmarkRationalized && (oper != GT_QMARK) && (oper != GT_COLON));
 
         /* This is a binary operator */
 

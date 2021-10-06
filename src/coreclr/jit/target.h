@@ -5,12 +5,41 @@
 #ifndef TARGET_H_
 #define TARGET_H_
 
-// Native Varargs are not supported on Unix (all architectures) and Windows ARM
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-#define FEATURE_VARARG 1
-#else
-#define FEATURE_VARARG 0
+#ifdef TARGET_UNIX_POSSIBLY_SUPPORTED
+#define FEATURE_CFI_SUPPORT
 #endif
+
+// Undefine all of the target OS macros
+// Within the JIT codebase we use the TargetOS features
+#ifdef TARGET_UNIX
+#undef TARGET_UNIX
+#endif
+
+#ifdef TARGET_OSX
+#undef TARGET_OSX
+#endif
+
+#ifdef TARGET_WINDOWS
+#undef TARGET_WINDOWS
+#endif
+
+// Native Varargs are not supported on Unix (all architectures) and Windows ARM
+inline bool compFeatureVarArg()
+{
+    return TargetOS::IsWindows && !TargetArchitecture::IsArm32;
+}
+inline bool compMacOsArm64Abi()
+{
+    return TargetArchitecture::IsArm64 && TargetOS::IsMacOS;
+}
+inline bool compFeatureArgSplit()
+{
+    return TargetArchitecture::IsArm32 || (TargetOS::IsWindows && TargetArchitecture::IsArm64);
+}
+inline bool compUnixX86Abi()
+{
+    return TargetArchitecture::IsX86 && TargetOS::IsUnix;
+}
 
 /*****************************************************************************/
 // The following are human readable names for the target architectures
@@ -268,7 +297,10 @@ class Target
 {
 public:
     static const char* g_tgtCPUName;
-    static const char* g_tgtPlatformName;
+    static const char* g_tgtPlatformName()
+    {
+        return TargetOS::IsWindows ? "Windows" : "Unix";
+    };
 
     enum ArgOrder
     {

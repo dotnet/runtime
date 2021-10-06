@@ -181,6 +181,8 @@ int __cdecl main(int argc, char* argv[])
         return doParallelSuperPMI(o);
     }
 
+    SetBreakOnException(o.breakOnException);
+
     SetSuperPmiTargetArchitecture(o.targetArchitecture);
 
     if (o.methodStatsTypes != NULL &&

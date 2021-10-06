@@ -180,23 +180,13 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: is local user");
 
-#if PAPI_REGSAM
                     context = new PrincipalContext(ContextType.Machine);
-#else
-                    // This implementation doesn't support Reg-SAM/MSAM (machine principals)
-                    throw new NotSupportedException(SR.UserLocalNotSupportedOnPlatform);
-#endif // PAPI_REGSAM
                 }
                 else
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "Current: is not local user");
 
-#if PAPI_AD
                     context = new PrincipalContext(ContextType.Domain);
-#else
-                    // This implementation doesn't support AD (domain principals)
-                    throw new NotSupportedException(SR.UserDomainNotSupportedOnPlatform);
-#endif // PAPI_AD
                 }
 
                 // Construct a query for the current user, using a SID IdentityClaim
