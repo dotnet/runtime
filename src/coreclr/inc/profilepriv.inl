@@ -1840,7 +1840,7 @@ inline void ProfControlBlock::EventPipeProviderCreated(EventPipeProvider *provid
 
 FORCEINLINE BOOL CORProfilerPresent()
 {
-    LIMITED_METHOD_DAC_CONTRACT;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->mainProfilerInfo.pProfInterface.Load() != NULL 
             || (&g_profControlBlock)->notificationProfilerCount.Load() > 0;
@@ -1848,7 +1848,7 @@ FORCEINLINE BOOL CORProfilerPresent()
 
 FORCEINLINE BOOL CORMainProfilerPresent()
 {
-    LIMITED_METHOD_DAC_CONTRACT;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->mainProfilerInfo.curProfStatus.Get() >= kProfStatusActive;
 }
@@ -1858,13 +1858,7 @@ FORCEINLINE BOOL CORMainProfilerPresent()
 
 FORCEINLINE BOOL CORProfilerFunctionIDMapperEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (CORMainProfilerPresent() &&
         (
@@ -1875,117 +1869,63 @@ FORCEINLINE BOOL CORProfilerFunctionIDMapperEnabled()
 
 FORCEINLINE BOOL CORProfilerTrackJITInfo()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_JIT_COMPILATION);
 }
 
 FORCEINLINE BOOL CORProfilerTrackCacheSearches()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_CACHE_SEARCHES);
 }
 
 FORCEINLINE BOOL CORProfilerTrackModuleLoads()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_MODULE_LOADS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackAssemblyLoads()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_ASSEMBLY_LOADS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackAppDomainLoads()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_APPDOMAIN_LOADS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackThreads()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_THREADS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackClasses()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_CLASS_LOADS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackGC()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_GC);
 }
 
 FORCEINLINE BOOL CORProfilerTrackAllocationsEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return
         (
@@ -1998,91 +1938,49 @@ FORCEINLINE BOOL CORProfilerTrackAllocationsEnabled()
 
 FORCEINLINE BOOL CORProfilerTrackAllocations()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_OBJECT_ALLOCATED);
 }
 
 FORCEINLINE BOOL CORProfilerTrackLargeAllocations()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED);
 }
 
 FORCEINLINE BOOL CORProfilerTrackPinnedAllocations()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_PINNEDOBJECT_ALLOCATED);
 }
 
 FORCEINLINE BOOL CORProfilerEnableRejit()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_ENABLE_REJIT);
 }
 
 FORCEINLINE BOOL CORProfilerTrackExceptions()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_EXCEPTIONS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackTransitions()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_CODE_TRANSITIONS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackEnterLeave()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
 #ifdef PROF_TEST_ONLY_FORCE_ELT
     if ((&g_profControlBlock)->fTestOnlyForceEnterLeave)
@@ -2094,39 +1992,21 @@ FORCEINLINE BOOL CORProfilerTrackEnterLeave()
 
 FORCEINLINE BOOL CORProfilerTrackCCW()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_CCW);
 }
 
 FORCEINLINE BOOL CORProfilerTrackSuspends()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_MONITOR_SUSPENDS);
 }
 
 FORCEINLINE BOOL CORProfilerDisableInlining()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_DISABLE_INLINING);
 }
@@ -2147,13 +2027,7 @@ FORCEINLINE BOOL CORProfilerDisableOptimizations()
 
 FORCEINLINE BOOL CORProfilerUseProfileImages()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
 #ifdef PROF_TEST_ONLY_FORCE_ELT
     if ((&g_profControlBlock)->fTestOnlyForceEnterLeave)
@@ -2165,14 +2039,14 @@ FORCEINLINE BOOL CORProfilerUseProfileImages()
 
 FORCEINLINE BOOL CORProfilerDisableAllNGenImages()
 {
-    LIMITED_METHOD_DAC_CONTRACT;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_DISABLE_ALL_NGEN_IMAGES);
 }
 
 FORCEINLINE BOOL CORProfilerTrackConditionalWeakTableElements()
 {
-    LIMITED_METHOD_DAC_CONTRACT;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return CORProfilerTrackGC() && (&g_profControlBlock)->IsCallback5Supported();
 }
@@ -2187,182 +2061,98 @@ FORCEINLINE BOOL CORProfilerTrackConditionalWeakTableElements()
 
 FORCEINLINE BOOL CORProfilerELT3SlowPathEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_FUNCTION_ARGS | COR_PRF_ENABLE_FUNCTION_RETVAL | COR_PRF_ENABLE_FRAME_INFO));
 }
 
 FORCEINLINE BOOL CORProfilerELT3SlowPathEnterEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_FUNCTION_ARGS | COR_PRF_ENABLE_FRAME_INFO));
 }
 
 FORCEINLINE BOOL CORProfilerELT3SlowPathLeaveEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_FUNCTION_RETVAL | COR_PRF_ENABLE_FRAME_INFO));
 }
 
 FORCEINLINE BOOL CORProfilerELT3SlowPathTailcallEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_FRAME_INFO));
 }
 
 FORCEINLINE BOOL CORProfilerELT2FastPathEnterEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return !((&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_STACK_SNAPSHOT | COR_PRF_ENABLE_FUNCTION_ARGS | COR_PRF_ENABLE_FRAME_INFO)));
 }
 
 FORCEINLINE BOOL CORProfilerELT2FastPathLeaveEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return !((&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_STACK_SNAPSHOT | COR_PRF_ENABLE_FUNCTION_RETVAL | COR_PRF_ENABLE_FRAME_INFO)));
 }
 
 FORCEINLINE BOOL CORProfilerELT2FastPathTailcallEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return !((&g_profControlBlock)->globalEventMask.IsEventMaskSet((COR_PRF_ENABLE_STACK_SNAPSHOT | COR_PRF_ENABLE_FRAME_INFO)));
 }
 
 FORCEINLINE BOOL CORProfilerFunctionArgsEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_ENABLE_FUNCTION_ARGS);
 }
 
 FORCEINLINE BOOL CORProfilerFunctionReturnValueEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_ENABLE_FUNCTION_RETVAL);
 }
 
 FORCEINLINE BOOL CORProfilerFrameInfoEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_ENABLE_FRAME_INFO);
 }
 
 FORCEINLINE BOOL CORProfilerStackSnapshotEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskSet(COR_PRF_ENABLE_STACK_SNAPSHOT);
 }
 
 FORCEINLINE BOOL CORProfilerInMemorySymbolsUpdatesEnabled()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED);
 }
 
 FORCEINLINE BOOL CORProfilerTrackDynamicFunctionUnloads()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS);
 }
 
 FORCEINLINE BOOL CORProfilerDisableTieredCompilation()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_DISABLE_TIERED_COMPILATION);
@@ -2370,39 +2160,21 @@ FORCEINLINE BOOL CORProfilerDisableTieredCompilation()
 
 FORCEINLINE BOOL CORProfilerTrackBasicGC()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_BASIC_GC);
 }
 
 FORCEINLINE BOOL CORProfilerTrackGCMovedObjects()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS);
 }
 
 FORCEINLINE BOOL CORProfilerTrackEventPipe()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        CANNOT_TAKE_LOCK;
-    }
-    CONTRACTL_END;
+    STATIC_CONTRACT_LIMITED_METHOD;
 
     return (&g_profControlBlock)->globalEventMask.IsEventMaskHighSet(COR_PRF_HIGH_MONITOR_EVENT_PIPE);
 }
