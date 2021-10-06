@@ -206,5 +206,11 @@ namespace System.IO.Compression
             isUTF8 = encoding.CodePage == 65001;
             return encoding.GetBytes(text);
         }
+
+        // Converts the specified bytes into a string of the proper encoding for this ZipArchive.
+        internal static string DecodeBytesToString(Encoding? encoding, byte[] bytes)
+        {
+            return (encoding ?? Encoding.UTF8).GetString(bytes);
+        }
     }
 }

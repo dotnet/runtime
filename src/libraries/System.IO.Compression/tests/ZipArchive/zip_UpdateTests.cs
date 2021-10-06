@@ -357,7 +357,6 @@ namespace System.IO.Compression.Tests
             }
         }
 
-
         [Theory]
         [MemberData(nameof(TestComments))]
         public static void Update_ZipArchive_Comment(string? comment)

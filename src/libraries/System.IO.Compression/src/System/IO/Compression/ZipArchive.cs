@@ -216,6 +216,7 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Gets or sets the optional archive comment.
+        /// The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
         /// </summary>
         [AllowNull]
         public string Comment
@@ -224,7 +225,7 @@ namespace System.IO.Compression
             {
                 if (_archiveComment == null)
                 {
-                    _archiveComment = _archiveCommentBytes != null ? DecodeBytesToString(_archiveCommentBytes) : string.Empty;
+                    _archiveComment = _archiveCommentBytes != null ? ZipHelper.DecodeBytesToString(EntryNameAndCommentEncoding, _archiveCommentBytes) : string.Empty;
                 }
                 return _archiveComment;
             }
@@ -585,7 +586,7 @@ namespace System.IO.Compression
 
                 _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
-                Comment = DecodeBytesToString(eocd.ArchiveComment);
+                _archiveCommentBytes = eocd.ArchiveComment;
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 
@@ -722,14 +723,6 @@ namespace System.IO.Compression
 
             // write normal eocd
             ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveCommentBytes);
-        }
-
-        // Converts the specified bytes into a string of the proper encoding for this ZipArchive.
-        private string DecodeBytesToString(byte[] bytes)
-        {
-            Debug.Assert(bytes != null);
-            Encoding encoding = EntryNameAndCommentEncoding ?? Encoding.UTF8;
-            return encoding.GetString(bytes);
         }
     }
 }

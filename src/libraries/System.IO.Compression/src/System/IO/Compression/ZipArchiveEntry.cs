@@ -179,6 +179,7 @@ namespace System.IO.Compression
 
         /// <summary>
         /// Gets or sets the optional entry comment.
+        /// The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
         /// </summary>
         [AllowNull]
         public string Comment
@@ -577,7 +578,8 @@ namespace System.IO.Compression
             if (_cdUnknownExtraFields != null)
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
-            writer.Write(_fileCommentBytes ?? Array.Empty<byte>());
+            if (_fileCommentBytes != null)
+                writer.Write(_fileCommentBytes);
         }
 
         // returns false if fails, will get called on every entry before closing in update mode

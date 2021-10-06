@@ -577,7 +577,8 @@ namespace System.IO.Compression
             Debug.Assert((archiveComment == null) || (archiveComment.Length <= ZipFileCommentMaxLength));
 
             writer.Write(archiveComment != null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
-            writer.Write(archiveComment ?? Array.Empty<byte>());
+            if (archiveComment != null)
+                writer.Write(archiveComment);
         }
 
         public static bool TryReadBlock(BinaryReader reader, out ZipEndOfCentralDirectoryBlock eocdBlock)
