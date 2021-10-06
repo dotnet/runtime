@@ -527,7 +527,7 @@ inline BOOL IsProfilerTrackingCacheSearches(ProfilerInfo *pProfilerInfo)
 inline HRESULT JITCachedFunctionSearchStartedHelper(BOOL *pAllTrue, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID functionId, BOOL *pbUseCachedFunction)
 {
     HRESULT hr = profInterface->JITCachedFunctionSearchStarted(functionId, pbUseCachedFunction);
-    *pAllTrue &= *pbUseCachedFunction;
+    *pAllTrue = *pAllTrue && *pbUseCachedFunction;
     return hr;
 }
 
@@ -535,6 +535,7 @@ inline void ProfControlBlock::JITCachedFunctionSearchStarted(FunctionID function
 {
     LIMITED_METHOD_CONTRACT;
 
+    *pbUseCachedFunction = TRUE;
     BOOL allTrue = TRUE;
     DoProfilerCallback(ProfilerCallbackType::Active,
                        IsProfilerTrackingCacheSearches,
@@ -565,7 +566,7 @@ inline void ProfControlBlock::JITCachedFunctionSearchFinished(FunctionID functio
 inline HRESULT JITInliningHelper(BOOL *pAllTrue, VolatilePtr<EEToProfInterfaceImpl> profInterface, FunctionID callerId, FunctionID calleeId, BOOL *pfShouldInline)
 {
     HRESULT hr = profInterface->JITInlining(callerId, calleeId, pfShouldInline);
-    *pAllTrue &= *pfShouldInline;
+    *pAllTrue = *pAllTrue && *pfShouldInline;
     return hr;
 }
 
@@ -573,6 +574,7 @@ inline HRESULT ProfControlBlock::JITInlining(FunctionID callerId, FunctionID cal
 {
     LIMITED_METHOD_CONTRACT;
 
+    *pfShouldInline = TRUE;
     BOOL allTrue = TRUE;
     HRESULT hr =  DoProfilerCallback(ProfilerCallbackType::Active,
                                      IsProfilerTrackingJITInfo,
