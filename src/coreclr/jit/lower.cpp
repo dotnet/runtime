@@ -5948,7 +5948,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
 PhaseStatus Lowering::DoPhase()
 {
-    // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
+    // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
     // data structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
     if (comp->compMethodRequiresPInvokeFrame())
