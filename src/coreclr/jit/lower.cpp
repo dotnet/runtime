@@ -144,11 +144,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_MUL:
         case GT_MULHI:
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) || defined(TARGET_ARM64)
         case GT_MUL_LONG:
 #endif
-            ContainCheckMul(node->AsOp());
-            break;
+            return LowerMul(node->AsOp());
 
         case GT_UDIV:
         case GT_UMOD:
@@ -5215,10 +5214,33 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         int    postShift;
         bool   simpleMul = false;
 
+        unsigned bits = type == TYP_INT ? 32 : 64;
+        // if the dividend operand is AND or RSZ with a constant then the number of input bits can be reduced
+        if (dividend->OperIs(GT_AND) && dividend->gtGetOp2()->IsCnsIntOrI())
+        {
+            size_t maskCns = static_cast<size_t>(dividend->gtGetOp2()->AsIntCon()->IconValue());
+            if (maskCns != 0)
+            {
+                unsigned maskBits = 1;
+                while (maskCns >>= 1)
+                    maskBits++;
+                if (maskBits < bits)
+                    bits = maskBits;
+            }
+        }
+        else if (dividend->OperIs(GT_RSZ) && dividend->gtGetOp2()->IsCnsIntOrI())
+        {
+            size_t shiftCns = static_cast<size_t>(dividend->gtGetOp2()->AsIntCon()->IconValue());
+            if (shiftCns < bits)
+            {
+                bits -= static_cast<unsigned>(shiftCns);
+            }
+        }
+
         if (type == TYP_INT)
         {
-            magic =
-                MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift, &postShift);
+            magic = MagicDivide::GetUnsigned32Magic(static_cast<uint32_t>(divisorValue), &increment, &preShift,
+                                                    &postShift, bits);
 
 #ifdef TARGET_64BIT
             // avoid inc_saturate/multiple shifts by widening to 32x64 MULHI
@@ -5230,7 +5252,7 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
                               ))
             {
                 magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
-                                                        &postShift, 32);
+                                                        &postShift, bits);
             }
             // otherwise just widen to regular multiplication
             else
@@ -5243,8 +5265,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         else
         {
 #ifdef TARGET_64BIT
-            magic =
-                MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift, &postShift);
+            magic = MagicDivide::GetUnsigned64Magic(static_cast<uint64_t>(divisorValue), &increment, &preShift,
+                                                    &postShift, bits);
 #else
             unreached();
 #endif
@@ -5263,6 +5285,14 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         GenTree* firstNode        = nullptr;
         GenTree* adjustedDividend = dividend;
 
+#ifdef TARGET_ARM64
+        // On ARM64 we will use a 32x32->64 bit multiply instead of a 64x64->64 one.
+        bool widenToNativeIntForMul = (type != TYP_I_IMPL) && !simpleMul;
+#else
+        CLANG_FORMAT_COMMENT_ANCHOR;
+        bool widenToNativeIntForMul = (type != TYP_I_IMPL);
+#endif
+
         // If "increment" flag is returned by GetUnsignedMagic we need to do Saturating Increment first
         if (increment)
         {
@@ -5279,13 +5309,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL
-#ifdef TARGET_ARM64
-                 && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
-#endif
-                 )
+        else if (widenToNativeIntForMul)
         {
-            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
+            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_I_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
             firstNode = adjustedDividend;
         }
@@ -5294,44 +5320,50 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
         // reduntant copies otherwise
         if (firstNode && !simpleMul)
-            adjustedDividend->SetRegNum(REG_RAX);
-#endif
-
-        divisor->gtType = TYP_I_IMPL;
-
-#ifdef TARGET_ARM64
-        if (simpleMul)
         {
-            divisor->gtType = TYP_INT;
+            adjustedDividend->SetRegNum(REG_RAX);
         }
 #endif
 
+        if (widenToNativeIntForMul)
+        {
+            divisor->gtType = TYP_I_IMPL;
+        }
         divisor->AsIntCon()->SetIconValue(magic);
 
-        if (isDiv && !postShift && type == TYP_I_IMPL)
+        if (isDiv && !postShift && (type == TYP_I_IMPL))
         {
             divMod->SetOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
-            divMod->gtFlags |= GTF_UNSIGNED;
+            divMod->SetUnsigned();
         }
         else
         {
-            // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
+#ifdef TARGET_ARM64
+            // 64-bit MUL is more expensive than UMULL on ARM64.
+            genTreeOps mulOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
+#else
+            // 64-bit IMUL is less expensive than MUL eax:edx on x64.
+            genTreeOps mulOper = simpleMul ? GT_MUL : GT_MULHI;
+#endif
+            // Insert a new multiplication node before the existing GT_UDIV/GT_UMOD node.
             // The existing node will later be transformed into a GT_RSZ/GT_SUB that
             // computes the final result. This way don't need to find and change the use
             // of the existing node.
-            GenTree* mulhi = comp->gtNewOperNode(simpleMul ? GT_MUL : GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
-            mulhi->gtFlags |= GTF_UNSIGNED;
+            GenTree* mulhi = comp->gtNewOperNode(mulOper, TYP_I_IMPL, adjustedDividend, divisor);
+            mulhi->SetUnsigned();
             BlockRange().InsertBefore(divMod, mulhi);
-            if (!firstNode)
+            if (firstNode == nullptr)
+            {
                 firstNode = mulhi;
+            }
 
             if (postShift)
             {
                 GenTree* shiftBy = comp->gtNewIconNode(postShift, TYP_INT);
                 BlockRange().InsertBefore(divMod, shiftBy);
 
-                if (isDiv && type == TYP_I_IMPL)
+                if (isDiv && (type == TYP_I_IMPL))
                 {
                     divMod->SetOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
@@ -5361,8 +5393,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             {
 #ifdef TARGET_ARMARCH
                 divMod->SetOper(GT_CAST);
-                divMod->gtFlags |= GTF_UNSIGNED;
-                divMod->AsCast()->gtCastType = TYP_UINT;
+                divMod->SetUnsigned();
+                divMod->AsCast()->gtCastType = TYP_INT;
 #else
                 divMod->SetOper(GT_BITCAST);
 #endif
@@ -5371,8 +5403,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
         }
 
-        if (firstNode)
+        if (firstNode != nullptr)
+        {
             ContainCheckRange(firstNode, divMod);
+        }
+
         return true;
     }
 #endif
@@ -5913,7 +5948,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
 PhaseStatus Lowering::DoPhase()
 {
-    // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
+    // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
     // data structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
     if (comp->compMethodRequiresPInvokeFrame())

@@ -1428,7 +1428,7 @@ public:
     static bool OperIsMul(genTreeOps gtOper)
     {
         return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
                || (gtOper == GT_MUL_LONG)
 #endif
             ;
@@ -2112,13 +2112,13 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
         gtFlags |= GTF_UNSIGNED;
     }
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -2229,7 +2229,6 @@ public:
     bool gtRequestSetFlags();
 
 #ifdef DEBUG
-    bool       gtIsValid64RsltMul();
     static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
 #endif
 
@@ -3016,6 +3015,14 @@ struct GenTreeOp : public GenTreeUnOp
     {
         return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
     }
+
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+    bool IsValidLongMul();
+#endif
+
+#if !defined(TARGET_64BIT) && defined(DEBUG)
+    void DebugCheckLongMul();
+#endif
 
 #if DEBUGGABLE_GENTREE
     GenTreeOp() : GenTreeUnOp(), gtOp2(nullptr)

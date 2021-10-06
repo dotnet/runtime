@@ -1,19 +1,7 @@
 <Project DefaultTargets="Build">
-  <Import Project="Directory.Build.props" />
-
-  <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)Common\dirs.proj" />
-  </ItemGroup>
-
+  <Import Project="Common\dirs.proj" />
   <Import Project="Directory.Build.targets" />
-  <Import Project="Common\dir.traversal.targets" />
-
-  <PropertyGroup>
-    <TraversalBuildDependsOn>
-      BatchRestorePackages;
-      $(TraversalBuildDependsOn);
-    </TraversalBuildDependsOn>
-  </PropertyGroup>
+  <Import Project="run.proj" />
 
   <ItemGroup>
     <RestoreProjects Include="Common\test_dependencies_fs\test_dependencies.fsproj" />
@@ -23,14 +11,29 @@
     <RestoreProjects Include="Common\ilasm\ilasm.ilproj" />
   </ItemGroup>
 
-  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages" Condition="$(__SkipTargetingPackBuild) != 'true'">
-    <Message Text="Building Targeting Pack" Importance="High" />
-    <Error Text="TargetOS has not been specified. Please do that then run build again." Condition="'$(TargetOS)' == 'AnyOS'" />
+  <ItemGroup>
+    <TestBuildSteps Include="ManagedBuild" />
+    <TestBuildSteps Include="CheckTestBuildStep" />
+    <TestBuildSteps Include="GenerateLayout" />
+    <TestBuildSteps Include="RestorePackages" />
+    <TestBuildSteps Include="BuildTestWrappers" />
+    <TestBuildSteps Include="CrossgenFramework" />
+    <TestBuildSteps Include="CreateAndroidApps" />
+    <TestBuildSteps Include="CreateIosApps" />
+    <TestBuildSteps Include="BuildMonoAot" />
+  </ItemGroup>
+
+  <Target Name="TestBuild" DependsOnTargets="@(TestBuildSteps)" />
+
+  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages">
+    <Message Text="$(MsgPrefix)Building Targeting Pack" Importance="High" />
+    <Error Text="$(ErrMsgPrefix)$(MsgPrefix)ERROR: TargetOS has not been specified. Please do that then run build again."
+      Condition="'$(TargetOS)' == 'AnyOS'" />
     <MSBuild Projects="Common\external\external.csproj"
              Targets="Build" />
   </Target>
 
-  <Target Name="BatchRestorePackages" Condition="$(__SkipPackageRestore) != 'true'">
+  <Target Name="BatchRestorePackages">
     <Message Importance="High" Text="[$([System.DateTime]::Now.ToString('HH:mm:ss.ff'))] Restoring all packages..." />
 
     <!-- restore all csproj's with PackageReferences in one pass -->
@@ -51,5 +54,129 @@
   </Target>
 
   <!-- Override RestorePackages from dir.traversal.targets and do a batch restore -->
-  <Target Name="RestorePackages" DependsOnTargets="BatchRestorePackages" />
+  <Target Name="RestorePackages"
+      DependsOnTargets="BatchRestorePackages"
+      Condition="'$(__SkipRestorePackages)' != '1'" />
+
+  <Target Name="ManagedBuild"
+      DependsOnTargets="BuildManagedTestGroups"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__SkipManaged)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+
+  <Target Name="BuildManagedTestGroups" DependsOnTargets="RestorePackages;ResolveDisabledProjects">
+    <Message Importance="High" Text="$(MsgPrefix)Building managed test components" />
+    <!-- Execute msbuild test build in stages - workaround for excessive data retention in MSBuild ConfigCache -->
+    <!-- See https://github.com/Microsoft/msbuild/issues/2993 -->
+
+    <!-- We need to build group #1 manually as it doesn't have a _GroupStartsWith item associated with it, see the comment in Common\dirs.proj -->
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup;CopyNativeTestBinaries" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
+    <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup;CopyNativeTestBinaries" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1" />
+  </Target>
+
+  <Target Name="BuildManagedTestGroup"
+      DependsOnTargets="ResolveDisabledProjects"
+      Condition="'$(__SkipManaged)' != '1' and '$(__CopyNativeTestBinaries)' != '1'" >
+
+    <PropertyGroup>
+      <GroupBuildCmd>$(DotNetCli) msbuild</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) $(MSBuildThisFileFullPath)</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /t:Build</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetArchitecture=$(TargetArchitecture)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:Configuration=$(Configuration)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:LibrariesConfiguration=$(LibrariesConfiguration)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:TargetOS=$(TargetOS)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeFlavor=$(RuntimeFlavor)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:RuntimeVariant=$(RuntimeVariant)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:CLRTestBuildAllTargets=$(CLRTestBuildAllTargets)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:__TestGroupToBuild=$(__TestGroupToBuild)"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) "/p:__SkipRestorePackages=1"</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /nodeReuse:false</GroupBuildCmd>
+      <GroupBuildCmd>$(GroupBuildCmd) /maxcpucount</GroupBuildCmd>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="$(MsgPrefix)Building managed test group $(__TestGroupToBuild): $(GroupBuildCmd)" />
+
+    <Exec Command="$(GroupBuildCmd)" />
+  </Target>
+
+  <!-- In split pipeline mode (in the lab) we're using the native component copying step to generate the test execution scripts -->
+  <Target Name="CopyNativeTestBinaries"
+      DependsOnTargets="CopyAllNativeTestProjectBinaries"
+      AfterTargets="ResolveDisabledProjects"
+      Condition="'$(__CopyNativeTestBinaries)' == '1'">
+
+    <Message Importance="High" Text="$(MsgPrefix)Copied native binaries for test group $(__TestGroupToBuild)" />
+  </Target>
+
+  <Target Name="CheckTestBuildStep"
+      DependsOnTargets="CheckTestBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+
+  <Target Name="GenerateLayout"
+      DependsOnTargets="CreateTestOverlay"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
+
+  <Target Name="BuildTestWrappers"
+      DependsOnTargets="CreateAllWrappers"
+      AfterTargets="ManagedBuild;RestorePackages"
+      Condition="'$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and !$(MonoAot) and !$(MonoFullAot) and ('$(__BuildTestWrappersOnly)' == '1' or ('$(__SkipTestWrappers)' != '1' and '$(__SkipManaged)' != '1'))" />
+
+  <Target Name="CrossgenFramework"
+      DependsOnTargets="GenerateLayout"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__DoCrossgen2)' == '1' and !$(MonoAot) and !$(MonoFullAot)" >
+
+    <PropertyGroup>
+      <CrossgenDir>$(__BinDir)</CrossgenDir>
+      <CrossgenDir Condition="'$(TargetArchitecture)' == 'arm'">$(CrossgenDir)\x64</CrossgenDir>
+      <CrossgenDir Condition="'$(TargetArchitecture)' == 'arm64'">$(CrossgenDir)\x64</CrossgenDir>
+      <CrossgenDir Condition="'$(TargetArchitecture)' == 'x86'">$(CrossgenDir)\x64</CrossgenDir>
+
+      <CrossgenOutputDir>$(__TestIntermediatesDir)\crossgen.out</CrossgenOutputDir>
+
+      <CrossgenCmd>$(DotNetCli)</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) "$(CORE_ROOT)\R2RTest\R2RTest.dll"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) compile-framework</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) -cr "$(CORE_ROOT)"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --output-directory "$(CrossgenOutputDir)"</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --release</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --nocleanup</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --target-arch $(TargetArchitecture)</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) -dop $(NUMBER_OF_PROCESSORS)</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) -m "$(CORE_ROOT)\StandardOptimizationData.mibc"</CrossgenCmd>
+
+      <CrossgenCmd Condition="'$(__CreatePdb)' != ''">$(CrossgenCmd) --pdb</CrossgenCmd>
+      <CrossgenCmd Condition="'$(__CreatePerfMap)' != ''">$(CrossgenCmd) --perfmap</CrossgenCmd>
+      <CrossgenCmd Condition="'$(__CompositeBuildMode)' != ''">$(CrossgenCmd) --composite</CrossgenCmd>
+      <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
+
+      <CrossgenCmd>$(CrossgenCmd) --verify-type-and-field-layout</CrossgenCmd>
+      <CrossgenCmd>$(CrossgenCmd) --crossgen2-path "$(CrossgenDir)\crossgen2\crossgen2.dll"</CrossgenCmd>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="$(MsgPrefix)Compiling framework using Crossgen2: $(CrossgenCmd)" />
+    <Exec Command="$(CrossgenCmd)" />
+
+    <ItemGroup>
+      <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.dll" />
+      <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.ni.pdb" Condition="'$(__CreatePdb)' != ''" />
+    </ItemGroup>
+
+    <Move SourceFiles="@(CrossgenOutputFiles)" DestinationFolder="$(CORE_ROOT)" />
+    <Copy Condition="'$(__CreatePdb)' != ''" SourceFiles="$(__BinDir)\PDB\System.Private.CoreLib.ni.pdb" DestinationFolder="$(CORE_ROOT)" />
+  </Target>
+
+  <Target Name="CreateAndroidApps"
+      DependsOnTargets="BuildAllAndroidApp"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and $(RunWithAndroid)" />
+
+  <Target Name="CreateIosApps"
+      DependsOnTargets="BuildAlliOSApp"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator')" />
+
+  <Target Name="BuildMonoAot"
+      DependsOnTargets="MonoAotCompileTests"
+      AfterTargets="ManagedBuild"
+      Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__GenerateLayoutOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and ($(MonoAot) or $(MonoFullAot))" />
 </Project>

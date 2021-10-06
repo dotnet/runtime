@@ -4901,6 +4901,7 @@ public:
     BasicBlock* fgLastBB;         // End of the basic block list
     BasicBlock* fgFirstColdBlock; // First block to be placed in the cold section
     BasicBlock* fgEntryBB;        // For OSR, the original method's entry point
+    BasicBlock* fgOSREntryBB;     // For OSR, the logical entry point (~ patchpoint)
 #if defined(FEATURE_EH_FUNCLETS)
     BasicBlock* fgFirstFuncletBB; // First block of outlined funclets (to allow block insertion before the funclets)
 #endif
@@ -5210,6 +5211,7 @@ public:
 #endif
 
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
+    void fgFixEntryFlowForOSR();
 
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
@@ -5814,7 +5816,7 @@ public:
 
     unsigned fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting = nullptr);
 
-    void fgRemoveEmptyBlocks();
+    void fgPostImportationCleanup();
 
     void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
     void fgUnlinkStmt(BasicBlock* block, Statement* stmt);

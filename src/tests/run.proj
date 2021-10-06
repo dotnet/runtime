@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="Directory.Build.props" />
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' != 'true' ">sh</TestScriptExtension>
     <TestScriptExtension Condition="'$(TestWrapperTargetsWindows)' == 'true' ">cmd</TestScriptExtension>
+    <Language>C#</Language>
+    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
@@ -186,6 +187,7 @@ $(_XunitEpilog)
       <IsMobile>false</IsMobile>
       <IsMobile Condition=" '$(TargetOS)' == 'Android' Or '$(TargetOS)' == 'iOS' Or '$(TargetOS)' == 'iOSSimulator' ">true</IsMobile>
     </PropertyGroup>
+
     <PropertyGroup>
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' and '$(IsMobile)'=='false' ">
         <![CDATA[
@@ -844,37 +846,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   <Import Project="$(RepoRoot)/src/tests/Common/tests.targets" />
   <Import Project="$(RepoRoot)/src/tests/Common/publishdependency.targets" />
 
-  <Target Name="CreateTestOverlay">
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CopyDependencyToCoreRoot"
-             Properties="Language=C#;OutputRid=$(OutputRid);RuntimeIdentifier=$(OutputRid)" />
-  </Target>
-
-  <Target Name="Build">
-
-    <!-- generate project.lock.json file corresponding to above json file -->
-    <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj"
-             Condition=" '$(BuildWrappers)'=='true' " />
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="BuildAllAndroidApp"
-             Condition=" '$(RunWithAndroid)'=='true' " />
-
-    <!-- Default for building -->
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateAllWrappers"
-             Properties="_CMDDIR=%(TestDirectories.Identity)"
-             Condition=" '$(BuildWrappers)'=='true' " />
-
-    <!-- Execution -->
-
-    <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="CreateTestOverlay"
-             Condition=" '$(GenerateRuntimeLayout)'=='true' "/>
-
-    <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
-             Condition=" '$(RunTests)'=='true' "/>
-  </Target>
+  <Target Name="CreateTestOverlay" DependsOnTargets="CopyDependencyToCoreRoot" />
 
   <Target Name="Clean">
     <RemoveDir Condition=" '$(BuildWrappers)'=='true'" Directories="$(MSBuildThisFileDirectory)../$(XunitWrapperGeneratedCSDirBase);" ContinueOnError="WarnAndContinue" />

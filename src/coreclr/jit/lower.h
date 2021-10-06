@@ -296,6 +296,7 @@ private:
     void LowerIndir(GenTreeIndir* ind);
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
+    GenTree* LowerMul(GenTreeOp* mul);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
