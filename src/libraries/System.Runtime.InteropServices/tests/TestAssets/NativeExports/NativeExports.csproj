@@ -83,6 +83,7 @@
     <Error Condition="'$(TargetTriple)' == ''" Text="A target triple was not specified for the native components build. Update the 'GetAppleCrossBuildArgumentsForDNNE' target to specify a triple." />
     <Error Condition="'$(XCodeSdkName)' == ''" Text="The name of the XCode SDK for the target platform, as passed to xcrun to locate the sdk, must be specified." />
 
+    <!-- xcrun is used to locate the XCode SDKs and tools within them. See the xcrun manpage for usage information. -->
     <Exec Command="xcrun --sdk $(XCodeSdkName) --show-sdk-path"
           EchoOff="true"
           ConsoleToMsBuild="true"

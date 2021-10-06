@@ -33,10 +33,10 @@
   <ItemGroup Condition="'@(EnabledGenerators)' != ''
                         and @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'DllImportGenerator'))
                         and '$(IncludeDllImportGeneratorSources)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedDllImportAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/GeneratedMarshallingAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)Common/src/System/Runtime/InteropServices/ArrayMarshaller.cs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedDllImportAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\GeneratedMarshallingAttribute.cs" />
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\Runtime\InteropServices\ArrayMarshaller.cs" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"
@@ -59,7 +59,7 @@
         <DefineConstants>$(DefineConstants);DLLIMPORTGENERATOR_INTERNALUNSAFE</DefineConstants>
     </PropertyGroup>
 
-    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices/gen/DllImportGenerator/DllImportGenerator.csproj"
+    <MSBuild Projects="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj"
              RemoveProperties="TargetFramework">
       <Output TaskParameter="TargetOutputs" PropertyName="DllImportGeneratorOutputPath" />
     </MSBuild>
