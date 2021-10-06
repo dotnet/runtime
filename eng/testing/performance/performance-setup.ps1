@@ -47,13 +47,13 @@ function Verified-Move-Item {
 function Verified-Copy-Item {
     [CmdletBinding()]
     param(
-    [Parameter(mandatory=$true)]
-    [string]$Path,
-    [Parameter(mandatory=$true)]
-    [string]$Destination
+        [Parameter(mandatory=$true)]
+        [string]$Path,
+        [Parameter(mandatory=$true)]
+        [string]$Destination
     )
     
-    Copy-Item -path $path $Destination
+    Copy-Item -path $Path $Destination
     if (!$?) {
         Write-Output "Failed to copy $Path to $Destination"
         exit 1
@@ -63,8 +63,8 @@ function Verified-Copy-Item {
 function Verify-Robocopy {
     [CmdletBinding()]
     param(
-    [Parameter(mandatory=$true)]
-    [string]$Source
+        [Parameter(mandatory=$true)]
+        [string]$Source
     )
     
     if ($LASTEXITCODE -ne 0 -or !$?) {
@@ -198,7 +198,7 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-    Verified-Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Verified-Copy-Item -Path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -208,9 +208,9 @@ if ($iOSMono) {
         mkdir $WorkItemDirectory
     }
     if($iOSLlvmBuild) {
-        Verified-Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
+        Verified-Copy-Item -Path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
-        Verified-Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Verified-Copy-Item -Path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
