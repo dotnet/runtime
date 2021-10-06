@@ -29,38 +29,48 @@ Param(
 )
 
 function Verified-Move-Item {
-	[Parameter(Mandatory)]
-	[string]$Path
-	[Parameter(Mandatory)]
-	[string]$Destination
-	
-	Move-Item -Path $Path -Destination $Destination
-	if (!$?) {
-		Write-Output "Failed to move $Source to $Destination"
-		exit 1
-	}
+    [CmdletBinding()]
+    param(
+        [Parameter(mandatory=$true)]
+        [string]$Path,
+        [Parameter(mandatory=$true)]
+        [string]$Destination
+    )
+    
+    Move-Item -Path $Path -Destination $Destination
+    if (!$?) {
+        Write-Output "Failed to move $Path to $Destination"
+        exit 1
+    }
 }
 
 function Verified-Copy-Item {
-	[Parameter(Mandatory)]
-	[string]$path
-	[Parameter(Mandatory)]
-	[string]$Destination
-	
-	Copy-Item -path $path $Destination
-	if (!$?) {
-		Write-Output "Failed to copy $Source to $Destination"
-		exit 1
-	}
+    [CmdletBinding()]
+    param(
+        [Parameter(mandatory=$true)]
+        [string]$Path,
+        [Parameter(mandatory=$true)]
+        [string]$Destination
+    )
+    
+    Copy-Item -path $Path $Destination
+    if (!$?) {
+        Write-Output "Failed to copy $Path to $Destination"
+        exit 1
+    }
 }
 
 function Verify-Robocopy {
-	[Parameter(Mandatory)]
-	[string]$Source
-	if ($LASTEXITCODE -ne 0 -or !$?) {
-		Write-Output "Failed to copy ${Source}: exit code $LASTEXITCODE"
-		exit $LASTEXITCODE
-	}
+    [CmdletBinding()]
+    param(
+        [Parameter(mandatory=$true)]
+        [string]$Source
+    )
+    
+    if ($LASTEXITCODE -ne 0 -or !$?) {
+        Write-Output "Failed to copy ${Source}: exit code $LASTEXITCODE"
+        exit $LASTEXITCODE
+    }
 }
 
 $RunFromPerformanceRepo = ($Repository -eq "dotnet/performance") -or ($Repository -eq "dotnet-performance")
@@ -188,7 +198,7 @@ if ($AndroidMono) {
     {
         mkdir $WorkItemDirectory
     }
-    Verified-Copy-Item -path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
+    Verified-Copy-Item -Path "$SourceDirectory\artifacts\bin\AndroidSampleApp\arm64\Release\android-arm64\publish\apk\bin\HelloAndroid.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
 }
 
@@ -198,9 +208,9 @@ if ($iOSMono) {
         mkdir $WorkItemDirectory
     }
     if($iOSLlvmBuild) {
-        Verified-Copy-Item -path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
+        Verified-Copy-Item -Path "$SourceDirectory\iosHelloWorld\llvm" $PayloadDirectory\iosHelloWorld\llvm -Recurse
     } else {
-        Verified-Copy-Item -path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
+        Verified-Copy-Item -Path "$SourceDirectory\iosHelloWorld\nollvm" $PayloadDirectory\iosHelloWorld\nollvm -Recurse
     }
 
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
