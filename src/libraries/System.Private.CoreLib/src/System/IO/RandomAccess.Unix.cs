@@ -40,12 +40,12 @@ namespace System.IO
                     result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
                     if (result == -1)
                     {
-                        // Some devices (such as /dev/tty) are reported as seekable by macOS but pread is unable to handle them and returns ENXIO.
-                        // Historically we were able to handle /dev/tty using read so we need to fallback to read for that case.
+                        // We need to fallback to the non-offset version for certain file types
+                        // e.g: character devices (such as /dev/tty), pipes, and sockets.
                         Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                        AssertPReadPWriteKnownErrors(errorInfo.Error);
 
-                        if (errorInfo.Error == Interop.Error.ENXIO)
+                            if (errorInfo.Error == Interop.Error.ENXIO ||
+                                errorInfo.Error == Interop.Error.ESPIPE)
                         {
                             handle.SupportsRandomAccess = false;
                             result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
@@ -118,12 +118,12 @@ namespace System.IO
                         bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
                         if (bytesWritten == -1)
                         {
-                            // Some devices (such as /dev/tty) are reported as seekable by macOS but pwrite is unable to handle them and returns ENXIO.
-                            // Historically we were able to handle /dev/tty using write so we need to fallback to write for that case.
+                            // We need to fallback to the non-offset version for certain file types
+                            // e.g: character devices (such as /dev/tty), pipes, and sockets.
                             Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                            AssertPReadPWriteKnownErrors(errorInfo.Error);
 
-                            if (errorInfo.Error == Interop.Error.ENXIO)
+                            if (errorInfo.Error == Interop.Error.ENXIO ||
+                                errorInfo.Error == Interop.Error.ESPIPE)
                             {
                                 handle.SupportsRandomAccess = false;
                                 bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
@@ -161,13 +161,6 @@ namespace System.IO
             }
 #endif
             return byteCount;
-        }
-
-        private static void AssertPReadPWriteKnownErrors(Interop.Error error)
-        {
-            // We want to discover more errors that could make pread/pwrite fail and add unit tests for them.
-            Debug.Assert(error == Interop.Error.EBADF || error == Interop.Error.ENXIO,
-                $"Unexpected error: {error}");
         }
 
         internal static unsafe void WriteGatherAtOffset(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers, long fileOffset)
