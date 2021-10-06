@@ -50,6 +50,7 @@ void Compiler::fgInit()
     fgLastBB         = nullptr;
     fgFirstColdBlock = nullptr;
     fgEntryBB        = nullptr;
+    fgOSREntryBB     = nullptr;
 
 #if defined(FEATURE_EH_FUNCLETS)
     fgFirstFuncletBB  = nullptr;
@@ -3134,28 +3135,6 @@ void Compiler::fgFindBasicBlocks()
         return;
     }
 
-    // If we are doing OSR, add an entry block that simply branches to the right IL offset.
-    if (opts.IsOSR())
-    {
-        // Remember the original entry block in case this method is tail recursive.
-        fgEntryBB = fgLookupBB(0);
-
-        // Find the OSR entry block.
-        assert(info.compILEntry >= 0);
-        BasicBlock* bbTarget = fgLookupBB(info.compILEntry);
-
-        fgEnsureFirstBBisScratch();
-        fgFirstBB->bbJumpKind = BBJ_ALWAYS;
-        fgFirstBB->bbJumpDest = bbTarget;
-        fgAddRefPred(bbTarget, fgFirstBB);
-
-        JITDUMP("OSR: redirecting flow at entry via " FMT_BB " to " FMT_BB " (il offset 0x%x)\n", fgFirstBB->bbNum,
-                bbTarget->bbNum, info.compILEntry);
-
-        // rebuild lookup table... should be able to avoid this by leaving room up front.
-        fgInitBBLookup();
-    }
-
     /* Mark all blocks within 'try' blocks as such */
 
     if (info.compXcptnsCount == 0)
@@ -3543,6 +3522,49 @@ void Compiler::fgFindBasicBlocks()
 #endif
 
     fgNormalizeEH();
+}
+
+//------------------------------------------------------------------------
+// fgFixEntryFlowForOSR: add control flow path from method start to
+//   the appropriate IL offset for the OSR method
+//
+// Notes:
+//    This is simply a branch from the method entry to the OSR entry --
+//    the block where the OSR method should begin execution.
+//
+//    If the OSR entry is within a try we will eventually need add
+//    suitable step blocks to reach the OSR entry without jumping into
+//    the middle of the try. But we defer that until after importation.
+//    See fgPostImportationCleanup.
+//
+void Compiler::fgFixEntryFlowForOSR()
+{
+    // Ensure lookup IL->BB lookup table is valid
+    //
+    fgInitBBLookup();
+
+    // Remember the original entry block in case this method is tail recursive.
+    //
+    fgEntryBB = fgLookupBB(0);
+
+    // Find the OSR entry block.
+    //
+    assert(info.compILEntry >= 0);
+    BasicBlock* const osrEntry = fgLookupBB(info.compILEntry);
+
+    // Remember the OSR entry block so we can find it again later.
+    //
+    fgOSREntryBB = osrEntry;
+
+    // Now branch from method start to the right spot.
+    //
+    fgEnsureFirstBBisScratch();
+    fgFirstBB->bbJumpKind = BBJ_ALWAYS;
+    fgFirstBB->bbJumpDest = osrEntry;
+    fgAddRefPred(osrEntry, fgFirstBB);
+
+    JITDUMP("OSR: redirecting flow at entry from entry " FMT_BB " to OSR entry " FMT_BB " for the importer\n",
+            fgFirstBB->bbNum, osrEntry->bbNum);
 }
 
 /*****************************************************************************
