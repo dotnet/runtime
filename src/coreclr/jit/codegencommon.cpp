@@ -1666,9 +1666,7 @@ AGAIN:
 
     rv1 = op1;
     rv2 = op2;
-#ifdef TARGET_ARM64
     assert(cns == 0);
-#endif
 
 FOUND_AM:
 
