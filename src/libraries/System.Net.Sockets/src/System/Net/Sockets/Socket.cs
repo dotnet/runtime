@@ -3693,7 +3693,8 @@ namespace System.Net.Sockets
         private void UpdateStatusAfterSocketOptionErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
         {
             // Don't disconnect socket for unknown options.
-            bool disconnectOnFailure = error != SocketError.ProtocolOption;
+            bool disconnectOnFailure = error != SocketError.ProtocolOption &&
+                                       error != SocketError.OperationNotSupported;
             UpdateStatusAfterSocketErrorAndThrowException(error, disconnectOnFailure, callerName);
         }
 
