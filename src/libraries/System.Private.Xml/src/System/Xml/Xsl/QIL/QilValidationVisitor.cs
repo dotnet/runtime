@@ -185,7 +185,7 @@ namespace System.Xml.Xsl.Qil
             string? s = n.Annotation as string;
             if (s != null)
             {
-                message = s + "\n" + message;
+                message = $"{s}\n{message}";
             }
             n.Annotation = message;
             Debug.Fail(message);

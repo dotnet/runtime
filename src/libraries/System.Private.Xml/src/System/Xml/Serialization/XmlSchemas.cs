@@ -614,8 +614,8 @@ namespace System.Xml.Serialization
         private static string MergeFailedMessage(XmlSchemaObject src, XmlSchemaObject dest, string? ns)
         {
             string err = SR.Format(SR.XmlSerializableMergeItem, ns, GetSchemaItem(src, ns, null));
-            err += "\r\n" + Dump(src);
-            err += "\r\n" + Dump(dest);
+            err += $"\r\n{Dump(src)}";
+            err += $"\r\n{Dump(dest)}";
             return err;
         }
 
