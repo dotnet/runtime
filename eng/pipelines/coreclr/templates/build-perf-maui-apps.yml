@@ -91,12 +91,15 @@ steps:
       cd MauiTesting
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.targets ./Directory.Build.targets
+      ls -laR
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
     condition: succeededOrFailed()
 
 
   - script: |
+      chmod -R -a+r
+      ls -laR
       ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
     condition: succeededOrFailed()
     displayName: Build MAUI Android
