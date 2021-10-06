@@ -152,6 +152,7 @@ usage_list+=("-dir:xxx - build all tests in a given directory");
 usage_list+=("-tree:xxx - build all tests in a given subtree");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
+usage_list+=("-priority1: include priority=1 tests in the build.")
 usage_list+=("-composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
 usage_list+=("-perfmap: emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
 usage_list+=("-allTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
