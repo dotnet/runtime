@@ -485,6 +485,8 @@ namespace System.Net.Http
                     case null:
                         // Done receiving: copy over trailing headers.
                         CopyTrailersToResponseMessage(_response!);
+
+                        _responseDataPayloadRemaining = -1; // Set to -1 to indicate EOS.
                         return;
                     case Http3FrameType.Data:
                         // The sum of data frames must equal content length. Because this method is only
@@ -500,7 +502,7 @@ namespace System.Net.Http
                         }
                         break;
                     default:
-                        Debug.Fail($"Recieved unexpected frame type {frameType}.");
+                        Debug.Fail($"Received unexpected frame type {frameType}.");
                         return;
                 }
             }
