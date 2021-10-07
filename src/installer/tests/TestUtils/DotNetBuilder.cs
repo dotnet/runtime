@@ -5,7 +5,7 @@ using Microsoft.DotNet.Cli.Build;
 using System;
 using System.IO;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace Microsoft.DotNet.CoreSetup.Test
 {
     /// <summary>
     /// Helper class for creating a mock version of a dotnet installation
@@ -68,16 +68,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         /// Use a mock version of HostFxr.
         /// </summary>
         /// <param name="version">Version to add</param>
-        /// <remarks>
-        /// Currently, the only mock version of HostFxr that we have is mockhostfxr_2_2.
-        /// </remarks>
         public DotNetBuilder AddMockHostFxr(Version version)
         {
             string hostfxrPath = Path.Combine(_path, "host", "fxr", version.ToString());
             Directory.CreateDirectory(hostfxrPath);
-            bool hasCustomErrorWriter = version.Major >= 3;
 
-            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(hasCustomErrorWriter ? "mockhostfxr" : "mockhostfxr_2_2");
+            string mockHostFxrFileNameBase = version switch
+            {
+                { Major: 2, Minor: 2 } => "mockhostfxr_2_2",
+                { Major: 5, Minor: 0 } => "mockhostfxr_5_0",
+                _ => throw new InvalidOperationException($"Unsupported version {version} of mockhostfxr.")
+            };
+
+            string mockHostFxrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform(mockHostFxrFileNameBase);
             File.Copy(
                 Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockHostFxrFileName),
                 Path.Combine(hostfxrPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")),

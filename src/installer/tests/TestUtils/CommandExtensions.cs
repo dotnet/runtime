@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.DotNet.CoreSetup.Test;
 using System;
 using System.IO;
 
-namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
+namespace Microsoft.DotNet.CoreSetup.Test
 {
     public static class CommandExtensions
     {
@@ -38,11 +39,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public static Command DotNetRoot(this Command command, string dotNetRoot, string architecture = null)
         {
             if (!string.IsNullOrEmpty(architecture))
-                return command.EnvironmentVariable($"DOTNET_ROOT_{architecture.ToUpper()}", dotNetRoot);
+                return command.EnvironmentVariable(Constants.DotnetRoot.ArchitectureEnvironmentVariablePrefix + architecture.ToUpper(), dotNetRoot);
 
             return command
-                .EnvironmentVariable("DOTNET_ROOT", dotNetRoot)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", dotNetRoot);
+                .EnvironmentVariable(Constants.DotnetRoot.EnvironmentVariable, dotNetRoot)
+                .EnvironmentVariable(Constants.DotnetRoot.WindowsX86EnvironmentVariable, dotNetRoot);
         }
 
         public static Command MultilevelLookup(this Command command, bool enable)
