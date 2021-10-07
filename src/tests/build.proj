@@ -145,7 +145,7 @@
       <CrossgenCmd>$(CrossgenCmd) -m "$(CORE_ROOT)\StandardOptimizationData.mibc"</CrossgenCmd>
 
       <CrossgenCmd Condition="'$(__CreatePdb)' != ''">$(CrossgenCmd) --pdb</CrossgenCmd>
-      <CrossgenCmd Condition="'$(__CreatePerfMap)' != ''">$(CrossgenCmd) --perfmap</CrossgenCmd>
+      <CrossgenCmd Condition="'$(__CreatePerfmap)' != ''">$(CrossgenCmd) --perfmap --perfmap-format-version 1</CrossgenCmd>
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' != ''">$(CrossgenCmd) --composite</CrossgenCmd>
       <CrossgenCmd Condition="'$(__CompositeBuildMode)' == ''">$(CrossgenCmd) --crossgen2-parallelism 1</CrossgenCmd>
 
@@ -159,10 +159,10 @@
     <ItemGroup>
       <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.dll" />
       <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.ni.pdb" Condition="'$(__CreatePdb)' != ''" />
+      <CrossgenOutputFiles Include="$(CrossgenOutputDir)\*.ni.r2rmap" Condition="'$(__CreatePerfmap)' != ''" />
     </ItemGroup>
 
     <Move SourceFiles="@(CrossgenOutputFiles)" DestinationFolder="$(CORE_ROOT)" />
-    <Copy Condition="'$(__CreatePdb)' != ''" SourceFiles="$(__BinDir)\PDB\System.Private.CoreLib.ni.pdb" DestinationFolder="$(CORE_ROOT)" />
   </Target>
 
   <Target Name="CreateAndroidApps"
