@@ -78,7 +78,7 @@ namespace System.IO.Tests
             await ThrowWhenHandlePositionIsChanged(useAsync: true);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void DeleteOnClose_FailedShareDoesNotDeleteFile()
         {
             string fileName = GetTestFilePath();
