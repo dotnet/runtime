@@ -66,8 +66,8 @@
     <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.ref+libs.src</DefaultLibrariesSubsets>
     <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultLibrariesSubsets)+libs.pretest</DefaultLibrariesSubsets>
 
-    <DefaultHostSubsets>host.native+host.tools</DefaultHostSubsets>
-    <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.pkg+host.tests</DefaultHostSubsets>
+    <DefaultHostSubsets>host.native+host.tools+host.pkg</DefaultHostSubsets>
+    <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.tests</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)'"></DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">host.native</DefaultHostSubsets>
 
