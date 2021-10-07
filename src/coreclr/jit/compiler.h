@@ -11288,6 +11288,7 @@ public:
             case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
+            case GT_FIELD:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
@@ -11370,21 +11371,6 @@ public:
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
-                }
-                break;
-            }
-
-            case GT_FIELD:
-            {
-                GenTreeField* const field = node->AsField();
-
-                if (field->gtFldObj != nullptr)
-                {
-                    result = WalkTree(&field->gtFldObj, field);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
                 }
                 break;
             }

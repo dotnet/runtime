@@ -5813,7 +5813,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
     CORINFO_FIELD_HANDLE symHnd          = tree->AsField()->gtFldHnd;
     unsigned             fldOffset       = tree->AsField()->gtFldOffset;
-    GenTree*             objRef          = tree->AsField()->gtFldObj;
+    GenTree*             objRef          = tree->AsField()->GetFldObj();
     bool                 fieldMayOverlap = false;
     bool                 objIsLocal      = false;
 
@@ -5887,7 +5887,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                                   +----------+---------+
                                              |
                               +--------------+-------------+
-                              |   tree->AsField()->gtFldObj   |
+                              |tree->AsField()->GetFldObj()|
                               +--------------+-------------+
 
 
@@ -10617,7 +10617,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
     GenTree* ret = nullptr;
     if (tree->OperGet() == GT_FIELD)
     {
-        GenTree* objRef = tree->AsField()->gtFldObj;
+        GenTree* objRef = tree->AsField()->GetFldObj();
         if (objRef != nullptr)
         {
             GenTree* obj = nullptr;
@@ -11002,6 +11002,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 isQmarkColon = true;
             }
             break;
+
+        case GT_FIELD:
+            return fgMorphField(tree, mac);
 
         case GT_INDEX:
             return fgMorphArrayIndex(tree);
@@ -14827,10 +14830,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     switch (tree->OperGet())
     {
-        case GT_FIELD:
-            tree = fgMorphField(tree, mac);
-            break;
-
         case GT_CALL:
             if (tree->OperMayThrow(this))
             {
@@ -16971,7 +16970,7 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
     noway_assert(tree->OperGet() == GT_FIELD);
 
     GenTreeField* field  = tree->AsField();
-    GenTree*      objRef = field->gtFldObj;
+    GenTree*      objRef = field->GetFldObj();
     GenTree*      obj    = ((objRef != nullptr) && (objRef->gtOper == GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
     noway_assert((tree->gtFlags & GTF_GLOB_REF) || ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR)));
 

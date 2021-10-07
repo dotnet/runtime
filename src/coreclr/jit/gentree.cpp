@@ -1441,6 +1441,13 @@ AGAIN:
                     }
                     break;
 
+                case GT_FIELD:
+                    if (op1->AsField()->gtFldHnd != op2->AsField()->gtFldHnd)
+                    {
+                        return false;
+                    }
+                    break;
+
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                 case GT_RUNTIMELOOKUP:
@@ -1570,25 +1577,6 @@ AGAIN:
 
     switch (oper)
     {
-        case GT_FIELD:
-            if (op1->AsField()->gtFldHnd != op2->AsField()->gtFldHnd)
-            {
-                break;
-            }
-
-            op1 = op1->AsField()->gtFldObj;
-            op2 = op2->AsField()->gtFldObj;
-
-            if (op1 || op2)
-            {
-                if (op1 && op2)
-                {
-                    goto AGAIN;
-                }
-            }
-
-            return true;
-
         case GT_CALL:
             return GenTreeCall::Equals(op1->AsCall(), op2->AsCall());
 
@@ -1709,6 +1697,13 @@ AGAIN:
 
     if (kind & GTK_SMPOP)
     {
+        // Code in importation (see CEE_STFLD in impImportBlockCode), when
+        // spilling, can pass us "lclNum" that is actually a field handle...
+        if (tree->OperIs(GT_FIELD) && (lclNum == (ssize_t)tree->AsField()->gtFldHnd) && !defOnly)
+        {
+            return true;
+        }
+
         if (tree->gtGetOp2IfPresent())
         {
             if (gtHasRef(tree->AsOp()->gtOp1, lclNum, defOnly))
@@ -1751,22 +1746,6 @@ AGAIN:
 
     switch (oper)
     {
-        case GT_FIELD:
-            if (lclNum == (ssize_t)tree->AsField()->gtFldHnd)
-            {
-                if (!defOnly)
-                {
-                    return true;
-                }
-            }
-
-            tree = tree->AsField()->gtFldObj;
-            if (tree)
-            {
-                goto AGAIN;
-            }
-            break;
-
         case GT_CALL:
             if (tree->AsCall()->gtCallThisArg != nullptr)
             {
@@ -2118,6 +2097,11 @@ AGAIN:
                         genTreeHashAdd(hash,
                                        static_cast<unsigned>(reinterpret_cast<uintptr_t>(tree->AsBlk()->GetLayout())));
                     break;
+
+                case GT_FIELD:
+                    hash = genTreeHashAdd(hash, tree->AsField()->gtFldHnd);
+                    break;
+
                 // For the ones below no extra argument matters for comparison.
                 case GT_BOX:
                     break;
@@ -2221,15 +2205,6 @@ AGAIN:
     /* See what kind of a special operator we have here */
     switch (tree->gtOper)
     {
-        case GT_FIELD:
-            if (tree->AsField()->gtFldObj)
-            {
-                temp = tree->AsField()->gtFldObj;
-                assert(temp);
-                hash = genTreeHashAdd(hash, gtHashValue(temp));
-            }
-            break;
-
         case GT_ARR_ELEM:
 
             hash = genTreeHashAdd(hash, gtHashValue(tree->AsArrElem()->gtArrObj));
@@ -5131,13 +5106,6 @@ GenTree** GenTree::gtGetChildPointer(GenTree* parent) const
             }
             break;
 
-        case GT_FIELD:
-            if (this == parent->AsField()->gtFldObj)
-            {
-                return &(parent->AsField()->gtFldObj);
-            }
-            break;
-
         case GT_RET_EXPR:
             if (this == parent->AsRetExpr()->gtInlineCandidate)
             {
@@ -5374,14 +5342,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             }
             return false;
         }
-
-        case GT_FIELD:
-            if (def == this->AsField()->gtFldObj)
-            {
-                *use = &this->AsField()->gtFldObj;
-                return true;
-            }
-            return false;
 
         case GT_ARR_ELEM:
         {
@@ -5840,7 +5800,7 @@ bool GenTree::OperMayThrow(Compiler* comp)
 
         case GT_FIELD:
         {
-            GenTree* fldObj = this->AsField()->gtFldObj;
+            GenTree* fldObj = this->AsField()->GetFldObj();
 
             if (fldObj != nullptr)
             {
@@ -7606,9 +7566,9 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
                 // copied from line 9850
 
                 objp = nullptr;
-                if (tree->AsField()->gtFldObj)
+                if (tree->AsField()->GetFldObj() != nullptr)
                 {
-                    objp = gtClone(tree->AsField()->gtFldObj, false);
+                    objp = gtClone(tree->AsField()->GetFldObj(), false);
                     if (!objp)
                     {
                         return objp;
@@ -7973,6 +7933,15 @@ GenTree* Compiler::gtCloneExpr(
                 copy = new (this, GT_DYN_BLK) GenTreeDynBlk(tree->AsOp()->gtGetOp1(), tree->AsDynBlk()->gtDynamicSize);
                 break;
 
+            case GT_FIELD:
+                copy = new (this, GT_FIELD) GenTreeField(tree->TypeGet(), tree->AsField()->GetFldObj(),
+                                                         tree->AsField()->gtFldHnd, tree->AsField()->gtFldOffset);
+                copy->AsField()->gtFldMayOverlap = tree->AsField()->gtFldMayOverlap;
+#ifdef FEATURE_READYTORUN
+                copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
+#endif
+                break;
+
             case GT_BOX:
                 copy = new (this, GT_BOX)
                     GenTreeBox(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsBox()->gtAsgStmtWhenInlinedBoxValue,
@@ -8123,20 +8092,6 @@ GenTree* Compiler::gtCloneExpr(
             }
 
             copy = gtCloneExprCallHelper(tree->AsCall(), addFlags, deepVarNum, deepVarVal);
-            break;
-
-        case GT_FIELD:
-
-            copy = gtNewFieldRef(tree->TypeGet(), tree->AsField()->gtFldHnd, nullptr, tree->AsField()->gtFldOffset);
-
-            copy->AsField()->gtFldObj = tree->AsField()->gtFldObj
-                                            ? gtCloneExpr(tree->AsField()->gtFldObj, addFlags, deepVarNum, deepVarVal)
-                                            : nullptr;
-            copy->AsField()->gtFldMayOverlap = tree->AsField()->gtFldMayOverlap;
-#ifdef FEATURE_READYTORUN
-            copy->AsField()->gtFieldLookup = tree->AsField()->gtFieldLookup;
-#endif
-
             break;
 
         case GT_ARR_ELEM:
@@ -8967,16 +8922,9 @@ unsigned GenTree::NumChildren()
     }
     else if (OperIsUnary())
     {
-        if (OperGet() == GT_NOP || OperGet() == GT_RETURN || OperGet() == GT_RETFILT)
+        if (AsUnOp()->gtOp1 == nullptr)
         {
-            if (AsOp()->gtOp1 == nullptr)
-            {
-                return 0;
-            }
-            else
-            {
-                return 1;
-            }
+            return 0;
         }
         else
         {
@@ -9055,9 +9003,6 @@ unsigned GenTree::NumChildren()
             case GT_HW_INTRINSIC_CHK:
 #endif // FEATURE_HW_INTRINSICS
                 return 2;
-
-            case GT_FIELD:
-                return 1;
 
             case GT_ARR_ELEM:
                 return 1 + AsArrElem()->gtArrRank;
@@ -9230,9 +9175,6 @@ GenTree* GenTree::GetChild(unsigned childNum)
                     default:
                         unreached();
                 }
-
-            case GT_FIELD:
-                return AsField()->gtFldObj;
 
             case GT_ARR_ELEM:
                 if (childNum == 0)
@@ -9421,6 +9363,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 
         // Unary operators with an optional operand
         case GT_NOP:
+        case GT_FIELD:
         case GT_RETURN:
         case GT_RETFILT:
             if (m_node->AsUnOp()->gtOp1 == nullptr)
@@ -9509,18 +9452,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             m_edge = &m_node->AsBoundsChk()->gtIndex;
             assert(*m_edge != nullptr);
             m_advance = &GenTreeUseEdgeIterator::AdvanceBoundsChk;
-            return;
-
-        case GT_FIELD:
-            if (m_node->AsField()->gtFldObj == nullptr)
-            {
-                m_state = -1;
-            }
-            else
-            {
-                m_edge    = &m_node->AsField()->gtFldObj;
-                m_advance = &GenTreeUseEdgeIterator::Terminate;
-            }
             return;
 
         case GT_ARR_ELEM:
@@ -11923,6 +11854,18 @@ void Compiler::gtDispTree(GenTree*     tree,
 #endif // FEATURE_ARG_SPLIT
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
+        if (tree->OperIs(GT_FIELD))
+        {
+            if (FieldSeqStore::IsPseudoField(tree->AsField()->gtFldHnd))
+            {
+                printf(" #PseudoField:0x%x", tree->AsField()->gtFldOffset);
+            }
+            else
+            {
+                printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
+            }
+        }
+
         if (tree->gtOper == GT_INTRINSIC)
         {
             GenTreeIntrinsic* intrinsic = tree->AsIntrinsic();
@@ -12135,25 +12078,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                     gtDispChild(use.GetNode(), indentStack, (use.GetNext() == nullptr) ? IIArcBottom : IIArc, block);
                 }
             }
-            break;
-
-        case GT_FIELD:
-            if (FieldSeqStore::IsPseudoField(tree->AsField()->gtFldHnd))
-            {
-                printf(" #PseudoField:0x%x", tree->AsField()->gtFldOffset);
-            }
-            else
-            {
-                printf(" %s", eeGetFieldName(tree->AsField()->gtFldHnd), 0);
-            }
-
-            gtDispCommonEndLine(tree);
-
-            if (tree->AsField()->gtFldObj && !topOnly)
-            {
-                gtDispChild(tree->AsField()->gtFldObj, indentStack, IIArcBottom);
-            }
-
             break;
 
         case GT_CALL:
