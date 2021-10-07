@@ -1418,7 +1418,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             foreach (LogEvent logEvent in logger.GetEvents())
             {
-                Assert.True(logEvent.LogLevel <= LogLevel.Information, "All logged events should be les than or equal to Information. No Warnings or Errors.");
+                Assert.True(logEvent.LogLevel <= LogLevel.Information, "All logged events should be less than or equal to Information. No Warnings or Errors.");
 
                 Assert.NotEqual("BackgroundServiceFaulted", logEvent.EventId.Name);
             }
