@@ -27,6 +27,7 @@
       <RpmPackageVersion>$(HostPackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedHostPublishRoot)</InputRoot>
       <RpmFile>$(SharedHostInstallerFile)</RpmFile>
+      <RpmFileCblMariner>$(SharedHostInstallerFileCblMariner)</RpmFileCblMariner>
       <ConfigJsonName>dotnet-sharedhost-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -122,6 +123,12 @@
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
 
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFileCblMariner)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
     <!--
       Clean up dotnet symlink. Later build steps are confused and fail because the symlink points to
       a path that doesn't exist on the build machine.
@@ -135,6 +142,7 @@
       <RpmPackageVersion>$(HostResolverPackageVersion)</RpmPackageVersion>
       <InputRoot>$(HostFxrPublishRoot)</InputRoot>
       <RpmFile>$(HostFxrInstallerFile)</RpmFile>
+      <RpmFileCblMariner>$(HostFxrInstallerFileCblMariner)</RpmFileCblMariner>
       <ConfigJsonName>dotnet-hostfxr-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -214,6 +222,12 @@
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
 
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFileCblMariner)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
   </Target>
 
   <Target Name="GenerateSharedFrameworkRpm">
@@ -222,6 +236,7 @@
       <RpmPackageVersion>$(RuntimePackageVersion)</RpmPackageVersion>
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <RpmFile>$(SharedFrameworkInstallerFile)</RpmFile>
+      <RpmFileCblMariner>$(SharedFrameworkInstallerFileCblMariner)</RpmFileCblMariner>
       <ConfigJsonName>dotnet-sharedframework-rpm_config.json</ConfigJsonName>
       <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
@@ -309,6 +324,12 @@
 
     <Copy SourceFiles="@(GeneratedRpmFiles)"
           DestinationFiles="$(RpmFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFileCblMariner)"
           OverwriteReadOnlyFiles="True"
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
