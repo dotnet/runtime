@@ -138,7 +138,7 @@ namespace System.Xml
             Find a Unicode string in the ternary tree and return the data byte it's
             mapped to.  Find is case-insensitive.
         */
-        public static byte FindCaseInsensitiveString(string stringToFind, ReadOnlySpan<byte> nodeBuffer)
+        private static byte FindCaseInsensitiveString(string stringToFind, ReadOnlySpan<byte> nodeBuffer)
         {
             int stringPos = 0, nodePos = 0;
             int charToFind = stringToFind[stringPos];
