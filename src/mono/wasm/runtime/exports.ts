@@ -50,7 +50,7 @@ import { mono_wasm_typed_array_copy_to, mono_wasm_typed_array_from, mono_wasm_ty
 import { mono_wasm_cancel_promise } from "./cancelable-promise";
 import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from "./event-listener";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
-import { mono_bind_method, _create_primitive_converters } from "./method-binding";
+import { mono_bind_method } from "./method-binding";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 
@@ -127,7 +127,8 @@ export const BINDING: BINDING = <any>{
 
 // this is executed early during load of emscripten runtime
 // it exports methods to global objects MONO, BINDING and Module in backward compatible way
-export function export_to_emscripten(mono: any, binding: any, dotnet: any, module: t_ModuleExtension) {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function export_to_emscripten(mono: any, binding: any, dotnet: any, module: t_ModuleExtension): void {
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     setLegacyModules(mono, binding, module);
 

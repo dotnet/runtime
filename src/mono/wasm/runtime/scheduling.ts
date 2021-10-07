@@ -34,7 +34,7 @@ function mono_wasm_set_timeout_exec(id: number) {
     cwraps.mono_set_timeout_exec(id);
 }
 
-export function prevent_timer_throttling() {
+export function prevent_timer_throttling(): void {
     if (isChromium) {
         return;
     }
@@ -56,14 +56,14 @@ export function prevent_timer_throttling() {
     spread_timers_maximum = desired_reach_time;
 }
 
-export function schedule_background_exec() {
+export function schedule_background_exec(): void {
     ++pump_count;
     if (typeof globalThis.setTimeout === "function") {
         globalThis.setTimeout(pump_message, 0);
     }
 }
 
-export function mono_set_timeout(timeout: number, id: number) {
+export function mono_set_timeout(timeout: number, id: number): void {
 
     if (typeof globalThis.setTimeout === "function") {
         globalThis.setTimeout(function () {

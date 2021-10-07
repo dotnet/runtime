@@ -2546,10 +2546,21 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         call->gtCallType    = CT_HELPER;
         call->gtCallMethHnd = eeFindHelper(CORINFO_HELP_PINVOKE_CALLI);
     }
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
-    // For arm, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
+#if defined(FEATURE_READYTORUN)
+    // For arm/arm64, we dispatch code same as VSD using virtualStubParamInfo->GetReg()
     // for indirection cell address, which ZapIndirectHelperThunk expects.
-    if (call->IsR2RRelativeIndir())
+    // For x64/x86 we use return address to get the indirection cell by disassembling the call site.
+    // That is not possible for fast tailcalls, so we only need this logic for fast tailcalls on xarch.
+    // Note that we call this before we know if something will be a fast tailcall or not.
+    // That's ok; after making something a tailcall, we will invalidate this information
+    // and reconstruct it if necessary. The tailcalling decision does not change since
+    // this is a non-standard arg in a register.
+    bool needsIndirectionCell = call->IsR2RRelativeIndir() && !call->IsDelegateInvoke();
+#if defined(TARGET_XARCH)
+    needsIndirectionCell &= call->IsFastTailCall();
+#endif
+
+    if (needsIndirectionCell)
     {
         assert(call->gtEntryPoint.addr != nullptr);
 
@@ -2574,8 +2585,7 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
         nonStandardArgs.Add(indirectCellAddress, indirectCellAddress->GetRegNum(),
                             NonStandardArgKind::R2RIndirectionCell);
     }
-
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+#endif
 
     // Allocate the fgArgInfo for the call node;
     //
@@ -5803,7 +5813,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
     CORINFO_FIELD_HANDLE symHnd          = tree->AsField()->gtFldHnd;
     unsigned             fldOffset       = tree->AsField()->gtFldOffset;
-    GenTree*             objRef          = tree->AsField()->gtFldObj;
+    GenTree*             objRef          = tree->AsField()->GetFldObj();
     bool                 fieldMayOverlap = false;
     bool                 objIsLocal      = false;
 
@@ -5877,7 +5887,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
                                   +----------+---------+
                                              |
                               +--------------+-------------+
-                              |   tree->AsField()->gtFldObj   |
+                              |tree->AsField()->GetFldObj()|
                               +--------------+-------------+
 
 
@@ -7425,6 +7435,21 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     }
 #endif
 
+    // For R2R we might need a different entry point for this call if we are doing a tailcall.
+    // The reason is that the normal delay load helper uses the return address to find the indirection
+    // cell in xarch, but now the JIT is expected to leave the indirection cell in REG_R2R_INDIRECT_PARAM:
+    // We optimize delegate invocations manually in the JIT so skip this for those.
+    if (call->IsR2RRelativeIndir() && canFastTailCall && !fastTailCallToLoop && !call->IsDelegateInvoke())
+    {
+        info.compCompHnd->updateEntryPointForTailCall(&call->gtEntryPoint);
+
+#ifdef TARGET_XARCH
+        // We have already computed arg info to make the fast tailcall decision, but on X64 we now
+        // have to pass the indirection cell, so redo arg info.
+        call->ResetArgInfo();
+#endif
+    }
+
     // If this block has a flow successor, make suitable updates.
     //
     BasicBlock* const nextBlock = compCurBB->GetUniqueSucc();
@@ -7504,21 +7529,35 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     while (retBlock->bbJumpKind != BBJ_RETURN)
                     {
 #ifdef DEBUG
-                        assert(retBlock->firstStmt() == retBlock->lastStmt());
-                        asgNode = retBlock->firstStmt()->GetRootNode();
-                        if (!asgNode->OperIs(GT_NOP))
+                        Statement* nonEmptyStmt = nullptr;
+                        for (Statement* const stmt : retBlock->Statements())
                         {
-                            assert(asgNode->OperIs(GT_ASG));
-
-                            GenTree* rhs = asgNode->gtGetOp2();
-                            while (rhs->OperIs(GT_CAST))
+                            // Ignore NOP statements
+                            if (!stmt->GetRootNode()->OperIs(GT_NOP))
                             {
-                                assert(!rhs->gtOverflow());
-                                rhs = rhs->gtGetOp1();
+                                // Only a single non-NOP statement is allowed
+                                assert(nonEmptyStmt == nullptr);
+                                nonEmptyStmt = stmt;
                             }
+                        }
 
-                            assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
-                            lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                        if (nonEmptyStmt != nullptr)
+                        {
+                            asgNode = nonEmptyStmt->GetRootNode();
+                            if (!asgNode->OperIs(GT_NOP))
+                            {
+                                assert(asgNode->OperIs(GT_ASG));
+
+                                GenTree* rhs = asgNode->gtGetOp2();
+                                while (rhs->OperIs(GT_CAST))
+                                {
+                                    assert(!rhs->gtOverflow());
+                                    rhs = rhs->gtGetOp1();
+                                }
+
+                                assert(lcl == rhs->AsLclVarCommon()->GetLclNum());
+                                lcl = asgNode->gtGetOp1()->AsLclVarCommon()->GetLclNum();
+                            }
                         }
 #endif
                         retBlock = retBlock->GetUniqueSucc();
@@ -8592,6 +8631,39 @@ GenTree* Compiler::fgGetStubAddrArg(GenTreeCall* call)
 }
 
 //------------------------------------------------------------------------------
+// fgGetArgTabEntryParameterLclNum : Get the lcl num for the parameter that
+// corresponds to the argument to a recursive call.
+//
+// Notes:
+//    Due to non-standard args this is not just fgArgTabEntry::argNum.
+//    For example, in R2R compilations we will have added a non-standard
+//    arg for the R2R indirection cell.
+//
+// Arguments:
+//    argTabEntry  - the arg
+//
+unsigned Compiler::fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry)
+{
+    fgArgInfo*      argInfo  = call->fgArgInfo;
+    unsigned        argCount = argInfo->ArgCount();
+    fgArgTabEntry** argTable = argInfo->ArgTable();
+
+    unsigned numToRemove = 0;
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        fgArgTabEntry* arg = argTable[i];
+        // Late added args add extra args that do not map to IL parameters and that we should not reassign.
+        if (!arg->isNonStandard() || !arg->isNonStandardArgAddedLate())
+            continue;
+
+        if (arg->argNum < argTabEntry->argNum)
+            numToRemove++;
+    }
+
+    return argTabEntry->argNum - numToRemove;
+}
+
+//------------------------------------------------------------------------------
 // fgMorphRecursiveFastTailCallIntoLoop : Transform a recursive fast tail call into a loop.
 //
 //
@@ -8682,13 +8754,20 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
             {
                 // This is an actual argument that needs to be assigned to the corresponding caller parameter.
                 fgArgTabEntry* curArgTabEntry = gtArgEntryByArgNum(recursiveTailCall, earlyArgIndex);
-                Statement*     paramAssignStmt =
-                    fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry, block, callILOffset,
-                                                          tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
-                if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+                // Late-added non-standard args are extra args that are not passed as locals, so skip those
+                if (!curArgTabEntry->isNonStandard() || !curArgTabEntry->isNonStandardArgAddedLate())
                 {
-                    // All temp assignments will happen before the first param assignment.
-                    tmpAssignmentInsertionPoint = paramAssignStmt;
+                    Statement* paramAssignStmt =
+                        fgAssignRecursiveCallArgToCallerParam(earlyArg, curArgTabEntry,
+                                                              fgGetArgTabEntryParameterLclNum(recursiveTailCall,
+                                                                                              curArgTabEntry),
+                                                              block, callILOffset, tmpAssignmentInsertionPoint,
+                                                              paramAssignmentInsertionPoint);
+                    if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+                    {
+                        // All temp assignments will happen before the first param assignment.
+                        tmpAssignmentInsertionPoint = paramAssignStmt;
+                    }
                 }
             }
         }
@@ -8702,14 +8781,21 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         // A late argument is an actual argument that needs to be assigned to the corresponding caller's parameter.
         GenTree*       lateArg        = use.GetNode();
         fgArgTabEntry* curArgTabEntry = gtArgEntryByLateArgIndex(recursiveTailCall, lateArgIndex);
-        Statement*     paramAssignStmt =
-            fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry, block, callILOffset,
-                                                  tmpAssignmentInsertionPoint, paramAssignmentInsertionPoint);
-
-        if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+        // Late-added non-standard args are extra args that are not passed as locals, so skip those
+        if (!curArgTabEntry->isNonStandard() || !curArgTabEntry->isNonStandardArgAddedLate())
         {
-            // All temp assignments will happen before the first param assignment.
-            tmpAssignmentInsertionPoint = paramAssignStmt;
+            Statement* paramAssignStmt =
+                fgAssignRecursiveCallArgToCallerParam(lateArg, curArgTabEntry,
+                                                      fgGetArgTabEntryParameterLclNum(recursiveTailCall,
+                                                                                      curArgTabEntry),
+                                                      block, callILOffset, tmpAssignmentInsertionPoint,
+                                                      paramAssignmentInsertionPoint);
+
+            if ((tmpAssignmentInsertionPoint == lastStmt) && (paramAssignStmt != nullptr))
+            {
+                // All temp assignments will happen before the first param assignment.
+                tmpAssignmentInsertionPoint = paramAssignStmt;
+            }
         }
         lateArgIndex++;
     }
@@ -8805,6 +8891,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 // Arguments:
 //    arg  -  argument to assign
 //    argTabEntry  -  argument table entry corresponding to arg
+//    lclParamNum - the lcl num of the parameter
 //    block  --- basic block the call is in
 //    callILOffset  -  IL offset of the call
 //    tmpAssignmentInsertionPoint  -  tree before which temp assignment should be inserted (if necessary)
@@ -8815,6 +8902,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
 
 Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
                                                            fgArgTabEntry* argTabEntry,
+                                                           unsigned       lclParamNum,
                                                            BasicBlock*    block,
                                                            IL_OFFSETX     callILOffset,
                                                            Statement*     tmpAssignmentInsertionPoint,
@@ -8824,7 +8912,6 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
     // some argument trees may reference parameters directly.
 
     GenTree* argInTemp             = nullptr;
-    unsigned originalArgNum        = argTabEntry->argNum;
     bool     needToAssignParameter = true;
 
     // TODO-CQ: enable calls with struct arguments passed in registers.
@@ -8844,7 +8931,7 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
             // The argument is a non-parameter local so it doesn't need to be assigned to a temp.
             argInTemp = arg;
         }
-        else if (lclNum == originalArgNum)
+        else if (lclNum == lclParamNum)
         {
             // The argument is the same parameter local that we were about to assign so
             // we can skip the assignment.
@@ -8875,9 +8962,9 @@ Statement* Compiler::fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
         }
 
         // Now assign the temp to the parameter.
-        LclVarDsc* paramDsc = lvaTable + originalArgNum;
+        LclVarDsc* paramDsc = lvaTable + lclParamNum;
         assert(paramDsc->lvIsParam);
-        GenTree* paramDest       = gtNewLclvNode(originalArgNum, paramDsc->lvType);
+        GenTree* paramDest       = gtNewLclvNode(lclParamNum, paramDsc->lvType);
         GenTree* paramAssignNode = gtNewAssignNode(paramDest, argInTemp);
         paramAssignStmt          = gtNewStmt(paramAssignNode, callILOffset);
 
@@ -10530,7 +10617,7 @@ GenTree* Compiler::getSIMDStructFromField(GenTree*     tree,
     GenTree* ret = nullptr;
     if (tree->OperGet() == GT_FIELD)
     {
-        GenTree* objRef = tree->AsField()->gtFldObj;
+        GenTree* objRef = tree->AsField()->GetFldObj();
         if (objRef != nullptr)
         {
             GenTree* obj = nullptr;
@@ -10916,6 +11003,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 
+        case GT_FIELD:
+            return fgMorphField(tree, mac);
+
         case GT_INDEX:
             return fgMorphArrayIndex(tree);
 
@@ -10962,19 +11052,17 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     // We are seeing this node again.
                     // Morph only the children of casts,
                     // so as to avoid losing them.
-                    assert(tree->gtIsValid64RsltMul());
                     tree = fgMorphLongMul(tree->AsOp());
 
                     goto DONE_MORPHING_CHILDREN;
                 }
 
                 tree = fgRecognizeAndMorphLongMul(tree->AsOp());
+                op1  = tree->AsOp()->gtGetOp1();
+                op2  = tree->AsOp()->gtGetOp2();
 
                 if (tree->Is64RsltMul())
                 {
-                    op1 = tree->AsOp()->gtGetOp1();
-                    op2 = tree->AsOp()->gtGetOp2();
-
                     goto DONE_MORPHING_CHILDREN;
                 }
                 else
@@ -11966,7 +12054,7 @@ DONE_MORPHING_CHILDREN:
             if (typ == TYP_LONG)
             {
                 // This must be GTF_MUL_64RSLT
-                assert(tree->gtIsValid64RsltMul());
+                INDEBUG(tree->AsOp()->DebugCheckLongMul());
                 return tree;
             }
 #endif // TARGET_64BIT
@@ -14138,6 +14226,47 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
             }
             break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_HWINTRINSIC:
+        {
+            GenTreeHWIntrinsic* hw = tree->AsHWIntrinsic();
+            switch (hw->gtHWIntrinsicId)
+            {
+                case NI_SSE_Xor:
+                case NI_SSE2_Xor:
+                case NI_AVX_Xor:
+                case NI_AVX2_Xor:
+                {
+                    // Transform XOR(X, 0) to X for vectors
+                    GenTree* op1 = hw->gtGetOp1();
+                    GenTree* op2 = hw->gtGetOp2();
+                    if (!gtIsActiveCSE_Candidate(tree))
+                    {
+                        if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op1);
+                            INDEBUG(op2->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op2;
+                        }
+                        if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                        {
+                            DEBUG_DESTROY_NODE(tree);
+                            DEBUG_DESTROY_NODE(op2);
+                            INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+                            return op1;
+                        }
+                    }
+                    break;
+                }
+
+                default:
+                    break;
+            }
+            break;
+        }
+#endif // defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+
         default:
             break;
     }
@@ -14472,17 +14601,15 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
 //------------------------------------------------------------------------------
 // fgRecognizeAndMorphLongMul : Check for and morph long multiplication with 32 bit operands.
 //
-// Recognizes the following tree: MUL(CAST(long <- int) or CONST, CAST(long <- int) or CONST),
-// where CONST must be an integer constant that fits in 32 bits. Note that if both operands are
-// constants, the original tree is returned unmodified, i. e. the caller is responsible for
-// folding or correct code generation (e. g. for overflow cases). May swap operands if the
-// first one is a constant and the second one is not.
+// Uses "GenTree::IsValidLongMul" to check for the long multiplication pattern. Will swap
+// operands if the first one is a constant and the second one is not, even for trees which
+// end up not being eligibile for long multiplication.
 //
 // Arguments:
 //    mul  -  GT_MUL tree to check for a long multiplication opportunity
 //
 // Return Value:
-//    The original tree unmodified if it is not eligible for long multiplication.
+//    The original tree, with operands possibly swapped, if it is not eligible for long multiplication.
 //    Tree with GTF_MUL_64RSLT set, side effect flags propagated, and children morphed if it is.
 //
 GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
@@ -14493,83 +14620,17 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
     GenTree* op1 = mul->gtGetOp1();
     GenTree* op2 = mul->gtGetOp2();
 
-    assert(op1->TypeIs(TYP_LONG) && op2->TypeIs(TYP_LONG));
-
-    if (!(op1->OperIs(GT_CAST) && genActualTypeIsInt(op1->AsCast()->CastOp())) &&
-        !(op1->IsIntegralConst() && FitsIn<int32_t>(op1->AsIntConCommon()->IntegralValue())))
-    {
-        return mul;
-    }
-
-    if (!(op2->OperIs(GT_CAST) && genActualTypeIsInt(op2->AsCast()->CastOp())) &&
-        !(op2->IsIntegralConst() && FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue())))
-    {
-        return mul;
-    }
-
-    // Let fgMorphSmpOp take care of folding.
-    if (op1->IsIntegralConst() && op2->IsIntegralConst())
-    {
-        return mul;
-    }
-
-    // We don't handle checked casts.
-    if (op1->gtOverflowEx() || op2->gtOverflowEx())
-    {
-        return mul;
-    }
-
-    // Move the constant operand to the right to make the logic below more straightfoward.
-    if (op2->OperIs(GT_CAST) && op1->IsIntegralConst())
+    // "IsValidLongMul" and decomposition do not handle constant op1.
+    if (op1->IsIntegralConst())
     {
         std::swap(op1, op2);
         mul->gtOp1 = op1;
         mul->gtOp2 = op2;
     }
 
-    // The operands must have the same extending behavior, since the instruction
-    // used to compute the result will sign/zero-extend both operands at once.
-    bool op1ZeroExtends = op1->IsUnsigned();
-    bool op2ZeroExtends = op2->OperIs(GT_CAST) ? op2->IsUnsigned() : op2->AsIntConCommon()->IntegralValue() >= 0;
-    bool op2AnyExtensionIsSuitable = op2->IsIntegralConst() && op2ZeroExtends;
-    if ((op1ZeroExtends != op2ZeroExtends) && !op2AnyExtensionIsSuitable)
+    if (!mul->IsValidLongMul())
     {
         return mul;
-    }
-
-    if (mul->gtOverflow())
-    {
-        auto getMaxValue = [mul](GenTree* op) -> int64_t {
-            if (op->OperIs(GT_CAST))
-            {
-                if (op->IsUnsigned())
-                {
-                    switch (op->AsCast()->CastOp()->TypeGet())
-                    {
-                        case TYP_UBYTE:
-                            return UINT8_MAX;
-                        case TYP_USHORT:
-                            return UINT16_MAX;
-                        default:
-                            return UINT32_MAX;
-                    }
-                }
-
-                return mul->IsUnsigned() ? static_cast<int64_t>(UINT64_MAX) : INT32_MIN;
-            }
-
-            return op->AsIntConCommon()->IntegralValue();
-        };
-
-        int64_t maxOp1 = getMaxValue(op1);
-        int64_t maxOp2 = getMaxValue(op2);
-
-        if (CheckedOps::MulOverflows(maxOp1, maxOp2, mul->IsUnsigned()))
-        {
-            return mul;
-        }
-
-        mul->ClearOverflow();
     }
 
     // MUL_LONG needs to do the work the casts would have done.
@@ -14579,6 +14640,8 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
         mul->SetUnsigned();
     }
 
+    // "IsValidLongMul" returned "true", so this GT_MUL cannot overflow.
+    mul->ClearOverflow();
     mul->Set64RsltMul();
 
     return fgMorphLongMul(mul);
@@ -14598,6 +14661,8 @@ GenTreeOp* Compiler::fgRecognizeAndMorphLongMul(GenTreeOp* mul)
 //
 GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
 {
+    INDEBUG(mul->DebugCheckLongMul());
+
     GenTree* op1 = mul->gtGetOp1();
     GenTree* op2 = mul->gtGetOp2();
 
@@ -14765,10 +14830,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
     switch (tree->OperGet())
     {
-        case GT_FIELD:
-            tree = fgMorphField(tree, mac);
-            break;
-
         case GT_CALL:
             if (tree->OperMayThrow(this))
             {
@@ -14897,18 +14958,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             tree->gtFlags |= tree->AsDynBlk()->Addr()->gtFlags & GTF_ALL_EFFECT;
             tree->gtFlags |= tree->AsDynBlk()->gtDynamicSize->gtFlags & GTF_ALL_EFFECT;
-            break;
-
-        case GT_INDEX_ADDR:
-            GenTreeIndexAddr* indexAddr;
-            indexAddr          = tree->AsIndexAddr();
-            indexAddr->Index() = fgMorphTree(indexAddr->Index());
-            indexAddr->Arr()   = fgMorphTree(indexAddr->Arr());
-
-            tree->gtFlags &= ~GTF_CALL;
-
-            tree->gtFlags |= indexAddr->Index()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= indexAddr->Arr()->gtFlags & GTF_ALL_EFFECT;
             break;
 
         default:
@@ -16921,7 +16970,7 @@ void Compiler::fgMorphStructField(GenTree* tree, GenTree* parent)
     noway_assert(tree->OperGet() == GT_FIELD);
 
     GenTreeField* field  = tree->AsField();
-    GenTree*      objRef = field->gtFldObj;
+    GenTree*      objRef = field->GetFldObj();
     GenTree*      obj    = ((objRef != nullptr) && (objRef->gtOper == GT_ADDR)) ? objRef->AsOp()->gtOp1 : nullptr;
     noway_assert((tree->gtFlags & GTF_GLOB_REF) || ((obj != nullptr) && (obj->gtOper == GT_LCL_VAR)));
 
@@ -18081,7 +18130,7 @@ bool Compiler::fgCheckStmtAfterTailCall()
 //
 bool Compiler::fgCanTailCallViaJitHelper()
 {
-#if !defined(TARGET_X86) || defined(UNIX_X86_ABI)
+#if !defined(TARGET_X86) || defined(UNIX_X86_ABI) || defined(FEATURE_READYTORUN)
     // On anything except windows X86 we have no faster mechanism available.
     return false;
 #else

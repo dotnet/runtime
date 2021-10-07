@@ -305,6 +305,9 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
+        # Official builds don't run tests, locally or on Helix
+        runTests: false
+        useHelix: false
 
   #
   # Build libraries AllConfigurations for packages
@@ -320,6 +323,9 @@ stages:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         isOfficialAllConfigurations: true
         liveRuntimeBuildConfig: release
+        # Official builds don't run tests, locally or on Helix
+        runTests: false
+        useHelix: false
 
   #
   # Build Sourcebuild leg
@@ -336,7 +342,7 @@ stages:
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: SourceBuildPackages
-      
+
 
   #
   # Installer Build

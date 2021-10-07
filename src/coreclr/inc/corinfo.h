@@ -3164,6 +3164,13 @@ public:
                 CORINFO_InstructionSet instructionSet,
                 bool supportEnabled
             ) = 0;
+
+    // Notify EE that JIT needs an entry-point that is tail-callable.
+    // This is used for AOT on x64 to support delay loaded fast tailcalls.
+    // Normally the indirection cell is retrieved from the return address,
+    // but for tailcalls, the contract is that JIT leaves the indirection cell in
+    // a register during tailcall.
+    virtual void updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint) = 0;
 };
 
 /**********************************************************************************/

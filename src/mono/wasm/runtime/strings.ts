@@ -13,7 +13,7 @@ export class StringDecoder {
     private mono_text_decoder: TextDecoder | undefined | null;
     private mono_wasm_string_decoder_buffer: NativePointer | undefined;
 
-    copy(mono_string: MonoString) {
+    copy(mono_string: MonoString): string | null {
         if (!this.mono_wasm_string_decoder_buffer) {
             this.mono_text_decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-16le") : null;
             this.mono_wasm_string_root = mono_wasm_new_root();
@@ -87,19 +87,19 @@ let _interned_string_current_root_buffer_count = 0;
 export const string_decoder = new StringDecoder();
 export const mono_wasm_empty_string = "";
 
-export function conv_string(mono_obj: MonoString) {
+export function conv_string(mono_obj: MonoString): string | null {
     return string_decoder.copy(mono_obj);
 }
 
 // Ensures the string is already interned on both the managed and JavaScript sides,
 //  then returns the interned string value (to provide fast reference comparisons like C#)
-export function mono_intern_string(string: string) {
+export function mono_intern_string(string: string): string {
     if (string.length === 0)
         return mono_wasm_empty_string;
 
     const ptr = js_string_to_mono_string_interned(string);
     const result = interned_string_table.get(ptr);
-    return result;
+    return result!;
 }
 
 function _store_string_in_intern_table(string: string, ptr: MonoString, internIt: boolean) {
@@ -143,7 +143,7 @@ function _store_string_in_intern_table(string: string, ptr: MonoString, internIt
     return ptr;
 }
 
-export function js_string_to_mono_string_interned(string: string | symbol) {
+export function js_string_to_mono_string_interned(string: string | symbol): MonoString {
     const text = (typeof (string) === "symbol")
         ? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
         : string;
@@ -161,7 +161,7 @@ export function js_string_to_mono_string_interned(string: string | symbol) {
     return ptr;
 }
 
-export function js_string_to_mono_string(string: string) {
+export function js_string_to_mono_string(string: string): MonoString | null {
     if (string === null)
         return null;
     else if (typeof (string) === "symbol")

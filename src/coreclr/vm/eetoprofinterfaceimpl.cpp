@@ -102,8 +102,32 @@ enum ClrToProfEntrypointFlags
     kEE2PNoTrigger                      = 0x00000004,
 };
 
-#define ASSERT_EVAC_COUNTER_NONZERO()   \
-    _ASSERTE(m_pProfilerInfo->dwProfilerEvacuationCounter.Load() > 0)
+EvacuationCounterHolder::EvacuationCounterHolder(ProfilerInfo *pProfilerInfo) :
+    m_pProfilerInfo(pProfilerInfo),
+    m_pThread(GetThreadNULLOk())
+{
+    _ASSERTE(m_pProfilerInfo != NULL);
+    if (m_pThread == NULL)
+    {
+        return;
+    }
+
+    m_pThread->IncProfilerEvacuationCounter(m_pProfilerInfo->slot);
+}
+
+EvacuationCounterHolder::~EvacuationCounterHolder()
+{
+    if (m_pThread == NULL)
+    {
+        return;
+    }
+
+    m_pThread->DecProfilerEvacuationCounter(m_pProfilerInfo->slot);
+}
+
+#define ASSERT_EVAC_COUNTER_NONZERO()                                                       \
+    _ASSERTE((GetThreadNULLOk() == NULL) ||                                                 \
+             (GetThread()->GetProfilerEvacuationCounter(m_pProfilerInfo->slot) > 0))
 
 #define CHECK_PROFILER_STATUS(ee2pFlags)                                                \
     /* If one of these asserts fires, perhaps you forgot to use                     */  \

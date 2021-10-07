@@ -27,7 +27,7 @@ export function mono_wasm_get_icudt_name(culture: string): string {
 // @globalization_mode is one of "icu", "invariant", or "auto".
 // "auto" will use "icu" if any ICU data archives have been loaded,
 //  otherwise "invariant".
-export function mono_wasm_globalization_init(globalization_mode: GlobalizationMode) {
+export function mono_wasm_globalization_init(globalization_mode: GlobalizationMode): void {
     let invariantMode = false;
 
     if (globalization_mode === "invariant")

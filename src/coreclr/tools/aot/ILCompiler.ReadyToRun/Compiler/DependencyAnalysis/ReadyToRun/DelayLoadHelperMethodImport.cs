@@ -30,7 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             bool useInstantiatingStub,
             Signature instanceSignature, 
             MethodDesc callingMethod = null)
-            : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, callingMethod)
+            : base(factory, importSectionNode, helper, instanceSignature, useVirtualCall, useJumpableStub: false, callingMethod)
         {
             _method = method;
             _useInstantiatingStub = useInstantiatingStub;

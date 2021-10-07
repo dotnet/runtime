@@ -12,7 +12,7 @@ import { AOTProfilerOptions, CoverageProfilerOptions } from "./types";
 // send_to defaults to 'WebAssembly.Runtime::DumpAotProfileData'.
 // DumpAotProfileData stores the data into Module.aot_profile_data.
 //
-export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions) {
+export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions): void {
     if (options == null)
         options = {};
     if (!("write_at" in options))
@@ -28,7 +28,7 @@ export function mono_wasm_init_aot_profiler(options: AOTProfilerOptions) {
 // write_at defaults to 'WebAssembly.Runtime::StopProfile'.
 // send_to defaults to 'WebAssembly.Runtime::DumpCoverageProfileData'.
 // DumpCoverageProfileData stores the data into Module.coverage_profile_data.
-export function mono_wasm_init_coverage_profiler(options: CoverageProfilerOptions) {
+export function mono_wasm_init_coverage_profiler(options: CoverageProfilerOptions): void {
     if (options == null)
         options = {};
     if (!("write_at" in options))

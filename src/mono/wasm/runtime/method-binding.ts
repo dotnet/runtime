@@ -12,7 +12,7 @@ const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
 const _method_descriptions = new Map<MonoMethod, string>();
 
-export function find_method(klass: MonoClass, name: string, n: number) {
+export function find_method(klass: MonoClass, name: string, n: number): MonoMethod {
     const result = cwraps.mono_wasm_assembly_find_method(klass, name, n);
     if (result) {
         _method_descriptions.set(result, name);
@@ -20,21 +20,23 @@ export function find_method(klass: MonoClass, name: string, n: number) {
     return result;
 }
 
-export function get_method(method_name: string) {
+export function get_method(method_name: string): MonoMethod {
     const res = find_method(runtimeHelpers.wasm_runtime_class, method_name, -1);
     if (!res)
         throw "Can't find method " + runtimeHelpers.runtime_namespace + "." + runtimeHelpers.runtime_classname + ":" + method_name;
     return res;
 }
 
-export function bind_runtime_method(method_name: string, signature: ArgsMarshalString) {
+export function bind_runtime_method(method_name: string, signature: ArgsMarshalString): Function {
     const method = get_method(method_name);
     return mono_bind_method(method, null, signature, "BINDINGS_" + method_name);
 }
 
 
 function _create_named_function(name: string, argumentNames: string[], body: string, closure: any) {
-    let result = null, closureArgumentList = null, closureArgumentNames = null;
+    let result = null;
+    let closureArgumentList: any[] | null = null;
+    let closureArgumentNames = null;
 
     if (closure) {
         closureArgumentNames = Object.keys(closure);
@@ -44,6 +46,7 @@ function _create_named_function(name: string, argumentNames: string[], body: str
     }
 
     const constructor = _create_rebindable_named_function(name, argumentNames, body, closureArgumentNames);
+    // eslint-disable-next-line prefer-spread
     result = constructor.apply(null, closureArgumentList);
 
     return result;
@@ -85,7 +88,7 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
     return result;
 }
 
-export function _create_primitive_converters() {
+export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
     result.set("s", { steps: [{ convert: js_string_to_mono_string.bind(BINDING) }], size: 0, needs_root: true });
@@ -103,8 +106,6 @@ export function _create_primitive_converters() {
     result.set("l", { steps: [{ indirect: "i64" }], size: 8 });
     result.set("f", { steps: [{ indirect: "float" }], size: 8 });
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
-
-    return result;
 }
 
 function _create_converter_for_marshal_string(args_marshal: ArgsMarshalString): Converter {
@@ -247,7 +248,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
     body.push("return buffer;");
 
-    var bodyJs = body.join("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
+    let bodyJs = body.join("\r\n"), compiledFunction = null, compiledVariadicFunction = null;
     try {
         compiledFunction = _create_named_function("converter_" + converterName, argumentNames, bodyJs, closure);
         converter.compiled_function = compiledFunction;
@@ -279,7 +280,7 @@ export function _compile_converter_for_marshal_string(args_marshal: ArgsMarshalS
 
     body.push(");");
 
-    var bodyJs = body.join("\r\n");
+    bodyJs = body.join("\r\n");
     try {
         compiledVariadicFunction = _create_named_function("variadic_converter_" + converterName, argumentNames, bodyJs, closure);
         converter.compiled_variadic_function = compiledVariadicFunction;
@@ -303,7 +304,7 @@ function _maybe_produce_signature_warning(converter: Converter) {
     converter.has_warned_about_signature = true;
 }
 
-export function _decide_if_result_is_marshaled(converter: Converter, argc: number) {
+export function _decide_if_result_is_marshaled(converter: Converter, argc: number): boolean {
     if (!converter)
         return true;
 
@@ -324,7 +325,7 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
     }
 }
 
-export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string) {
+export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null, args_marshal: ArgsMarshalString, friendly_name: string): Function {
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
     this_arg = coerceNull(this_arg);
