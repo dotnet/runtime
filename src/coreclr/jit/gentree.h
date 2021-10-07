@@ -4645,11 +4645,15 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
-#ifdef FEATURE_READYTORUN
     bool IsR2RRelativeIndir() const
     {
+#ifdef FEATURE_READYTORUN
         return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0;
+#else
+        return false;
+#endif
     }
+#ifdef FEATURE_READYTORUN
     void setEntryPoint(const CORINFO_CONST_LOOKUP& entryPoint)
     {
         gtEntryPoint = entryPoint;

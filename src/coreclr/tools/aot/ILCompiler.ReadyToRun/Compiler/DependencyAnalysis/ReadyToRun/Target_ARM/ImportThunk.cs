@@ -30,6 +30,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 case Kind.DelayLoadHelper:
                 case Kind.VirtualStubDispatch:
+                case Kind.DelayLoadHelperWithExistingIndirectionCell:
                     // r4 contains indirection cell
                     // push r4
                     instructionEncoder.EmitPUSH(Register.R4);
