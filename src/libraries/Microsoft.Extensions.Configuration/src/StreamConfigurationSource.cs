@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace Microsoft.Extensions.Configuration
@@ -13,6 +14,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// The stream containing the configuration data.
         /// </summary>
+        [DisallowNull]
         public Stream? Stream { get; set; }
 
         /// <summary>

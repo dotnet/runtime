@@ -114,7 +114,8 @@ namespace Microsoft.Extensions.Configuration
     public abstract partial class StreamConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         protected StreamConfigurationSource() { }
-        public System.IO.Stream Stream { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
+        public System.IO.Stream? Stream { get { throw null; } set { } }
         public abstract Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder);
     }
 }
