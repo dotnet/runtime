@@ -4813,8 +4813,8 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     id->idCodeSize(paddingBytes);
 #elif defined(TARGET_ARM64)
     assert(paddingBytes == INSTR_ENCODED_SIZE);
-#endif  
-    
+#endif
+
     id->idaIG = emitCurIG;
 
     /* Append this instruction to this IG's alignment list */
@@ -5182,20 +5182,19 @@ void emitter::emitLoopAlignAdjustments()
                 int instrAdjusted =
                     (emitComp->opts.compJitAlignLoopBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
 #elif defined(TARGET_ARM64)
-                unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) /
-                                                       INSTR_ENCODED_SIZE;
+                unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) / INSTR_ENCODED_SIZE;
                 if (!emitComp->opts.compJitAlignLoopAdaptive)
                 {
                     instrAdjusted = emitComp->opts.compJitAlignLoopBoundary / INSTR_ENCODED_SIZE;
                 }
-#endif  // TARGET_XARCH & TARGET_ARM64
-#endif  // DEBUG
+#endif // TARGET_XARCH & TARGET_ARM64
+#endif // DEBUG
                 // Adjust the padding amount in all align instructions in this IG
                 instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
                 for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
                      alignInstrToAdj = alignInstrToAdj->idaNext)
                 {
-                    
+
 #if defined(TARGET_XARCH)
                     unsigned newPadding = min(paddingToAdj, MAX_ENCODED_SIZE);
                     alignInstrToAdj->idCodeSize(newPadding);
@@ -5334,7 +5333,7 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         // max padding limit of 15 bytes ((alignmentBoundary >> 1) - 1)
         nMaxPaddingBytes -= 1;
 #endif
-        unsigned nPaddingBytes    = (-(int)(size_t)offset) & (alignmentBoundary - 1);
+        unsigned nPaddingBytes = (-(int)(size_t)offset) & (alignmentBoundary - 1);
 
         // Check if the alignment exceeds maxPadding limit
         if (nPaddingBytes > nMaxPaddingBytes)
