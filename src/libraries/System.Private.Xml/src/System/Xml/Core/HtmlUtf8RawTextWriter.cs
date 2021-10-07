@@ -95,7 +95,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                _currentElementProperties = (ElementProperties)TernaryTreeReadOnly.FindElementProperty(localName);
+                _currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
                 base._bufBytes[_bufPos++] = (byte)'<';
                 base.RawText(localName);
                 base._attrEndPos = _bufPos;
@@ -286,7 +286,7 @@ namespace System.Xml
 
                 if ((_currentElementProperties & (ElementProperties.BOOL_PARENT | ElementProperties.URI_PARENT | ElementProperties.NAME_PARENT)) != 0)
                 {
-                    _currentAttributeProperties = (AttributeProperties)TernaryTreeReadOnly.FindAttributeProperty(localName) &
+                    _currentAttributeProperties = TernaryTreeReadOnly.FindAttributeProperty(localName) &
                                                  (AttributeProperties)_currentElementProperties;
 
                     if ((_currentAttributeProperties & AttributeProperties.BOOLEAN) != 0)
@@ -794,7 +794,7 @@ namespace System.Xml
             {
                 Debug.Assert(prefix.Length == 0);
 
-                base._currentElementProperties = (ElementProperties)TernaryTreeReadOnly.FindElementProperty(localName);
+                base._currentElementProperties = TernaryTreeReadOnly.FindElementProperty(localName);
 
                 if (_endBlockPos == base._bufPos && (base._currentElementProperties & ElementProperties.BLOCK_WS) != 0)
                 {
