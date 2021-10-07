@@ -122,11 +122,11 @@ namespace System.Xml
             67, 0, 0, 0, 84, 0, 0, 0, 69, 0, 0, 0, 68, 0, 0, 0, 0, 0, 0, 2, 85, 0, 0, 0, 83, 0, 0, 0,
             69, 0, 0, 0, 77, 0, 0, 0, 65, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 1,
         };
-        public static ElementProperties FindElementProperty(string stringToFind)
+        public static ElementProperties FindElementProperty(ReadOnlySpan<char> stringToFind)
         {
             return (ElementProperties)FindCaseInsensitiveString(stringToFind, HtmlElements);
         }
-        public static AttributeProperties FindAttributeProperty(string stringToFind)
+        public static AttributeProperties FindAttributeProperty(ReadOnlySpan<char> stringToFind)
         {
             return (AttributeProperties)FindCaseInsensitiveString(stringToFind, HtmlAttributes);
         }
@@ -137,7 +137,7 @@ namespace System.Xml
             Find a Unicode string in the ternary tree and return the data byte it's
             mapped to.  Find is case-insensitive.
         */
-        private static byte FindCaseInsensitiveString(string stringToFind, ReadOnlySpan<byte> nodeBuffer)
+        private static byte FindCaseInsensitiveString(ReadOnlySpan<char> stringToFind, ReadOnlySpan<byte> nodeBuffer)
         {
             int stringPos = 0, nodePos = 0;
             int charToFind = stringToFind[stringPos];
