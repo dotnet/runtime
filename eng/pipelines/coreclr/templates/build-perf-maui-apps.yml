@@ -99,6 +99,7 @@ steps:
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
+      mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
     condition: succeededOrFailed()
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
@@ -110,7 +111,7 @@ steps:
       artifactName:  ${{ parameters.artifactName }} #
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk #
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk #
         includeRootFolder: true #
         displayName: Maui Android App #
         artifactName: MauiAndroidApp #
