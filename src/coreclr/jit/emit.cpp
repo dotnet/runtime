@@ -4810,10 +4810,9 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
 
 #if defined(TARGET_XARCH)
     assert(paddingBytes <= MAX_ENCODED_SIZE);
-    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
     id->idCodeSize(paddingBytes);
 #elif defined(TARGET_ARM64)
-    assert(paddingBytes % INSTR_ENCODED_SIZE == 0);
+    assert(paddingBytes == INSTR_ENCODED_SIZE);
 #endif  
     
     id->idaIG = emitCurIG;
