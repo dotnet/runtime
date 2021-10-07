@@ -42,6 +42,27 @@ namespace XmlCoreTest.Common
             return Path.Combine(GetHttpDataPath(), "StandardTests");
         }
 
+        public static string GetWriteableTestRootPath()
+        {
+            return (PlatformDetection.IsiOS || PlatformDetection.IstvOS) ? Path.GetTempPath() : string.Empty;
+        }
+
+        public static void EnsureTestPathIsValid(string rootPath, params string[] paths)
+        {
+            DirectoryInfo di = new DirectoryInfo(rootPath);
+
+            foreach(string path in paths)
+            {
+                if (path.Trim().Length == 0)
+                {
+                    continue;
+                }
+
+                string childPath = Path.Combine(di.FullName, path);
+                di = Directory.CreateDirectory(childPath);
+            }
+        }
+
         public static string GetTestDataPath()
         {
             return Path.Combine(GetDataPath(), "TestData");

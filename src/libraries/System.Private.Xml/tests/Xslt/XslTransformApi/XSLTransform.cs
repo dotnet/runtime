@@ -45,6 +45,7 @@ namespace System.Xml.Tests
         private const string XmlResolverDocumentName = "xmlResolver_document_function.xml";
         private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), typeof(XsltApiTestCaseBase) + "_" + Path.GetRandomFileName());
         private static readonly object s_temporaryResolverDocumentLock = new object();
+        protected static string absoluteUriXslFile = "xmlResolver_document_function_absolute_uri_replaced.xsl";
 
         // Generic data for all derived test cases
         public string szXslNS = "http://www.w3.org/1999/XSL/Transform";
@@ -83,15 +84,17 @@ namespace System.Xml.Tests
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
 
+                FilePathUtil.EnsureTestPathIsValid(FilePathUtil.GetWriteableTestRootPath(), "TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
+
                 // Replace absolute URI in xmlResolver_document_function.xml based on the environment, and store it under a different name
                 string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri.xsl");
-                string replacedXslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri_replaced.xsl");
-                File.Copy(xslFile, replacedXslFile, true);
+                absoluteUriXslFile = Path.Combine(FilePathUtil.GetWriteableTestRootPath(), "TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri_replaced.xsl");
+                File.Copy(xslFile, absoluteUriXslFile, true);
                 XmlDocument doc = new XmlDocument();
-                doc.Load(replacedXslFile);
+                doc.Load(absoluteUriXslFile);
                 string xslString = doc.OuterXml.Replace("ABSOLUTE_URI", s_temporaryResolverDocumentFullName);
                 doc.LoadXml(xslString);
-                doc.Save(replacedXslFile);
+                doc.Save(absoluteUriXslFile);
             }
         }
 

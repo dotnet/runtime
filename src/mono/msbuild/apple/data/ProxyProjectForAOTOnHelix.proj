@@ -27,7 +27,7 @@
       <AppleAppBundleDir>$(TestRootDir)AppBundle\</AppleAppBundleDir>
 
       <MainLibraryFileName>$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
-      <Optimized>true</Optimized>
+      <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
     </PropertyGroup>
 
     <ItemGroup>

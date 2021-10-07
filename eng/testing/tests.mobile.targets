@@ -32,7 +32,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">--expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments>$(Configuration)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments Condition="'$(ExpectedExitCode)' != ''">$(AdditionalXHarnessArguments) --expected-exit-code $(ExpectedExitCode)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
