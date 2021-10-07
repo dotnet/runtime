@@ -1,11 +1,10 @@
-<Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+<Project Sdk="Microsoft.Build.NoTargets">
 
   <UsingTask TaskName="RegenerateThirdPartyNotices" AssemblyFile="$(InstallerTasksAssemblyPath)" />
 
-  <Target Name="Build">
+  <Target Name="RegenerateThirdPartyNotices" AfterTargets="Build">
     <PropertyGroup>
-      <TpnFile>$(RepoRoot)src/installer/pkg/THIRD-PARTY-NOTICES.TXT</TpnFile>
+      <TpnFile>$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT</TpnFile>
     </PropertyGroup>
 
     <!--
@@ -32,7 +31,7 @@
           mono/linker
       -->
 
-      <TpnRepo Condition="'%(TpnRepo.Branch)' == ''" Branch="master" />
+      <TpnRepo Condition="'%(TpnRepo.Branch)' == ''" Branch="main" />
 
       <PotentialTpnPath Include="THIRD-PARTY-NOTICES.TXT" />
       <PotentialTpnPath Include="THIRD-PARTY-NOTICES.txt" />
@@ -49,5 +48,4 @@
     <Message Text="$(MSBuildProjectName) -> $(TpnFile)" Importance="High" />
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 </Project>
