@@ -3,7 +3,7 @@
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
              TaskName="ILStrip"
-             AssemblyFile="$(ILStripTasksAssemblyPath)" />
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <Target Name="AppleBuildApp" AfterTargets="$(AppleBuildAppAfterThisTarget)" />
 

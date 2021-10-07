@@ -34,10 +34,8 @@
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
 
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(_NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
-    <ILStripTaskDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILStrip', 'Debug', '$(_NetCoreAppToolCurrent)'))</ILStripTaskDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
-    <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(_NetCoreAppToolCurrent)'))</RuntimeConfigParserDir>
-    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(_NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(_NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
 
     <MonoArtifactsPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'mono', '$(TargetOS).$(TargetArchitecture).$(RuntimeConfig)'))</MonoArtifactsPath>
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(MonoArtifactsPath), 'cross', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MonoAotCrossDir>
@@ -52,10 +50,8 @@
     <MicrosoftNetCoreAppRuntimePackLibDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'lib', '$(_NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackLibDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoAOTCompiler'))</MonoAOTCompilerDir>
-    <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'RuntimeConfigParser'))</RuntimeConfigParserDir>
-    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'JsonToItemsTaskFactory'))</JsonToItemsTaskFactoryDir>
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'MonoTargetsTasks'))</MonoTargetsTasksDir>
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory($(BuildBaseDir), 'AppleAppBuilder'))</AppleAppBuilderDir>
-    <ILStripTaskDir>$([MSBuild]::NormalizePath('$(BuildBaseDir)', 'ILStrip'))</ILStripTaskDir>
 
     <MonoAotCrossDir>$([MSBuild]::NormalizePath($(BuildBaseDir), 'cross'))</MonoAotCrossDir>
     <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
@@ -70,10 +66,8 @@
     <MicrosoftNetCoreAppRuntimePackDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackLocationToUse)))</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackDir), 'runtimes', '$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
-    <ILStripTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ILStripTaskDir)', 'ILStrip.dll'))</ILStripTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
-    <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
-    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
   </PropertyGroup>
 
 </Project>

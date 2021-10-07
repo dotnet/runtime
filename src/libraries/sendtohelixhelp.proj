@@ -433,13 +433,11 @@
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
-      <HelixCorrelationPayload Include="$(ILStripTaskDir)"                       Destination="build/ILStrip" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())" />
       <HelixCorrelationPayload Include="$(iOSBuildTargetsDir)"                   Destination="build/apple" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
-      <HelixCorrelationPayload Include="$(JsonToItemsTaskFactoryDir)"            Destination="build/JsonToItemsTaskFactory" />
-      <HelixCorrelationPayload Include="$(RuntimeConfigParserDir)"               Destination="build/RuntimeConfigParser" />
+      <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
