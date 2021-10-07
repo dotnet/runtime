@@ -27,7 +27,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.TypeDefinition:
                     return TypeDefinition(module, (TypeDefinitionHandle)handle);
                 case HandleKind.FieldDefinition:
-                    throw new NotImplementedException();
+                    return FieldDefinition(module, (FieldDefinitionHandle)handle);
                 case HandleKind.MethodDefinition:
                     return MethodDefinition(module, (MethodDefinitionHandle)handle);
                 case HandleKind.Parameter:
@@ -79,6 +79,14 @@ namespace ILTrim.DependencyAnalysis
         public TypeDefinitionNode TypeDefinition(EcmaModule module, TypeDefinitionHandle handle)
         {
             return _typeDefinitions.GetOrAdd(new HandleKey<TypeDefinitionHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<FieldDefinitionHandle>, FieldDefinitionNode> _fieldDefinitions
+            = new NodeCache<HandleKey<FieldDefinitionHandle>, FieldDefinitionNode>(key
+                => new FieldDefinitionNode(key.Module, key.Handle));
+        public FieldDefinitionNode FieldDefinition(EcmaModule module, FieldDefinitionHandle handle)
+        {
+            return _fieldDefinitions.GetOrAdd(new HandleKey<FieldDefinitionHandle>(module, handle));
         }
 
         NodeCache<HandleKey<MethodDefinitionHandle>, MethodDefinitionNode> _methodDefinitions
