@@ -27,7 +27,7 @@ PtrHashMap *PEImage::s_ijwFixupDataHash;
 #ifndef TARGET_UNIX
 namespace
 {
-    void static GetPathFromDll(HINSTANCE hMod, SString& result)
+    void GetPathFromDll(HINSTANCE hMod, SString& result)
     {
         CONTRACTL
         {
@@ -268,7 +268,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
 
     if (pLocator->m_bIsInBundle != pImage->IsInBundle())
     {
-        return false;
+        return FALSE;
     }
 
     BOOL ret = FALSE;

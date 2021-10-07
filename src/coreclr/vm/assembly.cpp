@@ -66,7 +66,7 @@ static CrstStatic g_friendAssembliesCrst;
 
 namespace
 {
-    static void DefineEmitScope(GUID iid, void** ppEmit)
+    void DefineEmitScope(GUID iid, void** ppEmit)
     {
         CONTRACT_VOID
         {

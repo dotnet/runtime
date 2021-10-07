@@ -35,8 +35,8 @@ static int g_BreakOnEnCResolveField = -1;
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *m_pPEAssembly)
-  : Module(pAssembly, moduleRef, m_pPEAssembly)
+EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly)
+  : Module(pAssembly, moduleRef, pPEAssembly)
 {
     CONTRACTL
     {
