@@ -4980,7 +4980,7 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
-    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon)
+    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon) : GenTreeOp(GT_QMARK, type, cond, colon)
     {
         // These must follow a specific form.
         assert((cond != nullptr) && cond->TypeIs(TYP_INT));
