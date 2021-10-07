@@ -78,6 +78,18 @@ namespace System.IO.Tests
             await ThrowWhenHandlePositionIsChanged(useAsync: true);
         }
 
+        [Fact]
+        public void DeleteOnClose_FailedShareDoesNotDeleteFile()
+        {
+            string fileName = GetTestFilePath();
+
+            using SafeFileHandle handle = File.OpenHandle(fileName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+
+            Assert.Throws<IOException>(() => File.OpenHandle(fileName, FileMode.Open, FileAccess.Write, FileShare.None, FileOptions.DeleteOnClose));
+
+            Assert.True(File.Exists(fileName));
+        }
+
         private async Task ThrowWhenHandlePositionIsChanged(bool useAsync)
         {
             string fileName = GetTestFilePath();
