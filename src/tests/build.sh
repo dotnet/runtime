@@ -100,7 +100,7 @@ build_Tests()
     export __CopyNativeTestBinaries
     export __Priority
     export __DoCrossgen2
-    export __CreatePerfMap
+    export __CreatePerfmap
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
     export __GenerateLayoutOnly
@@ -270,10 +270,6 @@ handle_arguments_local() {
             __BuildLogRootName="${parts[1]}"
             ;;
 
-        perfmap|-perfmap)
-            __CreatePerfMap=1
-            ;;
-
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -322,7 +318,6 @@ __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
 __SkipCrossgenFramework=0
-__CreatePerfMap=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
 __UseNinja=0
