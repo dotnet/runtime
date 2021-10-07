@@ -246,12 +246,10 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
         assert((spOffset % 8) == 0);
         GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
-#if defined(TARGET_UNIX)
-        if (compiler->generateCFIUnwindCodes())
+        if (TargetOS::IsUnix && compiler->generateCFIUnwindCodes())
         {
             useSaveNextPair = false;
         }
-#endif // TARGET_UNIX
 
         if (useSaveNextPair)
         {
@@ -381,12 +379,10 @@ void CodeGen::genEpilogRestoreRegPair(regNumber reg1,
     {
         GetEmitter()->emitIns_R_R_R_I(INS_ldp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
-#if defined(TARGET_UNIX)
-        if (compiler->generateCFIUnwindCodes())
+        if (TargetOS::IsUnix && compiler->generateCFIUnwindCodes())
         {
             useSaveNextPair = false;
         }
-#endif // TARGET_UNIX
 
         if (useSaveNextPair)
         {
@@ -1853,16 +1849,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
-    emitAttr attr = emitActualTypeSize(treeNode);
 
-    // UMULL/SMULL is twice as fast for 32*32->64bit MUL
-    if ((oper == GT_MUL) && (targetType == TYP_LONG) && genActualTypeIsInt(op1) && genActualTypeIsInt(op2))
-    {
-        ins  = treeNode->IsUnsigned() ? INS_umull : INS_smull;
-        attr = EA_4BYTE;
-    }
-
-    regNumber r = emit->emitInsTernary(ins, attr, treeNode, op1, op2);
+    regNumber r = emit->emitInsTernary(ins, emitActualTypeSize(treeNode), treeNode, op1, op2);
     assert(r == targetReg);
 
     genProduceReg(treeNode);

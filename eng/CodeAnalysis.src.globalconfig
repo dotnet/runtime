@@ -202,7 +202,7 @@ dotnet_diagnostic.CA1417.severity = warning
 # CA1418: Use valid platform string
 dotnet_diagnostic.CA1418.severity = warning
 
-# CA1419: Provide a public parameterless constructor for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
+# CA1419: Provide a parameterless constructor that is as visible as the containing type for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
 dotnet_diagnostic.CA1419.severity = warning
 
 # CA1501: Avoid excessive inheritance
@@ -422,6 +422,9 @@ dotnet_diagnostic.CA2016.severity = warning
 # CA2017: Parameter count mismatch
 dotnet_diagnostic.CA2017.severity = warning
 
+# CA2018: 'Buffer.BlockCopy' expects the number of bytes to be copied for the 'count' argument
+dotnet_diagnostic.CA2018.severity = warning
+
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
 
@@ -542,6 +545,18 @@ dotnet_diagnostic.CA2253.severity = none
 
 # CA2254: Template should be a static expression
 dotnet_diagnostic.CA2254.severity = none
+
+# CA2255: The 'ModuleInitializer' attribute should not be used in libraries
+dotnet_diagnostic.CA2255.severity = warning
+
+# CA2256: All members declared in parent interfaces must have an implementation in a DynamicInterfaceCastableImplementation-attributed interface
+dotnet_diagnostic.CA2256.severity = warning
+
+# CA2257: Members defined on an interface with the 'DynamicInterfaceCastableImplementationAttribute' should be 'static'
+dotnet_diagnostic.CA2257.severity = warning
+
+# CA2258: Providing a 'DynamicInterfaceCastableImplementation' interface in Visual Basic is unsupported
+dotnet_diagnostic.CA2258.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -809,6 +824,12 @@ dotnet_diagnostic.CA5402.severity = none
 
 # CA5403: Do not hard-code certificate
 dotnet_diagnostic.CA5403.severity = none
+
+# CA5404: Do not disable token validation checks
+dotnet_diagnostic.CA5404.severity = none
+
+# CA5405: Do not always skip token validation in delegates
+dotnet_diagnostic.CA5405.severity = none
 
 # IL3000: Avoid using accessing Assembly file path when publishing as a single-file
 dotnet_diagnostic.IL3000.severity = warning
@@ -1257,293 +1278,278 @@ dotnet_diagnostic.SA1643.severity = none
 # SA1649: File name should match first type name
 dotnet_diagnostic.SA1649.severity = none
 
-# IDE0001: SimplifyNames
-dotnet_diagnostic.IDE0001.severity = silent
+# IDE0001: Simplify name
+dotnet_diagnostic.IDE0001.severity = suggestion
 
-# IDE0002: SimplifyMemberAccess
-dotnet_diagnostic.IDE0002.severity = silent
+# IDE0002: Simplify member access
+dotnet_diagnostic.IDE0002.severity = suggestion
 
-# IDE0003: RemoveQualification
-dotnet_diagnostic.IDE0003.severity = silent
+# IDE0003: Remove this or Me qualification
+dotnet_diagnostic.IDE0003.severity = suggestion
 
-# IDE0004: RemoveUnnecessaryCast
-dotnet_diagnostic.IDE0004.severity = silent
+# IDE0004: Remove Unnecessary Cast
+dotnet_diagnostic.IDE0004.severity = suggestion
 
-# IDE0005: RemoveUnnecessaryImports
-dotnet_diagnostic.IDE0005.severity = silent
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = suggestion
 
-# IDE0006: IntellisenseBuildFailed
-dotnet_diagnostic.IDE0006.severity = silent
-
-# IDE0007: UseImplicitType
+# IDE0007: Use implicit type
 dotnet_diagnostic.IDE0007.severity = silent
 
-# IDE0008: UseExplicitType
-dotnet_diagnostic.IDE0008.severity = silent
+# IDE0008: Use explicit type
+dotnet_diagnostic.IDE0008.severity = suggestion
 
-# IDE0009: AddQualification
+# IDE0009: Add this or Me qualification
 dotnet_diagnostic.IDE0009.severity = silent
 
-# IDE0010: PopulateSwitchStatement
+# IDE0010: Add missing cases
 dotnet_diagnostic.IDE0010.severity = silent
 
-# IDE0011: AddBraces
+# IDE0011: Add braces
 dotnet_diagnostic.IDE0011.severity = silent
 
-# IDE0016: UseThrowExpression
+# IDE0016: Use 'throw' expression
 dotnet_diagnostic.IDE0016.severity = silent
 
-# IDE0017: UseObjectInitializer
-dotnet_diagnostic.IDE0017.severity = silent
+# IDE0017: Simplify object initialization
+dotnet_diagnostic.IDE0017.severity = suggestion
 
-# IDE0018: InlineDeclaration
-dotnet_diagnostic.IDE0018.severity = silent
+# IDE0018: Inline variable declaration
+dotnet_diagnostic.IDE0018.severity = suggestion
 
-# IDE0019: InlineAsTypeCheck
-dotnet_diagnostic.IDE0019.severity = silent
+# IDE0019: Use pattern matching to avoid as followed by a null check
+dotnet_diagnostic.IDE0019.severity = suggestion
 
-# IDE0020: InlineIsTypeCheck
-dotnet_diagnostic.IDE0020.severity = silent
+# IDE0020: Use pattern matching to avoid is check followed by a cast (with variable)
+dotnet_diagnostic.IDE0020.severity = suggestion
 
-# IDE0021: UseExpressionBodyForConstructors
+# IDE0021: Use expression body for constructors
 dotnet_diagnostic.IDE0021.severity = silent
 
-# IDE0022: UseExpressionBodyForMethods
+# IDE0022: Use expression body for methods
 dotnet_diagnostic.IDE0022.severity = silent
 
-# IDE0023: UseExpressionBodyForConversionOperators
+# IDE0023: Use expression body for operators
 dotnet_diagnostic.IDE0023.severity = silent
 
-# IDE0024: UseExpressionBodyForOperators
+# IDE0024: Use expression body for operators
 dotnet_diagnostic.IDE0024.severity = silent
 
-# IDE0025: UseExpressionBodyForProperties
+# IDE0025: Use expression body for properties
 dotnet_diagnostic.IDE0025.severity = silent
 
-# IDE0026: UseExpressionBodyForIndexers
+# IDE0026: Use expression body for indexers
 dotnet_diagnostic.IDE0026.severity = silent
 
-# IDE0027: UseExpressionBodyForAccessors
+# IDE0027: Use expression body for accessors
 dotnet_diagnostic.IDE0027.severity = silent
 
-# IDE0028: UseCollectionInitializer
-dotnet_diagnostic.IDE0028.severity = silent
+# IDE0028: Simplify collection initialization
+dotnet_diagnostic.IDE0028.severity = suggestion
 
-# IDE0029: UseCoalesceExpression
-dotnet_diagnostic.IDE0029.severity = silent
+# IDE0029: Use coalesce expression
+dotnet_diagnostic.IDE0029.severity = suggestion
 
-# IDE0030: UseCoalesceExpressionForNullable
-dotnet_diagnostic.IDE0030.severity = silent
+# IDE0030: Use coalesce expression
+dotnet_diagnostic.IDE0030.severity = suggestion
 
-# IDE0031: UseNullPropagation
+# IDE0031: Use null propagation
 dotnet_diagnostic.IDE0031.severity = silent
 
-# IDE0032: UseAutoProperty
+# IDE0032: Use auto property
 dotnet_diagnostic.IDE0032.severity = silent
 
-# IDE0033: UseExplicitTupleName
-dotnet_diagnostic.IDE0033.severity = silent
+# IDE0033: Use explicitly provided tuple name
+dotnet_diagnostic.IDE0033.severity = suggestion
 
-# IDE0034: UseDefaultLiteral
-dotnet_diagnostic.IDE0034.severity = silent
+# IDE0034: Simplify 'default' expression
+dotnet_diagnostic.IDE0034.severity = suggestion
 
-# IDE0035: RemoveUnreachableCode
-dotnet_diagnostic.IDE0035.severity = silent
+# IDE0035: Remove unreachable code
+dotnet_diagnostic.IDE0035.severity = suggestion
 
-# IDE0036: OrderModifiers
-dotnet_diagnostic.IDE0036.severity = silent
+# IDE0036: Order modifiers
+dotnet_diagnostic.IDE0036.severity = suggestion
 
-# IDE0037: UseInferredMemberName
+# IDE0037: Use inferred member name
 dotnet_diagnostic.IDE0037.severity = silent
 
-# IDE0038: InlineIsTypeWithoutNameCheck
-dotnet_diagnostic.IDE0038.severity = silent
+# IDE0038: Use pattern matching to avoid is check followed by a cast (without variable)
+dotnet_diagnostic.IDE0038.severity = suggestion
 
-# IDE0039: UseLocalFunction
-dotnet_diagnostic.IDE0039.severity = silent
+# IDE0039: Use local function
+dotnet_diagnostic.IDE0039.severity = suggestion
 
-# IDE0040: AddAccessibilityModifiers
-dotnet_diagnostic.IDE0040.severity = silent
+# IDE0040: Add accessibility modifiers
+dotnet_diagnostic.IDE0040.severity = suggestion
 
-# IDE0041: UseIsNullCheck
+# IDE0041: Use 'is null' check
 dotnet_diagnostic.IDE0041.severity = warning
 
-# IDE0042: UseDeconstruction
+# IDE0042: Deconstruct variable declaration
 dotnet_diagnostic.IDE0042.severity = silent
 
-# IDE0043: ValidateFormatString
+# IDE0043: Invalid format string
 dotnet_diagnostic.IDE0043.severity = warning
 
-# IDE0044: MakeFieldReadonly
-dotnet_diagnostic.IDE0044.severity = silent
+# IDE0044: Add readonly modifier
+dotnet_diagnostic.IDE0044.severity = suggestion
 
-# IDE0045: UseConditionalExpressionForAssignment
-dotnet_diagnostic.IDE0045.severity = silent
+# IDE0045: Use conditional expression for assignment
+dotnet_diagnostic.IDE0045.severity = suggestion
 
-# IDE0046: UseConditionalExpressionForReturn
-dotnet_diagnostic.IDE0046.severity = silent
+# IDE0046: Use conditional expression for return
+dotnet_diagnostic.IDE0046.severity = suggestion
 
-# IDE0047: RemoveUnnecessaryParentheses
+# IDE0047: Remove unnecessary parentheses
 dotnet_diagnostic.IDE0047.severity = silent
 
-# IDE0048: AddRequiredParentheses
+# IDE0048: Add parentheses for clarity
 dotnet_diagnostic.IDE0048.severity = silent
 
-# IDE0049: PreferBuiltInOrFrameworkType
-dotnet_diagnostic.IDE0049.severity = silent
+# IDE0049: Use language keywords instead of framework type names for type references
+dotnet_diagnostic.IDE0049.severity = warning
 
-# IDE0050: ConvertAnonymousTypeToTuple
-dotnet_diagnostic.IDE0050.severity = silent
+# IDE0050: Convert anonymous type to tuple
+dotnet_diagnostic.IDE0050.severity = suggestion
 
-# IDE0051: RemoveUnusedMembers
-dotnet_diagnostic.IDE0051.severity = silent
+# IDE0051: Remove unused private members
+dotnet_diagnostic.IDE0051.severity = suggestion
 
-# IDE0052: RemoveUnreadMembers
-dotnet_diagnostic.IDE0052.severity = silent
+# IDE0052: Remove unread private members
+dotnet_diagnostic.IDE0052.severity = suggestion
 
-# IDE0053: UseExpressionBodyForLambdaExpressions
+# IDE0053: Use expression body for lambdas
 dotnet_diagnostic.IDE0053.severity = silent
 
-# IDE0054: UseCompoundAssignment
-dotnet_diagnostic.IDE0054.severity = silent
+# IDE0054: Use compound assignment
+dotnet_diagnostic.IDE0054.severity = suggestion
 
-# IDE0055: Formatting
-dotnet_diagnostic.IDE0055.severity = silent
+# IDE0055: Fix formatting
+dotnet_diagnostic.IDE0055.severity = suggestion
 
-# IDE0056: UseIndexOperator
-dotnet_diagnostic.IDE0056.severity = silent
+# IDE0056: Use index operator
+dotnet_diagnostic.IDE0056.severity = suggestion
 
-# IDE0057: UseRangeOperator
-dotnet_diagnostic.IDE0057.severity = silent
+# IDE0057: Use range operator
+dotnet_diagnostic.IDE0057.severity = suggestion
 
-# IDE0058: ExpressionValueIsUnused
+# IDE0058: Expression value is never used
 dotnet_diagnostic.IDE0058.severity = silent
 
-# IDE0059: ValueAssignedIsUnused
-dotnet_diagnostic.IDE0059.severity = silent
+# IDE0059: Unnecessary assignment of a value
+dotnet_diagnostic.IDE0059.severity = suggestion
 
-# IDE0060: UnusedParameter
+# IDE0060: Remove unused parameter
 dotnet_diagnostic.IDE0060.severity = silent
 
-# IDE0061: UseExpressionBodyForLocalFunctions
+# IDE0061: Use expression body for local functions
 dotnet_diagnostic.IDE0061.severity = silent
 
-# IDE0062: MakeLocalFunctionStatic
+# IDE0062: Make local function 'static'
 dotnet_diagnostic.IDE0062.severity = warning
 
-# IDE0063: UseSimpleUsingStatement
+# IDE0063: Use simple 'using' statement
 dotnet_diagnostic.IDE0063.severity = silent
 
-# IDE0064: MakeStructFieldsWritable
+# IDE0064: Make readonly fields writable
 dotnet_diagnostic.IDE0064.severity = silent
 
-# IDE0065: MoveMisplacedUsingDirectives
-dotnet_diagnostic.IDE0065.severity = silent
+# IDE0065: Misplaced using directive
+dotnet_diagnostic.IDE0065.severity = suggestion
 
-# IDE0066: ConvertSwitchStatementToExpression
-dotnet_diagnostic.IDE0066.severity = silent
+# IDE0066: Convert switch statement to expression
+dotnet_diagnostic.IDE0066.severity = suggestion
 
-# IDE0070: UseSystemHashCode
-dotnet_diagnostic.IDE0070.severity = silent
+# IDE0070: Use 'System.HashCode'
+dotnet_diagnostic.IDE0070.severity = suggestion
 
-# IDE0071: SimplifyInterpolation
-dotnet_diagnostic.IDE0071.severity = silent
+# IDE0071: Simplify interpolation
+dotnet_diagnostic.IDE0071.severity = suggestion
 
-# IDE0072: PopulateSwitchExpression
+# IDE0072: Add missing cases
 dotnet_diagnostic.IDE0072.severity = silent
 
-# IDE0073: FileHeaderMismatch
+# IDE0073: The file header is missing or not located at the top of the file
 dotnet_diagnostic.IDE0073.severity = warning
 
-# IDE0074: UseCoalesceCompoundAssignment
-dotnet_diagnostic.IDE0074.severity = silent
+# IDE0074: Use compound assignment
+dotnet_diagnostic.IDE0074.severity = suggestion
 
-# IDE0075: SimplifyConditionalExpression
+# IDE0075: Simplify conditional expression
 dotnet_diagnostic.IDE0075.severity = silent
 
-# IDE0076: InvalidSuppressMessageAttribute
-dotnet_diagnostic.IDE0076.severity = silent
+# IDE0076: Invalid global 'SuppressMessageAttribute'
+dotnet_diagnostic.IDE0076.severity = warning
 
-# IDE0077: LegacyFormatSuppressMessageAttribute
+# IDE0077: Avoid legacy format target in 'SuppressMessageAttribute'
 dotnet_diagnostic.IDE0077.severity = silent
 
-# IDE0078: UsePatternCombinators
-dotnet_diagnostic.IDE0078.severity = silent
+# IDE0078: Use pattern matching
+dotnet_diagnostic.IDE0078.severity = suggestion
 
-# IDE0079: RemoveUnnecessarySuppression
-dotnet_diagnostic.IDE0079.severity = silent
+# IDE0079: Remove unnecessary suppression
+dotnet_diagnostic.IDE0079.severity = suggestion
 
-# IDE0080: RemoveConfusingSuppressionForIsExpression
-dotnet_diagnostic.IDE0080.severity = silent
+# IDE0080: Remove unnecessary suppression operator
+dotnet_diagnostic.IDE0080.severity = warning
 
-# IDE0081: RemoveUnnecessaryByVal
-dotnet_diagnostic.IDE0081.severity = silent
+# IDE0081: Remove unnecessary suppression operator
+dotnet_diagnostic.IDE0081.severity = none
 
-# IDE0082: ConvertTypeOfToNameOf
+# IDE0082: 'typeof' can be converted  to 'nameof'
 dotnet_diagnostic.IDE0082.severity = warning
 
-# IDE0083: UseNotPattern
+# IDE0083: Use pattern matching
 dotnet_diagnostic.IDE0083.severity = silent
 
-# IDE0084: UseIsNotExpression
-dotnet_diagnostic.IDE0084.severity = silent
+# IDE0084: Use pattern matching (IsNot operator)
+dotnet_diagnostic.IDE0084.severity = none
 
-# IDE0090: UseNew
+# IDE0090: Use 'new(...)'
 dotnet_diagnostic.IDE0090.severity = silent
 
-# IDE0100: RemoveRedundantEquality
-dotnet_diagnostic.IDE0100.severity = silent
+# IDE0100: Remove redundant equality
+dotnet_diagnostic.IDE0100.severity = suggestion
 
-# IDE0110: RemoveUnnecessaryDiscard
-dotnet_diagnostic.IDE0110.severity = silent
+# IDE0110: Remove unnecessary discard
+dotnet_diagnostic.IDE0110.severity = suggestion
 
-# IDE0120: SimplifyLINQExpression
-dotnet_diagnostic.IDE0120.severity = silent
+# IDE0120: Simplify LINQ expression
+dotnet_diagnostic.IDE0120.severity = none
 
-# IDE0130: NamespaceDoesNotMatchFolderStructure
+# IDE0130: Namespace does not match folder structure
 dotnet_diagnostic.IDE0130.severity = silent
 
-# IDE0140: SimplifyObjectCreationDiagnosticId
-dotnet_diagnostic.IDE0140.severity = silent
+# IDE0140: Simplify object creation
+dotnet_diagnostic.IDE0140.severity = none
 
-# IDE0150: UseNullCheckOverTypeCheckDiagnosticId
+# IDE0150: Prefer 'null' check over type check
 dotnet_diagnostic.IDE0150.severity = silent
 
-# IDE1001: AnalyzerChanged
-dotnet_diagnostic.IDE1001.severity = silent
+# IDE0160: Convert to block scoped namespace
+dotnet_diagnostic.IDE0160.severity = silent
 
-# IDE1002: AnalyzerDependencyConflict
-dotnet_diagnostic.IDE1002.severity = silent
+# IDE0161: Convert to file-scoped namespace
+dotnet_diagnostic.IDE0161.severity = silent
 
-# IDE1003: MissingAnalyzerReference
-dotnet_diagnostic.IDE1003.severity = silent
+# IDE1005: Delegate invocation can be simplified.
+dotnet_diagnostic.IDE1005.severity = suggestion
 
-# IDE1004: ErrorReadingRuleset
-dotnet_diagnostic.IDE1004.severity = silent
-
-# IDE1005: InvokeDelegateWithConditionalAccess
-dotnet_diagnostic.IDE1005.severity = silent
-
-# IDE1006: NamingRule
+# IDE1006: Naming styles
 dotnet_diagnostic.IDE1006.severity = silent
 
-# IDE1007: UnboundIdentifier
-dotnet_diagnostic.IDE1007.severity = silent
-
-# IDE1008: UnboundConstructor
-dotnet_diagnostic.IDE1008.severity = silent
-
-# IDE2000: MultipleBlankLines
+# IDE2000: Allow multiple blank lines
 dotnet_diagnostic.IDE2000.severity = silent
 
-# IDE2001: EmbeddedStatementsMustBeOnTheirOwnLine
+# IDE2001: Embedded statements must be on their own line
 dotnet_diagnostic.IDE2001.severity = silent
 
-# IDE2002: ConsecutiveBracesMustNotHaveBlankLinesBetweenThem
+# IDE2002: Consecutive braces must not have blank line between them
 dotnet_diagnostic.IDE2002.severity = silent
 
-# IDE2003: ConsecutiveStatementPlacement
+# IDE2003: Allow statement immediately after block
 dotnet_diagnostic.IDE2003.severity = silent
 
-# IDE2004: BlankLineNotAllowedAfterConstructorInitializerColon
+# IDE2004: Blank line not allowed after constructor initializer colon
 dotnet_diagnostic.IDE2004.severity = silent

@@ -140,6 +140,9 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static IntPtr AllocException([MarshalAs(UnmanagedType.LPWStr)]string message, int messageLength);
 
+        [DllImport(JitSupportLibrary)]
+        private extern static void JitSetOs(IntPtr jit, CORINFO_OS os);
+
         private IntPtr AllocException(Exception ex)
         {
             _lastException = ExceptionDispatchInfo.Capture(ex);
@@ -160,9 +163,10 @@ namespace Internal.JitInterface
         [DllImport(JitSupportLibrary)]
         private extern static char* GetExceptionMessage(IntPtr obj);
 
-        public static void Startup()
+        public static void Startup(CORINFO_OS os)
         {
             jitStartup(GetJitHost(JitConfigProvider.Instance.UnmanagedInstance));
+            JitSetOs(JitPointerAccessor.Get(), os);
         }
 
         public CorInfoImpl()
@@ -2910,6 +2914,12 @@ namespace Internal.JitInterface
         private void ThrowExceptionForHelper(ref CORINFO_HELPER_DESC throwHelper)
         { throw new NotImplementedException("ThrowExceptionForHelper"); }
 
+        public static CORINFO_OS TargetToOs(TargetDetails target)
+        {
+            return target.IsWindows ? CORINFO_OS.CORINFO_WINNT : 
+                   target.IsOSX ? CORINFO_OS.CORINFO_MACOS : CORINFO_OS.CORINFO_UNIX;
+        }
+
         private void getEEInfo(ref CORINFO_EE_INFO pEEInfoOut)
         {
             pEEInfoOut = new CORINFO_EE_INFO();
@@ -2936,7 +2946,7 @@ namespace Internal.JitInterface
                 new UIntPtr(32 * 1024 - 1) : new UIntPtr((uint)pEEInfoOut.osPageSize / 2 - 1);
 
             pEEInfoOut.targetAbi = TargetABI;
-            pEEInfoOut.osType = _compilation.NodeFactory.Target.IsWindows ? CORINFO_OS.CORINFO_WINNT : CORINFO_OS.CORINFO_UNIX;
+            pEEInfoOut.osType = TargetToOs(_compilation.NodeFactory.Target);
         }
 
         private char* getJitTimeLogFilename()
@@ -3206,7 +3216,7 @@ namespace Internal.JitInterface
             // Slow tailcalls are not supported yet
             // https://github.com/dotnet/runtime/issues/35423
 #if READYTORUN
-            throw new NotImplementedException(nameof(getTailCallHelpers));
+            throw new RequiresRuntimeJitException(nameof(getTailCallHelpers));
 #else
             return false;
 #endif

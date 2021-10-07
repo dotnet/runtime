@@ -2653,5 +2653,94 @@ namespace System.Text.Json.Serialization.Tests
             json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
             Assert.Equal("{\"MyProp\":{}}", json);
         }
+
+        public class ConcreteDerivedClass : AbstractBaseClass
+        {
+            // Ignored including on base class:
+            [JsonIgnore] public override int Abstract_Ignored_Property { get; set; }
+            [JsonIgnore] public override int Virtual_Ignored_Property { get; set; }
+
+            // Ignored but not specified on base class:
+            [JsonIgnore] public override int Abstract_IgnoredOnConcrete_Property { get; set; }
+            [JsonIgnore] public override int Virtual_IgnoredOnConcrete_Property { get; set; }
+
+            // Ignored specified on base class:
+            [JsonPropertyOrder(1)] public override int Abstract_IgnoredOnBase_Property { get; set; }
+            [JsonPropertyOrder(2)] public override int Virtual_IgnoredOnBase_Property { get; set; }
+
+            // Standard overrides (not ignored):
+            [JsonPropertyOrder(3)] public override int Abstract_Property { get; set; }
+            [JsonPropertyOrder(4)] public override int Virtual_Property { get; set; }
+        }
+
+        public abstract class AbstractBaseClass
+        {
+            [JsonIgnore] public abstract int Abstract_Ignored_Property { get; set; }
+            [JsonIgnore] public virtual int Virtual_Ignored_Property { get; set; }
+
+            public abstract int Abstract_IgnoredOnConcrete_Property { get; set; }
+            public virtual int Virtual_IgnoredOnConcrete_Property { get; set; }
+
+            [JsonIgnore] public abstract int Abstract_IgnoredOnBase_Property { get; set; }
+            [JsonIgnore] public virtual int Virtual_IgnoredOnBase_Property { get; set; }
+
+            public abstract int Abstract_Property { get; set; }
+            public virtual int Virtual_Property { get; set; }
+        }
+
+        [Fact]
+        public async Task JsonIgnoreCondition_Polymorphic()
+        {
+            ConcreteDerivedClass obj = new()
+            {
+                Abstract_Ignored_Property = -1,
+                Virtual_Ignored_Property = -1,
+                Abstract_IgnoredOnConcrete_Property = -1,
+                Virtual_IgnoredOnConcrete_Property = -1,
+                Abstract_IgnoredOnBase_Property = 1,
+                Virtual_IgnoredOnBase_Property = 2,
+                Abstract_Property = 3,
+                Virtual_Property = 4,
+            };
+
+            // Verify properties work as expected.
+            Assert.Equal(-1, obj.Abstract_Ignored_Property);
+            Assert.Equal(-1, obj.Virtual_Ignored_Property);
+            Assert.Equal(-1, obj.Abstract_IgnoredOnConcrete_Property);
+            Assert.Equal(-1, obj.Virtual_IgnoredOnConcrete_Property);
+            Assert.Equal(1, obj.Abstract_IgnoredOnBase_Property);
+            Assert.Equal(2, obj.Virtual_IgnoredOnBase_Property);
+            Assert.Equal(3, obj.Abstract_Property);
+            Assert.Equal(4, obj.Virtual_Property);
+
+            const string ExpectedJson = "{" +
+                "\"Abstract_IgnoredOnBase_Property\":1," +
+                "\"Virtual_IgnoredOnBase_Property\":2," +
+                "\"Abstract_Property\":3," +
+                "\"Virtual_Property\":4}";
+
+            string json = await JsonSerializerWrapperForString.SerializeWrapper(obj);
+            Assert.Equal(ExpectedJson, json);
+
+            const string Json = "{" +
+                "\"Abstract_Ignored_Property\":-1," +
+                "\"Virtual_Ignored_Property\":-1," +
+                "\"Abstract_IgnoredOnConcrete_Property\":-1," +
+                "\"Virtual_IgnoredOnConcrete_Property\":-1," +
+                "\"Abstract_IgnoredOnBase_Property\":1," +
+                "\"Virtual_IgnoredOnBase_Property\":2," +
+                "\"Abstract_Property\":3," +
+                "\"Virtual_Property\":4}";
+
+            obj = await JsonSerializerWrapperForString.DeserializeWrapper<ConcreteDerivedClass>(Json);
+            Assert.Equal(0, obj.Abstract_Ignored_Property);
+            Assert.Equal(0, obj.Virtual_Ignored_Property);
+            Assert.Equal(0, obj.Abstract_IgnoredOnConcrete_Property);
+            Assert.Equal(0, obj.Virtual_IgnoredOnConcrete_Property);
+            Assert.Equal(1, obj.Abstract_IgnoredOnBase_Property);
+            Assert.Equal(2, obj.Virtual_IgnoredOnBase_Property);
+            Assert.Equal(3, obj.Abstract_Property);
+            Assert.Equal(4, obj.Virtual_Property);
+        }
     }
 }

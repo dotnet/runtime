@@ -568,48 +568,30 @@ pal::string_t pal::get_current_os_rid_platform()
     pal::string_t ridOS;
 
     char str[256];
-
-    // There is no good way to get the visible version of OSX (i.e. something like 10.x.y) as
-    // certain APIs work till 10.9 and have been deprecated and others require linking against
-    // UI frameworks to get the data.
-    //
-    // We will, instead, use kern.osrelease and use its major version number
-    // as a means to formulate the OSX 10.X RID.
-    //
     size_t size = sizeof(str);
-    int ret = sysctlbyname("kern.osrelease", str, &size, nullptr, 0);
+
+    // returns something like 10.5.2
+    int ret = sysctlbyname("kern.osproductversion", str, &size, nullptr, 0);
     if (ret == 0)
     {
-        std::string release(str, size);
-        size_t pos = release.find('.');
-        if (pos != std::string::npos)
+        // the value _should_ be null terminated but let's make sure
+        str[size - 1] = 0;
+        char* pos = strchr(str, '.');
+        if (pos != NULL)
         {
-            int majorVersion = stoi(release.substr(0, pos));
-            // compat path with 10.x
-            if (majorVersion < 20)
-            {
-                // Extract the major version and subtract 4 from it
-                // to get the Minor version used in OSX versioning scheme.
-                // That is, given a version 10.X.Y, we will get X below.
-                //
-                // macOS Cataline 10.15.5 has kernel 19.5.0
-                int minorVersion = majorVersion - 4;
-                if (minorVersion < 10)
-                {
-                    // On OSX, our minimum supported RID is 10.12.
-                    minorVersion = 12;
-                }
+            pos = strchr(pos + 1, '.');
 
-                ridOS.append(_X("osx.10."));
-                ridOS.append(pal::to_string(minorVersion));
-            }
-            else
+            if (pos != NULL)
             {
-                // 11.0 shipped with kernel 20.0
-                ridOS.append(_X("osx.11."));
-                ridOS.append(pal::to_string(majorVersion - 20));
+                // strip anything after second dot and return something like 10.5
+                *pos = 0;
+                size = pos - str;
             }
         }
+
+        std::string release(str, size);
+        ridOS.append(_X("osx."));
+        ridOS.append(release);
     }
 
     return ridOS;
@@ -716,6 +698,7 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
     pal::string_t alpinePrefix(_X("alpine."));
+    pal::string_t rockyPrefix(_X("rocky."));
     size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
@@ -729,6 +712,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
         {
             lastVersionSeparatorIndex = rid.find(_X("."), secondVersionSeparatorIndex + 1);
         }
+    }
+    else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)

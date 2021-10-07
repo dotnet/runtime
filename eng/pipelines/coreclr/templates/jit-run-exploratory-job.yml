@@ -19,8 +19,7 @@ parameters:
   runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
   codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
   runKind: ''                     # required -- test category
-  collectionType: ''
-  collectionName: ''
+  helixQueues: ''                 # required -- Helix queue
   dependOnEvaluatePaths: false
 
 jobs:
@@ -95,23 +94,23 @@ jobs:
       displayName: ${{ format('Antigen setup ({0}-{1})', parameters.osGroup, parameters.archType) }}
 
       # Run exploratory tool in helix
-    - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
-        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixType: 'test/superpmi/$(CollectionName)/$(CollectionType)/$(_Framework)/$(Architecture)'
-        HelixAccessToken: $(HelixApiAccessToken)
-        HelixTargetQueues: $(Queue)
-        HelixPreCommands: $(HelixPreCommand)
-        Creator: $(Creator)
+        displayName: 'Send job to Helix'
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+        helixType: 'build/tests/'
+        helixQueues: ${{ join(',', parameters.helixQueues) }}
+        creator: dotnet-bot
         WorkItemTimeout: 2:30 # 2.5 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        ProjectFile: 'exploratory.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/exploratory.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         RunConfiguration: '$(RunConfiguration)'
         ToolName: '$(ToolName)'
-        continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
+        continueOnError: true
 
     - template: /eng/pipelines/common/upload-artifact-step.yml
       parameters:
@@ -139,3 +138,11 @@ jobs:
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
       displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
+      continueOnError: true
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Antigen build logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'Antigen_BuildLogs__$(archType)_$(buildConfig)'
+      condition: always()

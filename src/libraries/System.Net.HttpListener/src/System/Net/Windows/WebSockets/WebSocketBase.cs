@@ -1632,7 +1632,7 @@ namespace System.Net.WebSockets
                 return ReceiveResult;
             }
 
-            public class ReceiveOperation : WebSocketOperation
+            public sealed class ReceiveOperation : WebSocketOperation
             {
                 private int _receiveState;
                 private bool _pongReceived;
@@ -1888,7 +1888,7 @@ namespace System.Net.WebSockets
                 }
             }
 
-            public class CloseOutputOperation : SendOperation
+            public sealed class CloseOutputOperation : SendOperation
             {
                 public CloseOutputOperation(WebSocketBase webSocket)
                     : base(webSocket)

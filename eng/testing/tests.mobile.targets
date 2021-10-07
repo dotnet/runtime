@@ -55,11 +55,11 @@
   </PropertyGroup>
 
   <UsingTask TaskName="RuntimeConfigParserTask"
-             AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)"
-             Condition="'$(RuntimeConfigParserTasksAssemblyPath)' != ''" />
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)"
+             Condition="'$(MonoTargetsTasksAssemblyPath)' != ''" />
 
   <Target Name="GenerateRuntimeConfig" Condition="'$(TargetOS)' != 'Browser'"
-                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json" 
+                                       Inputs="$(PublishDir)$(AssemblyName).runtimeconfig.json"
                                        Outputs="$(PublishDir)runtimeconfig.bin">
     <PropertyGroup>
       <RuntimeConfigFilePath>$(PublishDir)$(AssemblyName).runtimeconfig.json</RuntimeConfigFilePath>

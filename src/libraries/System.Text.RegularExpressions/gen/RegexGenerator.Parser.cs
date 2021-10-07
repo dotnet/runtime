@@ -4,6 +4,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -46,9 +47,8 @@ namespace System.Text.RegularExpressions.Generator
         // Returns null if nothing to do, Diagnostic if there's an error to report, or RegexType if the type was analyzed successfully.
         private static object? GetRegexTypeToEmit(Compilation compilation, MethodDeclarationSyntax methodSyntax, CancellationToken cancellationToken)
         {
-            // TODO: Use https://github.com/dotnet/runtime/pull/59092
-            INamedTypeSymbol? regexSymbol = compilation.GetTypeByMetadataName(RegexName);
-            INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetTypeByMetadataName(RegexGeneratorAttributeName);
+            INamedTypeSymbol? regexSymbol = compilation.GetBestTypeByMetadataName(RegexName);
+            INamedTypeSymbol? regexGeneratorAttributeSymbol = compilation.GetBestTypeByMetadataName(RegexGeneratorAttributeName);
             if (regexSymbol is null || regexGeneratorAttributeSymbol is null)
             {
                 // Required types aren't available
@@ -170,8 +170,8 @@ namespace System.Text.RegularExpressions.Generator
             // Parse the input pattern
             try
             {
-                regexMethod.Tree = RegexParser.Parse(regexMethod.Pattern, (RegexOptions)regexMethod.Options, culture);
-                regexMethod.Code = RegexWriter.Write(regexMethod.Tree);
+                RegexTree tree = RegexParser.Parse(regexMethod.Pattern, (RegexOptions)regexMethod.Options, culture);
+                regexMethod.Code = RegexWriter.Write(tree);
             }
             catch (Exception e)
             {
@@ -239,7 +239,6 @@ namespace System.Text.RegularExpressions.Generator
             public int? Options;
             public int? MatchTimeout;
             public string Modifiers = string.Empty;
-            public RegexTree Tree;
             public RegexCode Code;
         }
     }

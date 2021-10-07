@@ -471,7 +471,7 @@
     <PropertyGroup>
       <EMSDK_PATH>$([MSBuild]::EnsureTrailingSlash('$(EMSDK_PATH)'))</EMSDK_PATH>
       <_MonoCMakeConfigureCommand>cmake @(_MonoCMakeArgs, ' ') $(MonoCMakeExtraArgs) &quot;$(MonoProjectRoot.TrimEnd('\/'))&quot;</_MonoCMakeConfigureCommand>
-      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh $(_CompilerTargetArch) $(MonoCCompiler) &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
+      <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' != 'Windows_NT'">bash -c 'source $(RepositoryEngineeringCommonDir)native/init-compiler.sh &quot;$(RepositoryEngineeringCommonDir)native&quot; &quot;$(_CompilerTargetArch)&quot; &quot;$(MonoCCompiler)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' != 'false' and '$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; $(_CompilerTargetArch) &amp;&amp; cd /D &quot;$(MonoObjDir)&quot; &amp;&amp; @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' != 'true' and '$(_MonoRunInitCompiler)' == 'false'">$(_MonoCCOption) $(_MonoCXXOption) @(_MonoBuildEnv, ' ') $(_MonoCMakeConfigureCommand)</_MonoCMakeConfigureCommand>
       <_MonoCMakeConfigureCommand Condition="'$(TargetsBrowser)' == 'true' and '$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; emcmake $(_MonoCMakeConfigureCommand)'</_MonoCMakeConfigureCommand>
@@ -736,13 +736,18 @@
   </Target>
 
   <Target Name="GenerateMonoVersionFile" DependsOnTargets="InitializeGenerateRuntimeVersionFile">
+    <PropertyGroup>
+      <NativeVersionFile Condition="'$(OS)' == 'Windows_NT'">_version.h</NativeVersionFile>
+      <NativeVersionFile Condition="'$(OS)' != 'Windows_NT'">version.c</NativeVersionFile>
+    </PropertyGroup>
+
     <MSBuild Projects="$(RepoRoot)eng\empty.csproj"
              Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjDir)_version.h;RuntimeVersionFile=$(MonoObjDir)runtime_version.h" />
+             Properties="NativeVersionFile=$(MonoObjDir)$(NativeVersionFile);RuntimeVersionFile=$(MonoObjDir)runtime_version.h" />
     <MSBuild Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'"
              Projects="$(RepoRoot)eng\empty.csproj"
              Targets="GenerateRuntimeVersionFile"
-             Properties="NativeVersionFile=$(MonoObjCrossDir)_version.h;RuntimeVersionFile=$(MonoObjCrossDir)runtime_version.h" />
+             Properties="NativeVersionFile=$(MonoObjCrossDir)$(NativeVersionFile);RuntimeVersionFile=$(MonoObjCrossDir)runtime_version.h" />
   </Target>
 
   <!-- The standard set of targets that need to run before the BuildMono target runs -->

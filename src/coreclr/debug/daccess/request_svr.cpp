@@ -260,7 +260,7 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
         EnumGenerationTable(generationTable);
         DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->finalize_queue), sizeof(dac_finalize_queue));
 
-        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        ULONG first = IsRegionGCEnabled() ? 0 : (*g_gcDacGlobals->max_gen);
         // enumerating the first to max + 2 gives you
         // the segment list for all the normal segments plus the pinned heap segment (max + 2)
         // this is the convention in the GC so it is repeated here
@@ -288,7 +288,7 @@ DWORD DacGetNumHeaps()
 
 HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 {
-    bool regions = IsRegion();
+    bool regions = IsRegionGCEnabled();
 
     if (g_gcDacGlobals->n_heaps == nullptr || g_gcDacGlobals->g_heaps == nullptr)
         return S_OK;
@@ -422,8 +422,8 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 
             seg = seg->next;
         }
+        _ASSERTE(count == j);
     }
-
     return S_OK;
 }
 

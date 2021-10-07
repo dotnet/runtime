@@ -1300,9 +1300,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // Case of call returning a struct via hidden retbuf arg
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
-            // Unmanaged instance methods on Windows need the retbuf arg after the first (this) parameter
-            if (srcCall->IsUnmanaged())
+#if !defined(TARGET_ARM)
+            // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
+            if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())
             {
                 if (callConvIsInstanceMethodCallConv(srcCall->GetUnmanagedCallConv()))
                 {
@@ -1366,7 +1366,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                 }
             }
             else
-#endif // (defined(TARGET_WINDOWS) && !defined(TARGET_ARM)) || defined(UNIX_X86_ABI)
+#endif // !defined(TARGET_ARM)
             {
                 // insert the return value buffer into the argument list as first byref parameter
                 srcCall->gtCallArgs = gtPrependNewCallArg(destAddr, srcCall->gtCallArgs);
@@ -2337,10 +2337,10 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
         indir->gtFlags |= GTF_IND_NONFAULTING;
         indir->gtFlags |= GTF_IND_INVARIANT;
 
-        slot           = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
-        GenTree* asg   = gtNewAssignNode(slot, indir);
-        GenTree* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
-        GenTree* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
+        slot                = gtNewLclvNode(slotLclNum, TYP_I_IMPL);
+        GenTree*      asg   = gtNewAssignNode(slot, indir);
+        GenTreeColon* colon = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), asg);
+        GenTreeQmark* qmark = gtNewQmarkNode(TYP_VOID, relop, colon);
         impAppendTree(qmark, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 
         return gtNewLclvNode(slotLclNum, TYP_I_IMPL);
@@ -7435,7 +7435,7 @@ void Compiler::impCheckForPInvokeCall(
         }
     }
 
-    JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s", info.compFullName));
+    JITLOG((LL_INFO1000000, "\nInline a CALLI PINVOKE call from method %s\n", info.compFullName));
 
     call->gtFlags |= GTF_CALL_UNMANAGED;
     call->unmgdCallConv = unmanagedCallConv;
@@ -8798,14 +8798,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     CORINFO_CLASS_HANDLE actualMethodRetTypeSigClass;
     actualMethodRetTypeSigClass = sig->retTypeSigClass;
 
-#if !FEATURE_VARARG
     /* Check for varargs */
-    if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
-        (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
+    if (!compFeatureVarArg() && ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
+                                 (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG))
     {
         BADCODE("Varargs not supported.");
     }
-#endif // !FEATURE_VARARG
 
     if ((sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_VARARG ||
         (sig->callConv & CORINFO_CALLCONV_MASK) == CORINFO_CALLCONV_NATIVEVARARG)
@@ -11247,7 +11245,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //                condFalse  condTrue
     //
     temp    = new (this, GT_COLON) GenTreeColon(TYP_REF, condTrue, condFalse);
-    qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp);
+    qmarkMT = gtNewQmarkNode(TYP_REF, condMT, temp->AsColon());
 
     if (isCastClass && impIsClassExact(pResolvedToken->hClass) && condTrue->OperIs(GT_CALL))
     {
@@ -11266,7 +11264,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(GenTree*                op1,
     //                qmarkMT   op1Copy
     //
     temp      = new (this, GT_COLON) GenTreeColon(TYP_REF, gtClone(op1), qmarkMT);
-    qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp);
+    qmarkNull = gtNewQmarkNode(TYP_REF, condNull, temp->AsColon());
     qmarkNull->gtFlags |= GTF_QMARK_CAST_INSTOF;
 
     // Make QMark node a top level node by spilling it.
@@ -12066,15 +12064,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
                 else
                 {
-                    // The code generator generates GC tracking information
-                    // based on the RHS of the assignment.  Later the LHS (which is
-                    // is a BYREF) gets used and the emitter checks that that variable
-                    // is being tracked.  It is not (since the RHS was an int and did
-                    // not need tracking).  To keep this assert happy, we change the RHS
-                    if (lclTyp == TYP_BYREF && !varTypeIsGC(op1->gtType))
-                    {
-                        op1->gtType = TYP_BYREF;
-                    }
                     op1 = gtNewAssignNode(op2, op1);
                 }
 
@@ -12206,7 +12195,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* The ARGLIST cookie is a hidden 'last' parameter, we have already
                    adjusted the arg count cos this is like fetching the last param */
                 assertImp(0 < numArgs);
-                assert(lvaTable[lvaVarargsHandleArg].IsAddressExposed());
                 lclNum = lvaVarargsHandleArg;
                 op1    = gtNewLclvNode(lclNum, TYP_I_IMPL DEBUGARG(opcodeOffs + sz + 1));
                 op1    = gtNewOperNode(GT_ADDR, TYP_BYREF, op1);
@@ -15013,7 +15001,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        // If gtFldObj is a BYREF then our target is a value class and
+                        // If the object is a BYREF then our target is a value class and
                         // it could point anywhere, example a boxed class static int
                         if (obj->gtType == TYP_BYREF)
                         {
@@ -15339,7 +15327,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             op1->gtFlags |= GTF_EXCEPT;
                         }
 
-                        // If gtFldObj is a BYREF then our target is a value class and
+                        // If object is a BYREF then our target is a value class and
                         // it could point anywhere, example a boxed class static int
                         if (obj->gtType == TYP_BYREF)
                         {
@@ -16123,7 +16111,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     op1 = gtNewHelperCallNode(helper, TYP_VOID, gtNewCallArgs(op2, op1));
 
                     op1 = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), op1);
-                    op1 = gtNewQmarkNode(TYP_VOID, condBox, op1);
+                    op1 = gtNewQmarkNode(TYP_VOID, condBox, op1->AsColon());
 
                     // QMARK nodes cannot reside on the evaluation stack. Because there
                     // may be other trees on the evaluation stack that side-effect the
@@ -17520,10 +17508,10 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+#if defined(TARGET_ARM64)
         // On ARM64, the native instance calling convention variant
         // requires the implicit ByRef to be explicitly returned.
-        else if (callConvIsInstanceMethodCallConv(info.compCallConv))
+        else if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
@@ -18861,7 +18849,6 @@ void Compiler::impImport()
     // Skip leading internal blocks.
     // These can arise from needing a leading scratch BB, from EH normalization, and from OSR entry redirects.
     //
-    // We expect a linear flow to the first non-internal block. But not necessarily straght-line flow.
     BasicBlock* entryBlock = fgFirstBB;
 
     while (entryBlock->bbFlags & BBF_INTERNAL)
@@ -18873,10 +18860,8 @@ void Compiler::impImport()
         {
             entryBlock = entryBlock->bbNext;
         }
-        else if (entryBlock->bbJumpKind == BBJ_ALWAYS)
+        else if (opts.IsOSR() && (entryBlock->bbJumpKind == BBJ_ALWAYS))
         {
-            // Only expected for OSR
-            assert(opts.IsOSR());
             entryBlock = entryBlock->bbJumpDest;
         }
         else
@@ -19009,7 +18994,7 @@ bool Compiler::impIsAddressInLocal(const GenTree* tree, GenTree** lclVarTreeOut)
     GenTree* op = tree->AsOp()->gtOp1;
     while (op->gtOper == GT_FIELD)
     {
-        op = op->AsField()->gtFldObj;
+        op = op->AsField()->GetFldObj();
         if (op && op->gtOper == GT_ADDR) // Skip static fields where op will be NULL.
         {
             op = op->AsOp()->gtOp1;
@@ -20378,8 +20363,33 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
             // TODO-1stClassStructs: We currently do not reuse an existing lclVar
             // if it is a struct, because it requires some additional handling.
 
-            if (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
-                !argInfo.argHasCallerLocalRef)
+            bool substitute = false;
+            switch (argNode->OperGet())
+            {
+#ifdef FEATURE_HW_INTRINSICS
+                case GT_HWINTRINSIC:
+                {
+                    // Enable for all parameterless (=invariant) hw intrinsics such as
+                    // Vector128<>.Zero and Vector256<>.AllBitSets. We might consider
+                    // doing that for Vector.Create(cns) as well.
+                    if ((argNode->gtGetOp1() == nullptr) && (argNode->gtGetOp2() == nullptr))
+                    {
+                        substitute = true;
+                    }
+                    break;
+                }
+#endif
+
+                // TODO: Enable substitution for CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE (typeof(T))
+                // but in order to benefit from that, we need to move various "typeof + IsValueType"
+                // optimizations from importer to morph.
+
+                default:
+                    break;
+            }
+
+            if (substitute || (!varTypeIsStruct(lclTyp) && !argInfo.argHasSideEff && !argInfo.argHasGlobRef &&
+                               !argInfo.argHasCallerLocalRef))
             {
                 /* Get a *LARGE* LCL_VAR node */
                 op1 = gtNewLclLNode(tmpNum, genActualType(lclTyp) DEBUGARG(lclNum));

@@ -846,11 +846,8 @@ protected:
 
 #if defined(TARGET_ARMARCH)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+    void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
-
-#if defined(TARGET_ARM)
-    void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
-#endif // TARGET_ARM
 
 #if !defined(TARGET_64BIT)
     void genLongToIntCast(GenTree* treeNode);

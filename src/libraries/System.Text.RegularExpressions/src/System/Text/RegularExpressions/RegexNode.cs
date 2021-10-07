@@ -312,7 +312,7 @@ namespace System.Text.RegularExpressions
                 // If we find backtracking construct at the end of the regex, we can instead make it non-backtracking,
                 // since nothing would ever backtrack into it anyway.  Doing this then makes the construct available
                 // to implementations that don't support backtracking.
-                EliminateEndingBacktracking(rootNode.Child(0), DefaultMaxRecursionDepth);
+                EliminateEndingBacktracking(rootNode, DefaultMaxRecursionDepth);
 
                 // Optimization: unnecessary re-processing of starting loops.
                 // If an expression is guaranteed to begin with a single-character unbounded loop that isn't part of an alternation (in which case it
@@ -397,14 +397,20 @@ namespace System.Text.RegularExpressions
                         node.MakeLoopAtomic();
                         break;
 
+                    // Just because a particular node is atomic doesn't mean all its descendants are.
+                    // Process them as well.
+                    case Atomic:
+                        node = node.Child(0);
+                        continue;
+
+                    // For Capture and Concatenate, we just recur into their last child (only child in the case
+                    // of Capture).  However, if the child is Alternate, Loop, and Lazyloop, we can also make the
+                    // node itself atomic by wrapping it in an Atomic node. Since we later check to see whether a
+                    // node is atomic based on its parent or grandparent, we don't bother wrapping such a node in
+                    // an Atomic one if its grandparent is already Atomic.
+                    // e.g. [xyz](?:abc|def) => [xyz](?>abc|def)
                     case Capture:
                     case Concatenate:
-                        // For Capture and Concatenate, we just recur into their last child (only child in the case
-                        // of Capture).  However, if the child is Alternate, Loop, and Lazyloop, we can also make the
-                        // node itself atomic by wrapping it in an Atomic node. Since we later check to see whether a
-                        // node is atomic based on its parent or grandparent, we don't bother wrapping such a node in
-                        // an Atomic one if its grandparent is already Atomic.
-                        // e.g. [xyz](?:abc|def) => [xyz](?>abc|def)
                         RegexNode existingChild = node.Child(node.ChildCount() - 1);
                         if ((existingChild.Type == Alternate || existingChild.Type == Loop || existingChild.Type == Lazyloop) &&
                             (node.Next is null || node.Next.Type != Atomic)) // validate grandparent isn't atomic
@@ -474,7 +480,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Removes redundant nodes from the subtree, and returns an optimized subtree.
         /// </summary>
-        private RegexNode Reduce()
+        internal RegexNode Reduce()
         {
             switch (Type)
             {
@@ -580,6 +586,115 @@ namespace System.Text.RegularExpressions
                 case Setloop:
                     child.MakeLoopAtomic();
                     return child;
+
+                // Alternations have a variety of possible optimizations that can be applied
+                // iff they're atomic.
+                case Alternate:
+                    {
+                        List<RegexNode>? branches = child.Children as List<RegexNode>;
+                        Debug.Assert(branches is not null && branches.Count != 0);
+
+                        // If an alternation is atomic and its first branch is Empty, the whole thing
+                        // is a nop, as Empty will match everything trivially, and no backtracking
+                        // into the node will be performed, making the remaining branches irrelevant.
+                        if (branches[0].Type == Empty)
+                        {
+                            return new RegexNode(Empty, child.Options);
+                        }
+
+                        // Similarly, we can trim off any branches after an Empty, as they'll never be used.
+                        // An Empty will match anything, and thus branches after that would only be used
+                        // if we backtracked into it and advanced passed the Empty after trying the Empty...
+                        // but if the alternation is atomic, such backtracking won't happen.
+                        for (int i = 1; i < branches.Count - 1; i++)
+                        {
+                            if (branches[i].Type == Empty)
+                            {
+                                branches.RemoveRange(i + 1, branches.Count - (i + 1));
+                                break;
+                            }
+                        }
+
+                        // If an alternation is atomic, we won't ever backtrack back into it, which
+                        // means order matters but not repetition.  With backtracking, it would be incorrect
+                        // to convert an expression like "hi|there|hello" into "hi|hello|there", as doing
+                        // so could then change the order of results if we matched "hi" and then failed
+                        // based on what came after it, and both "hello" and "there" could be successful
+                        // with what came later.  But without backtracking, we can reorder "hi|there|hello"
+                        // to instead be "hi|hello|there", as "hello" and "there" can't match the same text,
+                        // and once this atomic alternation has matched, we won't try another branch. This
+                        // reordering is valuable as it then enables further optimizations, e.g.
+                        // "hi|there|hello" => "hi|hello|there" => "h(?:i|ello)|there", which means we only
+                        // need to check the 'h' once in case it's not an 'h', and it's easier to employ different
+                        // code gen that, for example, switches on first character of the branches, enabling faster
+                        // choice of branch without always having to walk through each.
+                        bool reordered = false;
+                        for (int start = 0; start < branches.Count; start++)
+                        {
+                            // Get the node that may start our range.  If it's a one, multi, or concat of those, proceed.
+                            RegexNode startNode = branches[start];
+                            if (startNode.FindBranchOneOrMultiStart() is null)
+                            {
+                                continue;
+                            }
+
+                            // Find the contiguous range of nodes from this point that are similarly one, multi, or concat of those.
+                            int endExclusive = start + 1;
+                            while (endExclusive < branches.Count && branches[endExclusive].FindBranchOneOrMultiStart() is not null)
+                            {
+                                endExclusive++;
+                            }
+
+                            // If there's at least 3, there may be something to reorder (we won't reorder anything
+                            // before the starting position, and so only 2 items is considered ordered).
+                            if (endExclusive - start >= 3)
+                            {
+                                int compare = start;
+                                while (compare < endExclusive)
+                                {
+                                    // Get the starting character
+                                    char c = branches[compare].FindBranchOneOrMultiStart()!.FirstCharOfOneOrMulti();
+
+                                    // Move compare to point to the last branch that has the same starting value.
+                                    while (compare < endExclusive && branches[compare].FindBranchOneOrMultiStart()!.FirstCharOfOneOrMulti() == c)
+                                    {
+                                        compare++;
+                                    }
+
+                                    // Compare now points to the first node that doesn't match the starting node.
+                                    // If we've walked off our range, there's nothing left to reorder.
+                                    if (compare < endExclusive)
+                                    {
+                                        // There may be something to reorder.  See if there are any other nodes that begin with the same character.
+                                        for (int next = compare + 1; next < endExclusive; next++)
+                                        {
+                                            RegexNode nextChild = branches[next];
+                                            if (nextChild.FindBranchOneOrMultiStart()!.FirstCharOfOneOrMulti() == c)
+                                            {
+                                                branches.RemoveAt(next);
+                                                branches.Insert(compare++, nextChild);
+                                                reordered = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Move to the end of the range we've now explored. endExclusive is not a viable
+                            // starting position either, and the start++ for the loop will thus take us to
+                            // the next potential place to start a range.
+                            start = endExclusive;
+                        }
+
+                        // If anything we reordered, there may be new optimization opportunities inside
+                        // of the alternation, so reduce it again.
+                        if (reordered)
+                        {
+                            atomic.ReplaceChild(0, child);
+                            child = atomic.Child(0);
+                        }
+                    }
+                    goto default;
 
                 // For everything else, try to reduce ending backtracking of the last contained expression.
                 default:
@@ -754,7 +869,7 @@ namespace System.Text.RegularExpressions
                 default:
                     ReduceSingleLetterAndNestedAlternations();
                     RegexNode newThis = ReplaceNodeIfUnnecessary(Nothing);
-                    return newThis != this ? newThis : ExtractCommonPrefix();
+                    return newThis != this ? newThis : ExtractCommonPrefixes();
             }
 
             // This function performs two optimizations:
@@ -882,7 +997,7 @@ namespace System.Text.RegularExpressions
             // by sets that can be merged.  Third, it reduces the amount of duplicated comparisons required
             // if we end up backtracking into subsequent branches.
             // e.g. abc|ade => a(?bc|de)
-            RegexNode ExtractCommonPrefix()
+            RegexNode ExtractCommonPrefixes()
             {
                 // To keep things relatively simple, we currently only handle:
                 // - Left to right (e.g. we don't process alternations in lookbehinds)
@@ -900,170 +1015,179 @@ namespace System.Text.RegularExpressions
                     return this;
                 }
 
-                // Process the first branch to get the maximum possible common string.
-                RegexNode? startingNode = FindBranchOneMultiStart(children[0]);
-                if (startingNode is null)
+                Span<char> scratchChar = stackalloc char[1];
+                ReadOnlySpan<char> startingSpan = stackalloc char[0];
+                for (int startingIndex = 0; startingIndex < children.Count - 1; startingIndex++)
                 {
-                    return this;
-                }
-
-                RegexOptions startingNodeOptions = startingNode.Options;
-                string? originalStartingString = startingNode.Str;
-                ReadOnlySpan<char> startingSpan = startingNode.Type == One ? stackalloc char[1] { startingNode.Ch } : originalStartingString.AsSpan();
-                Debug.Assert(startingSpan.Length > 0);
-
-                // Now compare the rest of the branches against it.
-                for (int i = 1; i < children.Count; i++)
-                {
-                    // Get the starting node of the next branch.
-                    startingNode = FindBranchOneMultiStart(children[i]);
-                    if (startingNode is null || startingNode.Options != startingNodeOptions)
+                    // Process the first branch to get the maximum possible common string.
+                    RegexNode? startingNode = children[startingIndex].FindBranchOneOrMultiStart();
+                    if (startingNode is null)
                     {
                         return this;
                     }
 
-                    // See if the new branch's prefix has a shared prefix with the current one.
-                    // If it does, shorten to that; if it doesn't, bail.
+                    RegexOptions startingNodeOptions = startingNode.Options;
+                    startingSpan = startingNode.Str.AsSpan();
                     if (startingNode.Type == One)
                     {
-                        if (startingSpan[0] != startingNode.Ch)
+                        scratchChar[0] = startingNode.Ch;
+                        startingSpan = scratchChar;
+                    }
+                    Debug.Assert(startingSpan.Length > 0);
+
+                    // Now compare the rest of the branches against it.
+                    int endingIndex = startingIndex + 1;
+                    for ( ; endingIndex < children.Count; endingIndex++)
+                    {
+                        // Get the starting node of the next branch.
+                        startingNode = children[endingIndex].FindBranchOneOrMultiStart();
+                        if (startingNode is null || startingNode.Options != startingNodeOptions)
                         {
-                            return this;
+                            break;
                         }
 
-                        if (startingSpan.Length != 1)
+                        // See if the new branch's prefix has a shared prefix with the current one.
+                        // If it does, shorten to that; if it doesn't, bail.
+                        if (startingNode.Type == One)
                         {
-                            startingSpan = startingSpan.Slice(0, 1);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Assert(startingNode.Type == Multi);
-                        Debug.Assert(startingNode.Str!.Length > 0);
+                            if (startingSpan[0] != startingNode.Ch)
+                            {
+                                break;
+                            }
 
-                        int minLength = Math.Min(startingSpan.Length, startingNode.Str.Length);
-                        int c = 0;
-                        while (c < minLength && startingSpan[c] == startingNode.Str[c]) c++;
-                        if (c == 0)
-                        {
-                            return this;
-                        }
-
-                        startingSpan = startingSpan.Slice(0, c);
-                    }
-                }
-
-                // If we get here, we have a starting string prefix shared by all branches.
-                Debug.Assert(startingSpan.Length > 0);
-
-                // Now remove the prefix from each branch.
-                for (int i = 0; i < children.Count; i++)
-                {
-                    RegexNode branch = children[i];
-                    if (branch.Type == Concatenate)
-                    {
-                        ProcessOneOrMulti(branch.Child(0), startingSpan);
-                        ReplaceChild(i, branch.Reduce());
-                    }
-                    else
-                    {
-                        ProcessOneOrMulti(branch, startingSpan);
-                    }
-
-                    // Remove the starting text from the one or multi node.  This may end up changing
-                    // the type of the node to be Empty if the starting text matches the node's full value.
-                    static void ProcessOneOrMulti(RegexNode node, ReadOnlySpan<char> startingSpan)
-                    {
-                        if (node.Type == One)
-                        {
-                            Debug.Assert(startingSpan.Length == 1);
-                            Debug.Assert(startingSpan[0] == node.Ch);
-                            node.Type = Empty;
-                            node.Ch = '\0';
+                            if (startingSpan.Length != 1)
+                            {
+                                startingSpan = startingSpan.Slice(0, 1);
+                            }
                         }
                         else
                         {
-                            Debug.Assert(node.Type == Multi);
-                            Debug.Assert(node.Str.AsSpan().StartsWith(startingSpan, StringComparison.Ordinal));
-                            if (node.Str!.Length == startingSpan.Length)
+                            Debug.Assert(startingNode.Type == Multi);
+                            Debug.Assert(startingNode.Str!.Length > 0);
+
+                            int minLength = Math.Min(startingSpan.Length, startingNode.Str.Length);
+                            int c = 0;
+                            while (c < minLength && startingSpan[c] == startingNode.Str[c]) c++;
+                            if (c == 0)
                             {
-                                node.Type = Empty;
-                                node.Str = null;
+                                break;
                             }
-                            else if (node.Str.Length - 1 == startingSpan.Length)
-                            {
-                                node.Type = One;
-                                node.Ch = node.Str[node.Str.Length - 1];
-                                node.Str = null;
-                            }
-                            else
-                            {
-                                node.Str = node.Str.Substring(startingSpan.Length);
-                            }
+
+                            startingSpan = startingSpan.Slice(0, c);
                         }
                     }
-                }
 
-                // We may have changed multiple branches to be Empty, but we only need to keep
-                // the first (keeping the rest would just duplicate work in backtracking, though
-                // it would also mean the original regex had at least two identical branches).
-                // e.g. abc|Empty|Empty|def|Empty => abc|Empty|def
-                for (int firstEmpty = 0; firstEmpty < children.Count; firstEmpty++)
-                {
-                    if (children[firstEmpty].Type != Empty)
+                    // When we get here, we have a starting string prefix shared by all branches
+                    // in the range [startingIndex, endingIndex).
+                    if (endingIndex - startingIndex <= 1)
                     {
+                        // There's nothing to consolidate for this starting node.
                         continue;
                     }
 
-                    // Found the first empty.  Now starting after it, remove all subsequent found Empty nodes,
-                    // pushing everything else down. (In the future, should we want to there's also the opportunity
-                    // here to remove other duplication, but such duplication is a more egregious mistake on the
-                    // part of the expression author.)
-                    int i = firstEmpty + 1;
-                    int j = i;
-                    while (i < children.Count)
+                    // We should be able to consolidate something for the nodes in the range [startingIndex, endingIndex).
+                    Debug.Assert(startingSpan.Length > 0);
+
+                    // Create a new node of the form:
+                    //     Concatenation(prefix, Alternation(each | node | with | prefix | removed))
+                    // that replaces all these branches in this alternation.
+
+                    var prefix = startingSpan.Length == 1 ?
+                        new RegexNode(One, startingNodeOptions, startingSpan[0]) :
+                        new RegexNode(Multi, startingNodeOptions, startingSpan.ToString());
+                    var newAlternate = new RegexNode(Alternate, startingNodeOptions);
+                    bool seenEmpty = false;
+                    for (int i = startingIndex; i < endingIndex; i++)
                     {
-                        if (children[i].Type != Empty)
+                        RegexNode branch = children[i];
+                        ProcessOneOrMulti(branch.Type == Concatenate ? branch.Child(0) : branch, startingSpan);
+                        branch = branch.Reduce();
+                        if (branch.Type == Empty)
                         {
-                            if (j != i)
+                            if (seenEmpty)
                             {
-                                children[j] = children[i];
+                                continue;
                             }
-                            j++;
+                            seenEmpty = true;
                         }
-                        i++;
+                        newAlternate.AddChild(branch);
+
+                        // Remove the starting text from the one or multi node.  This may end up changing
+                        // the type of the node to be Empty if the starting text matches the node's full value.
+                        static void ProcessOneOrMulti(RegexNode node, ReadOnlySpan<char> startingSpan)
+                        {
+                            if (node.Type == One)
+                            {
+                                Debug.Assert(startingSpan.Length == 1);
+                                Debug.Assert(startingSpan[0] == node.Ch);
+                                node.Type = Empty;
+                                node.Ch = '\0';
+                            }
+                            else
+                            {
+                                Debug.Assert(node.Type == Multi);
+                                Debug.Assert(node.Str.AsSpan().StartsWith(startingSpan, StringComparison.Ordinal));
+                                if (node.Str!.Length == startingSpan.Length)
+                                {
+                                    node.Type = Empty;
+                                    node.Str = null;
+                                }
+                                else if (node.Str.Length - 1 == startingSpan.Length)
+                                {
+                                    node.Type = One;
+                                    node.Ch = node.Str[node.Str.Length - 1];
+                                    node.Str = null;
+                                }
+                                else
+                                {
+                                    node.Str = node.Str.Substring(startingSpan.Length);
+                                }
+                            }
+                        }
                     }
 
-                    if (j < i)
+                    if (Next is RegexNode parent && parent.Type == Atomic)
                     {
-                        children.RemoveRange(j, i - j);
+                        var atomic = new RegexNode(Atomic, startingNodeOptions);
+                        atomic.AddChild(newAlternate);
+                        newAlternate = atomic;
                     }
 
-                    break;
+                    var newConcat = new RegexNode(Concatenate, startingNodeOptions);
+                    newConcat.AddChild(prefix);
+                    newConcat.AddChild(newAlternate);
+                    ReplaceChild(startingIndex, newConcat);
+                    children.RemoveRange(startingIndex + 1, endingIndex - startingIndex - 1);
                 }
 
-                var concat = new RegexNode(Concatenate, Options); // use same options as the Alternate
-                concat.AddChild(startingSpan.Length == 1 ? // use same options as the branches
-                    new RegexNode(One, startingNodeOptions) { Ch = startingSpan[0] } :
-                    new RegexNode(Multi, startingNodeOptions) { Str = originalStartingString?.Length == startingSpan.Length ? originalStartingString : startingSpan.ToString() });
-                concat.AddChild(this); // this will re-reduce the node, allowing for newly exposed possible optimizations in what came after the prefix
-                return concat;
-
-                // Finds the starting one or multi of the branch, if it has one; otherwise, returns null.
-                // For simplicity, this only considers branches that are One or Multi, or a Concatenation
-                // beginning with a One or Multi.  We don't traverse more than one level to avoid the
-                // complication of then having to later update that hierarchy when removing the prefix,
-                // but it could be done in the future if proven beneficial enough.
-                static RegexNode? FindBranchOneMultiStart(RegexNode branch)
-                {
-                    if (branch.Type == Concatenate)
-                    {
-                        branch = branch.Child(0);
-                    }
-
-                    return branch.Type == One || branch.Type == Multi ? branch : null;
-                }
+                return ChildCount() == 1 ? Child(0) : this;
             }
+        }
+
+        /// <summary>
+        /// Finds the starting one or multi of the branch, if it has one; otherwise, returns null.
+        /// For simplicity, this only considers branches that are One or Multi, or a Concatenation
+        /// beginning with a One or Multi.  We don't traverse more than one level to avoid the
+        /// complication of then having to later update that hierarchy when removing the prefix,
+        /// but it could be done in the future if proven beneficial enough.
+        /// </summary>
+        public RegexNode? FindBranchOneOrMultiStart()
+        {
+            RegexNode branch = this;
+
+            if (branch.Type == Concatenate)
+            {
+                branch = branch.Child(0);
+            }
+
+            return branch.Type == One || branch.Type == Multi ? branch : null;
+        }
+
+        /// <summary>Gets the character that begins a One or Multi.</summary>
+        public char FirstCharOfOneOrMulti()
+        {
+            Debug.Assert(Type is One or Multi);
+            return Type == One ? Ch : Str![0];
         }
 
         /// <summary>
@@ -1663,6 +1787,63 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>
+        /// Determine whether the specified child node is the beginning of a sequence that can
+        /// trivially have length checks combined in order to avoid bounds checks.
+        /// </summary>
+        /// <param name="childIndex">The starting index of the child to check.</param>
+        /// <param name="requiredLength">The sum of all the fixed lengths for the nodes in the sequence.</param>
+        /// <param name="exclusiveEnd">The index of the node just after the last one in the sequence.</param>
+        /// <returns>true if more than one node can have their length checks combined; otherwise, false.</returns>
+        /// <remarks>
+        /// There are additional node types for which we can prove a fixed length, e.g. examining all branches
+        /// of an alternation and returning true if all their lengths are equal.  However, the primary purpose
+        /// of this method is to avoid bounds checks by consolidating length checks that guard accesses to
+        /// strings/spans for which the JIT can see a fixed index within bounds, and alternations employ
+        /// patterns that defeat that (e.g. reassigning the span in question).  As such, the implementation
+        /// remains focused on only a core subset of nodes that are a) likely to be used in concatenations and
+        /// b) employ simple patterns of checks.
+        /// </remarks>
+        public bool TryGetJoinableLengthCheckChildRange(int childIndex, out int requiredLength, out int exclusiveEnd)
+        {
+            static bool CanJoinLengthCheck(RegexNode node) => node.Type switch
+            {
+                RegexNode.One or RegexNode.Notone or RegexNode.Set => true,
+                RegexNode.Multi => true,
+                RegexNode.Oneloop or RegexNode.Onelazy or RegexNode.Oneloopatomic or
+                    RegexNode.Notoneloop or RegexNode.Notonelazy or RegexNode.Notoneloopatomic or
+                    RegexNode.Setloop or RegexNode.Setlazy or RegexNode.Setloopatomic when node.M == node.N => true,
+                _ => false,
+            };
+
+            RegexNode child = Child(childIndex);
+            if (CanJoinLengthCheck(child))
+            {
+                requiredLength = child.ComputeMinLength();
+
+                int childCount = ChildCount();
+                for (exclusiveEnd = childIndex + 1; exclusiveEnd < childCount; exclusiveEnd++)
+                {
+                    child = Child(exclusiveEnd);
+                    if (!CanJoinLengthCheck(child))
+                    {
+                        break;
+                    }
+
+                    requiredLength += child.ComputeMinLength();
+                }
+
+                if (exclusiveEnd - childIndex > 1)
+                {
+                    return true;
+                }
+            }
+
+            requiredLength = 0;
+            exclusiveEnd = 0;
+            return false;
+        }
+
         public RegexNode MakeQuantifier(bool lazy, int min, int max)
         {
             if (min == 0 && max == 0)
@@ -1722,7 +1903,10 @@ namespace System.Text.RegularExpressions
             Debug.Assert(Children != null);
             Debug.Assert(index < ChildCount());
 
-            newChild.Next = this;
+            newChild.Next = this; // so that the child can see its parent while being reduced
+            newChild = newChild.Reduce();
+            newChild.Next = this; // in case Reduce returns a different node that needs to be reparented
+
             if (Children is RegexNode)
             {
                 Children = newChild;
@@ -2032,6 +2216,7 @@ namespace System.Text.RegularExpressions
                         (M == 0 && N == 1) ? "?" :
                         (M == 1 && N == int.MaxValue) ? "+" :
                         (N == int.MaxValue) ? $"{{{M}, *}}" :
+                        (N == M) ? $"{{{M}}}" :
                         $"{{{M}, {N}}}");
                     break;
             }

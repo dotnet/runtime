@@ -2,7 +2,8 @@
   <PropertyGroup>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- xUnit2008 is about regexes and isn't appropriate in the test project for regexes -->
-    <NoWarn>$(NoWarn);xUnit2008</NoWarn>
+    <!-- SYSLIB0036 is about obsoletion of regex members -->
+    <NoWarn>$(NoWarn);xUnit2008;SYSLIB0036</NoWarn>
     <TargetFrameworks>$(NetCoreAppCurrent);net48</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>

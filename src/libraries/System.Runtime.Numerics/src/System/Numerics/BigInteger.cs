@@ -2021,10 +2021,14 @@ namespace System.Numerics
                 }
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
-                if (xd[^1] == 0)
-                {
-                    trackSignBit = true;
-                }
+
+                // For a shift of N x 32 bit,
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
+                trackSignBit = smallShift == 0 && xd[^1] == 0;
             }
 
             int zl = xd.Length - digitShift + (trackSignBit ? 1: 0);
@@ -2061,12 +2065,12 @@ namespace System.Numerics
             }
             if (negx)
             {
-                NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
-
+                // Set the tracked sign to the last element
                 if (trackSignBit)
                 {
-                    zd[^1] = 1;
+                    zd[^1] = 0xFFFFFFFF;
                 }
+                NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
             }
 
             return new BigInteger(zd, zdArray, negx);

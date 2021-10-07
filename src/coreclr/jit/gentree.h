@@ -485,8 +485,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
-    GTF_NOP_DEATH               = 0x40000000, // GT_NOP -- operand dies here
-
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
     GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
@@ -1287,6 +1285,7 @@ public:
     bool OperIsPutArgSplit() const
     {
 #if FEATURE_ARG_SPLIT
+        assert((gtOper != GT_PUTARG_SPLIT) || compFeatureArgSplit());
         return gtOper == GT_PUTARG_SPLIT;
 #else // !FEATURE_ARG_SPLIT
         return false;
@@ -1427,7 +1426,7 @@ public:
     static bool OperIsMul(genTreeOps gtOper)
     {
         return (gtOper == GT_MUL) || (gtOper == GT_MULHI)
-#if !defined(TARGET_64BIT)
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
                || (gtOper == GT_MUL_LONG)
 #endif
             ;
@@ -1710,6 +1709,7 @@ public:
             case GT_LEA:
             case GT_RETFILT:
             case GT_NOP:
+            case GT_FIELD:
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
@@ -1944,6 +1944,8 @@ public:
     template <typename T>
     void BashToConst(T value, var_types type = TYP_UNDEF);
 
+    void BashToZeroConst(var_types type);
+
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);
     static void ReportOperBashing(FILE* fp);
@@ -2109,13 +2111,13 @@ public:
 
     void SetUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
         gtFlags |= GTF_UNSIGNED;
     }
 
     void ClearUnsigned()
     {
-        assert(OperIs(GT_ADD, GT_SUB, GT_MUL, GT_CAST));
+        assert(OperIs(GT_ADD, GT_SUB, GT_CAST) || OperIsMul());
         gtFlags &= ~GTF_UNSIGNED;
     }
 
@@ -2226,7 +2228,6 @@ public:
     bool gtRequestSetFlags();
 
 #ifdef DEBUG
-    bool       gtIsValid64RsltMul();
     static int gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
 #endif
 
@@ -3014,6 +3015,14 @@ struct GenTreeOp : public GenTreeUnOp
         return (gtFlags & GTF_DIV_BY_CNS_OPT) != 0;
     }
 
+#if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+    bool IsValidLongMul();
+#endif
+
+#if !defined(TARGET_64BIT) && defined(DEBUG)
+    void DebugCheckLongMul();
+#endif
+
 #if DEBUGGABLE_GENTREE
     GenTreeOp() : GenTreeUnOp(), gtOp2(nullptr)
     {
@@ -3673,11 +3682,9 @@ struct GenTreeBox : public GenTreeUnOp
 #endif
 };
 
-/* gtField  -- data member ref  (GT_FIELD) */
-
-struct GenTreeField : public GenTree
+// GenTreeField -- data member ref (GT_FIELD)
+struct GenTreeField : public GenTreeUnOp
 {
-    GenTree*             gtFldObj;
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
     bool                 gtFldMayOverlap;
@@ -3686,7 +3693,7 @@ struct GenTreeField : public GenTree
 #endif
 
     GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTree(GT_FIELD, type), gtFldObj(obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+        : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
         if (obj != nullptr)
         {
@@ -3698,17 +3705,24 @@ struct GenTreeField : public GenTree
 #endif
     }
 
+#if DEBUGGABLE_GENTREE
+    GenTreeField() : GenTreeUnOp()
+    {
+    }
+#endif
+
+    // The object this field belongs to. May be "nullptr", e. g. for static fields.
+    // Note that this is an address, i. e. for struct fields it will be ADDR(STRUCT).
+    GenTree* GetFldObj() const
+    {
+        return gtOp1;
+    }
+
     // True if this field is a volatile memory operation.
     bool IsVolatile() const
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeField() : GenTree()
-    {
-    }
-#endif
 };
 
 // Represents the Argument list of a call node, as a Lisp-style linked list.
@@ -4496,10 +4510,14 @@ struct GenTreeCall final : public GenTree
 
     bool HasFixedRetBufArg() const
     {
-#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
-        return hasFixedRetBuffReg() && HasRetBufArg() && !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
+        if (!(hasFixedRetBuffReg() && HasRetBufArg()))
+        {
+            return false;
+        }
+#if !defined(TARGET_ARM)
+        return !TargetOS::IsWindows || !callConvIsInstanceMethodCallConv(GetUnmanagedCallConv());
 #else
-        return hasFixedRetBuffReg() && HasRetBufArg();
+        return true;
 #endif
     }
 
@@ -4631,11 +4649,15 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
-#ifdef FEATURE_READYTORUN
     bool IsR2RRelativeIndir() const
     {
+#ifdef FEATURE_READYTORUN
         return (gtCallMoreFlags & GTF_CALL_M_R2R_REL_INDIRECT) != 0;
+#else
+        return false;
+#endif
     }
+#ifdef FEATURE_READYTORUN
     void setEntryPoint(const CORINFO_CONST_LOOKUP& entryPoint)
     {
         gtEntryPoint = entryPoint;
@@ -4975,12 +4997,15 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
-    // The "Compiler*" argument is not a DEBUGARG here because we use it to keep track of the set of
-    // (possible) QMark nodes.
-    GenTreeQmark(var_types type, GenTree* cond, GenTree* colonOp, class Compiler* comp);
+    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon) : GenTreeOp(GT_QMARK, type, cond, colon)
+    {
+        // These must follow a specific form.
+        assert((cond != nullptr) && cond->TypeIs(TYP_INT));
+        assert((colon != nullptr) && colon->OperIs(GT_COLON));
+    }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeQmark() : GenTreeOp(GT_QMARK, TYP_INT, nullptr, nullptr)
+    GenTreeQmark() : GenTreeOp()
     {
     }
 #endif
@@ -5177,20 +5202,39 @@ struct GenTreeSIMD : public GenTreeJitIntrinsic
 #ifdef FEATURE_HW_INTRINSICS
 struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
 {
-    GenTreeHWIntrinsic(var_types type, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+    GenTreeHWIntrinsic(var_types      type,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize,
+                       bool           isSimdAsHWIntrinsic)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, nullptr, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
+
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
+        }
     }
 
-    GenTreeHWIntrinsic(
-        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
+    GenTreeHWIntrinsic(var_types      type,
+                       GenTree*       op1,
+                       NamedIntrinsic hwIntrinsicID,
+                       CorInfoType    simdBaseJitType,
+                       unsigned       simdSize,
+                       bool           isSimdAsHWIntrinsic)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, nullptr, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
+
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        }
+
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
         }
     }
 
@@ -5199,13 +5243,20 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                        GenTree*       op2,
                        NamedIntrinsic hwIntrinsicID,
                        CorInfoType    simdBaseJitType,
-                       unsigned       simdSize)
+                       unsigned       simdSize,
+                       bool           isSimdAsHWIntrinsic)
         : GenTreeJitIntrinsic(GT_HWINTRINSIC, type, op1, op2, simdBaseJitType, simdSize)
     {
         gtHWIntrinsicId = hwIntrinsicID;
+
         if (OperIsMemoryStore())
         {
             gtFlags |= (GTF_GLOB_REF | GTF_ASG);
+        }
+
+        if (isSimdAsHWIntrinsic)
+        {
+            gtFlags |= GTF_SIMDASHW_OP;
         }
     }
 
@@ -5219,6 +5270,11 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                     // false otherwise
     bool OperIsMemoryLoadOrStore() const; // Returns true for the HW Intrinsic instructions that have MemoryLoad or
                                           // MemoryStore semantics, false otherwise
+
+    bool IsSimdAsHWIntrinsic() const
+    {
+        return (gtFlags & GTF_SIMDASHW_OP) != 0;
+    }
 
 #if DEBUGGABLE_GENTREE
     GenTreeHWIntrinsic() : GenTreeJitIntrinsic()

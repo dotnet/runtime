@@ -827,6 +827,7 @@ namespace Internal.JitInterface
     {
         CORINFO_WINNT,
         CORINFO_UNIX,
+        CORINFO_MACOS,
     }
 
     public enum CORINFO_RUNTIME_ABI

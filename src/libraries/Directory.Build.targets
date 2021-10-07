@@ -33,8 +33,9 @@
          SYSLIB0023: RNGCryptoServiceProvider.
          SYSLIB0025: SuppressIldasmAttribute.
          SYSLIB0032: HandleProcessCorruptedStateExceptionsAttribute.
+         SYSLIB0036: Regex.CompileToAssembly
     -->
-    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025;SYSLIB0032</NoWarn>
+    <NoWarn Condition="'$(IsPartialFacadeAssembly)' == 'true'">$(NoWarn);SYSLIB0003;SYSLIB0004;SYSLIB0015;SYSLIB0017;SYSLIB0021;SYSLIB0022;SYSLIB0023;SYSLIB0025;SYSLIB0032;SYSLIB0036</NoWarn>
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <WarningsAsErrors Condition="'$(WarningsAsErrors)' == 'NU1605'" />
     <IsNETCoreAppSrc Condition="'$(IsNETCoreAppSrc)' == '' and
@@ -219,7 +220,7 @@
   </Choose>
 
   <PropertyGroup>
-    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and ($([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', '$(NetCoreAppCurrent)')))">true</SkipLocalsInit>
+    <SkipLocalsInit Condition="'$(SkipLocalsInit)' == '' and '$(MSBuildProjectExtension)' == '.csproj' and '$(IsNETCoreAppSrc)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">true</SkipLocalsInit>
   </PropertyGroup>
 
   <!--Instructs compiler not to emit .locals init, using SkipLocalsInitAttribute.-->

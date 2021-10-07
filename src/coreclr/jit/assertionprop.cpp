@@ -1547,21 +1547,14 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             // Try and see if we can make a subrange assertion.
             if (((assertionKind == OAK_SUBRANGE) || (assertionKind == OAK_EQUAL)))
             {
-                // Keep the casts on small struct fields.
-                // TODO-Review: why?
-                if (op2->OperIs(GT_CAST) && lvaTable[lclNum].lvIsStructField && lvaTable[lclNum].lvNormalizeOnLoad())
-                {
-                    goto DONE_ASSERTION;
-                }
-
                 if (optTryExtractSubrangeAssertion(op2, &assertion.op2.u2))
                 {
                     assertion.op2.kind      = O2K_SUBRANGE;
                     assertion.assertionKind = OAK_SUBRANGE;
                 }
             }
-        } // else // !helperCallArgs
-    }     // if (op1->gtOper == GT_LCL_VAR)
+        }
+    }
 
     //
     // Are we making an IsType assertion?
@@ -2153,12 +2146,6 @@ AssertionIndex Compiler::optAssertionGenCast(GenTreeCast* cast)
 
     // A representation-changing cast cannot be simplified if it is not checked.
     if (!cast->gtOverflow() && (genActualType(cast) != genActualType(lclVar)))
-    {
-        return NO_ASSERTION_INDEX;
-    }
-
-    // This condition also exists to preverve previous behavior.
-    if (varDsc->lvIsStructField && varDsc->lvNormalizeOnLoad())
     {
         return NO_ASSERTION_INDEX;
     }

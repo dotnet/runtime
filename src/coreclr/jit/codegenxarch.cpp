@@ -1978,30 +1978,33 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
         inst_RV_RV_IV(INS_shufpd, EA_16BYTE, targetReg, targetReg, 0x01);
     }
     genProduceReg(lclNode);
-#elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
-    assert(varTypeIsIntegral(retTypeDesc->GetReturnRegType(0)));
-    assert(varTypeIsIntegral(retTypeDesc->GetReturnRegType(1)));
-    assert(lclNode->TypeIs(TYP_SIMD8));
-
-    // This is a case where a SIMD8 struct returned as [EAX, EDX]
-    // and needs to be assembled into a single xmm register,
-    // note we can't check reg0=EAX, reg1=EDX because they could be already moved.
-
-    inst_Mov(TYP_FLOAT, targetReg, reg0, /* canSkip */ false);
-    const emitAttr size = emitTypeSize(TYP_SIMD8);
-    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+#elif defined(TARGET_X86)
+    if (TargetOS::IsWindows)
     {
-        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_pinsrd, size, targetReg, targetReg, reg1, 1);
+        assert(varTypeIsIntegral(retTypeDesc->GetReturnRegType(0)));
+        assert(varTypeIsIntegral(retTypeDesc->GetReturnRegType(1)));
+        assert(lclNode->TypeIs(TYP_SIMD8));
+
+        // This is a case where a SIMD8 struct returned as [EAX, EDX]
+        // and needs to be assembled into a single xmm register,
+        // note we can't check reg0=EAX, reg1=EDX because they could be already moved.
+
+        inst_Mov(TYP_FLOAT, targetReg, reg0, /* canSkip */ false);
+        const emitAttr size = emitTypeSize(TYP_SIMD8);
+        if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+        {
+            GetEmitter()->emitIns_SIMD_R_R_R_I(INS_pinsrd, size, targetReg, targetReg, reg1, 1);
+        }
+        else
+        {
+            regNumber tempXmm = lclNode->GetSingleTempReg();
+            assert(tempXmm != targetReg);
+            inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
+            GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
+        }
     }
-    else
-    {
-        regNumber tempXmm = lclNode->GetSingleTempReg();
-        assert(tempXmm != targetReg);
-        inst_Mov(TYP_FLOAT, tempXmm, reg1, /* canSkip */ false);
-        GetEmitter()->emitIns_SIMD_R_R_R(INS_punpckldq, size, targetReg, targetReg, tempXmm);
-    }
-#elif defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
-    assert(!"Multireg store to SIMD reg not supported on Windows x64");
+#elif defined(TARGET_AMD64)
+    assert(!TargetOS::IsWindows || !"Multireg store to SIMD reg not supported on Windows x64");
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -2811,16 +2814,15 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
         {
             emit->emitIns_Mov(INS_movd, EA_PTRSIZE, srcXmmReg, srcIntReg, /* canSkip */ false);
             emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
-
+#ifdef TARGET_X86
+            // For x86, we need one more to convert it from 8 bytes to 16 bytes.
+            emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
+#endif
             if (regSize == YMM_REGSIZE_BYTES)
             {
                 // Extend the bytes in the lower lanes to the upper lanes
                 emit->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, srcXmmReg, srcXmmReg, srcXmmReg, 1);
             }
-#ifdef TARGET_X86
-            // For x86, we need one more to convert it from 8 bytes to 16 bytes.
-            emit->emitIns_R_R(INS_punpckldq, EA_16BYTE, srcXmmReg, srcXmmReg);
-#endif
         }
 
         instruction simdMov      = simdUnalignedMovIns();
@@ -5221,18 +5223,16 @@ void CodeGen::genCall(GenTreeCall* call)
                             emitActualTypeSize(TYP_I_IMPL));
         }
 
-#if FEATURE_VARARG
         // In the case of a varargs call,
         // the ABI dictates that if we have floating point args,
         // we must pass the enregistered arguments in both the
         // integer and floating point registers so, let's do that.
-        if (call->IsVarargs() && varTypeIsFloating(argNode))
+        if (compFeatureVarArg() && call->IsVarargs() && varTypeIsFloating(argNode))
         {
             regNumber srcReg    = argNode->GetRegNum();
             regNumber targetReg = compiler->getCallArgIntRegister(argNode->GetRegNum());
             inst_Mov(TYP_LONG, targetReg, srcReg, /* canSkip */ false, emitActualTypeSize(TYP_I_IMPL));
         }
-#endif // FEATURE_VARARG
     }
 
 #if defined(TARGET_X86) || defined(UNIX_AMD64_ABI)
@@ -5701,18 +5701,40 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         emitter::EmitCallType type =
             (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
-        // clang-format off
-        genEmitCall(type,
-                    methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo)
-                    (void*)call->gtEntryPoint.addr
-                    X86_ARG(argSizeForEmitter),
-                    retSize
-                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                    ilOffset,
-                    REG_NA,
-                    call->IsFastTailCall());
-        // clang-format on
+        if (call->IsFastTailCall() && (type == emitter::EC_FUNC_TOKEN_INDIR))
+        {
+            // For fast tailcall with func token indir we already have the indirection cell in REG_R2R_INDIRECT_PARAM,
+            // so get it from there.
+            // clang-format off
+            GetEmitter()->emitIns_Call(
+                emitter::EC_INDIR_ARD,
+                methHnd,
+                INDEBUG_LDISASM_COMMA(sigInfo)
+                nullptr,
+                0,
+                retSize
+                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                gcInfo.gcVarPtrSetCur,
+                gcInfo.gcRegGCrefSetCur,
+                gcInfo.gcRegByrefSetCur,
+                ilOffset, REG_R2R_INDIRECT_PARAM, REG_NA, 0, 0, true);
+            // clang-format on
+        }
+        else
+        {
+            // clang-format off
+            genEmitCall(type,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        (void*)call->gtEntryPoint.addr
+                        X86_ARG(argSizeForEmitter),
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        ilOffset,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
+        }
     }
 #endif
     else
@@ -5978,12 +6000,12 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             }
         }
 
-#if FEATURE_VARARG && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
         // In case of a jmp call to a vararg method also pass the float/double arg in the corresponding int arg
         // register. This is due to the AMD64 ABI which requires floating point values passed to varargs functions to
         // be passed in both integer and floating point registers. It doesn't apply to x86, which passes floating point
         // values on the stack.
-        if (compiler->info.compIsVarArgs)
+        if (compFeatureVarArg() && compiler->info.compIsVarArgs)
         {
             regNumber intArgReg;
             var_types loadType = varDsc->GetRegisterType();
@@ -6007,10 +6029,10 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 firstArgVarNum = varNum;
             }
         }
-#endif // FEATURE_VARARG
+#endif // TARGET_AMD64
     }
 
-#if FEATURE_VARARG && defined(TARGET_AMD64)
+#if defined(TARGET_AMD64)
     // Jmp call to a vararg method - if the method has fewer than 4 fixed arguments,
     // load the remaining arg registers (both int and float) from the corresponding
     // shadow stack slots.  This is for the reason that we don't know the number and type
@@ -6023,7 +6045,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
     // The caller could have passed gc-ref/byref type var args.  Since these are var args
     // the callee no way of knowing their gc-ness.  Therefore, mark the region that loads
     // remaining arg registers from shadow stack slots as non-gc interruptible.
-    if (fixedIntArgMask != RBM_NONE)
+    if (compFeatureVarArg() && fixedIntArgMask != RBM_NONE)
     {
         assert(compiler->info.compIsVarArgs);
         assert(firstArgVarNum != BAD_VAR_NUM);
@@ -6052,7 +6074,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             GetEmitter()->emitEnableGC();
         }
     }
-#endif // FEATURE_VARARG
+#endif // TARGET_AMD64
 }
 
 // produce code for a GT_LEA subnode
@@ -8854,13 +8876,11 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
         GetEmitter()->emitIns_R_S(load_ins, emitTypeSize(loadType), argReg, varNum, 0);
 
-#if FEATURE_VARARG
-        if (compiler->info.compIsVarArgs && varTypeIsFloating(loadType))
+        if (compFeatureVarArg() && compiler->info.compIsVarArgs && varTypeIsFloating(loadType))
         {
             regNumber intArgReg = compiler->getCallArgIntRegister(argReg);
             inst_Mov(TYP_LONG, intArgReg, argReg, /* canSkip */ false, emitActualTypeSize(loadType));
         }
-#endif //  FEATURE_VARARG
     }
 
     // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
