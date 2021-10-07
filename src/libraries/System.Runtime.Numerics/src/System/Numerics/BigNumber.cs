@@ -617,7 +617,7 @@ namespace System.Numerics
                     int remainingIntDigitCount = totalDigitCount;
                     foreach (ReadOnlyMemory<char> digitsChunk in number.digits.GetChunks())
                     {
-                        var digitsChunkSpan = digitsChunk.Span;
+                        ReadOnlySpan<char> digitsChunkSpan = digitsChunk.Span;
                         ReadOnlySpan<char> intDigitsSpan = digitsChunkSpan.Slice(0, Math.Min(remainingIntDigitCount, digitsChunkSpan.Length));
 
                         for (int i = 0; i < intDigitsSpan.Length; i++)
@@ -712,7 +712,7 @@ namespace System.Numerics
                                 }
                             }
 
-                            var tmp = buffer;
+                            Span<uint> tmp = buffer;
                             buffer = newBuffer;
                             newBuffer = tmp;
                             blockSize *= 2;
