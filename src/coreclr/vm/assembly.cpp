@@ -877,7 +877,11 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainFile * pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef);
+            DomainFile* pDomainModule = NULL;
+            if (loadFlag == Loader::Load)
+            {
+                pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef);
+            }
 
             if (pDomainModule == NULL)
                 RETURN NULL;

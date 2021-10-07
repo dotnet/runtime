@@ -144,7 +144,7 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
 
     EX_TRY
     {
-        PEImageLayout* pLayout = pPEImage->GetLayout(PEImageLayout::LAYOUT_ANY);
+        PEImageLayout* pLayout = pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
 
         // CheckCorHeader includes check of NT headers too
         if (!pLayout->CheckCorHeader())

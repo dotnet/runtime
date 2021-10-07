@@ -881,9 +881,6 @@ void DomainAssembly::Allocate()
         assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
         assemblyHolder->SetIsTenured();
 
-        //@todo! This is too early to be calling SuppressRelease. The right place to call it is below after
-        // the CANNOTTHROWCOMPLUSEXCEPTION. Right now, we have to do this to unblock OOM injection testing quickly
-        // as doing the right thing is nontrivial.
         pamTracker->SuppressRelease();
         assemblyHolder.SuppressRelease();
     }

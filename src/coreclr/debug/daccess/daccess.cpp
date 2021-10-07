@@ -7184,7 +7184,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
         return E_INVALIDARG;
     }
 #endif
-    // On MacOS, FreeBSD or NetBSD use the RVA include pPEAssembly
+    // On MacOS, FreeBSD or NetBSD use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
     // On Linux/MacOS try to get the dac table address via the export symbol

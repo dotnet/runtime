@@ -494,7 +494,7 @@ void PEAssembly::GetEmbeddedResource(DWORD dwOffset, DWORD *cbResource, PBYTE *p
 
     PEImage* image = GetPEImage();
 
-    PEImageLayout* theImage = image->GetLayout(PEImageLayout::LAYOUT_ANY);
+    PEImageLayout* theImage = image->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
     if (!theImage->CheckResource(dwOffset))
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
@@ -660,6 +660,7 @@ void PEAssembly::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
 {
     WRAPPER_NO_CONTRACT;
 
+    _ASSERTE(pdwKind != NULL && pdwMachine != NULL);
     if (IsDynamic())
     {
         *pdwKind = 0;
@@ -725,7 +726,7 @@ PEAssembly::PEAssembly(
         pPEImage->AddRef();
 
         // We require a mapping for the file.
-        pPEImage->GetLayout(PEImageLayout::LAYOUT_ANY);
+        pPEImage->GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
         m_PEImage = pPEImage;
     }
 
@@ -878,9 +879,9 @@ PEAssembly *PEAssembly::DoOpenSystem()
     RETURN new PEAssembly(pBoundAssembly, NULL, NULL, TRUE);
 }
 
-PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult, BOOL isSystem)
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
 {
-    return new PEAssembly(pBindResult,NULL,NULL,isSystem);
+    return new PEAssembly(pBindResult,NULL,NULL, /*isSystem*/ false);
 };
 
 /* static */
@@ -1111,7 +1112,6 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    // sizeof(PEAssembly) == 0xb8
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PEAssembly\n", dac_cast<TADDR>(this)));
 
@@ -1123,11 +1123,6 @@ void PEAssembly::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     if (m_PEImage.IsValid())
     {
         m_PEImage->EnumMemoryRegions(flags);
-    }
-
-    if (HasPEImage())
-    {
-        GetPEImage()->EnumMemoryRegions(flags);
     }
 
     if (m_creator.IsValid())

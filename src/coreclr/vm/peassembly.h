@@ -353,9 +353,7 @@ public:
     // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly* OpenSystem();
 
-    static PEAssembly* Open(
-        BINDER_SPACE::Assembly* pBindResult,
-        BOOL isSystem);
+    static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
 
     static PEAssembly* Create(
         PEAssembly* pParentAssembly,

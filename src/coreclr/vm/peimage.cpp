@@ -24,27 +24,6 @@ PtrHashMap *PEImage::s_Images = NULL;
 CrstStatic  PEImage::s_ijwHashLock;
 PtrHashMap *PEImage::s_ijwFixupDataHash;
 
-#ifndef TARGET_UNIX
-namespace
-{
-    void GetPathFromDll(HINSTANCE hMod, SString& result)
-    {
-        CONTRACTL
-        {
-            PRECONDITION(CheckPointer(hMod));
-            PRECONDITION(CheckValue(result));
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-            INJECT_FAULT(COMPlusThrowOM(););
-        }
-        CONTRACTL_END;
-
-        WszGetModuleFileName(hMod, result);
-    }
-}
-#endif // !TARGET_UNIX
-
 /* static */
 void PEImage::Startup()
 {
@@ -85,7 +64,7 @@ CHECK PEImage::CheckStartup()
 CHECK PEImage::CheckILFormat()
 {
     WRAPPER_NO_CONTRACT;
-    CHECK(GetLayout(PEImageLayout::LAYOUT_ANY)->CheckILFormat());
+    CHECK(GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->CheckILFormat());
     CHECK_OK;
 };
 
@@ -782,7 +761,7 @@ PEImage::PEImage():
     m_pLayoutLock=new SimpleRWLock(PREEMPTIVE,LOCK_TYPE_DEFAULT);
 }
 
-PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask)
+PTR_PEImageLayout PEImage::GetOrCreateLayout(DWORD imageLayoutMask)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
@@ -797,7 +776,7 @@ PTR_PEImageLayout PEImage::GetLayout(DWORD imageLayoutMask)
     {
         GCX_PREEMP();
         SimpleWriteLockHolder lock(m_pLayoutLock);
-        pRetVal = GetLayoutInternal(imageLayoutMask);
+        pRetVal = GetOrCreateLayoutInternal(imageLayoutMask);
     }
 #else
     // In DAC builds, we can't create any layouts - we must require that they already exist.
@@ -821,7 +800,7 @@ void PEImage::SetLayout(DWORD dwLayout, PEImageLayout* pLayout)
     m_pLayouts[dwLayout] = pLayout;
 }
 
-PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask)
+PTR_PEImageLayout PEImage::GetOrCreateLayoutInternal(DWORD imageLayoutMask)
 {
     CONTRACTL
     {
@@ -870,6 +849,8 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask)
         }
     }
 
+    _ASSERTE(pRetVal != NULL);
+    _ASSERTE(this->IsOpened());
     return pRetVal;
 }
 
@@ -941,7 +922,7 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     }
     else
     {
-        PEImageLayout* flatPE = GetLayout(PEImageLayout::LAYOUT_FLAT);
+        PEImageLayout* flatPE = GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
         if (!flatPE->CheckFormat() || !flatPE->IsILOnly())
             ThrowHR(COR_E_BADIMAGEFORMAT);
 
@@ -994,7 +975,10 @@ PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
     PEImageHolder pImage(new PEImage());
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFlat(flat,size,pImage);
     _ASSERTE(!pLayout->IsMapped());
-    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+
+    //Not taking a lock here since we have just created pImage
+    //SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+
     pImage->SetLayout(IMAGE_FLAT,pLayout);
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 }
@@ -1012,12 +996,13 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
     CONTRACT_END;
 
     StackSString path;
-    GetPathFromDll(hMod, path);
+    WszGetModuleFileName(hMod, path);
     PEImageHolder pImage(PEImage::OpenImage(path, MDInternalImport_Default));
     if (pImage->HasLoadedLayout())
         RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 
-    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+    //Not taking a lock here since we have just created pImage
+    // SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
 
     if(pImage->m_pLayouts[IMAGE_LOADED]==NULL)
         pImage->SetLayout(IMAGE_LOADED,PEImageLayout::CreateFromHMODULE(hMod,pImage,WszGetModuleHandle(NULL)!=hMod));
@@ -1105,7 +1090,7 @@ void PEImage::LoadFromMapped()
         return;
     }
 
-    PEImageLayout* pLayout = GetLayout(PEImageLayout::LAYOUT_MAPPED);
+    PEImageLayout* pLayout = GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
     SimpleWriteLockHolder lock(m_pLayoutLock);
     if (m_pLayouts[IMAGE_LOADED] == NULL)
     {
@@ -1194,21 +1179,6 @@ HANDLE PEImage::GetFileHandle()
     }
 
     return m_hFile;
-}
-
-void PEImage::SetFileHandle(HANDLE hFile)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    SimpleWriteLockHolder lock(m_pLayoutLock);
-    if (m_hFile == INVALID_HANDLE_VALUE)
-    {
-        m_hFile = hFile;
-    }
 }
 
 HRESULT PEImage::TryOpenFile()

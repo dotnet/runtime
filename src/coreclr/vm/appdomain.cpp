@@ -1319,9 +1319,8 @@ void SystemDomain::LoadBaseSystemClasses()
 
     ETWOnStartup(LdSysBases_V1, LdSysBasesEnd_V1);
 
-    {
-        m_pSystemPEAssembly = PEAssembly::OpenSystem();
-    }
+    m_pSystemPEAssembly = PEAssembly::OpenSystem();
+
     // Only partially load the system assembly. Other parts of the code will want to access
     // the globals in this function before finishing the load.
     m_pSystemAssembly = DefaultDomain()->LoadDomainAssembly(NULL, m_pSystemPEAssembly, FILE_LOAD_POST_LOADLIBRARY)->GetCurrentAssembly();
@@ -3686,7 +3685,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     else
                     {
                         // IsSystem on the PEAssembly should be false, even for CoreLib satellites
-                        result = PEAssembly::Open(boundAssembly, FALSE);
+                        result = PEAssembly::Open(boundAssembly);
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec

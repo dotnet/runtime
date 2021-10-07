@@ -184,37 +184,37 @@ inline BOOL PEImage::IsReferenceAssembly()
 inline BOOL PEImage::HasNTHeaders()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->HasNTHeaders();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasNTHeaders();
 }
 
 inline BOOL PEImage::HasCorHeader()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->HasCorHeader();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasCorHeader();
 }
 
 inline BOOL PEImage::IsComponentAssembly()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->IsComponentAssembly();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->IsComponentAssembly();
 }
 
 inline BOOL PEImage::HasReadyToRunHeader()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->HasReadyToRunHeader();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasReadyToRunHeader();
 }
 
 inline BOOL PEImage::HasDirectoryEntry(int entry)
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->HasDirectoryEntry(entry);
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasDirectoryEntry(entry);
 }
 
 inline mdToken PEImage::GetEntryPointToken()
 {
     WRAPPER_NO_CONTRACT;
-    PEImageLayout* pLayout = GetLayout(PEImageLayout::LAYOUT_ANY);
+    PEImageLayout* pLayout = GetOrCreateLayout(PEImageLayout::LAYOUT_ANY);
     if (!pLayout->HasManagedEntryPoint())
         return mdTokenNil;
     return pLayout->GetEntryPointToken();
@@ -223,7 +223,7 @@ inline mdToken PEImage::GetEntryPointToken()
 inline DWORD PEImage::GetCorHeaderFlags()
 {
     WRAPPER_NO_CONTRACT;
-    return VAL32(GetLayout(PEImageLayout::LAYOUT_ANY)->GetCorHeader()->Flags);
+    return VAL32(GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->GetCorHeader()->Flags);
 }
 
 inline BOOL PEImage::MDImportLoaded()
@@ -240,32 +240,32 @@ inline BOOL PEImage::HasV1Metadata()
 inline BOOL PEImage::IsILOnly()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->IsILOnly();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->IsILOnly();
 }
 
 inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->GetNativeManifestMetadata(pSize);
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->GetNativeManifestMetadata(pSize);
 }
 
 inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize)
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->GetMetadata(pSize);
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->GetMetadata(pSize);
 }
 
 inline BOOL PEImage::HasContents()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->HasContents();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->HasContents();
 }
 
 
 inline CHECK PEImage::CheckFormat()
 {
     WRAPPER_NO_CONTRACT;
-    CHECK(GetLayout(PEImageLayout::LAYOUT_ANY)->CheckFormat());
+    CHECK(GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->CheckFormat());
     CHECK_OK;
 }
 
@@ -368,7 +368,7 @@ inline void PEImage::AddToHashMap()
 inline BOOL PEImage::Has32BitNTHeaders()
 {
     WRAPPER_NO_CONTRACT;
-    return GetLayout(PEImageLayout::LAYOUT_ANY)->Has32BitNTHeaders();
+    return GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->Has32BitNTHeaders();
 }
 
 inline BOOL PEImage::HasPath()
@@ -411,7 +411,7 @@ inline void  PEImage::GetPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine)
     {
         // Compute result into a local variables first
         DWORD dwPEKind, dwMachine;
-        GetLayout(PEImageLayout::LAYOUT_ANY)->GetPEKindAndMachine(&dwPEKind, &dwMachine);
+        GetOrCreateLayout(PEImageLayout::LAYOUT_ANY)->GetPEKindAndMachine(&dwPEKind, &dwMachine);
 
         // Write the final results - first machine, then kind.
         m_dwMachine = dwMachine;

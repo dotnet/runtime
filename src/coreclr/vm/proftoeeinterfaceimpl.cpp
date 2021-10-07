@@ -4286,7 +4286,7 @@ HRESULT ProfToEEInterfaceImpl::GetILFunctionBody(ModuleID    moduleId,
         // Yay!
         MODE_ANY;
 
-        // PEAssembly::HasLoadedPEImage & Module::GetDynamicIL both take a lock
+        // Module::GetDynamicIL both take a lock
         CAN_TAKE_LOCK;
 
     }

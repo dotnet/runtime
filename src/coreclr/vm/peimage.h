@@ -91,7 +91,7 @@ public:
 #endif
 
     BOOL IsOpened();
-    PTR_PEImageLayout GetLayout(DWORD imageLayoutMask);
+    PTR_PEImageLayout GetOrCreateLayout(DWORD imageLayoutMask);
 
     BOOL HasLoadedLayout();
     PTR_PEImageLayout GetLoadedLayout();
@@ -108,7 +108,6 @@ public:
     INT64 GetSize() const;
     INT64 GetUncompressedSize() const;
 
-    void SetFileHandle(HANDLE hFile);
     HRESULT TryOpenFile();
 
     LPCWSTR GetPathForErrorMessages();
@@ -159,7 +158,7 @@ public:
 private:
 #ifndef DACCESS_COMPILE
     // Get or create the layout corresponding to the mask, with an AddRef
-    PTR_PEImageLayout GetLayoutInternal(DWORD imageLayoutMask);
+    PTR_PEImageLayout GetOrCreateLayoutInternal(DWORD imageLayoutMask);
 
     // Create the mapped layout
     PTR_PEImageLayout CreateLayoutMapped();
