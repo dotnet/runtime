@@ -1655,7 +1655,7 @@ int32_t SystemNative_GetSocketErrorOption(intptr_t socket, int32_t* error)
     return Error_SUCCESS;
 }
 
-static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socketOptionName, int* optLevel, int* optName)
+static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socketOptionName, int* optLevel, int* optName)
 {
     switch (socketOptionLevel)
     {
@@ -1666,37 +1666,37 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
             {
                 case SocketOptionName_SO_DEBUG:
                     *optName = SO_DEBUG;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_ACCEPTCONN:
                     *optName = SO_ACCEPTCONN;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_REUSEADDR:
                     *optName = SO_REUSEADDR;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_KEEPALIVE:
                     *optName = SO_KEEPALIVE;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_DONTROUTE:
                     *optName = SO_DONTROUTE;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_BROADCAST:
                     *optName = SO_BROADCAST;
-                    return Error_SUCCESS;
+                    return true;
 
                 // case SocketOptionName_SO_USELOOPBACK:
 
                 case SocketOptionName_SO_LINGER:
                     *optName = SO_LINGER;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_OOBINLINE:
                     *optName = SO_OOBINLINE;
-                    return Error_SUCCESS;
+                    return true;
 
                 // case SocketOptionName_SO_DONTLINGER:
 
@@ -1704,40 +1704,40 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
 
                 case SocketOptionName_SO_SNDBUF:
                     *optName = SO_SNDBUF;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_RCVBUF:
                     *optName = SO_RCVBUF;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_SNDLOWAT:
                     *optName = SO_SNDLOWAT;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_RCVLOWAT:
                     *optName = SO_RCVLOWAT;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_SNDTIMEO:
                     *optName = SO_SNDTIMEO;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_RCVTIMEO:
                     *optName = SO_RCVTIMEO;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_ERROR:
                     *optName = SO_ERROR;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_TYPE:
                     *optName = SO_TYPE;
-                    return Error_SUCCESS;
+                    return true;
 
                 // case SocketOptionName_SO_MAXCONN:
 
                 default:
-                    return Error_ENOPROTOOPT;
+                    return false;
             }
 
         case SocketOptionLevel_SOL_IP:
@@ -1747,76 +1747,76 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
             {
                 case SocketOptionName_SO_IP_OPTIONS:
                     *optName = IP_OPTIONS;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_HDRINCL:
                     *optName = IP_HDRINCL;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_TOS:
                     *optName = IP_TOS;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_TTL:
                     *optName = IP_TTL;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_MULTICAST_IF:
                     *optName = IP_MULTICAST_IF;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_MULTICAST_TTL:
                     *optName = IP_MULTICAST_TTL;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_MULTICAST_LOOP:
                     *optName = IP_MULTICAST_LOOP;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_ADD_MEMBERSHIP:
                     *optName = IP_ADD_MEMBERSHIP;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_DROP_MEMBERSHIP:
                     *optName = IP_DROP_MEMBERSHIP;
-                    return Error_SUCCESS;
+                    return true;
 
 #ifdef IP_MTU_DISCOVER
                 case SocketOptionName_SO_IP_DONTFRAGMENT:
                     *optName = IP_MTU_DISCOVER; // option values will also need to be translated
-                    return Error_SUCCESS;
+                    return true;
 #endif
 
 #ifdef IP_ADD_SOURCE_MEMBERSHIP
                 case SocketOptionName_SO_IP_ADD_SOURCE_MEMBERSHIP:
                     *optName = IP_ADD_SOURCE_MEMBERSHIP;
-                    return Error_SUCCESS;
+                    return true;
 #endif
 
 #ifdef IP_DROP_SOURCE_MEMBERSHIP
                 case SocketOptionName_SO_IP_DROP_SOURCE_MEMBERSHIP:
                     *optName = IP_DROP_SOURCE_MEMBERSHIP;
-                    return Error_SUCCESS;
+                    return true;
 #endif
 
 #ifdef IP_BLOCK_SOURCE
                 case SocketOptionName_SO_IP_BLOCK_SOURCE:
                     *optName = IP_BLOCK_SOURCE;
-                    return Error_SUCCESS;
+                    return true;
 #endif
 
 #ifdef IP_UNBLOCK_SOURCE
                 case SocketOptionName_SO_IP_UNBLOCK_SOURCE:
                     *optName = IP_UNBLOCK_SOURCE;
-                    return Error_SUCCESS;
+                    return true;
 #endif
 
                 case SocketOptionName_SO_IP_PKTINFO:
                     *optName = IP_PKTINFO;
-                    return Error_SUCCESS;
+                    return true;
 
                 default:
-                    return Error_ENOPROTOOPT;
+                    return false;
             }
 
         case SocketOptionLevel_SOL_IPV6:
@@ -1826,31 +1826,31 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
             {
                 case SocketOptionName_SO_IPV6_HOPLIMIT:
                     *optName = IPV6_HOPLIMIT;
-                    return Error_SUCCESS;
+                    return true;
 
                 // case SocketOptionName_SO_IPV6_PROTECTION_LEVEL:
 
                 case SocketOptionName_SO_IPV6_V6ONLY:
                     *optName = IPV6_V6ONLY;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_PKTINFO:
                     *optName = IPV6_RECVPKTINFO;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_MULTICAST_IF:
                     *optName = IPV6_MULTICAST_IF;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_IP_MULTICAST_TTL:
                     *optName = IPV6_MULTICAST_HOPS;
-                    return Error_SUCCESS;
+                    return true;
                 case SocketOptionName_SO_IP_TTL:
                     *optName = IPV6_UNICAST_HOPS;
-                    return Error_SUCCESS;
+                    return true;
 
                 default:
-                    return Error_ENOPROTOOPT;
+                    return false;
             }
 
         case SocketOptionLevel_SOL_TCP:
@@ -1860,13 +1860,13 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
             {
                 case SocketOptionName_SO_TCP_NODELAY:
                     *optName = TCP_NODELAY;
-                    return Error_SUCCESS;
+                    return true;
 
                 // case SocketOptionName_SO_TCP_BSDURGENT:
 
                 case SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT:
                     *optName = TCP_KEEPCNT;
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_TCP_KEEPALIVE_TIME:
                     *optName =
@@ -1875,14 +1875,14 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
                     #else
                         TCP_KEEPIDLE;
                     #endif
-                    return Error_SUCCESS;
+                    return true;
 
                 case SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL:
                     *optName = TCP_KEEPINTVL;
-                    return Error_SUCCESS;
+                    return true;
 
                 default:
-                    return Error_ENOPROTOOPT;
+                    return false;
             }
 
         case SocketOptionLevel_SOL_UDP:
@@ -1899,11 +1899,11 @@ static int32_t TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t soc
                 // case SocketOptionName_SO_UDP_UPDATECONNECTCONTEXT:
 
                 default:
-                    return Error_ENOPROTOOPT;
+                    return false;
             }
 
         default:
-            return Error_ENOTSUP;
+            return false;
     }
 }
 
@@ -2011,14 +2011,13 @@ int32_t SystemNative_GetSockOpt(
     }
 
     int optLevel, optName;
-    int err = TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, &optLevel, &optName);
-    if (err != Error_SUCCESS)
+    if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, &optLevel, &optName))
     {
-        return err;
+        return Error_ENOTSUP;
     }
 
     socklen_t optLen = (socklen_t)*optionLen;
-    err = getsockopt(fd, optLevel, optName, optionValue, &optLen);
+    int err = getsockopt(fd, optLevel, optName, optionValue, &optLen);
 
     if (err != 0)
     {
@@ -2159,13 +2158,12 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
 #endif
 
     int optLevel, optName;
-    int err = TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, &optLevel, &optName);
-    if (err != Error_SUCCESS)
+    if (!TryGetPlatformSocketOption(socketOptionLevel, socketOptionName, &optLevel, &optName))
     {
-        return err;
+        return Error_ENOTSUP;
     }
 
-    err = setsockopt(fd, optLevel, optName, optionValue, (socklen_t)optionLen);
+    int err = setsockopt(fd, optLevel, optName, optionValue, (socklen_t)optionLen);
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
