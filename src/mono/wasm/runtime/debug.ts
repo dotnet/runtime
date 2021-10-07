@@ -53,7 +53,7 @@ function mono_wasm_malloc_and_set_debug_buffer(command_parameters: string) {
     }
     const byteCharacters = atob(command_parameters);
     for (let i = 0; i < byteCharacters.length; i++) {
-        Module.setValue(<any>_debugger_buffer + i, byteCharacters.charCodeAt(i), "i8");
+        Module.HEAPU8[<any>_debugger_buffer + i] = byteCharacters.charCodeAt(i);
     }
 }
 
