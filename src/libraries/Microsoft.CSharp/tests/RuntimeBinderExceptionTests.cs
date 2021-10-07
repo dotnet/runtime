@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
                         }));
             Func<CallSite, object, object, object, object> target = site.Target;
-            Assert.Throws<ArgumentException>(null, () => target.Invoke(site, "Ceci n'est pas un type", 2, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => target.Invoke(site, "Ceci n'est pas un type", 2, 2));
         }
 
         [Fact]

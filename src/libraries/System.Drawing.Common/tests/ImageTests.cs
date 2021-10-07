@@ -121,7 +121,7 @@ namespace System.Drawing.Tests
         public void GetPropertyItem_NoSuchPropertyItemEmptyMemoryBitmap_ThrowsArgumentException(int propid)
         {
             using var bitmap = new Bitmap(1, 1);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
         }
 
         [Theory]
@@ -131,7 +131,7 @@ namespace System.Drawing.Tests
         public void GetPropertyItem_NoSuchPropertyItemEmptyImageBitmapBmp_ThrowsArgumentException(int propid)
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("almogaver1bit.bmp"));
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(propid));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -149,17 +149,17 @@ namespace System.Drawing.Tests
 
             bitmap.RemovePropertyItem(PropertyTagExifUserComment);
             Assert.Equal(new int[] { PropertyTagChrominanceTable, PropertyTagLuminanceTable }, bitmap.PropertyIdList);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagExifUserComment));
-            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagExifUserComment));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagExifUserComment));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagExifUserComment));
             
             bitmap.RemovePropertyItem(PropertyTagLuminanceTable);
             Assert.Equal(new int[] { PropertyTagChrominanceTable }, bitmap.PropertyIdList);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagLuminanceTable));
-            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagLuminanceTable));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagLuminanceTable));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagLuminanceTable));
             
             bitmap.RemovePropertyItem(PropertyTagChrominanceTable);
             Assert.Empty(bitmap.PropertyIdList);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagChrominanceTable));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagChrominanceTable));
             Assert.Throws<ExternalException>(() => bitmap.RemovePropertyItem(PropertyTagChrominanceTable));
         }
 
@@ -170,17 +170,17 @@ namespace System.Drawing.Tests
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
             bitmap.RemovePropertyItem(PropertyTagExifUserComment);
             Assert.Equal(new int[] { PropertyTagChrominanceTable, PropertyTagLuminanceTable }, bitmap.PropertyIdList);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagExifUserComment));
-            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagExifUserComment));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagExifUserComment));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagExifUserComment));
             
             bitmap.RemovePropertyItem(PropertyTagLuminanceTable);
             Assert.Equal(new int[] { PropertyTagChrominanceTable }, bitmap.PropertyIdList);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagLuminanceTable));
-            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagLuminanceTable));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagLuminanceTable));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(PropertyTagLuminanceTable));
             
             bitmap.RemovePropertyItem(PropertyTagChrominanceTable);
             Assert.Empty(bitmap.PropertyIdList);
-            Assert.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagChrominanceTable));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.GetPropertyItem(PropertyTagChrominanceTable));
             Assert.Throws<ExternalException>(() => bitmap.RemovePropertyItem(PropertyTagChrominanceTable));
         }
 
@@ -222,7 +222,7 @@ namespace System.Drawing.Tests
             bitmap.SetPropertyItem(item2);
             bitmap.SetPropertyItem(item3);
             
-            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(propid));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(propid));
         }
   
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
@@ -233,7 +233,7 @@ namespace System.Drawing.Tests
         public void RemovePropertyItem_NoSuchPropertyNotEmptyBitmapJpg_ThrowsArgumentException(int propid)
         {
             using var bitmap = new Bitmap(Helpers.GetTestBitmapPath("nature24bits.jpg"));
-            Assert.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(propid));
+            AssertExtensions.Throws<ArgumentException>(null, () => bitmap.RemovePropertyItem(propid));
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
