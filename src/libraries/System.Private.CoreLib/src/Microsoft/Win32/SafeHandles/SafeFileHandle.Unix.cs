@@ -38,12 +38,13 @@ namespace Microsoft.Win32.SafeHandles
         {
             get
             {
-                if (_supportsRandomAccess == NullableBool.Undefined)
+                NullableBool supportsRandomAccess = _supportsRandomAccess;
+                if (supportsRandomAccess == NullableBool.Undefined)
                 {
-                    _supportsRandomAccess = GetCanSeek() ? NullableBool.True : NullableBool.False;
+                    _supportsRandomAccess = supportsRandomAccess = GetCanSeek() ? NullableBool.True : NullableBool.False;
                 }
 
-                return _supportsRandomAccess == NullableBool.True;
+                return supportsRandomAccess == NullableBool.True;
             }
             set => _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
         }
