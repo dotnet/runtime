@@ -7,8 +7,14 @@ using System.Linq;
 
 namespace Microsoft.DotNet.CoreSetup.Test
 {
-    public class RepoDirectoriesProvider
+    public sealed class RepoDirectoriesProvider
     {
+        public static readonly RepoDirectoriesProvider Default = new RepoDirectoriesProvider();
+
+        public string Tfm { get; }
+        public string RuntimePackPath { get; }
+        public string CoreClrPath { get; }
+        public string TestHostPath { get; }
         public string BuildRID { get; }
         public string BuildArchitecture { get; }
         public string TargetRID { get; }
@@ -44,6 +50,10 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     line => line.Substring(line.IndexOf('=') + 1),
                     StringComparer.OrdinalIgnoreCase);
 
+            Tfm = GetTestContextVariable("MNA_TFM");
+            RuntimePackPath = GetTestContextVariable("RUNTIME_PACK_PATH");
+            CoreClrPath = GetTestContextVariable("CORECLR_ARTIFACTS_PATH");
+            TestHostPath = GetTestContextVariable("TESTHOST_PATH");
             TargetRID = GetTestContextVariable("TEST_TARGETRID");
             BuildRID = GetTestContextVariable("BUILDRID");
             BuildArchitecture = GetTestContextVariable("BUILD_ARCHITECTURE");

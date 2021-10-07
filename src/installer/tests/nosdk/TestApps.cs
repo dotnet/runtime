@@ -1,6 +1,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using BundleTests;
 using BundleTests.Helpers;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -20,9 +22,9 @@ namespace AppHost.Bundle.Tests
 {
     internal sealed class AppWithSubDirs : IDisposable
     {
-        private static NoSdkOptionsProvider s_provider => NoSdkOptionsProvider.Instance;
-        // mutable for disposal
-        private TempDirectory _outDir = s_provider.CreateTempDirectory();
+        private static RepoDirectoriesProvider s_provider => RepoDirectoriesProvider.Default;
+
+        private readonly TempDirectory _outDir = NoSdkTestBase.TempRoot.CreateDirectory();
 
         public string BundleFxDependent(BundleOptions options, Version? bundleVersion = null)
         {
@@ -121,6 +123,28 @@ namespace AppHost.Bundle.Tests
             return bundler.GenerateBundle(fileSpecs);
         }
 
+        private static ImmutableArray<MetadataReference> _refAssemblies = default;
+        public static ImmutableArray<MetadataReference> RefAssemblies
+        {
+            get
+            {
+                if (_refAssemblies.IsDefault)
+                {
+                    var refDirPath = Path.Combine(
+                        s_provider.BaseArtifactsFolder,
+                        "bin", "microsoft.netcore.app.ref", "ref/",
+                        s_provider.Tfm);
+                    var references = Directory.GetFiles(refDirPath, "*.dll")
+                        .Select(path => (MetadataReference)MetadataReference.CreateFromFile(path))
+                        .ToImmutableArray();
+                    ImmutableInterlocked.InterlockedInitialize(
+                        ref _refAssemblies,
+                        references);
+                }
+                return _refAssemblies;
+            }
+        }
+
         private static void WriteAppToDirectory(string tempDir, bool selfContained)
         {
             string appName = "AppWithSubDirs";
@@ -131,7 +155,7 @@ namespace AppHost.Bundle.Tests
             var comp = CSharpCompilation.Create(
                 assemblyName: appName,
                 syntaxTrees: new[] { CSharpSyntaxTree.ParseText(File.ReadAllText(srcPath)) },
-                references: s_provider.RefAssemblies);
+                references: RefAssemblies);
             var emitResult = comp.Emit(Path.Combine(tempDir, appName + ".dll"));
             Assert.True(emitResult.Success);
 
@@ -288,12 +312,7 @@ namespace AppHost.Bundle.Tests
 
         public void Dispose()
         {
-            if (_outDir is null)
-            {
-                throw new InvalidOperationException("Should only be disposed once");
-            }
             _outDir.Dispose();
-            _outDir = null!;
         }
     }
 }

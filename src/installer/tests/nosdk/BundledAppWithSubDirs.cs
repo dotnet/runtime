@@ -12,12 +12,9 @@ using Xunit;
 
 namespace AppHost.Bundle.Tests
 {
-    public class BundledAppWithSubDirs : BundleTestBase
+    public class BundledAppWithSubDirs : NoSdkTestBase
     {
-        private void RunTheApp(
-            string path,
-            NoSdkOptionsProvider provider,
-            bool selfContained)
+        private void RunTheApp(string path, bool selfContained)
         {
             var cmd = Command.Create(path)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -26,8 +23,8 @@ namespace AppHost.Bundle.Tests
             if (!selfContained)
             {
                 cmd = cmd
-                    .EnvironmentVariable("DOTNET_ROOT", provider.BuiltDotnet)
-                    .EnvironmentVariable("DOTNET_ROOT(x86)", provider.BuiltDotnet)
+                    .EnvironmentVariable("DOTNET_ROOT", Provider.BuiltDotnet)
+                    .EnvironmentVariable("DOTNET_ROOT(x86)", Provider.BuiltDotnet)
                     .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
             }
             cmd.Execute()
@@ -43,16 +40,15 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Framework_dependent_App_Run_Succeeds(BundleOptions options)
         {
-            var provider = NoSdkOptionsProvider.Instance;
             using var app = new AppWithSubDirs();
 
             var singleFile = app.BundleFxDependent(options);
 
             // Run the bundled app (extract files)
-            RunTheApp(singleFile, provider, selfContained: false);
+            RunTheApp(singleFile, selfContained: false);
 
             // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, provider, selfContained: false);
+            RunTheApp(singleFile, selfContained: false);
         }
 
         [InlineData(BundleOptions.None)]
@@ -61,15 +57,14 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Self_Contained_NoCompression_App_Run_Succeeds(BundleOptions options)
         {
-            var provider = NoSdkOptionsProvider.Instance;
             using var app = new AppWithSubDirs();
             var singleFile = app.BundleSelfContained(options);
 
             // Run the bundled app (extract files)
-            RunTheApp(singleFile, provider, selfContained: true);
+            RunTheApp(singleFile, selfContained: true);
 
             // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, provider, selfContained: true);
+            RunTheApp(singleFile, selfContained: true);
         }
 
         [InlineData(BundleOptions.None)]
@@ -78,36 +73,33 @@ namespace AppHost.Bundle.Tests
         [Theory]
         public void Bundled_Self_Contained_Targeting50_App_Run_Succeeds(BundleOptions options)
         {
-            var provider = NoSdkOptionsProvider.Instance;
             using var app = new AppWithSubDirs();
             var singleFile = app.BundleSelfContained(options, new Version(5, 0));
 
             // Run the bundled app (extract files)
-            RunTheApp(singleFile, provider, selfContained: true);
+            RunTheApp(singleFile, selfContained: true);
 
             // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, provider, selfContained: true);
+            RunTheApp(singleFile, selfContained: true);
         }
 
         [InlineData(BundleOptions.BundleAllContent)]
         [Theory]
         public void Bundled_Framework_dependent_Targeting50_App_Run_Succeeds(BundleOptions options)
         {
-            var provider = NoSdkOptionsProvider.Instance;
             using var app = new AppWithSubDirs();
             var singleFile = app.BundleFxDependent(options, new Version(5, 0));
 
             // Run the bundled app (extract files)
-            RunTheApp(singleFile, provider, selfContained: false);
+            RunTheApp(singleFile, selfContained: false);
 
-            // Run the bundled app again (reuse extracted files)
-            RunTheApp(singleFile, provider, selfContained: false);
+            // Run the bundled appuse extracted files)
+            RunTheApp(singleFile, selfContained: false);
         }
 
         [Fact]
         public void Bundled_Self_Contained_Targeting50_WithCompression_Throws()
         {
-            var provider = NoSdkOptionsProvider.Instance;
             using var app = new AppWithSubDirs();
             // compression must be off when targeting 5.0
             var options = BundleOptions.EnableCompression;
