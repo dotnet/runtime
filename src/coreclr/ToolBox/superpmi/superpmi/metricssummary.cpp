@@ -5,38 +5,80 @@
 #include "metricssummary.h"
 #include "logging.h"
 
-#include <fstream>
-#include <inttypes.h>
+struct HandleCloser
+{
+    void operator()(HANDLE hFile)
+    {
+        CloseHandle(hFile);
+    }
+};
+
+struct FileHandleWrapper
+{
+    FileHandleWrapper(HANDLE hFile)
+        : hFile(hFile)
+    {
+    }
+
+    ~FileHandleWrapper()
+    {
+        CloseHandle(hFile);
+    }
+
+    HANDLE get() { return hFile; }
+
+private:
+    HANDLE hFile;
+};
 
 bool MetricsSummary::SaveToFile(const char* path)
 {
-    FILE* file = fopen(path, "w");
-    if (file == nullptr)
+    FileHandleWrapper file(CreateFile(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));
+    if (file.get() == INVALID_HANDLE_VALUE)
     {
         return false;
     }
 
-    fprintf(file, "Successful compiles,Failing compiles,Code bytes\n");
-    fprintf(file, "%d,%d,%" PRId64 "\n", SuccessfulCompiles, FailingCompiles, NumCodeBytes);
-    fclose(file);
+    char buffer[4096];
+    int len =
+        sprintf_s(buffer, sizeof(buffer), "Successful compiles,Failing compiles,Code bytes\n%d,%d,%lld\n",
+            SuccessfulCompiles, FailingCompiles, NumCodeBytes);
+    DWORD numWritten;
+    if (!WriteFile(file.get(), buffer, static_cast<DWORD>(len), &numWritten, nullptr) || numWritten != len)
+    {
+        return false;
+    }
+
     return true;
 }
 
-bool MetricsSummary::LoadFromFile(const char* path, MetricsSummary* result)
+bool MetricsSummary::LoadFromFile(const char* path, MetricsSummary* metrics)
 {
-    FILE* file = fopen(path, "r");
-    if (file == nullptr)
+    FileHandleWrapper file(CreateFile(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr));
+    if (file.get() == INVALID_HANDLE_VALUE)
     {
         return false;
     }
 
-    fscanf(file, "Successful compiles,Failing compiles,Code bytes\n");
-    if (fscanf(file, "%d,%d,%" SCNd64 "\n", &result->SuccessfulCompiles, &result->FailingCompiles, &result->NumCodeBytes) != 3)
+    LARGE_INTEGER len;
+    if (!GetFileSizeEx(file.get(), &len))
     {
         return false;
     }
 
-    fclose(file);
+    std::vector<char> content(static_cast<size_t>(len.QuadPart));
+    DWORD numRead;
+    if (!ReadFile(file.get(), content.data(), static_cast<DWORD>(content.size()), &numRead, nullptr) || numRead != content.size())
+    {
+        return false;
+    }
+ 
+    if (sscanf_s(content.data(), "Successful compiles,Failing compiles,Code bytes\n%d,%d,%lld\n",
+        &metrics->SuccessfulCompiles, &metrics->FailingCompiles, &metrics->NumCodeBytes) != 3)
+    {
+        return false;
+    }
+
     return true;
 }
 

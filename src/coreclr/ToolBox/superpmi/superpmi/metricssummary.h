@@ -9,7 +9,7 @@ class MetricsSummary
 public:
     int SuccessfulCompiles;
     int FailingCompiles;
-    int64_t NumCodeBytes;
+    long long NumCodeBytes;
 
     MetricsSummary()
         : SuccessfulCompiles(0)
@@ -19,7 +19,7 @@ public:
     }
 
     bool SaveToFile(const char* path);
-    static bool LoadFromFile(const char* path, MetricsSummary* result);
+    static bool LoadFromFile(const char* path, MetricsSummary* metrics);
     void AggregateFrom(const MetricsSummary& other);
 };
 
