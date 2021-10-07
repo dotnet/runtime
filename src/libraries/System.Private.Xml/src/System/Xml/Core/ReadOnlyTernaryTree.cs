@@ -3,15 +3,6 @@
 
 namespace System.Xml
 {
-    // Array index to indicate the meaning of the each byte.
-    internal enum TernaryTreeByte
-    {
-        characterByte = 0,
-        leftTree = 1,
-        rightTree = 2,
-        data = 3
-    }
-
     //
     // XSL HTML output method properties
     //
@@ -49,6 +40,14 @@ namespace System.Xml
      */
     internal static class TernaryTreeReadOnly
     {
+        // Array index to indicate the meaning of the each byte.
+        private enum TernaryTreeByte
+        {
+            characterByte = 0,
+            leftTree = 1,
+            rightTree = 2,
+            data = 3
+        }
         private static ReadOnlySpan<byte> HtmlElements => new byte[]
         {
             73, 4, 147, 0, 77, 140, 162, 0, 71, 0, 0, 0, 0, 0, 0, 11, 68, 4, 85, 0, 73, 71, 92, 0, 86, 81, 0, 0,
