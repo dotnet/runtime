@@ -101,16 +101,30 @@ namespace ILCompiler
             {
                 if (!_sortedMethods)
                 {
-                    TypeSystemComparer comparer = new TypeSystemComparer();
-                    Comparison<IMethodNode> sortHelper = (x, y) => comparer.Compare(x.Method, y.Method);
+                    CompilerComparer comparer = new CompilerComparer();
+                    SortableDependencyNode.ObjectNodeComparer objectNodeComparer = new SortableDependencyNode.ObjectNodeComparer(comparer);
+                    Comparison<IMethodNode> sortHelper = (x, y) =>
+                    {
+                        int nodeComparerResult = objectNodeComparer.Compare((SortableDependencyNode)x, (SortableDependencyNode)y);
+#if DEBUG
+                        int methodOnlyResult = comparer.Compare(x.Method, y.Method);
+
+                        // Assert the two sorting techniques produce the same result unless there is a CustomSort applied
+                        Debug.Assert((nodeComparerResult == methodOnlyResult) || 
+                            ((x is SortableDependencyNode sortableX && sortableX.CustomSort != Int32.MaxValue) ||
+                             (y is SortableDependencyNode sortableY && sortableY.CustomSort != Int32.MaxValue)));
+#endif
+                        return nodeComparerResult;
+                    };
+                    Comparison<IMethodNode> sortHelperNoCustomSort = (x, y) => comparer.Compare(x, y);
 
                     List<PerModuleMethodsGenerated> perModuleDatas = new List<PerModuleMethodsGenerated>(_methodsGenerated.Values);
                     perModuleDatas.Sort((x, y) => x.Module.CompareTo(y.Module));
 
                     foreach (var perModuleData in perModuleDatas)
                     {
-                        perModuleData.MethodsGenerated.MergeSort(sortHelper);
-                        perModuleData.GenericMethodsGenerated.MergeSort(sortHelper);
+                        perModuleData.MethodsGenerated.MergeSort(sortHelperNoCustomSort);
+                        perModuleData.GenericMethodsGenerated.MergeSort(sortHelperNoCustomSort);
                         _completeSortedMethods.AddRange(perModuleData.MethodsGenerated);
                         _completeSortedMethods.AddRange(perModuleData.GenericMethodsGenerated);
                         _completeSortedGenericMethods.AddRange(perModuleData.GenericMethodsGenerated);

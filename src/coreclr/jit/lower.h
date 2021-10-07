@@ -296,6 +296,7 @@ private:
     void LowerIndir(GenTreeIndir* ind);
     void LowerStoreIndir(GenTreeStoreInd* node);
     GenTree* LowerAdd(GenTreeOp* node);
+    GenTree* LowerMul(GenTreeOp* mul);
     bool LowerUnsignedDivOrMod(GenTreeOp* divMod);
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
@@ -601,7 +602,7 @@ private:
         if (varDsc->lvTracked && !varDsc->lvDoNotEnregister)
         {
             assert(!m_lsra->isRegCandidate(varDsc));
-            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(Compiler::DNER_LocalField));
+            comp->lvaSetVarDoNotEnregister(lclNum DEBUG_ARG(DoNotEnregisterReason::LocalField));
         }
     }
 

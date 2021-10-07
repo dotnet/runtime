@@ -54,9 +54,10 @@ stages:
   #
   # Source Index Build
   #
-  - template: /eng/common/templates/job/source-index-stage1.yml
-    parameters:
-      sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
+  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    - template: /eng/common/templates/job/source-index-stage1.yml
+      parameters:
+        sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
 
   #
   # Build CoreCLR
@@ -304,6 +305,9 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
+        # Official builds don't run tests, locally or on Helix
+        runTests: false
+        useHelix: false
 
   #
   # Build libraries AllConfigurations for packages
@@ -319,6 +323,26 @@ stages:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         isOfficialAllConfigurations: true
         liveRuntimeBuildConfig: release
+        # Official builds don't run tests, locally or on Helix
+        runTests: false
+        useHelix: false
+
+  #
+  # Build Sourcebuild leg
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Release
+      helixQueueGroup: ci
+      platforms:
+      - SourceBuild_Linux_x64
+      jobParameters:
+        nameSuffix: SourceBuild
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: SourceBuildPackages
+
 
   #
   # Installer Build

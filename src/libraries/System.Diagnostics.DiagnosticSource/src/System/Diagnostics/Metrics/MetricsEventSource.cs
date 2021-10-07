@@ -438,7 +438,7 @@ namespace System.Diagnostics.Metrics
             }
         }
 
-        private class MetricSpec
+        private sealed class MetricSpec
         {
             private const char MeterInstrumentSeparator = '\\';
             public string MeterName { get; private set; }

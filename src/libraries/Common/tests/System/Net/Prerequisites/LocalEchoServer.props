@@ -7,11 +7,11 @@
     <!-- handle different path to middleware in Helix -->
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/TestEchoMiddleware</_TestEchoMiddleware>
     <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/TestEchoMiddleware</_TestEchoMiddleware>
-    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(NetCoreAppCurrent)-$(Configuration)</_TestEchoMiddleware>
+    <_TestEchoMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/NetCoreServer/$(AspNetCoreAppCurrent)-$(Configuration)</_TestEchoMiddleware>
 
     <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">%HELIX_CORRELATION_PAYLOAD%/xharness/RemoteLoopMiddleware</_RemoteLoopMiddleware>
     <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$HELIX_CORRELATION_PAYLOAD/xharness/RemoteLoopMiddleware</_RemoteLoopMiddleware>
-    <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/RemoteLoopServer/$(NetCoreAppCurrent)-$(Configuration)</_RemoteLoopMiddleware>
+    <_RemoteLoopMiddleware Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(ArtifactsDir)bin/RemoteLoopServer/$(AspNetCoreAppCurrent)-$(Configuration)</_RemoteLoopMiddleware>
 
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --web-server-use-cors --web-server-use-https</WasmXHarnessArgs>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --set-web-server-http-env=DOTNET_TEST_WEBSOCKETHOST,DOTNET_TEST_HTTPHOST,DOTNET_TEST_REMOTE_LOOP_HOST</WasmXHarnessArgs>

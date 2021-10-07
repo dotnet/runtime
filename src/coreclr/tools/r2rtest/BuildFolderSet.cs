@@ -479,35 +479,41 @@ namespace R2RTest
 
             foreach (BuildFolder folder in FoldersToBuild)
             {
-                AddBuildFolderExecutions(executionsToRun, folder, stopwatch);
+                AddBuildFolderExecutions(executionsToRun, folder, _options.Iterations);
             }
 
-            ParallelRunner.Run(executionsToRun, degreeOfParallelism: _options.Sequential ? 1 : 0);
+            ParallelRunner.Run(
+                executionsToRun,
+                degreeOfParallelism: _options.Sequential || _options.Iterations > 1 ? 1 : 0,
+                measurePerf: false);
 
             int successfulExecuteCount = 0;
 
             bool success = true;
             foreach (BuildFolder folder in FoldersToBuild)
             {
-                foreach (ProcessInfo[] execution in folder.Executions)
+                foreach (ProcessInfo[][] execution in folder.Executions)
                 {
                     HashSet<string> failedFiles = new HashSet<string>();
                     string failedBuilders = null;
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        ProcessInfo runnerProcess = execution[(int)runner.Index];
-                        if (runnerProcess != null && !runnerProcess.Succeeded)
+                        ProcessInfo[] runnerProcesses = execution[(int)runner.Index];
+                        foreach (ProcessInfo runnerProcess in runnerProcesses)
                         {
-                            _executionFailureBuckets.AddExecution(runnerProcess);
+                            if (runnerProcess != null && !runnerProcess.Succeeded)
+                            {
+                                _executionFailureBuckets.AddExecution(runnerProcess);
 
-                            failedFiles.UnionWith(runnerProcess.Parameters.InputFileNames);
-                            if (failedBuilders == null)
-                            {
-                                failedBuilders = runner.CompilerName;
-                            }
-                            else
-                            {
-                                failedBuilders += "; " + runner.CompilerName;
+                                failedFiles.UnionWith(runnerProcess.Parameters.InputFileNames);
+                                if (failedBuilders == null)
+                                {
+                                    failedBuilders = runner.CompilerName;
+                                }
+                                else
+                                {
+                                    failedBuilders += "; " + runner.CompilerName;
+                                }
                             }
                         }
                     }
@@ -556,14 +562,14 @@ namespace R2RTest
             }
         }
 
-        private void AddBuildFolderExecutions(List<ProcessInfo> executionsToRun, BuildFolder folder, Stopwatch stopwatch)
+        private void AddBuildFolderExecutions(List<ProcessInfo> executionsToRun, BuildFolder folder, int iterations)
         {
-            foreach (ProcessInfo[] execution in folder.Executions)
+            foreach (ProcessInfo[][] execution in folder.Executions)
             {
                 foreach (CompilerRunner runner in _compilerRunners)
                 {
-                    ProcessInfo executionProcess = execution[(int)runner.Index];
-                    if (executionProcess != null)
+                    ProcessInfo[] executionProcesses = execution[(int)runner.Index];
+                    if (executionProcesses != null)
                     {
                         bool compilationsSucceeded = true;
                         if (!_options.Exe)
@@ -580,7 +586,7 @@ namespace R2RTest
                         }
                         if (compilationsSucceeded)
                         {
-                            executionsToRun.Add(executionProcess);
+                            executionsToRun.AddRange(executionProcesses);
                         }
                         else
                         {
@@ -696,52 +702,55 @@ namespace R2RTest
 
                 if (!_options.NoExe)
                 {
-                    foreach (ProcessInfo[] execution in folder.Executions)
+                    foreach (ProcessInfo[][] executions in folder.Executions)
                     {
                         totalExecutions++;
                         bool anyCompilationFailed = false;
                         int executionFailureOutcomeMask = 0;
                         foreach (CompilerRunner runner in _compilerRunners)
                         {
-                            ProcessInfo execProcess = execution[(int)runner.Index];
+                            ProcessInfo[] execProcesses = executions[(int)runner.Index];
                             bool compilationFailed = compilationFailedPerRunner[(int)runner.Index];
                             anyCompilationFailed |= compilationFailed;
-                            bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
-                            if (executionFailed)
+                            foreach (ProcessInfo execProcess in execProcesses)
                             {
-                                ExecutionOutcome outcome = GetExecutionOutcome(execProcess);
-                                executionOutcomes[(int)outcome, (int)runner.Index]++;
-                                executionFailureOutcomeMask |= 1 << (int)outcome;
-                            }
-                            else if (compilationFailed)
-                            {
-                                executionOutcomes[(int)ExecutionOutcome.BUILD_FAILED, (int)runner.Index]++;
-                            }
-                            else
-                            {
-                                executionOutcomes[(int)ExecutionOutcome.PASS, (int)runner.Index]++;
-                            }
-                        }
-                        if (!anyCompilationFailed)
-                        {
-                            if (executionFailureOutcomeMask != 0)
-                            {
-                                for (int outcomeIndex = 0; outcomeIndex < (int)ExecutionOutcome.Count; outcomeIndex++)
+                                bool executionFailed = !compilationFailed && (execProcess != null && !execProcess.Succeeded);
+                                if (executionFailed)
                                 {
-                                    if ((executionFailureOutcomeMask & (1 << outcomeIndex)) != 0)
+                                    ExecutionOutcome outcome = GetExecutionOutcome(execProcess);
+                                    executionOutcomes[(int)outcome, (int)runner.Index]++;
+                                    executionFailureOutcomeMask |= 1 << (int)outcome;
+                                }
+                                else if (compilationFailed)
+                                {
+                                    executionOutcomes[(int)ExecutionOutcome.BUILD_FAILED, (int)runner.Index]++;
+                                }
+                                else
+                                {
+                                    executionOutcomes[(int)ExecutionOutcome.PASS, (int)runner.Index]++;
+                                }
+                                if (!anyCompilationFailed)
+                                {
+                                    if (executionFailureOutcomeMask != 0)
                                     {
-                                        executionOutcomes[outcomeIndex, (int)CompilerIndex.Count]++;
+                                        for (int outcomeIndex = 0; outcomeIndex < (int)ExecutionOutcome.Count; outcomeIndex++)
+                                        {
+                                            if ((executionFailureOutcomeMask & (1 << outcomeIndex)) != 0)
+                                            {
+                                                executionOutcomes[outcomeIndex, (int)CompilerIndex.Count]++;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        executionOutcomes[(int)ExecutionOutcome.PASS, (int)CompilerIndex.Count]++;
                                     }
                                 }
+                                else
+                                {
+                                    executionOutcomes[(int)ExecutionOutcome.BUILD_FAILED, (int)CompilerIndex.Count]++;
+                                }
                             }
-                            else
-                            {
-                                executionOutcomes[(int)ExecutionOutcome.PASS, (int)CompilerIndex.Count]++;
-                            }
-                        }
-                        else
-                        {
-                            executionOutcomes[(int)ExecutionOutcome.BUILD_FAILED, (int)CompilerIndex.Count]++;
                         }
                     }
                 }
@@ -968,15 +977,18 @@ namespace R2RTest
                         }
                         if (!_options.NoExe)
                         {
-                            foreach (ProcessInfo[] execution in buildFolder.Executions)
+                            foreach (ProcessInfo[][] executions in buildFolder.Executions)
                             {
                                 bool anyExeFail = false;
                                 foreach (CompilerRunner runner in _compilerRunners)
                                 {
-                                    if (execution[(int)runner.Index] != null && !execution[(int)runner.Index].Succeeded)
+                                    foreach (ProcessInfo execution in executions[(int)runner.Index])
                                     {
-                                        anyExeFail = true;
-                                        break;
+                                        if (execution != null && !execution.Succeeded)
+                                        {
+                                            anyExeFail = true;
+                                            break;
+                                        }
                                     }
                                 }
                                 exeCount++;
@@ -1200,14 +1212,17 @@ namespace R2RTest
         {
             foreach (BuildFolder folder in FoldersToBuild)
             {
-                foreach (ProcessInfo[] execution in folder.Executions)
+                foreach (ProcessInfo[][] executions in folder.Executions)
                 {
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        ProcessInfo executionProcess = execution[(int)runner.Index];
-                        if (executionProcess != null)
+                        foreach (ProcessInfo execution in executions[(int)runner.Index])
                         {
-                            yield return executionProcess;
+                            ProcessInfo executionProcess = execution;
+                            if (executionProcess != null)
+                            {
+                                yield return executionProcess;
+                            }
                         }
                     }
                 }
@@ -1272,32 +1287,34 @@ namespace R2RTest
                             }
                         }
                     }
-                    foreach (ProcessInfo[] execution in folder.Executions)
+                    foreach (ProcessInfo[][] executions in folder.Executions)
                     {
                         foreach (CompilerRunner runner in _compilerRunners)
                         {
                             if (!compilationErrorPerRunner[(int)runner.Index])
                             {
                                 StreamWriter runnerLog = perRunnerLog[(int)runner.Index];
-                                ProcessInfo executionProcess = execution[(int)runner.Index];
-                                if (executionProcess != null)
+                                foreach (ProcessInfo executionProcess in executions[(int)runner.Index])
                                 {
-                                    string header = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.OutputFileName}";
-                                    combinedLog.WriteLine(header);
-                                    runnerLog.WriteLine(header);
-                                    try
+                                    if (executionProcess != null)
                                     {
-                                        using (Stream input = new FileStream(executionProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                        string header = $"\nEXECUTE {runner.CompilerName}:{executionProcess.Parameters.OutputFileName}";
+                                        combinedLog.WriteLine(header);
+                                        runnerLog.WriteLine(header);
+                                        try
                                         {
-                                            input.CopyTo(combinedLog.BaseStream);
-                                            input.Seek(0, SeekOrigin.Begin);
-                                            input.CopyTo(runnerLog.BaseStream);
+                                            using (Stream input = new FileStream(executionProcess.Parameters.LogPath, FileMode.Open, FileAccess.Read))
+                                            {
+                                                input.CopyTo(combinedLog.BaseStream);
+                                                input.Seek(0, SeekOrigin.Begin);
+                                                input.CopyTo(runnerLog.BaseStream);
+                                            }
                                         }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        combinedLog.WriteLine(" -> " + ex.Message);
-                                        runnerLog.WriteLine(" -> " + ex.Message);
+                                        catch (Exception ex)
+                                        {
+                                            combinedLog.WriteLine(" -> " + ex.Message);
+                                            runnerLog.WriteLine(" -> " + ex.Message);
+                                        }
                                     }
                                 }
                             }
@@ -1516,16 +1533,18 @@ namespace R2RTest
             var filteredTestList = new List<string>();
             foreach (BuildFolder folder in _buildFolders)
             {
-                foreach (ProcessInfo[] execution in folder.Executions)
+                foreach (ProcessInfo[][] executions in folder.Executions)
                 {
                     foreach (CompilerRunner runner in _compilerRunners)
                     {
-                        ProcessInfo executionPerRunner = execution[(int)runner.Index];
-                        if (executionPerRunner != null &&
-                            GetExecutionOutcome(executionPerRunner) == outcome &&
-                            executionPerRunner.Parameters != null)
+                        foreach (ProcessInfo executionPerRunner in executions[(int)runner.Index])
                         {
-                            filteredTestList.Add(executionPerRunner.Parameters.OutputFileName);
+                            if (executionPerRunner != null &&
+                                GetExecutionOutcome(executionPerRunner) == outcome &&
+                                executionPerRunner.Parameters != null)
+                            {
+                                filteredTestList.Add(executionPerRunner.Parameters.OutputFileName);
+                            }
                         }
                     }
                 }

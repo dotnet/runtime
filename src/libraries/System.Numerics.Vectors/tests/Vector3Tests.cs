@@ -27,7 +27,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => v1.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => v1.CopyTo(a, a.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => v1.CopyTo(a, a.Length - 2));
+            Assert.Throws<ArgumentException>(() => v1.CopyTo(a, a.Length - 2));
 
             v1.CopyTo(a, 1);
             v1.CopyTo(b);
@@ -160,7 +160,6 @@ namespace System.Numerics.Tests
 
         // A test for Distance (Vector3f, Vector3f)
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49824")]
         public void Vector3DistanceTest()
         {
             Vector3 a = new Vector3(1.0f, 2.0f, 3.0f);
@@ -176,7 +175,6 @@ namespace System.Numerics.Tests
         // A test for Distance (Vector3f, Vector3f)
         // Distance from the same point
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49824")]
         public void Vector3DistanceTest1()
         {
             Vector3 a = new Vector3(1.051f, 2.05f, 3.478f);
@@ -931,7 +929,7 @@ namespace System.Numerics.Tests
             Vector3 expected = new Vector3(value);
 
             Assert.Equal(expected, target);
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector3(new float[2]));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector3(new float[2]));
         }
 
         // A test for Add (Vector3f, Vector3f)

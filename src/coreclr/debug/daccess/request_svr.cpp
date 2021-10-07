@@ -252,21 +252,19 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     for (int i = 0; i < heaps; i++)
     {
-        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);    
+        TADDR heapAddress = HeapTableIndex(g_gcDacGlobals->g_heaps, i);
         dac_gc_heap heap = LoadGcHeapData(heapAddress);
         dac_gc_heap* pHeap = &heap;
-
-        size_t gen_table_size = g_gcDacGlobals->generation_size * (*g_gcDacGlobals->max_gen + 2);
-        DacEnumMemoryRegion(dac_cast<TADDR>(pHeap), sizeof(dac_gc_heap));
+        EnumGcHeap(heapAddress);
+        TADDR generationTable = ServerGenerationTableAddress(heapAddress);
+        EnumGenerationTable(generationTable);
         DacEnumMemoryRegion(dac_cast<TADDR>(pHeap->finalize_queue), sizeof(dac_finalize_queue));
 
-        TADDR taddrTable = dac_cast<TADDR>(pHeap) + offsetof(dac_gc_heap, generation_table);
-        DacEnumMemoryRegion(taddrTable, gen_table_size);
-
-        // enumerating the generations from max (which is normally gen2) to max+1 gives you
-        // the segment list for all the normal segements plus the large heap segment (max+1)
+        ULONG first = IsRegionGCEnabled() ? 0 : (*g_gcDacGlobals->max_gen);
+        // enumerating the first to max + 2 gives you
+        // the segment list for all the normal segments plus the pinned heap segment (max + 2)
         // this is the convention in the GC so it is repeated here
-        for (ULONG i = *g_gcDacGlobals->max_gen; i <= *g_gcDacGlobals->max_gen +1; i++)
+        for (ULONG i = first; i <= *g_gcDacGlobals->max_gen + 2; i++)
         {
             dac_generation generation = ServerGenerationTableIndex(heapAddress, i);
             DPTR(dac_heap_segment) seg = generation.start_segment;
@@ -290,7 +288,7 @@ DWORD DacGetNumHeaps()
 
 HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 {
-    bool regions = IsRegion();
+    bool regions = IsRegionGCEnabled();
 
     if (g_gcDacGlobals->n_heaps == nullptr || g_gcDacGlobals->g_heaps == nullptr)
         return S_OK;
@@ -424,8 +422,8 @@ HRESULT DacHeapWalker::InitHeapDataSvr(HeapData *&pHeaps, size_t &pCount)
 
             seg = seg->next;
         }
+        _ASSERTE(count == j);
     }
-
     return S_OK;
 }
 

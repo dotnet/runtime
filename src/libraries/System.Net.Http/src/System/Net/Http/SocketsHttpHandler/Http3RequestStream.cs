@@ -33,6 +33,7 @@ namespace System.Net.Http
 
         private CancellationTokenSource? _goawayCancellationSource;
         private CancellationToken _goawayCancellationToken;
+        private CancellationTokenSource? _sendContentCts;
 
         // Allocated when we receive a :status header.
         private HttpResponseMessage? _response;
@@ -126,6 +127,7 @@ namespace System.Net.Http
 
             // Link the input token with _resetCancellationTokenSource, so cancellation will trigger on GoAway() or Abort().
             using CancellationTokenSource requestCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _goawayCancellationToken);
+            CancellationTokenRegistration sendContentCancellationRegistration = default;
 
             try
             {
@@ -148,13 +150,33 @@ namespace System.Net.Http
                     await FlushSendBufferAsync(endStream: _request.Content == null, requestCancellationSource.Token).ConfigureAwait(false);
                 }
 
-                // If using duplex content, the content will continue sending after this method completes.
-                // So, only observe the cancellation token if not using duplex.
-                CancellationToken sendContentCancellationToken = _request.Content?.AllowDuplex == false ? requestCancellationSource.Token : default;
+                Task sendContentTask;
+                if (_request.Content != null)
+                {
+                    // If using duplex content, the content will continue sending after this method completes.
+                    // So, only observe the cancellation token during this method.
+                    CancellationToken sendContentCancellationToken;
+                    if (requestCancellationSource.Token.CanBeCanceled)
+                    {
+                        _sendContentCts = new CancellationTokenSource();
+                        sendContentCancellationToken = _sendContentCts.Token;
+                        sendContentCancellationRegistration = requestCancellationSource.Token.UnsafeRegister(
+                            static s => ((CancellationTokenSource)s!).Cancel(), _sendContentCts);
+                    }
+                    else
+                    {
+                        sendContentCancellationToken = default;
+                    }
+
+                    sendContentTask = SendContentAsync(_request.Content!, sendContentCancellationToken);
+                }
+                else
+                {
+                    sendContentTask = Task.CompletedTask;
+                }
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task sendContentTask = _request.Content != null ? SendContentAsync(_request.Content, sendContentCancellationToken) : Task.CompletedTask;
                 Task readResponseTask = ReadResponseAsync(requestCancellationSource.Token);
                 bool sendContentObserved = false;
 
@@ -254,7 +276,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
-            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token)
+            catch (OperationCanceledException ex) when (ex.CancellationToken == requestCancellationSource.Token || ex.CancellationToken == _sendContentCts?.Token)
             {
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
@@ -285,6 +307,7 @@ namespace System.Net.Http
             }
             finally
             {
+                sendContentCancellationRegistration.Dispose();
                 if (disposeSelf)
                 {
                     await DisposeAsync().ConfigureAwait(false);
@@ -1044,6 +1067,14 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= copyLen;
                         _recvBuffer.Discard(copyLen);
                         buffer = buffer.Slice(copyLen);
+
+                        // Stop, if we've reached the end of a data frame and start of the next data frame is not buffered yet
+                        // Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // TODO: this is inefficient if data is already available in transport
+                        if (_responseDataPayloadRemaining == 0 && _recvBuffer.ActiveLength == 0)
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -1061,10 +1092,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
 
-                        if (_responseDataPayloadRemaining == 0)
-                        {
-                            break;
-                        }
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
+                        // TODO: this is inefficient if data is already available in transport
+                        break;
                     }
                 }
 
@@ -1106,6 +1136,14 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= copyLen;
                         _recvBuffer.Discard(copyLen);
                         buffer = buffer.Slice(copyLen);
+
+                        // Stop, if we've reached the end of a data frame and start of the next data frame is not buffered yet
+                        // Waiting for the next data frame may cause a hang, e.g. in echo scenario
+                        // TODO: this is inefficient if data is already available in transport
+                        if (_responseDataPayloadRemaining == 0 && _recvBuffer.ActiveLength == 0)
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -1123,10 +1161,9 @@ namespace System.Net.Http
                         _responseDataPayloadRemaining -= bytesRead;
                         buffer = buffer.Slice(bytesRead);
 
-                        if (_responseDataPayloadRemaining == 0)
-                        {
-                            break;
-                        }
+                        // Stop, even if we are in the middle of a data frame. Waiting for the next data may cause a hang
+                        // TODO: this is inefficient if data is already available in transport
+                        break;
                     }
                 }
 

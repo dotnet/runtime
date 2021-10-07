@@ -476,6 +476,10 @@ public:
 
     HRESULT LoadAsNotficationOnly(BOOL *pbNotificationOnly);
 
+    ProfToEEInterfaceImpl *GetProfToEE()
+    {
+        return m_pProfToEE;
+    }
 private:
 
     //

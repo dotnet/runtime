@@ -19,10 +19,10 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half : IComparable, ISpanFormattable, IComparable<Half>, IEquatable<Half>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryFloatingPoint<Half>,
           IMinMaxValue<Half>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
@@ -241,7 +241,7 @@ namespace System
         public static Half Parse(string s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
         }
 
         /// <summary>
@@ -266,7 +266,7 @@ namespace System
         public static Half Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -1059,6 +1059,31 @@ namespace System
         static Half IFloatingPoint<Half>.Truncate(Half x)
             => (Half)MathF.Truncate((float)x);
 
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsFinite(Half x) => IsFinite(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsInfinity(Half x) => IsInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNaN(Half x) => IsNaN(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegative(Half x) => IsNegative(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNegativeInfinity(Half x) => IsNegativeInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsNormal(Half x) => IsNormal(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsPositiveInfinity(Half x) => IsPositiveInfinity(x);
+
+        [RequiresPreviewFeatures]
+        static bool IFloatingPoint<Half>.IsSubnormal(Half x) => IsSubnormal(x);
+
+
         // static Half IFloatingPoint<Half>.AcosPi(Half x)
         //     => (Half)MathF.AcosPi((float)x);
         //
@@ -1529,7 +1554,7 @@ namespace System
 
         [RequiresPreviewFeatures]
         static bool IParseable<Half>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Half result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, DefaultParseStyle, provider, out result);
 
         //
         // ISignedNumber
@@ -1544,11 +1569,11 @@ namespace System
 
         [RequiresPreviewFeatures]
         static Half ISpanParseable<Half>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
+            => Parse(s, DefaultParseStyle, provider);
 
         [RequiresPreviewFeatures]
         static bool ISpanParseable<Half>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Half result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, DefaultParseStyle, provider, out result);
 
         //
         // ISubtractionOperators

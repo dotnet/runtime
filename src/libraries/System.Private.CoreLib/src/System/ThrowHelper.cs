@@ -39,7 +39,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using System.Runtime.Serialization;
 
 namespace System
@@ -181,6 +183,18 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException_TimeSpanTooLong()
+        {
+            throw new OverflowException(SR.Overflow_TimeSpanTooLong);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowArgumentException_Arg_CannotBeNaN()
+        {
+            throw new ArgumentException(SR.Arg_CannotBeNaN);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
@@ -304,6 +318,12 @@ namespace System
         internal static void ThrowInvalidOperationException(ExceptionResource resource, Exception e)
         {
             throw new InvalidOperationException(GetResourceString(resource), e);
+        }
+
+        [DoesNotReturn]
+        internal static void ThrowNullReferenceException()
+        {
+            throw new NullReferenceException(SR.Arg_NullArgumentNullRef);
         }
 
         [DoesNotReturn]
@@ -582,28 +602,43 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedNumericsVectorBaseType<T>() where T : struct
         {
-            if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
-                typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
-                typeof(T) != typeof(int) && typeof(T) != typeof(uint) &&
-                typeof(T) != typeof(long) && typeof(T) != typeof(ulong) &&
-                typeof(T) != typeof(float) && typeof(T) != typeof(double) &&
-                typeof(T) != typeof(nint) && typeof(T) != typeof(nuint))
+            if (!Vector<T>.IsTypeSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }
         }
 
-        // Throws if 'T' is disallowed in Vector64/128/256<T> in the Intrinsics namespace.
+        // Throws if 'T' is disallowed in Vector64<T> in the Intrinsics namespace.
         // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
         // is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ThrowForUnsupportedIntrinsicsVectorBaseType<T>() where T : struct
+        internal static void ThrowForUnsupportedIntrinsicsVector64BaseType<T>() where T : struct
         {
-            if (typeof(T) != typeof(byte) && typeof(T) != typeof(sbyte) &&
-                typeof(T) != typeof(short) && typeof(T) != typeof(ushort) &&
-                typeof(T) != typeof(int) && typeof(T) != typeof(uint) &&
-                typeof(T) != typeof(long) && typeof(T) != typeof(ulong) &&
-                typeof(T) != typeof(float) && typeof(T) != typeof(double))
+            if (!Vector64<T>.IsTypeSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
+        // Throws if 'T' is disallowed in Vector128<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVector128BaseType<T>() where T : struct
+        {
+            if (!Vector128<T>.IsTypeSupported)
+            {
+                ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
+            }
+        }
+
+        // Throws if 'T' is disallowed in Vector256<T> in the Intrinsics namespace.
+        // If 'T' is allowed, no-ops. JIT will elide the method entirely if 'T'
+        // is supported and we're on an optimized release build.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void ThrowForUnsupportedIntrinsicsVector256BaseType<T>() where T : struct
+        {
+            if (!Vector256<T>.IsTypeSupported)
             {
                 ThrowNotSupportedException(ExceptionResource.Arg_TypeNotSupported);
             }

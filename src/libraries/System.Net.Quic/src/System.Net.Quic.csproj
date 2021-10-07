@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <DefineConstants Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsOSX)' == 'true'">$(DefineConstants);SOCKADDR_HAS_LENGTH</DefineConstants>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -62,6 +63,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.Ssl.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtx.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SslCtxOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.SetProtocolOptions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509Name.cs" />
@@ -75,21 +77,23 @@
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeBioHandle.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" Link="Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeHandleCache.cs" Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
   <!-- Linux specific files -->
   <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs" Link="Common\Interop\Linux\Interop.Libraries.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.Linux.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
   </ItemGroup>
   <!-- FreeBSD specific files -->
   <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true' ">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.Unix.cs" Link="Common\System\Net\Security\CertificateValidation.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs" Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
     <!-- Assume similarity with OSX for now -->
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
   <!-- OSX specific files -->
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
+    <Compile Include="$(CommonPath)System\Net\Security\CertificateValidation.OSX.cs" Link="Common\System\Net\Security\CertificateValidation.OSX.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs" Link="Common\Interop\OSX\Interop.Libraries.cs" />
     <Compile Include="System\Net\Quic\Implementations\MsQuic\Interop\MsQuicStatusCodes.OSX.cs" />
   </ItemGroup>
@@ -100,7 +104,8 @@
     <PackageReference Include="System.Net.MsQuic.Transport"
                       Version="$(SystemNetMsQuicTransportVersion)"
                       PrivateAssets="all"
-                      GeneratePathProperty="true" />
+                      GeneratePathProperty="true" 
+                      Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>
@@ -128,7 +133,7 @@
 
   <!-- Support for deploying msquic -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and
-                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86')">
+                        ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'x86') and '$(DotNetBuildFromSource)' != 'true'">
     <BinPlaceDir Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentTestHostSharedFrameworkPath)" ItemName="NativeBinPlaceItem" />
     <BinPlaceDir Include="$(NetCoreAppCurrentRuntimePath)" ItemName="NativeBinPlaceItem" />

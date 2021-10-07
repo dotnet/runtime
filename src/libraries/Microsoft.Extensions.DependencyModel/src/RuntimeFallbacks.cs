@@ -10,10 +10,10 @@ namespace Microsoft.Extensions.DependencyModel
     public class RuntimeFallbacks
     {
         public string Runtime { get; set; }
-        public IReadOnlyList<string> Fallbacks { get; set; }
+        public IReadOnlyList<string?> Fallbacks { get; set; }
 
-        public RuntimeFallbacks(string runtime, params string[] fallbacks) : this(runtime, (IEnumerable<string>)fallbacks) { }
-        public RuntimeFallbacks(string runtime, IEnumerable<string> fallbacks)
+        public RuntimeFallbacks(string runtime, params string?[] fallbacks) : this(runtime, (IEnumerable<string?>)fallbacks) { }
+        public RuntimeFallbacks(string runtime, IEnumerable<string?> fallbacks)
         {
             if (string.IsNullOrEmpty(runtime))
             {

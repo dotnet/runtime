@@ -363,18 +363,6 @@ inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize)
     }
 }
 
-inline BOOL PEImage::HasNativeHeader()
-{
-    WRAPPER_NO_CONTRACT;
-    if (HasLoadedLayout())
-        return GetLoadedLayout()->HasNativeHeader();
-    else
-    {
-        PEImageLayoutHolder pLayout(GetLayout(PEImageLayout::LAYOUT_ANY,LAYOUT_CREATEIFNEEDED));
-        return pLayout->HasNativeHeader();
-    }
-}
-
 inline BOOL PEImage::HasContents()
 {
     WRAPPER_NO_CONTRACT;

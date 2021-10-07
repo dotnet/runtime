@@ -556,10 +556,6 @@ public:
 
     bool IsMemberDefHashPresent() { return m_pMemberDefHash != NULL; }
 
-    // Function to reorganize the string pool based on IBC profile data (if available) and static analysis.
-    // Throws on error.
-    VOID OrganizeStringPool(CorProfileData *pProfileData);
-
     // Result of hash search
     enum HashSearchResult
     {
@@ -769,10 +765,6 @@ public:
     // look up hash table for tokenless tables.
     // They are constant, FieldMarshal, MethodSemantics, ClassLayout, FieldLayout, ImplMap, FieldRVA, NestedClass, and MethodImpl
     CLookUpHash * m_pLookUpHashs[TBL_COUNT];
-
-#if !defined(DACCESS_COMPILE)
-    MapSHash<UINT32, UINT32> m_StringPoolOffsetHash;
-#endif
 
     //*************************************************************************
     // Hash for named items.
@@ -1338,31 +1330,6 @@ public:
 
 private:
     BOOL m_fMinimalDelta;
-
-    //
-    // String heap reorganization
-    //
-
-    // Check to see if it is safe to reorder the string pool.
-    BOOL IsSafeToReorderStringPool();
-    // Function to mark hot strings in the marks array based on the token information in profile data.
-    VOID MarkHotStrings(CorProfileData *pProfileData, BYTE * pMarks, ULONG poolSize);
-    // Function to mark hot strings referenced by hot tables based on token information in profile data.
-    VOID MarkStringsInHotTables(CorProfileData *pProfileData, BYTE * pMarks, ULONG poolSize);
-    // Function to mark strings referenced by the different metadata tables.
-    VOID MarkStringsInTables(BYTE * pMarks, ULONG poolSize);
-    // Function to mark duplicate strings in the mark array.
-    // Throws on error.
-    VOID MarkDuplicateStrings(BYTE * pMarks, ULONG poolSize);
-    // Function to update the tables with the modified string offsets.
-    VOID FixStringsInTables();
-    // Function to fill the given string pool with strings from the existing string pool using the mark array.
-    // Throws on error.
-    VOID CreateReorderedStringPool(
-        MetaData::StringHeapRW *pStringHeap,
-        BYTE                   *pMarks,
-        ULONG                   cbHeapSize,
-        CorProfileData         *pProfileData);
 
 public:
     BOOL IsMinimalDelta()

@@ -12,10 +12,12 @@
     Output:<br><br> <span id="out"></span>
     <script type='text/javascript'>
       var is_testing = false;
+      var tasks = '';
       var onLoad = function() {
         var url = new URL(decodeURI(window.location));
         let args = url.searchParams.getAll('arg');
         is_testing = args !== undefined && (args.find(arg => arg == '--testing') !== undefined);
+        tasks = url.searchParams.getAll('task');
       };
 
       var test_exit = function(exit_code)
@@ -35,18 +37,22 @@
       };
 
       function yieldBench () {
-        let ret = BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark", []);
-        document.getElementById("out").innerHTML += ret;
-        if (ret.length > 0) {
-          document.getElementById("out").innerHTML += "<br>";
-          setTimeout (function() { yieldBench(); }, 0);
-        } else {
-          document.getElementById("out").innerHTML += "<br>Finished";
-        }
+        let promise = BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:RunBenchmark", []);
+        promise.then(ret => {
+          document.getElementById("out").innerHTML += ret;
+          if (ret.length > 0) {
+              document.getElementById("out").innerHTML += "<br>";
+              setTimeout(function () { yieldBench(); }, 0);
+          } else {
+              document.getElementById("out").innerHTML += "<br>Finished";
+          }
+        });
       }
 
       var App = {
         init: function () {
+          if (tasks != '')
+            BINDING.call_static_method("[Wasm.Browser.Bench.Sample] Sample.Test:SetTasks", tasks);
           yieldBench ();
         }
       };

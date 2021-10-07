@@ -419,7 +419,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source, BOOL isInBundl
     // so must ensure the mapping is compatible with that
     bool enableExecution = isInBundle &&
         source->HasCorHeader() &&
-        (source->HasNativeHeader() || source->HasReadyToRunHeader()) &&
+        source->HasReadyToRunHeader() &&
         g_fAllowNativeImages;
 
     DWORD mapAccess = PAGE_READWRITE;
@@ -586,13 +586,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     m_LoadedFile = PAL_LOADLoadPEFile(hFile, offset);
 
     if (m_LoadedFile == NULL)
-    {
-        // For CoreCLR, try to load all files via LoadLibrary first. If LoadLibrary did not work, retry using
-        // regular mapping - but not for native images.
-        if (pOwner->IsTrustedNativeImage())
-            ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
         return;
-    }
 
     LOG((LF_LOADER, LL_INFO1000, "PEImage: image %S (hFile %p) mapped @ %p\n",
         (LPCWSTR) GetPath(), hFile, (void*)m_LoadedFile));
@@ -602,7 +596,7 @@ MappedImageLayout::MappedImageLayout(PEImage* pOwner)
     if (!HasCorHeader())
         ThrowHR(COR_E_BADIMAGEFORMAT);
 
-    if ((HasNativeHeader() || HasReadyToRunHeader()) && g_fAllowNativeImages)
+    if (HasReadyToRunHeader() && g_fAllowNativeImages)
     {
         //Do base relocation for PE, if necessary.
         if (!IsNativeMachineFormat())
