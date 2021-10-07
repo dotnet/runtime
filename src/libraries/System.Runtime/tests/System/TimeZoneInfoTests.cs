@@ -3101,6 +3101,14 @@ namespace System.Tests
                 // native string is null terminated
                 var cultureName = new string(lpUiLanguageString);
 
+                string tzResourceFilePath = Path.Join(Environment.SystemDirectory, cultureName, "tzres.dll.mui");
+                if (!File.Exists(tzResourceFilePath))
+                {
+                    // If Windows installed a UI language and not including the time zone resources DLL for that language,
+                    // then skip this language as .NET will not be able to get the localized resources for that language.
+                    return 1;
+                }
+
                 try
                 {
                     var handle = GCHandle.FromIntPtr(lParam);
