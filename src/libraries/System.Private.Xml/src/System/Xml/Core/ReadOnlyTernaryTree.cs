@@ -123,13 +123,13 @@ namespace System.Xml
             67, 0, 0, 0, 84, 0, 0, 0, 69, 0, 0, 0, 68, 0, 0, 0, 0, 0, 0, 2, 85, 0, 0, 0, 83, 0, 0, 0,
             69, 0, 0, 0, 77, 0, 0, 0, 65, 0, 0, 0, 80, 0, 0, 0, 0, 0, 0, 1,
         };
-        public static byte FindElementProperty(string stringToFind)
+        public static ElementProperties FindElementProperty(string stringToFind)
         {
-            return FindCaseInsensitiveString(stringToFind, HtmlElements);
+            return (ElementProperties)FindCaseInsensitiveString(stringToFind, HtmlElements);
         }
-        public static byte FindAttributeProperty(string stringToFind)
+        public static AttributeProperties FindAttributeProperty(string stringToFind)
         {
-            return FindCaseInsensitiveString(stringToFind, HtmlAttributes);
+            return (AttributeProperties)FindCaseInsensitiveString(stringToFind, HtmlAttributes);
         }
 
         /*  ----------------------------------------------------------------------------
