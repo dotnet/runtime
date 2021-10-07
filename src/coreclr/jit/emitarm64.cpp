@@ -6459,6 +6459,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_ldr:
+        case INS_str:
+            fmt = IF_LS_3A;
+            break;
+
         case INS_extr:
             assert(insOptsNone(opt));
             assert(isValidGeneralDatasize(size));
