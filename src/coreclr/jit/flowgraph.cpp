@@ -2804,7 +2804,7 @@ void Compiler::fgAddInternal()
         // Stick the conditional call at the start of the method
 
         fgEnsureFirstBBisScratch();
-        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback));
+        fgNewStmtAtEnd(fgFirstBB, gtNewQmarkNode(TYP_VOID, guardCheckCond, callback->AsColon()));
     }
 
 #if !defined(FEATURE_EH_FUNCLETS)
