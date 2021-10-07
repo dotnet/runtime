@@ -81,27 +81,29 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
             Task backgroundTask = backgroundService.ExecuteTask;
-            if (backgroundTask != null)
+            if (backgroundTask == null)
             {
-                try
-                {
-                    await backgroundTask.ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    // When the host is being stopped, it cancels the background services.
-                    // This isn't an error condition, so don't log it as an error.
-                    if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
-                    {
-                        return;
-                    }
+                return;
+            }
 
-                    _logger.BackgroundServiceFaulted(ex);
-                    if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
-                    {
-                        _logger.BackgroundServiceStoppingHost(ex);
-                        _applicationLifetime.StopApplication();
-                    }
+            try
+            {
+                await backgroundTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // When the host is being stopped, it cancels the background services.
+                // This isn't an error condition, so don't log it as an error.
+                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
+                {
+                    return;
+                }
+
+                _logger.BackgroundServiceFaulted(ex);
+                if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
+                {
+                    _logger.BackgroundServiceStoppingHost(ex);
+                    _applicationLifetime.StopApplication();
                 }
             }
         }
