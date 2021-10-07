@@ -101,12 +101,12 @@ namespace System.IO.Tests
             await Task.WhenAll(
                 Task.Run(() => 
                 {
-                    using var fs = File.OpenRead(fifoPath);
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     ReadByte(fs, 42);
                 }),
                 Task.Run(() => 
                 {
-                    using var fs = File.OpenWrite(fifoPath);
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
                     WriteByte(fs, 42);
                 }));
         }
@@ -120,12 +120,12 @@ namespace System.IO.Tests
 
             await Task.WhenAll(
                 Task.Run(async () => {
-                    using var fs = File.OpenRead(fifoPath);
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     await ReadByteAsync(fs, 42);
                 }),
                 Task.Run(async () => 
                 {
-                    using var fs = File.OpenWrite(fifoPath);
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
                     await WriteByteAsync(fs, 42);
                 }));
         }
@@ -139,15 +139,12 @@ namespace System.IO.Tests
             int* ptr = stackalloc int[2];
             Assert.Equal(0, socketpair(AF_UNIX, SOCK_STREAM, 0, ptr));
 
-            using var readFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[0], ownsHandle: false), FileAccess.Read);
-            using var writeFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[1], ownsHandle: false), FileAccess.Write);
+            using var readFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[0], ownsHandle: true), FileAccess.Read);
+            using var writeFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[1], ownsHandle: true), FileAccess.Write);
 
             Task.WhenAll(
                 Task.Run(() => ReadByte(readFileStream, 42)),
                 Task.Run(() => WriteByte(writeFileStream, 42))).GetAwaiter().GetResult();
-
-            close(ptr[0]);
-            close(ptr[1]);
         }
 
         [Fact]
@@ -161,15 +158,12 @@ namespace System.IO.Tests
                 int* ptr = stackalloc int[2];
                 Assert.Equal(0, socketpair(AF_UNIX, SOCK_STREAM, 0, ptr));
 
-                using var readFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[0], ownsHandle: false), FileAccess.Read);
-                using var writeFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[1], ownsHandle: false), FileAccess.Write);
+                using var readFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[0], ownsHandle: true), FileAccess.Read);
+                using var writeFileStream = new FileStream(new SafeFileHandle((IntPtr)ptr[1], ownsHandle: true), FileAccess.Write);
 
                 Task.WhenAll(
                     ReadByteAsync(readFileStream, 42),
                     WriteByteAsync(writeFileStream, 42)).GetAwaiter().GetResult();
-
-                close(ptr[0]);
-                close(ptr[1]);
             }
         }
 
@@ -246,8 +240,5 @@ namespace System.IO.Tests
 
         [DllImport("libc")]
         private static unsafe extern int socketpair(int domain, int type, int protocol, int* ptr);
-
-        [DllImport("libc")]
-        private static extern int close(int fd);
     }
 }

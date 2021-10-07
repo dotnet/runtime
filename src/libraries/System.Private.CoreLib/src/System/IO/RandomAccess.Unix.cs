@@ -44,8 +44,8 @@ namespace System.IO
                         // e.g: character devices (such as /dev/tty), pipes, and sockets.
                         Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
 
-                            if (errorInfo.Error == Interop.Error.ENXIO ||
-                                errorInfo.Error == Interop.Error.ESPIPE)
+                        if (errorInfo.Error == Interop.Error.ENXIO ||
+                            errorInfo.Error == Interop.Error.ESPIPE)
                         {
                             handle.SupportsRandomAccess = false;
                             result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
