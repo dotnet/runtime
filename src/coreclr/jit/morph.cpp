@@ -14961,18 +14961,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags |= tree->AsDynBlk()->gtDynamicSize->gtFlags & GTF_ALL_EFFECT;
             break;
 
-        case GT_INDEX_ADDR:
-            GenTreeIndexAddr* indexAddr;
-            indexAddr          = tree->AsIndexAddr();
-            indexAddr->Index() = fgMorphTree(indexAddr->Index());
-            indexAddr->Arr()   = fgMorphTree(indexAddr->Arr());
-
-            tree->gtFlags &= ~GTF_CALL;
-
-            tree->gtFlags |= indexAddr->Index()->gtFlags & GTF_ALL_EFFECT;
-            tree->gtFlags |= indexAddr->Arr()->gtFlags & GTF_ALL_EFFECT;
-            break;
-
         default:
 #ifdef DEBUG
             gtDispTree(tree);
