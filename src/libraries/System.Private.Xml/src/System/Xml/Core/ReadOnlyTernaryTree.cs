@@ -43,10 +43,10 @@ namespace System.Xml
         // Array index to indicate the meaning of the each byte.
         private enum TernaryTreeByte
         {
-            characterByte = 0,
-            leftTree = 1,
-            rightTree = 2,
-            data = 3
+            CharacterByte = 0,
+            LeftTree = 1,
+            RightTree = 2,
+            Data = 3
         }
         private static ReadOnlySpan<byte> HtmlElements => new byte[]
         {
@@ -155,35 +155,35 @@ namespace System.Xml
             while (true)
             {
                 int pos = nodePos * 4;
-                int charInTheTree = nodeBuffer[pos + (int)TernaryTreeByte.characterByte];
+                int charInTheTree = nodeBuffer[pos + (int)TernaryTreeByte.CharacterByte];
                 //Console.WriteLine("charToFind: {0},charInTheTree: {1}, nodePos: {2}", charToFind, charInTheTree, nodePos);
 
                 if (charToFind < charInTheTree)
                 {
                     // If input character is less than the tree character, take the left branch
-                    if (nodeBuffer[pos + (int)TernaryTreeByte.leftTree] == 0x0)
+                    if (nodeBuffer[pos + (int)TernaryTreeByte.LeftTree] == 0x0)
                     {
                         break;
                     }
 
-                    nodePos += nodeBuffer[pos + (int)TernaryTreeByte.leftTree];
+                    nodePos += nodeBuffer[pos + (int)TernaryTreeByte.LeftTree];
                 }
                 else if (charToFind > charInTheTree)
                 {
                     // If input character is greater than the tree character, take the right branch
-                    if (nodeBuffer[pos + (int)TernaryTreeByte.rightTree] == 0x0)
+                    if (nodeBuffer[pos + (int)TernaryTreeByte.RightTree] == 0x0)
                     {
                         break;
                     }
 
-                    nodePos += nodeBuffer[pos + (int)TernaryTreeByte.rightTree];
+                    nodePos += nodeBuffer[pos + (int)TernaryTreeByte.RightTree];
                 }
                 else
                 {
                     // If input character is equal to the tree character, take the equal branch
                     if (charToFind == 0)
                     {
-                        return nodeBuffer[pos + (int)TernaryTreeByte.data];
+                        return nodeBuffer[pos + (int)TernaryTreeByte.Data];
                     }
 
                     // The offset for the equal branch is always one
