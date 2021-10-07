@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (Source.Stream == null)
             {
-                throw new NullReferenceException("Source.Stream");
+                throw new InvalidOperationException("Source.Stream cannot be null");
             }
 
             Load(Source.Stream);
