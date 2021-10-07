@@ -662,7 +662,7 @@ jobs:
       jobTemplate: ${{ parameters.jobTemplate }}
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
-      osGroup: Linux
+      osGroup: Tizen
       archType: armel
       targetRid: tizen-armel
       platform: Tizen_armel
