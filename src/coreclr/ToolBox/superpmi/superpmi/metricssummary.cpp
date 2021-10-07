@@ -44,7 +44,7 @@ bool MetricsSummary::SaveToFile(const char* path)
         sprintf_s(buffer, sizeof(buffer), "Successful compiles,Failing compiles,Code bytes\n%d,%d,%lld\n",
             SuccessfulCompiles, FailingCompiles, NumCodeBytes);
     DWORD numWritten;
-    if (!WriteFile(file.get(), buffer, static_cast<DWORD>(len), &numWritten, nullptr) || numWritten != len)
+    if (!WriteFile(file.get(), buffer, static_cast<DWORD>(len), &numWritten, nullptr) || numWritten != static_cast<DWORD>(len))
     {
         return false;
     }
