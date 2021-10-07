@@ -4749,7 +4749,7 @@ void LinearScan::allocateRegisters()
                                     if (assignedInterval->IsUpperVector())
                                     {
                                         sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
-                                                (recentRefPosition->refType == RefTypeUpperVectorRestore);
+                                                       (recentRefPosition->refType == RefTypeUpperVectorRestore);
                                     }
 
                                     assert(sanityCheck);
