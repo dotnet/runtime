@@ -15578,7 +15578,7 @@ GenTree* Compiler::gtNewTempAssign(
         //     the field was transformed as IND opr GT_LCL_FLD;
         // 2. we are propagation `ASG(struct V01, 0)` to `RETURN(struct V01)`, `CNT_INT` doesn't `structHnd`;
         // in these cases, we can use the type of the merge return for the assignment.
-        assert(val->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
+        assert(val->gtEffectiveVal(true)->OperIs(GT_IND, GT_LCL_FLD, GT_CNS_INT));
         assert(tmp == genReturnLocal);
         valStructHnd = lvaGetStruct(genReturnLocal);
         assert(valStructHnd != NO_CLASS_HANDLE);
@@ -15590,7 +15590,7 @@ GenTree* Compiler::gtNewTempAssign(
     }
     else if (varTypeIsStruct(varDsc) && ((valStructHnd != NO_CLASS_HANDLE) || varTypeIsSIMD(valTyp)))
     {
-        // The struct value may be be a child of a GT_COMMA.
+        // The struct value may be be a child of a GT_COMMA due to explicit null checks of indirs/fields.
         GenTree* valx = val->gtEffectiveVal(/*commaOnly*/ true);
 
         if (valStructHnd != NO_CLASS_HANDLE)
