@@ -12,9 +12,6 @@ if(CLR_CMAKE_HOST_WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 include_directories(.)
 include_directories(../superpmi-shared)
 
