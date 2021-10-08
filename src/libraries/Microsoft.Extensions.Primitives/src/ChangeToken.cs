@@ -95,7 +95,7 @@ namespace Microsoft.Extensions.Primitives
 
             private void RegisterChangeTokenCallback(IChangeToken? token)
             {
-                if (token is null)
+                if (token is null || token.HasChanged)
                 {
                     return;
                 }

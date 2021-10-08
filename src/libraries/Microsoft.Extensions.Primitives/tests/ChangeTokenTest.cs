@@ -90,6 +90,58 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        public void ReusingOnceFiredChangeTokenShouldNotThrow()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+
+            Func<IChangeToken> producer = () =>
+            {
+                return cancellationChangeToken;
+            };
+
+            var count = 0;
+            Action consumer = () => ++ count;
+
+            using (ChangeToken.OnChange(producer, consumer))
+            {
+                cancellationTokenSource.Cancel();
+            }
+
+            Assert.Equal(1, count);
+        }
+
+        [Fact]
+        public void RenewingFiredChangeTokenShouldFireExpectedNumberOfTimes()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+
+            Func<IChangeToken> producer = () =>
+            {
+                if (cancellationTokenSource.IsCancellationRequested)
+                {
+                    cancellationTokenSource = new CancellationTokenSource();
+                    cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+                }
+
+                return cancellationChangeToken;
+            };
+
+            var count = 0;
+            Action consumer = () => ++count;
+
+            using (ChangeToken.OnChange(producer, consumer))
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+            }
+
+            Assert.Equal(3, count);
+        }
+
+        [Fact]
         public void AsyncLocalsNotCapturedAndRestored()
         {
             // Capture clean context
