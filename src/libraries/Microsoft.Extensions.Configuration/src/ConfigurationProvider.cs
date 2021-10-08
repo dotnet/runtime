@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public abstract class ConfigurationProvider : IConfigurationProvider
     {
-        private ConfigurationReloadToken _reloadToken = new();
+        private ConfigurationReloadToken _reloadToken = new ConfigurationReloadToken();
 
         /// <summary>
         /// Initializes a new <see cref="IConfigurationProvider"/>
