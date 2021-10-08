@@ -121,17 +121,6 @@ namespace Microsoft.Win32.SafeHandles
 
         protected override bool ReleaseHandle()
         {
-            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add
-            // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
-            // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
-            // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
-            // try to release the lock before we close the handle.
-            if (_isLocked)
-            {
-                Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
-                _isLocked = false;
-            }
-
             // If DeleteOnClose was requested when constructed, delete the file now.
             // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
             if (_deleteOnClose)
@@ -141,6 +130,17 @@ namespace Microsoft.Win32.SafeHandles
                 // name will be removed immediately.
                 Debug.Assert(_path is not null);
                 Interop.Sys.Unlink(_path); // ignore errors; it's valid that the path may no longer exist
+            }
+
+            // When the SafeFileHandle was opened, we likely issued an flock on the created descriptor in order to add
+            // an advisory lock.  This lock should be removed via closing the file descriptor, but close can be
+            // interrupted, and we don't retry closes.  As such, we could end up leaving the file locked,
+            // which could prevent subsequent usage of the file until this process dies.  To avoid that, we proactively
+            // try to release the lock before we close the handle.
+            if (_isLocked)
+            {
+                Interop.Sys.FLock(handle, Interop.Sys.LockOperations.LOCK_UN); // ignore any errors
+                _isLocked = false;
             }
 
             // Close the descriptor. Although close is documented to potentially fail with EINTR, we never want
@@ -274,7 +274,6 @@ namespace Microsoft.Win32.SafeHandles
         private void Init(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
         {
             IsAsync = (options & FileOptions.Asynchronous) != 0;
-            _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 
             // Lock the file if requested via FileShare.  This is only advisory locking. FileShare.None implies an exclusive
             // lock on the file and all other modes use a shared lock.  While this is not as granular as Windows, not mandatory,
@@ -292,6 +291,10 @@ namespace Microsoft.Win32.SafeHandles
                     throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
                 }
             }
+
+            // Enable DeleteOnClose when we've succesfully locked the file.
+            // On Windows, the locking happens atomically as part of opening the file.
+            _deleteOnClose = (options & FileOptions.DeleteOnClose) != 0;
 
             // These provide hints around how the file will be accessed.  Specifying both RandomAccess
             // and Sequential together doesn't make sense as they are two competing options on the same spectrum,
