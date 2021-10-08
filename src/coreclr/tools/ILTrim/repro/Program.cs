@@ -18,7 +18,7 @@ interface IProgram
     static void LastMethod(int someParameter) { }
 }
 
-interface IAnortherType
+interface IAnotherType
 {
     static void Method() { }
 }
