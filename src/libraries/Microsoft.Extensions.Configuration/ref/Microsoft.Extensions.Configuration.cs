@@ -24,6 +24,7 @@ namespace Microsoft.Extensions.Configuration
     public partial class ChainedConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {
         public ChainedConfigurationSource() { }
+        [System.Diagnostics.CodeAnalysis.DisallowNull]
         public Microsoft.Extensions.Configuration.IConfiguration? Configuration { get { throw null; } set { } }
         public bool ShouldDisposeConfiguration { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
