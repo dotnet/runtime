@@ -357,7 +357,7 @@ public class MDPuzzle
     [Benchmark]
     public static void Test()
     {
-        Puzzle P = new Puzzle();
+        MDPuzzle P = new MDPuzzle();
         foreach (var iteration in Benchmark.Iterations)
         {
             using (iteration.StartMeasurement())
@@ -369,7 +369,7 @@ public class MDPuzzle
 
     private static bool TestBase()
     {
-        Puzzle P = new Puzzle();
+        MDPuzzle P = new MDPuzzle();
         bool result = P.Bench();
         return result;
     }
