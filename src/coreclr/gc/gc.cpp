@@ -12493,14 +12493,12 @@ void gc_heap::reset_write_watch (BOOL concurrent_p)
         while (seg)
         {
             uint8_t* base_address = align_lower_page (heap_segment_mem (seg));
-#ifdef BACKGROUND_GC
             base_address = max (base_address, background_saved_lowest_address);
-#endif
+
             uint8_t* high_address = ((seg == ephemeral_heap_segment) ? 
                 alloc_allocated : heap_segment_allocated (seg));
-#ifdef BACKGROUND_GC
             high_address = min (high_address, background_saved_highest_address);
-#endif
+
             if (base_address < high_address)
             {
                 size_t reset_size = 0;
@@ -46733,7 +46731,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->saved_sweep_ephemeral_seg = 0;
     gcDacVars->saved_sweep_ephemeral_start = 0;
 #endif //BACKGROUND_GC
-    gcDacVars->alloc_allocated = &gc_heap::alloc_allocated;    
+    gcDacVars->alloc_allocated = &gc_heap::alloc_allocated;
     gcDacVars->oom_info = &gc_heap::oom_info;
     gcDacVars->finalize_queue = reinterpret_cast<dac_finalize_queue**>(&gc_heap::finalize_queue);
     gcDacVars->generation_table = reinterpret_cast<unused_generation**>(&gc_heap::generation_table);
