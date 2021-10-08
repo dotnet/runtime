@@ -2838,7 +2838,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<ushort> WidenLower(Vector128<byte> source)
         {
             Unsafe.SkipInit(out Vector128<ushort> lower);
@@ -2853,7 +2852,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<int> WidenLower(Vector128<short> source)
         {
             Unsafe.SkipInit(out Vector128<int> lower);
@@ -2868,7 +2866,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<long> WidenLower(Vector128<int> source)
         {
             Unsafe.SkipInit(out Vector128<long> lower);
@@ -2883,7 +2880,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<short> WidenLower(Vector128<sbyte> source)
         {
             Unsafe.SkipInit(out Vector128<short> lower);
@@ -2898,7 +2894,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<double> WidenLower(Vector128<float> source)
         {
             Unsafe.SkipInit(out Vector128<double> lower);
@@ -2913,7 +2908,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<uint> WidenLower(Vector128<ushort> source)
         {
             Unsafe.SkipInit(out Vector128<uint> lower);
@@ -2928,7 +2922,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<ulong> WidenLower(Vector128<uint> source)
         {
             Unsafe.SkipInit(out Vector128<ulong> lower);
@@ -2943,7 +2936,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector128<ushort> WidenUpper(Vector128<byte> source)
         {
             Unsafe.SkipInit(out Vector128<ushort> upper);
@@ -2958,7 +2950,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<int> WidenUpper(Vector128<short> source)
         {
             Unsafe.SkipInit(out Vector128<int> upper);
@@ -2973,7 +2964,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<long> WidenUpper(Vector128<int> source)
         {
             Unsafe.SkipInit(out Vector128<long> upper);
@@ -2988,7 +2978,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<short> WidenUpper(Vector128<sbyte> source)
         {
             Unsafe.SkipInit(out Vector128<short> upper);
@@ -3003,7 +2992,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<double> WidenUpper(Vector128<float> source)
         {
             Unsafe.SkipInit(out Vector128<double> upper);
@@ -3018,7 +3006,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<uint> WidenUpper(Vector128<ushort> source)
         {
             Unsafe.SkipInit(out Vector128<uint> upper);
@@ -3033,7 +3020,6 @@ namespace System.Runtime.Intrinsics
         }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Vector128<ulong> WidenUpper(Vector128<uint> source)
         {
             Unsafe.SkipInit(out Vector128<ulong> upper);
