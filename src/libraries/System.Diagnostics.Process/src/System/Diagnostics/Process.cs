@@ -1709,8 +1709,6 @@ namespace System.Diagnostics
             HaveProcessInfo = 0x8,
             Exited = 0x10,
             Associated = 0x20,
-            // Shortcut to quickly get the process name.
-            //HaveProcessName = 0x40,
         }
     }
 }

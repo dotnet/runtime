@@ -895,10 +895,11 @@ namespace System.Diagnostics
         {
             get
             {
+                EnsureState(State.HaveNonExitedId);
+
                 if (_processName == null)
                 {
                     EnsureState(State.HaveId);
-                    EnsureState(State.HaveNonExitedId);
 
                     _processName = ProcessManager.GetProcessName(_processId, _machineName);
 
