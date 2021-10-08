@@ -1003,12 +1003,8 @@ bool pal::is_running_in_wow64()
 
 bool pal::is_emulating_x64()
 {
-#ifndef TARGET_OSX
-    // We currently don't support any emulation scenarios on Linux.
-    return false;
-#endif
-
     int is_translated_process = 0;
+#if defined(TARGET_OSX)
     size_t size = sizeof(is_translated_process);
     if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
     {
@@ -1020,8 +1016,9 @@ bool pal::is_emulating_x64()
 
         return false;
     }
+#endif
 
-    return is_translated_process;
+    return is_translated_process == 1;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
