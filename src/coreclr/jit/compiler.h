@@ -3009,7 +3009,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
-    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
+    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
@@ -5362,6 +5362,8 @@ public:
     // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
     // rather than the "use" SSA number recorded in the tree "lcl".
     inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
+
+    inline bool PreciseRefCountsRequired();
 
     // Performs SSA conversion.
     void fgSsaBuild();
@@ -11286,6 +11288,7 @@ public:
             case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
+            case GT_FIELD:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
@@ -11368,21 +11371,6 @@ public:
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
-                }
-                break;
-            }
-
-            case GT_FIELD:
-            {
-                GenTreeField* const field = node->AsField();
-
-                if (field->gtFldObj != nullptr)
-                {
-                    result = WalkTree(&field->gtFldObj, field);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
                 }
                 break;
             }

@@ -4373,8 +4373,8 @@ void Compiler::lvaMarkLocalVars()
     const bool isRecompute = false;
     lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    // If we're not optimizing, we're done.
-    if (opts.OptimizationDisabled())
+    // If we don't need precise reference counts, e.g. we're not optimizing, we're done.
+    if (!PreciseRefCountsRequired())
     {
         return;
     }
@@ -4394,7 +4394,7 @@ void Compiler::lvaMarkLocalVars()
     }
 
 #if ASSERTION_PROP
-    assert(opts.OptimizationEnabled());
+    assert(PreciseRefCountsRequired());
 
     // Note: optAddCopies() depends on lvaRefBlks, which is set in lvaMarkLocalVars(BasicBlock*), called above.
     optAddCopies();
@@ -4432,7 +4432,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     //
     // On first compute: mark all locals as implicitly referenced and untracked.
     // On recompute: do nothing.
-    if (opts.OptimizationDisabled())
+    if (!PreciseRefCountsRequired())
     {
         if (isRecompute)
         {

@@ -485,8 +485,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
-    GTF_NOP_DEATH               = 0x40000000, // GT_NOP -- operand dies here
-
     GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
     GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
 
@@ -1711,6 +1709,7 @@ public:
             case GT_LEA:
             case GT_RETFILT:
             case GT_NOP:
+            case GT_FIELD:
 #ifdef FEATURE_HW_INTRINSICS
             case GT_HWINTRINSIC:
 #endif // FEATURE_HW_INTRINSICS
@@ -3683,11 +3682,9 @@ struct GenTreeBox : public GenTreeUnOp
 #endif
 };
 
-/* gtField  -- data member ref  (GT_FIELD) */
-
-struct GenTreeField : public GenTree
+// GenTreeField -- data member ref (GT_FIELD)
+struct GenTreeField : public GenTreeUnOp
 {
-    GenTree*             gtFldObj;
     CORINFO_FIELD_HANDLE gtFldHnd;
     DWORD                gtFldOffset;
     bool                 gtFldMayOverlap;
@@ -3696,7 +3693,7 @@ struct GenTreeField : public GenTree
 #endif
 
     GenTreeField(var_types type, GenTree* obj, CORINFO_FIELD_HANDLE fldHnd, DWORD offs)
-        : GenTree(GT_FIELD, type), gtFldObj(obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
+        : GenTreeUnOp(GT_FIELD, type, obj), gtFldHnd(fldHnd), gtFldOffset(offs), gtFldMayOverlap(false)
     {
         if (obj != nullptr)
         {
@@ -3708,17 +3705,24 @@ struct GenTreeField : public GenTree
 #endif
     }
 
+#if DEBUGGABLE_GENTREE
+    GenTreeField() : GenTreeUnOp()
+    {
+    }
+#endif
+
+    // The object this field belongs to. May be "nullptr", e. g. for static fields.
+    // Note that this is an address, i. e. for struct fields it will be ADDR(STRUCT).
+    GenTree* GetFldObj() const
+    {
+        return gtOp1;
+    }
+
     // True if this field is a volatile memory operation.
     bool IsVolatile() const
     {
         return (gtFlags & GTF_FLD_VOLATILE) != 0;
     }
-
-#if DEBUGGABLE_GENTREE
-    GenTreeField() : GenTree()
-    {
-    }
-#endif
 };
 
 // Represents the Argument list of a call node, as a Lisp-style linked list.
@@ -4993,12 +4997,15 @@ struct GenTreeFptrVal : public GenTree
 /* gtQmark */
 struct GenTreeQmark : public GenTreeOp
 {
-    // The "Compiler*" argument is not a DEBUGARG here because we use it to keep track of the set of
-    // (possible) QMark nodes.
-    GenTreeQmark(var_types type, GenTree* cond, GenTree* colonOp, class Compiler* comp);
+    GenTreeQmark(var_types type, GenTree* cond, GenTreeColon* colon) : GenTreeOp(GT_QMARK, type, cond, colon)
+    {
+        // These must follow a specific form.
+        assert((cond != nullptr) && cond->TypeIs(TYP_INT));
+        assert((colon != nullptr) && colon->OperIs(GT_COLON));
+    }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeQmark() : GenTreeOp(GT_QMARK, TYP_INT, nullptr, nullptr)
+    GenTreeQmark() : GenTreeOp()
     {
     }
 #endif

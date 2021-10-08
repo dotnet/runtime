@@ -2689,7 +2689,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
                 BlockRange().InsertAfter(cmp, cc);
-                cmpUse.ReplaceWith(comp, cc);
+                cmpUse.ReplaceWith(cc);
             }
 
             cc->gtFlags |= GTF_USE_FLAGS;
@@ -2953,7 +2953,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
             {
                 cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
                 BlockRange().InsertAfter(node, cc);
-                use.ReplaceWith(comp, cc);
+                use.ReplaceWith(cc);
             }
         }
     }
@@ -5065,7 +5065,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             DISPNODE(op1);
             if (BlockRange().TryGetUse(node, &use))
             {
-                use.ReplaceWith(comp, op1);
+                use.ReplaceWith(op1);
             }
             else
             {
@@ -5670,7 +5670,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     BlockRange().Remove(divMod);
 
     // replace the original divmod node with the new divmod tree
-    use.ReplaceWith(comp, newDivMod);
+    use.ReplaceWith(newDivMod);
 
     return newDivMod->gtNext;
 }
@@ -5931,7 +5931,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     LIR::Use arrElemUse;
     if (BlockRange().TryGetUse(arrElem, &arrElemUse))
     {
-        arrElemUse.ReplaceWith(comp, leaNode);
+        arrElemUse.ReplaceWith(leaNode);
     }
     else
     {
