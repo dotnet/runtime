@@ -9,9 +9,9 @@ using Xunit;
 
 [assembly: OptimizeForBenchmarks]
 
-namespace Benchstone.BenchI
+namespace Benchstone.MDBenchI
 {
-public static class LogicArray
+public static class MDLogicArray
 {
 
 #if DEBUG
@@ -23,15 +23,7 @@ public static class LogicArray
     struct Workarea
     {
         public int X;
-        public int[][] A;
-    }
-
-    static T[][] AllocArray<T>(int n1, int n2) {
-        T[][] a = new T[n1][];
-        for (int i = 0; i < n1; ++i) {
-            a[i] = new T[n2];
-        }
-        return a;
+        public int[,] A;
     }
 
     static bool Inner(ref Workarea cmn) {
@@ -39,14 +31,14 @@ public static class LogicArray
         cmn.X = 0;
         for (i = 1; i <= 50; i++) {
             for (j = 1; j <= 50; j++) {
-                cmn.A[i][j] = 1;
+                cmn.A[i,j] = 1;
             }
         }
         for (k = 1; k <= 50; k++) {
             for (j = 1; j <= 50; j++) {
                 i = 1;
                 do {
-                    cmn.X = cmn.X | cmn.A[i][j] & cmn.A[i + 1][k];
+                    cmn.X = cmn.X | cmn.A[i,j] & cmn.A[i + 1,k];
                     i = i + 2;
                 } while (i <= 50);
             }
@@ -63,7 +55,7 @@ public static class LogicArray
     static bool Bench() {
         Workarea cmn = new Workarea();
         cmn.X = 0;
-        cmn.A = AllocArray<int>(51, 51);
+        cmn.A = new int[51, 51];
         for (int n = 1; n <= Iterations; n++) {
             bool result = Inner(ref cmn);
             if (!result) {
