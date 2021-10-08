@@ -38748,7 +38748,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
-    ptrdiff_t desired_allocation = estimate_gen_growth (soh_gen0) +
+    ptrdiff_t desired_allocation = dd_new_allocation (dd0) +
                                    estimate_gen_growth (soh_gen1) +
                                    loh_size_threshold;
 
