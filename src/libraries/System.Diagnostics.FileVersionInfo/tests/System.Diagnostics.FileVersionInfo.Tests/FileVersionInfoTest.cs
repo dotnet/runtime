@@ -109,16 +109,19 @@ namespace System.Diagnostics.Tests
         {
             try
             {
-                File.WriteAllText("kernelbase.dll", "bogus kernelbase.dll");
-                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo("kernelbase.dll");
+                string rootPath = (PlatformDetection.IsiOS || PlatformDetection.IstvOS) ? Path.GetTempPath() : string.Empty;
+                string kernelBasePath = Path.Combine(rootPath, "kernelbase.dll");
+
+                File.WriteAllText(kernelBasePath, "bogus kernelbase.dll");
+                FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(kernelBasePath);
                 // File name should be the full path to the local kernelbase.dll, not the relative path or the path to the system .dll
-                Assert.Equal(Path.GetFullPath("kernelbase.dll"), fvi.FileName);
+                Assert.Equal(Path.GetFullPath(kernelBasePath), fvi.FileName);
                 // FileDescription should be null in the local kernelbase.dll
                 Assert.Null(fvi.FileDescription);
             }
             finally
             {
-                File.Delete("kernelbase.dll");
+                File.Delete(kernelBasePath);
             }
         }
 

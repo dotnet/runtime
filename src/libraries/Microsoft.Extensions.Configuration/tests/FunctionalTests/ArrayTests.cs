@@ -103,7 +103,17 @@ i=ini_i.i.i.i
 
         public ArrayTests()
         {
-            var basePath = AppContext.BaseDirectory ?? string.Empty;
+            string basePath;
+
+            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                basePath = Path.GetTempPath();
+            }
+            else
+            {
+                basePath = AppContext.BaseDirectory ?? string.Empty;
+            }
+
             _iniConfigFilePath = Path.GetRandomFileName();
             _xmlConfigFilePath = Path.GetRandomFileName();
             _json1ConfigFilePath = Path.GetRandomFileName();
