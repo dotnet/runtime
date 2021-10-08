@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -35,7 +36,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key to lookup.</param>
         /// <param name="value">The value found at key if one is found.</param>
         /// <returns>True if key has a value, false otherwise.</returns>
-        public virtual bool TryGet(string key, out string? value)
+        public virtual bool TryGet(string key, [MaybeNullWhen(false)] out string value)
             => Data.TryGetValue(key, out value);
 
         /// <summary>
