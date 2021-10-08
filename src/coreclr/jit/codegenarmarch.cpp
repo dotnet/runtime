@@ -2580,7 +2580,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             if (!call->IsFastTailCall())
             {
                 GetEmitter()->emitIns_R_R(ins_Load(TYP_I_IMPL), emitActualTypeSize(TYP_I_IMPL), targetAddrReg,
-                                        indirCellReg);
+                                          indirCellReg);
             }
             else
             {

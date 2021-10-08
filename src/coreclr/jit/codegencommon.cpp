@@ -7819,16 +7819,16 @@ regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
     regNumber result = REG_NA;
     switch (call->GetIndirectionCellArgKind())
     {
-    case NonStandardArgKind::None:
-        break;
-    case NonStandardArgKind::R2RIndirectionCell:
-        result = REG_R2R_INDIRECT_PARAM;
-        break;
-    case NonStandardArgKind::VirtualStubCell:
-        result = compiler->virtualStubParamInfo->GetReg();
-        break;
-    default:
-        unreached();
+        case NonStandardArgKind::None:
+            break;
+        case NonStandardArgKind::R2RIndirectionCell:
+            result = REG_R2R_INDIRECT_PARAM;
+            break;
+        case NonStandardArgKind::VirtualStubCell:
+            result = compiler->virtualStubParamInfo->GetReg();
+            break;
+        default:
+            unreached();
     }
 
 #ifdef DEBUG
