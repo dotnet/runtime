@@ -67,7 +67,7 @@ function Verify-Robocopy {
         [string]$Source
     )
     
-    if ($LASTEXITCODE -eq 8 -or !$?) {
+    if ($LASTEXITCODE -gt 8 -or !$?) {
         Write-Output "Failed to copy ${Source}: exit code $LASTEXITCODE"
         exit $LASTEXITCODE
     }
