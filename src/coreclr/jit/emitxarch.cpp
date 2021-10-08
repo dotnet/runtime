@@ -8846,7 +8846,12 @@ void emitter::emitDispIns(
             }
             else
             {
-                printf("%s", sstr);
+                // GC ref bit is for the return value for calls, do not print it before the address mode
+                if ((ins != INS_call) && (ins != INS_tail_i_jmp))
+                {
+                    printf("%s", sstr);
+                }
+
                 emitDispAddrMode(id, isNew);
                 emitDispShift(ins);
             }
