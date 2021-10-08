@@ -277,7 +277,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     //  ***************************
 
     const pal::char_t* program_files_dir;
-    if (is_running_in_wow64())
+    if (pal::is_running_in_wow64())
     {
         program_files_dir = _X("ProgramFiles(x86)");
     }
@@ -292,7 +292,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
-    if (is_emulating_x64())
+    if (pal::is_emulating_x64())
     {
         // Install location for emulated x64 should be %ProgramFiles%\dotnet\x64.
         append_path(recv, _X("x64"));
@@ -775,6 +775,52 @@ void pal::readdir_onlydirectories(const pal::string_t& path, const string_t& pat
 void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::string_t>* list)
 {
     ::readdir(path, _X("*"), true, list);
+}
+
+bool pal::is_running_in_wow64()
+{
+    BOOL fWow64Process = FALSE;
+    if (!IsWow64Process(GetCurrentProcess(), &fWow64Process))
+    {
+        return false;
+    }
+    return (fWow64Process != FALSE);
+}
+
+typedef BOOL (WINAPI* is_wow64_process2)(
+  HANDLE hProcess,
+  USHORT *pProcessMachine,
+  USHORT *pNativeMachine
+);
+
+bool pal::is_emulating_x64()
+{
+    USHORT pProcessMachine, pNativeMachine;
+    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (kernel32)
+    {
+        is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
+        if (!isWow64Process2Func)
+        {
+            // Could not find IsWow64Process2.
+            return false;
+        }
+
+        if (!isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine))
+        {
+            // IsWow64Process2 failed. Log the error and continue.
+            trace::info(_X("Call to IsWow64Process2 failed: %s"), GetLastError());
+            return false;
+        }
+
+        // Check if we are running an x64 process on a non-x64 windows machine.
+        return pProcessMachine != pNativeMachine && pProcessMachine == IMAGE_FILE_MACHINE_AMD64;
+    }
+
+    // Loading kernel32.dll failed, log the error and continue.
+    trace::info(_X("Could not load 'kernel32.dll': %s"), GetLastError());
+
+    return false;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
