@@ -67,6 +67,12 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
                W("JitAlignLoopAdaptive"),
                1) // If set, perform adaptive loop alignment that limits number of padding based on loop size.
 
+CONFIG_INTEGER(JitHideAlignBehindJmp,
+               W("JitHideAlignBehindJmp"),
+               1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
+                  // that
+                  // is present before the loop start.
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 

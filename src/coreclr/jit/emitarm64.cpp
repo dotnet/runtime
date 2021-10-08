@@ -11439,13 +11439,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 // IG can be marked as not needing alignment after emitting align instruction.
                 // Alternatively, there are fewer align instructions needed than emitted.
                 // If that is the case, skip outputting alignment.
-                if (!ig->isLoopAlign() || id->idIsEmptyAlign())
+                if (!ig->endsWithAlignInstr() || id->idIsEmptyAlign())
                 {
                     skipIns = true;
                 }
 
 #ifdef DEBUG
-                if (!ig->isLoopAlign())
+                if (!ig->endsWithAlignInstr())
                 {
                     // Validate if the state is correctly updated
                     assert(id->idIsEmptyAlign());
@@ -13330,7 +13330,15 @@ void emitter::emitDispIns(
         case IF_SN_0A: // SN_0A   ................ ................
             if (ins == INS_align)
             {
-                printf("[%d bytes]", id->idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE);
+                instrDescAlign* alignInstrId = (instrDescAlign*)id;
+                printf("[%d bytes", id->idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE);
+
+                // targetIG is only set for 1st of the series of align instruction
+                if ((alignInstrId->idaTargetIG != nullptr) && (alignInstrId->idaTargetIG->igNext != nullptr))
+                {
+                    printf(" for IG%02u", alignInstrId->idaTargetIG->igNext->igNum);
+                }
+                printf("]");
             }
             break;
 

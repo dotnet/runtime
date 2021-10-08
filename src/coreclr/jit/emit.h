@@ -275,8 +275,10 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_LOOP_ALIGN 0x0400     // this group contains alignment instruction(s) at the end; the next IG is the
-                                  // head of a loop that needs alignment.
+#define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) in the end;
+                                  // the next IG may or may not be the head of a loop that is needing alignment
+                                  // This IG might end up with 'jmp' and hence 'align' instruction might be added
+                                  // in this IG, after the 'jmp' instruction.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -349,9 +351,14 @@ struct insGroup
         return *(unsigned*)ptr;
     }
 
-    bool isLoopAlign()
+    void removeAlignInstr()
     {
-        return (igFlags & IGF_LOOP_ALIGN) != 0;
+        igFlags &= ~IGF_HAS_ALIGN;
+    }
+
+    bool endsWithAlignInstr()
+    {
+        return (igFlags & IGF_HAS_ALIGN) != 0;
     }
 
 }; // end of struct insGroup
@@ -1383,14 +1390,13 @@ protected:
 #if FEATURE_LOOP_ALIGN
     struct instrDescAlign : instrDesc
     {
-        instrDescAlign* idaNext; // next align in the group/method
-        insGroup*       idaIG;   // containing group
+        instrDescAlign* idaNext;     // next align in the group/method
+        insGroup*       idaIG;       // containing group
+        insGroup*       idaTargetIG; // The IG before the loop IG.
+                                     // If no 'jmp' instructions were found until targetIG,
+                                     // the 'align' will be placed in this IG.
     };
-
     void emitCheckAlignFitInCurIG(unsigned short nAlignInstr);
-    void emitLoopAlign(unsigned short paddingBytes);
-    void emitLongLoopAlign(unsigned short alignmentBoundary);
-
 #endif // FEATURE_LOOP_ALIGN
 
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
@@ -1780,15 +1786,25 @@ private:
     unsigned        emitLastLoopStart;    // Start IG of last inner loop
     unsigned        emitLastLoopEnd;      // End IG of last inner loop
     unsigned        emitLastAlignedIgNum; // last IG that has align instruction
-    instrDescAlign* emitAlignList;        // list of local align instructions in method
+    instrDescAlign* emitAlignList;        // list of all align instructions in method
     instrDescAlign* emitAlignLast;        // last align instruction in method
+
+    // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
+    // non-adpative alignment on xarch, this points to the first align instruction of the series of align instructions.
+    instrDescAlign* emitRecentFirstAlign;
+
     unsigned getLoopSize(insGroup* igLoopHeader,
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
-    void emitLoopAlignment();
+    void emitLoopAlignment(BasicBlock* blockToAlign);
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
+
+    void emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign);
+    void emitLongLoopAlign(unsigned short alignmentBoundary);
+    instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
+    void emitConnectAlignInstrWithCurIG();
 #endif
 
     void emitCheckFuncletBranch(instrDesc* jmp, insGroup* jmpIG); // Check for illegal branches between funclets

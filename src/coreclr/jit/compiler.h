@@ -3973,7 +3973,7 @@ public:
     void lvaSortByRefCount();
 
     void lvaMarkLocalVars(); // Local variable ref-counting
-    void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
+    void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers, bool calculateAlign = false);
     void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
@@ -8333,6 +8333,12 @@ public:
                            weight_t refCntWtdStkDbl);
 #endif // DOUBLE_ALIGN
 
+#if FEATURE_LOOP_ALIGN
+public:
+    alignBlocksList* alignBBLists;
+
+#endif // FEATURE_LOOP_ALIGN
+
     bool IsFullPtrRegMapRequired()
     {
         return codeGen->IsFullPtrRegMapRequired();
@@ -9686,6 +9692,9 @@ public:
 
         // If set, perform adaptive loop alignment that limits number of padding based on loop size.
         bool compJitAlignLoopAdaptive;
+
+        // If set, tries to hide alignment instructions behind unconditional jumps.
+        bool compJitHideAlignBehindJmp;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

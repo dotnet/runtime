@@ -4407,6 +4407,8 @@ void Compiler::lvaMarkLocalVars()
 //                   groundwork for assertion prop, check type consistency, etc.
 //                   See lvaMarkLclRefs for details on what else goes on.
 //    setSlotNumbers -- true if local slot numbers should be assigned.
+//    calculateAlign -- Populate the list of alignBlocksList chaining all the
+//                      loop head blocks that needs alignment.
 //
 // Notes:
 //    Some implicit references are given actual counts or weight bumps here
@@ -4419,7 +4421,7 @@ void Compiler::lvaMarkLocalVars()
 //    When optimizing we also recompute lvaGenericsContextInUse based
 //    on specially flagged LCL_VAR appearances.
 //
-void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
+void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers, bool calculateAlign)
 {
     JITDUMP("\n*** lvaComputeRefCounts ***\n");
     unsigned   lclNum = 0;
@@ -4524,6 +4526,10 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     const bool oldLvaGenericsContextInUse = lvaGenericsContextInUse;
     lvaGenericsContextInUse               = false;
 
+#if FEATURE_LOOP_ALIGN
+    alignBlocksList* alignBB = nullptr;
+#endif
+
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
@@ -4531,6 +4537,30 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
     {
         if (block->IsLIR())
         {
+#if FEATURE_LOOP_ALIGN
+            if (calculateAlign)
+            {
+                // Track the blocks that needs alignment
+                // except if it is first block, because currently adding padding
+                // in prolog is not supported
+                if (opts.compJitHideAlignBehindJmp && block->isLoopAlign() && (block != fgFirstBB))
+                {
+                    alignBlocksList* curr = new (this, CMK_FlowList) alignBlocksList(block);
+
+                    if (alignBBLists == nullptr)
+                    {
+                        alignBBLists = curr;
+                    }
+                    else
+                    {
+                        alignBB->next = curr;
+                    }
+
+                    alignBB = curr;
+                }
+            }
+#endif
+
             assert(isRecompute);
 
             const weight_t weight = block->getBBWeight(this);

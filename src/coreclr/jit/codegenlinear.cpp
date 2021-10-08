@@ -172,8 +172,13 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
+#if FEATURE_LOOP_ALIGN
+    alignBlocksList* blockToAlign = compiler->alignBBLists;
+#endif
+
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
+
 #ifdef DEBUG
         if (compiler->verbose)
         {
@@ -744,6 +749,17 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
                 inst_JMP(EJ_jmp, block->bbJumpDest);
+
+#if FEATURE_LOOP_ALIGN
+                // Add 'align' instruction if the alignment for 'blockToAlign' was not
+                // already added.
+                if ((blockToAlign != nullptr) && !blockToAlign->getBlock()->isLoopAlignAdded())
+                {
+                    assert(ShouldAlignLoops());
+
+                    GetEmitter()->emitLoopAlignment(blockToAlign->getBlock());
+                }
+#endif
                 FALLTHROUGH;
 
             case BBJ_COND:
@@ -784,9 +800,13 @@ void CodeGen::genCodeForBBlist()
 #if FEATURE_LOOP_ALIGN
 
         // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
-        // then need to add align instruction in current "block". Also mark the
-        // corresponding IG with IGF_LOOP_ALIGN to know that there will be align
-        // instructions at the end of that IG.
+        // then need to add align instruction in current "block", provided there was
+        // no "align" instruction added after one of the previous "jmp" instructions.
+        //
+        // If the "align" instruction was added previously (isLoopAlignAdded() == true),
+        // update its idaTargetIG to point to the current IG. The current IG is the one
+        // that is just before the IG having loop start. Setting idaTargetIG, establish the
+        // connection of "align" instruction to the loop it actually wants to align.
         //
         // For non-adaptive alignment, add alignment instruction of size depending on the
         // compJitAlignLoopBoundary.
@@ -794,9 +814,32 @@ void CodeGen::genCodeForBBlist()
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
-            assert(ShouldAlignLoops());
+            if (compiler->opts.compJitHideAlignBehindJmp)
+            {
+                // blockToAlign should not be null because that's the one
+                // that we are trying to align.
+                assert(blockToAlign != nullptr);
+                assert(block->bbNext == blockToAlign->getBlock());
 
-            GetEmitter()->emitLoopAlignment();
+                // If there was no unconditional jmp until now, just handle it before the loop
+                if (!blockToAlign->getBlock()->isLoopAlignAdded())
+                {
+                    assert(ShouldAlignLoops());
+
+                    GetEmitter()->emitLoopAlignment(blockToAlign->getBlock());
+                }
+
+                GetEmitter()->emitConnectAlignInstrWithCurIG();
+
+                // Move to the next block to be aligned
+                blockToAlign = blockToAlign->next;
+            }
+            else
+            {
+                assert(ShouldAlignLoops());
+
+                GetEmitter()->emitLoopAlignment(nullptr);
+            }
         }
 #endif
 

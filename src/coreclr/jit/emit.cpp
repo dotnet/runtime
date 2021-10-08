@@ -872,7 +872,7 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         // Move align instructions to the global list, update their 'next' links
         do
         {
-            // Grab the jump and remove it from the list
+            // Grab the align and remove it from the list
 
             instrDescAlign* oa = emitCurIGAlignList;
             emitCurIGAlignList = oa->idaNext;
@@ -913,6 +913,9 @@ insGroup* emitter::emitSavIG(bool emitAdd)
         }
 
         emitAlignLast = last;
+        // Point to the first instruction of most recent
+        // align instruction(s) added.
+        emitRecentFirstAlign = list;
     }
 
 #endif
@@ -1071,8 +1074,8 @@ void emitter::emitBegFN(bool hasFramePtr
 #if FEATURE_LOOP_ALIGN
     /* We don't have any align instructions */
 
-    emitAlignList = emitAlignLast = nullptr;
-    emitCurIGAlignList            = nullptr;
+    emitAlignList = emitRecentFirstAlign = emitAlignLast = nullptr;
+    emitCurIGAlignList                                   = nullptr;
 #endif
 
     /* We have not recorded any live sets */
@@ -1574,7 +1577,7 @@ void emitter::emitCheckIGoffsets()
     {
         if (tempIG->igOffs != currentOffset)
         {
-            printf("Block #%u has offset %08X, expected %08X\n", tempIG->igNum, tempIG->igOffs, currentOffset);
+            printf("IG%02u has offset %08X, expected %08X\n", tempIG->igNum, tempIG->igOffs, currentOffset);
             assert(!"bad block offset");
         }
 
@@ -3555,7 +3558,7 @@ void emitter::emitDispIGflags(unsigned flags)
     {
         printf(", extend");
     }
-    if (flags & IGF_LOOP_ALIGN)
+    if (flags & IGF_HAS_ALIGN)
     {
         printf(", align");
     }
@@ -4818,10 +4821,10 @@ void emitter::emitCheckAlignFitInCurIG(unsigned short nAlignInstr)
 //-----------------------------------------------------------------------------
 //
 //  The next instruction will be a loop head entry point
-//  So insert an alignment instruction here to ensure that
-//  we can properly align the code.
+//  So insert an alignment instruction of "paddingBytes" to ensure that
+//  the code is properly aligned.
 //
-void emitter::emitLoopAlign(unsigned short paddingBytes)
+void emitter::emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign)
 {
     // Determine if 'align' instruction about to be generated will
     // fall in current IG or next.
@@ -4858,6 +4861,18 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
 #endif
 
     id->idaIG = emitCurIG;
+
+    if (isFirstAlign)
+    {
+        // For multiple align instructions, set the targetIG only for the
+        // first align instruction
+        id->idaTargetIG      = emitCurIG;
+        emitRecentFirstAlign = id;
+    }
+    else
+    {
+        id->idaTargetIG = nullptr;
+    }
 
     /* Append this instruction to this IG's alignment list */
     id->idaNext = emitCurIGAlignList;
@@ -4896,23 +4911,38 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
     /* Insert a pseudo-instruction to ensure that we align
     the next instruction properly */
 
+    bool isFirstAlign = true;
     while (insAlignCount)
     {
-        emitLoopAlign(paddingBytes);
+        emitLoopAlign(paddingBytes, isFirstAlign);
         insAlignCount--;
+        isFirstAlign = false;
     }
 
 #if defined(TARGET_XARCH)
-    emitLoopAlign(lastInsAlignSize);
+    emitLoopAlign(lastInsAlignSize, isFirstAlign);
 #endif
 }
 
 //-----------------------------------------------------------------------------
-// emitLoopAlignment: Insert an align instruction at the end of emitCurIG and
-//                    mark it as IGF_LOOP_ALIGN to indicate that next IG  is a
-//                    loop needing alignment.
+// emitConnectAlignInstrWithCurIG:  If "align" instruction is not just before the loop start,
+//                                  setting targetIG lets us know the exact IG that the "align"
+//                                  instruction is trying to align. This is used during loop size
+//                                  calculation.
 //
-void emitter::emitLoopAlignment()
+void emitter::emitConnectAlignInstrWithCurIG()
+{
+    // Since we never align overlapping instructions, it is always guaranteed that
+    // the emitRecentFirstAlign points to the loop that is in process of getting aligned.
+    emitRecentFirstAlign->idaTargetIG = emitCurIG;
+}
+
+//-----------------------------------------------------------------------------
+// emitLoopAlignment: Insert an align instruction at the end of emitCurIG and
+//                    mark it as IGF_HAS_ALIGN to indicate that a next or a future
+//                    IG is a loop that needs alignment.
+//
+void emitter::emitLoopAlignment(BasicBlock* blockToAlign)
 {
     unsigned short paddingBytes;
 
@@ -4928,7 +4958,7 @@ void emitter::emitLoopAlignment()
     {
         emitCheckAlignFitInCurIG(1);
         paddingBytes = MAX_ENCODED_SIZE;
-        emitLoopAlign(paddingBytes);
+        emitLoopAlign(paddingBytes, true);
     }
 #elif defined(TARGET_ARM64)
     // For Arm64, each align instruction is 4-bytes long because of fixed-length encoding.
@@ -4944,6 +4974,18 @@ void emitter::emitLoopAlignment()
     emitLongLoopAlign(paddingBytes);
 #endif
 
+    assert(emitLastIns->idIns() == INS_align);
+
+
+    if (emitComp->opts.compJitHideAlignBehindJmp)
+    {
+        // Mark that the alignment for this block is handled. Useful when hiding align behind the jmp.
+        blockToAlign->setLoopAlignAdded();
+    }
+    else
+    {
+        assert(blockToAlign == nullptr);
+    }
     JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
 
 #ifdef DEBUG
@@ -4958,7 +5000,7 @@ void emitter::emitLoopAlignment()
 //
 bool emitter::emitEndsWithAlignInstr()
 {
-    return emitCurIG->isLoopAlign();
+    return emitCurIG->endsWithAlignInstr();
 }
 
 //-----------------------------------------------------------------------------
@@ -4982,9 +5024,9 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->isLoopAlign())
+        if (igInLoop->endsWithAlignInstr())
         {
-            // If igInLoop is marked as "IGF_LOOP_ALIGN", the basic block flow detected a loop start.
+            // If igInLoop is marked as "IGF_HAS_ALIGN", the basic block flow detected a loop start.
             // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
             // set for them and such loops are not aligned. For such cases, the loop size threshold will never
             // be met and we would break as soon as loopSize > maxLoopSize.
@@ -5149,25 +5191,32 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
             bool            markedCurrLoop = alignCurrentLoop;
             while ((alignInstr != nullptr))
             {
-                // Find the IG before current loop and clear the IGF_LOOP_ALIGN flag
-                if (!alignCurrentLoop && (alignInstr->idaIG->igNext == dstIG))
+                // Find the IG that has 'align' instruction to align the current loop
+                // and clear the IGF_HAS_ALIGN flag.
+                if (!alignCurrentLoop && (alignInstr->idaTargetIG->igNext == dstIG))
                 {
                     assert(!markedCurrLoop);
-                    alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
+
+                    // This IG should no longer contain alignment instruction
+                    alignInstr->idaIG->removeAlignInstr();
+
                     markedCurrLoop = true;
                     JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
                             "IG%02u ~ IG%02u.\n",
                             currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
                 }
 
-                // Find the IG before the last loop and clear the IGF_LOOP_ALIGN flag
-                if (!alignLastLoop && (alignInstr->idaIG->igNext != nullptr) &&
-                    (alignInstr->idaIG->igNext->igNum == emitLastLoopStart))
+                // Find the IG that has 'align' instruction to align the last loop
+                // and clear the IGF_HAS_ALIGN flag.
+                if (!alignLastLoop && (alignInstr->idaTargetIG->igNext != nullptr) &&
+                    (alignInstr->idaTargetIG->igNext->igNum == emitLastLoopStart))
                 {
                     assert(!markedLastLoop);
-                    assert(alignInstr->idaIG->isLoopAlign());
+                    assert(alignInstr->idaIG->endsWithAlignInstr());
 
-                    alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
+                    // This IG should no longer contain alignment instruction
+                    alignInstr->idaIG->removeAlignInstr();
+
                     markedLastLoop = true;
                     JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
                             "IG%02u ~ IG%02u.\n",
@@ -5179,21 +5228,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     break;
                 }
 
-#if defined(TARGET_XARCH)
-                if (!emitComp->opts.compJitAlignLoopAdaptive)
-#endif
-                {
-                    // If there are multiple align instructions, skip the align instructions after
-                    // the first align instruction and fast forward to the next IG
-                    insGroup* alignIG = alignInstr->idaIG;
-                    while ((alignInstr != nullptr) && (alignInstr->idaNext != nullptr) &&
-                           (alignInstr->idaNext->idaIG == alignIG))
-                    {
-                        alignInstr = alignInstr->idaNext;
-                    }
-                }
-
-                alignInstr = alignInstr->idaNext;
+                alignInstr = emitAlignInNextIG(alignInstr);
             }
 
             assert(markedLastLoop && markedCurrLoop);
@@ -5232,21 +5267,31 @@ void emitter::emitLoopAlignAdjustments()
     unsigned        loopIGOffset      = 0;
     instrDescAlign* alignInstr        = emitAlignList;
 
-    for (; alignInstr != nullptr; alignInstr = alignInstr->idaNext)
+    for (; alignInstr != nullptr;)
     {
         assert(alignInstr->idIns() == INS_align);
 
-        insGroup* alignIG = alignInstr->idaIG;
+        insGroup* alignIG      = alignInstr->idaTargetIG;
+        insGroup* containingIG = alignInstr->idaIG;
 
-        loopIGOffset = alignIG->igOffs + alignIG->igSize;
+        JITDUMP("  Adjusting 'align' instruction in IG%02u that is targeted for IG%02u \n", containingIG->igNum,
+                alignIG->igNum);
+
+        // Since we only adjust the padding up to the next align instruction which is behind the jump, we make sure
+        // that we take into account all the alignBytes we removed until that point. Hence " - alignBytesRemoved"
+
+        loopIGOffset = alignIG->igNext->igOffs - alignBytesRemoved;
 
         // igSize also includes INS_align instruction, take it off.
         loopIGOffset -= estimatedPaddingNeeded;
 
         // IG can be marked as not needing alignment if during setting igLoopBackEdge, it is detected
         // that the igLoopBackEdge encloses an IG that is marked for alignment.
+
         unsigned actualPaddingNeeded =
-            alignIG->isLoopAlign() ? emitCalculatePaddingForLoopAlignment(alignIG, loopIGOffset DEBUG_ARG(false)) : 0;
+            containingIG->endsWithAlignInstr()
+                ? emitCalculatePaddingForLoopAlignment(alignIG, loopIGOffset DEBUG_ARG(false))
+                : 0;
 
         assert(estimatedPaddingNeeded >= actualPaddingNeeded);
 
@@ -5254,15 +5299,15 @@ void emitter::emitLoopAlignAdjustments()
 
         if (diff != 0)
         {
-            alignIG->igSize -= diff;
+            containingIG->igSize -= diff;
             alignBytesRemoved += diff;
             emitTotalCodeSize -= diff;
 
             // Update the flags
-            alignIG->igFlags |= IGF_UPD_ISZ;
+            containingIG->igFlags |= IGF_UPD_ISZ;
             if (actualPaddingNeeded == 0)
             {
-                alignIG->igFlags &= ~IGF_LOOP_ALIGN;
+                containingIG->removeAlignInstr();
             }
 
 #ifdef TARGET_XARCH
@@ -5312,21 +5357,19 @@ void emitter::emitLoopAlignAdjustments()
                 }
                 assert(paddingToAdj == 0);
                 assert(instrAdjusted == 0);
-
-                // fast forward the align instruction to next IG
-                alignInstr = prevAlignInstr;
             }
 
             JITDUMP("Adjusted alignment of %s from %u to %u.\n", emitLabelString(alignIG), estimatedPaddingNeeded,
                     actualPaddingNeeded);
-            JITDUMP("Adjusted size of %s from %u to %u.\n", emitLabelString(alignIG), (alignIG->igSize + diff),
-                    alignIG->igSize);
+            JITDUMP("Adjusted size of %s from %u to %u.\n", emitLabelString(containingIG),
+                    (containingIG->igSize + diff), containingIG->igSize);
         }
 
         // Adjust the offset of all IGs starting from next IG until we reach the IG having the next
         // align instruction or the end of IG list.
-        insGroup* adjOffIG     = alignIG->igNext;
-        insGroup* adjOffUptoIG = alignInstr->idaNext != nullptr ? alignInstr->idaNext->idaIG : emitIGlast;
+        insGroup*       adjOffIG     = containingIG->igNext;
+        instrDescAlign* nextAlign    = emitAlignInNextIG(alignInstr);
+        insGroup*       adjOffUptoIG = nextAlign != nullptr ? nextAlign->idaIG : emitIGlast;
         while ((adjOffIG != nullptr) && (adjOffIG->igNum <= adjOffUptoIG->igNum))
         {
             JITDUMP("Adjusted offset of %s from %04X to %04X\n", emitLabelString(adjOffIG), adjOffIG->igOffs,
@@ -5335,9 +5378,11 @@ void emitter::emitLoopAlignAdjustments()
             adjOffIG = adjOffIG->igNext;
         }
 
+        alignInstr = nextAlign;
+
         if (actualPaddingNeeded > 0)
         {
-            // Record the last IG that has align instruction. No overestimation
+            // Record the last loop IG that will be aligned. No overestimation
             // adjustment will be done after emitLastAlignedIgNum.
             emitLastAlignedIgNum = alignIG->igNum;
         }
@@ -5353,7 +5398,7 @@ void emitter::emitLoopAlignAdjustments()
 //    end of 'ig' so the loop that starts after 'ig' is aligned.
 //
 //  Arguments:
-//       ig              - The IG having 'align' instruction in the end.
+//       ig              - The IG before the IG that has the loop head that need to be aligned.
 //       offset          - The offset at which the IG that follows 'ig' starts.
 //       isAlignAdjusted - Determine if adjustments are done to the align instructions or not.
 //                         During generating code, it is 'false' (because we haven't adjusted the size yet).
@@ -5383,7 +5428,6 @@ void emitter::emitLoopAlignAdjustments()
 //
 unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted))
 {
-    assert(ig->isLoopAlign());
     unsigned alignmentBoundary = emitComp->opts.compJitAlignLoopBoundary;
 
     // No padding if loop is already aligned
@@ -5523,6 +5567,28 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     assert(paddingToAdd == 0 || (((offset + paddingToAdd) & (alignmentBoundary - 1)) == 0));
 
     return paddingToAdd;
+}
+
+// emitAlignInNextIG: On xarch, for adaptive alignment, this will usually point to next instruction in
+//                    'emitAlignList'. But for arm64 or non-adaptive alignment on xarch, where multiple
+//                    align instructions are emitted, this method will skip the 'align' instruction present
+//                    in the same IG and return the first instruction that is present in next IG.
+//
+emitter::instrDescAlign* emitter::emitAlignInNextIG(instrDescAlign* alignInstr)
+{
+#if defined(TARGET_XARCH)
+    if (!emitComp->opts.compJitAlignLoopAdaptive)
+#endif
+    {
+        // If there are multiple align instructions, skip the align instructions after
+        // the first align instruction and fast forward to the next IG
+        insGroup* alignIG = alignInstr->idaIG;
+        while ((alignInstr != nullptr) && (alignInstr->idaNext != nullptr) && (alignInstr->idaNext->idaIG == alignIG))
+        {
+            alignInstr = alignInstr->idaNext;
+        }
+    }
+    return alignInstr != nullptr ? alignInstr->idaNext : nullptr;
 }
 
 #endif // FEATURE_LOOP_ALIGN

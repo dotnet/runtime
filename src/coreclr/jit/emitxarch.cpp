@@ -9830,7 +9830,14 @@ void emitter::emitDispIns(
 #if FEATURE_LOOP_ALIGN
             if (ins == INS_align)
             {
-                printf("[%d bytes]", id->idCodeSize());
+                instrDescAlign* alignInstrId = (instrDescAlign*)id;
+                printf("[%d bytes", alignInstrId->idCodeSize());
+                // targetIG is only set for 1st of the series of align instruction
+                if ((alignInstrId->idaTargetIG != nullptr) && (alignInstrId->idaTargetIG->igNext != nullptr))
+                {
+                    printf(" for IG%02u", alignInstrId->idaTargetIG->igNext->igNum);
+                }
+                printf("]");
             }
 #endif
             break;
@@ -10018,25 +10025,38 @@ static BYTE* emitOutputNOP(BYTE* dstRW, size_t nBytes)
 //
 BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 {
+    instrDescAlign* alignInstr = (instrDescAlign*)id;
+
+#ifdef DEBUG
+    // For cases where 'align' was placed behing a 'jmp' in an IG that does not
+    // immediately preced the loop IG, we do not know in advance the offset of
+    // IG having loop. For such cases, skip the padding calculation validation.
+    bool validatePadding = alignInstr->idaIG == alignInstr->idaTargetIG;
+#endif
+
     // Candidate for loop alignment
     assert(codeGen->ShouldAlignLoops());
-    assert(ig->isLoopAlign());
+    assert(ig->endsWithAlignInstr());
 
     unsigned paddingToAdd = id->idCodeSize();
 
     // Either things are already aligned or align them here.
-    assert((paddingToAdd == 0) || (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
+    assert(!validatePadding || (paddingToAdd == 0) ||
+           (((size_t)dst & (emitComp->opts.compJitAlignLoopBoundary - 1)) != 0));
 
     // Padding amount should not exceed the alignment boundary
     assert(0 <= paddingToAdd && paddingToAdd < emitComp->opts.compJitAlignLoopBoundary);
 
 #ifdef DEBUG
-    unsigned paddingNeeded = emitCalculatePaddingForLoopAlignment(ig, (size_t)dst, true);
-
-    // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
-    if (emitComp->opts.compJitAlignLoopAdaptive)
+    if (validatePadding)
     {
-        assert(paddingToAdd == paddingNeeded);
+        unsigned paddingNeeded = emitCalculatePaddingForLoopAlignment(((instrDescAlign*)id)->idaIG, (size_t)dst, true);
+
+        // For non-adaptive, padding size is spread in multiple instructions, so don't bother checking
+        if (emitComp->opts.compJitAlignLoopAdaptive)
+        {
+            assert(paddingToAdd == paddingNeeded);
+        }
     }
 
     emitComp->loopsAligned++;
@@ -13373,7 +13393,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 sz = sizeof(instrDescAlign);
                 // IG can be marked as not needing alignment after emitting align instruction
                 // In such case, skip outputting alignment.
-                if (ig->isLoopAlign())
+                if (ig->endsWithAlignInstr())
                 {
                     dst = emitOutputAlign(ig, id, dst);
                 }
