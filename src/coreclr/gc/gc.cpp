@@ -43371,6 +43371,7 @@ unsigned int GCHeap::GetGenerationWithRange (Object* object, uint8_t** ppStart, 
         }
         if (generation == -1)
         {
+            generation = max_generation;
             *ppStart = heap_segment_mem (hs);
             *ppAllocated = *ppReserved = generation_allocation_start (hp->generation_of (max_generation - 1));
         }
