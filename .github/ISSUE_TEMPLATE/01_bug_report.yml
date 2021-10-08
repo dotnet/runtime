@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        We welcome bug reports! Please see our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md) for more information on writing a good bug report. This template will help us gather the information we need to start the triage process.
+        We welcome bug reports! Please see our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for more information on writing a good bug report. This template will help us gather the information we need to start the triage process.
   - type: textarea
     id: background
     attributes:
