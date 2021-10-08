@@ -510,6 +510,7 @@ namespace System.Numerics
             int currentBufferSize = 0;
 
             int[]? arrayFromPool = null;
+            int[]? rentedBuffer = null;
 
             int totalDigitCount = 0;
             int numberScale = number.scale;
@@ -607,11 +608,24 @@ namespace System.Numerics
                     int bufferSize = (totalDigitCount + MaxPartialDigits - 1) / MaxPartialDigits;
 
                     Span<uint> buffer = new uint[bufferSize];
+                    rentedBuffer = ArrayPool<int>.Shared.Rent(bufferSize);
+                    Span<uint> newBuffer = MemoryMarshal.Cast<int, uint>(rentedBuffer);
+                    newBuffer.Clear();
+
+                    // To ensure finally stored in newBuffer is the borrowed buffer.
+                    int blockSize = 1;
+                    do
+                    {
+                        Span<uint> tmp = buffer;
+                        buffer = newBuffer;
+                        newBuffer = tmp;
+                        blockSize *= 2;
+                    } while (blockSize < bufferSize);
 
                     // Separate every MaxPartialDigits digits and store them in the buffer.
                     // Buffers are treated as little-endian. That means, the array { 234567890, 1 }
                     // represents the number 1234567890.
-                    int bufferIndex = buffer.Length - 1;
+                    int bufferIndex = bufferSize - 1;
                     uint currentBlock = 0;
                     int shiftUntil = (totalDigitCount - 1) % MaxPartialDigits;
                     int remainingIntDigitCount = totalDigitCount;
@@ -658,13 +672,11 @@ namespace System.Numerics
 
                     unsafe
                     {
-                        Span<uint> newBuffer = new uint[bufferSize];
-
                         arrayFromPool = ArrayPool<int>.Shared.Rent(1);
                         Span<uint> multiplier = MemoryMarshal.Cast<int, uint>(arrayFromPool);
                         multiplier[0] = TenPowMaxPartial;
 
-                        int blockSize = 1;
+                        blockSize = 1;
                         while (true)
                         {
                             fixed (uint* bufPtr = buffer, newBufPtr = newBuffer, mulPtr = multiplier)
@@ -739,6 +751,8 @@ namespace System.Numerics
                         }
                     }
 
+                    Debug.Assert(MemoryMarshal.Cast<int, uint>(rentedBuffer) == newBuffer);
+
                     // shrink buffer to the currently used portion.
                     // First, calculate the rough size of the buffer from the ratio that the number
                     // of digits follows. Then, shrink the size until there is no more space left.
@@ -793,6 +807,10 @@ namespace System.Numerics
                 if (arrayFromPool != null)
                 {
                     ArrayPool<int>.Shared.Return(arrayFromPool);
+                }
+                if (rentedBuffer != null)
+                {
+                    ArrayPool<int>.Shared.Return(rentedBuffer);
                 }
             }
 
