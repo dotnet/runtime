@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Primitives
             };
 
             var count = 0;
-            Action consumer = () => ++count;
+            Action consumer = () => ++ count;
 
             using (ChangeToken.OnChange(producer, consumer))
             {
