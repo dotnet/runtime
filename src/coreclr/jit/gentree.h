@@ -4101,6 +4101,26 @@ public:
 
 class fgArgInfo;
 
+enum class NonStandardArgKind : unsigned
+{
+    None,
+    PInvokeFrame,
+    PInvokeTarget,
+    PInvokeCookie,
+    WrapperDelegateCell,
+    ShiftLow,
+    ShiftHigh,
+    FixedRetBuffer,
+    VirtualStubCell,
+    R2RIndirectionCell,
+
+    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate in fgArgInfo
+};
+
+#ifdef DEBUG
+const char* getNonStandardArgKindName(NonStandardArgKind kind);
+#endif
+
 struct GenTreeCall final : public GenTree
 {
     class Use
@@ -4767,6 +4787,40 @@ struct GenTreeCall final : public GenTree
     bool IsExpandedEarly() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
+    }
+
+    //-----------------------------------------------------------------------------------------
+    // GetIndirectionCellArgKind: Get the kind of indirection cell used by this call.
+    //
+    // Arguments:
+    //     None
+    //
+    // Return Value:
+    //     The kind (either R2RIndirectionCell or VirtualStubCell),
+    //     or NonStandardArgKind::None if this call does not have an indirection cell.
+    //
+    NonStandardArgKind GetIndirectionCellArgKind() const
+    {
+        if (IsVirtualStub())
+        {
+            return NonStandardArgKind::VirtualStubCell;
+        }
+
+#if defined(TARGET_ARMARCH)
+        // For ARM architectures, we always use an indirection cell for R2R calls.
+        if (IsR2RRelativeIndir())
+        {
+            return NonStandardArgKind::R2RIndirectionCell;
+        }
+#elif defined(TARGET_XARCH)
+        // On XARCH we disassemble it from callsite except for tailcalls that need indirection cell.
+        if (IsR2RRelativeIndir() && IsFastTailCall())
+        {
+            return NonStandardArgKind::R2RIndirectionCell;
+        }
+#endif
+
+        return NonStandardArgKind::None;
     }
 
     void ResetArgInfo();

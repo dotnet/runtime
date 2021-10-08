@@ -7817,25 +7817,18 @@ GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* 
 regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
 {
     regNumber result = REG_NA;
-    if (call->IsVirtualStub())
+    switch (call->GetIndirectionCellArgKind())
     {
+    case NonStandardArgKind::None:
+        break;
+    case NonStandardArgKind::R2RIndirectionCell:
+        result = REG_R2R_INDIRECT_PARAM;
+        break;
+    case NonStandardArgKind::VirtualStubCell:
         result = compiler->virtualStubParamInfo->GetReg();
-    }
-    else
-    {
-        bool hasR2rIndirCell = false;
-#if defined(TARGET_ARMARCH)
-        // On ARM architectures we always pass indirection cell for R2R calls in a register
-        hasR2rIndirCell = call->IsR2RRelativeIndir();
-#elif defined(TARGET_XARCH)
-        // On XARCH we disassemble indir cell from return address, so we only pass it for fast tailcalls
-        hasR2rIndirCell = call->IsR2RRelativeIndir() && call->IsFastTailCall();
-#endif
-
-        if (hasR2rIndirCell)
-        {
-            result = REG_R2R_INDIRECT_PARAM;
-        }
+        break;
+    default:
+        unreached();
     }
 
 #ifdef DEBUG
