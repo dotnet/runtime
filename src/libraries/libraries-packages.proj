@@ -20,7 +20,6 @@
     <!-- If setting BuildAllOOBPackages to false, add bellow the individual OOB packages you want to continue to build -->
     <ProjectReference Include="$(LibrariesProjectRoot)\System.DirectoryServices.Protocols\pkg\System.DirectoryServices.Protocols.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <!-- This is merge marker 1 to help automerge -->
-    <ProjectReference Include="$(PkgDir)\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.proj" />
     <!-- This is merge marker 2 to help automerge --> 
     <!-- This is merge marker 3 to help automerge --> 
     <!-- This is merge marker 4 to help automerge --> 
