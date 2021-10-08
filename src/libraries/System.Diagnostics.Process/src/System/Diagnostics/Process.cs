@@ -952,24 +952,6 @@ namespace System.Diagnostics
                 }
             }
 
-            // if ((state & State.HaveProcessName) != (State)0)
-            // {
-            //     if (_processName == null)
-            //     {
-            //         if ((state & State.HaveNonExitedId) != State.HaveNonExitedId)
-            //         {
-            //             EnsureState(State.HaveNonExitedId);
-            //         }
-            //
-            //         _processName = ProcessManager.GetProcessName(_processId, _machineName);
-            //
-            //         if (_processName == null)
-            //         {
-            //             throw new InvalidOperationException(SR.NoProcessInfo);
-            //         }
-            //     }
-            // }
-
             if ((state & State.Exited) != (State)0)
             {
                 if (!HasExited)
