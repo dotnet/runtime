@@ -4355,73 +4355,18 @@ bool emitter::IsJmpInstruction(instruction ins)
     return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
-//----------------------------------------------------------------------------------------
-// IsRedundantMov:
-//    Check if the current `mov` instruction is redundant and can be omitted.
-//    A `mov` is redundant in following 3 cases:
+// TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
+// is not an important detail, such as when "regular" floating-point code is generated
 //
-//    1. Move to same register on TARGET_AMD64
-//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+// This differs from cases like HWIntrinsics that deal with the entire vector and so
+// they need to be "aware" that a given move impacts the upper-bits.
 //
-//         mov rax, rax
-//
-//    2. Move that is identical to last instruction emitted.
-//
-//         mov rax, rbx  # <-- last instruction
-//         mov rax, rbx  # <-- current instruction can be omitted.
-//
-//    3. Opposite Move as that of last instruction emitted.
-//
-//         mov rax, rbx  # <-- last instruction
-//         mov rbx, rax  # <-- current instruction can be omitted.
-//
-// Arguments:
-//                 ins  - The current instruction
-//                 fmt  - The current format
-//                 size - Operand size of current instruction
-//                 dst  - The current destination
-//                 src  - The current source
-// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
-//
-// Return Value:
-//    true if the move instruction is redundant; otherwise, false.
+// Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
+// the below optimizations for those scenarios as well.
 
-bool emitter::IsRedundantMov(
-    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+// Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
+bool emitter::HasSideEffect(instruction ins, emitAttr size)
 {
-    assert(IsMovInstruction(ins));
-
-    if (canIgnoreSideEffects && (dst == src))
-    {
-        // These elisions used to be explicit even when optimizations were disabled
-
-        // Some instructions have a side effect and shouldn't be skipped
-        // however existing codepaths were skipping these instructions in
-        // certain scenarios and so we skip them as well for back-compat
-        // when canIgnoreSideEffects is true (see below for which have a
-        // side effect).
-        //
-        // Long term, these paths should be audited and should likely be
-        // replaced with copies rather than extensions.
-        return true;
-    }
-
-    if (!emitComp->opts.OptimizationEnabled())
-    {
-        // The remaining move elisions should only happen if optimizations are enabled
-        return false;
-    }
-
-    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
-    // is not an important detail, such as when "regular" floating-point code is generated
-    //
-    // This differs from cases like HWIntrinsics that deal with the entire vector and so
-    // they need to be "aware" that a given move impacts the upper-bits.
-    //
-    // Ideally we can detect this difference, likely via canIgnoreSideEffects, and allow
-    // the below optimizations for those scenarios as well.
-
-    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
     bool hasSideEffect = false;
 
     switch (ins)
@@ -4489,6 +4434,68 @@ bool emitter::IsRedundantMov(
             unreached();
         }
     }
+
+    return hasSideEffect;
+}
+
+//----------------------------------------------------------------------------------------
+// IsRedundantMov:
+//    Check if the current `mov` instruction is redundant and can be omitted.
+//    A `mov` is redundant in following 3 cases:
+//
+//    1. Move to same register on TARGET_AMD64
+//       (Except 4-byte movement like "mov eax, eax" which zeros out upper bits of eax register)
+//
+//         mov rax, rax
+//
+//    2. Move that is identical to last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rax, rbx  # <-- current instruction can be omitted.
+//
+//    3. Opposite Move as that of last instruction emitted.
+//
+//         mov rax, rbx  # <-- last instruction
+//         mov rbx, rax  # <-- current instruction can be omitted.
+//
+// Arguments:
+//                 ins  - The current instruction
+//                 fmt  - The current format
+//                 size - Operand size of current instruction
+//                 dst  - The current destination
+//                 src  - The current source
+// canIgnoreSideEffects - The move can be skipped as it doesn't represent special semantics
+//
+// Return Value:
+//    true if the move instruction is redundant; otherwise, false.
+
+bool emitter::IsRedundantMov(
+    instruction ins, insFormat fmt, emitAttr size, regNumber dst, regNumber src, bool canIgnoreSideEffects)
+{
+    assert(IsMovInstruction(ins));
+
+    if (canIgnoreSideEffects && (dst == src))
+    {
+        // These elisions used to be explicit even when optimizations were disabled
+
+        // Some instructions have a side effect and shouldn't be skipped
+        // however existing codepaths were skipping these instructions in
+        // certain scenarios and so we skip them as well for back-compat
+        // when canIgnoreSideEffects is true (see below for which have a
+        // side effect).
+        //
+        // Long term, these paths should be audited and should likely be
+        // replaced with copies rather than extensions.
+        return true;
+    }
+
+    if (!emitComp->opts.OptimizationEnabled())
+    {
+        // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    bool hasSideEffect = HasSideEffect(ins, size);
 
     // Check if we are already in the correct register and don't have a side effect
     if ((dst == src) && !hasSideEffect)
@@ -7101,7 +7108,7 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 }
 
 //----------------------------------------------------------------------------------------
-// IsRedundantMov_S_R:
+// IsRedundantStackMov:
 //    Check if the current `mov` instruction is redundant and can be omitted when dealing with Load/Store from stack.
 //    A `mov` is redundant in following 2 cases:
 //
@@ -7126,89 +7133,17 @@ void emitter::emitIns_S(instruction ins, emitAttr attr, int varx, int offs)
 // Return Value:
 //    true if the move instruction is redundant; otherwise, false.
 
-bool emitter::IsRedundantMov_S_R(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
+bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size, regNumber ireg, int varx, int offs)
 {
     assert(IsMovInstruction(ins));
+    assert((fmt == IF_SWR_RRD) || (fmt == IF_RWR_SRD));
     if (!emitComp->opts.OptimizationEnabled())
     {
         // The remaining move elisions should only happen if optimizations are enabled
         return false;
     }
 
-    // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
-    // is not an important detail, such as when "regular" floating-point code is generated
-    //
-    // This differs from cases like HWIntrinsics that deal with the entire vector and so
-    // they need to be "aware" that a given move impacts the upper-bits.
-
-    // Track whether the instruction has a zero/sign-extension or clearing of the upper-bits as a side-effect
-    bool hasSideEffect = false;
-
-    switch (ins)
-    {
-        case INS_mov:
-        {
-            // non EA_PTRSIZE moves may zero-extend the source
-            hasSideEffect = (size != EA_PTRSIZE);
-            break;
-        }
-
-        case INS_movapd:
-        case INS_movaps:
-        case INS_movdqa:
-        case INS_movdqu:
-        case INS_movupd:
-        case INS_movups:
-        {
-            // non EA_32BYTE moves clear the upper bits under VEX encoding
-            hasSideEffect = UseVEXEncoding() && (size != EA_32BYTE);
-            break;
-        }
-
-        case INS_movd:
-        {
-            // Clears the upper bits
-            hasSideEffect = true;
-            break;
-        }
-
-        case INS_movsdsse2:
-        case INS_movss:
-        {
-            // Clears the upper bits under VEX encoding
-            hasSideEffect = UseVEXEncoding();
-            break;
-        }
-
-        case INS_movsx:
-        case INS_movzx:
-        {
-            // Sign/Zero-extends the source
-            hasSideEffect = true;
-            break;
-        }
-
-#if defined(TARGET_AMD64)
-        case INS_movq:
-        {
-            // Clears the upper bits
-            hasSideEffect = true;
-            break;
-        }
-
-        case INS_movsxd:
-        {
-            // Sign-extends the source
-            hasSideEffect = true;
-            break;
-        }
-#endif // TARGET_AMD64
-
-        default:
-        {
-            unreached();
-        }
-    }
+    bool hasSideEffect = HasSideEffect(ins, size);
 
     bool isFirstInstrInBlock = (emitCurIGinsCnt == 0) && ((emitCurIG->igFlags & IGF_EXTEND) == 0);
     // TODO-XArch-CQ: Certain instructions, such as movaps vs movups, are equivalent in
@@ -7257,7 +7192,7 @@ bool emitter::IsRedundantMov_S_R(instruction ins, insFormat fmt, emitAttr size, 
 void emitter::emitIns_S_R(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs)
 {
     insFormat fmt = emitInsModeFormat(ins, IF_SRD_RRD);
-    if (IsMovInstruction(ins) && IsRedundantMov_S_R(ins, fmt, attr, ireg, varx, offs))
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
     {
         return;
     }
@@ -7292,7 +7227,7 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int va
     noway_assert(emitVerifyEncodable(ins, size, ireg));
     insFormat fmt = emitInsModeFormat(ins, IF_RRD_SRD);
 
-    if (IsMovInstruction(ins) && IsRedundantMov_S_R(ins, fmt, attr, ireg, varx, offs))
+    if (IsMovInstruction(ins) && IsRedundantStackMov(ins, fmt, attr, ireg, varx, offs))
     {
         return;
     }
