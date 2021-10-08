@@ -28,7 +28,7 @@ namespace ILTrim
         private ModuleWriter(NodeFactory factory, EcmaModule module, List<TokenBasedNode> tokensToWrite)
             => (_factory, _module, _tokensToWrite) = (factory, module, tokensToWrite);
 
-        public void Save(string outputFilePath)
+        public void Save(Stream outputStream)
         {
             // Sort the tokens so that tokens start from the lowest source token (this is the emission order)
             _tokensToWrite.Sort();
@@ -70,8 +70,7 @@ namespace ILTrim
             var o = new BlobBuilder();
             peBuilder.Serialize(o);
 
-            using var ofs = File.Create(outputFilePath);
-            o.WriteContentTo(ofs);
+            o.WriteContentTo(outputStream);
         }
 
         public static ModuleWriter[] CreateWriters(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodeList)

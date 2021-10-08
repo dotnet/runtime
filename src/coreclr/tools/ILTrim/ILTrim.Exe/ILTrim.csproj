@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
@@ -7,20 +7,12 @@
     <RollForward>Major</RollForward>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Remove="repro\**" />
-    <None Remove="repro\**" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\aot\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="C:\git\runtime2\src\coreclr\tools\ILTrim\repro\Program.cs" />
+    <ProjectReference Include="../ILTrim/ILTrim.Core.csproj" />
   </ItemGroup>
 </Project>

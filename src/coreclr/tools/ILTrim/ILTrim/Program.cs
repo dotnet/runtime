@@ -11,12 +11,10 @@ using ILTrim.DependencyAnalysis;
 
 namespace ILTrim
 {
-    class Program
+    public static class Trimmer
     {
-        static void Main(string[] args)
+        public static void TrimAssembly(PEReader pe, Stream output)
         {
-            using var fs = File.OpenRead(@"C:\git\runtime2\artifacts\bin\repro\x64\Debug\repro.dll");
-            using var pe = new PEReader(fs);
             var mdReader = pe.GetMetadataReader();
 
             var module = new EcmaModule(pe, mdReader);
@@ -30,8 +28,7 @@ namespace ILTrim
             analyzer.ComputeMarkedNodes();
 
             var writers = ModuleWriter.CreateWriters(factory, analyzer.MarkedNodeList);
-
-            writers[0].Save("c:\\temp\\out.exe");
+            writers[0].Save(output);
         }
     }
 }

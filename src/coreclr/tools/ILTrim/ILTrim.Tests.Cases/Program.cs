@@ -3,12 +3,13 @@
 
 #pragma warning disable 649
 
-interface IFirstType
+class FirstType
 {
     static void Method() { }
 }
 
-interface IProgram
+[Kept]
+class Program
 {
     static int Field;
 
@@ -22,7 +23,7 @@ interface IProgram
     static void LastMethod(int someParameter) { }
 }
 
-interface IAnortherType
+class AnortherType
 {
     static void Method() { }
 }
