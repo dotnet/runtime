@@ -1492,6 +1492,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
             <Issue>https://github.com/dotnet/runtime/issues/59296</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/rundownvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/54801</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/DllImportAttribute/DllImportPath/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
