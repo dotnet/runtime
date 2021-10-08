@@ -534,7 +534,6 @@ void LoopCloneContext::EvaluateConditions(unsigned loopNum, bool* pAllTrue, bool
 
                 // Since this will force us to abort loop cloning, there is no need compute an accurate `allTrue`,
                 // so we can break out of the loop now.
-                // REVIEW: it appears we never hit this condition in any test.
                 break;
             }
         }
@@ -1417,6 +1416,7 @@ void Compiler::optDebugLogLoopCloning(BasicBlock* block, Statement* insertBefore
 void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext* context DEBUGARG(bool dynamicPath))
 {
     JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    assert(optInfos != nullptr);
     for (unsigned i = 0; i < optInfos->Size(); ++i)
     {
         LcOptInfo* optInfo = optInfos->Get(i);
@@ -2566,7 +2566,7 @@ PhaseStatus Compiler::optCloneLoops()
             {
                 context.CancelLoopOptInfo(i);
             }
-            if (allTrue)
+            else if (allTrue)
             {
                 // Perform static optimizations on the fast path since we always
                 // have to take the cloned path.
