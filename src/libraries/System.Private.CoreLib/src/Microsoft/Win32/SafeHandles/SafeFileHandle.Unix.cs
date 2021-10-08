@@ -46,7 +46,11 @@ namespace Microsoft.Win32.SafeHandles
 
                 return supportsRandomAccess == NullableBool.True;
             }
-            set => _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
+            set
+            {
+                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
+            }
         }
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
