@@ -156,6 +156,7 @@ namespace ILCompiler
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
                     "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
+                    "random" => ReadyToRunMethodLayoutAlgorithm.Random,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
