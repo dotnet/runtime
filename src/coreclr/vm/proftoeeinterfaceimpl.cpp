@@ -1512,7 +1512,7 @@ HRESULT ProfToEEInterfaceImpl::SetEventMask(DWORD dwEventMask)
         "**PROF: SetEventMask 0x%08x.\n",
         dwEventMask));
 
-    _ASSERTE(CORProfilerPresentOrInitializing());
+    _ASSERTE(CORProfilerPresent());
 
     return m_pProfilerInfo->pProfInterface->SetEventMask(dwEventMask, 0 /* No high bits */);
 }
@@ -1544,7 +1544,7 @@ HRESULT ProfToEEInterfaceImpl::SetEventMask2(DWORD dwEventsLow, DWORD dwEventsHi
         "**PROF: SetEventMask2 0x%08x, 0x%08x.\n",
         dwEventsLow, dwEventsHigh));
 
-    _ASSERTE(CORProfilerPresentOrInitializing());
+    _ASSERTE(CORProfilerPresent());
 
     return m_pProfilerInfo->pProfInterface->SetEventMask(dwEventsLow, dwEventsHigh);
 }
