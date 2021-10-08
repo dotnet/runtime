@@ -4636,6 +4636,11 @@ struct GenTreeCall final : public GenTree
     }
 #endif // !FEATURE_TAILCALL_OPT
 
+    bool NormalizesSmallTypesOnReturn()
+    {
+        return GetUnmanagedCallConv() == CorInfoCallConvExtension::Managed;
+    }
+
     bool IsSameThis() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS) != 0;
