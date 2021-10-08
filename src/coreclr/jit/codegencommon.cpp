@@ -7802,6 +7802,62 @@ GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* 
     return call->gtControlExpr;
 }
 
+//------------------------------------------------------------------------
+// getCallIndirectionCellReg - Get the register containing the indirection cell for a call
+//
+// Arguments:
+//    call - the node
+//
+// Returns:
+//   The register containing the indirection cell, or REG_NA if this call does not use an indirection cell argument.
+//
+// Notes:
+//   We currently use indirection cells for VSD on all platforms and for R2R calls on ARM architectures.
+//
+regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
+{
+    regNumber result = REG_NA;
+    if (call->IsVirtualStub())
+    {
+        result = compiler->virtualStubParamInfo->GetReg();
+    }
+    else
+    {
+        bool hasR2rIndirCell = false;
+#if defined(TARGET_ARMARCH)
+        // On ARM architectures we always pass indirection cell for R2R calls in a register
+        hasR2rIndirCell = call->IsR2RRelativeIndir();
+#elif defined(TARGET_XARCH)
+        // On XARCH we disassemble indir cell from return address, so we only pass it for fast tailcalls
+        hasR2rIndirCell = call->IsR2RRelativeIndir() && call->IsFastTailCall();
+#endif
+
+        if (hasR2rIndirCell)
+        {
+            result = REG_R2R_INDIRECT_PARAM;
+        }
+    }
+
+#ifdef DEBUG
+    regNumber       foundReg = REG_NA;
+    unsigned        argCount = call->fgArgInfo->ArgCount();
+    fgArgTabEntry** argTable = call->fgArgInfo->ArgTable();
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        NonStandardArgKind kind = argTable[i]->nonStandardArgKind;
+        if ((kind == NonStandardArgKind::R2RIndirectionCell) || (kind == NonStandardArgKind::VirtualStubCell))
+        {
+            foundReg = argTable[i]->GetRegNum();
+            break;
+        }
+    }
+
+    assert(foundReg == result);
+#endif
+
+    return result;
+}
+
 /*****************************************************************************
  *
  *  Generates code for a function epilog.

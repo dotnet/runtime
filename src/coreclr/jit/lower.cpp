@@ -4801,12 +4801,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         else
         {
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
             // Skip inserting the indirection node to load the address that is already
-            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
-            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
+            // computed in the VSD stub arg register as a hidden parameter. Instead during the
+            // codegen, just load the call target from there.
             shouldOptimizeVirtualStubCall = true;
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+#endif
 
             if (!shouldOptimizeVirtualStubCall)
             {

@@ -4472,12 +4472,14 @@ struct GenTreeCall final : public GenTree
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
-        bool isVirtualStub = (gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_VIRT_STUB;
-        return ((IsR2RRelativeIndir()) || (isVirtualStub && (IsVirtualStubRelativeIndir())));
-#else
-        return false;
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+#if defined(FEATURE_READYTORUN)
+        if (IsR2RRelativeIndir())
+        {
+            return true;
+        }
+#endif
+
+        return IsVirtualStubRelativeIndir();
     }
 
     bool HasNonStandardAddedArgs(Compiler* compiler) const;
@@ -4646,7 +4648,7 @@ struct GenTreeCall final : public GenTree
     }
     bool IsVirtualStubRelativeIndir() const
     {
-        return (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
+        return IsVirtualStub() && (gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT) != 0;
     }
 
     bool IsR2RRelativeIndir() const
