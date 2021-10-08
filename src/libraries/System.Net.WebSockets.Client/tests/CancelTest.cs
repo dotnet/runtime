@@ -22,7 +22,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var cts = new CancellationTokenSource(100);
 
                 var ub = new UriBuilder(server);
-                ub.Query = "delay20sec";
+                ub.Query = PlatformDetection.IsBrowser ? "delay20sec" : "delay10sec";
 
                 var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
                 Assert.True(WebSocketState.Closed == cws.State, $"Actual {cws.State} when {ex}");
