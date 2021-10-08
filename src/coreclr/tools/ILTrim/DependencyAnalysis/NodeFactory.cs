@@ -23,7 +23,7 @@ namespace ILTrim.DependencyAnalysis
             switch (handle.Kind)
             {
                 case HandleKind.TypeReference:
-                    throw new NotImplementedException();
+                    return TypeReference(module, (TypeReferenceHandle)handle);
                 case HandleKind.TypeDefinition:
                     return TypeDefinition(module, (TypeDefinitionHandle)handle);
                 case HandleKind.FieldDefinition:
@@ -55,7 +55,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.TypeSpecification:
                     throw new NotImplementedException();
                 case HandleKind.AssemblyReference:
-                    throw new NotImplementedException();
+                    return AssemblyReference(module, (AssemblyReferenceHandle)handle);
                 case HandleKind.AssemblyFile:
                     throw new NotImplementedException();
                 case HandleKind.ExportedType:
@@ -71,6 +71,14 @@ namespace ILTrim.DependencyAnalysis
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        NodeCache<HandleKey<TypeReferenceHandle>, TypeReferenceNode> _typeReferences
+            = new NodeCache<HandleKey<TypeReferenceHandle>, TypeReferenceNode>(key
+                => new TypeReferenceNode(key.Module, key.Handle));
+        public TypeReferenceNode TypeReference(EcmaModule module, TypeReferenceHandle handle)
+        {
+            return _typeReferences.GetOrAdd(new HandleKey<TypeReferenceHandle>(module, handle));
         }
 
         NodeCache<HandleKey<TypeDefinitionHandle>, TypeDefinitionNode> _typeDefinitions
@@ -127,6 +135,14 @@ namespace ILTrim.DependencyAnalysis
         public AssemblyDefinitionNode AssemblyDefinition(EcmaModule module)
         {
             return _assemblyDefinitions.GetOrAdd(module);
+        }
+
+        NodeCache<HandleKey<AssemblyReferenceHandle>, AssemblyReferenceNode> _assemblyReferences
+            = new NodeCache<HandleKey<AssemblyReferenceHandle>, AssemblyReferenceNode>(key
+                => new AssemblyReferenceNode(key.Module, key.Handle));
+        public AssemblyReferenceNode AssemblyReference(EcmaModule module, AssemblyReferenceHandle handle)
+        {
+            return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceHandle>(module, handle));
         }
 
         private struct HandleKey<T> : IEquatable<HandleKey<T>> where T : struct, IEquatable<T>

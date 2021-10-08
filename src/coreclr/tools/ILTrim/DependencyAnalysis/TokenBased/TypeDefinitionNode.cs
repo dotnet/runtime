@@ -47,7 +47,7 @@ namespace ILTrim.DependencyAnalysis
             return builder.AddTypeDefinition(typeDef.Attributes,
                 builder.GetOrAddString(reader.GetString(typeDef.Namespace)),
                 builder.GetOrAddString(reader.GetString(typeDef.Name)),
-                (TypeDefinitionHandle)writeContext.TokenMap.MapToken(typeDef.BaseType),
+                writeContext.TokenMap.MapToken(typeDef.BaseType),
                 writeContext.TokenMap.MapTypeFieldList(Handle),
                 writeContext.TokenMap.MapTypeMethodList(Handle));
         }
