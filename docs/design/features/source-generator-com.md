@@ -61,7 +61,7 @@ In this scenario, we would have generated two different wrappers, one in assembl
 
 Today, this cast would work today if the underlying COM object implements the respective interface based on its IID.
 
-To implement this support, we would need to introduce a strong contract to be able to correctly identify that an interface is a COM interface. This would require either introducing a new public API, which would make .NET 6 compatibility more difficult, or emitting a new API, like an attribute, internally into each assembly and matching it by name (as the Roslyn compiler does with some types that are used in metadata or attributes). Additionally, there would need to be some shared interface to enable marshalling without having to manually track which ComWrappers instance created the wrapper object (to preserve object identity across marshalling). 
+To implement this support, we would need to introduce a strong contract to be able to correctly identify that an interface is a COM interface. This would require either introducing a new public API, which would make .NET 6 compatibility more difficult, or emitting a new API, like an attribute, internally into each assembly and matching it by name (as the Roslyn compiler does with some types that are used in metadata or attributes). Additionally, there would need to be some shared interface to enable marshalling without having to manually track which ComWrappers instance created the wrapper object (to preserve object identity across marshalling).
 
 2. Given two assemblies, `A` and `B`, that each define their own `IComFoo` interface that is a C# projection of an `IFoo` COM interface, should it be possible to cast from `A`'s `IComFoo` to `B`'s `IComFoo`?
 
