@@ -27,7 +27,15 @@ Please review our [API review process](https://github.com/dotnet/runtime/blob/ma
 
 ### Writing a Good Bug Report
 
-Good bug reports make it easier for maintainers to verify and root cause the underlying problem. The better a bug report, the faster the problem will be resolved. Ideally, a bug report should contain a _minimal reproduction_, i.e. the smallest size of code/configuration required to reproduce the wrong behavior.
+Good bug reports make it easier for maintainers to verify and root cause the underlying problem. The better a bug report, the faster the problem will be resolved. Ideally, a bug report should contain the following information:
+
+* A high-level description of the problem.
+* A _minimal reproduction_, i.e. the smallest size of code/configuration required to reproduce the wrong behavior.
+* A description of the _expected behavior_, contrasted with the _actual behavior_ observed.
+* Information on the environment: OS/distro, CPU arch, SDK version, etc.
+* Additional information, e.g. is it a regression from previous versions? are there any known workarounds?
+
+When ready to submit a bug report, please use the [Bug Report issue template](https://github.com/dotnet/runtime/issues/new?assignees=&labels=&template=01_bug_report.yml).
 
 #### Why are Minimal Reproductions Important?
 
@@ -48,8 +56,6 @@ The best way to create a minimal reproduction is gradually removing code and dep
 * Excludes all unnecessary types, methods, code blocks, source files, nuget dependencies and project configurations.
 * Contains documentation or code comments illustrating expected vs actual behavior.
 * If possible, avoids performing any unneeded IO or system calls. For example, can the ASP.NET based reproduction be converted to a plain old console app?
-
-When ready to submit a bug report, please use the [Bug Report issue template](https://github.com/dotnet/runtime/issues/new?assignees=&labels=&template=01_bug_report.yml).
 
 ## Contributing Changes
 
