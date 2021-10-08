@@ -23,7 +23,7 @@ class Program
     static void LastMethod(int someParameter) { }
 }
 
-class AnortherType
+class AnotherType
 {
     static void Method() { }
 }
