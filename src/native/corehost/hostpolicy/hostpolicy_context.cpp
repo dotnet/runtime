@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "hostpolicy_context.h"
+#include "hostpolicy.h"
 
 #include "deps_resolver.h"
 #include <error_codes.h>
@@ -55,11 +56,15 @@ namespace
     const void* STDMETHODCALLTYPE pinvoke_override(const char* libraryName, const char* entrypointName)
     {
 #if defined(_WIN32)
+        const char* hostPolicyLib = "hostpolicy.dll";
+
         if (strcmp(libraryName, "System.IO.Compression.Native") == 0)
         {
             return CompressionResolveDllImport(entrypointName);
         }
 #else
+        const char* hostPolicyLib = "libhostpolicy";
+
         if (strcmp(libraryName, "libSystem.IO.Compression.Native") == 0)
         {
             return CompressionResolveDllImport(entrypointName);
@@ -80,6 +85,19 @@ namespace
             return CryptoResolveDllImport(entrypointName);
         }
 #endif
+        // there are two PInvokes in the hostpolicy itself, redirect them here.
+        if (strcmp(libraryName, hostPolicyLib) == 0)
+        {
+            if (strcmp(entrypointName, "corehost_resolve_component_dependencies") == 0)
+            {
+                return (void*)corehost_resolve_component_dependencies;
+            }
+
+            if (strcmp(entrypointName, "corehost_set_error_writer") == 0)
+            {
+                return (void*)corehost_set_error_writer;
+            }
+        }
 
 #if defined(TARGET_OSX)
         if (strcmp(libraryName, "libSystem.Security.Cryptography.Native.Apple") == 0)
