@@ -1006,15 +1006,26 @@ int InlineStrategy::EstimateTime(InlineContext* context)
     // show time is fairly well predicted by IL size.
     //
     // Prediction varies for root and inlines.
+
+    int time = 0;
     if (context == m_RootContext)
     {
-        return EstimateRootTime(context->GetILSize());
+        time = EstimateRootTime(context->GetILSize());
     }
     else
     {
         // Use amount of IL actually imported
-        return EstimateInlineTime(context->GetImportedILSize());
+        time = EstimateInlineTime(context->GetImportedILSize());
     }
+
+#if DEBUG
+    if (m_Compiler->compInlineStress())
+    {
+        // Lower actual estimation for jit-stress mode
+        time /= 2;
+    }
+#endif
+    return time;
 }
 
 //------------------------------------------------------------------------
