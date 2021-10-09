@@ -1142,7 +1142,7 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitPrologIG = emitIGlist = emitIGlast = emitCurIG = ig = emitAllocIG();
 
-    emitLastIns = nullptr;
+    emitLastIns        = nullptr;
     emitLastMemBarrier = nullptr;
 
     ig->igNext = nullptr;
