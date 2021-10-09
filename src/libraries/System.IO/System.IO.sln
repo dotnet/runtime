@@ -7,8 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO", "ref\System.IO.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO", "src\System.IO.csproj", "{0769544B-1A5D-4D74-94FD-899DF6C39D62}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Net5Compat.Tests", "tests\Net5CompatTests\System.IO.Net5Compat.Tests.csproj", "{0217540D-FA86-41B3-9754-7BB5096ABA3E}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.IO.Tests", "tests\System.IO.Tests.csproj", "{72923407-7B7B-44A8-BCA6-2DB562835A8F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{602525FF-EE47-4938-8979-32DC962109E4}"
