@@ -146,13 +146,13 @@ namespace System.IO.Tests
                     foreach (TimeFunction function2 in functions)
                     {
                         function2.Setter(item, default(DateTime));
-                        yield return function2.GetTime(item);
+                        yield return function2.Getter(item);
                     }
                 }
                 DateTime[] defaultTimeValues = ResetTimes().ToArray();
 
                 // Now we set that specific time value
-                function.SetTime(item, DateTime.UtcNow);
+                function.Setter(item, DateTime.UtcNow);
 
                 // Now we compare the times to what they should be, except for the function that we're currently testing
                 int defaultTimeValuesIndex = 0;
@@ -160,7 +160,7 @@ namespace System.IO.Tests
                 {
                     if (function != function2)
                     {
-                        Assert.Equal(function2.GetTime(item), defaultTimeValues[defaultTimeValuesIndex]);
+                        Assert.Equal(function2.Getter(item), defaultTimeValues[defaultTimeValuesIndex]);
                     }
                     defaultTimeValuesIndex++;
                 });
@@ -184,7 +184,7 @@ namespace System.IO.Tests
                 foreach (TimeFunction function2 in functions)
                 {
                     function2.Setter(item, default(DateTime));
-                    yield return function2.GetTime(item);
+                    yield return function2.Getter(item);
                 }
             }
             DateTime[] defaultTimeValues = ResetTimes().ToArray();
