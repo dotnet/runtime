@@ -71,13 +71,12 @@ namespace System.Reflection.TypeLoading.Ecma
 
         private MetadataTable<T> CreateTable<T>(TableIndex tableIndex) where T : class
         {
-            int rowCount = tableIndex switch
-            {
-                // Windows Metadata assemblies contain additional "virtual" AssemblyRefs we need to account for.
+            // Windows Metadata assemblies contain additional "virtual" AssemblyRefs we need to account for.
+            int rowCount = tableIndex == TableIndex.AssemblyRef
                 // This is the simplest way to get the total AssemblyRefs count:
-                TableIndex.AssemblyRef => Reader.AssemblyReferences.Count,
-                _ => Reader.GetTableRowCount(tableIndex)
-            };
+                ? Reader.AssemblyReferences.Count
+                : Reader.GetTableRowCount(tableIndex);
+
             return new MetadataTable<T>(rowCount);
         }
     }

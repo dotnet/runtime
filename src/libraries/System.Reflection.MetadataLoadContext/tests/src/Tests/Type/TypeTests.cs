@@ -618,12 +618,11 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "BCL assemblies enumeration and loading is not supported on Browser.")]
         public static void WindowsRuntimeMetadataDelegateType()
         {
             // Get the array of runtime assemblies.
             // This will allow us to at least inspect types depending only on BCL.
-            string[] runtimeAssemblies = Directory.GetFiles(RuntimeEnvironment.GetRuntimeDirectory(), "*.dll");
+            string[] runtimeAssemblies = Directory.GetFiles(Path.GetDirectoryName(TestUtils.GetPathToCoreAssembly()), "*.dll");
 
             // Create MetadataLoadContext that can resolve assemblies using the created array.
             PathAssemblyResolver resolver = new(runtimeAssemblies);
