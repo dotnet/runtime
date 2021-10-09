@@ -47,7 +47,7 @@ When converting from native to managed, the built-in system would throw a [`Mars
 
 In the built-in system, marshalling a `string` contains an optimization for parameters passed by value to allocate on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if the string is below a certain length (MAX_PATH). For UTF-16, this optimization was also applied for parameters passed by read-only reference. The generated marshalling code will include this optimization for read-only reference parameters for non-UTF-16 as well.
 
-When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `CharSet.Ansi`, `CharSet.Auto`, or `UnmanagedType.LPStr`):
+When marshalling as [ANSI](https://docs.microsoft.com/windows/win32/intl/code-pages) on Windows (using `CharSet.Ansi` or `UnmanagedType.LPStr`):
   - Best-fit mapping will be disabled and no exception will be thrown for unmappable characters. In the built-in system, this behaviour was configured through [`DllImportAttribute.BestFitMapping`] and [`DllImportAttribute.ThrowOnUnmappableChar`]. The generated marshalling code will have the equivalent behaviour of `BestFitMapping=false` and `ThrowOnUnmappableChar=false`.
   - No optimization for stack allocation will be performed. Marshalling will always allocate through `AllocCoTaskMem`.
 
@@ -65,13 +65,11 @@ Specifying array-specific marshalling members on the `MarshalAsAttribute` such a
 
 Only single-dimensional arrays are supported for source generated marshalling.
 
-Jagged arrays (arrays of arrays) are technically unsupported as was the case in the built-in marshalling system, but currently are not explicitly blocked by the source generator since they are not blocked at an architectural level, which was the case in the built-in system.
-
 In the source-generated marshalling, arrays will be allocated on the stack (instead of through [`AllocCoTaskMem`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.alloccotaskmem)) if they are passed by value or by read-only reference if they contain at most 256 bytes of data. The built-in system does not support this optimization for arrays.
 
 ### `in` keyword
 
-For some types - blittable or Unicode `char` - passed by read-only reference via the [`in` keyword](https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/in-parameter-modifier), the built-in system simply pins the parameter. The generated marshalling code does the same. A consequence of this behaviour is that any modifications made by the invoked function will be reflected in the caller. It is left to the user to avoid the situation in which `in` is used for a parameter that will actually be modified by the invoked function.
+For some types - blittable or Unicode `char` - passed by read-only reference via the [`in` keyword](https://docs.microsoft.com/dotnet/csharp/language-reference/keywords/in-parameter-modifier), the built-in system simply pins the parameter. The generated marshalling code does the same, such that there is no behavioural difference. A consequence of this behaviour is that any modifications made by the invoked function will be reflected in the caller. It is left to the user to avoid the situation in which `in` is used for a parameter that will actually be modified by the invoked function.
 
 ### `LCIDConversion` support
 
@@ -92,6 +90,6 @@ Unlike the built-in system, the source generator does not support marshalling fo
 - [`HandleRef`](https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.handleref)
 - [`StringBuilder`](https://docs.microsoft.com/dotnet/api/system.text.stringbuilder)
 
-## Verison 0
+## Version 0
 
 This version is the built-in IL Stub generation system that is triggered whenever a method marked with `DllImport` is invoked.
