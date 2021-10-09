@@ -5,7 +5,10 @@ project(mono-wasm-runtime C)
 add_executable(dotnet corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
-target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DCORE_BINDINGS -DGEN_PINVOKE=1)
+target_compile_options(dotnet PUBLIC @${NATIVE_BIN_DIR}/src/emcc-default.rsp -DCORE_BINDINGS -DGEN_PINVOKE=1)
+
+set_target_properties(dotnet PROPERTIES COMPILE_FLAGS ${CONFIGURATION_EMCC_FLAGS})
+
 target_link_libraries(dotnet
     ${ICU_LIB_DIR}/libicuuc.a
     ${ICU_LIB_DIR}/libicui18n.a
@@ -25,4 +28,6 @@ set_target_properties(dotnet PROPERTIES
     LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --pre-js ${NATIVE_BIN_DIR}/src/runtime.iffe.js --js-library ${SOURCE_DIR}/library-dotnet.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
-add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_custom_command(TARGET dotnet POST_BUILD COMMAND ${EMSDK_PATH}/upstream/bin/wasm-opt --strip-dwarf ${NATIVE_BIN_DIR}/dotnet.wasm -o ${NATIVE_BIN_DIR}/dotnet.wasm)
+endif()

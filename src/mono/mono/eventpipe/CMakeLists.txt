@@ -1,6 +1,6 @@
-if(ENABLE_PERFTRACING)
+include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/gen-eventing.cmake)
 
-    include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/gen-eventing.cmake)
+if(ENABLE_PERFTRACING)
 
     if (FEATURE_PERFTRACING_PAL_TCP)
         add_definitions(-DENABLE_PERFTRACING_PAL_TCP)

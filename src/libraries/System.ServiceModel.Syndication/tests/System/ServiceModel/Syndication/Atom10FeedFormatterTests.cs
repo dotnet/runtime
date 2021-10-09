@@ -437,7 +437,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 Assert.Equal("updated", elements[2].Name.LocalName);
                 DateTimeOffset now = DateTimeOffset.UtcNow;
-                Assert.True(now > DateTimeOffset.ParseExact(elements[2].Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture));
+                Assert.True(now >= DateTimeOffset.ParseExact(elements[2].Value, "yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture));
             }
         }
 

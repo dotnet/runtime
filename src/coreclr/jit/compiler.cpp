@@ -4541,8 +4541,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // If this is a viable inline candidate
         if (compIsForInlining() && !compDonotInline())
         {
-            // Filter out unimported BBs
-            fgRemoveEmptyBlocks();
+            // Filter out unimported BBs in the inlinee
+            //
+            fgPostImportationCleanup();
 
             // Update type of return spill temp if we have gathered
             // better info when importing the inlinee, and the return
@@ -4679,8 +4680,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-        // Filter out unimported BBs
-        fgRemoveEmptyBlocks();
+        // Update flow graph after importation.
+        // Removes un-imported blocks, trims EH, and ensures correct OSR entry flow.
+        //
+        fgPostImportationCleanup();
     };
     DoPhase(this, PHASE_MORPH_INIT, morphInitPhase);
 
@@ -6379,6 +6382,13 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     {
         // We are jitting the root method, or inlining.
         fgFindBasicBlocks();
+
+        // If we are doing OSR, update flow to initially reach the appropriate IL offset.
+        //
+        if (opts.IsOSR())
+        {
+            fgFixEntryFlowForOSR();
+        }
     }
 
     // If we're inlining and the candidate is bad, bail out.
@@ -9069,14 +9079,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     chars += printf("[VAR_CSE_REF]");
                 }
 #endif
-                break;
-
-            case GT_NOP:
-
-                if (tree->gtFlags & GTF_NOP_DEATH)
-                {
-                    chars += printf("[NOP_DEATH]");
-                }
                 break;
 
             case GT_NO_OP:
