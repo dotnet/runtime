@@ -11,6 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -42,8 +43,8 @@ namespace System.Net.Security.Tests
         private static readonly X509BasicConstraintsExtension s_eeConstraints =
             new X509BasicConstraintsExtension(false, false, 0, false);
 
-        private static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
-        private static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
+        public static readonly byte[] s_ping = Encoding.UTF8.GetBytes("PING");
+        public static readonly byte[] s_pong = Encoding.UTF8.GetBytes("PONG");
 
         public static (SslStream ClientStream, SslStream ServerStream) GetConnectedSslStreams()
         {
@@ -139,82 +140,62 @@ namespace System.Net.Security.Tests
                 PkiOptions.IssuerRevocationViaCrl,
                 out RevocationResponder responder,
                 out CertificateAuthority root,
-                out CertificateAuthority intermediate,
+                out CertificateAuthority[] intermediates,
                 out X509Certificate2 endEntity,
+                intermediateAuthorityCount: longChain ? 3 : 1,
                 subjectName: targetName,
                 testName: testName,
                 keySize: keySize,
                 extensions: extensions);
 
-            if (longChain)
+            // Walk the intermediates backwards so we build the chain collection as
+            // Issuer3
+            // Issuer2
+            // Issuer1
+            // Root
+            for (int i = intermediates.Length - 1; i >= 0; i--)
             {
-                using (RSA intermedKey2 = RSA.Create(keySize))
-                using (RSA intermedKey3 = RSA.Create(keySize))
-                {
-                    X509Certificate2 intermedPub2 = intermediate.CreateSubordinateCA(
-                        $"CN=\"A SSL Test CA 2\", O=\"testName\"",
-                        intermedKey2);
+                CertificateAuthority authority = intermediates[i];
 
-                    X509Certificate2 intermedCert2 = intermedPub2.CopyWithPrivateKey(intermedKey2);
-                    intermedPub2.Dispose();
-                    CertificateAuthority intermediateAuthority2 = new CertificateAuthority(intermedCert2, null, null, null);
-
-                    X509Certificate2 intermedPub3 = intermediateAuthority2.CreateSubordinateCA(
-                        $"CN=\"A SSL Test CA 3\", O=\"testName\"",
-                        intermedKey3);
-
-                    X509Certificate2 intermedCert3 = intermedPub3.CopyWithPrivateKey(intermedKey3);
-                    intermedPub3.Dispose();
-                    CertificateAuthority intermediateAuthority3 = new CertificateAuthority(intermedCert3, null, null, null);
-
-                    RSA eeKey = (RSA)endEntity.PrivateKey;
-                    endEntity = intermediateAuthority3.CreateEndEntity(
-                        $"CN=\"A SSL Test\", O=\"testName\"",
-                        eeKey,
-                        extensions);
-
-                    endEntity = endEntity.CopyWithPrivateKey(eeKey);
-
-                    chain.Add(intermedCert3);
-                    chain.Add(intermedCert2);
-                }
+                chain.Add(authority.CloneIssuerCert());
+                authority.Dispose();
             }
 
-            chain.Add(intermediate.CloneIssuerCert());
             chain.Add(root.CloneIssuerCert());
 
             responder.Dispose();
             root.Dispose();
-            intermediate.Dispose();
 
             if (PlatformDetection.IsWindows)
             {
+                X509Certificate2 ephemeral = endEntity;
                 endEntity = new X509Certificate2(endEntity.Export(X509ContentType.Pfx));
+                ephemeral.Dispose();
             }
 
             return (endEntity, chain);
         }
 
-        internal static async Task PingPong(SslStream client, SslStream server)
+        internal static async Task PingPong(SslStream client, SslStream server, CancellationToken cancellationToken = default)
         {
             byte[] buffer = new byte[s_ping.Length];
-            ValueTask t = client.WriteAsync(s_ping);
+            ValueTask t = client.WriteAsync(s_ping, cancellationToken);
 
             int remains = s_ping.Length;
             while (remains > 0)
             {
-                int readLength = await server.ReadAsync(buffer, buffer.Length - remains, remains);
+                int readLength = await server.ReadAsync(buffer, buffer.Length - remains, remains, cancellationToken);
                 Assert.True(readLength > 0);
                 remains -= readLength;
             }
             Assert.Equal(s_ping, buffer);
             await t;
 
-            t = server.WriteAsync(s_pong);
+            t = server.WriteAsync(s_pong, cancellationToken);
             remains = s_pong.Length;
             while (remains > 0)
             {
-                int readLength = await client.ReadAsync(buffer, buffer.Length - remains, remains);
+                int readLength = await client.ReadAsync(buffer, buffer.Length - remains, remains, cancellationToken);
                 Assert.True(readLength > 0);
                 remains -= readLength;
             }

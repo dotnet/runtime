@@ -295,5 +295,35 @@ namespace System.Tests
             Half roundtripped = BitConverter.Int16BitsToHalf(result);
             Assert.Equal(input, roundtripped);
         }
+
+        [Fact]
+        public static void DoubleToUInt64Bits()
+        {
+            double input = 123456.3234;
+            ulong result = BitConverter.DoubleToUInt64Bits(input);
+            Assert.Equal(4683220267154373240UL, result);
+            double roundtripped = BitConverter.UInt64BitsToDouble(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
+        public static void SingleToUInt32Bits()
+        {
+            float input = 12345.63f;
+            uint result = BitConverter.SingleToUInt32Bits(input);
+            Assert.Equal(1178658437U, result);
+            float roundtripped = BitConverter.UInt32BitsToSingle(result);
+            Assert.Equal(input, roundtripped);
+        }
+
+        [Fact]
+        public static void HalfToUInt16Bits()
+        {
+            Half input = (Half)12.34;
+            ushort result = BitConverter.HalfToUInt16Bits(input);
+            Assert.Equal((ushort)18988, result);
+            Half roundtripped = BitConverter.UInt16BitsToHalf(result);
+            Assert.Equal(input, roundtripped);
+        }
     }
 }

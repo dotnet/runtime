@@ -51,7 +51,6 @@ SLIST_HEADER RCW::s_RCWStandbyList;
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #include "interoplibinterface.h"
 
-#ifndef CROSSGEN_COMPILE
 
 void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
 {
@@ -583,7 +582,6 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
 
     return RetObj;
 }
-#endif //#ifndef CROSSGEN_COMPILE
 
 //--------------------------------------------------------------
 // Init the ComClassFactory.
@@ -617,7 +615,6 @@ void ComClassFactory::Cleanup()
 
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------
 // RCW cache, act as the manager for the RCWs
 // uses a hash table to map IUnknown to the corresponding wrappers
@@ -2097,9 +2094,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     return hr;
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 // Performs QI for the given interface, optionally instantiating it with the given generic args.
 HRESULT RCW::CallQueryInterface(MethodTable *pMT, Instantiation inst, IID *piid, IUnknown **ppUnk)
 {
@@ -2548,7 +2543,11 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
                     MethodTable::InterfaceMapIterator it = pIntfTable->IterateInterfaceMap();
                     while (it.Next())
                     {
-                        bSupportsItf = Object::SupportsInterface(oref, it.GetInterface());
+                        MethodTable *pItf = it.GetInterfaceApprox();
+                        if (pItf->HasInstantiation() || pItf->IsGenericTypeDefinition())
+                            continue;
+
+                        bSupportsItf = Object::SupportsInterface(oref, pItf);
                         if (!bSupportsItf)
                             break;
                     }
@@ -2804,5 +2803,4 @@ IUnknown *ComObject::GetComIPFromRCWThrowing(OBJECTREF *pObj, MethodTable* pIntf
 }
 #endif // #ifndef DACCESS_COMPILE
 
-#endif //#ifndef CROSSGEN_COMPILE
 

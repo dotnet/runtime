@@ -42,7 +42,8 @@ namespace RuntimeEventCounterTests
                 { "poh-size", false },
                 { "assembly-count", false },
                 { "il-bytes-jitted", false },
-                { "methods-jitted-count", false }
+                { "methods-jitted-count", false },
+                { "time-in-jit", false }
             };
         }
         private Dictionary<string, bool> observedRuntimeCounters;
@@ -53,7 +54,9 @@ namespace RuntimeEventCounterTests
             {
                 Dictionary<string, string> refreshInterval = new Dictionary<string, string>();
                 refreshInterval.Add("EventCounterIntervalSec", "1");
-                EnableEvents(source, EventLevel.Informational, (EventKeywords)(-1), refreshInterval);
+                EnableEvents(source, EventLevel.Informational,
+                    (EventKeywords)(-1 & (~1 /* RuntimeEventSource.Keywords.AppContext */)),
+                    refreshInterval);
             }
         }
 
@@ -99,7 +102,7 @@ namespace RuntimeEventCounterTests
             // Create an EventListener.
             using (RuntimeCounterListener myListener = new RuntimeCounterListener())
             {
-                Thread.Sleep(3000); 
+                Thread.Sleep(3000);
                 if (myListener.Verify())
                 {
                     Console.WriteLine("Test passed");

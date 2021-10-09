@@ -99,7 +99,7 @@ namespace System.Drawing
             {
                 if (!(obj is WeakRefCollection other))
                 {
-                    return true;
+                    return false;
                 }
 
                 if (other == null || Count != other.Count)

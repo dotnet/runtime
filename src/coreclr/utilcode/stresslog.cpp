@@ -141,8 +141,8 @@ void StressLog::Leave(CRITSEC_COOKIE) {
 }
 
 /*********************************************************************************/
-void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThread,
-    unsigned maxBytesTotal, void* moduleBase, LPWSTR logFilename)
+void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxBytesPerThreadArg,
+    unsigned maxBytesTotalArg, void* moduleBase, LPWSTR logFilename)
 {
     STATIC_CONTRACT_LEAF;
 
@@ -154,17 +154,21 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 
     theLog.lock = ClrCreateCriticalSection(CrstStressLog, (CrstFlags)(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD | CRST_TAKEN_DURING_SHUTDOWN));
     // StressLog::Terminate is going to free memory.
+    size_t maxBytesPerThread = maxBytesPerThreadArg;
     if (maxBytesPerThread < STRESSLOG_CHUNK_SIZE)
     {
-        maxBytesPerThread = STRESSLOG_CHUNK_SIZE;
+        // in this case, interpret the number as GB
+        maxBytesPerThread *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizePerThread = maxBytesPerThread;
+    theLog.MaxSizePerThread = (unsigned)min(maxBytesPerThread,0xffffffff);
 
+    size_t maxBytesTotal = maxBytesTotalArg;
     if (maxBytesTotal < STRESSLOG_CHUNK_SIZE * 256)
     {
-        maxBytesTotal = STRESSLOG_CHUNK_SIZE * 256;
+        // in this case, interpret the number as GB
+        maxBytesTotal *= (1024 * 1024 * 1024);
     }
-    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, 0xffffffff);;
+    theLog.MaxSizeTotal = (unsigned)min(maxBytesTotal, 0xffffffff);
     theLog.totalChunk = 0;
     theLog.facilitiesToLog = facilities | LF_ALWAYS;
     theLog.levelToLog = level;
@@ -242,27 +246,23 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
         theLog.stressLogHeader = hdr;
 
         // copy coreclr image - just for the string literals
-        AddModule((uint8_t*)moduleBase);
     }
 #endif
+    AddModule((uint8_t*)moduleBase);
 }
 
 void StressLog::AddModule(uint8_t* moduleBase)
 {
+    unsigned moduleIndex = 0;
 #ifdef MEMORY_MAPPED_STRESSLOG
-    int moduleIndex = 0;
     StressLogHeader* hdr = theLog.stressLogHeader;
-    if (hdr == nullptr)
-    {
-        // nothing to do for the non-memory mapped stress log
-        return;
-    }
+#endif //MEMORY_MAPPED_STRESSLOG
     size_t cumSize = 0;
-    while (moduleIndex < MAX_MODULES && hdr->modules[moduleIndex].baseAddress != nullptr)
+    while (moduleIndex < MAX_MODULES && theLog.modules[moduleIndex].baseAddress != nullptr)
     {
-        if (hdr->modules[moduleIndex].baseAddress == moduleBase)
+        if (theLog.modules[moduleIndex].baseAddress == moduleBase)
             return;
-        cumSize += hdr->modules[moduleIndex].size;
+        cumSize += theLog.modules[moduleIndex].size;
         moduleIndex++;
     }
     if (moduleIndex >= MAX_MODULES)
@@ -270,7 +270,14 @@ void StressLog::AddModule(uint8_t* moduleBase)
         DebugBreak();
         return;
     }
-    hdr->modules[moduleIndex].baseAddress = moduleBase;
+    theLog.modules[moduleIndex].baseAddress = moduleBase;
+#ifdef MEMORY_MAPPED_STRESSLOG
+    if (hdr != nullptr)
+    {
+        hdr->modules[moduleIndex].baseAddress = moduleBase;
+    }
+#endif //MEMORY_MAPPED_STRESSLOG
+#ifdef HOST_WINDOWS
     uint8_t* addr = moduleBase;
     while (true)
     {
@@ -282,11 +289,22 @@ void StressLog::AddModule(uint8_t* moduleBase)
         if (mbi.AllocationBase != moduleBase)
             break;
         ptrdiff_t offs = (uint8_t*)mbi.BaseAddress - (uint8_t*)mbi.AllocationBase + cumSize;
-        memcpy(&hdr->moduleImage[offs], mbi.BaseAddress, mbi.RegionSize);
         addr += mbi.RegionSize;
-        hdr->modules[moduleIndex].size = (size_t)(addr - (uint8_t*)moduleBase);
-    }
+        theLog.modules[moduleIndex].size = (size_t)(addr - (uint8_t*)moduleBase);
+#ifdef MEMORY_MAPPED_STRESSLOG
+        if (hdr != nullptr)
+        {
+            memcpy(&hdr->moduleImage[offs], mbi.BaseAddress, mbi.RegionSize);
+            hdr->modules[moduleIndex].size = (size_t)(addr - (uint8_t*)moduleBase);
+        }
 #endif //MEMORY_MAPPED_STRESSLOG
+    }
+#else //HOST_WINDOWS
+    // as it is not easy to obtain module size on Linux or OSX,
+    // just guess and hope for the best
+    size_t remainingSize = StressMsg::maxOffset - cumSize;
+    theLog.modules[moduleIndex].size = remainingSize / 2;
+#endif //HOST_WINDOWS
 }
 
 /*********************************************************************************/
@@ -655,34 +673,19 @@ FORCEINLINE void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const cha
 #endif //
 
     size_t offs = 0;
-#ifdef MEMORY_MAPPED_STRESSLOG
-    StressLog::StressLogHeader* hdr = StressLog::theLog.stressLogHeader;
-    if (hdr != nullptr)
+    unsigned moduleIndex = 0;
+    size_t cumSize = 0;
+    offs = 0;
+    while (moduleIndex < StressLog::MAX_MODULES)
     {
-        int moduleIndex = 0;
-        size_t cumSize = 0;
-        offs = 0;
-        while (moduleIndex < StressLog::MAX_MODULES)
+        offs = (uint8_t*)format - StressLog::theLog.modules[moduleIndex].baseAddress;
+        if (offs < StressLog::theLog.modules[moduleIndex].size)
         {
-            offs = (uint8_t*)format - hdr->modules[moduleIndex].baseAddress;
-            if (offs < hdr->modules[moduleIndex].size)
-            {
-                offs += cumSize;
-                break;
-            }
-            cumSize += hdr->modules[moduleIndex].size;
-            moduleIndex++;
+            offs += cumSize;
+            break;
         }
-    }
-    else
-#endif // MEMORY_MAPPED_STRESSLOG
-    {
-#ifdef _DEBUG
-        // currently SOS stress log only supports a maximum of 7 arguments
-        if (cArgs > 7)
-            DebugBreak();
-#endif //_DEBUG
-        offs = ((size_t)format - StressLog::theLog.moduleOffset);
+        cumSize += StressLog::theLog.modules[moduleIndex].size;
+        moduleIndex++;
     }
 
     // _ASSERTE ( offs < StressMsg::maxOffset );

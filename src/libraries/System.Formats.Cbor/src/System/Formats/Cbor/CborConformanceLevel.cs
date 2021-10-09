@@ -207,8 +207,9 @@ namespace System.Formats.Cbor
         public static int GetKeyEncodingHashCode(ReadOnlySpan<byte> encoding)
         {
             HashCode hash = default;
-
-            // TODO: Use https://github.com/dotnet/runtime/issues/48702 if/when it's available
+#if NET6_0_OR_GREATER
+            hash.AddBytes(encoding);
+#else
             while (encoding.Length >= sizeof(int))
             {
                 hash.Add(MemoryMarshal.Read<int>(encoding));
@@ -219,7 +220,7 @@ namespace System.Formats.Cbor
             {
                 hash.Add(b);
             }
-
+#endif
             return hash.ToHashCode();
         }
 

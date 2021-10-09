@@ -169,49 +169,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse(string.Empty);
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse("  \"x\" ", new RangeConditionHeaderValue("\"x\""));
-            CheckValidTryParse("  Sun, 06 Nov 1994 08:49:37 GMT ",
-                new RangeConditionHeaderValue(new DateTimeOffset(1994, 11, 6, 8, 49, 37, TimeSpan.Zero)));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("\"x\" ,"); // no delimiter allowed
-            CheckInvalidTryParse("Sun, 06 Nov 1994 08:49:37 GMT ,"); // no delimiter allowed
-            CheckInvalidTryParse("\"x\" Sun, 06 Nov 1994 08:49:37 GMT");
-            CheckInvalidTryParse("Sun, 06 Nov 1994 08:49:37 GMT \"x\"");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, RangeConditionHeaderValue expectedResult)
         {
             RangeConditionHeaderValue result = RangeConditionHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(RangeConditionHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { RangeConditionHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, RangeConditionHeaderValue expectedResult)
-        {
-            RangeConditionHeaderValue result = null;
-            Assert.True(RangeConditionHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            RangeConditionHeaderValue result = null;
-            Assert.False(RangeConditionHeaderValue.TryParse(input, out result));
+            Assert.False(RangeConditionHeaderValue.TryParse(input, out RangeConditionHeaderValue result));
             Assert.Null(result);
         }
 

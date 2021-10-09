@@ -81,3 +81,12 @@ PALEXPORT int32_t SystemNative_GetGroupList(const char* name, uint32_t group, ui
 * Always succeeds.
 */
 PALEXPORT uint32_t SystemNative_GetUid(void);
+
+/**
+* Gets groups associated with current process.
+*
+* Returns number of groups for success.
+* On error, -1 is returned and errno is set.
+* If the buffer is too small, errno is EINVAL.
+*/
+PALEXPORT int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups);

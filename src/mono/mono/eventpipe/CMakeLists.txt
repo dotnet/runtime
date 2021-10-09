@@ -1,15 +1,21 @@
 if(ENABLE_PERFTRACING)
 
+    include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/gen-eventing.cmake)
+
     if (FEATURE_PERFTRACING_PAL_TCP)
         add_definitions(-DENABLE_PERFTRACING_PAL_TCP)
     endif (FEATURE_PERFTRACING_PAL_TCP)
 
     if (FEATURE_PERFTRACING_DISABLE_LISTEN_PORTS)
-        add_definitions(-DENABLE_PERFTRACING_DISABLE_LISTEN_PORTS)
+        add_definitions(-DDISABLE_PERFTRACING_LISTEN_PORTS)
     endif (FEATURE_PERFTRACING_DISABLE_LISTEN_PORTS)
 
+    if (FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT)
+        add_definitions(-DDISABLE_PERFTRACING_DEFAULT_LISTEN_PORT)
+    endif (FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT)
+
     if (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
-        add_definitions(-DENABLE_PERFTRACING_DISABLE_CONNECT_PORTS)
+        add_definitions(-DDISABLE_PERFTRACING_CONNECT_PORTS)
     endif (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
 
     include (${SHARED_EVENTPIPE_SOURCE_PATH}CMakeLists.txt)
@@ -73,11 +79,10 @@ if(ENABLE_PERFTRACING)
     addprefix(shared_diagnostic_server_sources_base ${SHARED_EVENTPIPE_SOURCE_PATH} "${shared_diagnostic_server_sources_base}")
     addprefix(mono_diagnostic_server_shim_sources_base ${MONO_EVENTPIPE_SHIM_SOURCE_PATH} "${mono_diagnostic_server_shim_sources_base}")
 
-    set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base})
+    set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base} ${MONO_EVENTPIPE_GEN_HEADERS} ${MONO_EVENTPIPE_GEN_SOURCES})
     set(diagnostic_server_sources ${shared_diagnostic_server_sources_base} ${mono_diagnostic_server_shim_sources_base})
 
     set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
     set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
-
 
 endif(ENABLE_PERFTRACING)

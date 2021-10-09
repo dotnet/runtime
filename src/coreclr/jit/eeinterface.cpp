@@ -46,19 +46,6 @@ struct FilterSuperPMIExceptionsParam_eeinterface
     EXCEPTION_POINTERS      exceptionPointers;
 };
 
-static LONG FilterSuperPMIExceptions_eeinterface(PEXCEPTION_POINTERS pExceptionPointers, LPVOID lpvParam)
-{
-    FilterSuperPMIExceptionsParam_eeinterface* pSPMIEParam = (FilterSuperPMIExceptionsParam_eeinterface*)lpvParam;
-    pSPMIEParam->exceptionPointers                         = *pExceptionPointers;
-
-    if (pSPMIEParam->pThis->IsSuperPMIException(pExceptionPointers->ExceptionRecord->ExceptionCode))
-    {
-        return EXCEPTION_EXECUTE_HANDLER;
-    }
-
-    return EXCEPTION_CONTINUE_SEARCH;
-}
-
 const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
 {
     const char* className;
@@ -101,104 +88,106 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
     /* add length of methodName and opening bracket */
     length += strlen(methodName) + 1;
 
-    PAL_TRY(FilterSuperPMIExceptionsParam_eeinterface*, pParam, &param)
-    {
+    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_eeinterface>(
+        [](FilterSuperPMIExceptionsParam_eeinterface* pParam) {
 
-        /* figure out the signature */
+            /* figure out the signature */
 
-        pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);
+            pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);
 
-        // allocate space to hold the class names for each of the parameters
+            // allocate space to hold the class names for each of the parameters
 
-        if (pParam->sig.numArgs > 0)
-        {
-            pParam->pArgNames = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<const char*>(pParam->sig.numArgs);
-        }
-        else
-        {
-            pParam->pArgNames = nullptr;
-        }
-
-        unsigned i;
-        pParam->argLst = pParam->sig.args;
-
-        for (i = 0; i < pParam->sig.numArgs; i++)
-        {
-            var_types type = pParam->pThis->eeGetArgType(pParam->argLst, &pParam->sig);
-            switch (type)
+            if (pParam->sig.numArgs > 0)
             {
-                case TYP_REF:
-                case TYP_STRUCT:
+                pParam->pArgNames =
+                    pParam->pThis->getAllocator(CMK_DebugOnly).allocate<const char*>(pParam->sig.numArgs);
+            }
+            else
+            {
+                pParam->pArgNames = nullptr;
+            }
+
+            unsigned i;
+            pParam->argLst = pParam->sig.args;
+
+            for (i = 0; i < pParam->sig.numArgs; i++)
+            {
+                var_types type = pParam->pThis->eeGetArgType(pParam->argLst, &pParam->sig);
+                switch (type)
                 {
-                    CORINFO_CLASS_HANDLE clsHnd = pParam->pThis->eeGetArgClass(&pParam->sig, pParam->argLst);
-                    // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
-                    if (clsHnd != NO_CLASS_HANDLE)
+                    case TYP_REF:
+                    case TYP_STRUCT:
                     {
-                        const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
-                        if (clsName != nullptr)
+                        CORINFO_CLASS_HANDLE clsHnd = pParam->pThis->eeGetArgClass(&pParam->sig, pParam->argLst);
+                        // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
+                        if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            pParam->pArgNames[i] = clsName;
-                            break;
+                            const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
+                            if (clsName != nullptr)
+                            {
+                                pParam->pArgNames[i] = clsName;
+                                break;
+                            }
                         }
                     }
+                        FALLTHROUGH;
+                    default:
+                        pParam->pArgNames[i] = varTypeName(type);
+                        break;
                 }
-                    FALLTHROUGH;
-                default:
-                    pParam->pArgNames[i] = varTypeName(type);
-                    break;
+                pParam->siglength += strlen(pParam->pArgNames[i]);
+                pParam->argLst = pParam->pJitInfo->compCompHnd->getArgNext(pParam->argLst);
             }
-            pParam->siglength += strlen(pParam->pArgNames[i]);
-            pParam->argLst = pParam->pJitInfo->compCompHnd->getArgNext(pParam->argLst);
-        }
 
-        /* add ',' if there is more than one argument */
+            /* add ',' if there is more than one argument */
 
-        if (pParam->sig.numArgs > 1)
-        {
-            pParam->siglength += (pParam->sig.numArgs - 1);
-        }
-
-        var_types retType = JITtype2varType(pParam->sig.retType);
-        if (retType != TYP_VOID)
-        {
-            switch (retType)
+            if (pParam->sig.numArgs > 1)
             {
-                case TYP_REF:
-                case TYP_STRUCT:
+                pParam->siglength += (pParam->sig.numArgs - 1);
+            }
+
+            var_types retType = JITtype2varType(pParam->sig.retType);
+            if (retType != TYP_VOID)
+            {
+                switch (retType)
                 {
-                    CORINFO_CLASS_HANDLE clsHnd = pParam->sig.retTypeClass;
-                    if (clsHnd != NO_CLASS_HANDLE)
+                    case TYP_REF:
+                    case TYP_STRUCT:
                     {
-                        const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
-                        if (clsName != nullptr)
+                        CORINFO_CLASS_HANDLE clsHnd = pParam->sig.retTypeClass;
+                        if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            pParam->returnType = clsName;
-                            break;
+                            const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
+                            if (clsName != nullptr)
+                            {
+                                pParam->returnType = clsName;
+                                break;
+                            }
                         }
                     }
+                        FALLTHROUGH;
+                    default:
+                        pParam->returnType = varTypeName(retType);
+                        break;
                 }
-                    FALLTHROUGH;
-                default:
-                    pParam->returnType = varTypeName(retType);
-                    break;
+                pParam->siglength += strlen(pParam->returnType) + 1; // don't forget the delimiter ':'
             }
-            pParam->siglength += strlen(pParam->returnType) + 1; // don't forget the delimiter ':'
-        }
 
-        // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first
-        // element of the arg type list
-        if (pParam->sig.hasThis() && !pParam->sig.hasExplicitThis())
-        {
-            assert(strlen(":this") == 5);
-            pParam->siglength += 5;
-            pParam->hasThis = true;
-        }
-    }
-    PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_eeinterface)
+            // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first
+            // element of the arg type list
+            if (pParam->sig.hasThis() && !pParam->sig.hasExplicitThis())
+            {
+                assert(strlen(":this") == 5);
+                pParam->siglength += 5;
+                pParam->hasThis = true;
+            }
+        },
+        &param);
+
+    if (!success)
     {
         param.siglength = 0;
     }
-    PAL_ENDTRY
 
     /* add closing bracket and null terminator */
 

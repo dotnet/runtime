@@ -424,8 +424,27 @@ namespace Internal.TypeSystem
 
                 if (!emittedWithShape)
                 {
-                    shapeEncoder.Shape(rank, ImmutableArray<int>.Empty, ImmutableArray<int>.Empty);
+                    shapeEncoder.Shape(rank, ImmutableArray<int>.Empty, GetZeroedImmutableArrayOfSize(rank));
                 }
+            }
+
+            private static ImmutableArray<int>[] ImmutableArraysFilledWithZeroes = CreateStaticArrayOfImmutableArraysFilledWithZeroes(33); // The max rank of an array is 32
+
+            private static ImmutableArray<int> GetZeroedImmutableArrayOfSize(int rank)
+            {
+                if (rank < ImmutableArraysFilledWithZeroes.Length)
+                    return ImmutableArraysFilledWithZeroes[rank];
+
+                return new int[rank].ToImmutableArray();
+            }
+            private static ImmutableArray<int>[] CreateStaticArrayOfImmutableArraysFilledWithZeroes(int count)
+            {
+                ImmutableArray<int>[] result = new ImmutableArray<int>[count];
+                for (int i = 0; i < result.Length; i++)
+                {
+                    result[i] = new int[i].ToImmutableArray();
+                }
+                return result;
             }
 
             public void EmitAtCurrentIndexStack(BlobBuilder signatureBuilder)

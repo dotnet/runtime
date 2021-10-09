@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics.CodeAnalysis;
 
 internal static partial class Interop
 {
@@ -36,6 +37,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
         internal static extern SafeX509Handle DecodeX509(ref byte buf, int len);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeX509")]
+        internal static extern SafeX509Handle DecodeX509(IntPtr buf, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509DerSize")]
         internal static extern int GetX509DerSize(SafeX509Handle x);
@@ -195,8 +199,13 @@ internal static partial class Interop
             return result != 0;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreCtxGetError")]
-        internal static extern X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+        [DllImport(Libraries.CryptoNative)]
+        internal static extern int CryptoNative_X509StoreCtxGetError(SafeX509StoreCtxHandle ctx);
+
+        internal static X509VerifyStatusCode X509StoreCtxGetError(SafeX509StoreCtxHandle ctx)
+        {
+            return (X509VerifyStatusCode)CryptoNative_X509StoreCtxGetError(ctx);
+        }
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_X509StoreCtxReset(SafeX509StoreCtxHandle ctx);
@@ -406,7 +415,7 @@ internal static partial class Interop
 
             public bool Equals(X509VerifyStatusCode other) => Code == other.Code;
 
-            public override bool Equals(object? obj) => obj is X509VerifyStatusCode other && Equals(other);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is X509VerifyStatusCode other && Equals(other);
 
             public override int GetHashCode() => Code.GetHashCode();
 

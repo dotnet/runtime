@@ -13,6 +13,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void Constants_Values_AreCorrect()
         {
+            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x33 }), SslApplicationProtocol.Http3);
             Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x32 }), SslApplicationProtocol.Http2);
             Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }), SslApplicationProtocol.Http11);
         }
@@ -75,6 +76,7 @@ namespace System.Net.Security.Tests
         {
             Assert.Equal("http/1.1", SslApplicationProtocol.Http11.ToString());
             Assert.Equal("h2", SslApplicationProtocol.Http2.ToString());
+            Assert.Equal("h3", SslApplicationProtocol.Http3.ToString());
             Assert.Equal("hello", new SslApplicationProtocol("hello").ToString());
             Assert.Equal("0x0b 0xee", new SslApplicationProtocol(new byte[] { 0x0B, 0xEE }).ToString());
             Assert.Equal(string.Empty, default(SslApplicationProtocol).ToString());

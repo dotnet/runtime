@@ -17,4 +17,8 @@
     <Configurations>Debug;Release;Checked</Configurations>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ILCompiler.TypeSystem.ReadyToRun\ILCompiler.TypeSystem.ReadyToRun.csproj" />
+  </ItemGroup>
+
 </Project>

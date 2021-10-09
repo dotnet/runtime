@@ -1,0 +1,35 @@
+trigger:
+  batch: false
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - src/coreclr/jit/*
+    - src/coreclr/inc/jiteeversionguid.h
+
+# This pipeline is supposed to be run only on merged changes
+# and should not be triggerable from a PR. 
+pr: none
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/build-jit-job.yml
+    buildConfig: checked
+    platforms:
+    - windows_x64
+    - windows_x86
+    jobParameters:
+      uploadAs: 'pipelineArtifacts'
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-replay-job.yml
+    buildConfig: checked
+    platforms:
+    - windows_x64
+    - windows_x86
+    helixQueueGroup: ci
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

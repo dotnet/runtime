@@ -14,12 +14,34 @@
       <DisabledProjects Include="$(TestRoot)GC\Performance\Framework\GCPerfTestFramework.csproj" />
       <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\regressions\DD117522\Test.csproj" />
       <DisabledProjects Include="$(TestRoot)Loader\classloader\generics\GenericMethods\VSW491668.csproj" /> <!-- issue 5501 -->
+      <DisabledProjects Include="$(TestRoot)Loader\classloader\StaticVirtualMethods\**\generatetest.csproj" /> <!-- test generators -->
       <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
-      <DisabledProjects Include="$(TestRoot)reflection\GenericAttribute\GenericAttributeTests.csproj" />
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
     </ItemGroup>
 
     <ItemGroup>
+      <BuildTestProjects Include="$(BuildTestProject.Split(';'))" />
+      <BuildTestDirs Include="$(BuildTestDir.Split(';'))" />
+      <BuildTestTrees Include="$(BuildTestTree.Split(';'))" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(BuildTestProjects)' != ''">
+      <AllProjects Include="$([MSBuild]::NormalizePath('$(TestRoot)', '%(BuildTestProjects.Identity)'))" Exclude="@(DisabledProjects)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(BuildTestDirs)' != ''">
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '%(BuildTestDirs.Identity)'))\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '%(BuildTestDirs.Identity)'))\*.fsproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '%(BuildTestDirs.Identity)'))\*.ilproj" Exclude="@(DisabledProjects)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(BuildTestTrees)' != ''">
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '%(BuildTestTrees.Identity)'))\**\*.csproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '%(BuildTestTrees.Identity)'))\**\*.fsproj" Exclude="@(DisabledProjects)" />
+      <AllProjects Include="$([MSBuild]::NormalizeDirectory('$(TestRoot)', '%(BuildTestTrees.Identity)'))\**\*.ilproj" Exclude="@(DisabledProjects)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'@(BuildTestProjects)' == '' and '@(BuildTestDirs)' == '' and '@(BuildTestTrees)' == ''">
       <AllProjects Include="$(TestRoot)**\*.csproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.fsproj" Exclude="@(DisabledProjects)" />
       <AllProjects Include="$(TestRoot)**\*.ilproj" Exclude="@(DisabledProjects)" />

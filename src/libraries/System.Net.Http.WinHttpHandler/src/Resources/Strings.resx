@@ -126,4 +126,10 @@
   <data name="PlatformNotSupported_WinHttpHandler" xml:space="preserve">
     <value>WinHttpHandler is only supported on .NET Framework and .NET runtimes on Windows. It is not supported for Windows Store Applications (UWP) or Unix platforms.</value>
   </data>
+  <data name="net_http_unsupported_requesturi_scheme" xml:space="preserve">
+    <value>The '{0}' scheme is not supported.</value>
+  </data>
+  <data name="net_http_client_invalid_requesturi" xml:space="preserve">
+    <value>An invalid request URI was provided. Either the request URI must be an absolute URI or BaseAddress must be set.</value>
+  </data>
 </root>

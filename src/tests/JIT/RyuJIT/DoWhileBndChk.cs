@@ -5,6 +5,8 @@
 //
 // Reference: TF Bug 150041
 
+#pragma warning disable SYSLIB0032 // HandleProcessCorruptedStateExceptionsAttribute is obsolete
+
 using System;
 using System.Runtime.ExceptionServices;
 

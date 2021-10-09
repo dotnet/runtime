@@ -132,8 +132,6 @@ MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.GetToken()' does 
 MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.SetMarshal(System.Reflection.Emit.UnmanagedMarshal)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.EmitCalli(System.Reflection.Emit.OpCode, System.Runtime.InteropServices.CallingConvention, System.Type, System.Type[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.MarkSequencePoint(System.Diagnostics.SymbolStore.ISymbolDocumentWriter, System.Int32, System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.LocalBuilder.SetLocalSymInfo(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Emit.LocalBuilder.SetLocalSymInfo(System.String, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.AddDeclarativeSecurity(System.Security.Permissions.SecurityAction, System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.CreateMethodBody(System.Byte[], System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.

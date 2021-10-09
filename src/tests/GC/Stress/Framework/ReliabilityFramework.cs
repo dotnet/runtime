@@ -10,10 +10,6 @@ using System.Collections;
 using System.Threading;
 using System.Reflection;
 using System.IO;
-#if !PROJECTK_BUILD
-using System.Runtime.Remoting;
-using System.Data;
-#endif 
 using System.Text;
 using System.Diagnostics;
 using System.Collections.Specialized;
@@ -25,12 +21,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 
-#if !PROJECTK_BUILD
-using System.Security.Policy;
-delegate void AppDomainUnloadDelegate(AppDomain domain);
-#endif
-
-#if PROJECTK_BUILD
 using System.Runtime.Loader;
 
 delegate void TestPreLoaderDelegate(ReliabilityTest test, string[] paths);
@@ -43,54 +33,36 @@ internal class CustomAssemblyResolver : AssemblyLoadContext
 
     public CustomAssemblyResolver()
     {
-        Console.WriteLine("CustomAssemblyResolver initializing");
         _frameworkPath = Environment.GetEnvironmentVariable("BVT_ROOT");
         if (_frameworkPath == null)
         {
-            Console.WriteLine("CustomAssemblyResolver: BVT_ROOT not set");
             _frameworkPath = Environment.GetEnvironmentVariable("CORE_ROOT");
         }
 
         if (_frameworkPath == null)
         {
-            Console.WriteLine("CustomAssemblyResolver: CORE_ROOT not set");
             _frameworkPath = Directory.GetCurrentDirectory();
         }
 
-        Console.WriteLine("CustomAssemblyResolver: looking for framework libraries at path: {0}", _frameworkPath);
         string stressFrameworkDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        Console.WriteLine("CustomAssemblyResolver: currently executing assembly is at path: {0}", stressFrameworkDir);
         _testsPath = Path.Combine(stressFrameworkDir, "Tests");
-        Console.WriteLine("CustomAssemblyResolver: looking for tests in dir: {0}", _testsPath);
     }
 
     protected override Assembly Load(AssemblyName assemblyName)
     {
-        Console.WriteLine("CustomAssemblyLoader: Got request to load {0}", assemblyName.ToString());
-
         string strPath;
         if (assemblyName.Name.StartsWith("System."))
         {
-            Console.WriteLine("CustomAssemblyLoader: this looks like a framework assembly");
             strPath = Path.Combine(_frameworkPath, assemblyName.Name + ".dll");
         }
         else
         {
-            Console.WriteLine("CustomAssemblyLoader: this looks like a test");
             strPath = Path.Combine(_testsPath, assemblyName.Name + ".dll");
         }
-
-        Console.WriteLine("Incoming AssemblyName: {0}", assemblyName.ToString());
-        Console.WriteLine("Trying to Load: {0}", strPath);
-        Console.WriteLine("Computed AssemblyName: {0}", GetAssemblyName(strPath).ToString());
         Assembly asmLoaded = LoadFromAssemblyPath(strPath);
-
-        Console.WriteLine("Loaded {0} from {1}", asmLoaded.FullName, asmLoaded.Location);
-
         return asmLoaded;
     }
 }
-#endif
 
 public interface IMultipleReliabilityTest
 {
@@ -108,26 +80,16 @@ public interface ISingleReliabilityTest
 }
 
 public class ReliabilityFramework
-#if !PROJECTK_BUILD
-    : MarshalByRefObject
-#endif
 {
     // instance members
-    private int _testsRunningCount = 0,_testsRanCount = 0,_failCount = 0;
+    private int _testsRunningCount = 0, _testsRanCount = 0, _failCount = 0;
     private ReliabilityConfig _reliabilityConfig;
     private ReliabilityTestSet _curTestSet;
     private DateTime _startTime;
     private bool _totalSuccess;
-#if !PROJECTK_BUILD
-    PerformanceCounter cpuCounter, memCounter, pagesCounter, pageFaultsCounter, ourPageFaultsCounter;	// we look at the total for all CPUs
-    Result resultReporter = null;
-#endif
     private Guid _resultGroupGuid = Guid.Empty;
     private AutoResetEvent _testDone = new AutoResetEvent(false);
-#if !PROJECTK_BUILD
-    AppDomain[] _testDomains = null;
-#endif
-    TestAssemblyLoadContext[]  _testALCs = null;
+    TestAssemblyLoadContext[] _testALCs = null;
     private DetourHelpers _detourHelpers;
     private Hashtable _foundTests;
     public int LoadingCount = 0;
@@ -140,15 +102,25 @@ public class ReliabilityFramework
     private static Random s_randNum = new Random(s_seed);
     private static string timeValue = null;
     private static bool s_fNoExit = false;
-#if !PROJECTK_BUILD
-    static string myProcessName = null;
-#endif 
     // constants
     private const string waitingText = "Waiting for all tests to finish loading, Remaining Tests: ";
 
     // support for running in automation
     internal static bool IsRunningAsUnitTest = false;
     internal static bool IsRunningLongGCTests = false;
+
+    internal MethodInfo _privateCollectionCountMethod;
+
+    private int PrivateCollectionCount(int generation)
+    {
+        if (_privateCollectionCountMethod == null)
+        {
+            _privateCollectionCountMethod = typeof(GC).GetMethod("_CollectionCount", BindingFlags.NonPublic | BindingFlags.Static);
+        }
+        object result = _privateCollectionCountMethod.Invoke(null, new object[] { generation, 1 });
+        int value = (int)result;
+        return value;
+    }
 
     /// <summary>
     /// Our main execution routine for the reliability framework.  Here we create an instance of the framework & run the reliability tests
@@ -160,13 +132,10 @@ public class ReliabilityFramework
     {
         string configFile = null;
         bool okToContinue = true, doReplay = false;
-        string sTests = "tests", sSeed = "seed",exectime ="maximumExecutionTime";
+        string sTests = "tests", sSeed = "seed", exectime = "maximumExecutionTime";
 
         ReliabilityFramework rf = new ReliabilityFramework();
         rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Started");
-#if !PROJECTK_BUILD
-        Thread.CurrentThread.Priority = ThreadPriority.Highest;
-#endif 
         foreach (string arg in args)
         {
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Argument: {0}", arg));
@@ -213,8 +182,8 @@ public class ReliabilityFramework
         // if no config file specified, check for [something]_gc.config in the current folder.
         if (configFile == null)
         {
-            var config = IsRunningAsUnitTest ? 
-                "*_gc_ci.config" : 
+            var config = IsRunningAsUnitTest ?
+                "*_gc_ci.config" :
                 "*_gc.config";
 
             configFile = Directory.GetFiles(Environment.CurrentDirectory, config).SingleOrDefault();
@@ -242,11 +211,7 @@ public class ReliabilityFramework
             Console.WriteLine(" -unittest   -   Set when run via unit test harness");
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Not ok to continue.");
 
-#if PROJECTK_BUILD
             return 0;
-#else
-            Environment.Exit(0);
-#endif 
         }
 
         int retVal = -1;
@@ -356,13 +321,6 @@ public class ReliabilityFramework
         // save the current directory
         string curDir = Directory.GetCurrentDirectory();
 
-#if !PROJECTK_BUILD
-        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("BASE_ROOT")))
-        {
-            Environment.SetEnvironmentVariable("BASE_ROOT", Environment.CurrentDirectory);
-        }
-#endif
-
         // Enumerator through all the test sets...					
         foreach (ReliabilityTestSet testSet in _reliabilityConfig)
         {
@@ -392,19 +350,6 @@ public class ReliabilityFramework
 
             _logger.ReportResults = _curTestSet.ReportResults;
 
-#if !PROJECTK_BUILD
-            if (curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.RoundRobin)
-            {
-                // full isoloation & normal are handled by the way we setup
-                // tests in ReliabilityConfiguration.  Round robin needs extra
-                // logic when we create app domains.
-                _testDomains = new AppDomain[curTestSet.NumAppDomains];
-                for (int domain = 0; domain < curTestSet.NumAppDomains; domain++)
-                {
-                    _testDomains[domain] = AppDomain.CreateDomain("RoundRobinDomain" + domain.ToString());
-                }
-            }
-#endif
             if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.RoundRobin)
             {
                 // full isoloation & normal are handled by the way we setup
@@ -422,57 +367,10 @@ public class ReliabilityFramework
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, "Reporting results...");
                 try
                 {
-#if !PROJECTK_BUILD
-                    resultReporter = new Result();
-                    resultReporter.Credentials = CredentialCache.DefaultCredentials;
-
-                    resultReporter.Url = curTestSet.ReportResultsTo + "/" + "result.asmx";
-                    WebRequest.DefaultWebProxy = null;
-
-                    Build buildObj = new Build();
-                    buildObj.Url = curTestSet.ReportResultsTo + "/" + "build.asmx";
-                    buildObj.Credentials = CredentialCache.DefaultCredentials;
-                    Guid langGuid = Guid.Empty;
-
-                    DataSet ds = buildObj.GetGeneralBuildInfo();
-                    foreach (DataTable myTable in ds.Tables)
-                    {
-                        if (myTable.TableName == "BuildAttributeValue")
-                        {
-                            foreach (DataRow myRow in myTable.Rows)
-                            {
-                                if (myRow["AttributeValueName"].ToString() == "English")
-                                {
-                                    langGuid = new Guid(myRow["AttributeValueGuid"].ToString());
-                                }
-                            }
-
-                        }
-                    }
-
-                    Guid buildGuid = buildObj.GetBuildGuid(
-                        Environment.GetEnvironmentVariable("WHIDBEY_TREE"), // build lab
-                        Environment.GetEnvironmentVariable("SHORTFLAVOR"),  // build flavor, string
-                        Environment.GetEnvironmentVariable("VERSION"),      // build version, string
-                        new Guid[] { langGuid });                                         // build attributes, Guid[]
-
-                    resultGroupGuid = resultReporter.CreateResultGroupEx(
-                        Guid.NewGuid(),
-                        String.Format("{0} - {1}", Environment.MachineName, DateTime.Now.ToShortDateString()),
-                        curTestSet.BvtCategory,
-                        new Guid[] { buildGuid },
-                        new Guid[] { },      // TODO: fill in environmental attributes
-                        false,
-                        0,
-                        "StressRun");
-#endif
                 }
                 catch (Exception e)
                 {
                     _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.SmartDotNet, String.Format("Exception while communicating w/ smart.net server: {0}", e));
-#if !PROJECTK_BUILD
-                    resultReporter = null;
-#endif
                     AddFailure("Failed to initialize result reporting", null, -1);
                 }
             }
@@ -545,26 +443,7 @@ public class ReliabilityFramework
                         catch { }
                         break;
                     case TestStartModeEnum.AppDomainLoader:
-#if PROJECTK_BUILD
                         Console.WriteLine("Appdomain mode is NOT supported for ProjectK");
-#else
-                        // for the app domain loader we create the
-                        // app domains here.  This is kinda slow so we
-                        // do it all in parallel.
-                        try
-                        {
-                            if (curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.Lazy)
-                            {
-                                Interlocked.Increment(ref LoadingCount);
-
-                                test.AppDomainIndex = i % curTestSet.NumAppDomains;	// only used for roudn robin scheduling.
-                                TestPreLoaderDelegate loadTestDelegate = new TestPreLoaderDelegate(this.TestPreLoader);
-                                loadTestDelegate.BeginInvoke(test, testSet.DiscoveryPaths, null, null);
-                            }
-                            haveAtLeastOneTest = true;
-                        }
-                        catch { }
-#endif
                         break;
                 }
                 Console.Write(".");
@@ -603,9 +482,6 @@ public class ReliabilityFramework
             else
             {
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, "Beginning test run...");
-#if !PROJECTK_BUILD
-                SetupGeneralUnload();
-#endif 
                 TestStarter();
                 _logger.CloseLog();
             }
@@ -630,7 +506,6 @@ public class ReliabilityFramework
         return (99);
     }
 
-#if !PROJECTK_BUILD
     [DllImport("kernel32.dll")]
     private extern static void DebugBreak();
 
@@ -639,7 +514,6 @@ public class ReliabilityFramework
 
     [DllImport("kernel32.dll")]
     private extern static void OutputDebugString(string debugStr);
-#endif
 
     /// <summary>
     /// Checks to see if we should block all execution due to a fatal error
@@ -661,20 +535,11 @@ public class ReliabilityFramework
     }
     internal static void MyDebugBreak(string extraData)
     {
-#if !PROJECTK_BUILD
         if (IsDebuggerPresent())
         {
-            OutputDebugString(String.Format("\r\n\r\n\r\nRELIABILITYFRAMEWORK DEBUGBREAK: Breaking in because test throw an exception ({0})\r\n\r\n\r\n", extraData));
+            Console.WriteLine(string.Format("DebugBreak: {0}", extraData));
             DebugBreak();
         }
-        else
-#else
-        if (Debugger.IsAttached)
-        {
-            Console.WriteLine(string.Format("DebugBreak: breaking in because test threw an exception: {0}", extraData));
-            Debugger.Break();
-        }
-#endif
         {
             // We need to stop the process now, 
             // but all the threads are still running
@@ -689,98 +554,7 @@ public class ReliabilityFramework
             }
         }
     }
-#if !PROJECTK_BUILD
-    /// <summary>
-    /// GetPerfStats - here's where we get the CPU usage & memory usage.  We do this in it's own
-    /// function so the JITter will not JIT (and load the performance DLLs) unless the user
-    /// enables it via the configuration file.
-    /// </summary>
-    /// <param name="memVal">the memory usage value</param>
-    /// <param name="cpuVal">the cpu usage value</param>
-    public void GetPerfStats(ref float memVal, ref float cpuVal, ref float pagesVal, ref float pageFaultsVal, ref float ourPageFaultsVal)
-    {
-        try
-        {
-            if (null == memCounter)
-            {
-                memCounter = new PerformanceCounter("Memory", "% Committed Bytes In Use");
-            }
-            memVal = memCounter.NextValue();
-        }
-        catch
-        {
-            memCounter = new PerformanceCounter("Memory", "% Committed Bytes In Use");
-        }
 
-        try
-        {
-            if (null == cpuCounter)
-            {
-                cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            }
-            cpuVal = cpuCounter.NextValue();
-        }
-        catch
-        {
-            cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");	// we look at the total for all CPUs
-        }
-
-        // pages / sec
-        try
-        {
-            if (null == pagesCounter)
-            {
-                pagesCounter = new PerformanceCounter("Memory", "Pages/sec");
-            }
-            pagesVal = pagesCounter.NextValue();
-        }
-        catch
-        {
-            pagesCounter = new PerformanceCounter("Memory", "Pages/sec");
-        }
-
-        // system wide page faults / sec
-        try
-        {
-            if (null == pageFaultsCounter)
-            {
-                pageFaultsCounter = new PerformanceCounter("Memory", "Page Faults/sec");
-            }
-            pageFaultsVal = pagesCounter.NextValue();
-        }
-        catch
-        {
-            pageFaultsCounter = new PerformanceCounter("Memory", "Page Faults/sec");
-        }
-
-        if (myProcessName == null)
-        {
-            myProcessName = System.Windows.Forms.Application.ExecutablePath;
-            if (myProcessName.LastIndexOf(Path.PathSeparator) != -1)
-            {
-                myProcessName = myProcessName.Substring(myProcessName.LastIndexOf(Path.PathSeparator) + 1);
-                if (myProcessName.LastIndexOf(".") != -1)
-                {
-                    myProcessName = myProcessName.Substring(0, myProcessName.LastIndexOf("."));
-                }
-            }
-        }
-
-        // our page faults / sec
-        try
-        {
-            if (null == ourPageFaultsCounter)
-            {
-                ourPageFaultsCounter = new PerformanceCounter("Process", "Page Faults/sec", myProcessName);
-            }
-            ourPageFaultsVal = pagesCounter.NextValue();
-        }
-        catch
-        {
-            ourPageFaultsCounter = new PerformanceCounter("Process", "Page Faults/sec", myProcessName);
-        }
-    }
-#endif
     /// <summary>
     /// Calculates the total number of tests to be run based upon the maximum
     /// number of loops & number of tests in the current test set.
@@ -814,23 +588,14 @@ public class ReliabilityFramework
     /// 
     private void TestStarter()
     {
-#if !PROJECTK_BUILD
-        // we don't want our test starter to be starved for resources & be unable to start tests.
-        Thread.CurrentThread.Priority = ThreadPriority.Highest;
-#endif
         int totalTestsToRun = CalculateTestsToRun();
         int lastTestStarted = 0;			// this is our index into the array of tests, this ensures fair distribution over all the tests.
-#if !PROJECTK_BUILD
-        int loopCount = 0;                  // number of times we've looped for perf counters, we log once every 30 times.
-#endif
         DateTime lastStart = DateTime.Now;	// keeps track of when we last started a test
         TimeSpan minTimeToStartTest = new TimeSpan(0, 5, 0);	// after 5 minutes if we haven't started a test we're having problems...
         int cpuAdjust = 0, memAdjust = 0;	// if we discover that we're not starting new tests quick enough we adjust the CPU/Mem percentages 
         // so we start new tests sooner (so they start BEFORE we drop below our minimum CPU)
 
         //Console.WriteLine("RF - TestStarter found {0} tests to run", totalTestsToRun);
-        if (_curTestSet.SuppressConsoleOutputFromTests)
-            Console.SetOut(System.IO.TextWriter.Null);
 
         /************************************************************************
          * loop until we've run out of time or have executed all of the tests.
@@ -870,17 +635,6 @@ public class ReliabilityFramework
                 // and the test can't be ran.
                 if (_curTestSet.MaxTestsRunning == -1 || (_testsRunningCount < _curTestSet.MaxTestsRunning))    // don't start if we have a maximum # of tests and we've reached it.
                 {
-#if !PROJECTK_BUILD
-                    if (curTestSet.EnablePerfCounters)
-                    {
-                        GetPerfStats(ref memVal, ref cpuVal, ref pagesVal, ref pageFaultsVal, ref ourPageFaultsVal);
-                        loopCount++;
-                        if ((loopCount % 30) == 0)
-                        {
-                            logger.WritePerfStats(pagesVal, pageFaultsVal, ourPageFaultsVal, cpuVal, memVal, false);
-                        }
-                    }
-#endif
                     // check test running count.
                     if (_testsRunningCount < _curTestSet.MinTestsRunning || _testsRunningCount == 0)
                     {
@@ -1081,11 +835,36 @@ public class ReliabilityFramework
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
             Console.WriteLine(msg);
 
+            int secondsIter = 5;
             int waitCnt = 0;
-            while (_testsRunningCount > 0 && waitCnt < 7200)  // wait a max of 2 hours for the tests to exit...
+            int waitCntTotal = _curTestSet.MaximumWaitTime * 60 / secondsIter;
+            msg = String.Format("START WAITING for {0}s", _curTestSet.MaximumWaitTime * 60);
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+            long lastAllocatedBytes = GC.GetTotalAllocatedBytes(false);
+            while (_testsRunningCount > 0 && waitCnt < waitCntTotal)
             {
-                Thread.Sleep(1000);
-                Console.Write("\b\b\b\b{0,4}", _testsRunningCount);
+                Thread.Sleep(secondsIter * 1000);
+                long currentAllocatedBytes = GC.GetTotalAllocatedBytes(false);
+                msg = String.Format("============current number of tests running {0,4}, allocated {1:n0} so far, {2:n0} since last; (GC {3}:{4}:{5}/{6}:{7}:{8}), waited {9}s",
+                    _testsRunningCount, currentAllocatedBytes, (currentAllocatedBytes - lastAllocatedBytes),
+                    GC.CollectionCount(0),
+                    GC.CollectionCount(1),
+                    GC.CollectionCount(2),
+                    PrivateCollectionCount(0),
+                    PrivateCollectionCount(1),
+                    PrivateCollectionCount(2),
+                    (waitCnt * secondsIter));
+                lastAllocatedBytes = currentAllocatedBytes;
+                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+
+                for (int i = 0; i < _curTestSet.Tests.Length; i++)
+                {
+                    if (_curTestSet.Tests[i].RunningCount != 0)
+                    {
+                        msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+                    }
+                }
                 waitCnt++;
             }
         }
@@ -1093,13 +872,12 @@ public class ReliabilityFramework
         // let the user know what tests haven't finished...
         if (_testsRunningCount != 0)
         {
-            string msg;
-
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, "************Timeout reached************");
             for (int i = 0; i < _curTestSet.Tests.Length; i++)
             {
                 if (_curTestSet.Tests[i].RunningCount != 0)
                 {
-                    msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
+                    string msg = String.Format("Still running: {0}", _curTestSet.Tests[i].RefOrID);
                     _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                     Console.WriteLine(msg);
                     AddFailure("Test Hang", _curTestSet.Tests[i], -1);
@@ -1116,6 +894,9 @@ public class ReliabilityFramework
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void TestIsHungDebugBreak()
     {
+        string msg = String.Format("break");
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+
         MyDebugBreak("TestHang");
     }
 
@@ -1127,11 +908,7 @@ public class ReliabilityFramework
     {
         try
         {
-#if PROJECTK_BUILD
             if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.Lazy)
-#else
-            if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
-#endif
             {
                 Console.WriteLine("Test Loading: {0} run #{1}", test.RefOrID, test.RunCount);
                 TestPreLoader(test, _curTestSet.DiscoveryPaths);
@@ -1146,6 +923,7 @@ public class ReliabilityFramework
             }
 
             Thread newThread = new Thread(new ParameterizedThreadStart(this.StartTestWorker));
+            newThread.IsBackground = true;
 
             // check the thread requirements and set appropriately.
             switch ((test.TestAttrs & TestAttributes.RequiresThread))
@@ -1165,7 +943,8 @@ public class ReliabilityFramework
 
             Interlocked.Increment(ref _testsRunningCount);
             test.TestStarted();
-            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}", _testsRunningCount, test.RunningCount, test.RefOrID));
+            _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.TestStarter, String.Format("RF.StartTest, RTs({0}) - Instances of this test: {1} - New Test:{2}, {3} threads",
+                _testsRunningCount, test.RunningCount, test.RefOrID, Process.GetCurrentProcess().Threads.Count));
 
             newThread.Start(test);
         }
@@ -1204,10 +983,13 @@ public class ReliabilityFramework
             switch (daTest.TestStartMode)
             {
                 case TestStartModeEnum.ProcessLoader:
-#if PROJECTK_BUILD
                     Task.Factory.StartNew(() =>
                     {
-                        Console.WriteLine("==============================running test: {0}==============================", daTest.Assembly);
+                        string msg = String.Format("==============================[tid: {0, 4}, running test: {1} STATUS: START, {2} tests running {3} threads ==============================",
+                                    Thread.CurrentThread.ManagedThreadId, daTest.Assembly, _testsRunningCount,
+                                    Process.GetCurrentProcess().Threads.Count);
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
+
                         try
                         {
                             daTest.EntryPointMethod.Invoke(null, new object[] { (daTest.Arguments == null) ? new string[0] : daTest.GetSplitArguments() });
@@ -1220,186 +1002,26 @@ public class ReliabilityFramework
 
                             Console.WriteLine(e);
                         }
+                        msg = String.Format("==============================[tid: {0, 4}, running test: {1} STATUS: DONE, {2} tests running {3} threads ==============================",
+                                    Thread.CurrentThread.ManagedThreadId, daTest.Assembly, _testsRunningCount,
+                                    Process.GetCurrentProcess().Threads.Count);
+                        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.StartupShutdown, msg);
                         Interlocked.Increment(ref _testsRanCount);
                         SignalTestFinished(daTest);
                     });
-#else
-                    try
-                    {
-                        if (daTest.TestObject is string)
-                        {
-                            ProcessStartInfo pi = null;
-                            Process p = null;
-
-                            try
-                            {
-
-                                if (daTest.Debugger != null && daTest.Debugger != String.Empty)
-                                {
-                                    if (daTest.DebuggerOptions == null)
-                                    {
-
-                                        pi = new ProcessStartInfo((string)daTest.Debugger,
-                                            String.Format("{0} {1} {2}",
-                                            "-g",
-                                            (string)daTest.TestObject,
-                                            daTest.Arguments
-                                            ));
-                                    }
-                                    else
-                                    {
-                                        pi = new ProcessStartInfo((string)daTest.Debugger,
-                                            String.Format("{0} {1} {2}",
-                                            daTest.DebuggerOptions,
-                                            (string)daTest.TestObject,
-                                            daTest.Arguments
-                                            ));
-                                    }
-                                }
-                                else
-                                {
-                                    // works for both exe and batch files
-                                    // a temporary file for exitcode is not needed here
-                                    // since it's not running directly under smarty
-                                    pi = new ProcessStartInfo((string)daTest.TestObject, daTest.Arguments);
-                                }
-                                if (daTest.BasePath != String.Empty)
-                                {
-                                    pi.WorkingDirectory = daTest.BasePath;
-                                }
-
-                                pi.UseShellExecute = false;
-                                pi.RedirectStandardOutput = true;
-                                pi.RedirectStandardError = true;
-
-                                p = Process.Start(pi);
-                                using (ProcessReader pr = new ProcessReader(p, daTest.RefOrID)) // reads & outputs standard error & output
-                                {
-                                    int timeOutCnt = 0;
-                                    while (!pr.Exited)
-                                    {
-                                        if (timeOutCnt > 24 * 15)
-                                        {
-                                            pr.TimedOut = true;
-                                            break;
-                                        }
-                                        Thread.Sleep(2500);
-                                        timeOutCnt++;
-                                    }
-
-                                    int exitCode = 0;
-                                    if (!pr.TimedOut)
-                                    {
-                                        p.WaitForExit();
-                                        exitCode = p.ExitCode;
-
-                                        if (exitCode != daTest.SuccessCode)
-                                        {
-                                            AddFailure(String.Format("Test Result ({0}) != Success ({1})", exitCode, daTest.SuccessCode), daTest, exitCode);
-                                        }
-                                        else
-                                        {
-                                            AddSuccess("", daTest, exitCode);
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        // external test timed out..
-                                        try
-                                        {
-                                            p.Kill();
-
-                                            AddFailure(String.Format("Test Timed out after 15 minutes..."), daTest, exitCode);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            AddFailure(String.Format("Test timed out after 15 minutes, failed to kill: {0}", e), daTest, exitCode);
-                                        }
-                                    }
-                                }
-
-                            }
-                            catch (Exception e)
-                            {
-                                if (null != pi)
-                                {
-                                    // let's see what process info thinks of this...
-                                    Console.WriteLine("Trying to run {1} {2} from {0}", pi.WorkingDirectory, pi.FileName, pi.Arguments);
-                                }
-
-                                Console.WriteLine("Unable to start test: {0} because {1} was thrown ({2})\r\nStack Trace: {3}", daTest.TestObject, e.GetType(), e.Message, e.StackTrace);
-
-                                SignalTestFinished(daTest);
-                                AddFailure("Unable to run test: ", daTest, -1);
-                                return;
-                            }
-                            finally
-                            {
-                                if (null != p)
-                                {
-                                    p.Dispose();
-                                }
-                            }
-
-                            Interlocked.Increment(ref testsRanCount);
-                            SignalTestFinished(daTest);
-                        }
-                        else if (daTest.TestObject != null)
-                        {
-                            SignalTestFinished(daTest);
-                            throw new NotSupportedException("ProcessLoader can only load applications, not assemblies!" + daTest.RefOrID + daTest.TestObject.GetType().ToString());
-                        }
-                        else
-                        {
-                            SignalTestFinished(daTest);
-                            AddFailure("Test does not exist", daTest, -1);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        AddFailure("Failed to start test in process loader mode" + e.ToString(), daTest, -1);
-                        Interlocked.Increment(ref testsRanCount);
-                        SignalTestFinished(daTest);
-
-                        Console.WriteLine("STA thread issue encountered, couldn't start in process loader {0}", e);
-                        MyDebugBreak(daTest.RefOrID);
-                    }
-#endif
                     break;
                 case TestStartModeEnum.AppDomainLoader:
-#if PROJECTK_BUILD
                     Console.WriteLine("Appdomain mode is NOT supported for ProjectK");
                     break;
                 case TestStartModeEnum.AssemblyLoadContextLoader:
-#endif
                     try
                     {
                         if (daTest.TestObject is string)
                         {
                             try
                             {
-#if PROJECTK_BUILD
                                 int exitCode = daTest.ExecuteInAssemblyLoadContext();
-#else
-                                int exitCode;
-#pragma warning disable 0618
-                                // AppendPrivatePath is obsolute, should move to AppDomainSetup but it's too risky at end of beta 1.
-                                daTest.AppDomain.AppendPrivatePath(daTest.BasePath);
-#pragma warning restore
 
-                                // Execute the test.
-                                if (daTest.Assembly.ToLower().IndexOf(".exe") == -1 && daTest.Assembly.ToLower().IndexOf(".dll") == -1)	// must be a simple name or fullname...
-                                {
-                                    //exitCode = daTest.AppDomain.ExecuteAssemblyByName(daTest.Assembly, daTest.GetSplitArguments());
-                                    exitCode = daTest.AppDomain.ExecuteAssemblyByName(daTest.Assembly, null, daTest.GetSplitArguments());
-                                }
-                                else
-                                {
-                                    //exitCode = daTest.AppDomain.ExecuteAssembly(daTest.Assembly, daTest.GetSplitArguments());
-                                    exitCode = daTest.AppDomain.ExecuteAssembly(daTest.Assembly, null, daTest.GetSplitArguments());
-                                }
-#endif
                                 // HACKHACK: VSWhidbey bug #113535: Breaking change.  Tests that return a value via Environment.ExitCode
                                 // will not have their value propagated back properly via AppDomain.ExecuteAssembly.   These tests will
                                 // typically have a return value of 0 (because they have a void entry point).  We will check 
@@ -1430,13 +1052,6 @@ public class ReliabilityFramework
                                     MyDebugBreak("Path too long");
                                 }
                             }
-#if !PROJECTK_BUILD
-                            catch (AppDomainUnloadedException)
-                            {
-                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Error in executing test {0}: AppDomainUnloaded", daTest.RefOrID));
-                                AddFailure("Failed to ExecuteAssembly, AD Unloaded (" + daTest.AppDomain.FriendlyName + ")", daTest, -1);
-                            }
-#endif
                             catch (OutOfMemoryException e)
                             {
                                 HandleOom(e, "ExecuteAssembly");
@@ -1467,16 +1082,6 @@ public class ReliabilityFramework
                                 // crash on exceptions when running as a unit test.
                                 if (IsRunningAsUnitTest)
                                     Environment.FailFast(err, e);
-
-#if !PROJECTK_BUILD
-                                if ((Thread.CurrentThread.ThreadState & System.Threading.ThreadState.AbortRequested) != 0)
-                                {
-                                    UnexpectedThreadAbortDebugBreak();
-                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, String.Format("Test left thread w/ abort requested set"));
-                                    AddFailure("Abort Requested Bit Still Set (" + e.ToString() + ")", daTest, -1);
-                                    Thread.ResetAbort();
-                                }
-#endif
                             }
                         }
                         else if (daTest.TestObject is ISingleReliabilityTest)
@@ -1534,7 +1139,6 @@ public class ReliabilityFramework
 
                         Interlocked.Increment(ref _testsRanCount);
 
-#if PROJECTK_BUILD
                         if (_curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.FullIsolation || _curTestSet.AssemblyLoadContextLoaderMode == AssemblyLoadContextLoaderMode.Lazy)
                         {
                             // we're in full isolation & have test runs left.  we need to 
@@ -1564,56 +1168,15 @@ public class ReliabilityFramework
                             {   // make sure no one accesses the assembly load context at the same time (between here & RunReliabilityTests)
                                 if (daTest.RunningCount == 1 && daTest.HasAssemblyLoadContext)
                                 {   // only unload when the last test finishes.
-                                    UnloadAssemblyLoadContext(daTest);
-                                    RunCommands(daTest.PostCommands, "post", daTest);
-                                }
-                            }
-                        }
-                    }
-#else
-                        if (_curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.FullIsolation || _curTestSet.AppDomainLoaderMode == AppDomainLoaderMode.Lazy)
-                        {
-                            // we're in full isolation & have test runs left.  we need to 
-                            // recreate the app domain so that we don't die on statics.
-                            lock (daTest)
-                            {
-                                if (daTest.AppDomain != null)
-                                {
-                                    _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AppDomain, String.Format("Unloading app domain (locked): {0}", daTest.AppDomain.FriendlyName));
-                                    AppDomain.Unload(daTest.AppDomain);
-                                    daTest.AppDomain = null;
                                     daTest.MyLoader = null;
-                                }
-                                if (_curTestSet.MaximumLoops != 1 && _curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.Lazy)
-                                {
-                                    TestPreLoader(daTest, _curTestSet.DiscoveryPaths);	// need to reload assembly & appdomain
-                                }
-                                _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AppDomain, String.Format("Unloading complete (freeing lock): {0}", daTest.RefOrID));
-                            }
-                        }
-                        else if ((daTest.RunCount >= (_curTestSet.MaximumLoops * daTest.ConcurrentCopies) ||
-                            ((DateTime.Now.Subtract(_startTime).Ticks / TimeSpan.TicksPerMinute > _curTestSet.MaximumTime))) &&
-                            (_curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.RoundRobin))	// don't want to unload domains in round robin mode, we don't know how
-                        // many tests are left.  
-                        {
-                            lock (daTest)
-                            {	// make sure no one accesses the app domain at the same time (between here & RunReliabilityTests)
-                                if (daTest.RunningCount == 1 && daTest.AppDomain != null)
-                                {	// only unload when the last test finishes.
-                                    // unload app domain's async so that we don't block while holding daTest lock.
-                                    AppDomainUnloadDelegate adu = new AppDomainUnloadDelegate(AppDomain.Unload);
-                                    adu.BeginInvoke(daTest.AppDomain, null, null);
-                                    daTest.AppDomain = null;
+                                    daTest.TestObject = null;
+                                    UnloadAssemblyLoadContext(daTest);
+                                    TestPreLoader(daTest, _curTestSet.DiscoveryPaths);  // need to reload assembly & AssemblyLoadContext
                                     RunCommands(daTest.PostCommands, "post", daTest);
                                 }
                             }
                         }
                     }
-                    catch (ThreadAbortException)
-                    {
-                        UnexpectedThreadAbortDebugBreak();
-                    }
-#endif
                     finally
                     {
                         SignalTestFinished(daTest);
@@ -1739,11 +1302,7 @@ public class ReliabilityFramework
                     TestPreLoader_AssemblyLoadContext(test, newPaths.ToArray());
                     break;
                 case TestStartModeEnum.AppDomainLoader:
-#if PROJECTK_BUILD
                     Console.WriteLine("Appdomain mode is NOT supported for ProjectK");
-#else
-                    TestPreLoader_AppDomain(test, paths);
-#endif
                     break;
             }
         }
@@ -1752,9 +1311,6 @@ public class ReliabilityFramework
             string msg = String.Format("\r\nBad test ({1} - {3}): {0}\r\n{2}\r\n{4}", test.RefOrID, e.GetType(), waitingText, e.Message, e.StackTrace);
             _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.Tests, msg);
             test.ConcurrentCopies = 0;
-#if !PROJECTK_BUILD
-            test.AppDomain = null;
-#endif
             test.TestLoadFailed = true;
             if (_curTestSet.DebugBreakOnBadTest)
             {
@@ -1801,8 +1357,10 @@ public class ReliabilityFramework
             if (alc != null)
             {
                 _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "FAILED unloading AssemblyLoadContext: " + alc.FriendlyName + " for " + test.Index.ToString());
+                return;
             }
         }
+        _logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AssemblyLoadContext, "SUCCEED unloading AssemblyLoadContext for " + test.Index.ToString());
     }
 
     /// <summary>
@@ -1856,11 +1414,11 @@ public class ReliabilityFramework
 
             if (test.Assembly.ToLower().IndexOf(".exe") == -1 && test.Assembly.ToLower().IndexOf(".dll") == -1)	// must be a simple name or fullname...
             {
-                loadMethod.Invoke(obj, new object[] { test.Assembly, paths});
+                loadMethod.Invoke(obj, new object[] { test.Assembly, paths });
             }
             else			// has an executable extension, must be in local directory.
             {
-                loadFromMethod.Invoke(obj, new object[] { Path.Combine(test.BasePath, test.Assembly), paths});
+                loadFromMethod.Invoke(obj, new object[] { Path.Combine(test.BasePath, test.Assembly), paths });
             }
 
             // check and see if this test is marked as requiring STA.  We only do
@@ -1920,117 +1478,6 @@ public class ReliabilityFramework
         }
     }
 
-#if !PROJECTK_BUILD
-    /// <summary>
-    /// Pre-loads a test into the correct app domain for the current loader mode.
-    /// </summary>
-    /// <param name="test"></param>
-    /// <param name="paths"></param>
-    void TestPreLoader_AppDomain(ReliabilityTest test, string[] paths)
-    {
-        AppDomain ad = null;
-
-        try
-        {
-            if (_curTestSet.AppDomainLoaderMode != AppDomainLoaderMode.RoundRobin || test.CustomAction == CustomActionType.LegacySecurityPolicy)
-            {
-                string appDomainName = AppDomain.CurrentDomain.FriendlyName + "_" + "TestDomain_" + test.Assembly + "_" + Guid.NewGuid().ToString();
-                logger.WriteToInstrumentationLog(_curTestSet, LoggingLevels.AppDomain, "Creating app domain: " + appDomainName + " for " + test.Index.ToString());
-
-                AppDomainSetup ads = new AppDomainSetup();
-                Evidence ev = AppDomain.CurrentDomain.Evidence;
-
-                if (test.CustomAction == CustomActionType.LegacySecurityPolicy)
-                {
-                    ads.SetCompatibilitySwitches(new string[] { "NetFx40_LegacySecurityPolicy" });
-                    ev = new Evidence(new EvidenceBase[] { new Zone(System.Security.SecurityZone.MyComputer) }, null);
-                }
-
-                // Set the probing scope for assemblies to %BVT_ROOT%. The default is %BVT_ROOT%\Stress\CLRCore,
-                // which causes some tests to fail because their assemblies are out of scope.
-                ads.ApplicationBase = "file:///" + Environment.GetEnvironmentVariable("BVT_ROOT").Replace(@"\", "/");
-                ads.PrivateBinPath = "file:///" + Environment.GetEnvironmentVariable("BASE_ROOT").Replace(@"\", "/");
-                ad = AppDomain.CreateDomain(appDomainName, ev, ads);
-            }
-            else
-            {
-                ad = _testDomains[test.AppDomainIndex];
-            }
-
-            AssemblyName an = new AssemblyName();
-            Object ourObj = null;
-
-            test.AppDomain = ad;
-
-            object obj = ad.CreateInstanceAndUnwrap(Assembly.GetExecutingAssembly().FullName, typeof(LoaderClass).FullName);
-            LoaderClass lfc = obj as LoaderClass;
-            if (test.SuppressConsoleOutput)
-                lfc.SuppressConsole();
-
-
-            if (test.Assembly.ToLower().IndexOf(".exe") == -1 && test.Assembly.ToLower().IndexOf(".dll") == -1)	// must be a simple name or fullname...			
-            {
-                lfc.Load(test.Assembly, paths, this);
-            }
-            else			// has an executable extension, must be in local directory.
-            {
-                lfc.LoadFrom(test.BasePath + test.Assembly, paths, this);
-            }
-
-            // check and see if this test is marked as requiring STA.  We only do
-            // the check once, and then we set the STA/MTA/Unknown bit on the test attributes
-            // to avoid doing reflection every time we start the test.
-            if ((test.TestAttrs & TestAttributes.RequiresThread) == TestAttributes.None)
-            {
-                ApartmentState state = lfc.CheckMainForThreadType();
-                switch (state)
-                {
-                    case ApartmentState.STA:
-                        test.TestAttrs |= TestAttributes.RequiresSTAThread;
-                        break;
-                    case ApartmentState.MTA:
-                        test.TestAttrs |= TestAttributes.RequiresMTAThread;
-                        break;
-                    case ApartmentState.Unknown:
-                        test.TestAttrs |= TestAttributes.RequiresUnknownThread;
-                        break;
-
-                }
-            }
-
-            ourObj = lfc.GetTest();
-
-            // and now call the register method on the type if it's one of our supported test types.
-            if (ourObj is ISingleReliabilityTest)
-            {
-                ((ISingleReliabilityTest)ourObj).Register();
-            }
-            else if (ourObj is IMultipleReliabilityTest)
-            {
-                ((IMultipleReliabilityTest)ourObj).Register();
-            }
-            else if (!(ourObj is string))	// we were unable to find a test here - a string is an executable filename.
-            {
-                Interlocked.Decrement(ref LoadingCount);
-                return;
-            }
-
-            test.TestObject = ourObj;
-            test.MyLoader = lfc;
-        }
-        catch (Exception)
-        {
-            // if we took an exception while loading the test, but we still have an app domain
-            // we don't want to leak the app domain.
-            if (ad != null)
-            {
-                test.AppDomain = null;
-                AppDomain.Unload(ad);
-            }
-            throw;
-        }
-    }
-#endif
     /// <summary>
     /// Preloads a test for a process, this just sets the test object to the appropriate path.
     /// </summary>
@@ -2038,32 +1485,21 @@ public class ReliabilityFramework
     /// <param name="paths"></param>
     private void TestPreLoader_Process(ReliabilityTest test, string[] paths)
     {
-        Console.WriteLine("Preloading for process mode");
-
-        Console.WriteLine("basepath: {0}, asm: {1}", test.BasePath, test.Assembly);
-        foreach (var path in paths)
-        {
-            Console.WriteLine(" path: {0}", path);
-        }
         string realpath = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(test.BasePath, test.Assembly);
         Debug.Assert(test.TestObject == null);
-        Console.WriteLine("Real path: {0}", realpath);
         if (File.Exists(realpath))
         {
             test.TestObject = realpath;
         }
         else if (File.Exists((string)test.Assembly))
         {
-            Console.WriteLine("asm path: {0}", test.Assembly);
             test.TestObject = test.Assembly;
         }
         else
         {
             foreach (string path in paths)
             {
-                Console.WriteLine("Candidate path: {0}", path);
                 string fullPath = ReliabilityConfig.ConvertPotentiallyRelativeFilenameToFullPath(path, (string)test.Assembly);
-                Console.WriteLine("Candidate full path: {0}", fullPath);
                 if (File.Exists(fullPath))
                 {
                     test.TestObject = fullPath;
@@ -2076,7 +1512,6 @@ public class ReliabilityFramework
         {
             Console.WriteLine("Couldn't find path for {0}", test.Assembly);
         }
-#if PROJECTK_BUILD
 
         if (test.EntryPointMethod == null)
         {
@@ -2086,6 +1521,18 @@ public class ReliabilityFramework
             Assembly testAssembly = resolver.LoadFromAssemblyName(new AssemblyName(strAssemblyNameWithoutExt));
             Type[] testTypes = AssemblyExtensions.GetTypes(testAssembly);
             MethodInfo methodInfo = null;
+
+            if (test.SuppressConsoleOutput)
+            {
+                // Console.SetOut(System.IO.TextWriter.Null);
+                Assembly consoleAssembly = resolver.LoadFromAssemblyPath(typeof(Console).Assembly.Location);
+                Type consoleType = consoleAssembly.GetType("System.Console");
+                MethodInfo setOutMethod = consoleType.GetMethod("SetOut", BindingFlags.Public | BindingFlags.Static);
+                Type textWriterType = setOutMethod.GetParameters()[0].ParameterType;
+                FieldInfo nullField = textWriterType.GetField("Null", BindingFlags.Public | BindingFlags.Static);
+                object nullInstance = nullField.GetValue(null);
+                setOutMethod.Invoke(null, new object[] { nullInstance });
+            }
 
             if (testTypes != null)
             {
@@ -2102,28 +1549,7 @@ public class ReliabilityFramework
 
             test.EntryPointMethod = methodInfo;
         }
-#endif
     }
-
-#if !PROJECTK_BUILD
-    /// <summary>
-    /// Unloads a test & the tests associated app domain.
-    /// </summary>
-    /// <param name="test"></param>
-    void UnloadTestAndAD(ReliabilityTest test)
-    {
-        if (test.TestObject is ISingleReliabilityTest)
-        {
-            ((ISingleReliabilityTest)test.TestObject).Unregister();
-        }
-        else if (test.TestObject is IMultipleReliabilityTest)
-        {
-            ((IMultipleReliabilityTest)test.TestObject).Unregister();
-        }
-
-        AppDomain.Unload(test.AppDomain);
-    }
-#endif
     /// <summary>
     /// This method will send a failure message to the test owner that their test has failed.
     /// </summary>
@@ -2260,63 +1686,6 @@ Thanks for contributing to CLR Stress!
         // report results back to harnesses / urt frameworks.
         _totalSuccess = false;
 
-        if (test != null)
-        {
-            try
-            {
-#if !PROJECTK_BUILD
-                // Record the failure to the database
-                string arguments = String.Format("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a LOG_FAILED_TEST -k \"FAILED  {0}\"", test.RefOrID);
-                ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables(arguments));
-                psi.UseShellExecute = false;
-                psi.RedirectStandardOutput = true;
-
-                Process p = Process.Start(psi);
-                p.StandardOutput.ReadToEnd();
-                p.WaitForExit();
-                if (p.ExitCode != 0)
-                {
-                    Console.WriteLine("//b //nologo record.js -i %STRESSID% -a LOG_FAILED_TEST -k \"{0}\"", test.RefOrID);
-                }
-                p.Dispose();
-#endif
-            }
-            catch
-            {
-                Console.WriteLine("Exception while trying to log a test failure to the custom table.");
-            }
-
-#if !PROJECTK_BUILD
-            if (_curTestSet.ReportResults && test.Guid != Guid.Empty && resultReporter != null)
-            {
-                lock (resultReporter)
-                {
-                    try
-                    {
-                        // smart.net test result reporting
-                        resultReporter.InsertNewTestResult(
-                            Guid.Empty,                     // test result (guid)
-                            resultGroupGuid,                // result group (guid)
-                            test.Guid,                      // test command line (guid)
-                            Guid.Empty,                     // clover bug (guid)
-                            _curTestSet.BvtCategory,         // bvt category (guid)
-                            Guid.Empty,                     // machine image (guid)
-                            true,                           // is failure (bool)
-                            returnCode,                     // return code  (int)
-                            test.StartTime,                 // start time (DateTime)
-                            DateTime.Now,                   // end time (DateTime)
-                            String.Empty,                   // automation comment (string)
-                            failMsg);                       // comment (string)
-                    }
-                    catch (Exception e)
-                    {
-                        Console.WriteLine("Exception while storing results: {0}", e);
-                    }
-                }
-            }
-#endif
-        }
-
         try
         {
             if (_curTestSet.ReportResults && File.Exists(Environment.ExpandEnvironmentVariables("%SCRIPTSDIR%\\record.js")))
@@ -2367,37 +1736,6 @@ Thanks for contributing to CLR Stress!
     /// <param name="testRefOrID">the test which passed</param>
     private void AddSuccess(string passMsg, ReliabilityTest test, int returnCode)
     {
-        if (_curTestSet.ReportResults && test.Guid != Guid.Empty)
-        {
-            // smart.net test result reporting
-            // smart.net test result reporting
-            try
-            {
-#if !PROJECTK_BUILD
-                lock (resultReporter)
-                {
-                    resultReporter.InsertNewTestResult(
-                        Guid.Empty,                     // test result (guid)
-                        resultGroupGuid,                // result group (guid)
-                        test.Guid,                      // test command line (guid)
-                        Guid.Empty,                     // clover bug (guid)
-                        curTestSet.BvtCategory,         // bvt category (guid)
-                        Guid.Empty,                     // machine image (guid)
-                        false,                          // is failure (bool)
-                        returnCode,                     // return code  (int)
-                        test.StartTime,                 // start time (DateTime)
-                        DateTime.Now,                   // end time (DateTime)
-                        String.Empty,                   // automation comment (string)
-                        passMsg);                       // comment (string)
-                }
-#endif
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Unable to save test result: {0}", e);
-            }
-        }
-
         // log the failure
         _logger.WriteTestPass(test, passMsg);
     }
@@ -2561,131 +1899,4 @@ Thanks for contributing to CLR Stress!
             Thread.Sleep(2000);
         }
     }
-#if !PROJECTK_BUILD
-    /// <summary>
-    /// Sets up general unload thread
-    /// </summary>
-    public void SetupGeneralUnload()
-    {
-        if ((curTestSet.ULGeneralUnloadPercent > 0) && (curTestSet.ULWaitTime > 0))
-        {
-            Thread oThread = new Thread(new ThreadStart(this.GeneralUnload));
-            oThread.Name = "General Unload Thread";
-            oThread.Start();
-        }
-    }
-
-    /// <summary>
-    /// Tries to unload a random appdomain every ULWaitTime milliseconds while tests are running
-    /// </summary>
-    public void GeneralUnload()
-    {
-        while (true)
-        {
-            Thread.Sleep(curTestSet.ULWaitTime);
-            if (randNum.Next(100) < curTestSet.ULGeneralUnloadPercent)
-            {
-
-                ArrayList availableDomains = new ArrayList();
-                //figure out which domains are still available
-                for (int i = 0; i < curTestSet.Tests.Length; i++)
-                {
-                    if (curTestSet.Tests[i].AppDomain != null)
-                    {
-                        availableDomains.Add(curTestSet.Tests[i]);
-                    }
-                }
-
-                //if we found at least one appDomain, pick one to unload
-                if (availableDomains.Count > 0)
-                {
-                    int x = randNum.Next(availableDomains.Count - 1);
-                    lock ((ReliabilityTest)availableDomains[x])
-                    {
-                        if (((ReliabilityTest)availableDomains[x]).AppDomain != null)
-                        {
-                            Console.WriteLine("ReliabilityFramework: {0}-{1}-{2}", eReasonForUnload.GeneralUnload, ((ReliabilityTest)availableDomains[x]).RefOrID, System.DateTime.Now);
-
-                            //print unload message to log
-                            ///WriteToLog(String.Format("UNLOAD {0} AppDomain Unloaded: {1}{2}", DateTime.Now, ((ReliabilityTest)availableDomains[x]).RefOrID, Environment.NewLine));
-
-                            //update testsRanCount to reflect missing tests
-                            testsRanCount += ((ReliabilityTest)availableDomains[x]).ConcurrentCopies * curTestSet.MaximumLoops - ((ReliabilityTest)availableDomains[x]).RunCount;
-
-                            // unload domain
-                            AppDomainUnloadDelegate adu = new AppDomainUnloadDelegate(AppDomain.Unload);
-                            adu.BeginInvoke(((ReliabilityTest)availableDomains[x]).AppDomain, null, null);
-                            ((ReliabilityTest)availableDomains[x]).AppDomain = null;
-                            ((ReliabilityTest)availableDomains[x]).ConcurrentCopies = 0;
-                        }
-                    }
-                }
-                else
-                {
-                    return;
-                }
-            }
-
-        }
-    }
-    /// <summary>
-    /// Handles unloads for assemblyLoad and domainUnload events
-    /// </summary>
-    /// <param name="ad">The appdomain to potentially unload</param>
-    /// <param name="eReasonForUnload">reason for unload</param>
-    public void UnloadOnEvent(AppDomain ad, eReasonForUnload reason)
-    {
-        int percent = 0;
-        switch (reason)
-        {
-            case eReasonForUnload.AssemblyLoad:
-                percent = curTestSet.ULAssemblyLoadPercent;
-                break;
-            case eReasonForUnload.AppDomainUnload:
-                percent = curTestSet.ULAppDomainUnloadPercent;
-                break;
-            case eReasonForUnload.Replay:
-                percent = 100;
-                break;
-        }
-        if (randNum.Next(100) < percent)
-        {
-            for (int i = 0; i < curTestSet.Tests.Length; i++)
-            {
-                lock (curTestSet.Tests[i])
-                {
-                    if ((curTestSet.Tests[i].AppDomain != null) && (curTestSet.Tests[i].AppDomain.FriendlyName == ad.FriendlyName))
-                    {
-                        //update testsRanCount to reflect missing tests
-                        this.testsRanCount += curTestSet.Tests[i].ConcurrentCopies * curTestSet.MaximumLoops - curTestSet.Tests[i].RunCount;
-
-                        //print unload message to log
-                        //WriteToLog(String.Format("UNLOAD {0} AppDomain Unloaded: {1}{2}", DateTime.Now, curTestSet.Tests[i].RefOrID, Environment.NewLine));
-
-                        if (reason == eReasonForUnload.AssemblyLoad)
-                        {
-                            //The test isn't going to load, so don't count it
-                            Interlocked.Decrement(ref LoadingCount);
-                        }
-                        Console.WriteLine("\nReliabilityFramework: Unload on{0}-{1}-{2}", reason.ToString(), curTestSet.Tests[i].RefOrID, System.DateTime.Now);
-
-                        // unload domain
-                        AppDomainUnloadDelegate adu = new AppDomainUnloadDelegate(AppDomain.Unload);
-                        adu.BeginInvoke(curTestSet.Tests[i].AppDomain, null, null);
-                        curTestSet.Tests[i].AppDomain = null;
-                        curTestSet.Tests[i].ConcurrentCopies = 0;
-                    }
-                }
-            }
-        }
-    }
-    /// <summary>
-    /// This stops our MBR from being deallocated by the distributed GC mechanism in remoting.
-    /// </summary>
-    /// <returns></returns>
-    public override Object InitializeLifetimeService()
-    {
-        return (null);
-    }
-#endif
 }

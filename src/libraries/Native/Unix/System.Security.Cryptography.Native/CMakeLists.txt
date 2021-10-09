@@ -37,7 +37,6 @@ set(NATIVECRYPTO_SOURCES
     pal_hmac.c
     pal_ocsp.c
     pal_pkcs7.c
-    pal_rsa.c
     pal_ssl.c
     pal_x509.c
     pal_x509_name.c
@@ -48,7 +47,7 @@ set(NATIVECRYPTO_SOURCES
 # Always build portable on macOS because OpenSSL is not a system component
 # and our prebuilts should not assume a specific ABI version for the types
 # that use OpenSSL at runtime.
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
     set(FEATURE_DISTRO_AGNOSTIC_SSL True)
 
     # by default uninitialized variables like the shim _ptr functions, will turn into common symbols
@@ -61,6 +60,8 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
         opensslshim.c
     )
     add_definitions(-DFEATURE_DISTRO_AGNOSTIC_SSL)
+    add_compile_options(-pthread)
+    add_linker_flag(-pthread)
 endif()
 
 add_library(objlib OBJECT ${NATIVECRYPTO_SOURCES} ${VERSION_FILE_PATH})

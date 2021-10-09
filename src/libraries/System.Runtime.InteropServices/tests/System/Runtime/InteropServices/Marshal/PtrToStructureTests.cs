@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void StructureToPtr_NonGenericType_ReturnsExpected()
         {
-            var structure = new SomeTestStruct
+            var structure = new SequentialClass
             {
                 i = 10,
                 s = "hello"
@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.Tests
             {
                 Marshal.StructureToPtr(structure, ptr, false);
 
-                SomeTestStruct result = Assert.IsType<SomeTestStruct>(Marshal.PtrToStructure(ptr, typeof(SomeTestStruct)));
+                SequentialClass result = Assert.IsType<SequentialClass>(Marshal.PtrToStructure(ptr, typeof(SequentialClass)));
                 Assert.Equal(10, result.i);
                 Assert.Equal("hello", result.s);
             }
@@ -125,7 +125,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15101", TestRuntimes.Mono)]
         public void PtrToStructure_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStructure(IntPtr.Zero, (object)new SomeTestStruct()));
@@ -139,18 +138,31 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentNullException>("structure", () => Marshal.PtrToStructure<object>((IntPtr)1, null));
         }
 
-        public static IEnumerable<object[]> PtrToStructure_GenericClass_TestData()
+        [Fact]
+        public void PtrToStructure_AutoLayoutClass_ThrowsArgumentException()
         {
-            yield return new object[] { new GenericClass<string>() };
-            yield return new object[] { new GenericStruct<string>() };
+            AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, (object)new NonGenericClass()));
+            AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, new NonGenericClass()));
         }
 
-        [Theory]
-        [MemberData(nameof(PtrToStructure_GenericClass_TestData))]
-        public void PtrToStructure_GenericObject_ThrowsArgumentException(object o)
+        [Fact]
+        public unsafe void PtrToStructure_GenericLayoutClass_Generic()
         {
-            AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure((IntPtr)1, o));
-            AssertExtensions.Throws<ArgumentException>("structure", () => Marshal.PtrToStructure<object>((IntPtr)1, o));
+            int i = 42;
+            IntPtr ptr = (IntPtr)(&i);
+            SequentialGenericClass<int> obj = new SequentialGenericClass<int>();
+            Marshal.PtrToStructure(ptr, obj);
+            Assert.Equal(i, obj.field);
+        }
+
+        [Fact]
+        public unsafe void PtrToStructure_GenericLayoutClass()
+        {
+            int i = 42;
+            IntPtr ptr = (IntPtr)(&i);
+            SequentialGenericClass<int> obj = new SequentialGenericClass<int>();
+            Marshal.PtrToStructure(ptr, (object)obj);
+            Assert.Equal(i, obj.field);
         }
 
         public static IEnumerable<object[]> PtrToStructure_ObjectNotValueClass_TestData()
@@ -256,6 +268,10 @@ namespace System.Runtime.InteropServices.Tests
         [StructLayout(LayoutKind.Sequential)]
         public class SequentialClass
         {
+            internal SequentialClass()
+            {
+            }
+
             public int i;
             public string s;
         }

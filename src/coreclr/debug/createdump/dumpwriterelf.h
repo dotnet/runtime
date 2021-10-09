@@ -36,11 +36,16 @@ private:
     CrashInfo& m_crashInfo;
     BYTE m_tempBuffer[0x4000];
 
+    // no public copy constructor
+    DumpWriter(const DumpWriter&) = delete;
+    void operator=(const DumpWriter&) = delete;
+
 public:
     DumpWriter(CrashInfo& crashInfo);
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
+    static bool WriteData(int fd, const void* buffer, size_t length);
 
 private:
     bool WriteProcessInfo();
@@ -48,7 +53,7 @@ private:
     size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);
     bool WriteNTFileInfo();
     bool WriteThread(const ThreadInfo& thread, int fatal_signal);
-    bool WriteData(const void* buffer, size_t length);
+    bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 
     size_t GetProcessInfoSize() const { return sizeof(Nhdr) + 8 + sizeof(prpsinfo_t); }
     size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_crashInfo.GetAuxvSize(); }

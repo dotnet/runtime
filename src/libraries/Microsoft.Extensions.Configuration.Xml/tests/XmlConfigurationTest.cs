@@ -561,6 +561,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50870", TestPlatforms.Android)]
         public void ThrowExceptionWhenFindDTD()
         {
             var xml =
@@ -689,6 +690,7 @@ namespace Microsoft.Extensions.Configuration.Xml.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50870", TestPlatforms.Android)]
         public void XmlConfiguration_Throws_On_Missing_Configuration_File()
         {
             var ex = Assert.Throws<FileNotFoundException>(() => new ConfigurationBuilder().AddXmlFile("NotExistingConfig.xml", optional: false).Build());

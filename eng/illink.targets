@@ -47,23 +47,27 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
-    <ILLinkTrimAssemblySuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblySuppressionsXmlsDir>
+    <NetCoreAppCurrentBuildSettings Condition="'$(NetCoreAppCurrentBuildSettings)' == ''">$(NetCoreAppCurrent)-$(TargetOS)-$(Configuration)-$(TargetArchitecture)</NetCoreAppCurrentBuildSettings>
+    <ILLinkTrimAssemblyArtifactsRootDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(NetCoreAppCurrentBuildSettings)'))</ILLinkTrimAssemblyArtifactsRootDir>
+    <ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)suppressions-xmls\</ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir>
+    <ILLinkTrimAssemblyOOBSuppressionsXmlsDir>$(ILLinkTrimAssemblyArtifactsRootDir)oob-suppressions-xmls\</ILLinkTrimAssemblyOOBSuppressionsXmlsDir>
+    <ILLinkTrimAssemblySuppressionsXmlsDir Condition="'$(IsNETCoreAppSrc)' == 'true'">$(ILLinkTrimAssemblyRuntimePackSuppressionsXmlsDir)</ILLinkTrimAssemblySuppressionsXmlsDir>
+    <ILLinkTrimAssemblySuppressionsXmlsDir Condition="'$(IsNETCoreAppSrc)' != 'true'">$(ILLinkTrimAssemblyOOBSuppressionsXmlsDir)</ILLinkTrimAssemblySuppressionsXmlsDir>
   </PropertyGroup>
 
   <!-- Custom binplacing for pre/post-trimming and reports that is useful for analysis
        Must be enabled by setting BinPlaceILLinkTrimAssembly=true
   -->
   <ItemGroup Condition="'$(BinPlaceILLinkTrimAssembly)' == 'true'">
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)trimmed</RuntimePath>
       <ItemName>TrimmedItem</ItemName>
     </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)reports</RuntimePath>
       <ItemName>TrimmingReport</ItemName>
     </BinPlaceTargetFramework>
-    <BinPlaceTargetFramework Include="$(BuildSettings)">
+    <BinPlaceTargetFramework Include="$(NetCoreAppCurrentBuildSettings)">
       <RuntimePath>$(ILLinkTrimAssemblyArtifactsRootDir)pretrimmed</RuntimePath>
       <ItemName>PreTrimmedItem</ItemName>
     </BinPlaceTargetFramework>

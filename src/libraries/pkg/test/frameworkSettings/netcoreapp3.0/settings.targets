@@ -1,7 +1,0 @@
-<Project>
-  <ItemGroup>
-    <!-- Temporary till SDK supports transitive framework references. -->
-    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
-    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
-  </ItemGroup>
-</Project>

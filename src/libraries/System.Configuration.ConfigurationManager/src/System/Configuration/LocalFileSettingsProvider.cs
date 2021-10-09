@@ -462,7 +462,9 @@ namespace System.Configuration
 
             string serializedValue = value.SerializedValue as string;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             if (serializedValue == null && setting.SerializeAs == SettingsSerializeAs.Binary)
+#pragma warning restore CS0618 // Type or member is obsolete
             {
                 // SettingsPropertyValue returns a byte[] in the binary serialization case. We need to
                 // encode this - we use base64 since SettingsPropertyValue understands it and we won't have

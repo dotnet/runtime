@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.Build.NoTargets">
-  <!-- These are wrapper project files for packaging.-->
-  <PropertyGroup>
-    <TargetFrameworks>netstandard1.0</TargetFrameworks>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <!-- Avoid trying to binplace non existent documentation file.-->
-    <EnableBinPlacing>false</EnableBinPlacing>
-  </PropertyGroup>
-</Project>

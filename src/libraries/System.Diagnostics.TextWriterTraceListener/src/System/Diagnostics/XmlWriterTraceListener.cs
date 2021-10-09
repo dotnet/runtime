@@ -71,14 +71,14 @@ namespace System.Diagnostics
             TraceEvent(null, SR.TraceAsTraceSource, TraceEventType.Error, 0, string.Create(length, (message, detailMessage),
             (dst, v) =>
             {
-                ReadOnlySpan<char> prefix = v.message;
+                string prefix = v.message;
                 prefix.CopyTo(dst);
 
                 if (v.detailMessage != null)
                 {
                     dst[prefix.Length] = ' ';
 
-                    ReadOnlySpan<char> detail = v.detailMessage;
+                    string detail = v.detailMessage;
                     detail.CopyTo(dst.Slice(prefix.Length + 1, detail.Length));
                 }
             }));

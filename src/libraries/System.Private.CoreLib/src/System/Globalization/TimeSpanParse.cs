@@ -590,8 +590,11 @@ namespace System.Globalization
                 return false;
             }
 
+            const long MaxMilliSeconds = long.MaxValue / TimeSpan.TicksPerMillisecond;
+            const long MinMilliSeconds = long.MinValue / TimeSpan.TicksPerMillisecond;
+
             long ticks = ((long)days._num * 3600 * 24 + (long)hours._num * 3600 + (long)minutes._num * 60 + seconds._num) * 1000;
-            if (ticks > InternalGlobalizationHelper.MaxMilliSeconds || ticks < InternalGlobalizationHelper.MinMilliSeconds)
+            if (ticks > MaxMilliSeconds || ticks < MinMilliSeconds)
             {
                 result = 0;
                 return false;

@@ -4,8 +4,9 @@
   <PropertyGroup>
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <OutputType>Library</OutputType>
+    <IsWasmProject>true</IsWasmProject>
     <Configuration>Debug</Configuration>
-    <RuntimeConfiguration>Release</RuntimeConfiguration>
+    <RuntimeConfiguration Condition="'$(RuntimeConfiguration)'==''">Release</RuntimeConfiguration>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>219</NoWarn>

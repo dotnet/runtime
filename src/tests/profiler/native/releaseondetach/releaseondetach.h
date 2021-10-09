@@ -7,8 +7,6 @@
 
 #include <atomic>
 
-typedef void (*ProfilerCallback) (void);
-
 // This test class is very small and doesn't do much. A repeated problem we had was that 
 // if an ICorProfilerCallback* interface was added the developer would forget to add
 // code to call release on the new interface. This test verifies that it is reclaimed
@@ -20,12 +18,10 @@ typedef void (*ProfilerCallback) (void);
 class ReleaseOnDetach : public Profiler
 {
 public:
-    static ReleaseOnDetach *Instance;
-
     ReleaseOnDetach();
     virtual ~ReleaseOnDetach();
 
-    virtual GUID GetClsid();
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE InitializeForAttach(IUnknown* pCorProfilerInfoUnk, void* pvClientData, UINT cbClientData);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
 
@@ -41,6 +37,4 @@ private:
     IMetaDataDispenserEx* _dispenser;
     std::atomic<int> _failures;
     bool _detachSucceeded;
-    ProfilerCallback _callback;
-    ManualEvent _callbackSet;
 };

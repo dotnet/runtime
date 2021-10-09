@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Text.Json.Node;
+using System.Text.Json.Nodes;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonSerializerOptions options,
             ref ReadStack state)
         {
-            bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out object? value);
+            bool success = JsonNodeConverter.Instance.TryRead(ref reader, typeof(JsonNode), options, ref state, out JsonNode? value);
             Debug.Assert(success); // Node converters are not resumable.
 
             Debug.Assert(obj is JsonObject);

@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
-using System.IO;
 using System.Drawing.Internal;
+using System.IO;
+using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
-using System.Runtime.Serialization;
 
 namespace System.Drawing.Imaging
 {
@@ -27,14 +26,18 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified stream.
         /// </summary>
-        public Metafile(Stream stream)
+        public unsafe Metafile(Stream stream)
         {
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            Gdip.CheckStatus(Gdip.GdipCreateMetafileFromStream(new GPStream(stream), out IntPtr metafile));
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+
+            IntPtr metafile = IntPtr.Zero;
+            Gdip.CheckStatus(Gdip.GdipCreateMetafileFromStream(streamWrapper.Ptr, &metafile));
+
             SetNativeImage(metafile);
         }
 
@@ -145,16 +148,19 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class from the specified data stream.
         /// </summary>
-        public Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string? description)
+        public unsafe Metafile(Stream stream, IntPtr referenceHdc, EmfType type, string? description)
         {
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+
+            IntPtr metafile = IntPtr.Zero;
             Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
-                new GPStream(stream),
+                streamWrapper.Ptr,
                 referenceHdc,
                 type,
                 IntPtr.Zero,
                 MetafileFrameUnit.GdiCompatible,
                 description,
-                out IntPtr metafile));
+                &metafile));
 
             SetNativeImage(metafile);
         }
@@ -162,16 +168,19 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
+        public unsafe Metafile(Stream stream, IntPtr referenceHdc, RectangleF frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+
+            IntPtr metafile = IntPtr.Zero;
             Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
-                new GPStream(stream),
+                streamWrapper.Ptr,
                 referenceHdc,
                 type,
-                ref frameRect,
+                &frameRect,
                 frameUnit,
                 description,
-                out IntPtr metafile));
+                &metafile));
 
             SetNativeImage(metafile);
         }
@@ -179,31 +188,32 @@ namespace System.Drawing.Imaging
         /// <summary>
         /// Initializes a new instance of the <see cref='Metafile'/> class with the specified filename.
         /// </summary>
-        public Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
+        public unsafe Metafile(Stream stream, IntPtr referenceHdc, Rectangle frameRect, MetafileFrameUnit frameUnit, EmfType type, string? description)
         {
-            IntPtr metafile = IntPtr.Zero;
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
 
+            IntPtr metafile = IntPtr.Zero;
             if (frameRect.IsEmpty)
             {
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileStream(
-                    new GPStream(stream),
+                    streamWrapper.Ptr,
                     referenceHdc,
                     type,
                     IntPtr.Zero,
                     frameUnit,
                     description,
-                    out metafile));
+                    &metafile));
             }
             else
             {
                 Gdip.CheckStatus(Gdip.GdipRecordMetafileStreamI(
-                    new GPStream(stream),
+                    streamWrapper.Ptr,
                     referenceHdc,
                     type,
-                    ref frameRect,
+                    &frameRect,
                     frameUnit,
                     description,
-                    out metafile));
+                    &metafile));
             }
 
             SetNativeImage(metafile);
@@ -292,7 +302,8 @@ namespace System.Drawing.Imaging
 
             try
             {
-                Gdip.CheckStatus(Gdip.GdipGetMetafileHeaderFromStream(new GPStream(stream), memory));
+                using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
+                Gdip.CheckStatus(Gdip.GdipGetMetafileHeaderFromStream(streamWrapper.Ptr, memory));
 
                 int[] type = new int[] { 0 };
 

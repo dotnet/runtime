@@ -492,7 +492,7 @@ namespace System.Xml.Xsl.Runtime
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
 
             Debug.Assert(destinationType == XsltConvert.ObjectType || !destinationType.IsAssignableFrom(value.GetType()),
-                         "No need to call ChangeTypeXsltArgument since value is already assignable to destinationType " + destinationType);
+                         $"No need to call ChangeTypeXsltArgument since value is already assignable to destinationType {destinationType}");
 
             switch (xmlType.TypeCode)
             {
@@ -566,7 +566,7 @@ namespace System.Xml.Xsl.Runtime
                     }
             }
 
-            Debug.Assert(destinationType.IsAssignableFrom(value.GetType()), "ChangeType from type " + value.GetType().Name + " to type " + destinationType.Name + " failed");
+            Debug.Assert(destinationType.IsAssignableFrom(value.GetType()), $"ChangeType from type {value.GetType().Name} to type {destinationType.Name} failed");
             return value;
         }
 
@@ -688,7 +688,7 @@ namespace System.Xml.Xsl.Runtime
                     }
             }
 
-            Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()), "Xml type " + xmlType + " is not represented in ILGen as " + value.GetType().Name);
+            Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()), $"Xml type {xmlType} is not represented in ILGen as {value.GetType().Name}");
 
             return value;
         }
@@ -884,7 +884,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public string GenerateId(XPathNavigator navigator)
         {
-            return string.Concat("ID", _docOrderCmp.GetDocumentIndex(navigator).ToString(CultureInfo.InvariantCulture), navigator.UniqueId);
+            return string.Create(CultureInfo.InvariantCulture, $"ID{_docOrderCmp.GetDocumentIndex(navigator)}{navigator.UniqueId}");
         }
 
 

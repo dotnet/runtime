@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class MethodInfoWrapper : MethodInfo
     {
@@ -23,43 +23,7 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         private MethodAttributes? _attributes;
 
-        public override MethodAttributes Attributes
-        {
-            get
-            {
-                if (!_attributes.HasValue)
-                {
-                    _attributes = default(MethodAttributes);
-
-                    if (_method.IsAbstract)
-                    {
-                        _attributes |= MethodAttributes.Abstract;
-                    }
-
-                    if (_method.IsStatic)
-                    {
-                        _attributes |= MethodAttributes.Static;
-                    }
-
-                    if (_method.IsVirtual)
-                    {
-                        _attributes |= MethodAttributes.Virtual;
-                    }
-
-                    switch (_method.DeclaredAccessibility)
-                    {
-                        case Accessibility.Public:
-                            _attributes |= MethodAttributes.Public;
-                            break;
-                        case Accessibility.Private:
-                            _attributes |= MethodAttributes.Private;
-                            break;
-                    }
-                }
-
-                return _attributes.Value;
-            }
-        }
+        public override MethodAttributes Attributes => _attributes ??= _method.GetMethodAttributes();
 
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException();
 

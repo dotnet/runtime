@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -113,7 +114,7 @@ namespace System.Text.Json
                 Debug.Assert(
                     genericArgs[1].UnderlyingSystemType == JsonTypeInfo.ObjectType ||
                     genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
-                    genericArgs[1].UnderlyingSystemType == typeof(Node.JsonNode));
+                    genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
                 if (jsonPropertyInfo.RuntimeTypeInfo.CreateObject == null)
                 {

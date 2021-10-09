@@ -14,10 +14,6 @@ class Module;
 class COMModule
 {
 public:
-    // Attaches an unmanaged symwriter to a newly created dynamic module.
-    static FCDECL2(LPVOID, nCreateISymWriterForDynamicModule, ReflectModuleBaseObject* reflectionModuleUNSAFE, StringObject* filenameUNSAFE);
-
-
     // IsTransient
     // Determine if a Module is transient
     static
@@ -112,12 +108,6 @@ public:
         mdTypeDef           td,             // given typedef in the emit scope
         mdTypeRef           *ptr);          // return typeref
 
-};
-
-class COMPunkSafeHandle
-{
-  public:
-    static FCDECL0(void*, nGetDReleaseTarget);
 };
 
 #endif

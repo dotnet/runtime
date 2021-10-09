@@ -122,7 +122,7 @@ namespace System.Net.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         public async Task HttpWebResponse_Serialize_ExpectedResult()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

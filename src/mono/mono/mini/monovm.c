@@ -11,22 +11,11 @@
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
 
-typedef struct {
-	int assembly_count;
-	char **basenames; /* Foo.dll */
-	int *basename_lens;
-	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll */
-} MonoCoreTrustedPlatformAssemblies;
-
-typedef struct {
-	int dir_count;
-	char **dirs;
-} MonoCoreLookupPaths;
+#include <mono/metadata/components.h>
 
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
 static MonoCoreLookupPaths *app_paths;
-static MonoCoreLookupPaths *app_ni_paths;
 static MonoCoreLookupPaths *platform_resource_roots;
 
 static void
@@ -68,7 +57,7 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->assembly_count = asm_count;
 	a->assembly_filepaths = parts;
 	a->basenames = g_new0 (char*, asm_count + 1);
-	a->basename_lens = g_new0 (int, asm_count + 1);
+	a->basename_lens = g_new0 (uint32_t, asm_count + 1);
 	for (int i = 0; i < asm_count; ++i) {
 		a->basenames [i] = g_path_get_basename (a->assembly_filepaths [i]);
 		a->basename_lens [i] = strlen (a->basenames [i]);
@@ -126,7 +115,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
+			mono_assembly_request_prepare_open (&req, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
@@ -173,8 +162,6 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 			parse_trusted_platform_assemblies (propertyValues[i]);
 		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
 			app_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (prop_len == 12 && !strncmp (propertyKeys [i], "APP_NI_PATHS", 12)) {
-			app_ni_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
 			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
@@ -192,15 +179,11 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 	return TRUE;
 }
 
-int
-monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
+static void
+finish_initialization (void)
 {
-	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
-
-	if (!parse_properties (propertyCount, propertyKeys, propertyValues))
-		return 0x80004005; /* E_FAIL */
-
 	install_assembly_loader_hooks ();
+
 	if (native_lib_paths != NULL)
 		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, g_strdupv (native_lib_paths->dirs));
 	// Our load hooks don't distinguish between normal, AOT'd, and satellite lookups the way CoreCLR's does.
@@ -213,6 +196,32 @@ monovm_initialize (int propertyCount, const char **propertyKeys, const char **pr
 	 * the requested version and culture.
 	 */
 	mono_loader_set_strict_assembly_name_check (TRUE);
+}
+
+int
+monovm_initialize (int propertyCount, const char **propertyKeys, const char **propertyValues)
+{
+	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
+
+	if (!parse_properties (propertyCount, propertyKeys, propertyValues))
+		return 0x80004005; /* E_FAIL */
+
+	finish_initialization ();
+
+	return 0;
+}
+
+int
+monovm_initialize_preparsed (MonoCoreRuntimeProperties *parsed_properties, int propertyCount, const char **propertyKeys, const char **propertyValues)
+{
+	mono_runtime_register_appctx_properties (propertyCount, propertyKeys, propertyValues);
+
+	trusted_platform_assemblies = parsed_properties->trusted_platform_assemblies;
+	app_paths = parsed_properties->app_paths;
+	native_lib_paths = parsed_properties->native_dll_search_directories;
+	mono_loader_install_pinvoke_override (parsed_properties->pinvoke_override);
+
+	finish_initialization ();
 
 	return 0;
 }

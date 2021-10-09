@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
     {
         internal static bool TryResolvePackagePath(IFileSystem fileSystem, CompilationLibrary library, string basePath, out string packagePath)
         {
-            string path = library.Path;
+            string? path = library.Path;
             if (string.IsNullOrEmpty(path))
             {
                 path = Path.Combine(library.Name, library.Version);

@@ -2,107 +2,79 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.IO.Strategies
 {
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        // in the future we are most probably going to introduce more strategies (io_uring etc)
-        private static FileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, FileShare share, int bufferSize, bool isAsync)
-            => new Net5CompatFileStreamStrategy(handle, access, bufferSize, isAsync);
+        private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
+            new UnixFileStreamStrategy(handle, access);
 
-        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options)
-            => new Net5CompatFileStreamStrategy(path, mode, access, share, bufferSize, options);
+        private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
+            new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize);
 
-        internal static SafeFileHandle OpenHandle(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal static long CheckFileCall(long result, string? path, bool ignoreNotSupported = false)
         {
-            // Translate the arguments into arguments for an open call.
-            Interop.Sys.OpenFlags openFlags = PreOpenConfigurationFromOptions(mode, access, share, options);
+            if (result < 0)
+            {
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                if (!(ignoreNotSupported && errorInfo.Error == Interop.Error.ENOTSUP))
+                {
+                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory: false);
+                }
+            }
 
-            // If the file gets created a new, we'll select the permissions for it.  Most Unix utilities by default use 666 (read and
-            // write for all), so we do the same (even though this doesn't match Windows, where by default it's possible to write out
-            // a file and then execute it). No matter what we choose, it'll be subject to the umask applied by the system, such that the
-            // actual permissions will typically be less than what we select here.
-            const Interop.Sys.Permissions OpenPermissions =
-                Interop.Sys.Permissions.S_IRUSR | Interop.Sys.Permissions.S_IWUSR |
-                Interop.Sys.Permissions.S_IRGRP | Interop.Sys.Permissions.S_IWGRP |
-                Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
-
-            // Open the file and store the safe handle.
-            return SafeFileHandle.Open(path!, openFlags, (int)OpenPermissions);
+            return result;
         }
 
-        internal static bool GetDefaultIsAsync(SafeFileHandle handle, bool defaultIsAsync) => handle.IsAsync ?? defaultIsAsync;
+        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false) =>
+            CheckFileCall(Interop.Sys.LSeek(handle, offset, (Interop.Sys.SeekWhence)(int)origin), handle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
 
-        /// <summary>Translates the FileMode, FileAccess, and FileOptions values into flags to be passed when opening the file.</summary>
-        /// <param name="mode">The FileMode provided to the stream's constructor.</param>
-        /// <param name="access">The FileAccess provided to the stream's constructor</param>
-        /// <param name="share">The FileShare provided to the stream's constructor</param>
-        /// <param name="options">The FileOptions provided to the stream's constructor</param>
-        /// <returns>The flags value to be passed to the open system call.</returns>
-        private static Interop.Sys.OpenFlags PreOpenConfigurationFromOptions(FileMode mode, FileAccess access, FileShare share, FileOptions options)
+        internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.EINVAL), handle.Path);
+
+        internal static unsafe void SetFileLength(SafeFileHandle handle, long length) =>
+            CheckFileCall(Interop.Sys.FTruncate(handle, length), handle.Path);
+
+        /// <summary>Flushes the file's OS buffer.</summary>
+        internal static void FlushToDisk(SafeFileHandle handle)
         {
-            // Translate FileMode.  Most of the values map cleanly to one or more options for open.
-            Interop.Sys.OpenFlags flags = default;
-            switch (mode)
+            if (Interop.Sys.FSync(handle) < 0)
             {
-                default:
-                case FileMode.Open: // Open maps to the default behavior for open(...).  No flags needed.
-                case FileMode.Truncate: // We truncate the file after getting the lock
-                    break;
+                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                switch (errorInfo.Error)
+                {
+                    case Interop.Error.EROFS:
+                    case Interop.Error.EINVAL:
+                    case Interop.Error.ENOTSUP:
+                        // Ignore failures for special files that don't support synchronization.
+                        // In such cases there's nothing to flush.
+                        break;
+                    default:
+                        throw Interop.GetExceptionForIoErrno(errorInfo, handle.Path, isDirectory: false);
+                }
+            }
+        }
 
-                case FileMode.Append: // Append is the same as OpenOrCreate, except that we'll also separately jump to the end later
-                case FileMode.OpenOrCreate:
-                case FileMode.Create: // We truncate the file after getting the lock
-                    flags |= Interop.Sys.OpenFlags.O_CREAT;
-                    break;
-
-                case FileMode.CreateNew:
-                    flags |= (Interop.Sys.OpenFlags.O_CREAT | Interop.Sys.OpenFlags.O_EXCL);
-                    break;
+        internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
+        {
+            if (OperatingSystem.IsOSXLike())
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }
 
-            // Translate FileAccess.  All possible values map cleanly to corresponding values for open.
-            switch (access)
+            CheckFileCall(Interop.Sys.LockFileRegion(handle, position, length, canWrite ? Interop.Sys.LockType.F_WRLCK : Interop.Sys.LockType.F_RDLCK), handle.Path);
+        }
+
+        internal static void Unlock(SafeFileHandle handle, long position, long length)
+        {
+            if (OperatingSystem.IsOSXLike())
             {
-                case FileAccess.Read:
-                    flags |= Interop.Sys.OpenFlags.O_RDONLY;
-                    break;
-
-                case FileAccess.ReadWrite:
-                    flags |= Interop.Sys.OpenFlags.O_RDWR;
-                    break;
-
-                case FileAccess.Write:
-                    flags |= Interop.Sys.OpenFlags.O_WRONLY;
-                    break;
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }
 
-            // Handle Inheritable, other FileShare flags are handled by Init
-            if ((share & FileShare.Inheritable) == 0)
-            {
-                flags |= Interop.Sys.OpenFlags.O_CLOEXEC;
-            }
-
-            // Translate some FileOptions; some just aren't supported, and others will be handled after calling open.
-            // - Asynchronous: Handled in ctor, setting _useAsync and SafeFileHandle.IsAsync to true
-            // - DeleteOnClose: Doesn't have a Unix equivalent, but we approximate it in Dispose
-            // - Encrypted: No equivalent on Unix and is ignored
-            // - RandomAccess: Implemented after open if posix_fadvise is available
-            // - SequentialScan: Implemented after open if posix_fadvise is available
-            // - WriteThrough: Handled here
-            if ((options & FileOptions.WriteThrough) != 0)
-            {
-                flags |= Interop.Sys.OpenFlags.O_SYNC;
-            }
-
-            return flags;
+            CheckFileCall(Interop.Sys.LockFileRegion(handle, position, length, Interop.Sys.LockType.F_UNLCK), handle.Path);
         }
     }
 }

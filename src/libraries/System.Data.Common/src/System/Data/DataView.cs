@@ -126,6 +126,7 @@ namespace System.Data
         /// Initializes a new instance of the <see cref='System.Data.DataView'/> class with the
         ///    specified <see cref='System.Data.DataTable'/>.
         /// </summary>
+        [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
         public DataView(DataTable table, string? RowFilter, string? Sort, DataViewRowState RowState)
         {
             GC.SuppressFinalize(this);
@@ -314,6 +315,7 @@ namespace System.Data
                 DataExpression? expression = (_rowFilter as DataExpression);
                 return (expression == null ? "" : expression.Expression); // CONSIDER: return optimized expression here
             }
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set
             {
                 if (value == null)
@@ -577,6 +579,8 @@ namespace System.Data
             _fInitInProgress = true;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Warning related to RowFilter has already been shown when RowFilter was delay set.")]
         public void EndInit()
         {
             if (_delayedTable != null && _delayedTable.fInitInProgress)
@@ -950,8 +954,6 @@ namespace System.Data
         #endregion
 
         #region IBindingList implementation
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
         bool IBindingList.AllowNew => AllowNew;
         object IBindingList.AddNew() => AddNew();
         bool IBindingList.AllowEdit => AllowEdit;
@@ -961,9 +963,10 @@ namespace System.Data
         bool IBindingList.SupportsSearching => true;
         bool IBindingList.SupportsSorting => true;
         bool IBindingList.IsSorted => Sort.Length != 0;
-        PropertyDescriptor IBindingList.SortProperty => GetSortProperty();
 
-        internal PropertyDescriptor GetSortProperty()
+        PropertyDescriptor? IBindingList.SortProperty => GetSortProperty();
+
+        internal PropertyDescriptor? GetSortProperty()
         {
             if (_table != null && _index != null && _index._indexFields.Length == 1)
             {
@@ -975,7 +978,6 @@ namespace System.Data
         ListSortDirection IBindingList.SortDirection => (_index!._indexFields.Length == 1 && _index._indexFields[0].IsDescending) ?
             ListSortDirection.Descending :
             ListSortDirection.Ascending;
-#nullable enable
         #endregion
 
         #region ListChanged & Initialized events
@@ -1080,7 +1082,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.ArgumentContainsNull(nameof(sorts));
                 }
-                PropertyDescriptor property = sort.PropertyDescriptor;
+                PropertyDescriptor? property = sort.PropertyDescriptor;
 
                 if (property == null)
                 {
@@ -1123,20 +1125,20 @@ namespace System.Data
             return resultString.ToString();
         }
 
-// TODO: Enable after System.ComponentModel.TypeConverter is annotated
-#nullable disable
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Safe because filter is set to empty string.")]
         void IBindingListView.RemoveFilter()
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.RemoveFilter|API> {0}", ObjectID);
             RowFilter = string.Empty;
         }
 
-        string IBindingListView.Filter
+        string? IBindingListView.Filter
         {
             get { return RowFilter; }
+            [RequiresUnreferencedCode(Select.RequiresUnreferencedCodeMessage)]
             set { RowFilter = value; }
         }
-#nullable enable
 
         ListSortDescriptionCollection IBindingListView.SortDescriptions => GetSortDescriptions();
 
@@ -1516,7 +1518,7 @@ namespace System.Data
                     {
                         // sdub: check that we will not do unnesasary operation here if dataViewSetting.Sort == this.Sort ...
                         _applyDefaultSort = dataViewSetting.ApplyDefaultSort;
-                        DataExpression newFilter = new DataExpression(_table, dataViewSetting.RowFilter);
+                        DataExpression newFilter = CreateDataExpressionFromDataViewSettings(dataViewSetting);
                         SetIndex(dataViewSetting.Sort, dataViewSetting.RowStateFilter, newFilter);
                     }
                     catch (Exception e) when (Common.ADP.IsCatchableExceptionType(e))
@@ -1530,6 +1532,14 @@ namespace System.Data
                     SetIndex("", DataViewRowState.CurrentRows, null);
                 }
             }
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "RowFilter is marked as unsafe because it can be used in DataExpression so that we only display warning when user is assigning an expression" +
+                " which means that in here we're either assigning empty filter which is safe or user has already seen a warning.")]
+        private DataExpression CreateDataExpressionFromDataViewSettings(DataViewSetting dataViewSetting)
+        {
+            return new DataExpression(_table, dataViewSetting.RowFilter);
         }
 
         internal virtual void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
@@ -1641,40 +1651,40 @@ namespace System.Data
             }
         }
 
-        internal void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        internal void ChildRelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
             /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
-        internal void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
+        internal void ParentRelationCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataRelationPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataRelationPropertyDescriptor((System.Data.DataRelation)e.Element!)) :
             /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
-        protected virtual void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
+        protected virtual void ColumnCollectionChanged(object? sender, CollectionChangeEventArgs e)
         {
             DataColumnPropertyDescriptor? NullProp = null;
             OnListChanged(
-                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element)) :
+                e.Action == CollectionChangeAction.Add ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorAdded, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element!)) :
                 e.Action == CollectionChangeAction.Refresh ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, NullProp) :
-                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element)) :
+                e.Action == CollectionChangeAction.Remove ? new ListChangedEventArgs(ListChangedType.PropertyDescriptorDeleted, new DataColumnPropertyDescriptor((System.Data.DataColumn)e.Element!)) :
                 /*default*/ null! // TODO: This will cause an NRE
             );
         }
 
-        internal void ColumnCollectionChangedInternal(object sender, CollectionChangeEventArgs e) =>
+        internal void ColumnCollectionChangedInternal(object? sender, CollectionChangeEventArgs e) =>
             ColumnCollectionChanged(sender, e);
 
         public DataTable ToTable() =>

@@ -39,7 +39,7 @@ namespace System.Runtime.Caching
                     MemoryCacheEntry entry = cache.GetEntry(k);
                     DateTime utcCreated = s_DATETIME_MINVALUE_UTC;
                     StartMonitoring(cache, entry, ref hasChanged, ref utcCreated);
-                    uniqueId = k + utcCreated.Ticks.ToString("X", CultureInfo.InvariantCulture);
+                    uniqueId = $"{k}{utcCreated.Ticks:X}";
                     _lastModified = utcCreated;
                 }
                 else
@@ -56,7 +56,7 @@ namespace System.Runtime.Caching
                         DateTime utcCreated = s_DATETIME_MINVALUE_UTC;
                         StartMonitoring(cache, entry, ref hasChanged, ref utcCreated);
                         sb.Append(key);
-                        sb.Append(utcCreated.Ticks.ToString("X", CultureInfo.InvariantCulture));
+                        sb.Append($"{utcCreated.Ticks:X}");
                         if (utcCreated > _lastModified)
                         {
                             _lastModified = utcCreated;

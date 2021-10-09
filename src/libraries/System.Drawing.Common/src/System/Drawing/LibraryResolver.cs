@@ -27,7 +27,8 @@ namespace System.Drawing
 
         internal static void EnsureRegistered()
         {
-            // dummy call to trigger the static constructor
+            if (!LocalAppContextSwitches.EnableUnixSupport)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Unix);
         }
     }
 }

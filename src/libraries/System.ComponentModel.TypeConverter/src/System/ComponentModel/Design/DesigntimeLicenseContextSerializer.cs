@@ -43,8 +43,8 @@ namespace System.ComponentModel.Design
                     writer.Write(context._savedLicenseKeys.Count);
                     foreach (DictionaryEntry keyAndValue in context._savedLicenseKeys)
                     {
-                        writer.Write(keyAndValue.Key.ToString());
-                        writer.Write(keyAndValue.Value.ToString());
+                        writer.Write(keyAndValue.Key.ToString()!);
+                        writer.Write(keyAndValue.Value!.ToString()!);
                     }
                 }
             }
@@ -58,7 +58,7 @@ namespace System.ComponentModel.Design
 #pragma warning restore SYSLIB0011
         }
 
-        private class StreamWrapper : Stream
+        private sealed class StreamWrapper : Stream
         {
             private Stream _stream;
             private bool _readFirstByte;
@@ -166,7 +166,7 @@ namespace System.ComponentModel.Design
                     int numEntries = reader.ReadInt32();
                     if (streamCryptoKey == cryptoKey)
                     {
-                        context._savedLicenseKeys.Clear();
+                        context._savedLicenseKeys!.Clear();
                         for (int i = 0; i < numEntries; i++)
                         {
                             string key = reader.ReadString();

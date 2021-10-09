@@ -11,10 +11,10 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the JavaScript Core SharedArrayBuffer class.
         /// </summary>
         /// <param name="length">The size, in bytes, of the array buffer to create.</param>
-        public SharedArrayBuffer(int length) : base(Interop.Runtime.New<SharedArrayBuffer>(length))
+        public SharedArrayBuffer(int length) : base(nameof(SharedArrayBuffer), length)
         { }
 
-        internal SharedArrayBuffer(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal SharedArrayBuffer(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>

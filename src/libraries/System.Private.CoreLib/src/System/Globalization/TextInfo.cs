@@ -144,7 +144,12 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
-            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant)
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -154,7 +159,12 @@ namespace System.Globalization
 
         internal static char ToLowerInvariant(char c)
         {
-            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -171,7 +181,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return ToLowerAsciiInvariant(str);
+                return InvariantModeCasing.ToLower(str);
             }
 
             return ChangeCaseCommon<ToLowerConversion>(str);
@@ -548,7 +558,12 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
-            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant)
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -558,7 +573,12 @@ namespace System.Globalization
 
         internal static char ToUpperInvariant(char c)
         {
-            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -575,7 +595,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return ToUpperAsciiInvariant(str);
+                return InvariantModeCasing.ToUpper(str);
             }
 
             return ChangeCaseCommon<ToUpperConversion>(str);
@@ -789,7 +809,9 @@ namespace System.Globalization
                 ReadOnlySpan<char> src = input.AsSpan(inputIndex, 2);
                 if (GlobalizationMode.Invariant)
                 {
-                    result.Append(src); // surrogate pair in invariant mode, so changing case is a nop
+                    SurrogateCasing.ToUpper(src[0], src[1], out char h, out char l);
+                    result.Append(h);
+                    result.Append(l);
                 }
                 else
                 {
@@ -825,7 +847,7 @@ namespace System.Globalization
                         result.Append((char)0x01F2);
                         break;
                     default:
-                        result.Append(ToUpper(input[inputIndex]));
+                        result.Append(GlobalizationMode.Invariant ? InvariantModeCasing.ToUpper(input[inputIndex]) : ToUpper(input[inputIndex]));
                         break;
                 }
             }

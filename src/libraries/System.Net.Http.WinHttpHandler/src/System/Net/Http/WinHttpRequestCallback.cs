@@ -40,7 +40,7 @@ namespace System.Net.Http
                 return;
             }
 
-            WinHttpRequestState state = WinHttpRequestState.FromIntPtr(context);
+            WinHttpRequestState? state = WinHttpRequestState.FromIntPtr(context);
             Debug.Assert(state != null, "WinHttpCallback must have a non-null state object");
 
             RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
@@ -84,8 +84,7 @@ namespace System.Net.Http
                         return;
 
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_REDIRECT:
-                        string redirectUriString = Marshal.PtrToStringUni(statusInformation);
-                        var redirectUri = new Uri(redirectUriString);
+                        var redirectUri = new Uri(Marshal.PtrToStringUni(statusInformation)!);
                         OnRequestRedirect(state, redirectUri);
                         return;
 
@@ -192,6 +191,8 @@ namespace System.Net.Http
         private static void OnRequestRedirect(WinHttpRequestState state, Uri redirectUri)
         {
             Debug.Assert(state != null, "OnRequestRedirect: state is null");
+            Debug.Assert(state.Handler != null, "OnRequestRedirect: state.Handler is null");
+            Debug.Assert(state.RequestMessage != null, "OnRequestRedirect: state.RequestMessage is null");
             Debug.Assert(redirectUri != null, "OnRequestRedirect: redirectUri is null");
 
             // If we're manually handling cookies, we need to reset them based on the new URI.
@@ -234,6 +235,8 @@ namespace System.Net.Http
         {
             Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
             Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
+            Debug.Assert(state.RequestMessage != null, "OnRequestSendingRequest: state.RequestMessage is null");
+            Debug.Assert(state.RequestMessage.RequestUri != null, "OnRequestSendingRequest: state.RequestMessage.RequestUri is null");
 
             if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https)
             {
@@ -280,7 +283,7 @@ namespace System.Net.Http
                 var serverCertificate = new X509Certificate2(certHandle);
                 Interop.Crypt32.CertFreeCertificateContext(certHandle);
 
-                X509Chain chain = null;
+                X509Chain? chain = null;
                 SslPolicyErrors sslPolicyErrors;
                 bool result = false;
 
@@ -391,6 +394,7 @@ namespace System.Net.Http
                     break;
 
                 case Interop.WinHttp.API_WRITE_DATA:
+                    Debug.Assert(state.TcsInternalWriteDataToRequestStream != null);
                     if (asyncResult.dwError == Interop.WinHttp.ERROR_WINHTTP_OPERATION_CANCELLED)
                     {
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(state, "API_WRITE_DATA - ERROR_WINHTTP_OPERATION_CANCELLED");
@@ -414,7 +418,8 @@ namespace System.Net.Http
         private static void ResetAuthRequestHeaders(WinHttpRequestState state)
         {
             const string AuthHeaderNameWithColon = "Authorization:";
-            SafeWinHttpHandle requestHandle = state.RequestHandle;
+            SafeWinHttpHandle? requestHandle = state.RequestHandle;
+            Debug.Assert(requestHandle != null);
 
             // Clear auth headers.
             if (!Interop.WinHttp.WinHttpAddRequestHeaders(

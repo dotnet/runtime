@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
+  <Import Project="..\Directory.Build.targets"/>
+
+  <Target Name="PrintRuntimePackLocation" AfterTargets="UpdateTargetingAndRuntimePack">
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+</Project>

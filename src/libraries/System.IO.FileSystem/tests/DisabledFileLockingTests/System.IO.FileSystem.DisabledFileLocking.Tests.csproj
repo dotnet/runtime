@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- file locking can't be disabled on Windows -->
+    <TargetFrameworks>$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+
+    <WasmXHarnessMonoArgs>--working-dir=/test-dir</WasmXHarnessMonoArgs>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="DisabledFileLockingSwitchTests.cs" />
+    <Compile Include="..\FSAssert.cs" />
+    <Compile Include="..\TestData.cs" />
+    <Compile Include="..\FileSystemTest.cs" />
+    <Compile Include="..\FileSystemTest.Unix.cs" />
+    <Compile Include="..\UnseekableFileStream.cs" />
+    <Compile Include="..\FileStream\**\*.cs" />
+    <Compile Include="..\PortedCommon\DllImports.cs" />
+    <Compile Include="..\PortedCommon\IOInputs.cs" />
+    <Compile Include="..\PortedCommon\IOServices.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\PathFeatures.cs" Link="Common\System\IO\PathFeatures.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Remove="..\**\*.Windows.cs" />
+    <Compile Remove="..\**\*.Browser.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Interop\Unix\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Interop\Unix\System.Native\Interop.Stat.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
+  </ItemGroup>
+</Project>

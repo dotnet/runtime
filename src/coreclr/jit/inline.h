@@ -248,6 +248,12 @@ public:
     // Policy estimates
     virtual int CodeSizeEstimate() = 0;
 
+    // Does Policy require a more precise IL scan?
+    virtual bool RequiresPreciseScan()
+    {
+        return false;
+    }
+
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Record observation for prior failure
@@ -263,6 +269,35 @@ public:
     virtual void DumpSchema(FILE* file) const
     {
     }
+
+#define XATTR_I4(x)                                                                                                    \
+    if ((INT32)x != 0)                                                                                                 \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"%d\"", (INT32)x);                                                                     \
+    }
+#define XATTR_R8(x)                                                                                                    \
+    if (fabs(x) > 0.01)                                                                                                \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"%.2lf\"", x);                                                                         \
+    }
+#define XATTR_B(x)                                                                                                     \
+    if (x)                                                                                                             \
+    {                                                                                                                  \
+        fprintf(file, " " #x "=\"True\"");                                                                             \
+    }
+
+    // Detailed data value dump as XML
+    void DumpXml(FILE* file, unsigned indent = 0)
+    {
+        fprintf(file, "%*s<%s", indent, "", GetName());
+        OnDumpXml(file);
+        fprintf(file, " />\n");
+    }
+
+    virtual void OnDumpXml(FILE* file, unsigned indent = 0) const
+    {
+    }
+
     // True if this is the inline targeted by data collection
     bool IsDataCollectionTarget()
     {
@@ -529,7 +564,9 @@ struct GuardedDevirtualizationCandidateInfo : ClassProfileCandidateInfo
 {
     CORINFO_CLASS_HANDLE  guardedClassHandle;
     CORINFO_METHOD_HANDLE guardedMethodHandle;
+    CORINFO_METHOD_HANDLE guardedMethodUnboxedEntryHandle;
     unsigned              likelihood;
+    bool                  requiresInstMethodTableArg;
 };
 
 // InlineCandidateInfo provides basic information about a particular
@@ -573,6 +610,7 @@ struct InlArgInfo
     unsigned argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
     unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
                                           // field in them?
+    unsigned argIsExact : 1;              // Is this arg of an exact class?
 };
 
 // InlLclVarInfo describes inline candidate argument and local variable properties.
@@ -910,7 +948,7 @@ public:
     }
 
     // Set up or access random state (for use by RandomPolicy)
-    CLRRandom* GetRandom();
+    CLRRandom* GetRandom(int optionalSeed = 0);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 

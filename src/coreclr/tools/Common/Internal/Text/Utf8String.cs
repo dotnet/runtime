@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -42,38 +43,31 @@ namespace Internal.Text
             return (obj is Utf8String) && Equals((Utf8String)obj);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int _rotl(int value, int shift)
-        {
-            // This is expected to be optimized into a single rotl instruction
-            return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
-        }
-
         public unsafe override int GetHashCode()
         {
             int length = _value.Length;
-            int hash = length;
+            uint hash = (uint)length;
             fixed (byte* ap = _value)
             {
                 byte* a = ap;
 
                 while (length >= 4)
                 {
-                    hash = (hash + _rotl(hash, 5)) ^ *(int*)a;
+                    hash = (hash + BitOperations.RotateLeft(hash, 5)) ^ *(uint*)a;
                     a += 4; length -= 4;
                 }
                 if (length >= 2)
                 {
-                    hash = (hash + _rotl(hash, 5)) ^ *(short*)a;
+                    hash = (hash + BitOperations.RotateLeft(hash, 5)) ^ *(ushort*)a;
                     a += 2; length -= 2;
                 }
                 if (length > 0)
                 {
-                    hash = (hash + _rotl(hash, 5)) ^ *a;
+                    hash = (hash + BitOperations.RotateLeft(hash, 5)) ^ *a;
                 }
-                hash += _rotl(hash, 7);
-                hash += _rotl(hash, 15);
-                return hash;
+                hash += BitOperations.RotateLeft(hash, 7);
+                hash += BitOperations.RotateLeft(hash, 15);
+                return (int)hash;
             }
         }
 

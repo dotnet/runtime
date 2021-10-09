@@ -109,14 +109,14 @@ namespace XmlCoreTest.Common
             if (pubid == null)
             {
                 if (sysid != null)
-                    dt.Append(" SYSTEM " + sysid);
+                    dt.Append($" SYSTEM {sysid}");
             }
             else
             {
-                dt.Append(" PUBLIC " + pubid);
+                dt.Append($" PUBLIC {pubid}");
                 if (sysid != null)
                 {
-                    dt.Append(" " + sysid);
+                    dt.Append($" {sysid}");
                 }
             }
 
@@ -298,7 +298,7 @@ namespace XmlCoreTest.Common
         /// </summary>
         public void PutCData()
         {
-            _q.Append("<![CDATA[" + CDATA + _cCount++ + "]]>");
+            _q.Append($"<![CDATA[{CDATA}{_cCount++}]]>");
         }
 
         /// <summary>
@@ -306,7 +306,7 @@ namespace XmlCoreTest.Common
         /// </summary>
         public void PutPI()
         {
-            _q.Append("<?" + PI + _pCount++ + "?>");
+            _q.Append($"<?{PI}{_pCount++}?>");
         }
 
         /// <summary>
@@ -314,7 +314,7 @@ namespace XmlCoreTest.Common
         /// </summary>
         public void PutComment()
         {
-            _q.Append("<!--" + COMMENT + _mCount++ + " -->");
+            _q.Append($"<!--{COMMENT}{_mCount++} -->");
         }
 
         /// <summary>

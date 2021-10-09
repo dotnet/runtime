@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.DirectoryServices.Protocols.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49105", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class DirectoryServicesProtocolsTests
     {
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
@@ -631,6 +630,7 @@ namespace System.DirectoryServices.Protocols.Tests
             // Set server protocol before bind; OpenLDAP servers default
             // to LDAP v2, which we do not support, and will return LDAP_PROTOCOL_ERROR
             connection.SessionOptions.ProtocolVersion = 3;
+            connection.SessionOptions.SecureSocketLayer = LdapConfiguration.Configuration.UseTls;
             connection.Bind();
 
             connection.Timeout = new TimeSpan(0, 3, 0);

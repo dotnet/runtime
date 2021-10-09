@@ -63,7 +63,6 @@
                 "FEATURE_MULTICASTSTUB_AS_IL",
                 "FEATURE_MULTICOREJIT",
                 "FEATURE_PERFTRACING=1",
-                "FEATURE_PREJIT",
                 "FEATURE_PROFAPI_ATTACH_DETACH",
                 "FEATURE_READYTORUN",
                 "FEATURE_REJIT",

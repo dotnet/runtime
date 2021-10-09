@@ -29,6 +29,7 @@ wasm_runtime_loc=
 using_wasm=false
 use_latest_dotnet=false
 logical_machine=
+javascript_engine="v8"
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -77,6 +78,10 @@ while (($# > 0)); do
       build_number=$2
       shift 2
       ;;
+    --javascriptengine)
+      javascript_engine=$2
+      shift 2
+      ;;
     --kind)
       kind=$2
       configurations="CompilationMode=$compilation_mode RunKind=$kind"
@@ -119,6 +124,10 @@ while (($# > 0)); do
       wasm_runtime_loc=$2
       shift 2
       ;;
+    --wasmaot)
+      wasmaot=true
+      shift 1
+      ;;
     --compare)
       compare=true
       shift 1
@@ -153,6 +162,7 @@ while (($# > 0)); do
       echo "  --internal                     If the benchmarks are running as an official job."
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
       echo "  --wasm                         Path to the unpacked wasm runtime pack."
+      echo "  --wasmaot                      Indicate wasm aot"  
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --alpine                       Set for runs on Alpine"
       echo ""
@@ -179,6 +189,7 @@ fi
 
 payload_directory=$source_directory/Payload
 performance_directory=$payload_directory/performance
+benchmark_directory=$payload_directory/BenchmarkDotNet
 workitem_directory=$source_directory/workitem
 extra_benchmark_dotnet_arguments="--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --stopOnFirstError true"
 perflab_arguments=
@@ -223,7 +234,14 @@ if [[ "$mono_dotnet" != "" ]] && [[ "$monointerpreter" == "false" ]]; then
 fi
 
 if [[ "$wasm_runtime_loc" != "" ]]; then
-    configurations="CompilationMode=wasm RunKind=$kind"
+    if [[ "$wasmaot" == "true" ]]; then
+        configurations="CompilationMode=wasm AOT=true RunKind=$kind"
+    else
+        configurations="CompilationMode=wasm RunKind=$kind"
+    fi
+    if [[ "$javascript_engine" == "javascriptcore" ]]; then
+      configurations="$configurations JSEngine=javascriptcore"
+    fi
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoInterpreter NoWASM NoMono"
 fi
 
@@ -237,7 +255,7 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
 fi
 
-common_setup_arguments="--channel master --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
+common_setup_arguments="--channel main --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
 if [[ "$run_from_perf_repo" = true ]]; then
@@ -246,8 +264,10 @@ if [[ "$run_from_perf_repo" = true ]]; then
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance $performance_directory
-    
+    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    # uncomment to use BenchmarkDotNet sources instead of nuget packages
+    # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
+
     docs_directory=$performance_directory/docs
     mv $docs_directory $workitem_directory
 fi
@@ -256,7 +276,21 @@ if [[ "$wasm_runtime_loc" != "" ]]; then
     using_wasm=true
     wasm_dotnet_path=$payload_directory/dotnet-wasm
     mv $wasm_runtime_loc $wasm_dotnet_path
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmMainJS \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm/runtime-test.js --wasmEngine /home/helixbot/.jsvu/v8 --customRuntimePack \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+    # install emsdk, $source_directory/src/mono/wasm/ has the nuget.config with require feed. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
+    pushd $source_directory/src/mono/wasm/
+    make provision-wasm
+    EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
+    popd
+    # wasm aot and interpreter need some source code from dotnet\runtime repo
+    rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
+    # copy wasm build drop to the location that aot and interpreter build expects
+    rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
+    rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
+    if [[ "$wasmaot" == "true" ]]; then
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600" 
+    else
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+    fi
 fi
 
 if [[ "$mono_dotnet" != "" ]] && [[ "$monoaot" == "false" ]]; then

@@ -149,7 +149,7 @@ namespace System.Collections
 
         private IEqualityComparer? _keycomparer;
 
-        [Obsolete("Please use EqualityComparer property.")]
+        [Obsolete("Hashtable.hcp has been deprecated. Use the EqualityComparer property instead.")]
         protected IHashCodeProvider? hcp
         {
             get
@@ -184,7 +184,7 @@ namespace System.Collections
             }
         }
 
-        [Obsolete("Please use KeyComparer properties.")]
+        [Obsolete("Hashtable.comparer has been deprecated. Use the KeyComparer properties instead.")]
         protected IComparer? comparer
         {
             get
@@ -284,7 +284,7 @@ namespace System.Collections
             _keycomparer = equalityComparer;
         }
 
-        [Obsolete("Please use Hashtable(IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Hashtable(IEqualityComparer) instead.")]
         public Hashtable(IHashCodeProvider? hcp, IComparer? comparer)
             : this(0, 1.0f, hcp, comparer)
         {
@@ -294,7 +294,7 @@ namespace System.Collections
         {
         }
 
-        [Obsolete("Please use Hashtable(int, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Hashtable(int, IEqualityComparer) instead.")]
         public Hashtable(int capacity, IHashCodeProvider? hcp, IComparer? comparer)
             : this(capacity, 1.0f, hcp, comparer)
         {
@@ -320,7 +320,7 @@ namespace System.Collections
         {
         }
 
-        [Obsolete("Please use Hashtable(IDictionary, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Hashtable(IDictionary, IEqualityComparer) instead.")]
         public Hashtable(IDictionary d, IHashCodeProvider? hcp, IComparer? comparer)
             : this(d, 1.0f, hcp, comparer)
         {
@@ -331,7 +331,7 @@ namespace System.Collections
         {
         }
 
-        [Obsolete("Please use Hashtable(int, float, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Hashtable(int, float, IEqualityComparer) instead.")]
         public Hashtable(int capacity, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
             : this(capacity, loadFactor)
         {
@@ -341,7 +341,7 @@ namespace System.Collections
             }
         }
 
-        [Obsolete("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
+        [Obsolete("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
         public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
             : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
         {

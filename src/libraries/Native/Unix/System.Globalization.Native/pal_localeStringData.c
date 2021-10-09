@@ -207,10 +207,13 @@ Returns 1 for success, 0 otherwise
 int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                 LocaleStringData localeStringData,
                                                 UChar* value,
-                                                int32_t valueLength)
+                                                int32_t valueLength,
+                                                const UChar* uiLocaleName)
 {
     UErrorCode status = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY];
+    char locale[ULOC_FULLNAME_CAPACITY] = "";
+    char uiLocale[ULOC_FULLNAME_CAPACITY] = "";
+
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
 
     if (U_FAILURE(status))
@@ -221,28 +224,59 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
     switch (localeStringData)
     {
         case LocaleString_LocalizedDisplayName:
-            uloc_getDisplayName(locale, DetectDefaultLocaleName(), value, valueLength, &status);
+            assert(uiLocaleName != NULL);
+            GetLocale(uiLocaleName, uiLocale, ULOC_FULLNAME_CAPACITY, false, &status);
+            uloc_getDisplayName(locale, uiLocale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // The default locale data was used. i.e. couldn't find suitable resources for the requested UI language. Fallback to English then.
+                uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
             break;
         case LocaleString_EnglishDisplayName:
             uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case LocaleString_NativeDisplayName:
             uloc_getDisplayName(locale, locale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // The default locale data was used. i.e. couldn't find suitable resources for the requested input locale. Fallback to English instead.
+                uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
+
             break;
         case LocaleString_LocalizedLanguageName:
-            uloc_getDisplayLanguage(locale, DetectDefaultLocaleName(), value, valueLength, &status);
+            assert(uiLocaleName != NULL);
+            GetLocale(uiLocaleName, uiLocale, ULOC_FULLNAME_CAPACITY, false, &status);
+            uloc_getDisplayLanguage(locale, uiLocale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // No data was found from the locale resources and a case canonicalized language code is placed into language as fallback. Fallback to English instead.
+                uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
+
             break;
         case LocaleString_EnglishLanguageName:
             uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case LocaleString_NativeLanguageName:
             uloc_getDisplayLanguage(locale, locale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // No data was found from the locale resources and a case canonicalized language code is placed into language as fallback. Fallback to English instead.
+                uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
             break;
         case LocaleString_EnglishCountryName:
             uloc_getDisplayCountry(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case LocaleString_NativeCountryName:
             uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // No data was found from the locale resources and a case canonicalized language code is placed into language as fallback. Fallback to English instead.
+                uloc_getDisplayCountry(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
             break;
         case LocaleString_ThousandSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
@@ -62,6 +62,8 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\IntegerEncoder.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
@@ -98,7 +100,7 @@
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.cs"
              Link="System\IO\PathInternal.cs" />
     <Compile Include="System\IO\ConnectedStreams.cs" Link="System\IO\ConnectedStreams.cs" />
     <Compile Include="Tests\System\IO\ConnectedStreamsTests.cs" />
@@ -107,7 +109,7 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Windows.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Windows.cs"
              Link="System\IO\PathInternal.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
@@ -124,7 +126,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
     <Compile Include="Tests\System\IO\PathInternal.Unix.Tests.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\IO\PathInternal.Unix.cs"
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs"
              Link="System\IO\PathInternal.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.PathConf.cs"
              Link="Common\Interop\Unix\Interop.PathConf.cs" />

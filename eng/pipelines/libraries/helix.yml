@@ -15,7 +15,7 @@ parameters:
   scenarios: ''
 
 steps:
-  - script: $(_msbuildCommand)
+  - script: $(_msbuildCommand) -restore
             $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
             /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
             /p:TargetArchitecture=${{ parameters.archType }}

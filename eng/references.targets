@@ -7,13 +7,6 @@
     <_FindDependencies>false</_FindDependencies>
   </PropertyGroup>
 
-  <!-- netstandard is a default reference whenever building an implementation assembly for .NETCoreApp. -->
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                        '$(IsSourceProject)' == 'true'">
-    <Reference Include="netstandard"
-               Private="false" />
-  </ItemGroup>
-
    <!-- If a CoreLib ProjectReference is present, make all P2P assets non transitive. -->
   <ItemGroup Condition="'@(ProjectReference)' != '' and
                          @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
@@ -56,4 +49,14 @@
     </ItemGroup>
   </Target>
 
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsReferenceAssembly>$(IsReferenceAssembly)</IsReferenceAssembly>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
+
+  <Target Name="ValidateReferenceAssemblyProjectReferences" Condition="'$(IsReferenceAssembly)' == 'true'" AfterTargets="ResolveReferences">
+    <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' AND '%(ReferencePath.IsReferenceAssembly)' != 'true' AND '%(ReferencePath.ReferenceAssembly)' == ''"
+           Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'." />
+  </Target>
 </Project>

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
@@ -19,7 +19,7 @@
     <Compile Include="ChannelClosedExceptionTests.netcoreapp.cs" />
     <Compile Include="ChannelTestBase.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetFrameworkMinimum)'">
     <ProjectReference Include="..\src\System.Threading.Channels.csproj" />
   </ItemGroup>
 </Project>

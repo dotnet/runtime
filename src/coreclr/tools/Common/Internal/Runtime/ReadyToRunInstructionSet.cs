@@ -36,6 +36,7 @@ namespace Internal.ReadyToRunConstants
         X86Base=22,
         Dp=23,
         Rdm=24,
+        AvxVnni=25,
 
     }
 }

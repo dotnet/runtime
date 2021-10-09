@@ -18,7 +18,7 @@ namespace System.ComponentModel
         /// object in the given source type to a <see cref='System.DateTime'/>
         /// object using the specified context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -27,7 +27,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object
         /// to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -35,7 +35,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to a <see cref='System.DateTime'/> object.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {
@@ -48,11 +48,11 @@ namespace System.ComponentModel
                 try
                 {
                     // See if we have a culture info to parse with. If so, then use it.
-                    DateTimeFormatInfo formatInfo = null;
+                    DateTimeFormatInfo? formatInfo = null;
 
                     if (culture != null)
                     {
-                        formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo));
+                        formatInfo = (DateTimeFormatInfo?)culture.GetFormat(typeof(DateTimeFormatInfo));
                     }
 
                     if (formatInfo != null)
@@ -77,7 +77,7 @@ namespace System.ComponentModel
         /// Converts the given value object to a <see cref='System.DateTime'/>
         /// object using the arguments.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is DateTime)
             {
@@ -92,7 +92,7 @@ namespace System.ComponentModel
                     culture = CultureInfo.CurrentCulture;
                 }
 
-                DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo));
+                DateTimeFormatInfo? formatInfo = (DateTimeFormatInfo?)culture.GetFormat(typeof(DateTimeFormatInfo));
 
                 if (culture == CultureInfo.InvariantCulture)
                 {
@@ -109,11 +109,11 @@ namespace System.ComponentModel
                 string format;
                 if (dt.TimeOfDay.TotalSeconds == 0)
                 {
-                    format = formatInfo.ShortDatePattern;
+                    format = formatInfo!.ShortDatePattern;
                 }
                 else
                 {
-                    format = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern;
+                    format = formatInfo!.ShortDatePattern + " " + formatInfo.ShortTimePattern;
                 }
 
                 return dt.ToString(format, CultureInfo.CurrentCulture);

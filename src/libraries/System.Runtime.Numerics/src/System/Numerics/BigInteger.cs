@@ -464,7 +464,7 @@ namespace System.Numerics
             AssertValid();
         }
 
-        private BigInteger(int n, uint[]? rgu)
+        internal BigInteger(int n, uint[]? rgu)
         {
             _sign = n;
             _bits = rgu;
@@ -626,11 +626,11 @@ namespace System.Numerics
             return;
         }
 
-        public static BigInteger Zero { get { return s_bnZeroInt; } }
+        public static BigInteger Zero => s_bnZeroInt;
 
-        public static BigInteger One { get { return s_bnOneInt; } }
+        public static BigInteger One => s_bnOneInt;
 
-        public static BigInteger MinusOne { get { return s_bnMinusOneInt; } }
+        public static BigInteger MinusOne => s_bnMinusOneInt;
 
         public bool IsPowerOfTwo
         {
@@ -703,7 +703,7 @@ namespace System.Numerics
 
         public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result)
         {
-            return BigNumber.TryParseBigInteger(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(value, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, NumberStyles style, IFormatProvider? provider, out BigInteger result)
@@ -1996,6 +1996,7 @@ namespace System.Numerics
             Span<uint> stackallocedXd = stackalloc uint[1];
             Span<uint> xd = stackallocedXd;
             bool negx = GetPartsForBitManipulation(ref value, ref xd);
+            bool trackSignBit = false;
 
             if (negx)
             {
@@ -2020,9 +2021,17 @@ namespace System.Numerics
                 }
 
                 NumericsHelpers.DangerousMakeTwosComplement(xd); // Mutates xd
+
+                // For a shift of N x 32 bit,
+                // We check for a special case where its sign bit could be outside the uint array after 2's complement conversion.
+                // For example given [0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF], its 2's complement is [0x01, 0x00, 0x00]
+                // After a 32 bit right shift, it becomes [0x00, 0x00] which is [0x00, 0x00] when converted back.
+                // The expected result is [0x00, 0x00, 0xFFFFFFFF] (2's complement) or [0x00, 0x00, 0x01] when converted back
+                // If the 2's component's last element is a 0, we will track the sign externally
+                trackSignBit = smallShift == 0 && xd[^1] == 0;
             }
 
-            int zl = xd.Length - digitShift;
+            int zl = xd.Length - digitShift + (trackSignBit ? 1: 0);
             uint[]? zdArray = null;
             Span<uint> zd = stackalloc uint[0];
             if (zl > 0)
@@ -2056,6 +2065,11 @@ namespace System.Numerics
             }
             if (negx)
             {
+                // Set the tracked sign to the last element
+                if (trackSignBit)
+                {
+                    zd[^1] = 0xFFFFFFFF;
+                }
                 NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
             }
 

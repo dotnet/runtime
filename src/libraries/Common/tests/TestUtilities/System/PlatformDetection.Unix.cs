@@ -20,6 +20,7 @@ namespace System
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
         public static bool IsDebian8 => IsDistroAndVersion("debian", 8);
+        public static bool IsDebian9 => IsDistroAndVersion("debian", 9);
         public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
         public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", 16, 4);
         public static bool IsUbuntu1704 => IsDistroAndVersion("ubuntu", 17, 4);
@@ -27,15 +28,13 @@ namespace System
         public static bool IsUbuntu1710OrHigher => IsDistroAndVersionOrHigher("ubuntu", 17, 10);
         public static bool IsUbuntu1804 => IsDistroAndVersion("ubuntu", 18, 04);
         public static bool IsUbuntu1810OrHigher => IsDistroAndVersionOrHigher("ubuntu", 18, 10);
+        public static bool IsMariner => IsDistroAndVersion("mariner");
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
 
         // OSX family
-        public static bool IsOSXLike =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ||
-            RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
+        public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsNotOSX => !IsOSX;
         public static bool IsMacOsMojaveOrHigher => IsOSX && Environment.OSVersion.Version >= new Version(10, 14);
@@ -101,6 +100,19 @@ namespace System
                 {
                     return "glibc_not_found";
                 }
+            }
+        }
+
+        public static bool OpenSslPresentOnSystem
+        {
+            get
+            {
+                if (IsAndroid || UsesMobileAppleCrypto || IsBrowser)
+                {
+                    return false;
+                }
+
+                return Interop.OpenSslNoInit.OpenSslIsAvailable;
             }
         }
 

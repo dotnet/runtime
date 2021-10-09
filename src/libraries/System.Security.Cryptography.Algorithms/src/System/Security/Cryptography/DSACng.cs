@@ -8,7 +8,7 @@ namespace System.Security.Cryptography
 {
     public partial class DSA : AsymmetricAlgorithm
     {
-        public static new DSA Create()
+        private static DSA CreateCore()
         {
             return new DSAImplementation.DSACng();
         }

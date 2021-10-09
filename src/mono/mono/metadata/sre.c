@@ -31,8 +31,6 @@
 #include "mono/metadata/reflection-cache.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include "mono/metadata/security-manager.h"
-#include "mono/metadata/security-core-clr.h"
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/tokentype.h"
 #include "mono/metadata/abi-details.h"
@@ -1263,10 +1261,12 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 			assembly->assembly.aname.revision = 0;
         }
 
-	/* SRE assemblies are loaded into the individual loading context, ie,
-	 * they only fire AssemblyResolve events, they don't cause probing for
-	 * referenced assemblies to happen. */
-	assembly->assembly.context.kind = MONO_ASMCTX_INDIVIDUAL;
+	if (assemblyb->public_key_token) {
+		for (int i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
+			guint8 byte = mono_array_get_internal (assemblyb->public_key_token, guint8, i);
+			sprintf ((char*)(assembly->assembly.aname.public_key_token + 2 * i), "%02x", byte);
+		}
+	}
 
 	char *assembly_name = mono_string_to_utf8_checked_internal (assemblyb->name, error);
 	return_if_nok (error);

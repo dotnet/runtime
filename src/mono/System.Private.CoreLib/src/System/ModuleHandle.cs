@@ -35,16 +35,19 @@ namespace System
             }
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken)
         {
             return ResolveFieldHandle(fieldToken, null, null);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken)
         {
             return ResolveMethodHandle(methodToken, null, null);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken)
         {
             return ResolveTypeHandle(typeToken, null, null);
@@ -61,6 +64,7 @@ namespace System
             return res;
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             ResolveTokenError error;
@@ -73,6 +77,7 @@ namespace System
                 return new RuntimeTypeHandle(res);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             ResolveTokenError error;
@@ -85,6 +90,7 @@ namespace System
                 return new RuntimeMethodHandle(res);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             ResolveTokenError error;
@@ -98,16 +104,19 @@ namespace System
                 return new RuntimeFieldHandle(res);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeFieldHandle GetRuntimeFieldHandleFromMetadataToken(int fieldToken)
         {
             return ResolveFieldHandle(fieldToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeMethodHandle GetRuntimeMethodHandleFromMetadataToken(int methodToken)
         {
             return ResolveMethodHandle(methodToken);
         }
 
+        [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         public RuntimeTypeHandle GetRuntimeTypeHandleFromMetadataToken(int typeToken)
         {
             return ResolveTypeHandle(typeToken);

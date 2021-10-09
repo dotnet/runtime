@@ -5,9 +5,9 @@ set EXECUTION_DIR=%~dp0
 set SCENARIO=%3
 
 if [%HELIX_WORKITEM_UPLOAD_ROOT%] == [] (
-    set XHARNESS_OUT="%EXECUTION_DIR%xharness-output"
+    set "XHARNESS_OUT=%EXECUTION_DIR%xharness-output"
 ) else (
-    set XHARNESS_OUT="%HELIX_WORKITEM_UPLOAD_ROOT%xharness-output"
+    set "XHARNESS_OUT=%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output"
 )
 
 if [%XHARNESS_CLI_PATH%] NEQ [] (

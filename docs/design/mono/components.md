@@ -164,10 +164,10 @@ To implement `feature_X` as a component.  Carry out the following steps:
 	  { feature_X_cleanup },
 	  feature_X_hello,
     };
-	
+
 	MonoComponentFeatureX *
 	mono_component_feature_X_init (void) { return &fn_table; }
-	
+
 	void feature_X_cleanup (MonoComponent *self)
 	{
 	  static int cleaned = 0;
@@ -207,10 +207,10 @@ To implement `feature_X` as a component.  Carry out the following steps:
 	  { feature_X_cleanup },
 	  feature_X_hello,
     };
-	
+
 	MonoComponentFeatureX *
 	mono_component_feature_X_init (void) { return &fn_table; }
-	
+
 	void feature_X_cleanup (MonoComponent *self)
 	{
 	  static int cleaned = 0;
@@ -229,7 +229,7 @@ To implement `feature_X` as a component.  Carry out the following steps:
   ```c
     MonoComponentFeatureX*
 	mono_component_feature_X (void);
-	
+
     ...
     MonoComponentFeatureX*
 	mono_component_feature_X_stub_init (void);
@@ -238,7 +238,7 @@ To implement `feature_X` as a component.  Carry out the following steps:
 * Add an entry to the `components` list to load the component to `mono/metadata/components.c`, and also implement the getter for the component:
   ```c
     static MonoComponentFeatureX *feature_X = NULL;
-	
+
     MonoComponentEntry components[] = {
 	   ...
 	   {"feature_X", "feature_X", COMPONENT_INIT_FUNC (feature_X), (MonoComponent**)&feature_X, NULL },
@@ -265,16 +265,66 @@ To implement `feature_X` as a component.  Carry out the following steps:
 ## Detailed design - Packaging and runtime packs
 
 The components are building blocks to put together a functional runtime.  The
-runtime pack includes the base runtime and the components and additional
-properties and targets that enable the workload to construct a runtime for
-various scenarios.
+runtime pack includes the base runtime and the components.  The mono workload
+includes the runtime pack and additional tasks, properties and targets that
+enable the workload to construct a runtime for various scenarios.
 
-In each runtime pack we include:
+For the target RID, we expose:
 
-- The compiled compnents for the apropriate host architectures in a well-known subdirectory
-- An MSBuild props file that defines an item group that list each component name and has metadata that indicates:
-   - the path to the component in the runtime pack
-   - the path to the stub component in the runtime pack (if components are static)
-- An MSBuild targets file that defines targets to copy a specified set of components to the app publish folder (if components are dynamic); or to link the runtime together with stubs and a set of enabled components (if components are static)
+- `@(_MonoRuntimeComponentLinking)` set to either `'static'` or `'dynamic'` depending on whether the
+  current runtime pack for the current target includes runtime components as static archives or as
+  shared libraries, respectively.
+- `@(_MonoRuntimeComponentSharedLibExt)` and `@(_MonoRuntimeComponentStaticLibExt)` set to the file
+  extension of the runtime components for the current target (ie, `'.a', '.so', '.dylib'` etc).
+- `@(_MonoRuntimeAvailableComponents)` a list of component names without the `lib` prefix (if any)
+  or file extensions.  For example: `'hot_reload; diagnostics_tracing'`.
 
-** TODO ** Write this up in more detail
+Each of the above item lists has `RuntimeIdentifier` metadata.  For technical reasons the mono
+workload will provide a single `@(_MonoRuntimeAvailableComponent)` item list for all platforms.  We
+use the `RuntimeIdentifier` metadata to filter out the details applicable for the current platform.
+
+- The target `_MonoSelectRuntimeComponents` that has the following inputs and outputs:
+  - input `@(_MonoComponent)` (to be set by the workload) : a list of components that a workload wants to use for the current
+    app.  It is an error if this specifies any unknown component name.
+  - output `@(_MonoRuntimeSelectedComponents)` and `@(_MonoRuntimeSelectedStubComponents)` The names
+    of the components that were (resp, were not) selected.  For example `'hot_reload;
+    diagnostics_tracing'`.  Each item has two metadata properties `ComponentLib` and
+    `ComponentStubLib` (which may be empty) that specify the name of the static or dynamic library
+    of the component.  This is not the main output of the target, it's primarily for debugging.
+  - output `@(_MonoRuntimeComponentLink)` a list of library names (relative to the `native/`
+    subdirectory of the runtime pack) that (for dynamic components) must be placed next to the
+    runtime in the application bundle, or (for static components) that must be linked with the
+    runtime to enable the components' functionality.  Each item in the list has metadata
+    `ComponentName` (e.g. `'hot_reload'`), `IsStub` (`true` or `false`), `Linking` (`'static'` or
+    `'dynamic'`).  This output should be used by the workloads when linking the app and runtime if
+    the workload uses an allow list of native libraries to link or bundle.
+  - output `@(_MonoRuntimeComponentDontLink)` a list of library names (relative to the `native/`
+    subdirectory of the runtime pack) that should be excluded from the application bundle (for
+    dynamic linking) or that should not be passed to the native linker (for static linking).  This
+    output should be used by workloads that just link or bundle every native library from `native/`
+    in order to filter the contents of the subdirectory to exclude the disabled components (and to
+    exclude the static library stubs for the enabled components when static linking).
+
+Generally workloads should only use one of `@(_MonoRuntimeComponentLink)` or
+`@(_MonoRuntimeComponentDontLink)`, depending on whether they use an allow or block list for the
+contents of the `native/` subdirectory.
+
+Example fragment (assuming the mono workload has been imported):
+
+```xml
+  <Project>
+    <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+      <_MonoComponent Include="hot_reload;diagnostics_tracing" />
+    </ItemGroup>
+
+    <Target Name="PrintComponents" DependsOnTargets="_MonoSelectRuntimeComponents">
+      <Message Importance="High" Text="Runtime identifier: $(RuntimeIdentifier)" />
+      <Message Importance="High" Text="Selected : @(_MonoRuntimeSelectedComponents) %(ComponentLib)" />
+      <Message Importance="High" Text="Stubbed out : @(_MonoRuntimeSelectedStubComponents) %(ComponentStubLib)" />
+      <Message Importance="High" Text="Linking with lib @(_MonoRuntimeComponentLink) Stub: %(IsStub) Linking: %(Linking) Component: %(ComponentName)"/>
+
+      <Message Importance="High" Text="UnSelected : @(_MonoRuntimeUnSelectedComponents) %(ComponentLib)" />
+      <Message Importance="High" Text="Exclude these from linking: @(_MonoRuntimeComponentDontLink) Stub: %(IsStub) Linking: %(Linking) Component: %(ComponentName)" />
+    </Target>
+  </Project>
+```

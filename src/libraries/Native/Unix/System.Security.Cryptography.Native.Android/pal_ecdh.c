@@ -8,9 +8,14 @@
 
 int32_t AndroidCryptoNative_EcdhDeriveKey(EC_KEY* ourKey, EC_KEY* peerKey, uint8_t* resultKey, int32_t bufferLength, int32_t* usedBufferLength)
 {
+    abort_if_invalid_pointer_argument (ourKey);
+    abort_if_invalid_pointer_argument (peerKey);
+    abort_if_invalid_pointer_argument (resultKey);
+    abort_if_invalid_pointer_argument (usedBufferLength);
+
     JNIEnv* env = GetJNIEnv();
 
-    jstring algorithmName = JSTRING("ECDH");
+    jstring algorithmName = make_java_string(env, "ECDH");
 
     jobject keyAgreement = (*env)->CallStaticObjectMethod(env, g_KeyAgreementClass, g_KeyAgreementGetInstance, algorithmName);
     ReleaseLRef(env, algorithmName);

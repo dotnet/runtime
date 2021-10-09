@@ -234,3 +234,11 @@ int32_t SystemNative_GetGroupList(const char* name, uint32_t group, uint32_t* gr
 
     return rv;
 }
+
+int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
+{
+    assert(ngroups >= 0);
+    assert(groups != NULL);
+
+    return getgroups(ngroups, groups);
+}

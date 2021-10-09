@@ -3,6 +3,7 @@
 
 
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -23,6 +24,37 @@ namespace System.Net.Sockets.Tests
 #pragma warning disable 0618 // Supports* are obsoleted
             Assert.Equal(Socket.SupportsIPv6, Socket.OSSupportsIPv6);
 #pragma warning restore
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void DisableIPv6_OSSupportsIPv6_False()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_SYSTEM_NET_DISABLEIPV6"] = "1";
+            RemoteExecutor.Invoke(RunTest, options).Dispose();
+
+            static void RunTest()
+            {
+                Assert.False(Socket.OSSupportsIPv6);
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void DisableIPv6_SocketConstructor_CreatesIPv4Socket()
+        {
+            RemoteExecutor.Invoke(RunTest).Dispose();
+
+            static void RunTest()
+            {
+                AppContext.SetSwitch("System.Net.DisableIPv6", true);
+                using Socket socket1 = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                using Socket socket2 = new Socket(SocketType.Dgram, ProtocolType.Udp);
+
+                Assert.Equal(AddressFamily.InterNetwork, socket1.AddressFamily);
+                Assert.Equal(AddressFamily.InterNetwork, socket2.AddressFamily);
+                Assert.False(socket1.DualMode);
+                Assert.False(socket2.DualMode);
+            }
         }
 
         [Fact]
@@ -64,7 +96,8 @@ namespace System.Net.Sockets.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void IOControl_SIOCATMARK_Unix_Success()
         {
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

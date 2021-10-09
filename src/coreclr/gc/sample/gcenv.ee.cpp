@@ -147,11 +147,11 @@ void GCToEEInterface::GcStartWork(int condemned, int max_gen)
 {
 }
 
-void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
+void GCToEEInterface::BeforeGcScanRoots(int condemned, bool is_bgc, bool is_concurrent)
 {
 }
 
-void GCToEEInterface::GcBeforeBGCSweepWork()
+void GCToEEInterface::AfterGcScanRoots(int condemned, int max_gen, ScanContext* sc)
 {
 }
 
@@ -291,7 +291,6 @@ bool GCToEEInterface::GetStringConfigValue(const char* privateKey, const char* p
 
 void GCToEEInterface::FreeStringConfigValue(const char *value)
 {
-
 }
 
 bool GCToEEInterface::IsGCThread()
@@ -341,7 +340,6 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
 
 inline void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
-
 }
 
 void GCToEEInterface::VerifySyncTableEntry()
@@ -349,5 +347,14 @@ void GCToEEInterface::VerifySyncTableEntry()
 }
 
 void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPublicKeywords, int currentPrivateLevel, int currentPrivateKeywords)
+{
+}
+
+uint32_t GCToEEInterface::GetCurrentProcessCpuCount()
+{
+    return GCToOSInterface::GetTotalProcessorCount();
+}
+
+void GCToEEInterface::DiagAddNewRegion(int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
 {
 }

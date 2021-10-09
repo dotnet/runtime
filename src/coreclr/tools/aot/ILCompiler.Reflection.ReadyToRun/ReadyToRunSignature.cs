@@ -457,14 +457,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="r2rReader">R2RReader object representing the PE file containing the ECMA metadata</param>
         /// <param name="offset">Signature offset within the PE file byte array</param>
-        public R2RSignatureDecoder(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, TGenericContext context, MetadataReader metadataReader, ReadyToRunReader r2rReader, int offset)
+        public R2RSignatureDecoder(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, TGenericContext context, MetadataReader metadataReader, ReadyToRunReader r2rReader, int offset, bool skipOverrideMetadataReader = false)
         {
             Context = context;
             _provider = provider;
             _image = r2rReader.Image;
             _originalOffset = _offset = offset;
             _contextReader = r2rReader;
-            MetadataReader moduleOverrideMetadataReader = TryGetModuleOverrideMetadataReader();
+            MetadataReader moduleOverrideMetadataReader = null;
+            if (!skipOverrideMetadataReader)
+                moduleOverrideMetadataReader = TryGetModuleOverrideMetadataReader();
             _metadataReader = moduleOverrideMetadataReader ?? metadataReader;
             _outerReader = moduleOverrideMetadataReader ?? metadataReader;
             Reset();
@@ -479,14 +481,16 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <param name="offset">Signature offset within the signature byte array</param>
         /// <param name="outerReader">Metadata reader representing the outer signature context</param>
         /// <param name="contextReader">Top-level signature context reader</param>
-        public R2RSignatureDecoder(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, TGenericContext context, MetadataReader metadataReader, byte[] signature, int offset, MetadataReader outerReader, ReadyToRunReader contextReader)
+        public R2RSignatureDecoder(IR2RSignatureTypeProvider<TType, TMethod, TGenericContext> provider, TGenericContext context, MetadataReader metadataReader, byte[] signature, int offset, MetadataReader outerReader, ReadyToRunReader contextReader, bool skipOverrideMetadataReader = false)
         {
             Context = context;
             _provider = provider;
             _image = signature;
             _originalOffset = _offset = offset;
             _contextReader = contextReader;
-            MetadataReader moduleOverrideMetadataReader = TryGetModuleOverrideMetadataReader();
+            MetadataReader moduleOverrideMetadataReader = null;
+            if (!skipOverrideMetadataReader)
+                moduleOverrideMetadataReader = TryGetModuleOverrideMetadataReader();
             _metadataReader = moduleOverrideMetadataReader ?? metadataReader;
             _outerReader = moduleOverrideMetadataReader ?? outerReader;
             Reset();
@@ -805,6 +809,24 @@ namespace ILCompiler.Reflection.ReadyToRun
         {
             uint methodFlags = ReadUInt();
 
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UpdateContext) != 0)
+            {
+                int moduleIndex = (int)ReadUInt();
+                IAssemblyMetadata refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                var refAsmDecoder = new R2RSignatureDecoder<TType, TMethod, TGenericContext>(_provider, Context, refAsmReader.MetadataReader, _image, _offset, _outerReader, _contextReader, skipOverrideMetadataReader: true);
+                var result = refAsmDecoder.ParseMethodWithMethodFlags(methodFlags);
+                _offset = refAsmDecoder.Offset;
+                return result;
+            }
+            else
+            {
+                return ParseMethodWithMethodFlags(methodFlags);
+            }
+        }
+
+
+        private TMethod ParseMethodWithMethodFlags(uint methodFlags)
+        {
             TType owningTypeOverride = default(TType);
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
@@ -1346,6 +1368,28 @@ namespace ILCompiler.Reflection.ReadyToRun
                         builder.Append(" (CHECK_TYPE_LAYOUT)");
                     else
                         builder.Append(" (VERIFY_TYPE_LAYOUT)");
+                    break;
+
+                case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
+                case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
+                    ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
+                    ParseMethod(builder);
+                    builder.Append($" ImplType :");
+                    ParseType(builder);
+                    if (flags.HasFlag(ReadyToRunVirtualFunctionOverrideFlags.VirtualFunctionOverriden))
+                    {
+                        builder.Append($" ImplMethod :");
+                        ParseMethod(builder);
+                    }
+                    else
+                    {
+                        builder.Append("Not Overriden");
+                    }
+
+                    if (fixupType == ReadyToRunFixupKind.Check_TypeLayout)
+                        builder.Append(" (CHECK_VIRTUAL_FUNCTION_OVERRIDE)");
+                    else
+                        builder.Append(" (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)");
                     break;
 
                 case ReadyToRunFixupKind.Check_FieldOffset:

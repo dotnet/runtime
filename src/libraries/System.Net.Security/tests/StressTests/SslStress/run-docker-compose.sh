@@ -89,6 +89,13 @@ fi
 
 compose_file="$scriptroot/docker-compose.yml"
 
+if ! docker-compose --file "$compose_file" pull client; then
+    exit $?
+fi
+if ! docker-compose --file "$compose_file" pull server; then
+    exit $?
+fi
+
 if ! docker-compose --file "$compose_file" build $build_args; then
     exit $?
 fi

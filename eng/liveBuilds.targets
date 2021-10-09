@@ -25,7 +25,7 @@
     <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'sharedFramework'))</CoreCLRSharedFrameworkDir>
     <CoreCLRCrossgen2Dir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'crossgen2'))</CoreCLRCrossgen2Dir>
 
-    <MonoCrossAOTDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross'))</MonoCrossAOTDir>
+    <MonoAotCrossDir>$([MSBuild]::NormalizeDirectory('$(MonoArtifactsPath)', 'cross', $(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())))</MonoAotCrossDir>
 
     <LibrariesPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'packages', '$(LibrariesConfiguration)'))</LibrariesPackagesDir>
     <LibrariesShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesPackagesDir)', 'Shipping'))</LibrariesShippingPackagesDir>
@@ -35,9 +35,9 @@
     <LibrariesAllConfigShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigPackagesDir)', 'Shipping'))</LibrariesAllConfigShippingPackagesDir>
     <LibrariesAllConfigNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(LibrariesAllConfigPackagesDir)', 'NonShipping'))</LibrariesAllConfigNonShippingPackagesDir>
 
-    <LibrariesSharedFrameworkRefArtifactsPath Condition="'$(LibrariesSharedFrameworkRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', 'microsoft.netcore.app', '$(LibrariesConfiguration)'))</LibrariesSharedFrameworkRefArtifactsPath>
+    <LibrariesSharedFrameworkRefArtifactsPath Condition="'$(LibrariesSharedFrameworkRefArtifactsPath)' == ''">$(MicrosoftNetCoreAppRefPackRefDir)</LibrariesSharedFrameworkRefArtifactsPath>
     <LibrariesAllRefArtifactsPath Condition="'$(LibrariesAllRefArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'ref', '$(NetCoreAppCurrent)'))</LibrariesAllRefArtifactsPath>
-    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'pkg', '$(NetCoreAppCurrent)', 'runtime'))$(LibrariesTargetOSConfigurationArchitecture)\</LibrariesSharedFrameworkBinArtifactsPath>
+    <LibrariesSharedFrameworkBinArtifactsPath Condition="'$(LibrariesSharedFrameworkBinArtifactsPath)' == ''">$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</LibrariesSharedFrameworkBinArtifactsPath>
     <LibrariesAllBinArtifactsPath Condition="'$(LibrariesAllBinArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'runtime'))$(NetCoreAppCurrent)-$(LibrariesTargetOSConfigurationArchitecture)\</LibrariesAllBinArtifactsPath>
     <LibrariesNativeArtifactsPath Condition="'$(LibrariesNativeArtifactsPath)' == ''">$([MSBuild]::NormalizeDirectory('$(LibrariesArtifactsPath)', 'bin', 'native'))$(NetCoreAppCurrent)-$(LibrariesTargetOSConfigurationArchitecture)\</LibrariesNativeArtifactsPath>
 
@@ -87,7 +87,7 @@
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;
           $(CoreCLRSharedFrameworkPdbDir)*.dbg;
           $(CoreCLRSharedFrameworkPdbDir)*.dwarf" IsNative="true" />
-      <RuntimeFiles
+      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
       <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
         Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb" />
@@ -109,8 +109,8 @@
         <IsNative>true</IsNative>
       </RuntimeFiles>
 
-      <MonoCrossFiles Condition="'$(TargetsMobile)' == 'true'"
-        Include="$(MonoArtifactsPath)\cross\**\*.*" />
+      <FrameworkReleaseFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.release.framework\*.*" />
+      <FrameworkDebugFiles Condition="'$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Include="$(MonoArtifactsPath)\Mono.debug.framework\*.*" />
       <MonoIncludeFiles Condition="'$(TargetsMobile)' == 'true'"
         Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
@@ -177,8 +177,8 @@
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;
         $(LibrariesNativeArtifactsPath)src\*.js;
-        $(LibrariesNativeArtifactsPath)src\emcc-flags.txt;
-        $(LibrariesNativeArtifactsPath)src\emcc-version.txt;"
+        $(LibrariesNativeArtifactsPath)src\emcc-default.rsp;
+        $(LibrariesNativeArtifactsPath)src\emcc-props.json;"
         NativeSubDirectory="src"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
@@ -193,7 +193,6 @@
   </Target>
 
   <PropertyGroup>
-    <LiveRuntimeIdentifierGraphPath>$(RuntimeIdGraphDefinitionFile)</LiveRuntimeIdentifierGraphPath>
-    <BundledRuntimeIdentifierGraphFile>$(LiveRuntimeIdentifierGraphPath)</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile>$(RuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
 </Project>

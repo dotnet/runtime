@@ -31,6 +31,7 @@ typedef struct _EventPipeProvider EventPipeProvider;
 typedef struct _EventPipeProviderCallbackData EventPipeProviderCallbackData;
 typedef struct _EventPipeProviderCallbackDataQueue EventPipeProviderCallbackDataQueue;
 typedef struct _EventPipeProviderConfiguration EventPipeProviderConfiguration;
+typedef struct _EventPipeExecutionCheckpoint EventPipeExecutionCheckpoint;
 typedef struct _EventPipeSession EventPipeSession;
 typedef struct _EventPipeSessionProvider EventPipeSessionProvider;
 typedef struct _EventPipeSessionProviderList EventPipeSessionProviderList;
@@ -144,7 +145,8 @@ typedef enum {
 	EP_SESSION_TYPE_FILE,
 	EP_SESSION_TYPE_LISTENER,
 	EP_SESSION_TYPE_IPCSTREAM,
-	EP_SESSION_TYPE_SYNCHRONOUS
+	EP_SESSION_TYPE_SYNCHRONOUS,
+	EP_SESSION_TYPE_FILESTREAM
 } EventPipeSessionType ;
 
 typedef enum {
@@ -199,7 +201,8 @@ typedef void (*EventPipeSessionSynchronousCallback)(
 	const uint8_t *related_activity_id,
 	/*ep_rt_thread_handle_t*/ void *event_thread,
 	uint32_t stack_frames_len,
-	uintptr_t *stack_frames);
+	uintptr_t *stack_frames,
+    void *additional_data);
 
 typedef bool (*EventPipeIpcStreamFactorySuspendedPortsCallback)(void);
 

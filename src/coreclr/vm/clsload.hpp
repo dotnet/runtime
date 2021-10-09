@@ -680,7 +680,8 @@ public:
                                                      LoadTypesFlag fLoadTypes = LoadTypes,
                                                      ClassLoadLevel level = CLASS_LOADED,
                                                      BOOL dropGenericArgumentLevel = FALSE,
-                                                     const Substitution *pSubst = NULL /* substitution to apply if the token is a type spec with generic variables */ );
+                                                     const Substitution *pSubst = NULL /* substitution to apply if the token is a type spec with generic variables */,
+                                                     MethodTable *pMTInterfaceMapOwner = NULL);
 
     // Load constructed types by providing their constituents
     static TypeHandle LoadPointerOrByrefTypeThrowing(CorElementType typ,
@@ -908,9 +909,6 @@ private:
                                     BOOL fCheckUnderLock);
 
     static TypeHandle LookupInLoaderModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#ifdef FEATURE_PREJIT
-    static TypeHandle LookupInPreferredZapModule(TypeKey* pKey, BOOL fCheckUnderLock);
-#endif // FEATURE_PREJIT
 
     // Lookup a handle in the appropriate table
     // (declaring module for TypeDef or loader-module for constructed types)

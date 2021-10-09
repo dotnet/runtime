@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text.Json.Serialization.Tests;
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class JsonObjectTests
     {

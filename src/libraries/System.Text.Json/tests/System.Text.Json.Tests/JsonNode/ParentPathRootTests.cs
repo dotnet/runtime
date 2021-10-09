@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Text.Json.Node.Tests
+namespace System.Text.Json.Nodes.Tests
 {
     public static class ParentPathRootTests
     {
@@ -16,18 +16,30 @@ namespace System.Text.Json.Node.Tests
             Assert.Equal("$", node.GetPath());
             Assert.Same(node, node.Root);
 
+            node = JsonValue.Parse(node.ToJsonString());
+            Assert.Equal("$", node.GetPath());
+
             node = new JsonObject();
             Assert.Equal("$", node.GetPath());
             Assert.Same(node, node.Root);
+
+            node = JsonValue.Parse(node.ToJsonString());
+            Assert.Equal("$", node.GetPath());
 
             node = new JsonArray();
             Assert.Equal("$", node.GetPath());
             Assert.Same(node, node.Root);
 
+            node = JsonValue.Parse(node.ToJsonString());
+            Assert.Equal("$", node.GetPath());
+
             node = new JsonObject
             {
                 ["Child"] = 1
             };
+            Assert.Equal("$.Child", node["Child"].GetPath());
+
+            node = JsonValue.Parse(node.ToJsonString());
             Assert.Equal("$.Child", node["Child"].GetPath());
 
             node = new JsonObject
@@ -37,12 +49,18 @@ namespace System.Text.Json.Node.Tests
             Assert.Equal("$.Child[1]", node["Child"][1].GetPath());
             Assert.Same(node, node["Child"][1].Root);
 
+            node = JsonValue.Parse(node.ToJsonString());
+            Assert.Equal("$.Child[1]", node["Child"][1].GetPath());
+
             node = new JsonObject
             {
                 ["Child"] = new JsonArray { 1, 2, 3 }
             };
             Assert.Equal("$.Child[2]", node["Child"][2].GetPath());
             Assert.Same(node, node["Child"][2].Root);
+
+            node = JsonValue.Parse(node.ToJsonString());
+            Assert.Equal("$.Child[2]", node["Child"][2].GetPath());
 
             node = new JsonArray
             {
@@ -53,6 +71,9 @@ namespace System.Text.Json.Node.Tests
             };
             Assert.Equal("$[0].Child", node[0]["Child"].GetPath());
             Assert.Same(node, node[0]["Child"].Root);
+
+            node = JsonValue.Parse(node.ToJsonString());
+            Assert.Equal("$[0].Child", node[0]["Child"].GetPath());
         }
 
         [Fact]

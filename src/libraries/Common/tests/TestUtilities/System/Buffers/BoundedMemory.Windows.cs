@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace System.Buffers
 {
@@ -290,7 +287,6 @@ namespace System.Buffers
                 UnsafeNativeMethods.VirtualFree(handle, IntPtr.Zero, VirtualAllocAllocationType.MEM_RELEASE);
         }
 
-        [SuppressUnmanagedCodeSecurity]
         private static class UnsafeNativeMethods
         {
             private const string KERNEL32_LIB = "kernel32.dll";

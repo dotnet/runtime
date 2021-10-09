@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;net461-windows</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Ace\Ace.Common.Tests.cs" />

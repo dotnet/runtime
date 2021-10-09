@@ -1,24 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;netstandard2.0;netstandard2.0-windows;netstandard2.0-Unix;netcoreapp2.1-windows;netcoreapp2.1-Unix;net461-windows</TargetFrameworks>
-    <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <PropertyGroup>
-    <IsPartialFacadeAssembly Condition="$(TargetFramework.StartsWith('net4'))">true</IsPartialFacadeAssembly>
-    <OmitResources Condition="$(TargetFramework.StartsWith('net4'))">true</OmitResources>
-  </PropertyGroup>
 
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup Condition="'$(TargetsWindows)' != 'true'">
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Work around 'notsupported.cs' source generation of explicit interface implementations issue -->
     <!-- https://github.com/dotnet/arcade/issues/4722 -->
-    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
 
-  <ItemGroup Condition="!$(TargetFramework.StartsWith('net4')) and '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
     <Compile Include="System\Security\Principal\IdentityReference.cs" />
@@ -31,6 +26,10 @@
     <Compile Include="System\Security\Principal\WindowsPrincipal.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.BOOLEAN.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.SECURITY_QUALITY_OF_SERVICE.cs"
+             Link="Common\Interop\Windows\Advapi32\Interop.SECURITY_QUALITY_OF_SERVICE.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.UNICODE_STRING.cs"
              Link="Common\Interop\Windows\Advapi32\Interop.UNICODE_STRING.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs"
@@ -132,8 +131,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.CheckTokenMembership.cs"
              Link="Common\Interop\Interop.CheckTokenMembership.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
-                        $(TargetFramework.StartsWith('netcoreapp2'))">
+  <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />

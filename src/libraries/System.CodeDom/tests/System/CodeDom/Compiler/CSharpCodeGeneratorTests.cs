@@ -9,6 +9,7 @@ using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57363", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
     public class CSharpCodeGeneratorTests
     {
         private static IEnumerable<string> Identifier_TestData()
@@ -2585,7 +2586,7 @@ public class name<, name, [attribute()]  name, name, name, [()] [name1()] [name2
         {
             try
             {
-                Assert.Equal(expected, actual);
+                Assert.Equal(LineEndingsHelper.Normalize(expected), actual);
             }
             catch (Xunit.Sdk.AssertActualExpectedException)
             {

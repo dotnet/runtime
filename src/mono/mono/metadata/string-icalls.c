@@ -51,11 +51,3 @@ ves_icall_System_String_InternalIsInterned (MonoStringHandle str, MonoError *err
 {
 	return mono_string_is_interned_internal (str, error);
 }
-
-int
-ves_icall_System_String_GetLOSLimit (void)
-{
-	int limit = mono_gc_get_los_limit ();
-
-	return (limit - 2 - G_STRUCT_OFFSET (MonoString, chars)) / 2;
-}

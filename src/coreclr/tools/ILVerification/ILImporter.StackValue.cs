@@ -93,8 +93,8 @@ namespace Internal.IL
 
         static public StackValue CreatePrimitive(StackValueKind kind)
         {
-            Debug.Assert(kind == StackValueKind.Int32 || 
-                         kind == StackValueKind.Int64 || 
+            Debug.Assert(kind == StackValueKind.Int32 ||
+                         kind == StackValueKind.Int64 ||
                          kind == StackValueKind.NativeInt ||
                          kind == StackValueKind.Float);
 
@@ -114,7 +114,7 @@ namespace Internal.IL
         static public StackValue CreateByRef(TypeDesc type, bool readOnly = false, bool permanentHome = false)
         {
             return new StackValue(StackValueKind.ByRef, type, null,
-                (readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None) | 
+                (readOnly ? StackValueFlags.ReadOnly : StackValueFlags.None) |
                 (permanentHome ? StackValueFlags.PermanentHome : StackValueFlags.None));
         }
 
@@ -145,6 +145,7 @@ namespace Internal.IL
                 case TypeFlags.IntPtr:
                 case TypeFlags.UIntPtr:
                 case TypeFlags.Pointer:
+                case TypeFlags.FunctionPointer:
                     return CreatePrimitive(StackValueKind.NativeInt);
                 case TypeFlags.Enum:
                     return CreateFromType(type.UnderlyingType);
@@ -241,7 +242,7 @@ namespace Internal.IL
     partial class ILImporter
     {
         /// <summary>
-        /// Merges two stack values to a common stack value as defined in the ECMA-335 
+        /// Merges two stack values to a common stack value as defined in the ECMA-335
         /// standard III.1.8.1.3 (Merging stack states).
         /// </summary>
         /// <param name="valueA">The value to be merged with <paramref name="valueB"/>.</param>
@@ -278,7 +279,7 @@ namespace Internal.IL
                     return true;
 
                 // Merging classes always succeeds since System.Object always works
-                merged = StackValue.CreateFromType(MergeObjectReferences(valueA.Type, valueB.Type)); 
+                merged = StackValue.CreateFromType(MergeObjectReferences(valueA.Type, valueB.Type));
                 return true;
             }
 
@@ -443,7 +444,7 @@ namespace Internal.IL
                 mergedElementType = MergeArrayTypes(arrayTypeA, arrayTypeB);
             }
             //Both array element types are ObjRefs
-            else if ((!arrayTypeA.ElementType.IsValueType && !arrayTypeA.ElementType.IsByRef) && 
+            else if ((!arrayTypeA.ElementType.IsValueType && !arrayTypeA.ElementType.IsByRef) &&
                      (!arrayTypeB.ElementType.IsValueType && !arrayTypeB.ElementType.IsByRef))
             {
                 // Find common ancestor of the element types
@@ -544,9 +545,9 @@ namespace Internal.IL
     }
 
     // Normally we just let the runtime sort it out but we wish to be more strict
-    // than the runtime wants to be.  For backwards compatibility, the runtime considers 
+    // than the runtime wants to be.  For backwards compatibility, the runtime considers
     // int32[] and nativeInt[] to be the same on 32-bit machines.  It also is OK with
-    // int64[] and nativeInt[] on a 64-bit machine.  
+    // int64[] and nativeInt[] on a 64-bit machine.
 
     if (child.IsType(TI_REF) && parent.IsType(TI_REF)
         && jitInfo->isSDArray(child.GetClassHandleForObjRef())
@@ -568,16 +569,16 @@ namespace Internal.IL
             cType = CORINFO_TYPE_NATIVEINT;
         if (pType == CORINFO_TYPE_NATIVEUINT)
             pType = CORINFO_TYPE_NATIVEINT;
-        
+
         if (cType == CORINFO_TYPE_NATIVEINT)
             return pType == CORINFO_TYPE_NATIVEINT;
-            
+
         if (pType == CORINFO_TYPE_NATIVEINT)
             return cType == CORINFO_TYPE_NATIVEINT;
 
         return runtime_OK;
     }
-   
+
     if (parent.IsUnboxedGenericTypeVar() || child.IsUnboxedGenericTypeVar())
     {
         return (FALSE);  // need to have had child == parent
@@ -634,8 +635,8 @@ namespace Internal.IL
                     {
                         case StackValueKind.ObjRef:
                             // ECMA-335 III.1.5 Operand type table, P. 303:
-                            // __cgt.un__ is allowed and verifiable on ObjectRefs (O). This is commonly used when 
-                            // comparing an ObjectRef with null(there is no "compare - not - equal" instruction, which 
+                            // __cgt.un__ is allowed and verifiable on ObjectRefs (O). This is commonly used when
+                            // comparing an ObjectRef with null(there is no "compare - not - equal" instruction, which
                             // would otherwise be a more obvious solution)
                             return op == ILOpcode.beq || op == ILOpcode.beq_s ||
                                    op == ILOpcode.bne_un || op == ILOpcode.bne_un_s ||

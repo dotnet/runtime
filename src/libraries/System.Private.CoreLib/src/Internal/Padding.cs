@@ -21,4 +21,12 @@ namespace Internal
     internal struct PaddingFor32
     {
     }
+
+    /// <summary>Padded reference to an object.</summary>
+    [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE)]
+    internal struct PaddedReference
+    {
+        [FieldOffset(0)]
+        public object? Object;
+    }
 }

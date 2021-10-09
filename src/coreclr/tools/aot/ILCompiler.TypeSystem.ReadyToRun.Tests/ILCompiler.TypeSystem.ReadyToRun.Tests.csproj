@@ -12,6 +12,8 @@
          included in compilation of this project -->
     <EnableDefaultItems>false</EnableDefaultItems>
     <Platforms>AnyCPU;x64</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>    
@@ -37,6 +39,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../../Common/TypeSystem/MetadataEmitter/TypeSystemMetadataEmitter.cs" />
+    <Compile Include="../../Common/TypeSystem/IL/ILReader.cs" />
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
     <Compile Include="CanonicalizationTests.cs" />
     <Compile Include="ConstraintsValidationTest.cs" />

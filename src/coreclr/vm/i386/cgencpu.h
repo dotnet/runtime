@@ -38,11 +38,7 @@ Stub * GenerateInitPInvokeFrameHelper();
 EXTERN_C void SinglecastDelegateInvokeStub();
 #endif // FEATURE_STUBS_AS_IL
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-#endif
 
 //**********************************************************************
 // To be used with GetSpecificCpuInfo()
@@ -278,17 +274,18 @@ inline INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDe
 }
 
 #ifdef FEATURE_COMINTEROP
-inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethod, PCODE target)
+inline void emitCOMStubCall (ComCallMethodDesc *pCOMMethodRX, ComCallMethodDesc *pCOMMethodRW, PCODE target)
 {
     WRAPPER_NO_CONTRACT;
 
-    BYTE *pBuffer = (BYTE*)pCOMMethod - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRW = (BYTE*)pCOMMethodRW - COMMETHOD_CALL_PRESTUB_SIZE;
+    BYTE *pBufferRX = (BYTE*)pCOMMethodRX - COMMETHOD_CALL_PRESTUB_SIZE;
 
-    pBuffer[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
-    *((LPVOID*)(1+pBuffer)) = (LPVOID) (((LPBYTE)target) - (pBuffer+5));
+    pBufferRW[0] = X86_INSTR_CALL_REL32; //CALLNEAR32
+    *((LPVOID*)(1+pBufferRW)) = (LPVOID) (((LPBYTE)target) - (pBufferRX+5));
 
-    _ASSERTE(IS_ALIGNED(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
-        *((SSIZE_T*)(pBuffer + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethod));
+    _ASSERTE(IS_ALIGNED(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET, sizeof(void*)) &&
+        *((SSIZE_T*)(pBufferRX + COMMETHOD_CALL_PRESTUB_ADDRESS_OFFSET)) == ((LPBYTE)target - (LPBYTE)pCOMMethodRX));
 }
 #endif // FEATURE_COMINTEROP
 
@@ -378,12 +375,12 @@ inline BOOL isCallRegisterIndirect(const BYTE *pRetAddr)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBuffer, LPVOID target)
+inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
-    pBuffer[0] = X86_INSTR_JMP_REL32; //JUMPNEAR32
-    *((LPVOID*)(1+pBuffer)) = (LPVOID) (((LPBYTE)target) - (pBuffer+5));
+    pBufferRW[0] = X86_INSTR_JMP_REL32; //JUMPNEAR32
+    *((LPVOID*)(1+pBufferRW)) = (LPVOID) (((LPBYTE)target) - (pBufferRX+5));
 }
 
 //------------------------------------------------------------------------
@@ -420,10 +417,10 @@ inline PCODE decodeJump(PCODE pCode)
 //
 
 //------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBuffer, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     WRAPPER_NO_CONTRACT;
-    emitJump(pBuffer, target);
+    emitJump(pBufferRX, pBufferRW, target);
 }
 
 //------------------------------------------------------------------------
@@ -457,7 +454,7 @@ struct DECLSPEC_ALIGN(4) UMEntryThunkCode
     BYTE            m_jmp;      //JMP NEAR32
     const BYTE *    m_execstub; // pointer to destination code  // make sure the backpatched portion is dword aligned.
 
-    void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
     void Poison();
 
     LPCBYTE GetEntryPoint() const
@@ -620,19 +617,19 @@ private:
 
 #ifndef DACCESS_COMPILE
 public:
-    CallCountingStubShort(CallCount *remainingCallCountCell, PCODE targetForMethod)
+    CallCountingStubShort(CallCountingStubShort* stubRX, CallCount *remainingCallCountCell, PCODE targetForMethod)
         : m_part0{                                              0xb8},                  //     mov  eax,
         m_remainingCallCountCell(remainingCallCountCell),                               //               <imm32>
         m_part1{                                                0x66, 0xff, 0x08,       //     dec  word ptr [eax]
                                                                 0x0f, 0x85},            //     jnz  
         m_rel32TargetForMethod(                                                         //          <rel32>
             GetRelative32BitOffset(
-                &m_rel32TargetForMethod,
+                &stubRX->m_rel32TargetForMethod,
                 targetForMethod)),
         m_part2{                                                0xe8},                  //     call
         m_rel32TargetForThresholdReached(                                               //          <rel32>
             GetRelative32BitOffset(
-                &m_rel32TargetForThresholdReached,
+                &stubRX->m_rel32TargetForThresholdReached,
                 TargetForThresholdReached)),
                                                                                         // (eip == stub-identifying token)
         m_alignmentPadding{                                     0xcc}                   //     int  3

@@ -9,25 +9,24 @@ namespace System.Drawing
 {
     public sealed partial class Bitmap
     {
-        public Bitmap(Stream stream, bool useIcm)
+        public unsafe Bitmap(Stream stream, bool useIcm)
         {
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
 
-            IntPtr bitmap = IntPtr.Zero;
-            int status;
+            using DrawingCom.IStreamWrapper streamWrapper = DrawingCom.GetComWrapper(new GPStream(stream));
 
+            IntPtr bitmap = IntPtr.Zero;
             if (useIcm)
             {
-                status = Gdip.GdipCreateBitmapFromStreamICM(new GPStream(stream), out bitmap);
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStreamICM(streamWrapper.Ptr, &bitmap));
             }
             else
             {
-                status = Gdip.GdipCreateBitmapFromStream(new GPStream(stream), out bitmap);
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromStream(streamWrapper.Ptr, &bitmap));
             }
-            Gdip.CheckStatus(status);
 
             ValidateImage(bitmap);
 

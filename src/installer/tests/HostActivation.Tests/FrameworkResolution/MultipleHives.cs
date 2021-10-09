@@ -21,14 +21,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
         public void FrameworkHiveSelection_GlobalHiveWithBetterMatch()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multiple hives are only supported on Windows.
-                return;
-            }
-
             RunTest(
                 runtimeConfig => runtimeConfig
                     .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
@@ -36,14 +31,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
         public void FrameworkHiveSelection_MainHiveWithBetterMatch()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multiple hives are only supported on Windows.
-                return;
-            }
-
             RunTest(
                 runtimeConfig => runtimeConfig
                     .WithFramework(MicrosoftNETCoreApp, "6.0.0"))
@@ -51,14 +41,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
         public void FrameworkHiveSelection_CurrentDirectoryIsIgnored()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multiple hives are only supported on Windows.
-                return;
-            }
-
             RunTest(
                 SharedState.DotNetMainHive,
                 SharedState.FrameworkReferenceApp,

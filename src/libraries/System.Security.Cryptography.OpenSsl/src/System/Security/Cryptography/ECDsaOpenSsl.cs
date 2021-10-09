@@ -23,6 +23,7 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
+            ThrowIfNotSupported();
             // If ecKey is valid it has already been up-ref'd, so we can just use this handle as-is.
             SafeEcKeyHandle key = Interop.Crypto.EvpPkeyGetEcKey(pkeyHandle);
             if (key.IsInvalid)
@@ -50,6 +51,7 @@ namespace System.Security.Cryptography
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
+            ThrowIfNotSupported();
             SafeEcKeyHandle ecKeyHandle = SafeEcKeyHandle.DuplicateHandle(handle);
             _key = new ECOpenSsl(ecKeyHandle);
             KeySizeValue = _key.KeySize;
@@ -81,6 +83,14 @@ namespace System.Security.Cryptography
             {
                 pkeyHandle.Dispose();
                 throw;
+            }
+        }
+
+        static partial void ThrowIfNotSupported()
+        {
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(ECDsaOpenSsl)));
             }
         }
     }

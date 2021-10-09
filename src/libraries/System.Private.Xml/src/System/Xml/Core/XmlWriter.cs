@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.IO;
 using System.Text;
 using System.Xml.XPath;
 using System.Xml.Schema;
 using System.Diagnostics;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.Versioning;
 
 namespace System.Xml
 {
@@ -35,7 +32,7 @@ namespace System.Xml
         Closed,
 
         // Writer is in error state.
-        Error,
+        Error
     };
 
     // Represents a writer that provides fast non-cached forward-only way of generating XML streams containing XML documents
@@ -49,13 +46,7 @@ namespace System.Xml
         private const int WriteNodeBufferSize = 1024;
 
         // Returns the settings describing the features of the writer. Returns null for V1 XmlWriters (XmlTextWriter).
-        public virtual XmlWriterSettings? Settings
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public virtual XmlWriterSettings? Settings => null;
 
         // Write methods
         // Writes out the XML declaration with the version "1.0".
@@ -87,7 +78,7 @@ namespace System.Xml
         // Writes out a start tag with the specified local name with no namespace.
         public void WriteStartElement(string localName)
         {
-            WriteStartElement(null, localName, (string?)null);
+            WriteStartElement(null, localName, null);
         }
 
         // Closes one element and pops the corresponding namespace scope.
@@ -109,7 +100,7 @@ namespace System.Xml
         // Writes out the attribute with the specified LocalName and value.
         public void WriteAttributeString(string localName, string? value)
         {
-            WriteStartAttribute(null, localName, (string?)null);
+            WriteStartAttribute(null, localName, null);
             WriteString(value);
             WriteEndAttribute();
         }
@@ -135,7 +126,7 @@ namespace System.Xml
         // Writes the start of an attribute.
         public void WriteStartAttribute(string localName)
         {
-            WriteStartAttribute(null, localName, (string?)null);
+            WriteStartAttribute(null, localName, null);
         }
 
         // Closes the attribute opened by WriteStartAttribute call.
@@ -190,7 +181,7 @@ namespace System.Xml
 
         public abstract void WriteBase64(byte[] buffer, int index, int count);
 
-        // Encodes the specified binary bytes as binhex and writes out the resulting text.
+        // Encodes the specified binary bytes as bin hex and writes out the resulting text.
         public virtual void WriteBinHex(byte[] buffer, int index, int count)
         {
             BinHexEncoder.Encode(buffer, index, count, this);
@@ -210,22 +201,10 @@ namespace System.Xml
         public abstract string? LookupPrefix(string ns);
 
         // Gets an XmlSpace representing the current xml:space scope.
-        public virtual XmlSpace XmlSpace
-        {
-            get
-            {
-                return XmlSpace.Default;
-            }
-        }
+        public virtual XmlSpace XmlSpace => XmlSpace.Default;
 
         // Gets the current xml:lang scope.
-        public virtual string? XmlLang
-        {
-            get
-            {
-                return string.Empty;
-            }
-        }
+        public virtual string? XmlLang => string.Empty;
 
         // Scalar Value Methods
 
@@ -233,7 +212,7 @@ namespace System.Xml
         // (http://www.w3.org/TR/1998/REC-xml-19980210#NT-Name).
         public virtual void WriteNmToken(string name)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }
@@ -250,7 +229,7 @@ namespace System.Xml
         // Writes out the specified namespace-qualified name by looking up the prefix that is in scope for the given namespace.
         public virtual void WriteQualifiedName(string localName, string? ns)
         {
-            if (ns != null && ns.Length > 0)
+            if (!string.IsNullOrEmpty(ns))
             {
                 string? prefix = LookupPrefix(ns);
                 if (prefix == null)
@@ -276,12 +255,10 @@ namespace System.Xml
         // Writes out the specified value.
         public virtual void WriteValue(string? value)
         {
-            if (value == null)
+            if (value != null)
             {
-                return;
+                WriteString(value);
             }
-
-            WriteString(value);
         }
 
         // Writes out the specified value.
@@ -302,14 +279,7 @@ namespace System.Xml
             // Under Win8P, WriteValue(DateTime) will invoke this overload, but custom writers
             // might not have implemented it. This base implementation should call WriteValue(DateTime).
             // The following conversion results in the same string as calling ToString with DateTimeOffset.
-            if (value.Offset != TimeSpan.Zero)
-            {
-                WriteValue(value.LocalDateTime);
-            }
-            else
-            {
-                WriteValue(value.UtcDateTime);
-            }
+            WriteValue(value.Offset != TimeSpan.Zero ? value.LocalDateTime : value.UtcDateTime);
         }
 
         // Writes out the specified value.
@@ -347,12 +317,12 @@ namespace System.Xml
         // Writes out all the attributes found at the current position in the specified XmlReader.
         public virtual void WriteAttributes(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            if (reader.NodeType == XmlNodeType.Element || reader.NodeType == XmlNodeType.XmlDeclaration)
+            if (reader.NodeType is XmlNodeType.Element or XmlNodeType.XmlDeclaration)
             {
                 if (reader.MoveToFirstAttribute())
                 {
@@ -395,7 +365,7 @@ namespace System.Xml
         // to the corresponding end element.
         public virtual void WriteNode(XmlReader reader, bool defattr)
         {
-            if (null == reader)
+            if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -412,20 +382,16 @@ namespace System.Xml
                         if (reader.IsEmptyElement)
                         {
                             WriteEndElement();
-                            break;
                         }
                         break;
                     case XmlNodeType.Text:
                         if (canReadChunk)
                         {
-                            if (_writeNodeBuffer == null)
-                            {
-                                _writeNodeBuffer = new char[WriteNodeBufferSize];
-                            }
+                            _writeNodeBuffer ??= new char[WriteNodeBufferSize];
                             int read;
                             while ((read = reader.ReadValueChunk(_writeNodeBuffer, 0, WriteNodeBufferSize)) > 0)
                             {
-                                this.WriteChars(_writeNodeBuffer, 0, read);
+                                WriteChars(_writeNodeBuffer, 0, read);
                             }
                         }
                         else
@@ -544,19 +510,17 @@ namespace System.Xml
                         iLevel++;
                         continue;
                     }
-                    else
+
+                    // EndElement
+                    if (navigator.NodeType == XPathNodeType.Element)
                     {
-                        // EndElement
-                        if (navigator.NodeType == XPathNodeType.Element)
+                        if (navigator.IsEmptyElement)
                         {
-                            if (navigator.IsEmptyElement)
-                            {
-                                WriteEndElement();
-                            }
-                            else
-                            {
-                                WriteFullEndElement();
-                            }
+                            WriteEndElement();
+                        }
+                        else
+                        {
+                            WriteFullEndElement();
                         }
                     }
                 }
@@ -599,7 +563,7 @@ namespace System.Xml
         public void WriteElementString(string localName, string? ns, string? value)
         {
             WriteStartElement(localName, ns);
-            if (null != value && 0 != value.Length)
+            if (!string.IsNullOrEmpty(value))
             {
                 WriteString(value);
             }
@@ -611,7 +575,7 @@ namespace System.Xml
         public void WriteElementString(string? prefix, string localName, string? ns, string? value)
         {
             WriteStartElement(prefix, localName, ns);
-            if (null != value && 0 != value.Length)
+            if (!string.IsNullOrEmpty(value))
             {
                 WriteString(value);
             }
@@ -671,7 +635,7 @@ namespace System.Xml
             var fs = new FileStream(outputFileName, FileMode.Create, FileAccess.Write, FileShare.Read);
             try
             {
-                var settings = new XmlWriterSettings() { CloseOutput = true };
+                var settings = new XmlWriterSettings { CloseOutput = true };
                 XmlWriter writer = new XmlEncodedRawTextWriter(fs, settings);
                 return new XmlWellFormedWriter(writer, settings);
             }

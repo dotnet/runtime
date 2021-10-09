@@ -45,7 +45,7 @@ namespace HttpStress
             (string scheme, string hostname, int port) = ParseServerUri(configuration.ServerUri);
             IWebHostBuilder host = WebHost.CreateDefaultBuilder();
 
-            if (configuration.UseHttpSys)
+            if (configuration.UseHttpSys && OperatingSystem.IsWindows())
             {
                 // Use http.sys.  This requires additional manual configuration ahead of time;
                 // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
@@ -102,17 +102,21 @@ namespace HttpStress
                                 certReq.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(new OidCollection { new Oid("1.3.6.1.5.5.7.3.1") }, false));
                                 certReq.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
                                 X509Certificate2 cert = certReq.CreateSelfSigned(DateTimeOffset.UtcNow.AddMonths(-1), DateTimeOffset.UtcNow.AddMonths(1));
-                                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                                if (OperatingSystem.IsWindows())
                                 {
                                     cert = new X509Certificate2(cert.Export(X509ContentType.Pfx));
                                 }
                                 listenOptions.UseHttps(cert);
                             }
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                listenOptions.Protocols = HttpProtocols.Http3;
+                            }
                         }
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion == new Version(2,0) ?
+                                configuration.HttpVersion ==  HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
                                 HttpProtocols.Http1 ;
                         }
@@ -123,8 +127,12 @@ namespace HttpStress
             LoggerConfiguration loggerConfiguration = new LoggerConfiguration();
             if (configuration.Trace)
             {
+                if (!Directory.Exists(LogHttpEventListener.LogDirectory))
+                {
+                    Directory.CreateDirectory(LogHttpEventListener.LogDirectory);
+                }
                 // Clear existing logs first.
-                foreach (var filename in Directory.GetFiles(".", "server*.log"))
+                foreach (var filename in Directory.GetFiles(LogHttpEventListener.LogDirectory, "server*.log"))
                 {
                     try
                     {
@@ -134,7 +142,7 @@ namespace HttpStress
 
                 loggerConfiguration = loggerConfiguration
                     // Output diagnostics to the file
-                    .WriteTo.File("server.log", fileSizeLimitBytes: 50 << 20, rollOnFileSizeLimit: true)
+                    .WriteTo.File(Path.Combine(LogHttpEventListener.LogDirectory, "server.log"), fileSizeLimitBytes: 100 << 20, rollOnFileSizeLimit: true)
                     .MinimumLevel.Debug();
             }
             if (configuration.LogAspNet)
@@ -161,7 +169,7 @@ namespace HttpStress
         private static void MapRoutes(IEndpointRouteBuilder endpoints)
         {
             var loggerFactory = endpoints.ServiceProvider.GetService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger<StressServer>();
+            var logger = loggerFactory?.CreateLogger<StressServer>();
             var head = new[] { "HEAD" };
 
             endpoints.MapGet("/", async context =>

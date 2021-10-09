@@ -637,7 +637,7 @@ namespace System.Xml.Serialization
             (Type, string) typeMemberNameTuple = (o.GetType(), memberName);
             if (!s_setMemberValueDelegateCache.TryGetValue(typeMemberNameTuple, out ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate? result))
             {
-                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetMember(o.GetType(), memberName);
+                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
                 Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
                 Type memberType;
                 if (memberInfo is PropertyInfo propInfo)
@@ -883,6 +883,11 @@ namespace System.Xml.Serialization
                 {
                     Reader.Skip();
                     value = default(TimeSpan);
+                }
+                else if (element.Mapping.TypeDesc!.Type == typeof(DateTimeOffset) && Reader.IsEmptyElement)
+                {
+                    Reader.Skip();
+                    value = default(DateTimeOffset);
                 }
                 else
                 {
@@ -1219,6 +1224,7 @@ namespace System.Xml.Serialization
                         "Guid" => XmlConvert.ToGuid(value),
                         "Char" => XmlConvert.ToChar(value),
                         "TimeSpan" => XmlConvert.ToTimeSpan(value),
+                        "DateTimeOffset" => XmlConvert.ToDateTimeOffset(value),
                         _ => throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}")),
                     };
                     return retObj;

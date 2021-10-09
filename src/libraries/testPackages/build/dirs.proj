@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+    <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
+    <RestoreUseStaticGraphEvaluation>true</RestoreUseStaticGraphEvaluation>
+    <RestorePackagesPath>$(MSBuildThisFileDirectory)cache\</RestorePackagesPath>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.Build.Traversal" />
+
+  <ItemGroup>
+    <ProjectReference Include="projects\**\*.csproj" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.Traversal" />
+</Project>

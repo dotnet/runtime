@@ -33,7 +33,7 @@ typedef std::unordered_map<known_options, std::vector<pal::string_t>, known_opti
 
 namespace command_line
 {
-    const pal::string_t& get_option_name(known_options opt);
+    const pal::char_t* get_option_name(known_options opt);
     pal::string_t get_option_value(
         const opt_map_t& opts,
         known_options opt,

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <NoWarn>$(NoWarn);1634;1691;649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <!-- Too much private reflection. Do not bother with trimming -->
     <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
@@ -135,6 +134,7 @@
     <Compile Include="System\Runtime\Serialization\IExtensibleDataObject.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatReader.cs" />
     <Compile Include="System\Runtime\Serialization\Json\ReflectionJsonFormatWriter.cs" />
+    <Compile Include="System\Runtime\Serialization\MemoryStreamAdapter.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionFeature.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionReader.cs" />
     <Compile Include="System\Runtime\Serialization\ReflectionClassWriter.cs" />

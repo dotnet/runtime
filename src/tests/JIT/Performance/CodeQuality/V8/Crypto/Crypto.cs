@@ -1789,6 +1789,14 @@ namespace V8.Crypto
         // An array of bytes the size of the pool will be passed to init()
         private const int rng_psize = 256;
 
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
         // Random number generator - requires a PRNG backend, e.g. prng4.js
 
         // For best results, put code like
@@ -1804,7 +1812,7 @@ namespace V8.Crypto
             _rng_pool = new int[rng_psize];
             _rng_pptr = 0;
 #if USE_RANDOM_SEED
-            Random rnd = new Random();
+            Random rnd = new Random(Seed);
 #endif
             while (_rng_pptr < rng_psize)
             {  // extract some randomness from Math.random()

@@ -177,7 +177,7 @@ namespace System.Threading
 
         // This needs to be initialized after UsePortableThreadPool above, as it may depend on UsePortableThreadPool and the
         // config initialization
-        internal static readonly bool EnableWorkerTracking = GetEnableWorkerTracking();
+        private static readonly bool IsWorkerTrackingEnabledInConfig = GetEnableWorkerTracking();
 
         private static unsafe bool InitializeConfigAndDetermineUsePortableThreadPool()
         {
@@ -450,6 +450,7 @@ namespace System.Threading
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
 
         [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
         public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped) =>
             PostQueuedCompletionStatus(overlapped);
 
@@ -522,6 +523,15 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void NotifyWorkItemProgressNative();
 
+        internal static bool NotifyThreadBlocked() =>
+            UsePortableThreadPool && PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
+
+        internal static void NotifyThreadUnblocked()
+        {
+            Debug.Assert(UsePortableThreadPool);
+            PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
+        }
+
         internal static object? GetOrCreateThreadLocalCompletionCountObject() =>
             UsePortableThreadPool ? PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject() : null;
 
@@ -537,7 +547,8 @@ namespace System.Threading
              RegisteredWaitHandle registeredWaitHandle
              );
 
-        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated.  Please use ThreadPool.BindHandle(SafeHandle) instead.", false)]
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [SupportedOSPlatform("windows")]
         public static bool BindHandle(IntPtr osHandle)
         {
             return BindIOCompletionCallbackNative(osHandle);

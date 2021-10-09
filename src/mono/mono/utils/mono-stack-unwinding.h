@@ -30,7 +30,9 @@ typedef enum {
 	FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX = 6,
 	/* Frame for transitioning to interpreted code */
 	FRAME_TYPE_INTERP_ENTRY = 7,
-	FRAME_TYPE_NUM = 8
+	/* Frame marking transition to native JIT compiler */
+	FRAME_TYPE_JIT_ENTRY = 8,
+	FRAME_TYPE_NUM = 9
 } MonoStackFrameType;
 
 typedef enum {

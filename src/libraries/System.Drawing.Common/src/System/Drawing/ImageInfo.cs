@@ -18,21 +18,25 @@ namespace System.Drawing
         private sealed class ImageInfo
         {
             private const int PropertyTagFrameDelay = 0x5100;
+            private const int PropertyTagLoopCount = 0x5101;
 
             private readonly Image _image;
             private int _frame;
+            private short _loop;
             private readonly int _frameCount;
+            private readonly short _loopCount;
             private bool _frameDirty;
             private readonly bool _animated;
             private EventHandler? _onFrameChangedHandler;
-            private readonly int[] _frameDelay;
-            private int _frameTimer;
+            private readonly long[]? _frameEndTimes;
+            private long _totalAnimationTime;
+            private long _frameTimer;
 
             public ImageInfo(Image image)
             {
                 _image = image;
                 _animated = ImageAnimator.CanAnimate(image);
-                _frameDelay = null!; // guaranteed to be initialized by the final check
+                _frameEndTimes = null;
 
                 if (_animated)
                 {
@@ -41,80 +45,77 @@ namespace System.Drawing
                     PropertyItem? frameDelayItem = image.GetPropertyItem(PropertyTagFrameDelay);
 
                     // If the image does not have a frame delay, we just return 0.
-                    //
                     if (frameDelayItem != null)
                     {
                         // Convert the frame delay from byte[] to int
-                        //
                         byte[] values = frameDelayItem.Value!;
-                        Debug.Assert(values.Length == 4 * FrameCount, "PropertyItem has invalid value byte array");
-                        _frameDelay = new int[FrameCount];
-                        for (int i = 0; i < FrameCount; ++i)
+
+                        // On Windows, we get the frame delays for every frame. On Linux, we only get the first frame delay.
+                        // We handle this by treating the frame delays as a repeating sequence, asserting that the sequence
+                        // is fully repeatable to match the frame count.
+                        Debug.Assert(values.Length % 4 == 0, "PropertyItem has an invalid value byte array. It should have a length evenly divisible by 4 to represent ints.");
+                        Debug.Assert(_frameCount % (values.Length / 4) == 0, "PropertyItem has invalid value byte array. The FrameCount should be evenly divisible by a quarter of the byte array's length.");
+
+                        _frameEndTimes = new long[_frameCount];
+                        long lastEndTime = 0;
+
+                        for (int f = 0, i = 0; f < _frameCount; ++f, i += 4)
                         {
-                            _frameDelay[i] = values[i * 4] + 256 * values[i * 4 + 1] + 256 * 256 * values[i * 4 + 2] + 256 * 256 * 256 * values[i * 4 + 3];
+                            if (i >= values.Length)
+                            {
+                                i = 0;
+                            }
+
+                            // Frame delays are stored in 1/100ths of a second; convert to milliseconds while accumulating
+                            // Per spec, a frame delay can be 0 which is treated as a single animation tick
+                            int delay = BitConverter.ToInt32(values, i) * 10;
+                            lastEndTime += delay > 0 ? delay : ImageAnimator.AnimationDelayMS;
+
+                            // Guard against overflows
+                            if (lastEndTime < _totalAnimationTime)
+                            {
+                                lastEndTime = _totalAnimationTime;
+                            }
+                            else
+                            {
+                                _totalAnimationTime = lastEndTime;
+                            }
+
+                            _frameEndTimes[f] = lastEndTime;
                         }
+                    }
+
+                    PropertyItem? loopCountItem = image.GetPropertyItem(PropertyTagLoopCount);
+
+                    if (loopCountItem != null)
+                    {
+                        // The loop count is a short where 0 = infinite, and a positive value indicates the
+                        // number of times to loop. The animation will be shown 1 time more than the loop count.
+                        byte[] values = loopCountItem.Value!;
+
+                        Debug.Assert(values.Length == sizeof(short), "PropertyItem has an invalid byte array. It should represent a single short value.");
+                        _loopCount = BitConverter.ToInt16(values);
+                    }
+                    else
+                    {
+                        _loopCount = 0;
                     }
                 }
                 else
                 {
                     _frameCount = 1;
                 }
-                if (_frameDelay == null)
-                {
-                    _frameDelay = new int[FrameCount];
-                }
             }
 
             /// <summary>
             /// Whether the image supports animation.
             /// </summary>
-            public bool Animated
-            {
-                get
-                {
-                    return _animated;
-                }
-            }
+            public bool Animated => _animated;
 
             /// <summary>
-            /// The current frame.
+            /// The current frame has changed but the image has not yet been updated.
             /// </summary>
-            public int Frame
-            {
-                get
-                {
-                    return _frame;
-                }
-                set
-                {
-                    if (_frame != value)
-                    {
-                        if (value < 0 || value >= FrameCount)
-                        {
-                            throw new ArgumentException(SR.InvalidFrame, nameof(value));
-                        }
-
-                        if (Animated)
-                        {
-                            _frame = value;
-                            _frameDirty = true;
-
-                            OnFrameChanged(EventArgs.Empty);
-                        }
-                    }
-                }
-            }
-
-            /// <summary>
-            /// The current frame has not been updated.
-            /// </summary>
-            public bool FrameDirty
-            {
-                get
-                {
-                    return _frameDirty;
-                }
-            }
+            public bool FrameDirty => _frameDirty;
 
             public EventHandler? FrameChangedHandler
             {
@@ -129,46 +130,75 @@ namespace System.Drawing
             }
 
             /// <summary>
-            /// The number of frames in the image.
+            /// The total animation time of the image in milliseconds, or <value>0</value> if not animated.
             /// </summary>
-            public int FrameCount
-            {
-                get
-                {
-                    return _frameCount;
-                }
-            }
+            private long TotalAnimationTime => Animated ? _totalAnimationTime : 0;
 
             /// <summary>
-            /// The delay associated with the frame at the specified index.
+            /// Whether animation should progress, respecting the image's animation support
+            /// and if there are animation frames or loops remaining.
             /// </summary>
-            public int FrameDelay(int frame)
-            {
-                return _frameDelay![frame];
-            }
+            private bool ShouldAnimate => TotalAnimationTime > 0 ? (_loopCount == 0 || _loop <= _loopCount) : false;
 
-            internal int FrameTimer
+            /// <summary>
+            /// Advance the animation by the specified number of milliseconds. If the advancement
+            /// progresses beyond the end time of the current Frame, <see cref="FrameChangedHandler"/>
+            /// will be called. Subscribed handlers often use that event to call
+            /// <see cref="ImageAnimator.UpdateFrames(Image)"/>.
+            /// <para>
+            /// If the animation progresses beyond the end of the image's total animation time,
+            /// the animation will loop.
+            /// </para>
+            /// </summary>
+            /// <remarks>
+            /// This animation does not respect a GIF's specified number of animation repeats;
+            /// instead, animations loop indefinitely.
+            /// </remarks>
+            /// <param name="milliseconds">The number of milliseconds to advance the animation by</param>
+            public void AdvanceAnimationBy(long milliseconds)
             {
-                get
+                if (ShouldAnimate)
                 {
-                    return _frameTimer;
-                }
-                set
-                {
-                    _frameTimer = value;
+                    int oldFrame = _frame;
+                    _frameTimer += milliseconds;
+
+                    if (_frameTimer > TotalAnimationTime)
+                    {
+                        _loop += (short)Math.DivRem(_frameTimer, TotalAnimationTime, out long newTimer);
+                        _frameTimer = newTimer;
+
+                        if (!ShouldAnimate)
+                        {
+                            // If we've finished looping, then freeze onto the last frame
+                            _frame = _frameCount - 1;
+                            _frameTimer = TotalAnimationTime;
+                        }
+                        else if (_frame > 0 && _frameTimer < _frameEndTimes![_frame - 1])
+                        {
+                            // If the loop put us before the current frame (which is common)
+                            // then reset back to the first frame. We will then progress
+                            // forward again from there (below).
+                            _frame = 0;
+                        }
+                    }
+
+                    while (_frameTimer > _frameEndTimes![_frame])
+                    {
+                        _frame++;
+                    }
+
+                    if (_frame != oldFrame)
+                    {
+                        _frameDirty = true;
+                        OnFrameChanged(EventArgs.Empty);
+                    }
                 }
             }
 
             /// <summary>
             /// The image this object wraps.
             /// </summary>
-            internal Image Image
-            {
-                get
-                {
-                    return _image;
-                }
-            }
+            internal Image Image => _image;
 
             /// <summary>
             /// Selects the current frame as the active frame in the image.
@@ -177,7 +207,7 @@ namespace System.Drawing
             {
                 if (_frameDirty)
                 {
-                    _image.SelectActiveFrame(FrameDimension.Time, Frame);
+                    _image.SelectActiveFrame(FrameDimension.Time, _frame);
                     _frameDirty = false;
                 }
             }

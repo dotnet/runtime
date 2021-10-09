@@ -50,6 +50,7 @@ static char* newStringWDel(__in __nullterminated char* str1, char delimiter, __i
 static char* newString(__in __nullterminated const char* str1);
 static void corEmitInt(BinStr* buff, unsigned data);
 static void AppendStringWithLength(BinStr* pbs, __in __nullterminated char* sz);
+static void AppendFieldToCustomBlob(BinStr* pBlob, __in BinStr* pField);
 bool bParsingByteArray = FALSE;
 int iOpcodeLen = 0;
 int iCallConv = 0;

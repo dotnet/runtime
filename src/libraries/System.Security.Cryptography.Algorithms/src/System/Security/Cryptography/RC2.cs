@@ -23,6 +23,7 @@ namespace System.Security.Cryptography
             FeedbackSizeValue = BlockSizeValue;
         }
 
+        [UnsupportedOSPlatform("android")]
         public static new RC2 Create()
         {
             return new RC2Implementation();

@@ -15,8 +15,6 @@
     <Compile Include="System\Collections\Generic\LinkedList.cs" />
     <Compile Include="System\Collections\Generic\PriorityQueue.cs" />
     <Compile Include="System\Collections\Generic\PriorityQueueDebugView.cs" />
-    <Compile Include="System\Collections\Generic\Queue.cs" />
-    <Compile Include="System\Collections\Generic\QueueDebugView.cs" />
     <Compile Include="System\Collections\Generic\SortedDictionary.cs" />
     <Compile Include="System\Collections\Generic\SortedList.cs" />
     <Compile Include="System\Collections\Generic\SortedSet.cs" />

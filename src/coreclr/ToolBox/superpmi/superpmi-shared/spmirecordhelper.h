@@ -35,6 +35,10 @@ public:
     static Agnostic_CORINFO_RESOLVED_TOKEN RestoreAgnostic_CORINFO_RESOLVED_TOKEN(
         CORINFO_RESOLVED_TOKEN* pResolvedToken, LightWeightMap<key, value>* buffers);
 
+    template <typename key, typename value>
+    static CORINFO_RESOLVED_TOKEN Restore_CORINFO_RESOLVED_TOKEN(
+        Agnostic_CORINFO_RESOLVED_TOKEN* pResolvedTokenAgnostic, LightWeightMap<key, value>* buffers);
+
     // Restore the out values in the first argument from the second.
     // Can't just return whole CORINFO_RESOLVED_TOKEN because [in] values in it are important too.
     template <typename key, typename value>
@@ -197,6 +201,22 @@ inline Agnostic_CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::RestoreAgnostic_CORINF
     ZeroMemory(&token, sizeof(token));
     token.inValue  = CreateAgnostic_CORINFO_RESOLVED_TOKENin(pResolvedToken);
     token.outValue = RestoreAgnostic_CORINFO_RESOLVED_TOKENout(pResolvedToken, buffers);
+    return token;
+}
+
+template <typename key, typename value>
+inline CORINFO_RESOLVED_TOKEN SpmiRecordsHelper::Restore_CORINFO_RESOLVED_TOKEN(
+    Agnostic_CORINFO_RESOLVED_TOKEN* pResolvedTokenAgnostic, LightWeightMap<key, value>* buffers)
+{
+    CORINFO_RESOLVED_TOKEN token;
+    ZeroMemory(&token, sizeof(token));
+
+    token.tokenContext = (CORINFO_CONTEXT_HANDLE)pResolvedTokenAgnostic->inValue.tokenContext;
+    token.tokenScope   = (CORINFO_MODULE_HANDLE)pResolvedTokenAgnostic->inValue.tokenScope;
+    token.token        = (mdToken)pResolvedTokenAgnostic->inValue.token;
+    token.tokenType    = (CorInfoTokenKind)pResolvedTokenAgnostic->inValue.tokenType;
+
+    Restore_CORINFO_RESOLVED_TOKENout(&token, pResolvedTokenAgnostic->outValue, buffers);
     return token;
 }
 

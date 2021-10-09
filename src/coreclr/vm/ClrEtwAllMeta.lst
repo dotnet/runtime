@@ -134,9 +134,9 @@ nomac:GarbageCollection:::GCJoin_V2
 
 nostack:Type:::BulkType
 
-###################
-# Threadpool events
-###################
+#################################
+# Threading and Threadpool events
+#################################
 nomac:WorkerThreadCreation:::WorkerThreadCreate
 noclrinstanceid:WorkerThreadCreation:::WorkerThreadCreate
 nomac:WorkerThreadCreation:::WorkerThreadTerminate
@@ -170,6 +170,8 @@ nomac:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentSample
 nostack:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentSample
 nomac:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentAdjustment
 nostack:ThreadPoolWorkerThreadAdjustment:::ThreadPoolWorkerThreadAdjustmentAdjustment
+nomac:YieldProcessorMeasurement:::YieldProcessorMeasurement
+nostack:YieldProcessorMeasurement:::YieldProcessorMeasurement
 
 ##################
 # Exception events
@@ -633,3 +635,35 @@ nomac:StressLogTask:::StressLogEvent_V1
 # StackWalk events
 ##################
 nomac:CLRStackStress:::CLRStackWalkStress
+
+#################################
+# Events from the Mono profiler provider
+#################################
+noclrinstanceid:MonoProfiler:::
+nostack:MonoProfiler:::MonoProfilerExceptionClause
+nostack:MonoProfiler:::MonoProfilerMethodEnter
+nostack:MonoProfiler:::MonoProfilerMethodLeave
+nostack:MonoProfiler:::MonoProfilerMethodTailCall
+nostack:MonoProfiler:::MonoProfilerMethodExceptionLeave
+nostack:MonoProfiler:::MonoProfilerMethodFree
+nostack:MonoProfiler:::MonoProfilerMethodBeginInvoke
+nostack:MonoProfiler:::MonoProfilerMethodEndInvoke
+nostack:MonoProfiler:::MonoProfilerGCEvent
+nostack:MonoProfiler:::MonoProfilerGCMoves
+nostack:MonoProfiler:::MonoProfilerGCResize
+nostack:MonoProfiler:::MonoProfilerGCFinalizing
+nostack:MonoProfiler:::MonoProfilerGCFinalized
+nostack:MonoProfiler:::MonoProfilerGCFinalizingObject
+nostack:MonoProfiler:::MonoProfilerGCFinalizedObject
+nostack:MonoProfiler:::MonoProfilerGCRootRegister
+nostack:MonoProfiler:::MonoProfilerGCRootUnregister
+nostack:MonoProfiler:::MonoProfilerGCRoots
+nostack:MonoProfiler:::MonoProfilerGCHeapDumpStart
+nostack:MonoProfiler:::MonoProfilerGCHeapDumpStop
+nostack:MonoProfiler:::MonoProfilerGCHeapDumpObjectReference
+nostack:MonoProfiler:::MonoProfilerThreadStarted
+nostack:MonoProfiler:::MonoProfilerThreadStopping
+nostack:MonoProfiler:::MonoProfilerThreadStopped
+nostack:MonoProfiler:::MonoProfilerThreadExited
+nostack:MonoProfiler:::MonoProfilerThreadName
+nostack:MonoProfiler:::MonoProfilerGCHeapDumpVTableClassReference

@@ -66,6 +66,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -366,50 +367,53 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(a*){2}(x)", "x", "(0,1)(0,0)(0,1)")]
         [InlineData("(a*){2}(x)", "ax", "(0,2)(1,1)(1,2)")]
         [InlineData("(a*){2}(x)", "axa", "(0,2)(1,1)(1,2)")]
-        public void Test(string pattern, string input, string captures)
+        public async Task Test(string pattern, string input, string captures)
         {
             if (input == "NULL")
             {
                 input = "";
             }
 
-            foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Compiled })
+            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 if (captures == "BADBR")
                 {
-                    Assert.ThrowsAny<ArgumentException>(() => Regex.IsMatch(input, pattern, options));
+                    await Assert.ThrowsAnyAsync<ArgumentException>(async () => (await RegexHelpers.GetRegexAsync(engine, pattern)).IsMatch(input));
+                    return;
                 }
-                else if (captures == "NOMATCH")
+
+                Regex r = await RegexHelpers.GetRegexAsync(engine, pattern);
+
+                if (captures == "NOMATCH")
                 {
-                    Assert.False(Regex.IsMatch(input, pattern, options));
+                    Assert.False(r.IsMatch(input));
+                    return;
                 }
-                else
+
+                Match match = r.Match(input);
+                Assert.True(match.Success);
+
+                var expected = new HashSet<(int start, int end)>(
+                    captures
+                    .Split(new[] { '(', ')' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Split(','))
+                    .Select(s => (start: int.Parse(s[0]), end: int.Parse(s[1])))
+                    .Distinct()
+                    .OrderBy(c => c.start)
+                    .ThenBy(c => c.end));
+
+                var actual = new HashSet<(int start, int end)>(
+                    match.Groups
+                    .Cast<Group>()
+                    .Select(g => (start: g.Index, end: g.Index + g.Length))
+                    .Distinct()
+                    .OrderBy(g => g.start)
+                    .ThenBy(g => g.end));
+
+                // The .NET implementation sometimes has extra captures beyond what the original data specifies, so we assert a subset.
+                if (!expected.IsSubsetOf(actual))
                 {
-                    Match match = Regex.Match(input, pattern, options);
-                    Assert.True(match.Success);
-
-                    var expected = new HashSet<(int start, int end)>(
-                        captures
-                        .Split(new[] { '(', ')' }, StringSplitOptions.RemoveEmptyEntries)
-                        .Select(s => s.Split(','))
-                        .Select(s => (start: int.Parse(s[0]), end: int.Parse(s[1])))
-                        .Distinct()
-                        .OrderBy(c => c.start)
-                        .ThenBy(c => c.end));
-
-                    var actual = new HashSet<(int start, int end)>(
-                        match.Groups
-                        .Cast<Group>()
-                        .Select(g => (start: g.Index, end: g.Index + g.Length))
-                        .Distinct()
-                        .OrderBy(g => g.start)
-                        .ThenBy(g => g.end));
-
-                    // The .NET implementation sometimes has extra captures beyond what the original data specifies, so we assert a subset.
-                    if (!expected.IsSubsetOf(actual))
-                    {
-                        throw new Xunit.Sdk.XunitException($"Actual: {string.Join(", ", actual)}{Environment.NewLine}Expected: {string.Join(", ", expected)}");
-                    }
+                    throw new Xunit.Sdk.XunitException($"Actual: {string.Join(", ", actual)}{Environment.NewLine}Expected: {string.Join(", ", expected)}");
                 }
             }
         }

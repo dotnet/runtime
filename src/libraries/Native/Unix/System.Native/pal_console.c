@@ -97,21 +97,9 @@ static bool g_hasTty = false;                  // cache we are not a tty
 
 static volatile bool g_receivedSigTtou = false;
 
-static void ttou_handler(int signo)
+static void ttou_handler()
 {
-    (void)signo;
     g_receivedSigTtou = true;
-}
-
-static void InstallTTOUHandler(void (*handler)(int), int flags)
-{
-    struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    action.sa_handler = handler;
-    action.sa_flags = flags;
-    int rvSigaction = sigaction(SIGTTOU, &action, NULL);
-    assert(rvSigaction == 0);
-    (void)rvSigaction;
 }
 
 static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
@@ -131,7 +119,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
         // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
-        InstallTTOUHandler(ttou_handler, (int)SA_RESETHAND);
+        InstallTTOUHandlerForConsole(ttou_handler);
 
         g_receivedSigTtou = false;
     }
@@ -147,8 +135,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
             rv = true;
         }
 
-        // Restore default SIGTTOU handler.
-        InstallTTOUHandler(SIG_DFL, 0);
+        UninstallTTOUHandlerForConsole();
     }
 
     // On success, update the cached value.
@@ -205,8 +192,6 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
 void UninitializeTerminal()
 {
-    assert(g_hasTty);
-
     // This method is called on SIGQUIT/SIGINT from the signal dispatching thread
     // and on atexit.
 
@@ -473,7 +458,7 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling()
 {
     static int32_t initialized = 0;
 
-    // Both the Process and Console class call this method for initialization.
+    // The Process, Console and PosixSignalRegistration classes call this method for initialization.
     if (pthread_mutex_lock(&g_lock) == 0)
     {
         if (initialized == 0)

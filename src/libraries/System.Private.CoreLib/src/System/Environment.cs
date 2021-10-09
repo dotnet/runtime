@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System
@@ -127,8 +128,7 @@ namespace System
                 int processId = s_processId;
                 if (processId == 0)
                 {
-                    Interlocked.CompareExchange(ref s_processId, GetProcessId(), 0);
-                    processId = s_processId;
+                    s_processId = processId = GetProcessId();
                     // Assume that process Id zero is invalid for user processes. It holds for all mainstream operating systems.
                     Debug.Assert(processId != 0);
                 }
@@ -200,6 +200,27 @@ namespace System
 
                 // Return zeros rather then failing if the version string fails to parse
                 return Version.TryParse(versionSpan, out Version? version) ? version : new Version();
+            }
+        }
+
+        public static string StackTrace
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
+            get => new StackTrace(true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+        }
+
+        private static volatile int s_systemPageSize;
+
+        public static int SystemPageSize
+        {
+            get
+            {
+                int systemPageSize = s_systemPageSize;
+                if (systemPageSize == 0)
+                {
+                    s_systemPageSize = systemPageSize = GetSystemPageSize();
+                }
+                return systemPageSize;
             }
         }
 

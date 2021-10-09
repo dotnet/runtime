@@ -7,6 +7,8 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+
 namespace System.Security.Cryptography.CryptoConfigTests
 {
     public static class CryptoConfigTests
@@ -220,8 +222,11 @@ namespace System.Security.Cryptography.CryptoConfigTests
                     yield return new object[] { "RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.RSA", "System.Security.Cryptography.RSACryptoServiceProvider", true };
                     yield return new object[] { "System.Security.Cryptography.AsymmetricAlgorithm", "System.Security.Cryptography.RSACryptoServiceProvider", true };
-                    yield return new object[] { "DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
-                    yield return new object[] { "System.Security.Cryptography.DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
+                    if (!PlatformDetection.UsesMobileAppleCrypto)
+                    {
+                        yield return new object[] { "DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
+                        yield return new object[] { "System.Security.Cryptography.DSA", "System.Security.Cryptography.DSACryptoServiceProvider", true };
+                    }
                     yield return new object[] { "ECDsa", "System.Security.Cryptography.ECDsaCng", true };
                     yield return new object[] { "ECDsaCng", "System.Security.Cryptography.ECDsaCng", false };
                     yield return new object[] { "System.Security.Cryptography.ECDsaCng", null, false };
@@ -343,25 +348,30 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void EncodeOID_Validation()
         {
+#pragma warning disable SYSLIB0031 // EncodeOID is obsolete
             Assert.Throws<ArgumentNullException>(() => CryptoConfig.EncodeOID(null));
             Assert.Throws<FormatException>(() => CryptoConfig.EncodeOID(string.Empty));
             Assert.Throws<FormatException>(() => CryptoConfig.EncodeOID("BAD.OID"));
             Assert.Throws<FormatException>(() => CryptoConfig.EncodeOID("1.2.BAD.OID"));
             Assert.Throws<OverflowException>(() => CryptoConfig.EncodeOID("1." + uint.MaxValue));
+#pragma warning restore SYSLIB0031
         }
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void EncodeOID_Compat()
         {
+#pragma warning disable SYSLIB0031 // EncodeOID is obsolete
             string actual = CryptoConfig.EncodeOID("-1.2.-3").ByteArrayToHex();
             Assert.Equal("0602DAFD", actual); // Negative values not checked
+#pragma warning restore SYSLIB0031
         }
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void EncodeOID_Length_Boundary()
         {
+#pragma warning disable SYSLIB0031 // EncodeOID is obsolete
             string valueToRepeat = "1.1";
 
             // Build a string like 1.11.11.11. ... .11.1, which has 0x80 separators.
@@ -374,6 +384,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
             // and would just clutter up this test, so only verify it doesn't throw.
             s = new StringBuilder(valueToRepeat.Length * 0x7f).Insert(0, valueToRepeat, 0x7f).ToString();
             CryptoConfig.EncodeOID(s);
+#pragma warning restore SYSLIB0031
         }
 
         [Theory]
@@ -387,9 +398,11 @@ namespace System.Security.Cryptography.CryptoConfigTests
         {
             // Boundary cases in EncodeOID; output may produce the wrong value mathematically due to encoding
             // algorithm semantics but included here for compat reasons.
+#pragma warning disable SYSLIB0031 // EncodeOID is obsolete
             byte[] actual = CryptoConfig.EncodeOID("1." + elementValue.ToString());
             byte[] expected = expectedEncoding.HexToByteArray();
             Assert.Equal(expected, actual);
+#pragma warning restore SYSLIB0031
         }
 
         [Theory]
@@ -399,12 +412,14 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [InlineData("MD5", "1.2.840.113549.2.5", "06082A864886F70D0205")]
         public static void MapAndEncodeOID(string alg, string expectedOid, string expectedEncoding)
         {
+#pragma warning disable SYSLIB0031 // EncodeOID is obsolete
             string oid = CryptoConfig.MapNameToOID(alg);
             Assert.Equal(expectedOid, oid);
 
             byte[] actual = CryptoConfig.EncodeOID(oid);
             byte[] expected = expectedEncoding.HexToByteArray();
             Assert.Equal(expected, actual);
+#pragma warning restore SYSLIB0031
         }
 
         private static void VerifyCreateFromName<TExpected>(string name)
@@ -425,3 +440,5 @@ namespace System.Security.Cryptography.CryptoConfigTests
         }
     }
 }
+
+#pragma warning restore SYSLIB0022

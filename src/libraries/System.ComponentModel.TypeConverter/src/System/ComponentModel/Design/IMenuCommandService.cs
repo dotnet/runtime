@@ -29,7 +29,7 @@ namespace System.ComponentModel.Design
         /// Searches for the given command ID and returns the <see cref='System.ComponentModel.Design.MenuCommand'/>
         /// associated with it.
         /// </summary>
-        MenuCommand FindCommand(CommandID commandID);
+        MenuCommand? FindCommand(CommandID commandID);
 
         /// <summary>
         /// Invokes a command on the local form or in the global environment.

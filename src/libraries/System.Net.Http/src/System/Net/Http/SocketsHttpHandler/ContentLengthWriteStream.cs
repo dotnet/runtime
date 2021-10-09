@@ -39,10 +39,10 @@ namespace System.Net.Http
                 return connection.WriteAsync(buffer, async: true);
             }
 
-            public override ValueTask FinishAsync(bool async)
+            public override Task FinishAsync(bool async)
             {
                 _connection = null;
-                return default;
+                return Task.CompletedTask;
             }
         }
     }

@@ -58,7 +58,7 @@ namespace System.Text
 
             // Legal windows code pages are between Devanagari and Punjabi
             Debug.Assert(_defaultCodePage >= CodeDevanagari && _defaultCodePage <= CodePunjabi,
-                "[ISCIIEncoding] Code page (" + codePage + " isn't supported by ISCIIEncoding!");
+                $"[ISCIIEncoding] Code page ({codePage} isn't supported by ISCIIEncoding!");
 
             // This shouldn't really be possible
             if (_defaultCodePage < CodeDevanagari || _defaultCodePage > CodePunjabi)
@@ -237,7 +237,7 @@ namespace System.Text
 
                     // We only know how to map from Unicode to pages from Devanagari to Punjabi (2 to 11)
                     Debug.Assert(currentCodePage >= CodeDevanagari && currentCodePage <= CodePunjabi,
-                        "[ISCIIEncoding.GetBytes]Code page (" + currentCodePage + " shouldn't appear in ISCII from Unicode table!");
+                        $"[ISCIIEncoding.GetBytes]Code page ({currentCodePage} shouldn't appear in ISCII from Unicode table!");
                 }
 
                 // Safe to add our byte now
@@ -252,10 +252,10 @@ namespace System.Text
                 {
                     // This one needs another byte
                     Debug.Assert((indicTwoBytes >> 12) > 0 && (indicTwoBytes >> 12) <= 3,
-                        "[ISCIIEncoding.GetBytes]Expected indicTwoBytes from 1-3, not " + (indicTwoBytes >> 12));
+                        $"[ISCIIEncoding.GetBytes]Expected indicTwoBytes from 1-3, not {(indicTwoBytes >> 12)}");
 
                     // Already did buffer checking, but...
-                    if (!buffer.AddByte(s_SecondIndicByte[indicTwoBytes >> 12]))
+                    if (!buffer.AddByte(SecondIndicByte[indicTwoBytes >> 12]))
                         break;
                 }
             }
@@ -350,7 +350,7 @@ namespace System.Text
             // Get our current code page index (some code pages are dups)
             int currentCodePageIndex = -1;
             Debug.Assert(currentCodePage >= CodeDevanagari && currentCodePage <= CodePunjabi,
-                "[ISCIIEncoding.GetChars]Decoder code page must be >= Devanagari and <= Punjabi, not " + currentCodePage);
+                $"[ISCIIEncoding.GetChars]Decoder code page must be >= Devanagari and <= Punjabi, not {currentCodePage}");
 
             if (currentCodePage >= CodeDevanagari && currentCodePage <= CodePunjabi)
             {
@@ -1936,7 +1936,7 @@ namespace System.Text
         // This is used if the UnicodeToIndic table 4 high bits are set, this is
         // the value of the second Indic byte when applicable.
         ////////////////////////////////////////////////////////////////////////////
-        private static readonly byte[] s_SecondIndicByte =
+        private static ReadOnlySpan<byte> SecondIndicByte => new byte[]
         {
             0x00,
             0xe9,

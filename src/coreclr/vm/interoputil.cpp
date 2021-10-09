@@ -72,7 +72,6 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* pComObj);
 #endif // FEATURE_COMINTEROP
 
 
-#ifndef CROSSGEN_COMPILE
 //------------------------------------------------------------------
 // setup error info for exception object
 //
@@ -224,7 +223,6 @@ void FillExceptionData(
         }
     }
 }
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute,
@@ -297,7 +295,6 @@ ErrExit:
     return iLCIDParam;
 }
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
@@ -333,7 +330,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     GCPROTECT_END();
 }
 
-#endif // CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------
 // This method determines if a member is visible from COM.
@@ -439,7 +435,6 @@ BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef m
     return TRUE;
 }
 
-#ifndef CROSSGEN_COMPILE
 // This method checks whether the given IErrorInfo is actually a managed CLR object.
 BOOL IsManagedObject(IUnknown *pIUnknown)
 {
@@ -462,7 +457,6 @@ BOOL IsManagedObject(IUnknown *pIUnknown)
 #endif
     return FALSE;
 }
-#endif
 
 ULONG GetStringizedMethodDef(MethodTable *pDeclaringMT, mdToken tkMb, CQuickArray<BYTE> &rDef, ULONG cbCur)
 {
@@ -818,25 +812,6 @@ BOOL CanCastComObject(OBJECTREF obj, MethodTable * pTargetMT)
     {
         return obj->GetMethodTable()->CanCastToClass(pTargetMT);
     }
-}
-
-// Returns TRUE iff the argument represents the "__ComObject" type or
-// any type derived from it (i.e. typelib-imported RCWs).
-BOOL IsComWrapperClass(TypeHandle type)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    MethodTable* pMT = type.GetMethodTable();
-    if (pMT == NULL)
-        return FALSE;
-
-    return pMT->IsComObjectType();
 }
 
 // Returns TRUE iff the argument represents the "__ComObject" type.
@@ -1248,9 +1223,7 @@ HRESULT SafeQueryInterfacePreemp(IUnknown* pUnk, REFIID riid, IUnknown** pResUnk
 }
 #include <optdefault.h>
 
-#ifdef FEATURE_COMINTEROP
-
-#ifndef CROSSGEN_COMPILE
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 //--------------------------------------------------------------------------------
 // Cleanup helpers
@@ -1266,11 +1239,13 @@ void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_COMINTEROP
     // No need to notify the thread that the RCW is in use here.
     // This is a privileged function called during GC or shutdown.
     RCW* pRCW = pInteropInfo->GetRawRCW();
     if (pRCW)
         pRCW->MinorCleanup();
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     void* eoc;
@@ -1301,6 +1276,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
+#ifdef FEATURE_COMINTEROP
     // No need to notify the thread that the RCW is in use here.
     // This is only called during finalization of a __ComObject so no one
     // else could have a reference to this object.
@@ -1317,6 +1293,7 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
         pInteropInfo->SetCCW(NULL);
         pCCW->Cleanup();
     }
+#endif // FEATURE_COMINTEROP
 
 #ifdef FEATURE_COMWRAPPERS
     pInteropInfo->ClearManagedObjectComWrappers(&ComWrappersNative::DestroyManagedObjectComWrapper);
@@ -1329,6 +1306,10 @@ void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo)
     }
 #endif // FEATURE_COMWRAPPERS
 }
+
+#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS
+
+#ifdef FEATURE_COMINTEROP
 
 //--------------------------------------------------------------------------------
 //  Helper to release all of the RCWs in the specified context across all caches.
@@ -1788,7 +1769,6 @@ BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT)
     return FALSE;
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 
 //---------------------------------------------------------------------------
@@ -1808,7 +1788,6 @@ BOOL ClassSupportsIClassX(MethodTable *pMT)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 //---------------------------------------------------------------------------
@@ -1834,7 +1813,6 @@ OBJECTREF AllocateComObject_ForManaged(MethodTable* pMT)
 }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 //---------------------------------------------------------------------------
 // This method returns the default interface for the class.
@@ -2012,7 +1990,6 @@ DefaultInterfaceType GetDefaultInterfaceForClassWrapper(TypeHandle hndClass, Typ
     }
     CONTRACTL_END;
 
-#ifndef CROSSGEN_COMPILE
     if (!hndClass.IsTypeDesc())
     {
         ComCallWrapperTemplate *pTemplate = hndClass.AsMethodTable()->GetComCallWrapperTemplate();
@@ -2026,13 +2003,11 @@ DefaultInterfaceType GetDefaultInterfaceForClassWrapper(TypeHandle hndClass, Typ
             return itfType;
         }
     }
-#endif // CROSSGEN_COMPILE
 
     return GetDefaultInterfaceForClassInternal(hndClass, pHndDefClass);
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 HRESULT TryGetDefaultInterfaceForClass(TypeHandle hndClass, TypeHandle *pHndDefClass, DefaultInterfaceType *pDefItfType)
 {
@@ -2603,7 +2578,6 @@ HRESULT GetTypeLibVersionForAssembly(
     return S_OK;
 } // HRESULT TypeLibExporter::GetTypeLibVersionFromAssembly()
 
-#endif //CROSSGEN_COMPILE
 
 
 //---------------------------------------------------------------------------
@@ -2759,93 +2733,7 @@ BOOL IsTypeVisibleFromCom(TypeHandle hndType)
     return SpecialIsGenericTypeVisibleFromCom(hndType);
 }
 
-#ifdef FEATURE_PREJIT
-//---------------------------------------------------------------------------
-// Determines if a method is likely to be used for forward COM/WinRT interop.
-BOOL MethodNeedsForwardComStub(MethodDesc *pMD, DataImage *pImage)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
 
-    MethodTable *pMT = pMD->GetMethodTable();
-
-    if (pMT->HasInstantiation())
-    {
-        // method is declared on an unsupported generic type -> stub not needed
-        return FALSE;
-    }
-
-    GUID guid;
-    pMT->GetGuid(&guid, FALSE);
-
-    if (guid != GUID_NULL)
-    {
-        // explicit GUID defined in metadata -> stub needed
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-//---------------------------------------------------------------------------
-// Determines if a method is visible from COM in a way that requires a marshaling
-// stub, i.e. it allows early binding.
-BOOL MethodNeedsReverseComStub(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pMD));
-    }
-    CONTRACTL_END;
-
-    BOOL fIsAllowedCtorOrStatic = FALSE;
-    MethodTable *pMT = pMD->GetMethodTable();
-
-    if (pMT->IsInterface())
-    {
-        if (!pMT->IsComImport() && !IsTypeVisibleFromCom(TypeHandle(pMT)))
-            return FALSE;
-
-        if (pMT->HasInstantiation())
-            return FALSE;
-
-        // declaring interface must be InterfaceIsIUnknown or InterfaceIsDual
-        if (pMT->GetComInterfaceType() == ifDispatch)
-            return FALSE;
-    }
-    else
-    {
-        if (!IsTypeVisibleFromCom(TypeHandle(pMT)))
-            return FALSE;
-
-        if (pMT->IsDelegate())
-        {
-            return FALSE;
-        }
-
-        // declaring class must be AutoDual
-        if (pMT->GetComClassInterfaceType() != clsIfAutoDual)
-            return FALSE;
-    }
-
-    // NGen can't compile stubs for var arg methods
-    if (pMD->IsVarArg())
-        return FALSE;
-
-    return IsMethodVisibleFromCom(pMD);
-}
-#endif // FEATURE_PREJIT
-
-
-#ifndef CROSSGEN_COMPILE
 
 //--------------------------------------------------------------------------------
 // Validate that the given target is valid for the specified type.
@@ -3792,7 +3680,6 @@ void GetComClassFromCLSID(REFCLSID clsid, _In_opt_z_ PCWSTR wszServer, OBJECTREF
 
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION && FEATURE_COMINTEROP
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -3872,16 +3759,13 @@ void InitializeComInterop()
 #ifdef TARGET_X86
     ComPlusCall::Init();
 #endif
-#ifndef CROSSGEN_COMPILE
     CtxEntryCache::Init();
     ComCallWrapperTemplate::Init();
 #ifdef _DEBUG
     IntializeInteropLogging();
 #endif //_DEBUG
-#endif //CROSSGEN_COMPILE
 }
 
-#ifndef CROSSGEN_COMPILE
 
 #ifdef _DEBUG
 //-------------------------------------------------------------------
@@ -4236,20 +4120,18 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
 
     _ASSERTE(!pClassMT || !pClassMT->IsInterface());
 
-    bool fIsInterface = (pItfMT != NULL && pItfMT->IsInterface());
-
     DWORD dwObjFromComIPFlags = ObjFromComIP::FromItfMarshalInfoFlags(dwFlags);
     GetObjectRefFromComIP(
         ppObjectDest,                  // Object
         ppUnkSrc,                      // Interface pointer
         pClassMT,                      // Class type
-        fIsInterface ? pItfMT : NULL,  // Interface type - used to cache the incoming interface pointer
         dwObjFromComIPFlags            // Flags
         );
 
     // Make sure the interface is supported.
     _ASSERTE(!pItfMT || pItfMT->IsInterface() || pItfMT->GetComClassInterfaceType() != clsIfNone);
 
+    bool fIsInterface = (pItfMT != NULL && pItfMT->IsInterface());
     if (fIsInterface)
     {
         // We only verify that the object supports the interface for non-WinRT scenarios because we
@@ -4262,6 +4144,5 @@ void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, 
     }
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 #endif // FEATURE_COMINTEROP

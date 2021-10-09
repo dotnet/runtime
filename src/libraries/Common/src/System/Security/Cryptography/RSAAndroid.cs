@@ -84,12 +84,11 @@ namespace System.Security.Cryptography
                 SafeRsaHandle key = GetKey();
 
                 int rsaSize = Interop.AndroidCrypto.RsaSize(key);
-                byte[]? buf = null;
                 Span<byte> destination = default;
+                byte[] buf = CryptoPool.Rent(rsaSize);
 
                 try
                 {
-                    buf = CryptoPool.Rent(rsaSize);
                     destination = new Span<byte>(buf, 0, rsaSize);
 
                     if (!TryDecrypt(key, data, destination, rsaPadding, oaepProcessor, out int bytesWritten))
@@ -103,7 +102,7 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(destination);
-                    CryptoPool.Return(buf!, clearSize: 0);
+                    CryptoPool.Return(buf, clearSize: 0);
                 }
             }
 
@@ -381,6 +380,50 @@ namespace System.Security.Cryptography
             {
                 ValidateParameters(ref parameters);
                 ThrowIfDisposed();
+
+                if (parameters.Exponent == null || parameters.Modulus == null)
+                {
+                    throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                }
+
+                // Check that either all parameters are not null or all are null, if a subset were set, then the parameters are invalid.
+                // If the parameters are all not null, verify the integrity of their lengths.
+                if (parameters.D == null)
+                {
+                    if (parameters.P != null ||
+                        parameters.DP != null ||
+                        parameters.Q != null ||
+                        parameters.DQ != null ||
+                        parameters.InverseQ != null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                    }
+                }
+                else
+                {
+                    if (parameters.P == null ||
+                        parameters.DP == null ||
+                        parameters.Q == null ||
+                        parameters.DQ == null ||
+                        parameters.InverseQ == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                    }
+
+                    // Half, rounded up.
+                    int halfModulusLength = (parameters.Modulus.Length + 1) / 2;
+
+                    // Matching the .NET Framework RSACryptoServiceProvider behavior, as that's the .NET de facto standard
+                    if (parameters.D.Length != parameters.Modulus.Length ||
+                        parameters.P.Length != halfModulusLength ||
+                        parameters.Q.Length != halfModulusLength ||
+                        parameters.DP.Length != halfModulusLength ||
+                        parameters.DQ.Length != halfModulusLength ||
+                        parameters.InverseQ.Length != halfModulusLength)
+                    {
+                        throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
+                    }
+                }
 
                 SafeRsaHandle key = Interop.AndroidCrypto.RsaCreate();
                 bool imported = false;
@@ -700,7 +743,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(padding != null);
                 signature = null;
 
-                if (padding == RSASignaturePadding.Pkcs1 && padding == RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }
@@ -782,7 +825,7 @@ namespace System.Security.Cryptography
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
-                if (padding == RSASignaturePadding.Pkcs1 && padding == RSASignaturePadding.Pss)
+                if (padding != RSASignaturePadding.Pkcs1 && padding != RSASignaturePadding.Pss)
                 {
                     throw PaddingModeNotSupported();
                 }

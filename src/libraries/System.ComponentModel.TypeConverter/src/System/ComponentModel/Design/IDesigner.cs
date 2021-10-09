@@ -18,7 +18,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         /// Gets or sets the design-time verbs supported by the designer.
         /// </summary>
-        DesignerVerbCollection Verbs { get; }
+        DesignerVerbCollection? Verbs { get; }
 
         /// <summary>
         /// Performs the default action for this designer.

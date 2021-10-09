@@ -56,7 +56,6 @@ static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, 
 						    gboolean signature_only);
 static void free_generic_inst (MonoGenericInst *ginst);
 static void free_generic_class (MonoGenericClass *ginst);
-static void free_inflated_method (MonoMethodInflated *method);
 static void free_inflated_signature (MonoInflatedMethodSignature *sig);
 static void free_aggregate_modifiers (MonoAggregateModContainer *amods);
 static void mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, guint32 *rva, MonoMarshalSpec **marshal_spec, gboolean alloc_from_image);
@@ -987,7 +986,6 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 	return size;
 }
 
-#ifdef ENABLE_METADATA_UPDATE
 /* returns true if given index is not in bounds with provided table/index pair */
 gboolean
 mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int token_index)
@@ -995,30 +993,11 @@ mono_metadata_table_bounds_check_slow (MonoImage *image, int table_index, int to
 	if (G_LIKELY (token_index <= table_info_get_rows (&image->tables [table_index])))
 		return FALSE;
 
-	GList *list = image->delta_image;
-	MonoImage *dmeta;
-	MonoTableInfo *table;
-	/* result row, 0-based */
-	int ridx;
+        if (G_LIKELY (!image->has_updates))
+                return TRUE;
 
-	int original_token = mono_metadata_make_token (table_index, token_index);
-
-	uint32_t exposed_gen = mono_metadata_update_get_thread_generation ();
-	do {
-		if (!list)
-			return TRUE;
-		dmeta = list->data;
-		if (dmeta->generation > exposed_gen)
-			return TRUE;
-		list = list->next;
-		table = &dmeta->tables [table_index];
-		/* mono_image_relative_delta_index returns a 1-based index */
-		ridx = mono_image_relative_delta_index (dmeta, original_token) - 1;
-	} while (ridx < 0 || ridx >= table_info_get_rows (table));
-
-	return FALSE;
+        return mono_metadata_update_table_bounds_check (image, table_index, token_index);
 }
-#endif
 
 /**
  * mono_metadata_compute_table_bases:
@@ -1077,11 +1056,6 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 	return mono_metadata_locate (meta, token >> 24, token & 0xffffff);
 }
 
-
-
-typedef MonoStreamHeader* (*MetadataHeapGetterFunc) (MonoImage*);
-
-#ifdef ENABLE_METADATA_UPDATE
 static MonoStreamHeader *
 get_string_heap (MonoImage *image)
 {
@@ -1103,35 +1077,8 @@ get_blob_heap (MonoImage *image)
 static gboolean
 mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, guint32 orig_index, MonoImage **image_out, guint32 *index_out)
 {
-	g_assert (image_out);
-	g_assert (index_out);
-	MonoStreamHeader *heap = get_heap (base_image);
-	g_assert (orig_index >= heap->size && base_image->delta_image);
-
-	*image_out = base_image;
-	*index_out = orig_index;
-
-	guint32 prev_size = heap->size;
-
-	uint32_t current_gen = mono_metadata_update_get_thread_generation ();
-	GList *cur;
-	for (cur = base_image->delta_image; cur; cur = cur->next) {
-		*image_out = (MonoImage*)cur->data;
-		heap = get_heap (*image_out);
-
-		if ((*image_out)->generation > current_gen)
-			return FALSE;
-
-		/* FIXME: for non-minimal deltas we should just look in the last published image. */
-		if (G_LIKELY ((*image_out)->minimal_delta))
-			*index_out -= prev_size;
-		if (*index_out < heap->size)
-			break;
-		prev_size = heap->size;
-	}
-	return (cur != NULL);
+        return mono_metadata_update_delta_heap_lookup (base_image, get_heap, orig_index, image_out, index_out);
 }
-#endif
 
 /**
  * mono_metadata_string_heap:
@@ -1142,8 +1089,7 @@ mono_delta_heap_lookup (MonoImage *base_image, MetadataHeapGetterFunc get_heap, 
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
 {
-#ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_string_heap, index, &dmeta, &dindex);
@@ -1151,7 +1097,6 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 
 	g_assertf (index < meta->heap_strings.size, " index = 0x%08x size = 0x%08x meta=%s ", index, meta->heap_strings.size, meta && meta->name ? meta->name : "unknown image" );
 	g_return_val_if_fail (index < meta->heap_strings.size, "");
@@ -1180,8 +1125,7 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 		return img->sheap.data + index;
 	}
 
-#ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_strings.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_string_heap, index, &dmeta, &dindex);
@@ -1194,7 +1138,6 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 
 	if (G_UNLIKELY (!(index < meta->heap_strings.size))) {
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
@@ -1213,8 +1156,7 @@ mono_metadata_string_heap_checked (MonoImage *meta, guint32 index, MonoError *er
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
 {
-#ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_us.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_us.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_user_string_heap, index, &dmeta, &dindex);
@@ -1222,7 +1164,6 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 	g_assert (index < meta->heap_us.size);
 	g_return_val_if_fail (index < meta->heap_us.size, "");
 	return meta->heap_us.data + index;
@@ -1242,8 +1183,7 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 	 * assertion is hit, consider updating caller to use
 	 * mono_metadata_blob_heap_null_ok and handling a null return value. */
 	g_assert (!(index == 0 && meta->heap_blob.size == 0));
-#ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_blob_heap, index, &dmeta, &dindex);
@@ -1251,7 +1191,6 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 	g_assert (index < meta->heap_blob.size);
 	return meta->heap_blob.data + index;
 }
@@ -1297,8 +1236,7 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 	}
 	if (G_UNLIKELY (index == 0 && meta->heap_blob.size == 0))
 		return NULL;
-#ifdef ENABLE_METADATA_UPDATE
-	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->delta_image)) {
+	if (G_UNLIKELY (index >= meta->heap_blob.size && meta->has_updates)) {
 		MonoImage *dmeta;
 		guint32 dindex;
 		gboolean ok = mono_delta_heap_lookup (meta, &get_blob_heap, index, &dmeta, &dindex);
@@ -1310,7 +1248,6 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 		meta = dmeta;
 		index = dindex;
 	}
-#endif
 	if (G_UNLIKELY (!(index < meta->heap_blob.size))) {
 		const char *image_name = meta && meta->name ? meta->name : "unknown image";
 		mono_error_set_bad_image_by_name (error, image_name, "blob heap index %u out of bounds %u: %s", index, meta->heap_blob.size, image_name);
@@ -1328,7 +1265,7 @@ mono_metadata_blob_heap_checked (MonoImage *meta, guint32 index, MonoError *erro
 const char *
 mono_metadata_guid_heap (MonoImage *meta, guint32 index)
 {
-	/* EnC TODO: lookup in MonoImage:delta_image_last.  Unlike the other heaps, the GUID heaps are always full in every delta, even in minimal delta images. */
+	/* EnC TODO: lookup in DeltaInfo:delta_image_last.  Unlike the other heaps, the GUID heaps are always full in every delta, even in minimal delta images. */
 	--index;
 	index *= 16; /* adjust for guid size and 1-based index */
 	g_return_val_if_fail (index < meta->heap_guid.size, "");
@@ -2030,11 +1967,7 @@ mono_metadata_init (void)
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
 		g_hash_table_insert (type_cache, (gpointer) &builtin_types [i], (gpointer) &builtin_types [i]);
 
-	mono_components_init ();
-
-#ifdef ENABLE_METADATA_UPDATE
 	mono_metadata_update_init ();
-#endif
 }
 
 /**
@@ -2375,7 +2308,8 @@ mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
 }
 
 static MonoMethodSignature*
-mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig, size_t padding)
+mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMemoryManager *mem_manager,
+									  MonoMethodSignature *sig, size_t padding)
 {
 	int sigsize, sig_header_size;
 	MonoMethodSignature *ret;
@@ -2387,6 +2321,8 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 		ret = (MonoMethodSignature *)mono_image_alloc (image, sigsize);
 	} else if (mp) {
 		ret = (MonoMethodSignature *)mono_mempool_alloc (mp, sigsize);
+	} else if (mem_manager) {
+		ret = (MonoMethodSignature *)mono_mem_manager_alloc (mem_manager, sigsize);
 	} else {
 		ret = (MonoMethodSignature *)g_malloc (sigsize);
 	}
@@ -2404,11 +2340,6 @@ mono_metadata_signature_dup_internal_with_padding (MonoImage *image, MonoMemPool
 	return ret;
 }
 
-static MonoMethodSignature*
-mono_metadata_signature_dup_internal (MonoImage *image, MonoMemPool *mp, MonoMethodSignature *sig)
-{
-	return mono_metadata_signature_dup_internal_with_padding (image, mp, sig, 0);
-}
 /*
  * signature_dup_add_this:
  *
@@ -2418,7 +2349,7 @@ MonoMethodSignature*
 mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig, MonoClass *klass)
 {
 	MonoMethodSignature *ret;
-	ret = mono_metadata_signature_dup_internal_with_padding (image, NULL, sig, sizeof (MonoType *));
+	ret = mono_metadata_signature_dup_internal (image, NULL, NULL, sig, sizeof (MonoType *));
 
 	ret->param_count = sig->param_count + 1;
 	ret->hasthis = FALSE;
@@ -2434,15 +2365,13 @@ mono_metadata_signature_dup_add_this (MonoImage *image, MonoMethodSignature *sig
 	return ret;
 }
 
-
-
 MonoMethodSignature*
 mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
 {
-	MonoMethodSignature *ret = mono_metadata_signature_dup_internal (image, NULL, sig);
+	MonoMethodSignature *ret = mono_metadata_signature_dup_internal (image, NULL, NULL, sig, 0);
 
 	for (int i = 0 ; i < sig->param_count; i ++)
-		g_assert(ret->params [i]->type == sig->params [i]->type);
+		g_assert (ret->params [i]->type == sig->params [i]->type);
 	g_assert (ret->ret->type == sig->ret->type);
 
 	return ret;
@@ -2452,7 +2381,13 @@ mono_metadata_signature_dup_full (MonoImage *image, MonoMethodSignature *sig)
 MonoMethodSignature*
 mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig)
 {
-	return mono_metadata_signature_dup_internal (NULL, mp, sig);
+	return mono_metadata_signature_dup_internal (NULL, mp, NULL, sig, 0);
+}
+
+MonoMethodSignature*
+mono_metadata_signature_dup_mem_manager (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
+{
+	return mono_metadata_signature_dup_internal (NULL, NULL, mem_manager, sig, 0);
 }
 
 /**
@@ -3173,20 +3108,6 @@ check_gmethod (gpointer key, gpointer value, gpointer data)
 		g_assert (!ginst_in_image (method->context.method_inst, image));
 	if (((MonoMethod*)method)->signature)
 		g_assert (!signature_in_image (mono_method_signature_internal ((MonoMethod*)method), image));
-}
-
-static void
-free_inflated_method (MonoMethodInflated *imethod)
-{
-	MonoMethod *method = (MonoMethod*)imethod;
-
-	if (method->signature)
-		mono_metadata_free_inflated_signature (method->signature);
-
-	if (method->wrapper_type)
-		g_free (((MonoMethodWrapper*)method)->method_data);
-
-	g_free (method);
 }
 
 static void

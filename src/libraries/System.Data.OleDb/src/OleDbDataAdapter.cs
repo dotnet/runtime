@@ -117,7 +117,7 @@ namespace System.Data.OleDb
 
                 // prevent someone from registering two different command builders on the adapter by
                 // silently removing the old one
-                if ((null != handler) && (value.Target is DbCommandBuilder))
+                if ((null != handler) && (value!.Target is DbCommandBuilder))
                 {
                     OleDbRowUpdatingEventHandler? d = (OleDbRowUpdatingEventHandler?)ADP.FindBuilder(handler);
                     if (null != d)
@@ -259,8 +259,7 @@ namespace System.Data.OleDb
                             // Current provider does not support returning multiple recordsets from a single execution.
                             if (ODB.ADODB_NextResultError != (int)hr)
                             {
-                                UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-                                UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
+                                SafeNativeMethods.Wrapper.ClearErrorInfo();
 
                                 string message = string.Empty;
                                 throw new COMException(message, (int)hr);
@@ -430,8 +429,7 @@ namespace System.Data.OleDb
             }
             if ((0 < (int)hr) && (ODB.ADODB_AlreadyClosedError != (int)hr))
             {
-                UnsafeNativeMethods.IErrorInfo? errorInfo = null;
-                UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);
+                SafeNativeMethods.Wrapper.ClearErrorInfo();
                 string message = string.Empty;
                 throw new COMException(message, (int)hr);
             }

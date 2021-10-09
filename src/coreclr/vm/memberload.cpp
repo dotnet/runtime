@@ -338,7 +338,7 @@ void MemberLoader::GetDescFromMemberRef(Module * pModule,
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
 
     BOOL fIsField = isCallConv(
-        MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)),
+        MetaSig::GetCallingConvention(Signature(pSig, cSig)),
         IMAGE_CEE_CS_CALLCONV_FIELD);
 
     if (fIsField)
@@ -462,7 +462,7 @@ MethodDesc * MemberLoader::GetMethodDescFromMemberRefAndType(Module * pModule,
 
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
 
-    _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
+    _ASSERTE(!isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
 
     // For array method signatures, the caller's signature contains "actual" types whereas the callee's signature has
     // formals (ELEMENT_TYPE_VAR 0 wherever the element type of the array occurs). So we need to pass in a substitution
@@ -532,7 +532,7 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
 
     IfFailThrow(pInternalImport->GetNameAndSigOfMemberRef(MemberRef, &pSig, &cSig, &szMember));
 
-    _ASSERTE(isCallConv(MetaSig::GetCallingConvention(pModule, Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
+    _ASSERTE(isCallConv(MetaSig::GetCallingConvention(Signature(pSig, cSig)), IMAGE_CEE_CS_CALLCONV_FIELD));
 
     FieldDesc * pFD = MemberLoader::FindField(pMT, szMember, pSig, cSig, pModule);
 
@@ -562,7 +562,8 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(Module * pModule,
 //
 MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
                                                      mdToken MethodDef,
-                                                     BOOL strictMetadataChecks)
+                                                     BOOL strictMetadataChecks,
+                                                     ClassLoadLevel owningTypeLoadLevel)
 {
     CONTRACTL
     {
@@ -623,7 +624,7 @@ MethodDesc* MemberLoader::GetMethodDescFromMethodDef(Module *pModule,
         }
     }
 
-    pMD->CheckRestore();
+    pMD->CheckRestore(owningTypeLoadLevel);
 
 #if 0
     // <TODO> Generics: enable this check after the findMethod call in the Zapper which passes
@@ -713,7 +714,8 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
     BOOL                   strictMetadataChecks,
                         // Normally true - the zapper is one exception.  Throw an exception if no generic method args
                         // given for a generic method, otherwise return the 'generic' instantiation
-    BOOL                   allowInstParam)
+    BOOL                   allowInstParam,
+    ClassLoadLevel         owningTypeLoadLevel)
 {
     CONTRACTL
     {
@@ -738,7 +740,7 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
     switch (TypeFromToken(MemberRef))
     {
     case mdtMethodDef:
-        pMD = GetMethodDescFromMethodDef(pModule, MemberRef, strictMetadataChecks);
+        pMD = GetMethodDescFromMethodDef(pModule, MemberRef, strictMetadataChecks, owningTypeLoadLevel);
         th = pMD->GetMethodTable();
         break;
 
@@ -770,7 +772,10 @@ MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec(
         th.GetMethodTable(),
         FALSE /* don't get unboxing entry point */,
         strictMetadataChecks ? Instantiation() : pMD->LoadMethodInstantiation(),
-        allowInstParam);
+        allowInstParam,
+        /* forceRemotableMethod */ FALSE,
+        /* allowCreate */ TRUE,
+        /* level */ owningTypeLoadLevel);
 } // MemberLoader::GetMethodDescFromMemberDefOrRefOrSpec
 
 //---------------------------------------------------------------------------------------

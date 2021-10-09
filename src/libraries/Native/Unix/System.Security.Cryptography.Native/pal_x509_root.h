@@ -8,11 +8,11 @@
 Look up the directory in which all certificate files therein are considered
 trusted (root or trusted intermediate).
 */
-PALEXPORT const char* CryptoNative_GetX509RootStorePath(void);
+PALEXPORT const char* CryptoNative_GetX509RootStorePath(uint8_t* defaultPath);
 
 /*
 Look up the file in which all certificates are considered trusted
 (root or trusted intermediate), in addition to those files in
 the root store path.
 */
-PALEXPORT const char* CryptoNative_GetX509RootStoreFile(void);
+PALEXPORT const char* CryptoNative_GetX509RootStoreFile(uint8_t* defaultPath);

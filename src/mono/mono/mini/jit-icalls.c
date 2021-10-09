@@ -25,6 +25,7 @@
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-math.h>
 #include "mono/utils/mono-tls-inline.h"
@@ -728,24 +729,29 @@ mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 	const int pcount_sig = mono_method_signature_internal (cm)->param_count;
 	const int rank = m_class_get_rank (cm->klass);
 	g_assert (pcount == pcount_sig);
-	g_assert (rank == pcount || rank * 2 == pcount);
 
 	uintptr_t *lengths = (uintptr_t*)params;
+	MonoArray *arr;
 
-	if (rank == pcount) {
-		/* Only lengths provided. */
-		if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-			lower_bounds = g_newa (intptr_t, rank);
-			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-		}
+	if (pcount > rank && m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_SZARRAY) {
+		// Special constructor for jagged arrays
+		arr = mono_array_new_jagged_checked (cm->klass, pcount, lengths, error);
 	} else {
-		g_assert (pcount == (rank * 2));
-		/* lower bounds are first. */
-		lower_bounds = params;
-		lengths += rank;
-	}
+		if (rank == pcount) {
+			/* Only lengths provided. */
+			if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
+				lower_bounds = g_newa (intptr_t, rank);
+				memset (lower_bounds, 0, sizeof (intptr_t) * rank);
+			}
+		} else {
+			g_assert (pcount == (rank * 2));
+			/* lower bounds are first. */
+			lower_bounds = params;
+			lengths += rank;
+		}
 
-	MonoArray *arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
+		arr = mono_array_new_full_checked (cm->klass, lengths, lower_bounds, error);
+	}
 
 	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
@@ -1390,7 +1396,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
  * the arguments to the method in the format used by mono_runtime_invoke_checked ().
  */
 MonoObject*
-mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, gboolean deref_arg, gpointer *args)
+mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args)
 {
 	ERROR_DECL (error);
 	MonoObject *o;
@@ -1418,8 +1424,15 @@ mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *kl
 
 	if (!m)
 		return NULL;
-	if (args && deref_arg) {
-		new_args [0] = *(gpointer*)args [0];
+	if (deref_args) {
+		/* Have to deref gsharedvt ref arguments since the runtime invoke expects it */
+		MonoMethodSignature *fsig = mono_method_signature_internal (m);
+		g_assert (fsig->param_count < 16);
+		memcpy (new_args, args, fsig->param_count * sizeof (gpointer));
+		for (int i = 0; i < fsig->param_count; ++i) {
+			if (deref_args [i])
+				new_args [i] = *(gpointer*)new_args [i];
+		}
 		args = new_args;
 	}
 	if (m->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
@@ -1512,10 +1525,6 @@ mono_fill_class_rgctx (MonoVTable *vtable, int index)
 	ERROR_DECL (error);
 	gpointer res;
 
-	/*
-	 * This is perf critical.
-	 * fill_runtime_generic_context () contains a fallpath.
-	 */
 	res = mono_class_fill_runtime_generic_context (vtable, index, error);
 	if (!is_ok (error)) {
 		mono_error_set_pending_exception (error);

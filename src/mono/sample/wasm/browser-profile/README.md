@@ -54,7 +54,7 @@ function saveProfile() {
 `<Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />` <br/>
 `<Import Project="$(MonoProjectRoot)wasm\build\WasmApp.InTree.props" />`
 
-For more information on how to utilize WasmApp.InTree.targets/props consult the wasm build directory [README.md](../../../../wasm/build/README.md)
+For more information on how to utilize WasmApp.InTree.targets/props consult the wasm build directory [README.md](../../../wasm/README.md)
 
 2. To get the profile data, run:
 

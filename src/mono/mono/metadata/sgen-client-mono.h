@@ -250,10 +250,13 @@ sgen_client_bridge_processing_stw_step (void)
 	sgen_bridge_processing_stw_step ();
 }
 
+void
+mono_gc_wait_for_bridge_processing_internal (void);
+
 static void G_GNUC_UNUSED
 sgen_client_bridge_wait_for_processing (void)
 {
-	mono_gc_wait_for_bridge_processing ();
+	mono_gc_wait_for_bridge_processing_internal ();
 }
 
 static void G_GNUC_UNUSED

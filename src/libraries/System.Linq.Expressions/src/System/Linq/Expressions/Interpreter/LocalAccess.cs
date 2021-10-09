@@ -380,12 +380,14 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-                Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
+                Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 try
                 {
-                    frame.Data[_index] = Activator.CreateInstance(_type);
+                    frame.Data[_index] = _type.IsNullableType() ?
+                        Activator.CreateInstance(_type) :
+                        RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {
@@ -417,14 +419,16 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
-                Justification = "_type is a ValueType. You can always create an instance of a ValueType.")]
+                Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 object? value;
 
                 try
                 {
-                    value = Activator.CreateInstance(_type);
+                    value = _type.IsNullableType() ?
+                        Activator.CreateInstance(_type) :
+                        RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {

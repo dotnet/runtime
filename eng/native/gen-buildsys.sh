@@ -26,10 +26,13 @@ compiler="$4"
 majorVersion="$5"
 minorVersion="$6"
 
-source "$scriptroot/init-compiler.sh" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
+if [[ "$compiler" != "default" ]]; then
+    nativescriptroot="$( cd -P "$scriptroot/../common/native" && pwd )"
+    source "$nativescriptroot/init-compiler.sh" "$nativescriptroot" "$build_arch" "$compiler" "$majorVersion" "$minorVersion"
 
-CCC_CC="$CC"
-CCC_CXX="$CXX"
+    CCC_CC="$CC"
+    CCC_CXX="$CXX"
+fi
 
 export CCC_CC CCC_CXX
 
@@ -98,7 +101,7 @@ if [[ "$build_arch" == "wasm" ]]; then
 fi
 
 cmake_args_to_cache="$scan_build\n$SCAN_BUILD_COMMAND\n$generator\n$__UnprocessedCMakeArgs"
-cmake_args_cache_file="$__CMakeBinDir/cmake_cmd_line.txt"
+cmake_args_cache_file="$2/cmake_cmd_line.txt"
 if [[ -z "$__ConfigureOnly" ]]; then
     if [[ -e "$cmake_args_cache_file" ]]; then
         cmake_args_cache=$(<"$cmake_args_cache_file")
@@ -113,7 +116,6 @@ fi
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
 pushd "$2"
 
-# Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
 $cmake_command \
   --no-warn-unused-cli \
   -G "$generator" \

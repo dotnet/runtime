@@ -290,29 +290,29 @@ namespace System.Configuration
     }
     public partial class ConfigurationException : System.SystemException
     {
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException() { }
         protected ConfigurationException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Exception inner) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Exception inner, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Exception inner, System.Xml.XmlNode node) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, string filename, int line) { }
-        [System.ObsoleteAttribute("This class is obsolete, to create a new exception create a System.Configuration.ConfigurationErrorsException")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException instead.")]
         public ConfigurationException(string message, System.Xml.XmlNode node) { }
         public virtual string BareMessage { get { throw null; } }
         public virtual string Filename { get { throw null; } }
         public virtual int Line { get { throw null; } }
         public override string Message { get { throw null; } }
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetFilename instead")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetFilename instead.")]
         public static string GetXmlNodeFilename(System.Xml.XmlNode node) { throw null; }
-        [System.ObsoleteAttribute("This class is obsolete, use System.Configuration.ConfigurationErrorsException.GetLinenumber instead")]
+        [System.ObsoleteAttribute("ConfigurationException has been deprecated. Use System.Configuration.ConfigurationErrorsException.GetLinenumber instead.")]
         public static int GetXmlNodeLineNumber(System.Xml.XmlNode node) { throw null; }
     }
     public partial class ConfigurationFileMap : System.ICloneable
@@ -494,9 +494,9 @@ namespace System.Configuration
     public sealed partial class ConfigurationSettings
     {
         internal ConfigurationSettings() { }
-        [System.ObsoleteAttribute("This property is obsolete, it has been replaced by System.Configuration.ConfigurationManager.AppSettings")]
+        [System.ObsoleteAttribute("ConfigurationSettings.AppSettings has been deprecated. Use System.Configuration.ConfigurationManager.AppSettings instead.")]
         public static System.Collections.Specialized.NameValueCollection AppSettings { get { throw null; } }
-        [System.ObsoleteAttribute("This method is obsolete, it has been replaced by System.Configuration.ConfigurationManager.GetSection")]
+        [System.ObsoleteAttribute("ConfigurationSettings.GetConfig has been deprecated. Use System.Configuration.ConfigurationManager.GetSection instead.")]
         public static object GetConfig(string sectionName) { throw null; }
     }
     public enum ConfigurationUserLevel
@@ -1052,6 +1052,7 @@ namespace System.Configuration
     {
         public SettingsAttributeDictionary() { }
         public SettingsAttributeDictionary(System.Configuration.SettingsAttributeDictionary attributes) { }
+        protected SettingsAttributeDictionary(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     public abstract partial class SettingsBase
     {
@@ -1070,6 +1071,7 @@ namespace System.Configuration
     public partial class SettingsContext : System.Collections.Hashtable
     {
         public SettingsContext() { }
+        protected SettingsContext(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property)]
     public sealed partial class SettingsDescriptionAttribute : System.Attribute
@@ -1213,6 +1215,7 @@ namespace System.Configuration
     {
         String = 0,
         Xml = 1,
+        [System.ObsoleteAttribute(System.Obsoletions.BinaryFormatterMessage + @". Consider using Xml instead.")]
         Binary = 2,
         ProviderSpecific = 3,
     }
@@ -1380,7 +1383,9 @@ namespace System.Configuration.Internal
         public virtual string GetConfigPathFromLocationSubPath(string configPath, string locationSubPath) { throw null; }
         public virtual System.Type GetConfigType(string typeName, bool throwOnError) { throw null; }
         public virtual string GetConfigTypeName(System.Type t) { throw null; }
+#pragma warning disable SYSLIB0003
         public virtual void GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady) { throw null; }
+#pragma warning restore SYSLIB0003
         public virtual string GetStreamName(string configPath) { throw null; }
         public virtual string GetStreamNameForConfigSource(string streamName, string configSource) { throw null; }
         public virtual object GetStreamVersion(string streamName) { throw null; }
@@ -1468,7 +1473,9 @@ namespace System.Configuration.Internal
         string GetConfigPathFromLocationSubPath(string configPath, string locationSubPath);
         System.Type GetConfigType(string typeName, bool throwOnError);
         string GetConfigTypeName(System.Type t);
+#pragma warning disable SYSLIB0003
         void GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord configRecord, out System.Security.PermissionSet permissionSet, out bool isHostReady);
+#pragma warning restore SYSLIB0003
         string GetStreamName(string configPath);
         string GetStreamNameForConfigSource(string streamName, string configSource);
         object GetStreamVersion(string streamName);

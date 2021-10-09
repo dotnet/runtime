@@ -21,7 +21,7 @@ namespace Internal.Cryptography
         //
         // The delegate must instantiate a new CngKey, based on a new underlying NCryptKeyHandle, each time is called.
         //
-        public BasicSymmetricCipherNCrypt(Func<CngKey> cngKeyFactory, CipherMode cipherMode, int blockSizeInBytes, byte[] iv, bool encrypting, int feedbackSizeInBytes, int paddingSize)
+        public BasicSymmetricCipherNCrypt(Func<CngKey> cngKeyFactory, CipherMode cipherMode, int blockSizeInBytes, byte[]? iv, bool encrypting, int paddingSize)
             : base(iv, blockSizeInBytes, paddingSize)
         {
             _encrypting = encrypting;

@@ -10,13 +10,14 @@ namespace System.Text.Json
     public static partial class JsonSerializer
     {
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -25,11 +26,14 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static TValue? Deserialize<[DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
-            => ReadUsingOptions<TValue>(utf8Json, typeof(TValue), options);
+        public static TValue? Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions? options = null)
+        {
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
+        }
 
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
@@ -39,7 +43,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -48,24 +52,26 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, [DynamicallyAccessedMembers(JsonHelpers.MembersAccessedOnRead)] Type returnType, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options = null)
         {
             if (returnType == null)
             {
                 throw new ArgumentNullException(nameof(returnType));
             }
 
-            return ReadUsingOptions<object>(utf8Json, returnType, options);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
+            return ReadFromSpan<object>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
         /// </summary>
+        /// <typeparam name="TValue">The type to deserialize the JSON value into.</typeparam>
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -80,11 +86,11 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(jsonTypeInfo));
             }
 
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
 
         /// <summary>
-        /// Parse the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// Parses the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
         /// </summary>
         /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
@@ -94,7 +100,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="JsonException">
-        /// Thrown when the JSON is invalid,
+        /// The JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
@@ -118,14 +124,7 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(context));
             }
 
-            return ReadUsingMetadata<object?>(utf8Json, GetTypeInfo(context, returnType));
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        private static TValue? ReadUsingOptions<TValue>(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions? options)
-        {
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(returnType, options);
-            return ReadUsingMetadata<TValue>(utf8Json, jsonTypeInfo);
+            return ReadFromSpan<object?>(utf8Json, GetTypeInfo(context, returnType));
         }
     }
 }

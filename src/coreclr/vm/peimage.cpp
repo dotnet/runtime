@@ -16,10 +16,6 @@
 #include "eventtrace.h"
 #include "peimagelayout.inl"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #ifndef DACCESS_COMPILE
 
 
@@ -54,8 +50,6 @@ void PEImage::Startup()
     s_ijwFixupDataHash = ::new PtrHashMap;
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
-    PEImageLayout::Startup();
-
     RETURN;
 }
 
@@ -79,20 +73,7 @@ CHECK PEImage::CheckLayoutFormat(PEDecoder *pe)
     }
     CONTRACT_CHECK_END;
 
-    // If we are in a compilation domain, we will allow
-    // non-IL only files to be treated as IL only
-
-    // <TODO>@todo: this is not really the right model here.  This is a per-app domain
-    // choice, but an image created this way would become available globally.
-    // (Also, this call prevents us from moving peimage into utilcode.)</TODO>
-
-    if (GetAppDomain() == NULL ||
-        (!GetAppDomain()->IsCompilationDomain()))
-    {
-        CHECK(pe->IsILOnly());
-    }
-
-    CHECK(!pe->HasNativeHeader());
+    CHECK(pe->IsILOnly());
     CHECK_OK;
 }
 
@@ -113,45 +94,10 @@ CHECK PEImage::CheckILFormat()
         pLayoutToCheck = pLayoutHolder;
     }
 
-#ifdef FEATURE_PREJIT
-    if (PEFile::ShouldTreatNIAsMSIL())
-    {
-        // This PEImage may intentionally be an NI image, being used as if it were an
-        // MSIL image.  In that case, rather than using CheckILFormat on its layout,
-        // do CheckCORFormat(), which is the same as CheckILFormat, except it allows for
-        // a native header.  (CheckILFormat() fails if it finds a native header.)
-        CHECK(pLayoutToCheck->CheckCORFormat());
-    }
-    else
-#endif
-    {
-        CHECK(pLayoutToCheck->CheckILFormat());
-    }
+    CHECK(pLayoutToCheck->CheckILFormat());
 
     CHECK_OK;
 };
-
-/* static */
-// This method is only intended to be called during NGen.  It doesn't AddRef to the objects it returns,
-// and can be unsafe for general use.
-void PEImage::GetAll(SArray<PEImage*> &images)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CrstHolder holder(&s_hashLock);
-
-    for (PtrHashMap::PtrIterator i = s_Images->begin(); !i.end(); ++i)
-    {
-        PEImage *image = (PEImage*) i.GetValue();
-        images.Append(image);
-    }
-}
 
 PEImage::~PEImage()
 {
@@ -409,7 +355,7 @@ IMDInternalImport* PEImage::GetNativeMDImport(BOOL loadAllowed)
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader() || HasReadyToRunHeader());
+        PRECONDITION(HasReadyToRunHeader());
         if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
         if (loadAllowed) THROWS;                         else NOTHROW;
         if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
@@ -434,7 +380,7 @@ void PEImage::OpenNativeMDImport()
     CONTRACTL
     {
         INSTANCE_CHECK;
-        PRECONDITION(HasNativeHeader() || HasReadyToRunHeader());
+        PRECONDITION(HasReadyToRunHeader());
         GC_TRIGGERS;
         THROWS;
         MODE_ANY;
@@ -519,11 +465,6 @@ void PEImage::OpenMDImport()
                 m_sModuleFileNameHintUsedByDac.Normalize();
             }
          }
-
-        if (IsCompilationProcess())
-        {
-            m_pMDImport->SetOptimizeAccessForSpeed(TRUE);
-        }
     }
     _ASSERTE(m_pMDImport);
 
@@ -579,32 +520,6 @@ void PEImage::VerifyIsAssembly()
     }
     CONTRACTL_END;
 
-    VerifyIsILOrNIAssembly(TRUE);
-}
-
-void PEImage::VerifyIsNIAssembly()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    VerifyIsILOrNIAssembly(FALSE);
-}
-
-void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
     // buch of legacy stuff here wrt the error codes...
 
     if (!HasNTHeaders())
@@ -614,18 +529,7 @@ void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
         ThrowFormat(COR_E_ASSEMBLYEXPECTED);
 
     CHECK checkGoodFormat;
-#ifdef FEATURE_PREJIT
-    if (fIL)
-    {
-        checkGoodFormat = CheckILFormat();
-    }
-    else
-    {
-        checkGoodFormat = CheckNativeFormat();
-    }
-#else
     checkGoodFormat = CheckILFormat();
-#endif
     if (!checkGoodFormat)
         ThrowFormat(COR_E_BADIMAGEFORMAT);
 
@@ -647,7 +551,6 @@ void DECLSPEC_NORETURN PEImage::ThrowFormat(HRESULT hrError)
     EEFileLoadException::Throw(m_path, hrError);
 }
 
-#if !defined(CROSSGEN_COMPILE)
 
 //may outlive PEImage
 PEImage::IJWFixupData::IJWFixupData(void *pBase)
@@ -779,7 +682,6 @@ void PEImage::UnloadIJWModule(void *pBase)
         delete pData;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 
 
@@ -890,7 +792,6 @@ PEImage::PEImage():
     m_path(),
     m_refCount(1),
     m_bundleFileLocation(),
-    m_bIsTrustedNativeImage(FALSE),
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA
     m_pMDTracker(NULL),
@@ -988,7 +889,7 @@ PTR_PEImageLayout PEImage::GetLayoutInternal(DWORD imageLayoutMask,DWORD flags)
         BOOL bIsFlatLayoutRequired = !bIsMappedLayoutSuitable;
 
         if (bIsFlatLayoutRequired
-            || (bIsFlatLayoutSuitable && !m_bIsTrustedNativeImage))
+            || bIsFlatLayoutSuitable)
         {
           _ASSERTE(bIsFlatLayoutSuitable);
 
@@ -1029,12 +930,11 @@ PTR_PEImageLayout PEImage::CreateLayoutMapped()
     PEImageLayout * pLoadLayout = NULL;
 
     HRESULT loadFailure = S_OK;
-    if (m_bIsTrustedNativeImage || IsFile())
+    if (IsFile())
     {
         // Try to load all files via LoadLibrary first. If LoadLibrary did not work,
         // retry using regular mapping.
-        HRESULT* returnDontThrow = m_bIsTrustedNativeImage ? NULL : &loadFailure;
-        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, returnDontThrow);
+        pLoadLayout = PEImageLayout::Load(this, FALSE /* bNTSafeLoad */, &loadFailure);
     }
 
     if (pLoadLayout != NULL)

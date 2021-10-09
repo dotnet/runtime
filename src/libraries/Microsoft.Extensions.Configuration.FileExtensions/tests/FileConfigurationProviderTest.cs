@@ -40,6 +40,7 @@ namespace Microsoft.Extensions.Configuration.FileExtensions.Test
         };
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52319", TestPlatforms.Android)]
         public void ProviderThrowsInvalidDataExceptionWhenLoadFails()
         {
             var tempFile = Path.GetTempFileName();
