@@ -64,7 +64,7 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, GenTreeCall:
 
     GenTreeCall* call           = tree->AsCall();
     call->gtCallType            = CT_HELPER;
-    call->gtReturnType          = static_cast<unsigned char>(tree->TypeGet());
+    call->gtReturnType          = tree->TypeGet();
     call->gtCallMethHnd         = eeFindHelper(helper);
     call->gtCallThisArg         = nullptr;
     call->gtCallArgs            = args;
