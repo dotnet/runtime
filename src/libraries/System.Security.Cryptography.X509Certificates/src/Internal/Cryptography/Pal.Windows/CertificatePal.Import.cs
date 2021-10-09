@@ -35,9 +35,9 @@ namespace Internal.Cryptography.Pal
             PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
             bool deleteKeyContainer = false;
 
-            CertEncodingType msgAndCertEncodingType;
-            ContentType contentType;
-            FormatType formatType;
+            Interop.Crypt32.CertEncodingType msgAndCertEncodingType;
+            Interop.Crypt32.ContentType contentType;
+            Interop.Crypt32.FormatType formatType;
             SafeCertStoreHandle? hCertStore = null;
             SafeCryptMsgHandle? hCryptMsg = null;
             SafeCertContextHandle? pCertContext = null;
@@ -52,10 +52,10 @@ namespace Internal.Cryptography.Pal
                         {
                             CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData.Length, pRawData);
 
-                            CertQueryObjectType objectType = loadFromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
+                            Interop.Crypt32.CertQueryObjectType objectType = loadFromFile ? Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_FILE : Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
                             void* pvObject = loadFromFile ? (void*)pFileName : (void*)&certBlob;
 
-                            bool success = Interop.crypt32.CryptQueryObject(
+                            bool success = Interop.Crypt32.CryptQueryObject(
                                 objectType,
                                 pvObject,
                                 X509ExpectedContentTypeFlags,
@@ -76,11 +76,11 @@ namespace Internal.Cryptography.Pal
                         }
                     }
 
-                    if (contentType == ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED || contentType == ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED)
+                    if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED || contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED)
                     {
                         pCertContext = GetSignerInPKCS7Store(hCertStore, hCryptMsg);
                     }
-                    else if (contentType == ContentType.CERT_QUERY_CONTENT_PFX)
+                    else if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
                     {
                         if (loadFromFile)
                             rawData = File.ReadAllBytes(fileName!);
@@ -247,13 +247,13 @@ namespace Internal.Cryptography.Pal
             return pfxCertStoreFlags;
         }
 
-        private const ExpectedContentTypeFlags X509ExpectedContentTypeFlags =
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX;
+        private const Interop.Crypt32.ExpectedContentTypeFlags X509ExpectedContentTypeFlags =
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX;
 
-        private const ExpectedFormatTypeFlags X509ExpectedFormatTypeFlags = ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL;
+        private const Interop.Crypt32.ExpectedFormatTypeFlags X509ExpectedFormatTypeFlags = Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL;
     }
 }

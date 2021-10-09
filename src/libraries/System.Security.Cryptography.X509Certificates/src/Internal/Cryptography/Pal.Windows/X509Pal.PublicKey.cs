@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography.Pal.Native;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -133,7 +134,7 @@ namespace Internal.Cryptography.Pal
                 {
                     unsafe
                     {
-                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
+                        bool success = Interop.crypt32.CryptImportPublicKeyInfoEx2(Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING, &(certContext.CertContext->pCertInfo->SubjectPublicKeyInfo), importFlags, null, out bCryptKeyHandle);
                         if (!success)
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         return bCryptKeyHandle;
@@ -201,11 +202,11 @@ namespace Internal.Cryptography.Pal
         private static byte[] DecodeKeyBlob(CryptDecodeObjectStructType lpszStructType, byte[] encodedKeyValue)
         {
             int cbDecoded = 0;
-            if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, null, ref cbDecoded))
+            if (!Interop.crypt32.CryptDecodeObject(Native.CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, null, ref cbDecoded))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             byte[] keyBlob = new byte[cbDecoded];
-            if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, keyBlob, ref cbDecoded))
+            if (!Interop.crypt32.CryptDecodeObject(Native.CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, keyBlob, ref cbDecoded))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             return keyBlob;

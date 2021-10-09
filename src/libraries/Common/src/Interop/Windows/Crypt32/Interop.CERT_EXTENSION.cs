@@ -3,13 +3,17 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern SafeCertContextHandle CertDuplicateCertificateContext(IntPtr pCertContext);
+        [StructLayout(LayoutKind.Sequential)]
+        internal unsafe struct CERT_EXTENSION
+        {
+            internal IntPtr pszObjId;
+            internal int fCritical;
+            internal DATA_BLOB Value;
+        }
     }
 }
