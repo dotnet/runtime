@@ -123,7 +123,7 @@ namespace System.IO
             return HasHiddenFlag;
         }
 
-        internal bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
+        internal static bool IsNameHidden(ReadOnlySpan<char> fileName) => fileName.Length > 0 && fileName[0] == '.';
 
         // Returns true if the path points to a directory, or if the path is a symbolic link
         // that points to a directory
@@ -139,9 +139,9 @@ namespace System.IO
             return HasSymbolicLinkFlag;
         }
 
-        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName)
+        internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
-            EnsureCachesInitialized(path);
+            EnsureCachesInitialized(path, continueOnError);
 
             if (!_exists)
                 return (FileAttributes)(-1);

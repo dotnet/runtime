@@ -55,7 +55,7 @@ namespace System.IO.Tests.Enumeration
                 fileOne.Attributes &= ~(FileAttributes.Archive | FileAttributes.NotContentIndexed);
             }
 
-            using (var enumerator = new DefaultFileAttributes(testDirectory.FullName, new EnumerationOptions()))
+            using (var enumerator = new DefaultFileAttributes(testDirectory.FullName, new EnumerationOptions() { AttributesToSkip = 0 }))
             {
                 Assert.True(enumerator.MoveNext());
                 Assert.Equal(fileOne.Name, enumerator.Current);
@@ -104,7 +104,7 @@ namespace System.IO.Tests.Enumeration
                 subDirectory.Attributes &= ~FileAttributes.NotContentIndexed;
             }
 
-            using (var enumerator = new DefaultDirectoryAttributes(testDirectory.FullName, new EnumerationOptions()))
+            using (var enumerator = new DefaultDirectoryAttributes(testDirectory.FullName, new EnumerationOptions() { AttributesToSkip = 0 }))
             {
                 Assert.True(enumerator.MoveNext());
                 Assert.Equal(subDirectory.Name, enumerator.Current);
