@@ -29,7 +29,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 
             if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
             {
-                var runtimeJsonPath = PathCombine(defaultRootPath, defaultRuntimeFile);
+                var runtimeJsonPath = Path.Combine(defaultRootPath, defaultRuntimeFile);
                 File.Copy(defaultRuntimeFile, runtimeJsonPath, true);
 
                 defaultRuntimeFile = runtimeJsonPath;
