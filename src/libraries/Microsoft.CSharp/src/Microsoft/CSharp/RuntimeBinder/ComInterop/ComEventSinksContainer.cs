@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
     /// This list is usually attached as a custom data for RCW object and
     /// is finalized whenever RCW is finalized.
     /// </summary>
-    internal class ComEventSinksContainer : List<ComEventsSink>, IDisposable
+    internal sealed class ComEventSinksContainer : List<ComEventsSink>, IDisposable
     {
         private ComEventSinksContainer()
         {

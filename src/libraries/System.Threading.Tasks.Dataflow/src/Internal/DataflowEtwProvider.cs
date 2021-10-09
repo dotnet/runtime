@@ -14,13 +14,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Security;
-#if FEATURE_TRACING
 using System.Diagnostics.Tracing;
-#endif
 
 namespace System.Threading.Tasks.Dataflow.Internal
 {
-#if FEATURE_TRACING
     /// <summary>Provides an event source for tracing Dataflow information.</summary>
     [EventSource(
         Name = "System.Threading.Tasks.Dataflow.DataflowEventSource",
@@ -60,7 +57,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         // Dataflow Events
         //
 
-    #region Block Creation
+#region Block Creation
         /// <summary>Trace an event for when a new block is instantiated.</summary>
         /// <param name="block">The dataflow block that was created.</param>
         /// <param name="dataflowBlockOptions">The options with which the block was created.</param>
@@ -83,9 +80,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             WriteEvent(DATAFLOWBLOCKCREATED_EVENTID, blockName, blockId);
         }
-    #endregion
+#endregion
 
-    #region Task Launching
+#region Task Launching
         /// <summary>Trace an event for a block launching a task to handle messages.</summary>
         /// <param name="block">The owner block launching a task.</param>
         /// <param name="task">The task being launched for processing.</param>
@@ -105,6 +102,10 @@ namespace System.Threading.Tasks.Dataflow.Internal
             }
         }
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "WriteEvent Parameters are trimmer safe")]
+#endif
         [Event(TASKLAUNCHED_EVENTID, Level = EventLevel.Informational)]
         private void TaskLaunchedForMessageHandling(int blockId, TaskLaunchedReason reason, int availableMessages, int taskId)
         {
@@ -119,9 +120,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
             /// <summary>A task is being launched to offer outgoing messages to linked targets.</summary>
             OfferingOutputMessages = 2,
         }
-    #endregion
+#endregion
 
-    #region Block Completion
+#region Block Completion
         /// <summary>Trace an event for a block completing.</summary>
         /// <param name="block">The block that's completing.</param>
         [NonEvent]
@@ -130,17 +131,17 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Debug.Assert(block != null, "Block needed for the ETW event.");
             if (IsEnabled(EventLevel.Informational, ALL_KEYWORDS))
             {
-                Task completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
+                Task? completionTask = Common.GetPotentiallyNotSupportedCompletionTask(block);
                 bool blockIsCompleted = completionTask != null && completionTask.IsCompleted;
                 Debug.Assert(blockIsCompleted, "Block must be completed for this event to be valid.");
                 if (blockIsCompleted)
                 {
-                    var reason = (BlockCompletionReason)completionTask.Status;
+                    var reason = (BlockCompletionReason)completionTask!.Status;
                     string exceptionData = string.Empty;
 
                     if (completionTask.IsFaulted)
                     {
-                        try { exceptionData = string.Join(Environment.NewLine, completionTask.Exception.InnerExceptions.Select(e => e.ToString())); }
+                        try { exceptionData = string.Join(Environment.NewLine, completionTask.Exception!.InnerExceptions.Select(e => e.ToString())); }
                         catch { }
                     }
 
@@ -160,14 +161,18 @@ namespace System.Threading.Tasks.Dataflow.Internal
             Canceled = (int)TaskStatus.Canceled
         }
 
+#if !ES_BUILD_STANDALONE
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "WriteEvent Parameters are trimmer safe")]
+#endif
         [Event(BLOCKCOMPLETED_EVENTID, Level = EventLevel.Informational)]
         private void DataflowBlockCompleted(int blockId, BlockCompletionReason reason, string exceptionData)
         {
             WriteEvent(BLOCKCOMPLETED_EVENTID, blockId, reason, exceptionData);
         }
-    #endregion
+#endregion
 
-    #region Linking
+#region Linking
         /// <summary>Trace an event for a block linking.</summary>
         /// <param name="source">The source block linking to a target.</param>
         /// <param name="target">The target block being linked from a source.</param>
@@ -187,9 +192,9 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             WriteEvent(BLOCKLINKED_EVENTID, sourceId, targetId);
         }
-    #endregion
+#endregion
 
-    #region Unlinking
+#region Unlinking
         /// <summary>Trace an event for a block unlinking.</summary>
         /// <param name="source">The source block unlinking from a target.</param>
         /// <param name="target">The target block being unlinked from a source.</param>
@@ -210,7 +215,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             WriteEvent(BLOCKUNLINKED_EVENTID, sourceId, targetId);
         }
-    #endregion
+#endregion
     }
-#endif
 }

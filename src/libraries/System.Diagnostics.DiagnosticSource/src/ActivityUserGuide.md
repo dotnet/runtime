@@ -1,5 +1,9 @@
 # Activity User Guide
 
+**This doc is being obsoleted by: https://docs.microsoft.com/dotnet/core/diagnostics/distributed-tracing
+Future doc changes should be done in the official docs, not here.
+There is still some information here that is not present in the official docs (yet) so I am preserving it as-is.**
+
 This document describes Activity, a class that allows storing and accessing diagnostics context and consuming it with logging system.
 
 This document provides Activity architecture [overview](#overview) and [usage](#activity-usage).
@@ -17,7 +21,7 @@ External dependency Activity Id is passed along with the request, so the depende
 
 Activities may be created and started/stopped by platform code or frameworks; applications need to be notified about activities events and need to have access to current activity being processed.
 Therefore code which creates activity also writes corresponding event to `DiagnosticSource`:
-- DO - create new `DiagnosticListener` for specific Activity type to allow filtering by activity. E.g Incoming and Outgoing Http Requests should be different DiagnosticListeners. Follow [DiagnosticSource User Guide](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md) to pick a name.
+- DO - create new `DiagnosticListener` for specific Activity type to allow filtering by activity. E.g Incoming and Outgoing Http Requests should be different DiagnosticListeners. Follow [DiagnosticSource User Guide](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md) to pick a name.
 - DO - Guard Activity creation and start with call to `DiagnosticSource.IsEnabled` to avoid creating activities when no-one is listening to them and to enable event name-based filtering or sampling.
 - DO - Use `DiagnosticSource.StartActivity(Activity)` and `DiagnosticSource.StopActivity(Activity)` methods instead of Activity methods to ensure Activity events are always written to `DiagnosticSource`.
 - DO - pass any necessary context to `DiagnosticListener`, so your application may enrich Activity. For example, in the case of an incoming HTTP request, the application needs an instance of `HttpContext` in order to add custom tags (method, path, user-agent, etc.)
@@ -108,7 +112,7 @@ Note that different DiagnosticSources should be used for incoming and outgoing H
 
 ## Listening to Activity Events
 An application may listen to activity events and log them. It can access `Activity.Current` to get information about the current activity.
-This follows normal [DiagnosticListener conventions](https://github.com/dotnet/runtime/blob/master/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md).
+This follows normal [DiagnosticListener conventions](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md).
 
 An application may also add tags and baggage to the current activity when processing an Activity start callback.
 Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we pass `HttpContext` to DiagnosticSource, so that the application has access to the request properties in order to enrich the current activity.

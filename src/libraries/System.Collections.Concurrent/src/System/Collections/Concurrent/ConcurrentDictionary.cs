@@ -471,7 +471,8 @@ namespace System.Collections.Concurrent
 
         private bool TryGetValueInternal(TKey key, int hashcode, [MaybeNullWhen(false)] out TValue value)
         {
-            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode);
+            Debug.Assert((_comparer is null ? key.GetHashCode() : _comparer.GetHashCode(key)) == hashcode,
+                          $"Invalid comparer: _comparer {_comparer} key {key} _comparer.GetHashCode(key) {_comparer?.GetHashCode(key)} hashcode {hashcode}");
 
             // We must capture the volatile _tables field into a local variable: it is set to a new table on each table resize.
             // The Volatile.Read on the array element then ensures that we have a copy of the reference to tables._buckets[bucketNo]:
@@ -641,6 +642,12 @@ namespace System.Collections.Concurrent
             try
             {
                 AcquireAllLocks(ref locksAcquired);
+
+                // If the dictionary is already empty, then there's nothing to clear.
+                if (AreAllBucketsEmpty())
+                {
+                    return;
+                }
 
                 Tables tables = _tables;
                 var newTables = new Tables(new Node[DefaultCapacity], tables._locks, new int[tables._countPerLock.Length]);
@@ -1046,6 +1053,23 @@ namespace System.Collections.Concurrent
             throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
 
         /// <summary>
+        /// Gets the <see cref="IEqualityComparer{TKey}" />
+        /// that is used to determine equality of keys for the dictionary.
+        /// </summary>
+        /// <value>
+        /// The <see cref="IEqualityComparer{TKey}" /> generic interface implementation
+        /// that is used to determine equality of keys for the current
+        /// <see cref="ConcurrentDictionary{TKey, TValue}" /> and to provide hash values for the keys.
+        /// </value>
+        /// <remarks>
+        /// <see cref="ConcurrentDictionary{TKey, TValue}" /> requires an equality implementation to determine
+        /// whether keys are equal. You can specify an implementation of the <see cref="IEqualityComparer{TKey}" />
+        /// generic interface by using a constructor that accepts a comparer parameter;
+        /// if you do not specify one, the default generic equality comparer <see cref="EqualityComparer{TKey}.Default" /> is used.
+        /// </remarks>
+        public IEqualityComparer<TKey> Comparer => _comparer ?? _defaultComparer;
+
+        /// <summary>
         /// Gets the number of key/value pairs contained in the <see
         /// cref="ConcurrentDictionary{TKey,TValue}"/>.
         /// </summary>
@@ -1421,20 +1445,7 @@ namespace System.Collections.Concurrent
                     ReleaseLocks(0, acquiredLocks);
                 }
 
-                bool AreAllBucketsEmpty()
-                {
-                    int[] countPerLock = _tables._countPerLock;
 
-                    for (int i = 0; i < countPerLock.Length; i++)
-                    {
-                        if (countPerLock[i] != 0)
-                        {
-                            return false;
-                        }
-                    }
-
-                    return true;
-                }
             }
         }
 
@@ -1874,6 +1885,22 @@ namespace System.Collections.Concurrent
 
         #endregion
 
+
+        private bool AreAllBucketsEmpty()
+        {
+            int[] countPerLock = _tables._countPerLock;
+
+            for (int i = 0; i < countPerLock.Length; i++)
+            {
+                if (countPerLock[i] != 0)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the
         /// table as a result of races, the Tables instance that holds the table of buckets deemed too
@@ -1882,7 +1909,6 @@ namespace System.Collections.Concurrent
         /// </summary>
         private void GrowTable(Tables tables)
         {
-            const int MaxArrayLength = 0X7FEFFFFF;
             int locksAcquired = 0;
             try
             {
@@ -1938,7 +1964,7 @@ namespace System.Collections.Concurrent
 
                         Debug.Assert(newLength % 2 != 0);
 
-                        if (newLength > MaxArrayLength)
+                        if (newLength > Array.MaxLength)
                         {
                             maximizeTableSize = true;
                         }
@@ -1951,7 +1977,7 @@ namespace System.Collections.Concurrent
 
                 if (maximizeTableSize)
                 {
-                    newLength = MaxArrayLength;
+                    newLength = Array.MaxLength;
 
                     // We want to make sure that GrowTable will not be called again, since table is at the maximum size.
                     // To achieve that, we set the budget to int.MaxValue.
@@ -1960,9 +1986,6 @@ namespace System.Collections.Concurrent
                     // calling Clear() on the ConcurrentDictionary will shrink the table and lower the budget.)
                     _budget = int.MaxValue;
                 }
-
-                // Now acquire all other locks for the table
-                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
 
                 object[] newLocks = tables._locks;
 
@@ -1980,6 +2003,9 @@ namespace System.Collections.Concurrent
                 var newBuckets = new Node[newLength];
                 var newCountPerLock = new int[newLocks.Length];
                 var newTables = new Tables(newBuckets, newLocks, newCountPerLock);
+
+                // Now acquire all other locks for the table
+                AcquireLocks(1, tables._locks.Length, ref locksAcquired);
 
                 // Copy all data into a new table, creating new nodes for all elements
                 foreach (Node? bucket in tables._buckets)

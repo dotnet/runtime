@@ -2,10 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
-    internal class BsdIPv4GlobalStatistics : IPGlobalStatistics
+    internal sealed class BsdIPv4GlobalStatistics : IPGlobalStatistics
     {
         private readonly long _outboundPackets;
         private readonly long _outputPacketsNoRoute;
@@ -24,6 +27,21 @@ namespace System.Net.NetworkInformation
         private readonly int _numInterfaces;
         private readonly int _numIPAddresses;
         private readonly int _numRoutes;
+
+        private struct Context
+        {
+            internal int _numIPAddresses;
+            internal HashSet<string> _interfaceSet;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ProcessIpv4Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr)
+        {
+            ref Context context = ref Unsafe.As<byte, Context>(ref *(byte*)pContext);
+
+            context._interfaceSet.Add(new string((sbyte*)ifaceName));
+            context._numIPAddresses++;
+        }
 
         public unsafe BsdIPv4GlobalStatistics()
         {
@@ -48,19 +66,18 @@ namespace System.Net.NetworkInformation
             _defaultTtl = statistics.DefaultTtl;
             _forwarding = statistics.Forwarding == 1;
 
-            HashSet<string> interfaceSet = new HashSet<string>();
-            int numIPAddresses = 0;
+            Context context;
+            context._numIPAddresses = 0;
+            context._interfaceSet = new HashSet<string>();
+
             Interop.Sys.EnumerateInterfaceAddresses(
-                (name, addressInfo) =>
-                {
-                    interfaceSet.Add(name);
-                    numIPAddresses++;
-                },
+                Unsafe.AsPointer(ref context),
+                &ProcessIpv4Address,
                 null,
                 null);
 
-            _numInterfaces = interfaceSet.Count;
-            _numIPAddresses = numIPAddresses;
+            _numInterfaces = context._interfaceSet.Count;
+            _numIPAddresses = context._numIPAddresses;
 
             _numRoutes = Interop.Sys.GetNumRoutes();
             if (_numRoutes == -1)
@@ -79,19 +96,39 @@ namespace System.Net.NetworkInformation
 
         public override long OutputPacketRequests { get { return _outboundPackets; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long OutputPacketRoutingDiscards { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long OutputPacketsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutputPacketsWithNoRoute { get { return _outputPacketsNoRoute; } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long PacketFragmentFailures { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public override long PacketReassembliesRequired { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketReassemblyFailures { get { return _cantFrags; } }
 
-        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); ; } }
+        [UnsupportedOSPlatform("osx")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
+        public override long PacketReassemblyTimeout { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long PacketsFragmented { get { return _datagramsFragmented; } }
 

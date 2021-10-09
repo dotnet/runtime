@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization
 {
-    internal class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
+    internal sealed class XmlSerializationPrimitiveWriter : System.Xml.Serialization.XmlSerializationWriter
     {
         internal void Write_string(object? o)
         {
@@ -107,6 +108,18 @@ namespace System.Xml.Serialization
                 return;
             }
             WriteElementStringRaw(@"dateTime", @"", FromDateTime(((System.DateTime)o)));
+        }
+
+        internal void Write_dateTimeOffset(object? o)
+        {
+            WriteStartDocument();
+            if (o == null)
+            {
+                WriteEmptyTag(@"dateTimeOffset", @"");
+                return;
+            }
+            DateTimeOffset dto = (DateTimeOffset)o;
+            WriteElementStringRaw(@"dateTimeOffset", @"", System.Xml.XmlConvert.ToString(dto));
         }
 
         internal void Write_unsignedByte(object? o)
@@ -224,12 +237,13 @@ namespace System.Xml.Serialization
             WriteNullableQualifiedNameLiteral(@"QName", @"", ((global::System.Xml.XmlQualifiedName)o));
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
         }
     }
 
-    internal class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
+    internal sealed class XmlSerializationPrimitiveReader : System.Xml.Serialization.XmlSerializationReader
     {
         internal object? Read_string()
         {
@@ -438,6 +452,36 @@ namespace System.Xml.Serialization
                 {
                     {
                         o = ToDateTime(Reader.ReadElementString());
+                    }
+                }
+                else
+                {
+                    throw CreateUnknownNodeException();
+                }
+            }
+            else
+            {
+                UnknownNode(null);
+            }
+            return (object?)o;
+        }
+
+        internal object? Read_dateTimeOffset()
+        {
+            object? o = null;
+            Reader.MoveToContent();
+            if (Reader.NodeType == System.Xml.XmlNodeType.Element)
+            {
+                if (((object)Reader.LocalName == (object)_id20_dateTimeOffset && (object)Reader.NamespaceURI == (object)_id2_Item))
+                {
+                    if (Reader.IsEmptyElement)
+                    {
+                        Reader.Skip();
+                        o = default(DateTimeOffset);
+                    }
+                    else
+                    {
+                        o = System.Xml.XmlConvert.ToDateTimeOffset(Reader.ReadElementString());
                     }
                 }
                 else
@@ -708,6 +752,7 @@ namespace System.Xml.Serialization
             return (object?)o;
         }
 
+        [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected override void InitCallbacks()
         {
         }
@@ -717,6 +762,7 @@ namespace System.Xml.Serialization
         private string _id15_unsignedLong = null!;
         private string _id7_float = null!;
         private string _id10_dateTime = null!;
+        private string _id20_dateTimeOffset = null!;
         private string _id6_long = null!;
         private string _id9_decimal = null!;
         private string _id8_double = null!;
@@ -740,6 +786,7 @@ namespace System.Xml.Serialization
             _id15_unsignedLong = Reader.NameTable.Add(@"unsignedLong");
             _id7_float = Reader.NameTable.Add(@"float");
             _id10_dateTime = Reader.NameTable.Add(@"dateTime");
+            _id20_dateTimeOffset = Reader.NameTable.Add(@"dateTimeOffset");
             _id6_long = Reader.NameTable.Add(@"long");
             _id9_decimal = Reader.NameTable.Add(@"decimal");
             _id8_double = Reader.NameTable.Add(@"double");

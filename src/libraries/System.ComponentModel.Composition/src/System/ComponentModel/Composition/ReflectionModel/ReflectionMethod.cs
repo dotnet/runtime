@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace System.ComponentModel.Composition.ReflectionModel
 {
-    internal partial class ReflectionMethod : ReflectionMember
+    internal sealed partial class ReflectionMethod : ReflectionMember
     {
         private readonly MethodInfo _method;
 

@@ -1,0 +1,44 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(monodroid)
+
+enable_language(C ASM)
+
+if(NOT USE_LLVM)
+    # the assembler code we generate is GNU which isn't understood by llvm
+    add_compile_options(-no-integrated-as)
+endif()
+
+# Prevent the warning: shared library text segment is not shareable which is treated as an error
+if (NOT ANDROID_ABI STREQUAL "arm64-v8a")
+    add_link_options(-Wl,--no-warn-shared-textrel)
+endif()
+
+add_library(
+    monodroid
+    SHARED
+    monodroid.c
+    %AotModulesSource%
+)
+
+%AotSources%
+
+%Defines%
+
+include_directories("%MonoInclude%")
+
+target_link_libraries(
+    monodroid
+    %NativeLibrariesToLink%
+    libz.so
+    log
+    "-u GlobalizationNative_LoadICU"
+    "-u GlobalizationNative_GetLatestJapaneseEra"
+    "-u GlobalizationNative_ChangeCase"
+    "-u GlobalizationNative_CloseSortHandle"
+    "-u GlobalizationNative_GetLocales"
+    "-u GlobalizationNative_GetLocaleInfoInt"
+    "-u GlobalizationNative_GetLocaleTimeFormat"
+    "-u GlobalizationNative_ToUnicode"
+    "-u GlobalizationNative_NormalizeString"
+    "-u GlobalizationNative_GetTimeZoneDisplayName")

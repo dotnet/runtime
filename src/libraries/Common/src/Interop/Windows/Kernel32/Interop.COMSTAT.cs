@@ -4,9 +4,9 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Kernel32
+    internal static partial class Kernel32
     {
         // Declaration for C# representation of Win32 COMSTAT structure associated with
         // a file handle to a serial communications resource.  SerialStream's

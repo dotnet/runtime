@@ -10,7 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace Internal.Cryptography.Pal
 {
-    internal partial class FindPal
+    internal sealed partial class FindPal
     {
         private const int NamedKeyUsageFlagsCount = 9;
 

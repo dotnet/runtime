@@ -47,5 +47,24 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => GetCachedSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard", ref s_serializationGuard);
         }
+
+        private static int s_showILOffset;
+        private static bool GetDefaultShowILOffsetSetting()
+        {
+            if (s_showILOffset < 0) return false;
+            if (s_showILOffset > 0) return true;
+
+            // Disabled by default.
+            bool isSwitchEnabled = AppContextConfigHelper.GetBooleanConfig("Switch.System.Diagnostics.StackTrace.ShowILOffsets", false);
+            s_showILOffset = isSwitchEnabled ? 1 : -1;
+
+            return isSwitchEnabled;
+        }
+
+        public static bool ShowILOffsets
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => GetDefaultShowILOffsetSetting();
+        }
     }
 }

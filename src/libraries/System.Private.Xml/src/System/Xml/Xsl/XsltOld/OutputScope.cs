@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Diagnostics.CodeAnalysis;
     using System.Xml;
 
-    internal class OutputScope : DocumentScope
+    internal sealed class OutputScope : DocumentScope
     {
         private string _name;
         private string _nsUri;

@@ -7,6 +7,6 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <UnsupportedOSPlatforms>browser;android;ios;tvos</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>

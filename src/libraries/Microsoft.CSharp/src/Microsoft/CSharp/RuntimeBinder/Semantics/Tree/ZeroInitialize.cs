@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -12,6 +13,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
         }
 
-        public override object Object => Activator.CreateInstance(Type.AssociatedSystemType);
+        public override object Object
+        {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            get => Activator.CreateInstance(Type.AssociatedSystemType);
+        }
     }
 }

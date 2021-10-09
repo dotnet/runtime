@@ -25,6 +25,7 @@ namespace Microsoft.Extensions.Logging.Testing
         }
 
         public string Name { get; set; }
+        public int IsEnabledCallCount { get; private set; }
 
         public IDisposable BeginScope<TState>(TState state)
         {
@@ -60,6 +61,7 @@ namespace Microsoft.Extensions.Logging.Testing
 
         public bool IsEnabled(LogLevel logLevel)
         {
+            IsEnabledCallCount++;
             return logLevel != LogLevel.None && _filter(logLevel);
         }
 

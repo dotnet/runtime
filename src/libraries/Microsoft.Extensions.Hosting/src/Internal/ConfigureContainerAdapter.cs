@@ -5,7 +5,7 @@ using System;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
-    internal class ConfigureContainerAdapter<TContainerBuilder> : IConfigureContainerAdapter
+    internal sealed class ConfigureContainerAdapter<TContainerBuilder> : IConfigureContainerAdapter
     {
         private Action<HostBuilderContext, TContainerBuilder> _action;
 

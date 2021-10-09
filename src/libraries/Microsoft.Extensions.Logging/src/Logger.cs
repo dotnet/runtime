@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Logging
 {
-    internal class Logger : ILogger
+    internal sealed class Logger : ILogger
     {
         public LoggerInformation[] Loggers { get; set; }
         public MessageLogger[] MessageLoggers { get; set; }
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.Logging
                 message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
         }
 
-        private class Scope : IDisposable
+        private sealed class Scope : IDisposable
         {
             private bool _isDisposed;
 

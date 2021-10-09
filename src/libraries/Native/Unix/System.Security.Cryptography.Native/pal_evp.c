@@ -119,7 +119,7 @@ int32_t CryptoNative_EvpDigestOneShot(const EVP_MD* type, const void* source, in
 
 int32_t CryptoNative_EvpMdSize(const EVP_MD* md)
 {
-    return EVP_MD_size(md);
+    return EVP_MD_get_size(md);
 }
 
 const EVP_MD* CryptoNative_EvpMd5()
@@ -150,4 +150,45 @@ const EVP_MD* CryptoNative_EvpSha512()
 int32_t CryptoNative_GetMaxMdSize()
 {
     return EVP_MAX_MD_SIZE;
+}
+
+int32_t CryptoNative_Pbkdf2(const char* password,
+                            int32_t passwordLength,
+                            const unsigned char* salt,
+                            int32_t saltLength,
+                            int32_t iterations,
+                            const EVP_MD* digest,
+                            unsigned char* destination,
+                            int32_t destinationLength)
+{
+    if (passwordLength < 0 || saltLength < 0 || iterations <= 0 || digest == NULL ||
+        destination == NULL || destinationLength < 0)
+    {
+        return -1;
+    }
+
+    const char* empty = "";
+
+    if (salt == NULL)
+    {
+        if (saltLength != 0)
+        {
+            return -1;
+        }
+
+        salt = (const unsigned char*)empty;
+    }
+
+    if (password == NULL)
+    {
+        if (passwordLength != 0)
+        {
+            return -1;
+        }
+
+        password = empty;
+    }
+
+    return PKCS5_PBKDF2_HMAC(
+        password, passwordLength, salt, saltLength, iterations, digest, destinationLength, destination);
 }

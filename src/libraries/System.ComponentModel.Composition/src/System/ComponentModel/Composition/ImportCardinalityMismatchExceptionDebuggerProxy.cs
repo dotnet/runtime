@@ -5,7 +5,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition
 {
-    internal class ImportCardinalityMismatchExceptionDebuggerProxy
+    internal sealed class ImportCardinalityMismatchExceptionDebuggerProxy
     {
         private readonly ImportCardinalityMismatchException _exception;
 

@@ -96,6 +96,9 @@
   <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
     <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
   </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_ArgECDHKeySizeMismatch" xml:space="preserve">
     <value>The keys from both parties must be the same size to generate a secret agreement.</value>
   </data>
@@ -270,9 +273,6 @@
   <data name="Cryptography_PartialBlock" xml:space="preserve">
     <value>The input data is not a complete block.</value>
   </data>
-  <data name="Cryptography_PasswordDerivedBytes_FewBytesSalt" xml:space="preserve">
-    <value>Salt is not at least eight bytes.</value>
-  </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
   </data>
@@ -337,7 +337,7 @@
     <value>Method not supported. Derived class must override.</value>
   </data>
   <data name="Cryptography_AlgorithmTypesMustBeVisible" xml:space="preserve">
-    <value>Algorithms added to CryptoConfig must be accessable from outside their assembly.</value>
+    <value>Algorithms added to CryptoConfig must be accessible from outside their assembly.</value>
   </data>
   <data name="Cryptography_AddNullOrEmptyName" xml:space="preserve">
     <value>CryptoConfig cannot add a mapping for a null or empty name.</value>

@@ -63,10 +63,16 @@ jobs:
     # extra private job settings
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
-        - AdditionalHelixPreCommands: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - AdditionalHelixPreCommands: 'set ORIGPYPATH=%PYTHONPATH%;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - AdditionalHelixPostCommands: 'set PYTHONPATH=%ORIGPYPATH%'
         - IsInternal: -Internal      
-      - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - AdditionalHelixPreCommands: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.osSubGroup, '_musl')) }}:
+        - AdditionalHelixPreCommands: 'export ORIGPYPATH=$PYTHONPATH;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - AdditionalHelixPostCommands: 'export PYTHONPATH=$ORIGPYPATH'
+        - IsInternal: --internal
+      - ${{ if and(ne(parameters.osGroup, 'windows'), eq(parameters.osSubGroup, '_musl')) }}:
+        - AdditionalHelixPreCommands: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add py3-virtualenv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - AdditionalHelixPostCommands: 'export PYTHONPATH=$ORIGPYPATH'
         - IsInternal: --internal
       - group: DotNet-HelixApi-Access
       - group: dotnet-benchview
@@ -75,7 +81,8 @@ jobs:
       clean: all
     pool:
       ${{ parameters.pool }}
-    container: ${{ parameters.container }}
+    ${{ if ne(parameters.runtimeType, 'wasm') }}:
+      container: ${{ parameters.container }}
     strategy:
       matrix:
         ${{ each framework in parameters.frameworks }}:
@@ -84,24 +91,19 @@ jobs:
     steps:
     - ${{ parameters.steps }}
     # run performance-setup
-    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    # parse Version.props to get the latest stable sdk version on master
-    - script: $(Python) scripts/parse_props.py --branch-name master # defaults to master branch of sdk so we can get the latest
-      displayName: Parse Version.props 
-      workingDirectory: $(PerformanceDirectory)
-      continueOnError: ${{ parameters.continueOnError }}
     # run ci-setup
-    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
       displayName: Run ci setup script (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
       displayName: Run ci setup script (Linux)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     # copy wasm packs if running on wasm
@@ -139,13 +141,14 @@ jobs:
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       
     # run perf testing in helix
-    - template: /eng/common/templates/steps/perf-send-to-helix.yml
+    - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml
       parameters:
         HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
         HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
         HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: $(Queue)
         HelixPreCommands: '$(AdditionalHelixPreCommands);$(SharedHelixPreCommands)' # $(HelixPreCommands) should follow $(AdditionalHelixPreCommands) because PYTHONPATH is cleared by the former
+        HelixPostCommands: $(AdditionalHelixPostCommands)
         Creator: $(Creator)
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)' # contains scenario tools, shared python scripts, dotnet tool
@@ -158,6 +161,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}_$(iOSLlvmBuild)'
       continueOnError: true
       condition: always()

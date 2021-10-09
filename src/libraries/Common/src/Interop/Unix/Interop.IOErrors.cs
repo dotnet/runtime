@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -160,12 +159,14 @@ internal static partial class Interop
                 goto default;
 
             default:
-                return GetIOException(errorInfo);
+                return GetIOException(errorInfo, path);
         }
     }
 
-    internal static Exception GetIOException(Interop.ErrorInfo errorInfo)
+    internal static Exception GetIOException(Interop.ErrorInfo errorInfo, string? path = null)
     {
-        return new IOException(errorInfo.GetErrorMessage(), errorInfo.RawErrno);
+        string msg = errorInfo.GetErrorMessage();
+        return new IOException(
+            string.IsNullOrEmpty(path) ? msg : $"{msg} : '{path}'", errorInfo.RawErrno);
     }
 }

@@ -55,6 +55,14 @@ volatile gboolean mono_bridge_processing_in_progress = FALSE;
 void
 mono_gc_wait_for_bridge_processing (void)
 {
+	MONO_ENTER_GC_UNSAFE;
+	mono_gc_wait_for_bridge_processing_internal ();
+	MONO_EXIT_GC_UNSAFE;
+}
+
+void
+mono_gc_wait_for_bridge_processing_internal (void)
+{
 	if (!mono_bridge_processing_in_progress)
 		return;
 
@@ -735,6 +743,11 @@ volatile gboolean mono_bridge_processing_in_progress = FALSE;
 
 void
 mono_gc_wait_for_bridge_processing (void)
+{
+}
+
+void
+mono_gc_wait_for_bridge_processing_internal (void)
 {
 }
 

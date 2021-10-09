@@ -178,7 +178,7 @@ namespace System.Numerics.Tests
         private void TestConstructorArrayTooSmallException<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>().Skip(1).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 var vector = new Vector<T>(values);
             });
@@ -237,25 +237,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<short>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<int>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<long>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<float>());
         [Fact]
-        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
+        public void ReadOnlySpanBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanBasedConstructorWithLessElements<double>());
 
         private void TestReadOnlySpanBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -264,25 +264,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<short>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<int>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<long>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<float>());
         [Fact]
-        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
+        public void ReadOnlySpanByteBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestReadOnlySpanByteBasedConstructorWithLessElements<double>());
 
         private void TestReadOnlySpanByteBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -291,25 +291,25 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Byte() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<byte>());
+        public void SpanBasedConstructorWithLessElements_Byte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<byte>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_SByte() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<sbyte>());
+        public void SpanBasedConstructorWithLessElements_SByte() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<sbyte>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ushort>());
+        public void SpanBasedConstructorWithLessElements_UInt16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ushort>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int16() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<short>());
+        public void SpanBasedConstructorWithLessElements_Int16() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<short>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<uint>());
+        public void SpanBasedConstructorWithLessElements_UInt32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<uint>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int32() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<int>());
+        public void SpanBasedConstructorWithLessElements_Int32() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<int>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ulong>());
+        public void SpanBasedConstructorWithLessElements_UInt64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<ulong>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Int64() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<long>());
+        public void SpanBasedConstructorWithLessElements_Int64() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<long>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Single() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<float>());
+        public void SpanBasedConstructorWithLessElements_Single() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<float>());
         [Fact]
-        public void SpanBasedConstructorWithLessElements_Double() => Assert.Throws<IndexOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<double>());
+        public void SpanBasedConstructorWithLessElements_Double() => Assert.Throws<ArgumentOutOfRangeException>(() => TestSpanBasedConstructorWithLessElements<double>());
 
         private void TestSpanBasedConstructorWithLessElements<T>() where T : struct
         {
@@ -410,7 +410,7 @@ namespace System.Numerics.Tests
         private void TestArrayBasedConstructorWithLessElements<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count - 1).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector<T>(values));
         }
 
         [Fact]
@@ -437,7 +437,7 @@ namespace System.Numerics.Tests
         private void TestArrayIndexBasedConstructorLessElements<T>() where T : struct
         {
             T[] values = GenerateRandomValuesForVector<T>(Vector<T>.Count * 2).ToArray();
-            Assert.Throws<IndexOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Vector<T>(values, Vector<T>.Count + 1));
         }
 
         #endregion Tests for Array based constructor
@@ -445,13 +445,10 @@ namespace System.Numerics.Tests
         #region Tests for constructors using unsupported types
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Guid() => TestConstructorWithUnsupportedTypes<Guid>();
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_DateTime() => TestConstructorWithUnsupportedTypes<DateTime>();
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/15190", TestRuntimes.Mono)]
         public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<Char>();
 
         private void TestConstructorWithUnsupportedTypes<T>() where T : struct
@@ -490,7 +487,7 @@ namespace System.Numerics.Tests
         private void TestIndexerOutOfRange<T>() where T : struct
         {
             Vector<T> vector = Vector<T>.One;
-            Assert.Throws<IndexOutOfRangeException>(() =>
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
             {
                 T value = vector[Vector<T>.Count];
             });
@@ -591,7 +588,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => vector.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, array.Length));
-            AssertExtensions.Throws<ArgumentException>(null, () => vector.CopyTo(array, array.Length - 1));
+            Assert.Throws<ArgumentException>(() => vector.CopyTo(array, array.Length - 1));
 
             vector.CopyTo(array);
             for (int g = 0; g < array.Length; g++)
@@ -719,7 +716,7 @@ namespace System.Numerics.Tests
             // us to check that we didn't overwrite any part of the destination
             // if it was too small to contain the entire output.
 
-            new Random().NextBytes(MemoryMarshal.AsBytes(destination));
+            Random.Shared.NextBytes(MemoryMarshal.AsBytes(destination));
             T[] destinationCopy = destination.ToArray();
 
             Assert.False(vector.TryCopyTo(destination.Slice(1)));
@@ -3049,6 +3046,139 @@ namespace System.Numerics.Tests
         }
 
         #endregion Narrow / Widen
+
+        #region Explicit Cast/As
+        [Fact]
+        public void TestCastByteToInt() => TestCastToInt<byte>();
+
+        [Fact]
+        public void TestCastSByteToInt() => TestCastToInt<sbyte>();
+
+        [Fact]
+        public void TestCastInt16ToInt() => TestCastToInt<short>();
+
+        [Fact]
+        public void TestCastUInt16ToInt() => TestCastToInt<ushort>();
+
+        [Fact]
+        public void TestCastInt32ToInt() => TestCastToInt<int>();
+
+        [Fact]
+        public void TestCastUInt32ToInt() => TestCastToInt<uint>();
+
+        [Fact]
+        public void TestCastInt64ToInt() => TestCastToInt<long>();
+
+        [Fact]
+        public void TestCastUInt64ToInt() => TestCastToInt<ulong>();
+
+        [Fact]
+        public void TestCastSingleToInt() => TestCastToInt<float>();
+
+        [Fact]
+        public void TestCastDoubleToInt() => TestCastToInt<double>();
+
+        private unsafe void TestCastToInt<T>() where T : unmanaged
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector1 = new Vector<T>(values);
+            Vector<int> vector2 = (Vector<int>)vector1;
+
+            var vector1Bytes = new byte[sizeof(T) * Vector<T>.Count];
+            vector1.CopyTo(vector1Bytes);
+            var vector2Bytes = new byte[sizeof(int) * Vector<int>.Count];
+            vector2.CopyTo(vector2Bytes);
+
+            Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+
+        [Fact]
+        public void TestAsIntToByte() => TestAs<int, byte>();
+
+        [Fact]
+        public void TestAsIntToSByte() => TestAs<int, sbyte>();
+
+        [Fact]
+        public void TestAsIntToInt16() => TestAs<int, short>();
+
+        [Fact]
+        public void TestAsIntToUInt16() => TestAs<int, ushort>();
+
+        [Fact]
+        public void TestAsIntToInt32() => TestAs<int, int>();
+
+        [Fact]
+        public void TestAsIntToUInt32() => TestAs<int, uint>();
+
+        [Fact]
+        public void TestAsIntToInt64() => TestAs<int, long>();
+
+        [Fact]
+        public void TestAsIntToUInt64() => TestAs<int, ulong>();
+
+        [Fact]
+        public void TestAsIntToSingle() => TestAs<int, float>();
+
+        [Fact]
+        public void TestAsIntToDouble() => TestAs<int, double>();
+
+        private unsafe void TestAs<TFrom, TTo>() where TFrom : unmanaged where TTo : unmanaged
+        {
+            TFrom[] values = GenerateRandomValuesForVector<TFrom>();
+            Vector<TFrom> vector1 = new Vector<TFrom>(values);
+            Vector<TTo> vector2 = vector1.As<TFrom, TTo>();
+
+            var vector1Bytes = new byte[sizeof(TFrom) * Vector<TFrom>.Count];
+            vector1.CopyTo(vector1Bytes);
+            var vector2Bytes = new byte[sizeof(TTo) * Vector<TTo>.Count];
+            vector2.CopyTo(vector2Bytes);
+
+            Assert.Equal(vector1Bytes, vector2Bytes);
+        }
+        #endregion
+
+        #region Sum
+
+        [Fact]
+        public void SumInt32() => TestSum<int>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumInt64() => TestSum<long>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumSingle() => TestSum<float>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumDouble() => TestSum<double>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt32() => TestSum<uint>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumUInt64() => TestSum<ulong>(x => x.Aggregate((a, b) => a + b));
+
+        [Fact]
+        public void SumByte() => TestSum<byte>(x => x.Aggregate((a, b) => (byte)(a + b)));
+
+        [Fact]
+        public void SumSByte() => TestSum<sbyte>(x => x.Aggregate((a, b) => (sbyte)(a + b)));
+
+        [Fact]
+        public void SumInt16() => TestSum<short>(x => x.Aggregate((a, b) => (short)(a + b)));
+
+        [Fact]
+        public void SumUInt16() => TestSum<ushort>(x => x.Aggregate((a, b) => (ushort)(a + b)));
+
+        private static void TestSum<T>(Func<T[], T> expected) where T : struct, IEquatable<T>
+        {
+            T[] values = GenerateRandomValuesForVector<T>();
+            Vector<T> vector = new(values);
+            T sum = Vector.Sum(vector);
+
+            AssertEqual(expected(values), sum, "Sum");
+        }
+
+        #endregion
 
         #region Helper Methods
         private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>

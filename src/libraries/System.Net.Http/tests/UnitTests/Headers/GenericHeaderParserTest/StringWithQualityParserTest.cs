@@ -26,12 +26,12 @@ namespace System.Net.Http.Tests
         {
             CheckValidParsedValue("text", 0, new StringWithQualityHeaderValue("text"), 4);
             CheckValidParsedValue("text,", 0, new StringWithQualityHeaderValue("text"), 5);
-            CheckValidParsedValue("\r\n text ; q = 0.5, next_text  ", 0, new StringWithQualityHeaderValue("text", 0.5), 19);
+            CheckValidParsedValue(" text ; q = 0.5, next_text  ", 0, new StringWithQualityHeaderValue("text", 0.5), 17);
             CheckValidParsedValue("  text,next_text  ", 2, new StringWithQualityHeaderValue("text"), 7);
             CheckValidParsedValue(" ,, text, , ,next", 0, new StringWithQualityHeaderValue("text"), 13);
             CheckValidParsedValue(" ,, text, , ,", 0, new StringWithQualityHeaderValue("text"), 13);
-            CheckValidParsedValue(", \r\n text \r\n ; \r\n q = 0.123", 0,
-                new StringWithQualityHeaderValue("text", 0.123), 27);
+            CheckValidParsedValue(",  text  ;  q = 0.123", 0,
+                new StringWithQualityHeaderValue("text", 0.123), 21);
 
             CheckValidParsedValue(null, 0, null, 0);
             CheckValidParsedValue(string.Empty, 0, null, 0);
@@ -52,6 +52,8 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("t;q\u4F1A=1", 0);
             CheckInvalidParsedValue("t y", 0);
             CheckInvalidParsedValue("t;q=1 y", 0);
+            CheckInvalidParsedValue("\r\n text ; q = 0.5, next_text  ", 0);
+            CheckInvalidParsedValue(", \r\n text \r\n ; \r\n q = 0.123", 0);
         }
 
         #region Helper methods

@@ -19,7 +19,7 @@ namespace System.Xml
     ///
     /// It also performs well-formed document checks if standalone="yes" and/or a doc-type-decl is output.
     /// </summary>
-    internal class QueryOutputWriter : XmlRawWriter
+    internal sealed class QueryOutputWriter : XmlRawWriter
     {
         private readonly XmlRawWriter _wrapped;
         private bool _inCDataSection;

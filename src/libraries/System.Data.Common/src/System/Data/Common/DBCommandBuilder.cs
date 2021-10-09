@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     public abstract class DbCommandBuilder : Component
     {
-        private class ParameterNames
+        private sealed class ParameterNames
         {
             private const string DefaultOriginalPrefix = "Original_";
             private const string DefaultIsNullPrefix = "IsNull_";
@@ -1318,6 +1318,7 @@ namespace System.Data.Common
         {
             return GetInsertCommand(null, useColumnsForParameterNames);
         }
+
         internal DbCommand GetInsertCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
@@ -1329,10 +1330,12 @@ namespace System.Data.Common
         {
             return GetUpdateCommand(null, false);
         }
+
         public DbCommand GetUpdateCommand(bool useColumnsForParameterNames)
         {
             return GetUpdateCommand(null, useColumnsForParameterNames);
         }
+
         internal DbCommand GetUpdateCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);
@@ -1344,10 +1347,12 @@ namespace System.Data.Common
         {
             return GetDeleteCommand(null, false);
         }
+
         public DbCommand GetDeleteCommand(bool useColumnsForParameterNames)
         {
             return GetDeleteCommand(null, useColumnsForParameterNames);
         }
+
         internal DbCommand GetDeleteCommand(DataRow? dataRow, bool useColumnsForParameterNames)
         {
             BuildCache(true, dataRow, useColumnsForParameterNames);

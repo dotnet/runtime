@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomConstructorInfo : ProjectingConstructorInfo
+    internal sealed class CustomConstructorInfo : ProjectingConstructorInfo
     {
         public CustomConstructorInfo(ConstructorInfo template, CustomReflectionContext context)
             : base(template, context.Projector)

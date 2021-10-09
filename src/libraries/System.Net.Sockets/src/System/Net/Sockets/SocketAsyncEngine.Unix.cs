@@ -97,40 +97,34 @@ namespace System.Net.Sockets
         //
         // Registers the Socket with a SocketAsyncEngine, and returns the associated engine.
         //
-        public static SocketAsyncEngine RegisterSocket(IntPtr socketHandle, SocketAsyncContext context)
+        public static bool TryRegisterSocket(IntPtr socketHandle, SocketAsyncContext context, out SocketAsyncEngine? engine, out Interop.Error error)
         {
             int engineIndex = Math.Abs(Interlocked.Increment(ref s_allocateFromEngine) % s_engines.Length);
-            SocketAsyncEngine engine = s_engines[engineIndex];
-            engine.RegisterCore(socketHandle, context);
-            return engine;
+            SocketAsyncEngine nextEngine = s_engines[engineIndex];
+            bool registered = nextEngine.TryRegisterCore(socketHandle, context, out error);
+            engine = registered ? nextEngine : null;
+            return registered;
         }
 
-        private void RegisterCore(IntPtr socketHandle, SocketAsyncContext context)
+        private bool TryRegisterCore(IntPtr socketHandle, SocketAsyncContext context, out Interop.Error error)
         {
             bool added = _handleToContextMap.TryAdd(socketHandle, new SocketAsyncContextWrapper(context));
             if (!added)
             {
                 // Using public SafeSocketHandle(IntPtr) a user can add the same handle
                 // from a different Socket instance.
-                throw new InvalidOperationException("Handle is already used by another Socket.");
+                throw new InvalidOperationException(SR.net_sockets_handle_already_used);
             }
 
-            Interop.Error error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
+            error = Interop.Sys.TryChangeSocketEventRegistration(_port, socketHandle, Interop.Sys.SocketEvents.None,
                 Interop.Sys.SocketEvents.Read | Interop.Sys.SocketEvents.Write, socketHandle);
             if (error == Interop.Error.SUCCESS)
             {
-                return;
+                return true;
             }
 
             _handleToContextMap.TryRemove(socketHandle, out _);
-            if (error == Interop.Error.ENOMEM || error == Interop.Error.ENOSPC)
-            {
-                throw new OutOfMemoryException();
-            }
-            else
-            {
-                throw new InternalException(error);
-            }
+            return false;
         }
 
         public void UnregisterSocket(IntPtr socketHandle)
@@ -157,20 +151,12 @@ namespace System.Net.Sockets
                     throw new InternalException(err);
                 }
 
-                bool suppressFlow = !ExecutionContext.IsFlowSuppressed();
-                try
+                var thread = new Thread(static s => ((SocketAsyncEngine)s!).EventLoop())
                 {
-                    if (suppressFlow) ExecutionContext.SuppressFlow();
-
-                    Thread thread = new Thread(s => ((SocketAsyncEngine)s!).EventLoop());
-                    thread.IsBackground = true;
-                    thread.Name = ".NET Sockets";
-                    thread.Start(this);
-                }
-                finally
-                {
-                    if (suppressFlow) ExecutionContext.RestoreFlow();
-                }
+                    IsBackground = true,
+                    Name = ".NET Sockets"
+                };
+                thread.UnsafeStart(this);
             }
             catch
             {

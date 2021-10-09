@@ -16,6 +16,7 @@
 #include "mono/sgen/gc-internal-agnostic.h"
 #include "mono/utils/mono-error-internals.h"
 #include "mono/utils/mono-memory-model.h"
+#include "mono/utils/mono-compiler.h"
 
 #define MONO_CLASS_IS_ARRAY(c) (m_class_get_rank (c))
 
@@ -45,12 +46,6 @@ typedef enum {
 #undef WRAPPER
 	MONO_WRAPPER_NUM
 } MonoWrapperType;
-
-typedef enum {
-	MONO_REMOTING_TARGET_UNKNOWN,
-	MONO_REMOTING_TARGET_APPDOMAIN,
-	MONO_REMOTING_TARGET_COMINTEROP
-} MonoRemotingTarget;
 
 #define MONO_METHOD_PROP_GENERIC_CONTAINER 0
 /* verification success bit, protected by the image lock */
@@ -100,6 +95,7 @@ struct _MonoMethod {
 struct _MonoMethodWrapper {
 	MonoMethod method;
 	MonoMethodHeader *header;
+	MonoMemoryManager *mem_manager;
 	void *method_data;
 };
 
@@ -112,7 +108,10 @@ struct _MonoMethodPInvoke {
 	MonoMethod method;
 	gpointer addr;
 	/* add marshal info */
-	guint16 piflags;  /* pinvoke flags */
+	union {
+		guint16 piflags;  /* pinvoke flags */
+		guint16 icflags;  /* icall flags */
+	};
 	guint32 implmap_idx;  /* index into IMPLMAP */
 };
 
@@ -226,17 +225,6 @@ typedef enum {
 	/* add other exception type */
 } MonoExceptionType;
 
-/* This struct collects the info needed for the runtime use of a class,
- * like the vtables for a domain, the GC descriptor, etc.
- */
-typedef struct {
-	guint16 max_domain;
-	/* domain_vtables is indexed by the domain id and the size is max_domain + 1 */
-	MonoVTable *domain_vtables [MONO_ZERO_LEN_ARRAY];
-} MonoClassRuntimeInfo;
-
-#define MONO_SIZEOF_CLASS_RUNTIME_INFO (sizeof (MonoClassRuntimeInfo) - MONO_ZERO_LEN_ARRAY * SIZEOF_VOID_P)
-
 typedef struct {
 	MonoPropertyBagItem head;
 
@@ -260,6 +248,7 @@ typedef enum {
 	MONO_CLASS_GPARAM, /* generic parameter */
 	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
 	MONO_CLASS_POINTER, /* pointer or function pointer*/
+	MONO_CLASS_GC_FILLER = 0xAC /* not a real class kind - used for sgen nursery filler arrays */
 } MonoTypeKind;
 
 typedef struct _MonoClassDef MonoClassDef;
@@ -320,18 +309,6 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 
 #define MONO_VTABLE_AVAILABLE_GC_BITS 4
 
-#ifdef DISABLE_REMOTING
-#define mono_class_is_marshalbyref(klass) (FALSE)
-#define mono_class_is_contextbound(klass) (FALSE)
-#define mono_vtable_is_remote(vtable) (FALSE)
-#define mono_vtable_set_is_remote(vtable,enable) do {} while (0)
-#else
-#define mono_class_is_marshalbyref(klass) (m_class_get_marshalbyref (klass))
-#define mono_class_is_contextbound(klass) (m_class_get_contextbound (klass))
-#define mono_vtable_is_remote(vtable) ((vtable)->remote)
-#define mono_vtable_set_is_remote(vtable,enable) do { (vtable)->remote = enable ? 1 : 0; } while (0)
-#endif
-
 #ifdef DISABLE_COM
 #define mono_class_is_com_object(klass) (FALSE)
 #else
@@ -340,7 +317,7 @@ int mono_class_interface_match (const uint8_t *bitmap, int id);
 
 
 MONO_API int mono_class_interface_offset (MonoClass *klass, MonoClass *itf);
-int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match);
+MONO_COMPONENT_API int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf, gboolean *non_exact_match);
 
 typedef gpointer MonoRuntimeGenericContext;
 
@@ -368,7 +345,6 @@ struct MonoVTable {
 	guint8      initialized; /* cctor has been run */
 	/* Keep this a guint8, the jit depends on it */
 	guint8      flags; /* MonoVTableFlags */
-	guint remote          : 1; /* class is remotely activated */
 	guint init_failed     : 1; /* cctor execution failed */
 	guint has_static_fields : 1; /* pointer to the data stored at the end of the vtable array */
 	guint gc_bits         : MONO_VTABLE_AVAILABLE_GC_BITS; /* Those bits are reserved for the usaged of the GC */
@@ -428,10 +404,11 @@ struct _MonoMethodInflated {
 	union {
 		MonoMethod method;
 		MonoMethodPInvoke pinvoke;
+		MonoMethodWrapper wrapper;
 	} method;
 	MonoMethod *declaring;		/* the generic method definition. */
 	MonoGenericContext context;	/* The current instantiation */
-	MonoImageSet *owner; /* The image set that the inflated method belongs to. */
+	MonoMemoryManager *owner; /* The mem manager that the inflated method belongs to. */
 };
 
 /*
@@ -445,12 +422,8 @@ struct _MonoGenericClass {
 	guint need_sync   : 1;      /* Only if dynamic. Need to be synchronized with its container class after its finished. */
 	MonoClass *cached_class;	/* if present, the MonoClass corresponding to the instantiation.  */
 
-	/* 
-	 * The image set which owns this generic class. Memory owned by the generic class
-	 * including cached_class should be allocated from the mempool of the image set,
-	 * so it is easy to free.
-	 */
-	MonoImageSet *owner;
+	/* The mem manager which owns this generic class. */
+	MonoMemoryManager *owner;
 };
 
 /* Additional details about a MonoGenericParam */
@@ -605,7 +578,7 @@ typedef struct {
 	MonoMethod *wrapper_method;
 } MonoJitICallInfo;
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_supertypes (MonoClass *klass);
 
 /* WARNING
@@ -712,13 +685,6 @@ typedef struct {
 	gint64 gc_reserved_bytes;
 	gint32 gc_num_pinned;
 	gint32 gc_sync_blocks;
-	/* Remoting category */
-	gint32 remoting_calls;
-	gint32 remoting_channels;
-	gint32 remoting_proxies;
-	gint32 remoting_classes;
-	gint32 remoting_objects;
-	gint32 remoting_contexts;
 	/* Loader category */
 	gint32 loader_classes;
 	gint32 loader_total_classes;
@@ -807,7 +773,7 @@ mono_class_get_implemented_interfaces (MonoClass *klass, MonoError *error);
 int
 mono_class_get_vtable_size (MonoClass *klass);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_is_open_constructed_type (MonoType *t);
 
 void
@@ -822,10 +788,10 @@ mono_class_get_finalizer (MonoClass *klass);
 gboolean
 mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_field_is_special_static (MonoClassField *field);
 
-guint32
+MONO_COMPONENT_API guint32
 mono_class_field_get_special_static_type (MonoClassField *field);
 
 gboolean
@@ -834,7 +800,7 @@ mono_class_has_special_static_fields (MonoClass *klass);
 const char*
 mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_type);
 
-MonoProperty* 
+MONO_COMPONENT_API MonoProperty* 
 mono_class_get_property_from_name_internal (MonoClass *klass, const char *name);
 
 const char*
@@ -928,17 +894,20 @@ mono_method_get_is_covariant_override_impl (MonoMethod *method);
 void
 mono_method_set_is_covariant_override_impl (MonoMethod *methoddef);
 
-MonoMethod*
+MONO_COMPONENT_API MonoMethod*
 mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *klass_hint, MonoGenericContext *context, MonoError *error);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_class_inflate_generic_method_checked (MonoMethod *method, MonoGenericContext *context, MonoError *error);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_class (MonoClass *klass);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_type (MonoType *type);
 
-MonoImageSet *
-mono_metadata_get_image_set_for_method (MonoMethodInflated *method);
+MonoMemoryManager *
+mono_metadata_get_mem_manager_for_class (MonoClass *klass);
+
+MonoMemoryManager*
+mono_metadata_get_mem_manager_for_method (MonoMethodInflated *method);
 
 MONO_API MonoMethodSignature *
 mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericContext *context);
@@ -946,7 +915,7 @@ mono_metadata_get_inflated_signature (MonoMethodSignature *sig, MonoGenericConte
 MonoType*
 mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, MonoGenericContext *context, MonoError *error);
 
-MonoType*
+MONO_COMPONENT_API MonoType*
 mono_class_inflate_generic_type_checked (MonoType *type, MonoGenericContext *context, MonoError *error);
 
 MONO_API void
@@ -993,14 +962,8 @@ typedef struct {
 	MonoClass *threadabortexception_class;
 	MonoClass *thread_class;
 	MonoClass *internal_thread_class;
-#ifndef DISABLE_REMOTING
-	MonoClass *transparent_proxy_class;
-	MonoClass *real_proxy_class;
-	MonoClass *marshalbyrefobject_class;
-	MonoClass *iremotingtypeinfo_class;
-#endif
+	MonoClass *autoreleasepool_class;
 	MonoClass *mono_method_message_class;
-	MonoClass *appdomain_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
 	MonoClass *stack_frame_class;
@@ -1015,25 +978,9 @@ typedef struct {
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
-#ifdef ENABLE_NETCORE
 	MonoClass *alc_class;
 	MonoClass *appcontext_class;
-#endif
-#ifndef ENABLE_NETCORE
-	MonoMethod *threadpool_perform_wait_callback_method;
-#endif
 } MonoDefaults;
-
-#ifdef DISABLE_REMOTING
-#define mono_class_is_transparent_proxy(klass) (FALSE)
-#define mono_class_is_real_proxy(klass) (FALSE)
-#else
-#define mono_class_is_transparent_proxy(klass) ((klass) == mono_defaults.transparent_proxy_class)
-#define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
-#endif
-
-#define mono_object_is_transparent_proxy(object) (mono_class_is_transparent_proxy (mono_object_class (object)))
-
 
 #define GENERATE_GET_CLASS_WITH_CACHE_DECL(shortname) \
 MonoClass* mono_class_get_##shortname##_class (void);
@@ -1094,8 +1041,7 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 
 #endif
 
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain)
-GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup)
+MonoClass* mono_class_get_appdomain_class (void);
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
@@ -1104,10 +1050,8 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (valuetype)
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
 
-#ifdef ENABLE_NETCORE
 GENERATE_GET_CLASS_WITH_CACHE_DECL (assembly_load_context)
 GENERATE_GET_CLASS_WITH_CACHE_DECL (native_library)
-#endif
 
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
@@ -1118,16 +1062,16 @@ mono_loader_init           (void);
 void
 mono_loader_cleanup        (void);
 
-void
+MONO_COMPONENT_API void
 mono_loader_lock           (void);
 
-void
+MONO_COMPONENT_API void
 mono_loader_unlock         (void);
 
-void
+MONO_COMPONENT_API void
 mono_loader_lock_track_ownership (gboolean track);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_loader_lock_is_owned_by_self (void);
 
 void
@@ -1142,10 +1086,7 @@ mono_reflection_init       (void);
 void
 mono_icall_init            (void);
 
-void
-mono_icall_cleanup         (void);
-
-gpointer
+MONO_COMPONENT_API gpointer
 mono_method_get_wrapper_data (MonoMethod *method, guint32 id);
 
 gboolean
@@ -1189,6 +1130,7 @@ mono_identifier_escape_type_name_chars (const char* identifier);
 char*
 mono_type_get_full_name (MonoClass *klass);
 
+MONO_COMPONENT_API
 char *
 mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format);
 
@@ -1267,7 +1209,7 @@ mono_method_search_in_array_class (MonoClass *klass, const char *name, MonoMetho
 void
 mono_class_setup_interface_id (MonoClass *klass);
 
-MonoGenericContainer*
+MONO_COMPONENT_API MonoGenericContainer*
 mono_class_get_generic_container (MonoClass *klass);
 
 gpointer
@@ -1278,14 +1220,14 @@ mono_class_alloc0 (MonoClass *klass, int size);
 
 #define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 ((klass), (size))))
 
-void
+MONO_COMPONENT_API void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error);
 
-MonoClassField*
+MONO_COMPONENT_API MonoClassField*
 mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoType *type);
 
-MonoVTable*
-mono_class_vtable_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
+MONO_COMPONENT_API MonoVTable*
+mono_class_vtable_checked (MonoClass *klass, MonoError *error);
 
 void
 mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboolean *result, MonoError *error);
@@ -1305,7 +1247,7 @@ mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean 
 gboolean 
 mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces);
 
-mono_bool
+MONO_COMPONENT_API mono_bool
 mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
 
 gboolean
@@ -1319,7 +1261,7 @@ mono_field_get_type_checked (MonoClassField *field, MonoError *error);
 MonoType*
 mono_field_get_type_internal (MonoClassField *field);
 
-MonoClassField*
+MONO_COMPONENT_API MonoClassField*
 mono_class_get_fields_internal (MonoClass* klass, gpointer *iter);
 
 MonoClassField*
@@ -1334,7 +1276,7 @@ mono_class_has_finalizer (MonoClass *klass);
 void
 mono_unload_interface_id (MonoClass *klass);
 
-GPtrArray*
+MONO_COMPONENT_API GPtrArray*
 mono_class_get_methods_by_name (MonoClass *klass, const char *name, guint32 bflags, guint32 mlisttype, gboolean allow_ctors, MonoError *error);
 
 char*
@@ -1349,7 +1291,7 @@ mono_class_get_checked (MonoImage *image, guint32 type_token, MonoError *error);
 MonoClass *
 mono_class_get_and_inflate_typespec_checked (MonoImage *image, guint32 type_token, MonoGenericContext *context, MonoError *error);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_from_name_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
 MonoClass *
@@ -1358,10 +1300,10 @@ mono_class_from_name_case_checked (MonoImage *image, const char* name_space, con
 MONO_PROFILER_API MonoClass *
 mono_class_from_mono_type_internal (MonoType *type);
 
-MonoClassField*
+MONO_COMPONENT_API MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
 
-gpointer
+MONO_COMPONENT_API gpointer
 mono_ldtoken_checked (MonoImage *image, guint32 token, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
 MonoImage *
@@ -1370,10 +1312,10 @@ mono_get_image_for_generic_param (MonoGenericParam *param);
 char *
 mono_make_generic_name_string (MonoImage *image, int num);
 
-MonoClass *
+MONO_COMPONENT_API MonoClass *
 mono_class_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
-MonoClass*
+MONO_COMPONENT_API MonoClass*
 mono_class_try_load_from_name (MonoImage *image, const char* name_space, const char *name);
 
 void
@@ -1383,7 +1325,7 @@ gboolean
 mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
-MonoGenericClass*
+MONO_COMPONENT_API MonoGenericClass*
 mono_class_get_generic_class (MonoClass *klass);
 
 MonoGenericClass*
@@ -1491,10 +1433,10 @@ mono_class_set_dim_conflicts (MonoClass *klass, GSList *conflicts);
 GSList*
 mono_class_get_dim_conflicts (MonoClass *klass);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_method_has_no_body (MonoMethod *method);
 
 // FIXME Replace all internal callers of mono_method_get_header_checked with
@@ -1503,7 +1445,7 @@ mono_method_has_no_body (MonoMethod *method);
 // And then mark mono_method_get_header_checked as MONO_RT_EXTERNAL_ONLY MONO_API.
 //
 // Internal callers expected to use ERROR_DECL. External callers are not.
-MonoMethodHeader*
+MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
 
 MonoType*
@@ -1539,11 +1481,6 @@ mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr);
 
 void
 mono_class_compute_gc_descriptor (MonoClass *klass);
-
-#ifndef DISABLE_REMOTING
-void
-mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
-#endif
 
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);
@@ -1597,56 +1534,88 @@ m_field_get_offset (MonoClassField *field)
 }
 
 /*
- * Memory allocation for classes/methods
+ * Memory allocation for images/classes/methods
  *
  *   These should be used to allocate memory whose lifetime is equal to
- * the lifetime of the domain+class/method pair.
+ * the lifetime of the image/class/method.
  */
 
 static inline MonoMemoryManager*
-m_class_get_mem_manager (MonoDomain *domain, MonoClass *klass)
+mono_mem_manager_get_ambient (void)
 {
-#ifdef ENABLE_NETCORE
-	// FIXME:
-	return mono_domain_memory_manager (domain);
-#else
-	return mono_domain_memory_manager (domain);
-#endif
-}
-
-static inline void *
-m_class_alloc (MonoDomain *domain, MonoClass *klass, guint size)
-{
-	return mono_mem_manager_alloc (m_class_get_mem_manager (domain, klass), size);
-}
-
-static inline void *
-m_class_alloc0 (MonoDomain *domain, MonoClass *klass, guint size)
-{
-	return mono_mem_manager_alloc0 (m_class_get_mem_manager (domain, klass), size);
+	// FIXME: All callers should get a MemoryManager from their callers or context
+	return (MonoMemoryManager *)mono_alc_get_default ()->memory_manager;
 }
 
 static inline MonoMemoryManager*
-m_method_get_mem_manager (MonoDomain *domain, MonoMethod *method)
+m_image_get_mem_manager (MonoImage *image)
 {
-#ifdef ENABLE_NETCORE
-	// FIXME:
-	return mono_domain_memory_manager (domain);
-#else
-	return mono_domain_memory_manager (domain);
-#endif
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
+	if (!alc)
+		alc = mono_alc_get_default ();
+	return alc->memory_manager;
 }
 
 static inline void *
-m_method_alloc (MonoDomain *domain, MonoMethod *method, guint size)
+m_image_alloc (MonoImage *image, guint size)
 {
-	return mono_mem_manager_alloc (m_method_get_mem_manager (domain, method), size);
+	return mono_mem_manager_alloc (m_image_get_mem_manager (image), size);
 }
 
 static inline void *
-m_method_alloc0 (MonoDomain *domain, MonoMethod *method, guint size)
+m_image_alloc0 (MonoImage *image, guint size)
 {
-	return mono_mem_manager_alloc0 (m_method_get_mem_manager (domain, method), size);
+	return mono_mem_manager_alloc0 (m_image_get_mem_manager (image), size);
+}
+
+static inline MonoMemoryManager*
+m_class_get_mem_manager (MonoClass *klass)
+{
+	if (m_class_get_class_kind (klass) == MONO_CLASS_GINST)
+		return mono_class_get_generic_class (klass)->owner;
+	if (m_class_get_rank (klass))
+		return m_class_get_mem_manager (m_class_get_element_class (klass));
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (m_class_get_image (klass));
+	if (alc)
+		return alc->memory_manager;
+	else
+		/* Dynamic assemblies */
+		return mono_mem_manager_get_ambient ();
+}
+
+static inline void *
+m_class_alloc (MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc (m_class_get_mem_manager (klass), size);
+}
+
+static inline void *
+m_class_alloc0 (MonoClass *klass, guint size)
+{
+	return mono_mem_manager_alloc0 (m_class_get_mem_manager (klass), size);
+}
+
+static inline MonoMemoryManager*
+m_method_get_mem_manager (MonoMethod *method)
+{
+	if (method->is_inflated)
+		return ((MonoMethodInflated*)method)->owner;
+	else if (method->wrapper_type && ((MonoMethodWrapper*)method)->mem_manager)
+		return ((MonoMethodWrapper*)method)->mem_manager;
+	else
+		return m_class_get_mem_manager (method->klass);
+}
+
+static inline void *
+m_method_alloc (MonoMethod *method, guint size)
+{
+	return mono_mem_manager_alloc (m_method_get_mem_manager (method), size);
+}
+
+static inline void *
+m_method_alloc0 (MonoMethod *method, guint size)
+{
+	return mono_mem_manager_alloc0 (m_method_get_mem_manager (method), size);
 }
 
 // Enum and static storage for JIT icalls.

@@ -12,7 +12,7 @@ Our solution at this time is to intercept any unhandled exception in the PAL lay
 
 We looked at the existing technologies like Breakpad and its derivatives (e.g.: an internal MS version called _msbreakpad_ from the SQL team....). Breakpad generates Windows minidumps but they are not compatible with existing tools like Windbg, etc. Msbreakpad even more so. There is a minidump to Linux core conversion utility but it seems like a wasted extra step. _Breakpad_ does allow the minidump to be generated in-process inside the signal handlers. It restricts the APIs to what was allowed in a "async" signal handler (like SIGSEGV) and has a small subset of the C++ runtime that was also similarly constrained. We also need to add the set of memory regions for the "managed" state which requires loading and using the _DAC_'s (*) enumerate memory interfaces. Loading modules is not allowed in an async signal handler but forking/execve is allowed so launching an utility that loads the _DAC_, enumerates the list of memory regions and writes the dump is the only reasonable option. It would also allow uploading the dump to a server too.
 
-\* The _DAC_ is a special build of parts of the coreclr runtime that allows inspection of the runtime's managed state (stacks, variables, GC state heaps) out of context. One of the many interfaces it provides is [ICLRDataEnumMemoryRegions](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/debug/daccess/dacimpl.h) which enumerates all the managed state a minidump would require to enable a fruitful debugging experience.
+\* The _DAC_ is a special build of parts of the coreclr runtime that allows inspection of the runtime's managed state (stacks, variables, GC state heaps) out of context. One of the many interfaces it provides is [ICLRDataEnumMemoryRegions](https://github.com/dotnet/runtime/blob/main/src/coreclr/debug/daccess/dacimpl.h) which enumerates all the managed state a minidump would require to enable a fruitful debugging experience.
 
 _Breakpad_ could have still been used out of context in the generation utility but there seemed no value to their Windows-like minidump format when it would have to be converted to the native Linux core format away because in most scenarios using the platform tools like _lldb_ is necessary. It also adds a coreclr build dependency on Google's _Breakpad_ or SQL's _msbreakpad_ source repo. The only advantage is that the breakpad minidumps may be a little smaller because minidumps memory regions are byte granule and Linux core memory regions need to be page granule.
 
@@ -20,7 +20,7 @@ _Breakpad_ could have still been used out of context in the generation utility b
 
 ### Linux ###
 
-Core dump generation is triggered anytime coreclr is going to abort (via [PROCAbort()](https://github.com/dotnet/runtime/blob/master/src/coreclr/src/pal/src/include/pal/process.h)) the process because of an unhandled managed exception or an async signal like SIGSEGV, SIGILL, SIGFPE, etc. The _createdump_ utility is located in the same directory as libcoreclr.so and is launched with fork/execve. The child _createdump_ process is given permission to ptrace and access to the various special /proc files of the crashing process which waits until _createdump_ finishes.
+Core dump generation is triggered anytime coreclr is going to abort (via [PROCAbort()](https://github.com/dotnet/runtime/blob/main/src/coreclr/pal/src/include/pal/process.h)) the process because of an unhandled managed exception or an async signal like SIGSEGV, SIGILL, SIGFPE, etc. The _createdump_ utility is located in the same directory as libcoreclr.so and is launched with fork/execve. The child _createdump_ process is given permission to ptrace and access to the various special /proc files of the crashing process which waits until _createdump_ finishes.
 
 The _createdump_ utility starts by using ptrace to enumerate and suspend all the threads in the target process. The process and thread info (status, registers, etc.) is gathered. The auxv entries and _DSO_ info is enumerated. _DSO_ is the in memory data structures that described the shared modules loaded by the target. This memory is needed in the dump by gdb and lldb to enumerate the shared modules loaded and access their symbols. The module memory mappings are gathered from /proc/$pid/maps. None of the program or shared modules memory regions are explicitly added to dump's memory regions. The _DAC_ is loaded and the enumerate memory region interfaces are used to build the memory regions list just like on Windows. The threads stacks and one page of code around the IP are added. The byte sized regions are rounded up to pages and then combined into contiguous regions.
 
@@ -42,7 +42,9 @@ There will be some differences gathering the crash information but these platfor
 
 ### OS X ###
 
-As of .NET 5.0, createdump is supported on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This is because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with these dumps but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
+On .NET 5.0, createdump supported generating dumps on MacOS but instead of the MachO dump format, it generates the ELF coredumps. This wad because of time constraints developing a MachO dump writer on the generation side and a MachO reader for the diagnostics tooling side (dotnet-dump and CLRMD). This means the native debuggers like gdb and lldb will not work with dumps obtained from apps running on a 5.0 runtime, but the dotnet-dump tool will allow the managed state to be analyzed. Because of this behavior an additional environment variable will need to be set (COMPlus_DbgEnableElfDumpOnMacOS=1) along with the ones below in the Configuration/Policy section.
+
+Starting .NET 6.0, native Mach-O core files get generated and the variable COMPlus_DbgEnableElfDumpOnMacOS has been deprecated.
 
 ### Windows ###
 
@@ -58,8 +60,9 @@ Environment variables supported:
 
 - `COMPlus_DbgEnableMiniDump`: if set to "1", enables this core dump generation. The default is NOT to generate a dump.
 - `COMPlus_DbgMiniDumpType`: See below. Default is "2" MiniDumpWithPrivateReadWriteMemory.
-- `COMPlus_DbgMiniDumpName`: if set, use as the template to create the dump path and file name. The pid can be placed in the name with %d. The default is _/tmp/coredump.%d_.
+- `COMPlus_DbgMiniDumpName`: if set, use as the template to create the dump path and file name. See "Dump name formatting" for how the dump name can be formatted. The default is _/tmp/coredump.%p_.
 - `COMPlus_CreateDumpDiagnostics`: if set to "1", enables the _createdump_ utilities diagnostic messages (TRACE macro).
+- `COMPlus_EnableCrashReport`: In .NET 6.0 or greater, if set to "1", createdump also generates a json formatted crash report which includes information about the threads and stack frames of the crashing application. The crash report name is the dump path/name with _.crashreport.json_ appended.
 
 COMPlus_DbgMiniDumpType values:
 
@@ -77,15 +80,23 @@ COMPlus_DbgMiniDumpType values:
 
 The createdump utility can also be run from the command line on arbitrary .NET Core processes. The type of dump can be controlled with the below command switches. The default is a "minidump" which contains the majority the memory and managed state needed. Unless you have ptrace (CAP_SYS_PTRACE) administrative privilege, you need to run with sudo or su. The same as if you were attaching with lldb or other native debugger.
 
-`sudo createdump <pid>`
-
-    -f, --name - dump path and file name. The %p, %e, %h %t format characters are supported. The default is '/tmp/coredump.%p'
-    -n, --normal - create minidump.
-    -h, --withheap - create minidump with heap (default).
-    -t, --triage - create triage minidump.
-    -u, --full - create full core dump.
-    -d, --diag - enable diagnostic messages.
-
+```
+createdump [options] pid
+-f, --name - dump path and file name. The default is '/tmp/coredump.%p'. These specifiers are substituted with following values:
+   %p  PID of dumped process.
+   %e  The process executable filename.
+   %h  Hostname return by gethostname().
+   %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+-n, --normal - create minidump.
+-h, --withheap - create minidump with heap (default).
+-t, --triage - create triage minidump.
+-u, --full - create full core dump.
+-d, --diag - enable diagnostic messages.
+-v, --verbose - enable verbose diagnostic messages.
+--crashreport - write crash report file.
+--crashthread <id> - the thread id of the crashing thread.
+--signal <code> - the signal code of the crash.
+```
 
 **Dump name formatting**
 
@@ -101,12 +112,3 @@ As of .NET 5.0, the following subset of the core pattern (see [core](https://man
 # Testing #
 
 The test plan is to modify the SOS tests in the (still) private debuggertests repo to trigger and use the core minidumps generated. Debugging managed core dumps on Linux is not supported by _mdbg_ at this time until we have a ELF core dump reader so only the SOS tests (which use _lldb_ on Linux) will be modified.
-
-# Open Issues #
-
-- May need more than just the pid for decorating dump names for docker containers because I think the _pid_ is always 1.
-- Do we need all the memory mappings from `/proc/$pid/maps` in the PT\_LOAD sections even though the memory is not actually in the dump? They have a file offset/size of 0. Full dumps generated by the system or _gdb_ do have these un-backed regions.
-- There is no way to get the signal number, etc. that causes the abort from the _createdump_ utility using _ptrace_ or a /proc file. It would have to be passed from CoreCLR on the command line.
-- Do we need the "dynamic" sections of each shared module in the core dump? It is part of the "link_map" entry enumerated when gathering the _DSO_ information.
-- There may be more versioning and/or build id information needed to be added to the dump.
-- It is unclear exactly what cases stack overflow does not get control in the signal handler and when the OS just aborts the process.

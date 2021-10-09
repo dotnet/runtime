@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 #if !FEATURE_DYNAMIC_DELEGATE
@@ -27,7 +28,7 @@ namespace System.Dynamic.Utils
 
         private static readonly CacheDict<Type, MethodInfo> s_thunks = new CacheDict<Type, MethodInfo>(256);
         private static readonly MethodInfo s_FuncInvoke = typeof(Func<object?[], object?>).GetMethod("Invoke")!;
-        private static readonly MethodInfo s_ArrayEmpty = typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+        private static readonly MethodInfo s_ArrayEmpty = GetEmptyObjectArrayMethod();
         private static readonly MethodInfo[] s_ActionThunks = GetActionThunks();
         private static readonly MethodInfo[] s_FuncThunks = GetFuncThunks();
         private static int s_ThunksCreated;
@@ -62,6 +63,9 @@ namespace System.Dynamic.Utils
             return (TReturn)handler(new object?[]{t1, t2});
         }
 
+        private static MethodInfo GetEmptyObjectArrayMethod() =>
+            typeof(Array).GetMethod(nameof(Array.Empty))!.MakeGenericMethod(typeof(object));
+
         private static MethodInfo[] GetActionThunks()
         {
             Type delHelpers = typeof(DelegateHelpers);
@@ -78,6 +82,8 @@ namespace System.Dynamic.Utils
                                     delHelpers.GetMethod("FuncThunk2")!};
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
+            Justification = "The above ActionThunk and FuncThunk methods don't have trimming annotations.")]
         private static MethodInfo? GetCSharpThunk(Type returnType, bool hasReturnValue, ParameterInfo[] parameters)
         {
             try

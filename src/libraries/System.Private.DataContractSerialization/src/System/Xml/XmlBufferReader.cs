@@ -15,7 +15,7 @@ using System.Collections.ObjectModel;
 
 namespace System.Xml
 {
-    internal class XmlBufferReader
+    internal sealed class XmlBufferReader
     {
         private readonly XmlDictionaryReader _reader;
         private Stream? _stream;

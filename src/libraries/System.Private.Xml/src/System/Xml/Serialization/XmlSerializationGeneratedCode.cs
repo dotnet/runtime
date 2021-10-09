@@ -11,6 +11,7 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Security;
     using System.Globalization;
+    using System.Diagnostics.CodeAnalysis;
 
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
@@ -39,6 +40,7 @@ namespace System.Xml.Serialization
         private int _references;
         private readonly Hashtable _generatedMethods = new Hashtable();
 
+        [RequiresUnreferencedCode("Calls GetTypeDesc")]
         internal XmlSerializationCodeGen(IndentedWriter writer, TypeScope[] scopes, string access, string className)
         {
             _writer = writer;
@@ -64,8 +66,10 @@ namespace System.Xml.Serialization
         internal Hashtable MethodNames { get { return _methodNames; } }
         internal Hashtable GeneratedMethods { get { return _generatedMethods; } }
 
+        [RequiresUnreferencedCode("calls WriteStructMethod")]
         internal virtual void GenerateMethod(TypeMapping mapping) { }
 
+        [RequiresUnreferencedCode("calls GenerateMethod")]
         internal void GenerateReferencedMethods()
         {
             while (_references > 0)

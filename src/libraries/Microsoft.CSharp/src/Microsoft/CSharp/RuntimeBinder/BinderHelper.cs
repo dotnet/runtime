@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Numerics.Hashing;
 using Microsoft.CSharp.RuntimeBinder.Errors;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -19,6 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static MethodInfo s_DoubleIsNaN;
         private static MethodInfo s_SingleIsNaN;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         internal static DynamicMetaObject Bind(
                 ICSharpBinder action,
                 RuntimeBinder binder,

@@ -8,7 +8,7 @@ namespace System.Xml.Schema
     using System.Collections;
     using System.Collections.Generic;
 
-    internal class SchemaNamespaceManager : XmlNamespaceManager
+    internal sealed class SchemaNamespaceManager : XmlNamespaceManager
     {
         private readonly XmlSchemaObject _node;
 
@@ -23,16 +23,10 @@ namespace System.Xml.Schema
             { //Special case for the XML namespace
                 return XmlReservedNs.NsXml;
             }
-            Dictionary<string, string?> namespaces;
             for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
-                namespaces = current.Namespaces.Namespaces;
-                if (namespaces != null && namespaces.Count > 0)
-                {
-                    string? uri;
-                    if (namespaces.TryGetValue(prefix, out uri))
-                        return uri;
-                }
+                if (current.Namespaces.TryLookupNamespace(prefix, out string? uri))
+                    return uri;
             }
             return prefix.Length == 0 ? string.Empty : null;
         }
@@ -43,20 +37,11 @@ namespace System.Xml.Schema
             { //Special case for the XML namespace
                 return "xml";
             }
-            Dictionary<string, string?> namespaces;
+
             for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
             {
-                namespaces = current.Namespaces.Namespaces;
-                if (namespaces != null && namespaces.Count > 0)
-                {
-                    foreach (KeyValuePair<string, string?> entry in namespaces)
-                    {
-                        if (entry.Value!.Equals(ns))
-                        {
-                            return entry.Key;
-                        }
-                    }
-                }
+                if (current.Namespaces.TryLookupPrefix(ns, out string? prefix))
+                    return prefix;
             }
             return null;
         }

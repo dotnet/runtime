@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     // you to go from a metadata token -> PropertyInfo like it does with types,
     // fields, and methods.
 
-    internal class ReflectionProperty : ReflectionWritableMember
+    internal sealed class ReflectionProperty : ReflectionWritableMember
     {
         private readonly MethodInfo? _getMethod;
         private readonly MethodInfo? _setMethod;

@@ -13,7 +13,7 @@ namespace System.ServiceProcess.Tests
         // To view tracing, use DbgView from sysinternals.com;
         // run it elevated, check "Capture>Global Win32" and "Capture>Win32",
         // and filter to just messages beginning with "##"
-        internal const bool DebugTracing = false;
+        internal const bool DebugTracing = false; // toggle in TestService.cs as well
 
         private const int readTimeout = 60000;
 
@@ -56,7 +56,9 @@ namespace System.ServiceProcess.Tests
         public readonly string TestServiceName;
         public readonly string TestServiceDisplayName;
 
-        private readonly TestServiceProvider _dependentServices;
+        private readonly TestServiceProvider _prerequisiteServices;
+
+        // Creates a test service with a prerequisite service
         public TestServiceProvider()
         {
             TestMachineName = ".";
@@ -64,19 +66,20 @@ namespace System.ServiceProcess.Tests
             TestServiceName = Guid.NewGuid().ToString();
             TestServiceDisplayName = "Test Service " + TestServiceName;
 
-            _dependentServices = new TestServiceProvider(TestServiceName + ".Dependent");
+            _prerequisiteServices = new TestServiceProvider(TestServiceName + ".Prerequisite");
 
             // Create the service
             CreateTestServices();
         }
 
+        // Creates a test service with no prerequisite services
         public TestServiceProvider(string serviceName)
         {
             TestMachineName = ".";
             ControlTimeout = TimeSpan.FromSeconds(120);
             TestServiceName = serviceName;
             TestServiceDisplayName = "Test Service " + TestServiceName;
-            
+
             // Create the service
             CreateTestServices();
         }
@@ -86,7 +89,7 @@ namespace System.ServiceProcess.Tests
             Task readTask;
             byte[] received = new byte[] { 0 };
             readTask = Client.ReadAsync(received, 0, 1);
-            await readTask.TimeoutAfter(readTimeout).ConfigureAwait(false);
+            await readTask.WaitAsync(TimeSpan.FromMilliseconds(readTimeout)).ConfigureAwait(false);
             return received[0];
         }
 
@@ -94,6 +97,7 @@ namespace System.ServiceProcess.Tests
 
         private void CreateTestServices()
         {
+            DebugTrace($"TestServiceProvider: Creating test service {TestServiceName}");
             TestServiceInstaller testServiceInstaller = new TestServiceInstaller();
 
             testServiceInstaller.ServiceName = TestServiceName;
@@ -101,9 +105,10 @@ namespace System.ServiceProcess.Tests
             testServiceInstaller.Description = "__Dummy Test Service__";
             testServiceInstaller.Username = null;
 
-            if (_dependentServices != null)
+            if (_prerequisiteServices != null)
             {
-                testServiceInstaller.ServicesDependedOn = new string[] { _dependentServices.TestServiceName };
+                DebugTrace($"TestServiceProvider: .. with prequisite services {_prerequisiteServices.TestServiceName}");
+                testServiceInstaller.ServicesDependedOn = new string[] { _prerequisiteServices.TestServiceName };
             }
 
             string processName = Process.GetCurrentProcess().MainModule.FileName;
@@ -122,8 +127,9 @@ namespace System.ServiceProcess.Tests
             }
 
             testServiceInstaller.ServiceCommandLine = $"\"{processName}\" {arguments}";
-
+            DebugTrace($"TestServiceProvider: Executing {testServiceInstaller.ServiceCommandLine}");
             testServiceInstaller.Install();
+            DebugTrace("TestServiceProvider: Completed install of test service");
         }
 
         public void DeleteTestServices()
@@ -140,14 +146,16 @@ namespace System.ServiceProcess.Tests
                 TestServiceInstaller testServiceInstaller = new TestServiceInstaller();
                 testServiceInstaller.ServiceName = TestServiceName;
                 testServiceInstaller.RemoveService();
+                DebugTrace("TestServiceProvider: Removed test service");
             }
             finally
             {
-                // Lets be sure to try and clean up dependenct services even if something goes
+                // Lets be sure to try and clean up prerequisite services even if something goes
                 // wrong with the full removal of the other service.
-                if (_dependentServices != null)
+                if (_prerequisiteServices != null)
                 {
-                    _dependentServices.DeleteTestServices();
+                    _prerequisiteServices.DeleteTestServices();
+                    DebugTrace("TestServiceProvider: Deleted test services");
                 }
             }
         }

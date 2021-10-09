@@ -14,8 +14,7 @@ namespace System.Web.Util
     {
         private static void AppendCharAsUnicodeJavaScript(StringBuilder builder, char c)
         {
-            builder.Append("\\u");
-            builder.Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
+            builder.Append($"\\u{(int)c:x4}");
         }
 
         private static bool CharRequiresJavaScriptEncoding(char c) =>
@@ -665,7 +664,7 @@ namespace System.Web.Util
         }
 
         // Internal class to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
-        private class UrlDecoder
+        private sealed class UrlDecoder
         {
             private readonly int _bufferSize;
 

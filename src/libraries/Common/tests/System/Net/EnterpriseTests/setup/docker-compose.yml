@@ -24,6 +24,8 @@ services:
     hostname: apacheweb
     domainname: linux.contoso.com
     dns_search: linux.contoso.com
+    privileged: true
+    command: "-DNTLM"
     volumes:
       - shared-volume:/SHARED
     networks:
@@ -39,6 +41,7 @@ services:
     hostname: altweb
     domainname: linux.contoso.com
     dns_search: linux.contoso.com
+    command: "-DALTPORT -DALTSPN"
     volumes:
       - shared-volume:/SHARED
     networks:

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System
@@ -39,39 +40,36 @@ namespace System
         {
             var sb = new ValueStringBuilder(stackalloc char[128]);
             sb.Append(Name);
+
             if (Culture != null)
             {
                 sb.Append(", culture=\"");
                 sb.Append(Culture);
                 sb.Append('"');
             }
+
             sb.Append(", version=\"");
             sb.Append(Version.ToString());
             sb.Append('"');
+
             if (_publicKeyToken != null)
             {
                 sb.Append(", publicKeyToken=\"");
-                EncodeHexString(_publicKeyToken, ref sb);
+                HexConverter.EncodeToUtf16(_publicKeyToken, sb.AppendSpan(2 * _publicKeyToken.Length), HexConverter.Casing.Upper);
                 sb.Append('"');
             }
+
             if (ProcessorArchitecture != null)
             {
                 sb.Append(", processorArchitecture =\"");
                 sb.Append(ProcessorArchitecture);
                 sb.Append('"');
             }
+
             return sb.ToString();
         }
 
-        private static void EncodeHexString(byte[] sArray, ref ValueStringBuilder stringBuilder)
-        {
-            for (int i = 0; i < sArray.Length; i++)
-            {
-                HexConverter.ToCharsBuffer(sArray[i], stringBuilder.AppendSpan(2), 0, HexConverter.Casing.Upper);
-            }
-        }
-
-        public override bool Equals(object? o)
+        public override bool Equals([NotNullWhen(true)] object? o)
         {
             ApplicationId? other = o as ApplicationId;
             if (other == null)

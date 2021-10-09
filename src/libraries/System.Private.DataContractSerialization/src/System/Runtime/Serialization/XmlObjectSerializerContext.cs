@@ -6,8 +6,9 @@ namespace System.Runtime.Serialization
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Reflection;
-    using System.Security;
+        using System.Security;
     using System.Xml;
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
 
@@ -106,11 +107,13 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetDataContract(Type type)
         {
             return GetDataContract(type.TypeHandle, type);
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
         {
             if (IsGetOnlyCollection)
@@ -123,6 +126,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type? type)
         {
             if (IsGetOnlyCollection)
@@ -135,7 +139,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual DataContract GetDataContract(int id, RuntimeTypeHandle typeHandle)
         {
             if (IsGetOnlyCollection)
@@ -148,18 +152,21 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
         {
             if (!isMemberTypeSerializable)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TypeNotSerializable, memberType)));
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal virtual Type GetSurrogatedType(Type type)
         {
             return type;
         }
         internal virtual DataContractDictionary? SerializerKnownDataContracts
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 // This field must be initialized during construction by serializers using data contracts.
@@ -172,6 +179,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract? GetDataContractFromSerializerKnownTypes(XmlQualifiedName qname)
         {
             DataContractDictionary? serializerKnownDataContracts = this.SerializerKnownDataContracts;
@@ -181,6 +189,7 @@ namespace System.Runtime.Serialization
             return serializerKnownDataContracts.TryGetValue(qname, out outDataContract) ? outDataContract : null;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContractDictionary? GetDataContractsForKnownTypes(IList<Type> knownTypeList)
         {
             if (knownTypeList == null) return null;
@@ -197,6 +206,7 @@ namespace System.Runtime.Serialization
             return dataContracts;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool IsKnownType(DataContract dataContract, DataContractDictionary? knownDataContracts, Type? declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
@@ -215,18 +225,21 @@ namespace System.Runtime.Serialization
             return isKnownType;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool IsKnownType(DataContract dataContract, Type? declaredType)
         {
             DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/, declaredType);
             return knownContract != null && knownContract.UnderlyingType == dataContract.UnderlyingType;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal Type? ResolveNameFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = ResolveDataContractFromKnownTypes(typeName);
             return dataContract == null ? null : dataContract.UnderlyingType;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private DataContract? ResolveDataContractFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = PrimitiveDataContract.GetPrimitiveDataContract(typeName.Name, typeName.Namespace);
@@ -241,6 +254,7 @@ namespace System.Runtime.Serialization
             return dataContract;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected DataContract? ResolveDataContractFromKnownTypes(string typeName, string? typeNs, DataContract? memberTypeContract, Type? declaredType)
         {
             XmlQualifiedName qname = new XmlQualifiedName(typeName, typeNs);
@@ -267,24 +281,29 @@ namespace System.Runtime.Serialization
                     if (rootTypeDataContract.StableName == qname)
                         dataContract = rootTypeDataContract;
                     else
-                    {
-                        CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
-                        while (collectionContract != null)
-                        {
-                            DataContract itemContract = GetDataContract(GetSurrogatedType(collectionContract.ItemType));
-                            if (itemContract.StableName == qname)
-                            {
-                                dataContract = itemContract;
-                                break;
-                            }
-                            collectionContract = itemContract as CollectionDataContract;
-                        }
-                    }
+                        dataContract = ResolveDataContractFromRootDataContract(qname);
                 }
             }
             return dataContract;
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        protected virtual DataContract? ResolveDataContractFromRootDataContract(XmlQualifiedName typeQName)
+        {
+            CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
+            while (collectionContract != null)
+            {
+                DataContract itemContract = GetDataContract(GetSurrogatedType(collectionContract.ItemType));
+                if (itemContract.StableName == typeQName)
+                {
+                    return itemContract;
+                }
+                collectionContract = itemContract as CollectionDataContract;
+            }
+            return null;
+        }
+
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void PushKnownTypes(DataContract dc)
         {
             if (dc != null && dc.KnownDataContracts != null)
@@ -293,6 +312,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void PopKnownTypes(DataContract dc)
         {
             if (dc != null && dc.KnownDataContracts != null)

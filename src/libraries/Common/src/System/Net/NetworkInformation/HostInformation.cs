@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class HostInformation
+    internal static class HostInformation
     {
         // Specifies the host name for the local computer.
         internal static string HostName

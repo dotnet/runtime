@@ -105,8 +105,6 @@ namespace System.Resources
         // Returns the preferred IResourceWriter class for this kind of ResourceSet.
         // Subclasses of ResourceSet using their own Readers &; should override
         // GetDefaultReader and GetDefaultWriter.
-        // TODO: https://github.com/mono/linker/issues/943
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, "System.Resources.ResourceWriter", "System.Resources.Writer")]
         public virtual Type GetDefaultWriter()
         {
             return Type.GetType("System.Resources.ResourceWriter, System.Resources.Writer", throwOnError: true)!;

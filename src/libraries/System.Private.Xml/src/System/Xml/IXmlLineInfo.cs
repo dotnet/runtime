@@ -30,7 +30,7 @@ namespace System.Xml
         }
     }
 
-    internal class ReaderPositionInfo : PositionInfo
+    internal sealed class ReaderPositionInfo : PositionInfo
     {
         private readonly IXmlLineInfo _lineInfo;
 

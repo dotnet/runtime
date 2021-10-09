@@ -22,7 +22,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportsSatisfiedOnComponentWithoutImports()
         {
             CompositionContainer container = ContainerFactory.CreateWithAttributedCatalog(typeof(PartWithoutImports));
@@ -35,7 +34,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedTest()
         {
             var container = ContainerFactory.Create();
@@ -57,7 +55,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedWithRecomposing()
         {
             var container = ContainerFactory.Create();
@@ -96,7 +93,6 @@ namespace System.ComponentModel.Composition.AttributedModel
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/mono/mono/issues/16417", TestRuntimes.Mono)]
         public void ImportCompletedAddPartAndBindComponent()
         {
             var container = ContainerFactory.Create();

@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Filter : AstNode
+    internal sealed class Filter : AstNode
     {
         private readonly AstNode _input;
         private readonly AstNode _condition;

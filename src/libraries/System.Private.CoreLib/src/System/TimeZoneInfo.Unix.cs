@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -11,21 +10,45 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
-
-using Internal.IO;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
     public sealed partial class TimeZoneInfo
     {
         private const string DefaultTimeZoneDirectory = "/usr/share/zoneinfo/";
-        private const string ZoneTabFileName = "zone.tab";
-        private const string TimeZoneEnvironmentVariable = "TZ";
-        private const string TimeZoneDirectoryEnvironmentVariable = "TZDIR";
-        private const string FallbackCultureName = "en-US";
+
+        // UTC aliases per https://github.com/unicode-org/cldr/blob/master/common/bcp47/timezone.xml
+        // Hard-coded because we need to treat all aliases of UTC the same even when globalization data is not available.
+        // (This list is not likely to change.)
+        private static readonly string[] s_UtcAliases = new[] {
+            "Etc/UTC",
+            "Etc/UCT",
+            "Etc/Universal",
+            "Etc/Zulu",
+            "UCT",
+            "UTC",
+            "Universal",
+            "Zulu"
+        };
 
         private TimeZoneInfo(byte[] data, string id, bool dstDisabled)
         {
+            _id = id;
+
+            HasIanaId = true;
+
+            // Handle UTC and its aliases
+            if (StringArrayContains(_id, s_UtcAliases, StringComparison.OrdinalIgnoreCase))
+            {
+                _standardDisplayName = GetUtcStandardDisplayName();
+                _daylightDisplayName = _standardDisplayName;
+                _displayName = GetUtcFullDisplayName(_id, _standardDisplayName);
+                _baseUtcOffset = TimeSpan.Zero;
+                _adjustmentRules = Array.Empty<AdjustmentRule>();
+                return;
+            }
+
             TZifHead t;
             DateTime[] dts;
             byte[] typeOfLocalTime;
@@ -34,16 +57,14 @@ namespace System
             bool[] StandardTime;
             bool[] GmtTime;
             string? futureTransitionsPosixFormat;
+            string? standardAbbrevName = null;
+            string? daylightAbbrevName = null;
 
             // parse the raw TZif bytes; this method can throw ArgumentException when the data is malformed.
             TZif_ParseRaw(data, out t, out dts, out typeOfLocalTime, out transitionType, out zoneAbbreviations, out StandardTime, out GmtTime, out futureTransitionsPosixFormat);
 
-            _id = id;
-            _displayName = LocalId;
-            _baseUtcOffset = TimeSpan.Zero;
-
             // find the best matching baseUtcOffset and display strings based on the current utcNow value.
-            // NOTE: read the display strings from the tzfile now in case they can't be loaded later
+            // NOTE: read the Standard and Daylight display strings from the tzfile now in case they can't be loaded later
             // from the globalization data.
             DateTime utcNow = DateTime.UtcNow;
             for (int i = 0; i < dts.Length && dts[i] <= utcNow; i++)
@@ -52,11 +73,11 @@ namespace System
                 if (!transitionType[type].IsDst)
                 {
                     _baseUtcOffset = transitionType[type].UtcOffset;
-                    _standardDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
                 else
                 {
-                    _daylightDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
+                    daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[type].AbbreviationIndex);
                 }
             }
 
@@ -69,28 +90,23 @@ namespace System
                     if (!transitionType[i].IsDst)
                     {
                         _baseUtcOffset = transitionType[i].UtcOffset;
-                        _standardDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        standardAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                     else
                     {
-                        _daylightDisplayName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
+                        daylightAbbrevName = TZif_GetZoneAbbreviation(zoneAbbreviations, transitionType[i].AbbreviationIndex);
                     }
                 }
             }
-            _displayName = _standardDisplayName;
 
-            string uiCulture = CultureInfo.CurrentUICulture.Name.Length == 0 ? FallbackCultureName : CultureInfo.CurrentUICulture.Name; // ICU doesn't work nicely with Invariant
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Generic, uiCulture, ref _displayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.Standard, uiCulture, ref _standardDisplayName);
-            GetDisplayName(Interop.Globalization.TimeZoneDisplayNameType.DaylightSavings, uiCulture, ref _daylightDisplayName);
+            // Set fallback values using abbreviations, base offset, and id
+            // These are expected in environments without time zone globalization data
+            _standardDisplayName = standardAbbrevName;
+            _daylightDisplayName = daylightAbbrevName ?? standardAbbrevName;
+            _displayName = string.Create(null, stackalloc char[256], $"(UTC{(_baseUtcOffset >= TimeSpan.Zero ? '+' : '-')}{_baseUtcOffset:hh\\:mm}) {_id}");
 
-            if (_standardDisplayName == _displayName)
-            {
-                if (_baseUtcOffset >= TimeSpan.Zero)
-                    _displayName = $"(UTC+{_baseUtcOffset:hh\\:mm}) {_standardDisplayName}";
-                else
-                    _displayName = $"(UTC-{_baseUtcOffset:hh\\:mm}) {_standardDisplayName}";
-            }
+            // Try to populate the display names from the globalization data
+            TryPopulateTimeZoneDisplayNamesFromGlobalizationData(_id, _baseUtcOffset, ref _standardDisplayName, ref _daylightDisplayName, ref _displayName);
 
             // TZif supports seconds-level granularity with offsets but TimeZoneInfo only supports minutes since it aligns
             // with DateTimeOffset, SQL Server, and the W3C XML Specification
@@ -108,6 +124,17 @@ namespace System
             ValidateTimeZoneInfo(_id, _baseUtcOffset, _adjustmentRules, out _supportsDaylightSavingTime);
         }
 
+        // The TransitionTime fields are not used when AdjustmentRule.NoDaylightTransitions == true.
+        // However, there are some cases in the past where DST = true, and the daylight savings offset
+        // now equals what the current BaseUtcOffset is.  In that case, the AdjustmentRule.DaylightOffset
+        // is going to be TimeSpan.Zero.  But we still need to return 'true' from AdjustmentRule.HasDaylightSaving.
+        // To ensure we always return true from HasDaylightSaving, make a "special" dstStart that will make the logic
+        // in HasDaylightSaving return true.
+        private static readonly TransitionTime s_daylightRuleMarker = TransitionTime.CreateFixedDateRule(DateTime.MinValue.AddMilliseconds(2), 1, 1);
+
+        // Truncate the date and the time to Milliseconds precision
+        private static DateTime GetTimeOnlyInMillisecondsPrecision(DateTime input) => new DateTime((input.TimeOfDay.Ticks / TimeSpan.TicksPerMillisecond) * TimeSpan.TicksPerMillisecond);
+
         /// <summary>
         /// Returns a cloned array of AdjustmentRule objects
         /// </summary>
@@ -122,11 +149,20 @@ namespace System
             // as the rules now is public, we should fill it properly so the caller doesn't have to know how we use it internally
             // and can use it as it is used in Windows
 
-            AdjustmentRule[] rules = new AdjustmentRule[_adjustmentRules.Length];
+            List<AdjustmentRule> rulesList = new List<AdjustmentRule>(_adjustmentRules.Length);
 
             for (int i = 0; i < _adjustmentRules.Length; i++)
             {
-                AdjustmentRule? rule = _adjustmentRules[i];
+                AdjustmentRule rule = _adjustmentRules[i];
+
+                if (rule.NoDaylightTransitions &&
+                    rule.DaylightTransitionStart != s_daylightRuleMarker &&
+                    rule.DaylightDelta == TimeSpan.Zero && rule.BaseUtcOffsetDelta == TimeSpan.Zero)
+                {
+                    // This rule has no time transition, ignore it.
+                    continue;
+                }
+
                 DateTime start = rule.DateStart.Kind == DateTimeKind.Utc ?
                             // At the daylight start we didn't start the daylight saving yet then we convert to Local time
                             // by adding the _baseUtcOffset to the UTC time
@@ -138,21 +174,58 @@ namespace System
                             new DateTime(rule.DateEnd.Ticks + _baseUtcOffset.Ticks + rule.DaylightDelta.Ticks, DateTimeKind.Unspecified) :
                             rule.DateEnd;
 
-                TransitionTime startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
-                TransitionTime endTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, end.Hour, end.Minute, end.Second), end.Month, end.Day);
+                if (start.Year == end.Year || !rule.NoDaylightTransitions)
+                {
+                    // If the rule is covering only one year then the start and end transitions would occur in that year, we don't need to split the rule.
+                    // Also, rule.NoDaylightTransitions be false in case the rule was created from a POSIX time zone string and having a DST transition. We can represent this in one rule too
+                    TransitionTime startTransition = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day) : rule.DaylightTransitionStart;
+                    TransitionTime endTransition   = rule.NoDaylightTransitions ? TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day) : rule.DaylightTransitionEnd;
+                    rulesList.Add(AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+                }
+                else
+                {
+                    // For rules spanning more than one year. The time transition inside this rule would apply for the whole time spanning these years
+                    // and not for partial time of every year.
+                    // AdjustmentRule cannot express such rule using the DaylightTransitionStart and DaylightTransitionEnd because
+                    // the DaylightTransitionStart and DaylightTransitionEnd express the transition for every year.
+                    // We split the rule into more rules. The first rule will start from the start year of the original rule and ends at the end of the same year.
+                    // The second splitted rule would cover the middle range of the original rule and ranging from the year start+1 to
+                    // year end-1. The transition time in this rule would start from Jan 1st to end of December.
+                    // The last splitted rule would start from the Jan 1st of the end year of the original rule and ends at the end transition time of the original rule.
 
-                rules[i] = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start.Date, end.Date, rule.DaylightDelta, startTransition, endTransition);
+                    // Add the first rule.
+                    DateTime endForFirstRule = new DateTime(start.Year + 1, 1, 1).AddMilliseconds(-1); // At the end of the first year
+                    TransitionTime startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(start), start.Month, start.Day);
+                    TransitionTime endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(endForFirstRule), endForFirstRule.Month, endForFirstRule.Day);
+                    rulesList.Add(AdjustmentRule.CreateAdjustmentRule(start.Date, endForFirstRule.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+
+                    // Check if there is range of years between the start and the end years
+                    if (end.Year - start.Year > 1)
+                    {
+                        // Add the middle rule.
+                        DateTime middleYearStart = new DateTime(start.Year + 1, 1, 1);
+                        DateTime middleYearEnd   = new DateTime(end.Year, 1, 1).AddMilliseconds(-1);
+                        startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(middleYearStart), middleYearStart.Month, middleYearStart.Day);
+                        endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(middleYearEnd), middleYearEnd.Month, middleYearEnd.Day);
+                        rulesList.Add(AdjustmentRule.CreateAdjustmentRule(middleYearStart.Date, middleYearEnd.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+                    }
+
+                    // Add the end rule.
+                    DateTime endYearStart = new DateTime(end.Year, 1, 1); // At the beginning of the last year
+                    startTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(endYearStart), endYearStart.Month, endYearStart.Day);
+                    endTransition = TransitionTime.CreateFixedDateRule(GetTimeOnlyInMillisecondsPrecision(end), end.Month, end.Day);
+                    rulesList.Add(AdjustmentRule.CreateAdjustmentRule(endYearStart.Date, end.Date, rule.DaylightDelta, startTransition, endTransition, rule.BaseUtcOffsetDelta));
+                }
             }
 
-            return rules;
+            return rulesList.ToArray();
         }
 
         private static void PopulateAllSystemTimeZones(CachedData cachedData)
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            foreach (string timeZoneId in GetTimeZoneIds(timeZoneDirectory))
+            foreach (string timeZoneId in GetTimeZoneIds())
             {
                 TryGetTimeZone(timeZoneId, false, out _, out _, cachedData, alwaysFallbackToLocalMachine: true);  // populate the cache
             }
@@ -168,431 +241,12 @@ namespace System
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            // Without Registry support, create the TimeZoneInfo from a TZ file
-            return GetLocalTimeZoneFromTzFile();
+            return GetLocalTimeZoneCore();
         }
 
         private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
-            value = null;
-            e = null;
-
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            string timeZoneFilePath = Path.Combine(timeZoneDirectory, id);
-            byte[] rawData;
-            try
-            {
-                rawData = File.ReadAllBytes(timeZoneFilePath);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                e = ex;
-                return TimeZoneInfoResult.SecurityException;
-            }
-            catch (FileNotFoundException ex)
-            {
-                e = ex;
-                return TimeZoneInfoResult.TimeZoneNotFoundException;
-            }
-            catch (DirectoryNotFoundException ex)
-            {
-                e = ex;
-                return TimeZoneInfoResult.TimeZoneNotFoundException;
-            }
-            catch (IOException ex)
-            {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath), ex);
-                return TimeZoneInfoResult.InvalidTimeZoneException;
-            }
-
-            value = GetTimeZoneFromTzData(rawData, id);
-
-            if (value == null)
-            {
-                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath));
-                return TimeZoneInfoResult.InvalidTimeZoneException;
-            }
-
-            return TimeZoneInfoResult.Success;
-        }
-
-        /// <summary>
-        /// Returns a collection of TimeZone Id values from the zone.tab file in the timeZoneDirectory.
-        /// </summary>
-        /// <remarks>
-        /// Lines that start with # are comments and are skipped.
-        /// </remarks>
-        private static List<string> GetTimeZoneIds(string timeZoneDirectory)
-        {
-            List<string> timeZoneIds = new List<string>();
-
-            try
-            {
-                using (StreamReader sr = new StreamReader(Path.Combine(timeZoneDirectory, ZoneTabFileName), Encoding.UTF8))
-                {
-                    string? zoneTabFileLine;
-                    while ((zoneTabFileLine = sr.ReadLine()) != null)
-                    {
-                        if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
-                        {
-                            // the format of the line is "country-code \t coordinates \t TimeZone Id \t comments"
-
-                            int firstTabIndex = zoneTabFileLine.IndexOf('\t');
-                            if (firstTabIndex != -1)
-                            {
-                                int secondTabIndex = zoneTabFileLine.IndexOf('\t', firstTabIndex + 1);
-                                if (secondTabIndex != -1)
-                                {
-                                    string timeZoneId;
-                                    int startIndex = secondTabIndex + 1;
-                                    int thirdTabIndex = zoneTabFileLine.IndexOf('\t', startIndex);
-                                    if (thirdTabIndex != -1)
-                                    {
-                                        int length = thirdTabIndex - startIndex;
-                                        timeZoneId = zoneTabFileLine.Substring(startIndex, length);
-                                    }
-                                    else
-                                    {
-                                        timeZoneId = zoneTabFileLine.Substring(startIndex);
-                                    }
-
-                                    if (!string.IsNullOrEmpty(timeZoneId))
-                                    {
-                                        timeZoneIds.Add(timeZoneId);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-
-            return timeZoneIds;
-        }
-
-        /// <summary>
-        /// Gets the tzfile raw data for the current 'local' time zone using the following rules.
-        /// 1. Read the TZ environment variable.  If it is set, use it.
-        /// 2. Look for the data in /etc/localtime.
-        /// 3. Look for the data in GetTimeZoneDirectory()/localtime.
-        /// 4. Use UTC if all else fails.
-        /// </summary>
-        private static bool TryGetLocalTzFile([NotNullWhen(true)] out byte[]? rawData, [NotNullWhen(true)] out string? id)
-        {
-            rawData = null;
-            id = null;
-            string? tzVariable = GetTzEnvironmentVariable();
-
-            // If the env var is null, use the localtime file
-            if (tzVariable == null)
-            {
-                return
-                    TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
-                    TryLoadTzFile(Path.Combine(GetTimeZoneDirectory(), "localtime"), ref rawData, ref id);
-            }
-
-            // If it's empty, use UTC (TryGetLocalTzFile() should return false).
-            if (tzVariable.Length == 0)
-            {
-                return false;
-            }
-
-            // Otherwise, use the path from the env var.  If it's not absolute, make it relative
-            // to the system timezone directory
-            string tzFilePath;
-            if (tzVariable[0] != '/')
-            {
-                id = tzVariable;
-                tzFilePath = Path.Combine(GetTimeZoneDirectory(), tzVariable);
-            }
-            else
-            {
-                tzFilePath = tzVariable;
-            }
-            return TryLoadTzFile(tzFilePath, ref rawData, ref id);
-        }
-
-        private static string? GetTzEnvironmentVariable()
-        {
-            string? result = Environment.GetEnvironmentVariable(TimeZoneEnvironmentVariable);
-            if (!string.IsNullOrEmpty(result))
-            {
-                if (result[0] == ':')
-                {
-                    // strip off the ':' prefix
-                    result = result.Substring(1);
-                }
-            }
-
-            return result;
-        }
-
-        private static bool TryLoadTzFile(string tzFilePath, [NotNullWhen(true)] ref byte[]? rawData, [NotNullWhen(true)] ref string? id)
-        {
-            if (File.Exists(tzFilePath))
-            {
-                try
-                {
-                    rawData = File.ReadAllBytes(tzFilePath);
-                    if (string.IsNullOrEmpty(id))
-                    {
-                        id = FindTimeZoneIdUsingReadLink(tzFilePath);
-
-                        if (string.IsNullOrEmpty(id))
-                        {
-                            id = FindTimeZoneId(rawData);
-                        }
-                    }
-                    return true;
-                }
-                catch (IOException) { }
-                catch (SecurityException) { }
-                catch (UnauthorizedAccessException) { }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Finds the time zone id by using 'readlink' on the path to see if tzFilePath is
-        /// a symlink to a file.
-        /// </summary>
-        private static string? FindTimeZoneIdUsingReadLink(string tzFilePath)
-        {
-            string? id = null;
-
-            string? symlinkPath = Interop.Sys.ReadLink(tzFilePath);
-            if (symlinkPath != null)
-            {
-                // symlinkPath can be relative path, use Path to get the full absolute path.
-                symlinkPath = Path.GetFullPath(symlinkPath, Path.GetDirectoryName(tzFilePath)!);
-
-                string timeZoneDirectory = GetTimeZoneDirectory();
-                if (symlinkPath.StartsWith(timeZoneDirectory, StringComparison.Ordinal))
-                {
-                    id = symlinkPath.Substring(timeZoneDirectory.Length);
-                }
-            }
-
-            return id;
-        }
-
-        private static string? GetDirectoryEntryFullPath(ref Interop.Sys.DirectoryEntry dirent, string currentPath)
-        {
-            ReadOnlySpan<char> direntName = dirent.GetName(stackalloc char[Interop.Sys.DirectoryEntry.NameBufferSize]);
-
-            if ((direntName.Length == 1 && direntName[0] == '.') ||
-                (direntName.Length == 2 && direntName[0] == '.' && direntName[1] == '.'))
-                return null;
-
-            return Path.Join(currentPath.AsSpan(), direntName);
-        }
-
-        /// <summary>
-        /// Enumerate files
-        /// </summary>
-        private static unsafe void EnumerateFilesRecursively(string path, Predicate<string> condition)
-        {
-            List<string>? toExplore = null; // List used as a stack
-
-            int bufferSize = Interop.Sys.GetReadDirRBufferSize();
-            byte[]? dirBuffer = null;
-            try
-            {
-                dirBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-                string currentPath = path;
-
-                fixed (byte* dirBufferPtr = dirBuffer)
-                {
-                    while (true)
-                    {
-                        IntPtr dirHandle = Interop.Sys.OpenDir(currentPath);
-                        if (dirHandle == IntPtr.Zero)
-                        {
-                            throw Interop.GetExceptionForIoErrno(Interop.Sys.GetLastErrorInfo(), currentPath, isDirectory: true);
-                        }
-
-                        try
-                        {
-                            // Read each entry from the enumerator
-                            Interop.Sys.DirectoryEntry dirent;
-                            while (Interop.Sys.ReadDirR(dirHandle, dirBufferPtr, bufferSize, out dirent) == 0)
-                            {
-                                string? fullPath = GetDirectoryEntryFullPath(ref dirent, currentPath);
-                                if (fullPath == null)
-                                    continue;
-
-                                // Get from the dir entry whether the entry is a file or directory.
-                                // We classify everything as a file unless we know it to be a directory.
-                                bool isDir;
-                                if (dirent.InodeType == Interop.Sys.NodeType.DT_DIR)
-                                {
-                                    // We know it's a directory.
-                                    isDir = true;
-                                }
-                                else if (dirent.InodeType == Interop.Sys.NodeType.DT_LNK || dirent.InodeType == Interop.Sys.NodeType.DT_UNKNOWN)
-                                {
-                                    // It's a symlink or unknown: stat to it to see if we can resolve it to a directory.
-                                    // If we can't (e.g. symlink to a file, broken symlink, etc.), we'll just treat it as a file.
-
-                                    Interop.Sys.FileStatus fileinfo;
-                                    if (Interop.Sys.Stat(fullPath, out fileinfo) >= 0)
-                                    {
-                                        isDir = (fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR;
-                                    }
-                                    else
-                                    {
-                                        isDir = false;
-                                    }
-                                }
-                                else
-                                {
-                                    // Otherwise, treat it as a file.  This includes regular files, FIFOs, etc.
-                                    isDir = false;
-                                }
-
-                                // Yield the result if the user has asked for it.  In the case of directories,
-                                // always explore it by pushing it onto the stack, regardless of whether
-                                // we're returning directories.
-                                if (isDir)
-                                {
-                                    toExplore ??= new List<string>();
-                                    toExplore.Add(fullPath);
-                                }
-                                else if (condition(fullPath))
-                                {
-                                    return;
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            if (dirHandle != IntPtr.Zero)
-                                Interop.Sys.CloseDir(dirHandle);
-                        }
-
-                        if (toExplore == null || toExplore.Count == 0)
-                            break;
-
-                        currentPath = toExplore[toExplore.Count - 1];
-                        toExplore.RemoveAt(toExplore.Count - 1);
-                    }
-                }
-            }
-            finally
-            {
-                if (dirBuffer != null)
-                    ArrayPool<byte>.Shared.Return(dirBuffer);
-            }
-        }
-
-        /// <summary>
-        /// Find the time zone id by searching all the tzfiles for the one that matches rawData
-        /// and return its file name.
-        /// </summary>
-        private static string FindTimeZoneId(byte[] rawData)
-        {
-            // default to "Local" if we can't find the right tzfile
-            string id = LocalId;
-            string timeZoneDirectory = GetTimeZoneDirectory();
-            string localtimeFilePath = Path.Combine(timeZoneDirectory, "localtime");
-            string posixrulesFilePath = Path.Combine(timeZoneDirectory, "posixrules");
-            byte[] buffer = new byte[rawData.Length];
-
-            try
-            {
-                EnumerateFilesRecursively(timeZoneDirectory, (string filePath) =>
-                {
-                    // skip the localtime and posixrules file, since they won't give us the correct id
-                    if (!string.Equals(filePath, localtimeFilePath, StringComparison.OrdinalIgnoreCase)
-                        && !string.Equals(filePath, posixrulesFilePath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (CompareTimeZoneFile(filePath, buffer, rawData))
-                        {
-                            // if all bytes are the same, this must be the right tz file
-                            id = filePath;
-
-                            // strip off the root time zone directory
-                            if (id.StartsWith(timeZoneDirectory, StringComparison.Ordinal))
-                            {
-                                id = id.Substring(timeZoneDirectory.Length);
-                            }
-                            return true;
-                        }
-                    }
-                    return false;
-                });
-            }
-            catch (IOException) { }
-            catch (SecurityException) { }
-            catch (UnauthorizedAccessException) { }
-
-            return id;
-        }
-
-        private static bool CompareTimeZoneFile(string filePath, byte[] buffer, byte[] rawData)
-        {
-            try
-            {
-                // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-                using (FileStream stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1))
-                {
-                    if (stream.Length == rawData.Length)
-                    {
-                        int index = 0;
-                        int count = rawData.Length;
-
-                        while (count > 0)
-                        {
-                            int n = stream.Read(buffer, index, count);
-                            if (n == 0)
-                                throw Error.GetEndOfFile();
-
-                            int end = index + n;
-                            for (; index < end; index++)
-                            {
-                                if (buffer[index] != rawData[index])
-                                {
-                                    return false;
-                                }
-                            }
-
-                            count -= n;
-                        }
-
-                        return true;
-                    }
-                }
-            }
-            catch (IOException) { }
-            catch (SecurityException) { }
-            catch (UnauthorizedAccessException) { }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Helper function used by 'GetLocalTimeZone()' - this function wraps the call
-        /// for loading time zone data from computers without Registry support.
-        ///
-        /// The TryGetLocalTzFile() call returns a Byte[] containing the compiled tzfile.
-        /// </summary>
-        private static TimeZoneInfo GetLocalTimeZoneFromTzFile()
-        {
-            byte[]? rawData;
-            string? id;
-            if (TryGetLocalTzFile(out rawData, out id))
-            {
-                TimeZoneInfo? result = GetTimeZoneFromTzData(rawData, id);
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-
-            // if we can't find a local time zone, return UTC
-            return Utc;
+            return TryGetTimeZoneFromLocalMachineCore(id, out value, out e);
         }
 
         private static TimeZoneInfo? GetTimeZoneFromTzData(byte[]? rawData, string id)
@@ -616,21 +270,6 @@ namespace System
             return null;
         }
 
-        private static string GetTimeZoneDirectory()
-        {
-            string? tzDirectory = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable);
-
-            if (tzDirectory == null)
-            {
-                tzDirectory = DefaultTimeZoneDirectory;
-            }
-            else if (!tzDirectory.EndsWith(Path.DirectorySeparatorChar))
-            {
-                tzDirectory += PathInternal.DirectorySeparatorCharAsString;
-            }
-
-            return tzDirectory;
-        }
 
         /// <summary>
         /// Helper function for retrieving a TimeZoneInfo object by time_zone_name.
@@ -894,7 +533,7 @@ namespace System
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -921,7 +560,7 @@ namespace System
                     // is going to be TimeSpan.Zero.  But we still need to return 'true' from AdjustmentRule.HasDaylightSaving.
                     // To ensure we always return true from HasDaylightSaving, make a "special" dstStart that will make the logic
                     // in HasDaylightSaving return true.
-                    dstStart = TransitionTime.CreateFixedDateRule(DateTime.MinValue.AddMilliseconds(2), 1, 1);
+                    dstStart = s_daylightRuleMarker;
                 }
                 else
                 {
@@ -937,7 +576,7 @@ namespace System
                         baseUtcDelta,
                         noDaylightTransitions: true);
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -974,7 +613,7 @@ namespace System
                         noDaylightTransitions: true);
                 }
 
-                if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
+                if (!IsValidAdjustmentRuleOffset(timeZoneBaseUtcOffset, r))
                 {
                     NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r);
                 }
@@ -1032,7 +671,7 @@ namespace System
         /// Creates an AdjustmentRule given the POSIX TZ environment variable string.
         /// </summary>
         /// <remarks>
-        /// See http://man7.org/linux/man-pages/man3/tzset.3.html for the format and semantics of this POSX string.
+        /// See http://man7.org/linux/man-pages/man3/tzset.3.html for the format and semantics of this POSIX string.
         /// </remarks>
         private static AdjustmentRule? TZif_CreateAdjustmentRuleForPosixFormat(string posixFormat, DateTime startTransitionDate, TimeSpan timeZoneBaseUtcOffset)
         {
@@ -1202,8 +841,7 @@ namespace System
             {
                 if (date[0] != 'J')
                 {
-                    // should be n Julian day format which we don't support.
-                    //
+                    // should be n Julian day format.
                     // This specifies the Julian day, with n between 0 and 365. February 29 is counted in leap years.
                     //
                     // n would be a relative number from the beginning of the year. which should handle if the
@@ -1219,11 +857,30 @@ namespace System
                     // 0                30 31              58 59              89      334            364
                     // |-------Jan--------|-------Feb--------|-------Mar--------|....|-------Dec--------|
                     //
-                    //
                     // For example if n is specified as 60, this means in leap year the rule will start at Mar 1,
                     // while in non leap year the rule will start at Mar 2.
                     //
-                    // If we need to support n format, we'll have to have a floating adjustment rule support this case.
+                    // This n Julian day format is very uncommon and mostly  used for convenience to specify dates like January 1st
+                    // which we can support without any major modification to the Adjustment rules. We'll support this rule  for day
+                    // numbers less than 59 (up to Feb 28). Otherwise we'll skip this POSIX rule.
+                    // We've never encountered any time zone file using this format for days beyond Feb 28.
+
+                    if (int.TryParse(date, out int julianDay) && julianDay < 59)
+                    {
+                        int d, m;
+                        if (julianDay <= 30) // January
+                        {
+                            m = 1;
+                            d = julianDay + 1;
+                        }
+                        else // February
+                        {
+                            m = 2;
+                            d = julianDay - 30;
+                        }
+
+                        return TransitionTime.CreateFixedDateRule(ParseTimeOfDay(time), m, d);
+                    }
 
                     // Since we can't support this rule, return null to indicate to skip the POSIX rule.
                     return null;
@@ -1236,7 +893,7 @@ namespace System
         }
 
         /// <summary>
-        /// Parses a string like Jn or n into month and day values.
+        /// Parses a string like Jn into month and day values.
         /// </summary>
         private static void TZif_ParseJulianDay(ReadOnlySpan<char> date, out int month, out int day)
         {
@@ -1432,15 +1089,26 @@ namespace System
                 zoneAbbreviations.Substring(index);
         }
 
+        // Converts a span of bytes into a long - always using standard byte order (Big Endian)
+        // per TZif file standard
+        private static short TZif_ToInt16(ReadOnlySpan<byte> value)
+            => BinaryPrimitives.ReadInt16BigEndian(value);
+
         // Converts an array of bytes into an int - always using standard byte order (Big Endian)
         // per TZif file standard
         private static int TZif_ToInt32(byte[] value, int startIndex)
             => BinaryPrimitives.ReadInt32BigEndian(value.AsSpan(startIndex));
 
+        // Converts a span of bytes into an int - always using standard byte order (Big Endian)
+        // per TZif file standard
+        private static int TZif_ToInt32(ReadOnlySpan<byte> value)
+            => BinaryPrimitives.ReadInt32BigEndian(value);
+
         // Converts an array of bytes into a long - always using standard byte order (Big Endian)
         // per TZif file standard
         private static long TZif_ToInt64(byte[] value, int startIndex)
             => BinaryPrimitives.ReadInt64BigEndian(value.AsSpan(startIndex));
+
 
         private static long TZif_ToUnixTime(byte[] value, int startIndex, TZVersion version) =>
             version != TZVersion.V1 ?
@@ -1694,6 +1362,20 @@ namespace System
             V2,
             V3,
             // when adding more versions, ensure all the logic using TZVersion is still correct
+        }
+
+        // Helper function for string array search. (LINQ is not available here.)
+        private static bool StringArrayContains(string value, string[] source, StringComparison comparison)
+        {
+            foreach (string s in source)
+            {
+                if (string.Equals(s, value, comparison))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

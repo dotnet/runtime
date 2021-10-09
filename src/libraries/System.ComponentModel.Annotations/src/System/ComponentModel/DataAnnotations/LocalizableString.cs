@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
@@ -10,13 +10,14 @@ namespace System.ComponentModel.DataAnnotations
     ///     A helper class for providing a localizable string property.
     ///     This class is currently compiled in both System.Web.dll and System.ComponentModel.DataAnnotations.dll.
     /// </summary>
-    internal class LocalizableString
+    internal sealed class LocalizableString
     {
         #region Member fields
 
         private readonly string _propertyName;
         private Func<string?>? _cachedResult;
         private string? _propertyValue;
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         private Type? _resourceType;
 
         #endregion
@@ -62,6 +63,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets or sets the resource type to be used for localization.
         /// </summary>
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
         public Type? ResourceType
         {
             get => _resourceType;

@@ -71,6 +71,9 @@
   <data name="IO_FileTooLong2GB" xml:space="preserve">
     <value>The file is too long. This operation is currently limited to supporting files less than 2 gigabytes in size.</value>
   </data>
+  <data name="IO_InconsistentLinkType" xml:space="preserve">
+    <value>The link's file system entry type is inconsistent with that of its target: {0}</value>
+  </data>
   <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
     <value>Could not find a part of the path.</value>
   </data>
@@ -114,6 +117,9 @@
     <value>The path is empty.</value>
   </data>
   <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
-    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value> 
+    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
   </data>
 </root>

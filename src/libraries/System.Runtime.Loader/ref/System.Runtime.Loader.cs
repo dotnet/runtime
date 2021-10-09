@@ -11,9 +11,32 @@ namespace System.Reflection.Metadata
         [System.CLSCompliantAttribute(false)]
         public unsafe static bool TryGetRawMetadata(this System.Reflection.Assembly assembly, out byte* blob, out int length) { throw null; }
     }
+    public static partial class MetadataUpdater
+    {
+        public static void ApplyUpdate(Assembly assembly, ReadOnlySpan<byte> metadataDelta, ReadOnlySpan<byte> ilDelta, ReadOnlySpan<byte> pdbDelta) { throw null; }
+        public static bool IsSupported { get { throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Assembly, AllowMultiple = true)]
+    public sealed class MetadataUpdateHandlerAttribute : System.Attribute
+    {
+        public MetadataUpdateHandlerAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)] System.Type handlerType) { }
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]
+        public System.Type HandlerType { get { throw null; } }
+    }
+}
+namespace System.Runtime.CompilerServices
+{
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple = false)]
+    public sealed class CreateNewOnMetadataUpdateAttribute : System.Attribute
+    {
+    }
 }
 namespace System.Runtime.Loader
 {
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public sealed partial class AssemblyDependencyResolver
     {
         public AssemblyDependencyResolver(string componentAssemblyPath) { }

@@ -88,7 +88,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "\n    \n    \uD868\uDCF9\n    2A0F9\n    D868\n    DCF9\n    \n \n   "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -138,7 +137,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "\u0130"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -190,7 +188,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "\u0E22\u0E39\u0E48\u0E22\u0E35\u0E48\u0E1B\u0E31\u0E48\u0E19 \u0E01\u0E38\u0E0F\u0E34\u0E42\u0E01\u0E0E\u0E39 \u0E27\u0E34\u0E0D\u0E0D\u0E39 \u0E2D\u0E39\u0E10\u0E10\u0E38\u0E19 \u0E19\u0E49\u0E33\u0E1B\u0E49\u0E33 "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -376,7 +373,6 @@ namespace XPathTests.FunctionalTests
                     Name = "char",
                     HasNameTable = true
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -454,7 +450,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "\nKana \uFF90\uFF91\uFF92 \n"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -523,7 +518,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "\uFF2A\uFF55\uFF4E\uFF4A\uFF41"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
@@ -592,7 +586,6 @@ namespace XPathTests.FunctionalTests
                     HasNameTable = true,
                     Value = "\u2122 \u00A9\u00AD\u00AE"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }

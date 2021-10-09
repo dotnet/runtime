@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -17,32 +19,36 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets the class name of this object.
         /// </summary>
-        string GetClassName();
+        string? GetClassName();
 
         /// <summary>
         /// Gets the name of this object.
         /// </summary>
-        string GetComponentName();
+        string? GetComponentName();
 
         /// <summary>
         /// Gets a type converter for this object.
         /// </summary>
+        [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
         TypeConverter GetConverter();
 
         /// <summary>
         /// Gets the default event for this object.
         /// </summary>
-        EventDescriptor GetDefaultEvent();
+        [RequiresUnreferencedCode(EventDescriptor.RequiresUnreferencedCodeMessage)]
+        EventDescriptor? GetDefaultEvent();
 
         /// <summary>
         /// Gets the default property for this object.
         /// </summary>
-        PropertyDescriptor GetDefaultProperty();
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
+        PropertyDescriptor? GetDefaultProperty();
 
         /// <summary>
         /// Gets an editor of the specified type for this object.
         /// </summary>
-        object GetEditor(Type editorBaseType);
+        [RequiresUnreferencedCode(TypeDescriptor.EditorRequiresUnreferencedCode)]
+        object? GetEditor(Type editorBaseType);
 
         /// <summary>
         /// Gets the events for this instance of a component.
@@ -53,21 +59,24 @@ namespace System.ComponentModel
         /// Gets the events for this instance of a component using the attribute array as a
         /// filter.
         /// </summary>
-        EventDescriptorCollection GetEvents(Attribute[] attributes);
+        [RequiresUnreferencedCode(AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        EventDescriptorCollection GetEvents(Attribute[]? attributes);
 
         /// <summary>
         /// Gets the properties for this instance of a component.
         /// </summary>
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage)]
         PropertyDescriptorCollection GetProperties();
 
         /// <summary>
         /// Gets the properties for this instance of a component using the attribute array as a filter.
         /// </summary>
-        PropertyDescriptorCollection GetProperties(Attribute[] attributes);
+        [RequiresUnreferencedCode(PropertyDescriptor.PropertyDescriptorPropertyTypeMessage + " " + AttributeCollection.FilterRequiresUnreferencedCodeMessage)]
+        PropertyDescriptorCollection GetProperties(Attribute[]? attributes);
 
         /// <summary>
         /// Gets the object that directly depends on this value being edited.
         /// </summary>
-        object GetPropertyOwner(PropertyDescriptor pd);
+        object? GetPropertyOwner(PropertyDescriptor? pd);
     }
 }

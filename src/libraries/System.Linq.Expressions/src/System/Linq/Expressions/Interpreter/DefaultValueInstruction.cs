@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions.Interpreter
 {
@@ -21,9 +23,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "DefaultValue";
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+            Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
         public override int Run(InterpretedFrame frame)
         {
-            frame.Push(Activator.CreateInstance(_type));
+            frame.Push(RuntimeHelpers.GetUninitializedObject(_type));
             return 1;
         }
 

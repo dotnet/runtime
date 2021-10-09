@@ -27,23 +27,10 @@
 #define CFG_DEBUG
 #endif
 
-
 #ifdef CFG_DEBUG
-
-#ifdef HAVE_C99_SUPPORT
-#define cfg_debug(format, ...) g_debug(format, __VA_ARGS__)
-#else
 #define cfg_debug(...) g_debug(__VA_ARGS__)
-#endif
-
-#else
-
-#ifdef HAVE_C99_SUPPORT
-#define cfg_debug(format, ...) do {} while (0)
 #else
 #define cfg_debug(...) do {} while (0)
-#endif
-
 #endif
 
 static ConstantPoolEntry*

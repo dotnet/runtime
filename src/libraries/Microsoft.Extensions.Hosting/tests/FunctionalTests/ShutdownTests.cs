@@ -96,11 +96,11 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                     }
                 };
 
-                await started.Task.TimeoutAfter(TimeSpan.FromSeconds(60));
+                await started.Task.WaitAsync(TimeSpan.FromSeconds(60));
 
                 SendShutdownSignal(deployer.HostProcess);
 
-                await completed.Task.TimeoutAfter(TimeSpan.FromSeconds(60));
+                await completed.Task.WaitAsync(TimeSpan.FromSeconds(60));
 
                 WaitForExitOrKill(deployer.HostProcess);
 

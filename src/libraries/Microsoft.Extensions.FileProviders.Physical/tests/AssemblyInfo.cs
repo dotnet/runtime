@@ -2,6 +2,4 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Xunit;
-
-[assembly: SkipOnMono("Microsoft.Extensions.FileProviders.Physical is not supported on wasm", TestPlatforms.Browser)]
+using Xunit;    

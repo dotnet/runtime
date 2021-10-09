@@ -34,7 +34,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Last"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -59,7 +58,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Fourth"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -83,7 +81,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Last"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -107,7 +104,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Fourth"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -132,7 +128,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Last"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -247,7 +242,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Second"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -271,7 +265,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Second"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -296,7 +289,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Second"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -320,7 +312,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Second"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -363,7 +354,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Last"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -424,7 +414,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
                     HasNameTable = true,
                     Value = "Last"
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -878,8 +867,6 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
             var xml = "id4.xml";
             var testExpression = @"id(""1"")";
             var expected = new XPathResult(0);
-            ;
-
             Utils.XPathNodesetTest(xml, testExpression, expected);
         }
 #endif

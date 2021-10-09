@@ -227,6 +227,7 @@ rmove: dest:f src1:f len:4
 r4_conv_to_i1: dest:i src1:f len:88
 r4_conv_to_i2: dest:i src1:f len:88
 r4_conv_to_i4: dest:i src1:f len:88
+r4_conv_to_i: dest:i src1:f len:88
 r4_conv_to_u1: dest:i src1:f len:88
 r4_conv_to_u2: dest:i src1:f len:88
 r4_conv_to_u4: dest:i src1:f len:88

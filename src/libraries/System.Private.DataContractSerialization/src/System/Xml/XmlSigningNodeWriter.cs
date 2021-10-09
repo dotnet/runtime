@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Xml
 {
-    internal class XmlSigningNodeWriter : XmlNodeWriter
+    internal sealed class XmlSigningNodeWriter : XmlNodeWriter
     {
         private XmlNodeWriter _writer = null!; // initialized by SetOutput
         private XmlCanonicalWriter _signingWriter = null!; // initialized by SetOutput

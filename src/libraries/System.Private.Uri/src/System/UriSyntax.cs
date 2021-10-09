@@ -108,7 +108,7 @@ namespace System
         internal const int NoDefaultPort = -1;
         private const int c_InitialTableSize = 25;
 
-        private class BuiltInUriParser : UriParser
+        private sealed class BuiltInUriParser : UriParser
         {
             //
             // All BuiltIn parsers use that ctor. They are marked with "simple" and "built-in" flags

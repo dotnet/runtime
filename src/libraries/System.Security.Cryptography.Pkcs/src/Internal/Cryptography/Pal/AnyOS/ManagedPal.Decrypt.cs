@@ -170,16 +170,31 @@ namespace Internal.Cryptography.Pal.AnyOS
                     encryptedContent.CopyTo(encryptedContentArray);
 
                     using (SymmetricAlgorithm alg = OpenAlgorithm(contentEncryptionAlgorithm))
-                    using (ICryptoTransform decryptor = alg.CreateDecryptor(cek, alg.IV))
                     {
-                        // If we extend this library to accept additional algorithm providers
-                        // then a different array pool needs to be used.
-                        Debug.Assert(alg.GetType().Assembly == typeof(Aes).Assembly);
+                        ICryptoTransform decryptor;
 
-                        return decryptor.OneShot(
-                            encryptedContentArray,
-                            0,
-                            encryptedContentLength);
+                        try
+                        {
+                            decryptor = alg.CreateDecryptor(cek, alg.IV);
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            // Decrypting or deriving the symmetric key with the wrong key may still succeed
+                            // but produce a symmetric key that is not the correct length.
+                            throw new CryptographicException(SR.Cryptography_Cms_InvalidSymmetricKey, ae);
+                        }
+
+                        using (decryptor)
+                        {
+                            // If we extend this library to accept additional algorithm providers
+                            // then a different array pool needs to be used.
+                            Debug.Assert(alg.GetType().Assembly == typeof(Aes).Assembly);
+
+                            return decryptor.OneShot(
+                                encryptedContentArray,
+                                0,
+                                encryptedContentLength);
+                        }
                     }
                 }
                 catch (CryptographicException e)

@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <!-- These need to be set here because the root Directory.Build.props sets up the intermediate path early -->
+    <Configuration>Release</Configuration>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, '$(MSBuildThisFileDirectory)..'))" />
+
+  <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <OutputPath>$(RepoRoot)artifacts\bin\$(MSBuildProjectName)</OutputPath>
+    <_InTreeEmSdk>$(MSBuildThisFileDirectory)..\..\..\mono\wasm\emsdk</_InTreeEmSdk>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists($(_InTreeEmSdk))">$(_InTreeEmSdk)</EMSDK_PATH>
+  </PropertyGroup>
+</Project>

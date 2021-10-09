@@ -13,7 +13,7 @@ namespace System.Xml
     //
     // This class does special handling of text content for XML.  For example
     // it will replace special characters with entities whenever necessary.
-    internal class XmlTextEncoder
+    internal sealed class XmlTextEncoder
     {
         //
         // Fields

@@ -498,4 +498,10 @@ IInspectableTesting2 : IInspectable
     virtual HRESULT STDMETHODCALLTYPE Add(_In_ int i, _In_ int j, _Out_ _Ret_ int* retVal) = 0;
 };
 
+struct __declspec(uuid("57f396a1-58a0-425f-8807-9f938a534984"))
+ITrackMyLifetimeTesting : IUnknown
+{
+    virtual HRESULT STDMETHODCALLTYPE GetAllocationCountCallback(_Outptr_ void** fptr) = 0;
+};
+
 #pragma pack(pop)

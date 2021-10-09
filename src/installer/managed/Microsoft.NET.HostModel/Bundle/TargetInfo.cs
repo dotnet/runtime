@@ -25,7 +25,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public readonly OSPlatform OS;
         public readonly Architecture Arch;
         public readonly Version FrameworkVersion;
-        public readonly uint BundleVersion;
+        public readonly uint BundleMajorVersion;
         public readonly BundleOptions DefaultOptions;
         public readonly int AssemblyAlignment;
 
@@ -33,18 +33,23 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             OS = os ?? HostOS;
             Arch = arch ?? RuntimeInformation.OSArchitecture;
-            FrameworkVersion = targetFrameworkVersion ?? net50;
+            FrameworkVersion = targetFrameworkVersion ?? net60;
 
             Debug.Assert(IsLinux || IsOSX || IsWindows);
 
-            if (FrameworkVersion.CompareTo(net50) >= 0)
+            if (FrameworkVersion.CompareTo(net60) >= 0)
             {
-                BundleVersion = 2u;
+                BundleMajorVersion = 6u;
+                DefaultOptions = BundleOptions.None;
+            }
+            else if (FrameworkVersion.CompareTo(net50) >= 0)
+            {
+                BundleMajorVersion = 2u;
                 DefaultOptions = BundleOptions.None;
             }
             else if (FrameworkVersion.Major == 3 && (FrameworkVersion.Minor == 0 || FrameworkVersion.Minor == 1))
             {
-                BundleVersion = 1u;
+                BundleMajorVersion = 1u;
                 DefaultOptions = BundleOptions.BundleAllContent;
             }
             else
@@ -94,7 +99,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         // The .net core 3 apphost doesn't care about semantics of FileType -- all files are extracted at startup.
         // However, the apphost checks that the FileType value is within expected bounds, so set it to the first enumeration.
-        public FileType TargetSpecificFileType(FileType fileType) => (BundleVersion == 1) ? FileType.Unknown : fileType;
+        public FileType TargetSpecificFileType(FileType fileType) => (BundleMajorVersion == 1) ? FileType.Unknown : fileType;
 
         // In .net core 3.x, bundle processing happens within the AppHost.
         // Therefore HostFxr and HostPolicy can be bundled within the single-file app.
@@ -105,6 +110,7 @@ namespace Microsoft.NET.HostModel.Bundle
         public bool ShouldExclude(string relativePath) =>
             (FrameworkVersion.Major != 3) && (relativePath.Equals(HostFxr) || relativePath.Equals(HostPolicy));
 
+        private readonly Version net60 = new Version(6, 0);
         private readonly Version net50 = new Version(5, 0);
         private string HostFxr => IsWindows ? "hostfxr.dll" : IsLinux ? "libhostfxr.so" : "libhostfxr.dylib";
         private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsLinux ? "libhostpolicy.so" : "libhostpolicy.dylib";

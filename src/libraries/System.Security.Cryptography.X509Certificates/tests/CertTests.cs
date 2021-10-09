@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
@@ -24,12 +25,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RaceUseAndDisposeDoesNotCrash()
+        {
+            X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile);
+
+            Thread subjThread = new Thread(static state => {
+                X509Certificate2 c = (X509Certificate2)state;
+
+                try
+                {
+                    _ = c.Subject;
+                }
+                catch
+                {
+                    // managed exceptions are okay, we are looking for runtime crashes.
+                }
+            });
+
+            Thread disposeThread = new Thread(static state => {
+                ((X509Certificate2)state).Dispose();
+            });
+
+            subjThread.Start(cert);
+            disposeThread.Start(cert);
+            disposeThread.Join();
+            subjThread.Join();
+        }
+
+        [Fact]
         public static void X509CertTest()
         {
             string certSubject = @"CN=Microsoft Corporate Root Authority, OU=ITG, O=Microsoft, L=Redmond, S=WA, C=US, E=pkit@microsoft.com";
             string certSubjectObsolete = @"E=pkit@microsoft.com, C=US, S=WA, L=Redmond, O=Microsoft, OU=ITG, CN=Microsoft Corporate Root Authority";
 
-            using (X509Certificate cert = new X509Certificate(Path.Combine("TestData", "microsoft.cer")))
+            using (X509Certificate cert = new X509Certificate(TestFiles.MicrosoftRootCertFile))
             {
                 Assert.Equal(certSubject, cert.Subject);
                 Assert.Equal(certSubject, cert.Issuer);
@@ -74,7 +103,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             DateTime notBefore = new DateTime(1999, 7, 12, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
             DateTime notAfter = new DateTime(2009, 7, 9, 17, 33, 53, DateTimeKind.Utc).ToLocalTime();
 
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.cer")))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.TestCertFile))
             {
                 Assert.Equal(certName, cert2.IssuerName.Name);
                 Assert.Equal(certName, cert2.SubjectName.Name);
@@ -92,6 +121,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
+                Assert.NotEmpty(cert2.SignatureAlgorithm.FriendlyName);
                 Assert.Equal("7A74410FB0CD5C972A364B71BF031D88A6510E9E", cert2.Thumbprint);
                 Assert.Equal(3, cert2.Version);
             }
@@ -104,15 +134,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             bool success;
 
-            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComLegacySslCertBytes))
             {
                 // Fails because expired (NotAfter = 10/16/2016)
-                Assert.False(microsoftDotCom.Verify(), "MicrosoftDotComSslCertBytes");
+                Assert.False(microsoftDotCom.Verify(), "MicrosoftDotComLegacySslCertBytes");
             }
 
             using (var microsoftDotComIssuer = new X509Certificate2(TestData.MicrosoftDotComIssuerBytes))
             {
-                // NotAfter=10/31/2023
+                // NotAfter=10/8/2024, 7:00:00 AM UTC
                 success = microsoftDotComIssuer.Verify();
                 if (!success)
                 {
@@ -128,7 +158,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
                 {
-                    // NotAfter=7/17/2036
+                    // NotAfter=7/17/2025
                     success = microsoftDotComRoot.Verify();
                     if (!success)
                     {
@@ -264,7 +294,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Cert2CreateFromPfxFile()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "DummyTcpServer.pfx")))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.DummyTcpServerPfxFile))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -274,7 +304,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Cert2CreateFromPfxWithPassword()
         {
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), "test"))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.ChainPfxFile, TestData.ChainPfxPassword))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -286,7 +316,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             Span<char> pw = stackalloc char[] { 't', 'e', 's', 't' };
 
-            using (X509Certificate2 cert2 = new X509Certificate2(Path.Combine("TestData", "test.pfx"), pw))
+            using (X509Certificate2 cert2 = new X509Certificate2(TestFiles.ChainPfxFile, pw))
             {
                 // OID=RSA Encryption
                 Assert.Equal("1.2.840.113549.1.1.1", cert2.GetKeyAlgorithm());
@@ -296,13 +326,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void X509Certificate2FromPkcs7DerFile()
         {
-            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7b")));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestFiles.Pkcs7SingleDerFile));
         }
 
         [Fact]
         public static void X509Certificate2FromPkcs7PemFile()
         {
-            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(Path.Combine("TestData", "singlecert.p7c")));
+            Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(TestFiles.Pkcs7SinglePemFile));
         }
 
         [Fact]
@@ -358,6 +388,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 #endif
 
                 // State held on X509Certificate2
+                Assert.ThrowsAny<CryptographicException>(() => c.RawDataMemory);
                 Assert.ThrowsAny<CryptographicException>(() => c.RawData);
                 Assert.ThrowsAny<CryptographicException>(() => c.SignatureAlgorithm);
                 Assert.ThrowsAny<CryptographicException>(() => c.Version);
@@ -445,12 +476,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void RawDataMemory_NoCopy()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                ReadOnlyMemory<byte> first = cert.RawDataMemory;
+                ReadOnlyMemory<byte> second = cert.RawDataMemory;
+                Assert.True(first.Span == second.Span, "RawDataMemory returned different values.");
+            }
+        }
+
+        [Fact]
+        public static void RawDataMemory_RoundTrip_LifetimeIndependentOfCert()
+        {
+            ReadOnlyMemory<byte> memory;
+
+            using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
+            {
+                memory = cert.RawDataMemory;
+            }
+
+            AssertExtensions.SequenceEqual(TestData.MsCertificate.AsSpan(), memory.Span);
+        }
+
+        [Fact]
         public static void MutateDistinguishedName_IssuerName_DoesNotImpactIssuer()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 byte[] issuerBytes = cert.IssuerName.RawData;
-                Array.Clear(issuerBytes, 0, issuerBytes.Length);
+                Array.Clear(issuerBytes);
                 Assert.Equal("CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Issuer);
             }
         }
@@ -461,8 +516,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Certificate2 cert = new X509Certificate2(TestData.MsCertificate))
             {
                 byte[] subjectBytes = cert.SubjectName.RawData;
-                Array.Clear(subjectBytes, 0, subjectBytes.Length);
+                Array.Clear(subjectBytes);
                 Assert.Equal("CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US", cert.Subject);
+            }
+        }
+
+        [Fact]
+        public static void SignatureAlgorithmOidReadableForGostCertificate()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.GostCertificate))
+            {
+                Assert.Equal("1.2.643.2.2.3", cert.SignatureAlgorithm.Value);
             }
         }
 

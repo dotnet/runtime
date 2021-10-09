@@ -8,7 +8,7 @@ namespace System.ComponentModel.Composition.Hosting
 {
     public partial class CatalogExportProvider
     {
-        internal class ScopeManager : ExportProvider
+        internal sealed class ScopeManager : ExportProvider
         {
             private readonly CompositionScopeDefinition _scopeDefinition;
             private readonly CatalogExportProvider _catalogExportProvider;

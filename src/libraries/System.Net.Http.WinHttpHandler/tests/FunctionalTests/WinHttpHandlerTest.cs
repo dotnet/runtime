@@ -168,7 +168,6 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 Assert.Equal("POST", responseContent.Method);
                 Assert.Equal(payload, responseContent.BodyContent);
                 Assert.Equal(cookies.ToDictionary(c => c.Name, c => c.Value), responseContent.Cookies);
-
             };
         }
 
@@ -200,12 +199,12 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             aboveLimitRequest.Content = new StringContent($"{payloadText}-{maxActiveStreamsLimit + 1}");
             Task<HttpResponseMessage> aboveLimitResponseTask = client.SendAsync(aboveLimitRequest, HttpCompletionOption.ResponseContentRead);
 
-            await aboveLimitResponseTask.TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            await aboveLimitResponseTask.WaitAsync(TestHelper.PassingTestTimeout);
             await VerifyResponse(aboveLimitResponseTask, $"{payloadText}-{maxActiveStreamsLimit + 1}");
 
             delaySource.SetResult(true);
 
-            await Task.WhenAll(requests.Select(r => r.task).ToArray()).TimeoutAfter(15000);
+            await Task.WhenAll(requests.Select(r => r.task).ToArray()).WaitAsync(TimeSpan.FromSeconds(15));
 
             foreach ((Task<HttpResponseMessage> task, DelayedStream stream) in requests)
             {
@@ -213,9 +212,31 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
                 HttpResponseMessage response = task.Result;
                 Assert.True(response.IsSuccessStatusCode);
                 Assert.Equal(HttpVersion20.Value, response.Version);
-                string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+                string responsePayload = await response.Content.ReadAsStringAsync().WaitAsync(TestHelper.PassingTestTimeout);
                 Assert.Contains(payloadText, responsePayload);
             }
+        }
+
+        [OuterLoop("Uses external service")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version2004OrGreater))]
+        public async Task SendAsync_UseTcpKeepAliveOptions()
+        {
+            using var handler = new WinHttpHandler()
+            {
+                TcpKeepAliveEnabled = true,
+                TcpKeepAliveTime = TimeSpan.FromSeconds(1),
+                TcpKeepAliveInterval = TimeSpan.FromMilliseconds(500)
+            };
+
+            using var client = new HttpClient(handler);
+
+            var response = client.GetAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer).Result;
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            string responseContent = await response.Content.ReadAsStringAsync();
+            _output.WriteLine(responseContent);
+
+            // Uncomment this to observe an exchange of "TCP Keep-Alive" and "TCP Keep-Alive ACK" packets:
+            // await Task.Delay(5000); 
         }
 
         private async Task VerifyResponse(Task<HttpResponseMessage> task, string payloadText)
@@ -224,7 +245,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
             HttpResponseMessage response = task.Result;
             Assert.True(response.IsSuccessStatusCode);
             Assert.Equal(HttpVersion20.Value, response.Version);
-            string responsePayload = await response.Content.ReadAsStringAsync().TimeoutAfter(TestHelper.PassingTestTimeoutMilliseconds);
+            string responsePayload = await response.Content.ReadAsStringAsync().WaitAsync(TestHelper.PassingTestTimeout);
             Assert.Contains(payloadText, responsePayload);
         }
 

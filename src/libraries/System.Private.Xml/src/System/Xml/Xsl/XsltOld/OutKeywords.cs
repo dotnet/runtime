@@ -7,7 +7,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Diagnostics;
     using System.Xml;
 
-    internal class OutKeywords
+    internal sealed class OutKeywords
     {
 #if DEBUG
         private readonly XmlNameTable _NameTable;

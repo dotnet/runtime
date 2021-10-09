@@ -5,14 +5,7 @@
     <SkipTestsOnPlatform Condition="'$(TargetsMobile)' == 'true' or '$(TargetOS)' == 'FreeBSD' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'wasm'">true</SkipTestsOnPlatform>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <GeneratorRuntimeConfig>$(MSBuildThisFileDirectory)..\pkg\build\dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</GeneratorRuntimeConfig>
-    <GeneratorCommand>"$(DotNetTool)"</GeneratorCommand>
-    <GeneratorCommand Condition="'$(TargetOS)' == 'windows'">set DOTNET_MULTILEVEL_LOOKUP=0 &amp; $(GeneratorCommand)</GeneratorCommand>
-    <GeneratorCommand Condition="'$(TargetOS)' != 'windows'">export DOTNET_MULTILEVEL_LOOKUP=0 &amp;&amp; $(GeneratorCommand)</GeneratorCommand>
-  </PropertyGroup>
-
-  <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true'">
+  <ItemGroup Condition="'$(SkipTestsOnPlatform)' != 'true'">
     <Compile Include="SGenTests.cs" />
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Private.Xml\tests\XmlSerializer\XmlSerializerTests.cs" />
@@ -20,6 +13,9 @@
 
   <ItemGroup>
     <Compile Include="AlwaysPassTest.cs" />
+    <None Include="Expected.SerializableAssembly.XmlSerializers.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Content Include="$(GeneratorRuntimeConfig)">
       <!-- Rename it to match the Generator application name -->
       <Link>dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json</Link>
@@ -38,15 +34,48 @@
     <PropertyGroup>
       <SerializerName>SerializableAssembly.XmlSerializers</SerializerName>
     </PropertyGroup>
-    <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec Command="$(GeneratorCommand) $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)SerializableAssembly.dll --force --quiet" />
-    <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs" />
-    <Copy SourceFiles="$(OutputPath)$(SerializerName).cs" DestinationFiles="$(OutputPath)LKG.$(SerializerName).cs" />
-    <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
+    <Warning Condition="Exists('$(OutputPath)Expected.$(SerializerName).cs') != 'true'" Text="Fail to find $(OutputPath)Expected.$(SerializerName).cs" />
+    <Message Text="Compiling Expected Serializers" Importance="normal" />
+    <SetParentAssemblyId CodeFile="$(OutputPath)Expected.$(SerializerName).cs" AssemblyFile="$(OutputPath)SerializableAssembly.dll" />
+    <Csc Condition="Exists('$(OutputPath)Expected.$(SerializerName).cs') == 'true'" OutputAssembly="$(OutputPath)$(SerializerName).dll" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" DebugType="$(DebugType)" Sources="$(OutputPath)Expected.$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="$(NoWarn), 219" UseSharedCompilation="true" />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).dll') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).dll" />
     <ItemGroup>
       <!-- Include the Serializer in ReferenceCopyLocalPaths so that it will be binplaced -->
       <ReferenceCopyLocalPaths Include="$(OutputPath)$(SerializerName).dll" />
     </ItemGroup>
   </Target>
+
+  <UsingTask TaskName="SetParentAssemblyId" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <CodeFile ParameterType="System.String" Required="true" />
+      <AssemblyFile ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.Collections" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Reflection" />
+      <Code Type="Fragment" Language="C#"><![CDATA[
+            // Roughly based on System.Xml.Serialization.TempAssembly.GenerateAssemblyId()
+            var list = new ArrayList();
+            foreach (var module in Assembly.LoadFrom(AssemblyFile).GetModules())
+            {
+                list.Add(module.ModuleVersionId.ToString());
+            }
+            list.Sort();
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < list.Count; i++)
+            {
+                sb.Append(list[i]!.ToString());
+                sb.Append(',');
+            }
+            string parentAssemblyId = sb.ToString();
+
+            string content = File.ReadAllText(CodeFile);
+            content = content.Replace("%%ParentAssemblyId%%", parentAssemblyId);
+            File.WriteAllText(CodeFile, content);
+      ]]></Code>
+    </Task>
+  </UsingTask>
 </Project>

@@ -54,7 +54,14 @@ typedef HANDLE THREAD_ID;
 
 typedef char16_t WCHAR;
 typedef unsigned int DWORD;
+
+#ifdef OBJC_TESTS
+// The Objective-C headers define the BOOL type to be unsigned char or bool.
+// As a result, we can't redefine it here. So instead, define WINBOOL to be int-sized.
+typedef int WINBOOL;
+#else
 typedef int BOOL;
+#endif
 typedef WCHAR *LPWSTR, *PWSTR;
 typedef const WCHAR *LPCWSTR, *PCWSTR;
 
@@ -111,10 +118,12 @@ typedef unsigned int ULONG, *PULONG;
 #define __stdcall __attribute__((stdcall))
 #define _cdecl __attribute__((cdecl))
 #define __cdecl __attribute__((cdecl))
+#define __thiscall __attribute__((thiscall))
 #else
 #define __stdcall
 #define _cdecl
 #define __cdecl
+#define __thiscall
 #endif
 #endif
 
@@ -149,7 +158,7 @@ typedef int error_t;
 typedef void* LPVOID;
 typedef unsigned char BYTE;
 typedef WCHAR OLECHAR;
-typedef double DATE;          
+typedef double DATE;
 typedef DWORD LCID;
 #endif
 
@@ -170,8 +179,6 @@ error_t TP_itow_s(int num, LPWSTR buffer, size_t sizeInCharacters, int radix);
 error_t TP_itoa_s(int num, LPSTR buffer, size_t sizeInCharacters, int radix);
 LPWSTR TP_sstr(LPWSTR str, LPWSTR searchStr);
 LPSTR  HackyConvertToSTR(LPWSTR pwszInput);
-DWORD TP_CreateThread(THREAD_ID* tThread, LPTHREAD_START_ROUTINE worker,  LPVOID lpParameter);
-void TP_JoinThread(THREAD_ID tThread);
 void TP_DebugBreak();
 DWORD TP_GetFullPathName(LPWSTR fileName, DWORD nBufferLength, LPWSTR lpBuffer);
 

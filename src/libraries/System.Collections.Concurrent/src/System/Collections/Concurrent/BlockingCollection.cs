@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.Versioning;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -38,6 +39,7 @@ namespace System.Collections.Concurrent
     /// away as an <see cref="System.Collections.Concurrent.IProducerConsumerCollection{T}"/>.
     /// </remarks>
     /// <typeparam name="T">Specifies the type of elements in the collection.</typeparam>
+    [UnsupportedOSPlatform("browser")]
     [DebuggerTypeProxy(typeof(BlockingCollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}, Type = {_collection}")]
     public class BlockingCollection<T> : IEnumerable<T>, ICollection, IDisposable, IReadOnlyCollection<T>
@@ -219,7 +221,7 @@ namespace System.Collections.Concurrent
             Debug.Assert(boundedCapacity > 0 || boundedCapacity == NON_BOUNDED);
 
             _collection = collection;
-            _boundedCapacity = boundedCapacity; ;
+            _boundedCapacity = boundedCapacity;
             _isDisposed = false;
             _consumersCancellationTokenSource = new CancellationTokenSource();
             _producersCancellationTokenSource = new CancellationTokenSource();
@@ -759,12 +761,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-#pragma warning disable CS8762
-            // https://github.com/dotnet/runtime/issues/36132
-            // Compiler can't automatically deduce that nullability constraints
-            // for 'item' are satisfied at this exit point.
             return waitForSemaphoreWasSuccessful;
-#pragma warning restore CS8762
         }
 
 
@@ -1142,7 +1139,7 @@ namespace System.Collections.Concurrent
             }
 
             // Subtract the elapsed time from the current wait time
-            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds; ;
+            int currentWaitTimeout = originalWaitMillisecondsTimeout - (int)elapsedMilliseconds;
             if (currentWaitTimeout <= 0)
             {
                 return 0;
@@ -1801,6 +1798,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Returns a snapshot of the underlying collection's elements.</summary>
+        [UnsupportedOSPlatform("browser")]
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         public T[] Items
         {

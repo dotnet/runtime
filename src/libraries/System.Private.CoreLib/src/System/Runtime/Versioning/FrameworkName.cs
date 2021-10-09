@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Versioning
 {
@@ -51,22 +52,9 @@ namespace System.Runtime.Versioning
             {
                 if (_fullName == null)
                 {
-                    if (string.IsNullOrEmpty(Profile))
-                    {
-                        _fullName =
-                            Identifier +
-                            ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix +
-                            Version.ToString();
-                    }
-                    else
-                    {
-                        _fullName =
-                            Identifier +
-                            ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix +
-                            Version.ToString() +
-                            ComponentSeparator + ProfileKey + KeyValueSeparator +
-                            Profile;
-                    }
+                    _fullName = string.IsNullOrEmpty(Profile) ?
+                        $"{Identifier}{ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix}{Version}" :
+                        $"{Identifier}{ComponentSeparator + VersionKey + KeyValueSeparator + VersionValuePrefix}{Version}{ComponentSeparator + ProfileKey + KeyValueSeparator}{Profile}";
                 }
 
                 Debug.Assert(_fullName != null);
@@ -74,12 +62,12 @@ namespace System.Runtime.Versioning
             }
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return Equals(obj as FrameworkName);
         }
 
-        public bool Equals(FrameworkName? other)
+        public bool Equals([NotNullWhen(true)] FrameworkName? other)
         {
             if (other is null)
             {

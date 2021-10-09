@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Text;
 using EditorBrowsableAttribute = System.ComponentModel.EditorBrowsableAttribute;
 using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 using Internal.Runtime.CompilerServices;
@@ -82,7 +81,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
 
-            _pointer = new ByReference<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), start));
+            _pointer = new ByReference<T>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(array), (nint)(uint)start /* force zero-extension */));
             _length = length;
         }
 
@@ -140,7 +139,7 @@ namespace System
             {
                 if ((uint)index >= (uint)_length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
-                return ref Unsafe.Add(ref _pointer.Value, index);
+                return ref Unsafe.Add(ref _pointer.Value, (nint)(uint)index /* force zero-extension */);
             }
         }
 
@@ -174,7 +173,7 @@ namespace System
         /// Always thrown by this method.
         /// </exception>
         /// </summary>
-        [Obsolete("Equals() on Span will always throw an exception. Use == instead.")]
+        [Obsolete("Equals() on Span will always throw an exception. Use the equality operator instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object? obj) =>
             throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
@@ -269,64 +268,39 @@ namespace System
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _pointer.Value), (nuint)_length * (nuint)(Unsafe.SizeOf<T>() / sizeof(nuint)));
+                SpanHelpers.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _pointer.Value), (uint)_length * (nuint)(Unsafe.SizeOf<T>() / sizeof(nuint)));
             }
             else
             {
-                SpanHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _pointer.Value), (nuint)_length * (nuint)Unsafe.SizeOf<T>());
+                SpanHelpers.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _pointer.Value), (uint)_length * (nuint)Unsafe.SizeOf<T>());
             }
         }
 
         /// <summary>
         /// Fills the contents of this span with the given value.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Fill(T value)
         {
             if (Unsafe.SizeOf<T>() == 1)
             {
-                uint length = (uint)_length;
-                if (length == 0)
-                    return;
-
-                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loop below.
-                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref tmp), length);
+#if MONO
+                // Mono runtime's implementation of initblk performs a null check on the address.
+                // We'll perform a length check here to avoid passing a null address in the empty span case.
+                if (_length != 0)
+#endif
+                {
+                    // Special-case single-byte types like byte / sbyte / bool.
+                    // The runtime eventually calls memset, which can efficiently support large buffers.
+                    // We don't need to check IsReferenceOrContainsReferences because no references
+                    // can ever be stored in types this small.
+                    Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref value), (uint)_length);
+                }
             }
             else
             {
-                // Do all math as nuint to avoid unnecessary 64->32->64 bit integer truncations
-                nuint length = (uint)_length;
-                if (length == 0)
-                    return;
-
-                ref T r = ref _pointer.Value;
-
-                // TODO: Create block fill for value types of power of two sizes e.g. 2,4,8,16
-
-                nuint elementSize = (uint)Unsafe.SizeOf<T>();
-                nuint i = 0;
-                for (; i < (length & ~(nuint)7); i += 8)
-                {
-                    Unsafe.AddByteOffset<T>(ref r, (i + 0) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 1) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 2) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 3) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 4) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 5) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 6) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 7) * elementSize) = value;
-                }
-                if (i < (length & ~(nuint)3))
-                {
-                    Unsafe.AddByteOffset<T>(ref r, (i + 0) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 1) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 2) * elementSize) = value;
-                    Unsafe.AddByteOffset<T>(ref r, (i + 3) * elementSize) = value;
-                    i += 4;
-                }
-                for (; i < length; i++)
-                {
-                    Unsafe.AddByteOffset<T>(ref r, i * elementSize) = value;
-                }
+                // Call our optimized workhorse method for all other types.
+                SpanHelpers.Fill(ref _pointer.Value, (uint)_length, value);
             }
         }
 
@@ -348,7 +322,7 @@ namespace System
 
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (uint)_length);
             }
             else
             {
@@ -369,7 +343,7 @@ namespace System
             bool retVal = false;
             if ((uint)_length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (nuint)_length);
+                Buffer.Memmove(ref destination._pointer.Value, ref _pointer.Value, (uint)_length);
                 retVal = true;
             }
             return retVal;
@@ -399,7 +373,7 @@ namespace System
             {
                 return new string(new ReadOnlySpan<char>(ref Unsafe.As<T, char>(ref _pointer.Value), _length));
             }
-            return string.Format("System.Span<{0}>[{1}]", typeof(T).Name, _length);
+            return $"System.Span<{typeof(T).Name}>[{_length}]";
         }
 
         /// <summary>
@@ -415,7 +389,7 @@ namespace System
             if ((uint)start > (uint)_length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return new Span<T>(ref Unsafe.Add(ref _pointer.Value, start), _length - start);
+            return new Span<T>(ref Unsafe.Add(ref _pointer.Value, (nint)(uint)start /* force zero-extension */), _length - start);
         }
 
         /// <summary>
@@ -443,7 +417,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 #endif
 
-            return new Span<T>(ref Unsafe.Add(ref _pointer.Value, start), length);
+            return new Span<T>(ref Unsafe.Add(ref _pointer.Value, (nint)(uint)start /* force zero-extension */), length);
         }
 
         /// <summary>
@@ -458,7 +432,7 @@ namespace System
                 return Array.Empty<T>();
 
             var destination = new T[_length];
-            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _pointer.Value, (nuint)_length);
+            Buffer.Memmove(ref MemoryMarshal.GetArrayDataReference(destination), ref _pointer.Value, (uint)_length);
             return destination;
         }
     }

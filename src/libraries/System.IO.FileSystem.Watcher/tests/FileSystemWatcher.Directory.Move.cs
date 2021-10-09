@@ -39,17 +39,18 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [SkipOnPlatform(TestPlatforms.OSX, "Not supported on OSX.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51393", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Directory_Move_Multiple_From_Watched_To_Unwatched(int filesCount)
         {
             DirectoryMove_Multiple_FromWatchedToUnwatched(filesCount, skipOldEvents: false);
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.FreeBSD)]
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "Not supported on FreeBSD.")]
         [InlineData(1)]
         [InlineData(2)]
         [InlineData(3)]
@@ -90,6 +91,27 @@ namespace System.IO.Tests
         public void Directory_Move_With_Set_NotifyFilter()
         {
             DirectoryMove_WithNotifyFilter(WatcherChangeTypes.Renamed);
+        }
+
+        [Fact]
+        public void Directory_Move_SynchronizingObject()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            {
+                TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
+                watcher.SynchronizingObject = invoker;
+
+                string sourcePath = dir.Path;
+                string targetPath = Path.Combine(testDirectory.Path, "target");
+
+                Action action = () => Directory.Move(sourcePath, targetPath);
+                Action cleanup = () => Directory.Move(targetPath, sourcePath);
+
+                ExpectEvent(watcher, WatcherChangeTypes.Renamed, action, cleanup, targetPath);
+                Assert.True(invoker.BeginInvoke_Called);
+            }
         }
 
         #region Test Helpers

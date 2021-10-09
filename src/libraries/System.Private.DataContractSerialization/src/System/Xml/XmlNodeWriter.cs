@@ -106,7 +106,7 @@ namespace System.Xml
         }
         public abstract void WriteQualifiedName(string prefix, XmlDictionaryString localName);
 
-        private class XmlNullNodeWriter : XmlNodeWriter
+        private sealed class XmlNullNodeWriter : XmlNodeWriter
         {
             public override void Flush() { }
             public override void Close() { }

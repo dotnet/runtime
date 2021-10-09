@@ -11,8 +11,40 @@ using System.Security.Authentication.ExtendedProtection;
 
 namespace System.Net.Http
 {
-    internal partial class AuthenticationHelper
+    internal static partial class AuthenticationHelper
     {
+        private const string UsePortInSpnCtxSwitch = "System.Net.Http.UsePortInSpn";
+        private const string UsePortInSpnEnvironmentVariable = "DOTNET_SYSTEM_NET_HTTP_USEPORTINSPN";
+
+        private static volatile int s_usePortInSpn = -1;
+
+        private static bool UsePortInSpn
+        {
+            get
+            {
+                int usePortInSpn = s_usePortInSpn;
+                if (usePortInSpn != -1)
+                {
+                    return usePortInSpn != 0;
+                }
+
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(UsePortInSpnCtxSwitch, out bool value))
+                {
+                    s_usePortInSpn = value ? 1 : 0;
+                }
+                else
+                {
+                    // AppContext switch wasn't used. Check the environment variable.
+                   s_usePortInSpn =
+                       Environment.GetEnvironmentVariable(UsePortInSpnEnvironmentVariable) is string envVar &&
+                       (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase)) ? 1 : 0;
+                }
+
+                return s_usePortInSpn != 0;
+            }
+        }
+
         private static Task<HttpResponseMessage> InnerSendAsync(HttpRequestMessage request, bool async, bool isProxyAuth, HttpConnectionPool pool, HttpConnection connection, CancellationToken cancellationToken)
         {
             return isProxyAuth ?
@@ -63,16 +95,12 @@ namespace System.Net.Http
                         if (response.Headers.ConnectionClose.GetValueOrDefault())
                         {
                             // Server is closing the connection and asking us to authenticate on a new connection.
-                            // expression returns null connection on error, was not able to use '!' for the expression
-#pragma warning disable CS8600
-                            (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
-#pragma warning restore CS8600
-                            if (response != null)
-                            {
-                                return response;
-                            }
 
-                            connectionPool.IncrementConnectionCount();
+                            // First, detach the current connection from the pool. This means it will no longer count against the connection limit.
+                            // Instead, it will be replaced by the new connection below.
+                            connection.DetachFromPool();
+
+                            connection = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
                             connection!.Acquire();
                             isNewConnection = true;
                             needDrain = false;
@@ -114,9 +142,9 @@ namespace System.Net.Http
                                 hostName = result.HostName;
                             }
 
-                            if (!isProxyAuth && !authUri.IsDefaultPort)
+                            if (!isProxyAuth && !authUri.IsDefaultPort && UsePortInSpn)
                             {
-                                hostName = $"{hostName}:{authUri.Port}";
+                                hostName = string.Create(null, stackalloc char[128], $"{hostName}:{authUri.Port}");
                             }
                         }
 
@@ -127,7 +155,7 @@ namespace System.Net.Http
                         }
 
                         ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
-                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection, channelBinding);
+                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBinding);
                         string? challengeData = challenge.ChallengeData;
                         try
                         {

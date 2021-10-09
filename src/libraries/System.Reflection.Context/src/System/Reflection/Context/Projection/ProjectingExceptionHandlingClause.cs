@@ -7,7 +7,7 @@ using System.Reflection.Context.Delegation;
 namespace System.Reflection.Context.Projection
 {
     // Recursively 'projects' any assemblies, modules, types and members returned by a given exception handling clause
-    internal class ProjectingExceptionHandlingClause : DelegatingExceptionHandlingClause
+    internal sealed class ProjectingExceptionHandlingClause : DelegatingExceptionHandlingClause
     {
         private readonly Projector _projector;
 
@@ -19,7 +19,7 @@ namespace System.Reflection.Context.Projection
             _projector = projector;
         }
 
-        public override Type CatchType
+        public override Type? CatchType
         {
             get { return _projector.ProjectType(base.CatchType); }
         }

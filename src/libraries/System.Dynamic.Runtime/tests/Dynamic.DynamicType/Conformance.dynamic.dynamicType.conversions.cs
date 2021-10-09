@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions.common.common;
+using System;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions.common.common
@@ -4355,6 +4356,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions.dlgate003.dlgate003
 {
+    using System;
+    
     // <Title>Delegate conversions</Title>
     // <Description>
     // Tests to figure out if the right conversion from method groups to delegates are applied
@@ -4374,6 +4377,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/55117", typeof(PlatformDetection), nameof(PlatformDetection.IsLinqExpressionsBuiltWithIsInterpretingOnly))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

@@ -9,7 +9,7 @@ namespace Test {
 		}
 
 		public static int Main() {
-			val v = new val (1);;
+			val v = new val (1);
 			Console.WriteLine (v.ToString());
 			return 0;
 		}

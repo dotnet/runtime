@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyModel
         public CompilationLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable)
@@ -24,12 +24,12 @@ namespace Microsoft.Extensions.DependencyModel
         public CompilationLibrary(string type,
             string name,
             string version,
-            string hash,
+            string? hash,
             IEnumerable<string> assemblies,
             IEnumerable<Dependency> dependencies,
             bool serviceable,
-            string path,
-            string hashPath)
+            string? path,
+            string? hashPath)
             : base(type, name, version, hash, dependencies, serviceable, path, hashPath)
         {
             if (assemblies == null)
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (!resolver.TryResolveAssemblyPaths(this, assemblies))
             {
-                throw new InvalidOperationException($"Cannot find compilation library location for package '{Name}'");
+                throw new InvalidOperationException(SR.Format(SR.LibraryLocationNotFound, Name));
             }
             return assemblies;
         }

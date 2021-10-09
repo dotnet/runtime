@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxUdpStatistics : UdpStatistics
+    internal sealed class LinuxUdpStatistics : UdpStatistics
     {
         private readonly UdpGlobalStatisticsTable _table;
         private readonly int _udpListeners;
@@ -28,6 +29,7 @@ namespace System.Net.NetworkInformation
 
         public override long DatagramsSent { get { return _table.OutDatagrams; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long IncomingDatagramsDiscarded { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long IncomingDatagramsWithErrors { get { return _table.InErrors; } }

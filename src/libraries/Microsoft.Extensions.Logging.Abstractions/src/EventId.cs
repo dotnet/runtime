@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
@@ -44,7 +46,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="id">The numeric identifier for this event.</param>
         /// <param name="name">The name of this event.</param>
-        public EventId(int id, string name = null)
+        public EventId(int id, string? name = null)
         {
             Id = id;
             Name = name;
@@ -58,7 +60,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Gets the name of this event.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <inheritdoc />
         public override string ToString()
@@ -77,7 +79,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <inheritdoc />
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (obj is null)
             {

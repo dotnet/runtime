@@ -52,10 +52,6 @@ variables:
 stages:
 - stage: Build
   jobs:
-  #
-  # Checkout repository
-  #
-  - template: /eng/pipelines/common/checkout-job.yml
 
   #
   # Build with Debug config and Checked runtimeConfiguration
@@ -87,12 +83,13 @@ stages:
       - Linux_x64
       - windows_x64
       jobParameters:
+        timeoutInMinutes: 100
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         testGroup: innerloop
         extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
         extraStepsParameters:
           uploadLibrariesTests: ${{ eq(variables.isOfficialBuild, false) }}
-          uploadUnsignedArtifacts: false
+          uploadIntermediateArtifacts: false
         ${{ if eq(variables.isOfficialBuild, false) }}:
           buildArgs: -s clr+libs+libs.tests+host+packs -c $(_BuildConfig) /p:ArchiveTests=true
         ${{ if eq(variables.isOfficialBuild, true) }}:
@@ -115,7 +112,7 @@ stages:
         ${{ if eq(variables.isOfficialBuild, true) }}:
           extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml
           extraStepsParameters:
-            uploadUnsignedArtifacts: true
+            uploadIntermediateArtifacts: true
             isOfficialBuild: true
             librariesBinArtifactName: libraries_bin_official_allconfigurations
 

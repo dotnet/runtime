@@ -17,5 +17,6 @@ namespace Microsoft.NET.HostModel.Bundle
         BundleOtherFiles = 2,
         BundleSymbolFiles = 4,
         BundleAllContent = BundleNativeBinaries | BundleOtherFiles,
+        EnableCompression = 8,
     };
 }

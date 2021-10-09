@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokenProducer">Produces the change token.</param>
         /// <param name="changeTokenConsumer">Action called when the token changes.</param>
         /// <returns></returns>
-        public static IDisposable OnChange(Func<IChangeToken> changeTokenProducer, Action changeTokenConsumer)
+        public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Action changeTokenConsumer)
         {
             if (changeTokenProducer == null)
             {
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="changeTokenConsumer">Action called when the token changes.</param>
         /// <param name="state">state for the consumer.</param>
         /// <returns></returns>
-        public static IDisposable OnChange<TState>(Func<IChangeToken> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
+        public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
         {
             if (changeTokenProducer == null)
             {
@@ -53,22 +53,22 @@ namespace Microsoft.Extensions.Primitives
             return new ChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
 
-        private class ChangeTokenRegistration<TState> : IDisposable
+        private sealed class ChangeTokenRegistration<TState> : IDisposable
         {
-            private readonly Func<IChangeToken> _changeTokenProducer;
+            private readonly Func<IChangeToken?> _changeTokenProducer;
             private readonly Action<TState> _changeTokenConsumer;
             private readonly TState _state;
-            private IDisposable _disposable;
+            private IDisposable? _disposable;
 
             private static readonly NoopDisposable _disposedSentinel = new NoopDisposable();
 
-            public ChangeTokenRegistration(Func<IChangeToken> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
+            public ChangeTokenRegistration(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
             {
                 _changeTokenProducer = changeTokenProducer;
                 _changeTokenConsumer = changeTokenConsumer;
                 _state = state;
 
-                IChangeToken token = changeTokenProducer();
+                IChangeToken? token = changeTokenProducer();
 
                 RegisterChangeTokenCallback(token);
             }
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Primitives
                 //
                 // If the token changes after we take the token, then we'll process the update immediately upon
                 // registering the callback.
-                IChangeToken token = _changeTokenProducer();
+                IChangeToken? token = _changeTokenProducer();
 
                 try
                 {
@@ -93,14 +93,14 @@ namespace Microsoft.Extensions.Primitives
                 }
             }
 
-            private void RegisterChangeTokenCallback(IChangeToken token)
+            private void RegisterChangeTokenCallback(IChangeToken? token)
             {
                 if (token is null)
                 {
                     return;
                 }
 
-                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>)s).OnChangeTokenFired(), this);
+                IDisposable registraton = token.RegisterChangeCallback(s => ((ChangeTokenRegistration<TState>?)s)!.OnChangeTokenFired(), this);
 
                 SetDisposable(registraton);
             }
@@ -110,7 +110,7 @@ namespace Microsoft.Extensions.Primitives
                 // We don't want to transition from _disposedSentinel => anything since it's terminal
                 // but we want to allow going from previously assigned disposable, to another
                 // disposable.
-                IDisposable current = Volatile.Read(ref _disposable);
+                IDisposable? current = Volatile.Read(ref _disposable);
 
                 // If Dispose was called, then immediately dispose the disposable
                 if (current == _disposedSentinel)
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Primitives
                 }
 
                 // Otherwise, try to update the disposable
-                IDisposable previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
+                IDisposable? previous = Interlocked.CompareExchange(ref _disposable, disposable, current);
 
                 if (previous == _disposedSentinel)
                 {
@@ -129,7 +129,7 @@ namespace Microsoft.Extensions.Primitives
                 }
                 else if (previous == current)
                 {
-                    // We successfuly assigned the _disposable field to disposable
+                    // We successfully assigned the _disposable field to disposable
                 }
                 else
                 {
@@ -142,10 +142,10 @@ namespace Microsoft.Extensions.Primitives
             {
                 // If the previous value is disposable then dispose it, otherwise,
                 // now we've set the disposed sentinel
-                Interlocked.Exchange(ref _disposable, _disposedSentinel).Dispose();
+                Interlocked.Exchange(ref _disposable, _disposedSentinel)?.Dispose();
             }
 
-            private class NoopDisposable : IDisposable
+            private sealed class NoopDisposable : IDisposable
             {
                 public void Dispose()
                 {

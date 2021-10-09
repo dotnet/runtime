@@ -112,7 +112,7 @@ namespace System.Linq.Parallel
         // The enumerator type responsible for executing the last operation.
         //
 
-        private class LastQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
+        private sealed class LastQueryOperatorEnumerator<TKey> : QueryOperatorEnumerator<TSource, int>
         {
             private readonly QueryOperatorEnumerator<TSource, TKey> _source; // The data source to enumerate.
             private readonly Func<TSource, bool>? _predicate; // The optional predicate used during the search.
@@ -173,7 +173,7 @@ namespace System.Linq.Parallel
                     while (_source.MoveNext(ref value!, ref key))
                     {
                         if ((loopCount & CancellationState.POLL_INTERVAL) == 0)
-                            _cancellationToken.ThrowIfCancellationRequested();;
+                            _cancellationToken.ThrowIfCancellationRequested();
 
                         // If the predicate is null or the current element satisfies it, we will remember
                         // it as the current partition's candidate for the last element, and move on.
@@ -234,7 +234,7 @@ namespace System.Linq.Parallel
         }
 
 
-        private class LastQueryOperatorState<TKey>
+        private sealed class LastQueryOperatorState<TKey>
         {
             internal TKey _key = default!;
             internal int _partitionId = -1;

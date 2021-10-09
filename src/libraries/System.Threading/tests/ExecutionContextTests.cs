@@ -62,6 +62,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51400", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void FlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -169,6 +170,7 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51400", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void CaptureThenSuppressThenRunFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -237,14 +239,19 @@ namespace System.Threading.Tests
             }
             VerifyExecutionContext(ExecutionContext.Capture(), asyncLocal, expectedValue);
 
+            // Creating a thread flows context if and only if flow is not suppressed
             int asyncLocalValue = -1;
-            var done = new ManualResetEvent(false);
-            ThreadPool.QueueUserWorkItem(
-                state =>
-                {
-                    asyncLocalValue = asyncLocal.Value;
-                    done.Set();
-                });
+            ThreadTestHelpers.RunTestInBackgroundThread(() => asyncLocalValue = asyncLocal.Value);
+            Assert.Equal(expectedValue, asyncLocalValue);
+
+            // Queueing a thread pool work item flows context if and only if flow is not suppressed
+            asyncLocalValue = -1;
+            var done = new AutoResetEvent(false);
+            ThreadPool.QueueUserWorkItem(state =>
+            {
+                asyncLocalValue = asyncLocal.Value;
+                done.Set();
+            });
             done.CheckedWait();
             Assert.Equal(expectedValue, asyncLocalValue);
         }

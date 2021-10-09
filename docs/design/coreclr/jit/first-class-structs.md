@@ -16,13 +16,8 @@ Secondary Objectives
 * No “swizzling” or lying about struct types – they are always struct types
  - No confusing use of GT_LCL_FLD to refer to the entire struct as a different type
 
-Normalizing Struct Types
-------------------------
-We would like to facilitate full enregistration of structs with the following properties:
-1. Its fields are infrequently accessed, and
-1. The entire struct fits into a register, and
-2. Its value is used or defined in a register
-(i.e. as an argument to or return value from calls or intrinsics).
+Struct Types in RyuJIT
+----------------------
 
 In RyuJIT, the concept of a type is very simplistic (which helps support the high throughput
 of the JIT). Rather than a symbol table to hold the properties of a type, RyuJIT primarily
@@ -36,14 +31,18 @@ As a result, struct types are generally treated as an opaque type
 In order to treat fully-enregisterable struct types as "first class" types in RyuJIT, we
  created new types to represent vectors, in order for the JIT to support operations on them:
 * `TYP_SIMD8`, `TYP_SIMD12`, `TYP_SIMD16` and (where supported by the target) `TYP_SIMD32`.
- - These types already exist, and represent some already-completed steps toward First Class Structs.
+ - The are used to implement both the platform-independent (`Vector2`, `Vector3`, `Vector4` and `Vector<T>`)
+   types as well as the types used for platform-specific hardware intrinsics ('`Vector64<T>`, `Vector128<T>`
+   and `Vector256<T>`).
+ - These types are useful not only for enregistration purposes, but also because we can have
+   values of these types that are produced by computational `SIMD` and `HWIntrinsic` nodes.
 
  We had previously proposed to create additional types to be used where struct types of the given size are
  passed and/or returned in registers:
  * `TYP_STRUCT1`, `TYP_STRUCT2`, `TYP_STRUCT4`, `TYP_STRUCT8` (on 64-bit systems)
 
-However, further discussions have suggested that this may not be necessary. Rather, storage decisions
-should largely be deferred to the backend (`Lowering` and register allocation).
+However, further investigation and implementation has suggested that this may not be necessary.
+Rather, storage decisions should largely be deferred to the backend (`Lowering` and register allocation).
 
 The following transformations need to be supported effectively for all struct types:
 - Optimizations such as CSE and assertion propagation
@@ -61,8 +60,9 @@ over the JIT/EE interface. This includes:
 
 With the changes from @mikedn in
 [#21705 Pull struct type info out of GenTreeObj](https://github.com/dotnet/coreclr/pull/21705)
-this information is captured in a `ClassLayout` object. This will make it possible to retain
-this shape information on all struct-typed nodes, without impacting node size.
+this information is captured in a `ClassLayout` object which captures the size and GC layout of a struct type.
+The associated `ClassLayoutTable` on the `Compiler` object which supports lookup. This enables associating this
+this shape information with all struct-typed nodes, without impacting node size.
 
 Current Representation of Struct Values
 ---------------------------------------
@@ -75,8 +75,10 @@ encountered by most phases of the JIT:
     into the array info map.
   * Proposed: This should be transformed into a `GT_OBJ` when it represents a struct type, and then the
     class handle would no longer need to be obtained from the array info map.
-* `GT_FIELD`: This is transformed to a `GT_LCL_FLD` or a `GT_IND`
-  * Proposed: A struct typed field should be transformed into a `GT_OBJ`.
+* `GT_FIELD`: This is transformed to a `GT_LCL_VAR` by the `Compiler::fgMarkAddressExposedLocals()` phase
+  if it's a promoted struct field, or to a `GT_LCL_FLD` or GT_IND` by `fgMorphField()`.
+  * Proposed: A non-promoted struct typed field should be transformed into a `GT_OBJ`, so that consistently all struct
+    nodes, even r-values, have `ClassLayout`.
 * `GT_MKREFANY`: This produces a "known" struct type, which is currently obtained by
   calling `impGetRefAnyClass()` which is a call over the JIT/EE interface. This node is always
   eliminated, and its source address used to create a copy. If it is on the rhs
@@ -87,7 +89,7 @@ encountered by most phases of the JIT:
 
 ### Struct “objects” as lvalues
 
-* The lhs of a struct assignment is a block node or local
+* The lhs of a struct assignment is a block or local node:
   * `GT_OBJ` nodes represent the “shape” info via a struct handle, along with the GC info
     (location and type of GC references within the struct).
     * These are currently used only to represent struct values that contain GC references (although see below).
@@ -116,11 +118,12 @@ Structs only appear as rvalues in the following contexts:
     [#23739 Block the hoisting of TYP_STRUCT rvalues in loop hoisting](https://github.com/dotnet/coreclr/pull/23739)
 
 * As a call argument
-  * In this context, it must be one of: `GT_OBJ`, `GT_LCL_VAR`, `GT_LCL_FLD` or `GT_FIELD_LIST`
+  * In this context, it must be one of: `GT_OBJ`, `GT_LCL_VAR`, `GT_LCL_FLD` or `GT_FIELD_LIST`.
 
 * As an operand to a hardware or SIMD intrinsic (for `TYP_SIMD*` only)
   * In this case the struct handle is generally assumed to be unneeded, as it is captured (directly or
     indirectly) in the `GT_SIMD` or `GT_HWINTRINSIC` node.
+  * It would simplify both the recognition and optimization of these nodes if they carried a `ClassLayout`.
 
 After morph, a struct-typed value on the RHS of assignment is one of:
 * `GT_IND`: in this case the LHS is expected to provide the struct handle
@@ -128,16 +131,23 @@ After morph, a struct-typed value on the RHS of assignment is one of:
 * `GT_CALL`
 * `GT_LCL_VAR`
 * `GT_LCL_FLD`
-  * Proposed: `GT_LCL_FLD` would never be used to represent a reference to the full struct (e.g. as a different type).
+  * Note: With `compDoOldStructRetyping()`, a GT_LCL_FLD` with a primitive type of the same size as the struct
+    is used to represent a reference to the full struct when it is passed in a register.
+    This forces the struct to live on the stack, and makes it more difficult to optimize these struct values,
+    which is why this mechanism is being phased out.
 * `GT_SIMD`
 * `GT_OBJ` nodes can also be used as rvalues when they are call arguments
   * Proposed: `GT_OBJ` nodes can be used in any context where a struct rvalue or lvalue might occur,
     except after morph when the struct is independently promoted.
 
+Ideally, we should be able to obtain a valid `CLASS_HANDLE` for any struct-valued node.
+Once that is the case, we should be able to transform most or all uses of `gtGetStructHandleIfPresent()` to
+`gtGetStructHandle()`.
+
 Struct IR Phase Transitions
 ---------------------------
 
-There are three phases in the JIT that make changes to the representation of struct nodes and lclVars:
+There are three main phases in the JIT that make changes to the representation of struct nodes and lclVars:
 
 * Importer
   * Vector types are normalized to the appropriate `TYP_SIMD*` type. Other struct nodes have `TYP_STRUCT`.
@@ -163,8 +173,8 @@ There are three phases in the JIT that make changes to the representation of str
         registers. The necessary transformations for correct code generation would be
         made in `Lowering`.
 
-    * If it is passed in a single register, it is morphed into a `GT_LCL_FLD` node of the appropriate
-      type.
+    * With `compDoOldStructRetyping()`, if it is passed in a single register, it is morphed into a
+     `GT_LCL_FLD` node of the appropriate primitive type.
       * This may involve making a copy, if the size cannot be safely loaded.
       * Proposed: This would remain a `GT_OBJ` and would be appropriately transformed in `Lowering`,
         e.g. using `GT_BITCAST`.
@@ -179,6 +189,8 @@ There are three phases in the JIT that make changes to the representation of str
       * Proposed: This transformation would also be deferred until `Lowering`, at which time the
         liveness information can provide `lastUse` information to allow a dead struct to be passed
         directly by reference instead of being copied.
+        Related: [\#4524 Add optimization to avoid copying a struct if passed by reference and there are no
+  writes to and no reads after passed to a callee](https://github.com/dotnet/runtime/issues/4524)
 
 It is proposed to add the following transformations in `Lowering`:
 * Transform struct values that are passed to or returned from calls by creating one or more of the following:
@@ -190,7 +202,7 @@ It is proposed to add the following transformations in `Lowering`:
 
 Work Items
 ----------
-This is a preliminary breakdown of the work into somewhat separable tasks.
+This is a rough breakdown of the work into somewhat separable tasks.
 These work items are organized in priority order. Each work item should be able to
 proceed independently, though the aggregate effect of multiple work items may be greater
 than the individual work items alone.
@@ -201,7 +213,7 @@ This includes all copies and IR transformations that are only required to pass o
 as required by the ABI.
 
 Other transformations would remain:
-  * Copies required to satisfy ordering constraints
+  * Copies required to satisfy ordering constraints.
   * Transformations (e.g. `GT_FIELD_LIST` creation) required to expose references
     to promoted struct fields.
 
@@ -209,20 +221,29 @@ This would be done in multiple phases:
   * First, move transformations other than those listed above to `Lowering`, but retain any "pessimizations"
     (e.g. marking nodes as `GTF_DONT_CSE` or marking lclVars as `lvDoNotEnregister`)
   * Add support for passing vector types in the SSE registers for x64/ux
-    * This will also involve modifying code in the VM. See [#23675 Arm64 Vector ABI](https://github.com/dotnet/coreclr/pull/23675)
-      for a general idea of the kinds of VM changes that may be required.
-  * Defer retyping of struct return types (`Compiler::impFixupStructReturnType()` and
-    `Compiler::impFixupCallStructReturn()`)
-    * This is probably the "right" way to fix [#13355](https://github.com/dotnet/runtime/issues/13355).
+    * This will also involve modifying code in the VM.
+      [#23675 Arm64 Vector ABI](https://github.com/dotnet/coreclr/pull/23675) added similar support
+      for Arm64. The https://github.com/CarolEidt/runtime/tree/X64Vector16ABI branch was intended to
+      add this support for 16 byte vectors for .NET 5, but didn't make it into that release.
+      The https://github.com/CarolEidt/runtime/tree/FixX64VectorABI branch was an earlier attempt
+      to support both 16 and 32 byte vectors, but was abandoned in favor of doing just 16 byte vectors
+      first.
   * Next, eliminate the "pessimizations".
     * For cases where `GT_LCL_FLD` is currently used to "retype" the struct, change it to use *either*
       `GT_LCL_FLD`, if it is already address-taken, or to use a `GT_BITCAST` otherwise.
-      * This work item should address issue #1161 (test is `JIT\Regressions\JitBlue\GitHub_1161`) and #8828.
+      * This work item should address issue [#4323 RyuJIT properly optimizes structs with a single field
+        if the field type is int but not if it is double](https://github.com/dotnet/runtime/issues/4323)
+        (test is `JIT\Regressions\JitBlue\GitHub_1161`),
+        [#7200 Struct getters are generating unneccessary
+        instructions on x64 when struct contains floats](https://github.com/dotnet/runtime/issues/7200)
+        and [#11413 Inefficient codegen for casts between same size types](https://github.com/dotnet/runtime/issues/11413).
+    * Remove the pessimization in `LocalAddressVisitor::PostOrderVisit()` for the `GT_RETURN` case.
     * Add support in prolog to extract fields, and remove the restriction of not promoting incoming reg
-      structs that have more than one field. Note that SIMD types are already reassembled in the prolog.
+      structs whose fields do not match the register count or types.
+      Note that SIMD types are already reassembled in the prolog.
     * Add support in `Lowering` and `CodeGen` to handle call arguments where the fields of a promoted struct
-      must be extracted or reassembled in order to pass the struct in non-matching registers. This includes
-      producing the appropriate IR.
+      must be extracted or reassembled in order to pass the struct in non-matching registers. This probably
+      includes producing the appropriate IR, in order to correctly represent the register requirements.
     * Add support for extracting the fields for the returned struct value of a call (in registers or on
       stack), producing the appropriate IR.
     * Add support for assembling non-matching fields into registers for call args and returns.
@@ -232,16 +253,21 @@ This would be done in multiple phases:
   * Other ABI-related issues:
     * [#7048](https://github.com/dotnet/runtime/issues/7048) - code generation for x86 promoted struct args.
 
-Related issues: #1133 (maybe), #4766, #23675, #23129
+Related issues:
+  * [#4308 JIT: Excessive copies when inlining](https://github.com/dotnet/runtime/issues/4308) (maybe).
+    Test is `JIT\Regressions\JitBlue\GitHub_1133`.
+  * [#12219 Inlined struct copies via params, returns and assignment not elided](https://github.com/dotnet/runtime/issues/12219)
 
 ### Fully Enable Struct Optimizations
 
 Most of the existing places in the code where structs are handled conservatively are marked
 with `TODO-1stClassStructs`. This work item involves investigating these and making the
 necessary improvements (or determining that they are infeasible and removing the `TODO`).
-Some of these, such as the handling of `TYP_SIMD8` in LSRA, may be addressed by other work items.
 
-Related: #2003, #18542 (maybe), #19733 (maybe)
+Related:
+
+* [#4659 JIT - slow generated code on Release for iterating simple array of struct](https://github.com/dotnet/runtime/issues/4659)
+* [#11000 Strange codegen with struct forwarding implementation to another struct](https://github.com/dotnet/runtime/issues/11000) (maybe)
 
 ### Support Full Enregistration of Struct Types
 
@@ -254,15 +280,15 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
     as needed to extract the field from the register(s).
     * An initial investigation should be undertaken to determine if this is worthwhile.
 
-  * Related: #11407, #17257
+  * Related: [#10045 Accessing a field of a Vector4 causes later codegen to be inefficient if inlined](https://github.com/dotnet/runtime/issues/10045)
 
 ###  Improve Struct Promotion
 
- * Support recursive (nested) struct promotion, especially when struct field itself has a single field
-   (#10019, #9594, #7313)
+ * Support recursive (nested) struct promotion, especially when struct field itself has a single field:
+   * [#7576 Recursive Promotion of structs containing fields of structs with a single pointer-sized field](https://github.com/dotnet/runtime/issues/7576)
+   * [#7441 RyuJIT: Allow promotions of structs with fields of struct containing a single primitive field](https://github.com/dotnet/runtime/issues/7441)
+   * [#6707 RyuJIT x86: allow long-typed struct fields to be recursively promoted](https://github.com/dotnet/runtime/issues/6707)
  * Support partial struct promotion when some fields are more frequently accessed.
- * Aggressively promote lclVar struct incoming or outgoing args or returns whose fields match the ABI requirements.
-   * This should address [\#13417](https://github.com/dotnet/runtime/issues/13417).
  * Aggressively promote pointer-sized fields of structs used as args or returns
  * Allow struct promotion of locals that are passed or returned in a way that doesn't match
    the field types.
@@ -270,8 +296,11 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
    This would complicate type analysis when copied, passed or returned, but would avoid unnecessarily expanding
    the lclVar data structures.
  * Allow promotion of 32-byte SIMD on 16-byte alignment [\#12623](https://github.com/dotnet/runtime/issues/12623)
- * Related: #6839, #9477, #16887
- * Also, #11888, which suggests adding a struct promotion stress mode.
+ * Related:
+   * [#6534 Promote (scalar replace) structs with more than 4 fields](https://github.com/dotnet/runtime/issues/6534)
+   * [#7395 Heuristic meant to promote structs with no field access should consider the impact of passing to/from a call ](https://github.com/dotnet/runtime/issues/7395)
+   * [#9916 RyuJIT generates poor code for a helper method which does return Method(value, value)](https://github.com/dotnet/runtime/issues/9916)
+   * [#8227 JIT: add struct promotion stress mode](https://github.com/dotnet/runtime/issues/8227).
 
 ### <a name="Block-Assignments"></a>Improve and Simplify Block and Block Assignment Morphing
 
@@ -289,20 +318,30 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
   wrapped in `OBJ(ADDR(...))`. We should be able to change the IND to OBJ and avoid wrapping, and should also be
   able to remove the class handle from the array info map and instead used the one provided by the `GT_OBJ`.
 
+### Miscellaneous Cleanup
+
+These are all marked with `TODO-1stClassStructs` or `TODO-Cleanup` in the last case:
+
+* The handling of `DYN_BLK` is unnecessarily complicated to duplicate previous behavior (i.e. to enable previous
+  refactorings to be zero-diff). These nodes are infrequent so the special handling should just be eliminated
+  (e.g. see `GenTree::GetChild()`).
+
+* The checking at the end of `gtNewTempAssign()` should be simplified.
+
+* When we create a struct assignment, we use `impAssignStruct()`. This code will, in some cases, create
+  or re-create address or block nodes when not necessary.
+
+* For Linux X64, the handling of arguments could be simplified. For a single argument (or for the same struct
+  class), there may be multiple calls to `eeGetSystemVAmd64PassStructInRegisterDescriptor()`, and in some cases
+  (e.g. look for the `TODO-Cleanup` in `fgMakeTmpArgNode()`) there are awkward workarounds to avoid additional
+  calls. It might be useful to cache the struct descriptors so we don't have to call across the JIT/EE interface
+  for the same struct class more than once. It would also potentially be useful to save the descriptor for the
+  current method return type on the `Compiler` object for use when handling `RETURN` nodes.
+
 Struct-Related Issues in RyuJIT
 -------------------------------
 The following issues illustrate some of the motivation for improving the handling of value types
-(structs) in RyuJIT:
-
-* [\#8016 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/runtime/issues/8016), also VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
-  * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
-    instead generates many unnecessary copies. It is addressed by full enregistration of
-    structs that fit into a register. See [Support Full Enregistration of Struct Types](#support-full-enregistration-of-struct-types):
-
-```C#
-struct foo { public byte b1, b2, b3, b4; }
-static foo getfoo() { return new foo(); }
-```
+(structs) in RyuJIT (these issues are also cited above, in the applicable sections):
 
 * [\#4308 JIT: Excessive copies when inlining](https://github.com/dotnet/runtime/issues/4308)
   * The scenario given in this issue involves a struct that is larger than 8 bytes, so
@@ -321,7 +360,7 @@ static foo getfoo() { return new foo(); }
     for when to promote and enregister structs.
   * Related: [\#7200](https://github.com/dotnet/runtime/issues/7200)
 
-* [\#1636 Add optimization to avoid copying a struct if passed by reference and there are no
+* [\#4524 Add optimization to avoid copying a struct if passed by reference and there are no
   writes to and no reads after passed to a callee](https://github.com/dotnet/runtime/issues/4524).
   * This issue is related to #1133, except that in this case the desire is to
     eliminate unneeded copies locally (i.e. not just due to inlining), in the case where
@@ -331,29 +370,11 @@ static foo getfoo() { return new foo(); }
 * [\#10879 Unix: Unnecessary struct copy while passing struct of size <=16](https://github.com/dotnet/runtime/issues/10879)
 * [\#9839 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/runtime/issues/9839)
   * These require changing both the callsite and the callee to avoid copying the parameter onto the stack.
+  * It may be that these have been addressed by [PR #43870](https://github.com/dotnet/runtime/pull/43870).
 
-* [\#5112 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
-  enregisterable struct in two return registers](https://github.com/dotnet/runtime/issues/5112)
-  * This issue could be addressed without First Class Structs. However, it
-    should be done along with the streamlining of the handling of ABI-specific struct passing
-    and return values.
-
-* [\#5785 Pi-Digits: Extra Struct copies of BigInteger](https://github.com/dotnet/runtime/issues/5785)
-  * In addition to suffering from the same issue as #1133, this has a struct that is promoted even though it is
-    passed (by reference) to its non-inlined constructor. This means that any copy to/from this struct will be field-by-field.
-
-* [\#8186 Extra zeroing with structs and inlining](https://github.com/dotnet/runtime/issues/8186)
-  * This issue illustrates the failure of the JIT to eliminate zero-initialization of structs that are subsequently fully
-    defined. It is a related but somewhat different manifestation of the issue in #1133, i.e. that structs are not
-    fully supported in value numbering and optimization.
-
-* [\#8571 JIT: inefficient codegen for calls returning 16-byte structs on Linux x64](https://github.com/dotnet/runtime/issues/8571)
-  * This is related to #3144, and requires supporting the assignment of a multi-reg call return into a promoted local variable,
-    and enabling subsequent elimination of any redundant copies.
-
-* [\#11992](https://github.com/dotnet/runtime/issues/11992) and [\#11940](https://github.com/dotnet/runtime/issues/11940)
-  * These are both cases where we introduce a `GT_LCL_FLD` to retype a value that needs
-    to be passed in a register.
+* [\#11992](https://github.com/dotnet/runtime/issues/11992)
+  * This is a case where we introduce a `GT_LCL_FLD` to retype a value that needs
+    to be passed in a register. It may have been addressed by [PR #37745](https://github.com/dotnet/runtime/pull/37745)
 
 ## Other Struct-related Issues
 
@@ -363,287 +384,3 @@ static foo getfoo() { return new foo(); }
 
 * [#6858](https://github.com/dotnet/runtime/issues/6858)
   * Addressing mode expression optimization for struct fields
-
-Sample IR
----------
-
-*** Note: These IR samples have not been updated to correspond to the current state of the IR ***
-
-### Bug 11407
-#### Before
-
-The `getfoo` method initializes a struct of 4 bytes.
-The dump of the (single) local variable is included to show the change from `struct (8)` to
-`struct4`, as the "exact size" of the struct is 4 bytes.
-Here is the IR after Import:
-
-```
-;  V00 loc0           struct ( 8)
-
-   ▌  stmtExpr  void  (top level) (IL 0x000...  ???)
-   │  ┌──▌  const     int    4
-   └──▌  initBlk   void
-      │  ┌──▌  const     int    0
-      └──▌  <list>    void
-         └──▌  addr      byref
-            └──▌  lclVar    struct V00 loc0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  return    int
-      └──▌  lclFld    int    V00 loc0         [+0]
-```
-This is how it currently looks just before code generation:
-```
-   ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
-   │  ┌──▌  const     int    0 REG rax $81
-   │  ├──▌  &lclVar   byref  V00 loc0         d:3 REG NA
-   └──▌  storeIndir int    REG NA
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...0x009)
-   │  ┌──▌  lclFld    int    V00 loc0         u:3[+0] (last use) REG rax $180
-   └──▌  return    int    REG NA $181
-```
-And here is the resulting code:
-```
-  push     rax
-  xor      rax, rax
-  mov      qword ptr [V00 rsp], rax
-  xor      eax, eax
-  mov      dword ptr [V00 rsp], eax
-  mov      eax, dword ptr [V00 rsp]
-  add      rsp, 8
-  ret
-```
-#### After
-Here is the IR after Import with the prototype First Class Struct changes.
-Note that the fixed-size struct variable is assigned and returned just as for a scalar type.
-
-```
-;  V00 loc0          struct4
-
-   ▌  stmtExpr  void  (top level) (IL 0x000...  ???)
-   │  ┌──▌  const     int    0
-   └──▌  =         struct4 (init)
-      └──▌  lclVar    struct4 V00 loc0
-
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  return    struct4
-      └──▌  lclVar    struct4    V00 loc0
-```
-And Here is the resulting code just prior to code generation:
-```
-   ▌  stmtExpr  void  (top level) (IL 0x008...0x009)
-   │  ┌──▌  const     struct4    0 REG rax $81
-   └──▌  return    struct4    REG NA $140
-```
-Finally, here is the resulting code that we were hoping to achieve:
-```
-  xor      eax, eax
-```
-
-### Issue 1133:
-#### Before
-
-Here is the IR after Inlining for the `TestValueTypesInInlinedMethods` method that invokes a
-sequence of methods that are inlined, creating a sequence of copies.
-Because this struct type does not fit into a single register, the types do not change (and
-therefore the local variable table is not shown).
-
-```
-   ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
-   │  ┌──▌  const     int    16
-   └──▌  initBlk   void
-      │  ┌──▌  const     int    0
-      └──▌  <list>    void
-         └──▌  addr      byref
-            └──▌  lclVar    struct V00 loc0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     int    16
-   └──▌  copyBlk   void
-      │  ┌──▌  addr      byref
-      │  │  └──▌  lclVar    struct V00 loc0
-      └──▌  <list>    void
-         └──▌  addr      byref
-            └──▌  lclVar    struct V01 tmp0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     int    16
-   └──▌  copyBlk   void
-      │  ┌──▌  addr      byref
-      │  │  └──▌  lclVar    struct V01 tmp0
-      └──▌  <list>    void
-         └──▌  addr      byref
-            └──▌  lclVar    struct V02 tmp1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     int    16
-   └──▌  copyBlk   void
-      │  ┌──▌  addr      byref
-      │  │  └──▌  lclVar    struct V02 tmp1
-      └──▌  <list>    void
-         └──▌  addr      byref
-            └──▌  lclVar    struct V03 tmp2
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-      ├──▌  const     long   0x7ff918494e10
-      └──▌  const     int    1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     int    16
-   └──▌  copyBlk   void
-      │  ┌──▌  addr      byref
-      │  │  └──▌  lclVar    struct V03 tmp2
-      └──▌  <list>    void
-         │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref
-            └──▌  field     ref    s_dt
-
-   ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void
-```
-And here is the resulting code:
-```
-sub      rsp, 104
-xor      rax, rax
-mov      qword ptr [V00 rsp+58H], rax
-mov      qword ptr [V00+0x8 rsp+60H], rax
-xor      rcx, rcx
-lea      rdx, bword ptr [V00 rsp+58H]
-vxorpd   ymm0, ymm0
-vmovdqu  qword ptr [rdx], ymm0
-vmovdqu  ymm0, qword ptr [V00 rsp+58H]
-vmovdqu  qword ptr [V01 rsp+48H]ymm0, qword ptr
-vmovdqu  ymm0, qword ptr [V01 rsp+48H]
-vmovdqu  qword ptr [V02 rsp+38H]ymm0, qword ptr
-vmovdqu  ymm0, qword ptr [V02 rsp+38H]
-vmovdqu  qword ptr [V03 rsp+28H]ymm0, qword ptr
-mov      rcx, 0x7FF918494E10
-mov      edx, 1
-call     CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-mov      rax, 0x1FAC6EB29C8
-mov      rax, gword ptr [rax]
-add      rax, 8
-vmovdqu  ymm0, qword ptr [V03 rsp+28H]
-vmovdqu  qword ptr [rax], ymm0
-add      rsp, 104
-ret
-```
-
-#### After
-After fginline:
-(note that the obj node will become a blk node downstream).
-```
-   ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
-   │  ┌──▌  const     int    0
-   └──▌  =         struct (init)
-      └──▌  lclVar    struct V00 loc0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V00 loc0
-   └──▌  =         struct (copy)
-      └──▌  lclVar    struct V01 tmp0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V01 tmp0
-   └──▌  =         struct (copy)
-      └──▌  lclVar    struct V02 tmp1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V02 tmp1
-   └──▌  =         struct (copy)
-      └──▌  lclVar    struct V03 tmp2
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-      ├──▌  const     long   0x7ff9184b4e10
-      └──▌  const     int    1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  lclVar    struct V03 tmp2
-   └──▌  =         struct (copy)
-      └──▌  obj(16)   struct
-         │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref
-            └──▌  field     ref    s_dt
-
-   ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void
-```
-Here is the IR after fgMorph:
-Note that copy propagation has propagated the zero initialization through to the final store.
-```
-   ▌  stmtExpr  void  (top level) (IL 0x000...0x003)
-   │  ┌──▌  const     int    0
-   └──▌  =         struct (init)
-      └──▌  lclVar    struct V00 loc0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     struct 0
-   └──▌  =         struct (init)
-      └──▌  lclVar    struct V01 tmp0
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     struct 0
-   └──▌  =         struct (init)
-      └──▌  lclVar    struct V02 tmp1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     struct 0
-   └──▌  =         struct (init)
-      └──▌  lclVar    struct V03 tmp2
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-      ├──▌  const     long   0x7ffc8bbb4e10
-      └──▌  const     int    1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     struct 0
-   └──▌  =         struct (init)
-      └──▌  obj(16)   struct
-         │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref
-            └──▌  indir     ref
-               └──▌  const(h)  long   0x2425b6229c8 static Fseq[s_dt]
-
-   ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void
-
-```
-After liveness analysis the dead stores have been eliminated:
-```
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   └──▌  call help long   HELPER.CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-      ├──▌  const     long   0x7ffc8bbb4e10
-      └──▌  const     int    1
-
-   ▌  stmtExpr  void  (top level) (IL 0x008...  ???)
-   │  ┌──▌  const     struct 0
-   └──▌  =         struct (init)
-      └──▌  obj(16)   struct
-         │  ┌──▌  const     long   8 Fseq[#FirstElem]
-         └──▌  +         byref
-            └──▌  indir     ref
-               └──▌  const(h)  long   0x2425b6229c8 static Fseq[s_dt]
-
-   ▌  stmtExpr  void  (top level) (IL 0x00E...  ???)
-   └──▌  return    void
-```
-And here is the resulting code, going from a code size of 129 bytes down to 58.
-```
-sub      rsp, 40
-mov      rcx, 0x7FFC8BBB4E10
-mov      edx, 1
-call     CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
-xor      rax, rax
-mov      rdx, 0x2425B6229C8
-mov      rdx, gword ptr [rdx]
-add      rdx, 8
-vxorpd   ymm0, ymm0
-vmovdqu  qword ptr [rdx], ymm0
-add      rsp, 40
-ret
-```

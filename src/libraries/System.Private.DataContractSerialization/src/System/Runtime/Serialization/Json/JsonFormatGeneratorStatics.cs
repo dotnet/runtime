@@ -4,14 +4,17 @@
 using System;
 using System.Collections;
 using System.Reflection;
-using System.Runtime.Serialization.Json;
 using System.Xml;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Serialization.Json;
 
 namespace System.Runtime.Serialization
 {
     public static class JsonFormatGeneratorStatics
     {
+        private static MethodInfo? s_boxPointer;
+
         private static PropertyInfo? s_collectionItemNameProperty;
 
         private static ConstructorInfo? s_extensionDataObjectCtor;
@@ -58,6 +61,8 @@ namespace System.Runtime.Serialization
 
         private static PropertyInfo? s_typeHandleProperty;
 
+        private static MethodInfo? s_unboxPointer;
+
         private static PropertyInfo? s_useSimpleDictionaryFormatReadProperty;
 
         private static PropertyInfo? s_useSimpleDictionaryFormatWriteProperty;
@@ -80,6 +85,19 @@ namespace System.Runtime.Serialization
 
         private static MethodInfo? s_getJsonMemberNameMethod;
 
+        public static MethodInfo BoxPointer
+        {
+            get
+            {
+                if (s_boxPointer == null)
+                {
+                    s_boxPointer = typeof(Pointer).GetMethod("Box");
+                    Debug.Assert(s_boxPointer != null);
+                }
+                return s_boxPointer;
+            }
+        }
+
         public static PropertyInfo CollectionItemNameProperty
         {
             get
@@ -96,7 +114,7 @@ namespace System.Runtime.Serialization
 
         public static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
                                                                  (s_extensionDataObjectCtor =
-                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Array.Empty<Type>()))!;
+                                                                     typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes))!;
 
         public static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
                                                             (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
@@ -115,6 +133,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetItemContractMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getItemContractMethod == null)
@@ -127,6 +146,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetJsonDataContractMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getJsonDataContractMethod == null)
@@ -139,6 +159,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetJsonMemberIndexMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getJsonMemberIndexMethod == null)
@@ -151,6 +172,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetRevisedItemContractMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getRevisedItemContractMethod == null)
@@ -163,6 +185,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo GetUninitializedObjectMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getUninitializedObjectMethod == null)
@@ -180,7 +203,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_isStartElementMethod0 == null)
                 {
-                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, Type.EmptyTypes);
                     Debug.Assert(s_isStartElementMethod0 != null);
                 }
                 return s_isStartElementMethod0;
@@ -270,8 +293,10 @@ namespace System.Runtime.Serialization
                 return s_onDeserializationMethod;
             }
         }
+
         public static MethodInfo ReadJsonValueMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_readJsonValueMethod == null)
@@ -341,6 +366,18 @@ namespace System.Runtime.Serialization
                 return s_typeHandleProperty;
             }
         }
+        public static MethodInfo UnboxPointer
+        {
+            get
+            {
+                if (s_unboxPointer == null)
+                {
+                    s_unboxPointer = typeof(Pointer).GetMethod("Unbox");
+                    Debug.Assert(s_unboxPointer != null);
+                }
+                return s_unboxPointer;
+            }
+        }
         public static PropertyInfo UseSimpleDictionaryFormatReadProperty
         {
             get
@@ -383,7 +420,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_writeEndElementMethod == null)
                 {
-                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Array.Empty<Type>());
+                    s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, Type.EmptyTypes);
                     Debug.Assert(s_writeEndElementMethod != null);
                 }
                 return s_writeEndElementMethod;
@@ -391,6 +428,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo WriteJsonISerializableMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeJsonISerializableMethod == null)
@@ -415,6 +453,7 @@ namespace System.Runtime.Serialization
         }
         public static MethodInfo WriteJsonValueMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_writeJsonValueMethod == null)

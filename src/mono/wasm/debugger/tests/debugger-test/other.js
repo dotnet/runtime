@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+"use strict";
+
 function big_array_js_test (len) {
 	var big = new Array(len);
 	for (let i=0; i < len; i ++) {
@@ -92,4 +94,10 @@ function get_properties_test () {
 	Object.setPrototypeOf(obj, vehicle);
 
 	console.log(`break here`);
+}
+
+function malloc_to_reallocate_test () {
+	//need to allocate this buffer size to force wasm linear memory to grow 
+	var _debugger_buffer = Module._malloc(4500000);
+	Module._free(_debugger_buffer);
 }

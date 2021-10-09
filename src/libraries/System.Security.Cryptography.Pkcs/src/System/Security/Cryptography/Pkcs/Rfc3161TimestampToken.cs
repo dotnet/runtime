@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
-using System.Linq;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
@@ -241,14 +240,21 @@ namespace System.Security.Cryptography.Pkcs
             //
             // id-kp-timeStamping. This extension MUST be critical.
 
-            using (var ekuExts = tsaCertificate.Extensions.OfType<X509EnhancedKeyUsageExtension>().GetEnumerator())
+            X509ExtensionCollection extensions = tsaCertificate.Extensions;
+            bool anyFound = false;
+            for (int i = 0; i < extensions.Count; i++)
             {
-                if (!ekuExts.MoveNext())
+                if (extensions[i] is not X509EnhancedKeyUsageExtension ekuExt)
+                {
+                    continue;
+                }
+
+                if (anyFound)
                 {
                     return false;
                 }
 
-                X509EnhancedKeyUsageExtension ekuExt = ekuExts.Current;
+                anyFound = true;
 
                 if (!ekuExt.Critical)
                 {
@@ -270,22 +276,21 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     return false;
                 }
+            }
 
-                if (ekuExts.MoveNext())
+            if (anyFound)
+            {
+                try
                 {
-                    return false;
+                    signer.CheckSignature(new X509Certificate2Collection(tsaCertificate), true);
+                    return true;
+                }
+                catch (CryptographicException)
+                {
                 }
             }
 
-            try
-            {
-                signer.CheckSignature(new X509Certificate2Collection(tsaCertificate), true);
-                return true;
-            }
-            catch (CryptographicException)
-            {
-                return false;
-            }
+            return false;
         }
 
         public static bool TryDecode(ReadOnlyMemory<byte> encodedBytes, [NotNullWhen(true)] out Rfc3161TimestampToken? token, out int bytesConsumed)

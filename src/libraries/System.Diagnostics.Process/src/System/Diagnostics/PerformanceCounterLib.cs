@@ -189,7 +189,7 @@ namespace System.Diagnostics
 #endif
         }
 
-        internal class PerformanceMonitor
+        internal sealed class PerformanceMonitor
         {
 #if FEATURE_REGISTRY
             private RegistryKey _perfDataKey;

@@ -3,7 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
 using System.Runtime.Remoting;
@@ -724,6 +726,19 @@ namespace ContextualReflectionTest
             }
         }
 
+        void TestDefineDynamicAssembly(bool collectibleContext, AssemblyBuilderAccess assemblyBuilderAccess)
+        {
+            AssemblyLoadContext assemblyLoadContext = collectibleContext ? new AssemblyLoadContext("DynamicAssembly Collectable context", true) : AssemblyLoadContext.Default;
+            AssemblyBuilder assemblyBuilder;
+
+            using (assemblyLoadContext.EnterContextualReflection())
+            {
+                assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}"), assemblyBuilderAccess);
+            }
+
+            Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyBuilder.GetName())));
+        }
+
         void TestMockAssemblyThrows()
         {
             Exception e = Assert.ThrowsArgumentException("activating", () => AssemblyLoadContext.EnterContextualReflection(new MockAssembly()));
@@ -736,6 +751,9 @@ namespace ContextualReflectionTest
             VerifyContextualReflectionProxy();
             VerifyUsingStatementContextualReflectionUsage();
             VerifyBadContextualReflectionUsage();
+
+            TestDynamicAssembly(true);
+            TestDynamicAssembly(false);
 
             RunTests(isolated : false);
             alcProgramInstance.RunTestsIsolated();
@@ -754,6 +772,12 @@ namespace ContextualReflectionTest
         {
             VerifyIsolationAlc();
             RunTests(isolated : true);
+        }
+
+        public void TestDynamicAssembly(bool collectibleContext)
+        {
+            TestDefineDynamicAssembly(collectibleContext, AssemblyBuilderAccess.Run);
+            TestDefineDynamicAssembly(collectibleContext, AssemblyBuilderAccess.RunAndCollect);
         }
     }
 }

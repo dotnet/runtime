@@ -6,6 +6,7 @@ using System;
 public class doublemm
 {
     public static Random rand;
+    public const int DefaultSeed = 20010415;
     public static int size;
 
     public static double GenerateDbl()
@@ -117,11 +118,19 @@ public class doublemm
     {
         bool pass = false;
 
-        rand = new Random();
+        int seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
+
+        rand = new Random(seed);
         size = rand.Next(2, 10);
 
         Console.WriteLine();
         Console.WriteLine("2D Array");
+        Console.WriteLine("Random seed: {0}; set environment variable CORECLR_SEED to this value to reproduce", seed);
         Console.WriteLine("Testing inner product of {0} by {0} matrices", size);
         Console.WriteLine("Matrix element stores random double");
         Console.WriteLine("array set/get, ref/out param are used");

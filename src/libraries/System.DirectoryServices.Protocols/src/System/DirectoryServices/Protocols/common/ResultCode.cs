@@ -52,7 +52,7 @@ namespace System.DirectoryServices.Protocols
         Other = 80
     }
 
-    internal class OperationErrorMappings
+    internal static class OperationErrorMappings
     {
         private static readonly Dictionary<ResultCode, string> s_resultCodeMapping = new Dictionary<ResultCode, string>(capacity: 43)
         {

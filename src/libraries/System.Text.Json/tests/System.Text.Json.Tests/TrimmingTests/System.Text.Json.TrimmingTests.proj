@@ -1,0 +1,66 @@
+<Project DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="Collections\Array.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ConcurrentDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ConcurrentQueue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\DictionaryOfTKeyTValue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\HashSetOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\Hashtable.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+      <!-- Hashtable's ctor is getting trimmed on browser-wasm causing this test to fail.
+      These tests should be converted to use the source generator.
+      See https://github.com/dotnet/runtime/issues/53437 -->    
+      <SkipOnTestRuntimes>browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ICollectionOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IDictionary.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IDictionaryOfTKeyTValue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IEnumerable.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IEnumerableOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IList.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IListOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\IReadOnlyDictionaryOfTKeyTValue.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ISetOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\ListOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="Collections\StackOfT.cs">
+      <AdditionalSourceFiles>Helper.cs</AdditionalSourceFiles>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="EnumConverterTest.cs" />
+    <TestConsoleAppSourceFiles Include="JsonConverterAttributeTest.cs" />
+    <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+</Project>

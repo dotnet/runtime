@@ -16,7 +16,7 @@ namespace System.Net.Mime
     /// This stream should only be used for the e-mail content.
     /// Use QEncodedStream for encoding headers.
     /// </summary>
-    internal class QuotedPrintableStream : DelegatedStream, IEncodableStream
+    internal sealed class QuotedPrintableStream : DelegatedStream, IEncodableStream
     {
         //should we encode CRLF or not?
         private readonly bool _encodeCRLF;

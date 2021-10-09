@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.Serialization;
@@ -34,7 +33,8 @@ namespace System.Resources.Extensions
             return false;
         }
 
-        // Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+// Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
+#pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
             if (_formatter == null)
@@ -47,9 +47,9 @@ namespace System.Resources.Extensions
 
             return _formatter.Deserialize(_store.BaseStream);
         }
+#pragma warning restore SYSLIB0011
 
-
-        internal class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
+        internal sealed class UndoTruncatedTypeNameSerializationBinder : SerializationBinder
         {
             public override Type? BindToType(string assemblyName, string typeName)
             {
@@ -168,7 +168,7 @@ namespace System.Resources.Extensions
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
 
-                        value = converter.ConvertFrom(data);
+                        value = converter.ConvertFrom(data)!;
                         break;
                     }
                 case SerializationFormat.TypeConverterString:
@@ -182,7 +182,7 @@ namespace System.Resources.Extensions
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
 
-                        value = converter.ConvertFromInvariantString(stringData);
+                        value = converter.ConvertFromInvariantString(stringData)!;
                         break;
                     }
                 case SerializationFormat.ActivatorStream:

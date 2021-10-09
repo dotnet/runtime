@@ -17,7 +17,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// if the chains of dependecies are rather small. To achieve that we do a very minimal structure prep upfront - merely creating a contract-based
         /// index of imports - and the verify the full match of imports during the traversal. Given that most parts have a very few imports this should perform well.
         /// </summary>
-        internal class DependentsTraversal : IComposablePartCatalogTraversal
+        internal sealed class DependentsTraversal : IComposablePartCatalogTraversal
         {
             private readonly IEnumerable<ComposablePartDefinition> _parts;
             private readonly Func<ImportDefinition, bool> _importFilter;

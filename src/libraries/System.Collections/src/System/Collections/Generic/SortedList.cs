@@ -270,7 +270,7 @@ namespace System.Collections.Generic
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
+            if (value == null && default(TValue) != null)    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
@@ -493,8 +493,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             }
 
-            KeyValuePair<TKey, TValue>[]? keyValuePairArray = array as KeyValuePair<TKey, TValue>[];
-            if (keyValuePairArray != null)
+            if (array is KeyValuePair<TKey, TValue>[] keyValuePairArray)
             {
                 for (int i = 0; i < Count; i++)
                 {
@@ -523,8 +522,6 @@ namespace System.Collections.Generic
             }
         }
 
-        private const int MaxArrayLength = 0X7FEFFFFF;
-
         // Ensures that the capacity of this sorted list is at least the given
         // minimum value. The capacity is increased to twice the current capacity
         // or to min, whichever is larger.
@@ -533,7 +530,7 @@ namespace System.Collections.Generic
             int newCapacity = keys.Length == 0 ? DefaultCapacity : keys.Length * 2;
             // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
             // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-            if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+            if ((uint)newCapacity > Array.MaxLength) newCapacity = Array.MaxLength;
             if (newCapacity < min) newCapacity = min;
             Capacity = newCapacity;
         }
@@ -588,7 +585,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (((object)key) == null) throw new ArgumentNullException(nameof(key));
+                if (key == null) throw new ArgumentNullException(nameof(key));
                 int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -622,7 +619,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value == null && default(TValue) != null)
                     throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
@@ -741,7 +738,7 @@ namespace System.Collections.Generic
         // SortedList.TrimExcess();
         public void TrimExcess()
         {
-            int threshold = (int)(((double)keys.Length) * 0.9);
+            int threshold = (int)(keys.Length * 0.9);
             if (_size < threshold)
             {
                 Capacity = _size;
@@ -1105,7 +1102,7 @@ namespace System.Collections.Generic
 
             public int IndexOf(TKey key)
             {
-                if (((object)key) == null)
+                if (key == null)
                     throw new ArgumentNullException(nameof(key));
 
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,

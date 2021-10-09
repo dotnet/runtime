@@ -36,7 +36,6 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-#if NETCOREAPP
         [Fact]
         public static void SafeNCryptKeyHandle_ParentHandle_Invalid()
         {
@@ -173,6 +172,5 @@ namespace System.Security.Cryptography.Cng.Tests
 
             public override bool IsInvalid => !_isOpen;
         }
-#endif
     }
 }

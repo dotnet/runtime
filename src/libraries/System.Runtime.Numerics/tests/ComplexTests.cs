@@ -1307,6 +1307,7 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37093", TestPlatforms.Android)]
         public static void Reciprocal(double real, double imaginary)
         {
             var complex = new Complex(real, imaginary);

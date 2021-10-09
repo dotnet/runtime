@@ -14,6 +14,7 @@ namespace System.Net.Security.Tests
     {
         protected override bool UsableAfterCanceledReads => false;
         protected override bool BlocksOnZeroByteReads => true;
+        protected override bool ZeroByteReadPerformsZeroByteReadOnUnderlyingStream => true;
         protected override Type UnsupportedConcurrentExceptionType => typeof(NotSupportedException);
 
         protected virtual SslProtocols GetSslProtocols() => SslProtocols.None;
@@ -29,6 +30,20 @@ namespace System.Net.Security.Tests
                 ssl1.AuthenticateAsClientAsync(cert.GetNameInfo(X509NameType.SimpleName, false), null, GetSslProtocols(), false),
                 ssl2.AuthenticateAsServerAsync(cert, false, GetSslProtocols(), false)
             }.WhenAllOrAnyFailed().ConfigureAwait(false);
+
+            if (GetSslProtocols() == SslProtocols.Tls13)
+            {
+                // TLS 1.3 can generate some extra messages and we may get reset if test sends unidirectional traffic
+                // and extra packet stays in socket buffer.
+
+                // This ping-ping should flush leftovers from the handshake.
+                // We use sync method to preserve socket in default blocking state
+                // (as we don't go back once Async is used at least once)
+                ssl1.Write(new byte[1]);
+                ssl2.Write(new byte[1]);
+                Assert.Equal(1, ssl2.Read(new byte[1]));
+                Assert.Equal(1, ssl1.Read(new byte[1]));
+            }
 
             return new StreamPair(ssl1, ssl2);
         }

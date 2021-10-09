@@ -12,7 +12,7 @@ namespace System.Xml
     // so that next time Push() is called it simply returns the last
     // object that was already on the stack.
 
-    internal class HWStack : ICloneable
+    internal sealed class HWStack : ICloneable
     {
         internal HWStack(int GrowthRate) : this(GrowthRate, int.MaxValue) { }
 

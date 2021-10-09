@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
-    internal class CacheControlHeaderParser : BaseHeaderParser
+    internal sealed class CacheControlHeaderParser : BaseHeaderParser
     {
         internal static readonly CacheControlHeaderParser Parser = new CacheControlHeaderParser();
 

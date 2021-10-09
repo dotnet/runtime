@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http;
 
 namespace System.Net.Http.HPack
 {
-    internal class HPackDecoder
+    internal sealed class HPackDecoder
     {
         private enum State : byte
         {
@@ -83,7 +83,7 @@ namespace System.Net.Http.HPack
         private readonly int _maxDynamicTableSize;
         private readonly int _maxHeadersLength;
         private readonly DynamicTable _dynamicTable;
-        private readonly IntegerDecoder _integerDecoder = new IntegerDecoder();
+        private IntegerDecoder _integerDecoder;
         private byte[] _stringOctets;
         private byte[] _headerNameOctets;
         private byte[] _headerValueOctets;

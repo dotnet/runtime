@@ -15,7 +15,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class FieldSymbol : VariableSymbol
+    internal sealed class FieldSymbol : VariableSymbol
     {
         public new bool isStatic;               // Static member?
         public bool isReadOnly;            // Can only be changed from within constructor.

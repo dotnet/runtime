@@ -11,11 +11,8 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class SAMUtils
+    internal static class SAMUtils
     {
-        // To stop the compiler from autogenerating a constructor for this class
-        private SAMUtils() { }
-
         internal static bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
         {
             return string.Equals(de.SchemaClassName, classToCompare, StringComparison.OrdinalIgnoreCase);

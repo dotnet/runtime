@@ -75,6 +75,8 @@ namespace System.Net.Http
                     }
                 }
 
+                request.MarkAsRedirected();
+
                 // Issue the redirected request.
                 response = await _redirectInnerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
             }
@@ -142,9 +144,10 @@ namespace System.Net.Http
             {
                 case HttpStatusCode.Moved:
                 case HttpStatusCode.Found:
-                case HttpStatusCode.SeeOther:
                 case HttpStatusCode.MultipleChoices:
                     return requestMethod == HttpMethod.Post;
+                case HttpStatusCode.SeeOther:
+                    return requestMethod != HttpMethod.Get && requestMethod != HttpMethod.Head;
                 default:
                     return false;
             }

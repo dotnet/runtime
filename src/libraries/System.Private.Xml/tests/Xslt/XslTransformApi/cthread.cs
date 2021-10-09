@@ -171,7 +171,7 @@ namespace System.Xml.Tests
                             //case TEST_SKIPPED:
                         _output.WriteLine(eTest.Message);
                         return eResult; //were done
-                };
+                }
             }
 
             _output.WriteLine("Actual  : {0}", actual);

@@ -19,6 +19,7 @@ T:System.IO.IODescriptionAttribute
 T:System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute
 T:System.Runtime.CompilerServices.AsyncStateMachineAttribute
 T:System.Runtime.CompilerServices.CompilerGeneratedAttribute
+T:System.Runtime.CompilerServices.EnumeratorCancellationAttribute
 T:System.Runtime.CompilerServices.IteratorStateMachineAttribute
 T:System.Runtime.CompilerServices.MethodImpl
 T:System.Runtime.CompilerServices.NullableAttribute

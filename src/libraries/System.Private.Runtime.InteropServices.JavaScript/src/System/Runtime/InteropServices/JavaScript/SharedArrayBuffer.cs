@@ -11,10 +11,10 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the JavaScript Core SharedArrayBuffer class.
         /// </summary>
         /// <param name="length">The size, in bytes, of the array buffer to create.</param>
-        public SharedArrayBuffer(int length) : base(Interop.Runtime.New<SharedArrayBuffer>(length))
+        public SharedArrayBuffer(int length) : base(nameof(SharedArrayBuffer), length)
         { }
 
-        internal SharedArrayBuffer(IntPtr jsHandle, bool ownsHandle) : base(jsHandle, ownsHandle)
+        internal SharedArrayBuffer(IntPtr jsHandle) : base(jsHandle)
         { }
 
         /// <summary>
@@ -22,6 +22,21 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <value>The size, in bytes, of the array.</value>
         public int ByteLength => (int)GetObjectProperty("byteLength");
+
+        /// <summary>
+        /// Returns a new JavaScript Core SharedArrayBuffer whose contents are a copy of this SharedArrayBuffer's bytes.
+        /// </summary>
+        /// <returns>a new JavaScript Core SharedArrayBuffer</returns>
+        public SharedArrayBuffer Slice() => (SharedArrayBuffer)Invoke("slice");
+
+        /// <summary>
+        /// Returns a new JavaScript Core SharedArrayBuffer whose contents are a copy of this SharedArrayBuffer's bytes from begin,
+        /// inclusive, through to the end of the sequence, exclusive. If begin is negative, it refers to an index from the end
+        /// of the array, as opposed to from the beginning.
+        /// </summary>
+        /// <returns>a new JavaScript Core SharedArrayBuffer</returns>
+        /// <param name="begin">Beginning index of copy zero based.</param>
+        public SharedArrayBuffer Slice(int begin) => (SharedArrayBuffer)Invoke("slice", begin);
 
         /// <summary>
         /// Returns a new JavaScript Core SharedArrayBuffer whose contents are a copy of this SharedArrayBuffer's bytes from begin,

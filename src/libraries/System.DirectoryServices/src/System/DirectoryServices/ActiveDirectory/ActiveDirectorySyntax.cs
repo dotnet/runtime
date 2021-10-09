@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
         ReplicaLink = 22
     }
 
-    internal class OMObjectClass
+    internal sealed class OMObjectClass
     {
         public OMObjectClass(byte[] data) => Data = data;
 
@@ -58,13 +58,13 @@ namespace System.DirectoryServices.ActiveDirectory
         public byte[] Data { get; }
     }
 
-    internal class Syntax
+    internal sealed class Syntax
     {
         public readonly string attributeSyntax;
         public readonly int oMSyntax;
-        public readonly OMObjectClass oMObjectClass;
+        public readonly OMObjectClass? oMObjectClass;
 
-        public Syntax(string attributeSyntax, int oMSyntax, OMObjectClass oMObjectClass)
+        public Syntax(string attributeSyntax, int oMSyntax, OMObjectClass? oMObjectClass)
         {
             this.attributeSyntax = attributeSyntax;
             this.oMSyntax = oMSyntax;

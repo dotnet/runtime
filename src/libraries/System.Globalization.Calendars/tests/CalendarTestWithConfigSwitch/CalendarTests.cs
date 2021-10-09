@@ -18,6 +18,8 @@ namespace System.Globalization.Tests
             string eraName = dt.ToString("gg", ciJapanese);
 
             // Legacy behavior which we used to throw when using a year number exceeding the era max year.
+            //
+            // On mobile, this does not throw, but instead produces a DateTime w/ 95/01/01
             Assert.ThrowsAny<FormatException>(() => DateTime.Parse(eraName + " 70/1/1 0:00:00", ciJapanese));
         }
     }

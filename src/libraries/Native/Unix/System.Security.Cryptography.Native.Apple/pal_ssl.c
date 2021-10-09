@@ -4,12 +4,9 @@
 #include "pal_ssl.h"
 #include <dlfcn.h>
 
-// TLS 1.3 is only defined with 10.13 headers, but we build on 10.12
-#define kTLSProtocol13_ForwardDef 10
-
 // 10.13.4 introduced public API but linking would fail on all prior versions.
 // For that reason we use function pointers instead of direct call.
-// This can be revisited after we drop support for 10.12.
+// This can be revisited after we drop support for 10.12 and iOS 10
 
 static OSStatus (*SSLSetALPNProtocolsPtr)(SSLContextRef context, CFArrayRef protocols) = NULL;
 static OSStatus (*SSLCopyALPNProtocolsPtr)(SSLContextRef context, CFArrayRef* protocols) = NULL;
@@ -26,6 +23,14 @@ SSLContextRef AppleCryptoNative_SslCreateContext(int32_t isServer)
 #pragma clang diagnostic pop
 }
 
+int32_t AppleCryptoNative_SslSetConnection(SSLContextRef sslContext, SSLConnectionRef sslConnection)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    return SSLSetConnection(sslContext, sslConnection);
+#pragma clang diagnostic pop
+}
+
 int32_t AppleCryptoNative_SslSetAcceptClientCert(SSLContextRef sslContext)
 {
 #pragma clang diagnostic push
@@ -39,11 +44,11 @@ static SSLProtocol PalSslProtocolToSslProtocol(PAL_SslProtocol palProtocolId)
 {
     switch (palProtocolId)
     {
-        case PAL_SslProtocol_Tls13:
-            return kTLSProtocol13_ForwardDef;
-        case PAL_SslProtocol_Tls12:
 #pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"       
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+        case PAL_SslProtocol_Tls13:
+            return kTLSProtocol13;
+        case PAL_SslProtocol_Tls12: 
             return kTLSProtocol12;
         case PAL_SslProtocol_Tls11:
             return kTLSProtocol11;
@@ -465,15 +470,18 @@ int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringR
                 {
                     CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
 
-                    OSStatus status = 0;
-                    // look for first failure to keep it simple. Normally, there will be exactly one.
-                    for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
+                    if (statusCodes != NULL)
                     {
-                        CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
-                        if (status != noErr)
+                        OSStatus status = 0;
+                        // look for first failure to keep it simple. Normally, there will be exactly one.
+                        for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
                         {
-                            *pOSStatus = status;
-                            break;
+                            CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
+                            if (status != noErr)
+                            {
+                                *pOSStatus = status;
+                                break;
+                            }
                         }
                     }
                 }
@@ -546,7 +554,7 @@ int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_Ss
     {
         PAL_SslProtocol matchedProtocol = PAL_SslProtocol_None;
 
-        if (protocol == kTLSProtocol13_ForwardDef)
+        if (protocol == kTLSProtocol13)
             matchedProtocol = PAL_SslProtocol_Tls13;
         else if (protocol == kTLSProtocol12)
             matchedProtocol = PAL_SslProtocol_Tls12;
@@ -588,19 +596,19 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     // Max numCipherSuites is 2^16 (all possible cipher suites)
     assert(numCipherSuites < (1 << 16));
 
-#if !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+#if !defined(TARGET_ARM64) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
     if (sizeof(SSLCipherSuite) == sizeof(uint32_t))
     {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        // macOS
+        // macOS & MacCatalyst x64
         return SSLSetEnabledCiphers(sslContext, (const SSLCipherSuite *)cipherSuites, (size_t)numCipherSuites);
 #pragma clang diagnostic pop   
     }
     else
 #endif
     {
-        // iOS, tvOS, watchOS
+        // MacCatalyst arm64, iOS, tvOS, watchOS
         SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)calloc((size_t)numCipherSuites, sizeof(SSLCipherSuite));
 
         if (cipherSuites16 == NULL)

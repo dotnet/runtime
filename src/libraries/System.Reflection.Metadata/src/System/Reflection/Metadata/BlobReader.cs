@@ -12,9 +12,6 @@ namespace System.Reflection.Metadata
     [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
     public unsafe struct BlobReader
     {
-        /// <summary>An array containing the '\0' character.</summary>
-        private static readonly char[] s_nullCharArray = new char[1] { '\0' };
-
         internal const int InvalidCompressedInteger = int.MaxValue;
 
         private readonly MemoryBlock _block;
@@ -591,9 +588,7 @@ namespace System.Reflection.Metadata
             int length;
             if (TryReadCompressedInteger(out length))
             {
-                // Removal of trailing '\0' is a departure from the spec, but required
-                // for compatibility with legacy compilers.
-                return ReadUTF8(length).TrimEnd(s_nullCharArray);
+                return ReadUTF8(length);
             }
 
             if (ReadByte() != 0xFF)

@@ -491,6 +491,73 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
+        /// Tests that DiagnosticSourceEventSource can read property values from base classes
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaseClassProperties()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestBaseClassProperties"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    eventSourceListener.Enable(
+                        "  TestBaseClassProperties/TestEvent1:Point_X=Point.X;Point_Y=Point.Y;Url_2=Url2\r\n");
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern.
+                    MyClass val = new MyDerivedClass() { Url = "MyUrl", Point = new MyPoint() { X = 3, Y = 5 }, Url2 = "Second url", AnotherString = "another" };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", val);
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestBaseClassProperties", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(7, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("another", eventSourceListener.LastEvent.Arguments["AnotherString"]);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["Point_X"]);
+                    Assert.Equal("5", eventSourceListener.LastEvent.Arguments["Point_Y"]);
+                    Assert.Equal("Second url", eventSourceListener.LastEvent.Arguments["Url_2"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
+        }
+
+        /// <summary>
+        /// Tests that DiagnosticSourceEventSource can read property values from base classes
+        /// </summary>
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestBaseClassDuplicateProperties()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestBaseClassProperties"))
+                {
+                    Assert.Equal(0, eventSourceListener.EventCount);
+                    eventSourceListener.Enable(
+                        "  TestBaseClassProperties/TestEvent1:Point_X=Point.X;Point_Y=Point.Y;Url=Url\r\n");
+
+                    /***************************************************************************************/
+                    // Emit an event that matches the first pattern.
+                    MyClass val = new MyOtherDerivedClass() { Url = "MyUrl", Point = new MyDerivedPoint() { X = 3, Y = 5 } };
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", val);
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestBaseClassProperties", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(4, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("3", eventSourceListener.LastEvent.Arguments["Point_X"]);
+                    Assert.Equal("5", eventSourceListener.LastEvent.Arguments["Point_Y"]);
+                    Assert.Equal("MyUrl", eventSourceListener.LastEvent.Arguments["Url"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
+                }
+            }).Dispose();
+        }
+
+        /// <summary>
         /// Test that things work properly for Linux newline conventions.
         /// </summary>
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -694,6 +761,38 @@ namespace System.Diagnostics.Tests
                             diagnosticSourceListener2.Write("TestEvent1", new { propStr = "hi", propInt = 4, cls = val });
                     }
                     Assert.Equal(0, eventSourceListener.EventCount);        // No Event should be fired.
+                }
+            }).Dispose();
+        }
+
+        public class PropertyThrow
+        {
+            public string property1 => "P1";
+            public string property2 => throw new Exception("Always throw!");
+            public string property3 => "P3";
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestWithPropertyThrowing()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var eventSourceListener = new TestDiagnosticSourceEventListener())
+                using (var diagnosticSourceListener = new DiagnosticListener("TestThrows"))
+                {
+                    eventSourceListener.Enable("TestThrows/TestEvent1");
+
+                    if (diagnosticSourceListener.IsEnabled("TestEvent1"))
+                        diagnosticSourceListener.Write("TestEvent1", new PropertyThrow());
+
+                    Assert.Equal(1, eventSourceListener.EventCount); // Exactly one more event has been emitted.
+                    Assert.Equal("TestThrows", eventSourceListener.LastEvent.SourceName);
+                    Assert.Equal("TestEvent1", eventSourceListener.LastEvent.EventName);
+                    Assert.Equal(3, eventSourceListener.LastEvent.Arguments.Count);
+                    Assert.Equal("P1", eventSourceListener.LastEvent.Arguments["property1"]);
+                    Assert.Equal("P3", eventSourceListener.LastEvent.Arguments["property3"]);
+                    Assert.Equal("", eventSourceListener.LastEvent.Arguments["property2"]);
+                    eventSourceListener.ResetEventCountAndLastEvent();
                 }
             }).Dispose();
         }
@@ -1281,6 +1380,17 @@ namespace System.Diagnostics.Tests
         public MyPoint Point { get; set; }
     }
 
+    internal class MyDerivedClass : MyClass
+    {
+        public string Url2 { get; set; }
+        public string AnotherString { get; set; }
+    }
+
+    internal class MyOtherDerivedClass : MyClass
+    {
+        public new MyDerivedPoint Point { get; set; }
+    }
+
     /// <summary>
     /// classes for test data.
     /// </summary>
@@ -1289,6 +1399,9 @@ namespace System.Diagnostics.Tests
         public int X { get; set; }
         public int Y { get; set; }
     }
+
+    internal class MyDerivedPoint : MyPoint
+    { }
 
     /// <summary>
     /// classes for test data

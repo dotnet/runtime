@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
         /// Compares equality between two <see cref="HashBucket"/> instances
         /// by value.
         /// </summary>
-        private class HashBucketByValueEqualityComparer : IEqualityComparer<HashBucket>
+        private sealed class HashBucketByValueEqualityComparer : IEqualityComparer<HashBucket>
         {
             /// <summary>
             /// The instance to use when the value comparer is <see cref="EqualityComparer{T}.Default"/>.

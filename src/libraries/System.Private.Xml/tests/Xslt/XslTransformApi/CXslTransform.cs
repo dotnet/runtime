@@ -473,7 +473,6 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>
@@ -871,6 +870,34 @@ namespace System.Xml.Tests
             }
             _output.WriteLine("Did not throw compile exception for stylesheet");
             Assert.True(false);
+        }
+
+        [Fact]
+        public void XslTransformThrowsPNSEWhenUsingScripts()
+        {
+            using StringReader xslFile = new StringReader(
+        @"<xsl:stylesheet version=""1.0"" xmlns:xsl=""http://www.w3.org/1999/XSL/Transform""
+  xmlns:msxsl=""urn:schemas-microsoft-com:xslt""
+  xmlns:user=""urn:my-scripts"">
+  <msxsl:script language=""C#"" implements-prefix=""user"">
+    <![CDATA[
+  public double modifyPrice(double price){
+    price*=0.9;
+    return price;
+  }
+  ]]>
+  </msxsl:script>
+  <xsl:template match=""Root"">
+    <Root xmlns="""">
+      <Price><xsl:value-of select=""user:modifyPrice(Price)""/></Price>
+    </Root>
+  </xsl:template>
+</xsl:stylesheet>");
+
+            using XmlReader reader = XmlReader.Create(xslFile); 
+            XslTransform xslt = new XslTransform();
+            XsltCompileException compilationException = Assert.Throws<XsltCompileException>(() => xslt.Load(reader));
+            Assert.True(compilationException.InnerException != null && compilationException.InnerException is PlatformNotSupportedException);
         }
     }
 
@@ -2097,7 +2124,6 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
-        [ActiveIssue("https://github.com/mono/mono/issues/15353", TestRuntimes.Mono)]
         public void TC_AbsolutePath_Transform(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             TestUsingTemporaryCopyOfResolverDocument(() =>

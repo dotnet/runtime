@@ -8,15 +8,15 @@ using System.Reflection.Context.Custom;
 
 namespace System.Reflection.Context.Virtual
 {
-    internal partial class VirtualPropertyInfo
+    internal sealed partial class VirtualPropertyInfo
     {
-        private class PropertySetter : PropertySetterBase
+        private sealed class PropertySetter : PropertySetterBase
         {
-            private readonly Action<object, object> _setter;
+            private readonly Action<object, object?> _setter;
             private readonly ParameterInfo _valueParameter;
             private readonly IEnumerable<Attribute> _attributes;
 
-            public PropertySetter(VirtualPropertyBase property, Action<object, object> setter, IEnumerable<Attribute> setterAttributes)
+            public PropertySetter(VirtualPropertyBase property, Action<object, object?> setter, IEnumerable<Attribute>? setterAttributes)
                 : base(property)
             {
                 Debug.Assert(null != setter);
@@ -31,19 +31,19 @@ namespace System.Reflection.Context.Virtual
                 return new ParameterInfo[] { _valueParameter };
             }
 
-            public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+            public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
             {
                 // invokeAttr, binder, and culture are ignored, similar to what runtime reflection does with the default binder.
 
                 if (parameters == null || parameters.Length != 1)
                     throw new TargetParameterCountException();
 
-                object value = parameters[0];
+                object? value = parameters[0];
 
                 if (obj == null)
                     throw new TargetException(SR.Target_InstanceMethodRequiresTarget);
 
-                if (!ReflectedType.IsInstanceOfType(obj))
+                if (!ReflectedType!.IsInstanceOfType(obj))
                     throw new TargetException(SR.Target_ObjectTargetMismatch);
 
                 if (ReturnType.IsInstanceOfType(value))

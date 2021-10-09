@@ -4,6 +4,7 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data
 {
@@ -503,7 +504,7 @@ namespace System.Data
 
         internal void CheckCanRemoveParentRow(DataRow row)
         {
-            Debug.Assert(Table?.DataSet != null, "Relation " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet != null, $"Relation {ConstraintName} isn't part of a DataSet, so this check shouldn't be happening.");
             if (!Table.DataSet.EnforceConstraints)
             {
                 return;
@@ -516,7 +517,7 @@ namespace System.Data
 
         internal void CheckCascade(DataRow row, DataRowAction action)
         {
-            Debug.Assert(Table?.DataSet != null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet != null, $"ForeignKeyConstraint {ConstraintName} isn't part of a DataSet, so this check shouldn't be happening.");
 
             if (row._inCascade)
             {
@@ -855,7 +856,7 @@ namespace System.Data
         /// <summary>
         /// Gets a value indicating whether the current <see cref='System.Data.ForeignKeyConstraint'/> is identical to the specified object.
         /// </summary>
-        public override bool Equals(object? key)
+        public override bool Equals([NotNullWhen(true)] object? key)
         {
             if (!(key is ForeignKeyConstraint))
             {

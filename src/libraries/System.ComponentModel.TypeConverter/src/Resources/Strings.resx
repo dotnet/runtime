@@ -250,4 +250,7 @@
   <data name="MemberRelationshipService_RelationshipNotSupported" xml:space="preserve">
     <value>Relationships between {0}.{1} and {2}.{3} are not supported.</value>
   </data>
+  <data name="BinaryFormatterMessage" xml:space="preserve">
+    <value>BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.</value>
+  </data>
 </root>

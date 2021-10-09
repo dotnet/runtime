@@ -7,7 +7,7 @@ using System.Text;
 namespace System.Security.Cryptography.Xml
 {
     // the class that provides node subset state and canonicalization function to XmlAttribute
-    internal class CanonicalXmlAttribute : XmlAttribute, ICanonicalizableNode
+    internal sealed class CanonicalXmlAttribute : XmlAttribute, ICanonicalizableNode
     {
         private bool _isInNodeSet;
 
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml
 
         public void Write(StringBuilder strBuilder, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
-            strBuilder.Append(" " + Name + "=\"");
+            strBuilder.Append($" {Name}=\"");
             strBuilder.Append(Utils.EscapeAttributeValue(Value));
             strBuilder.Append('"');
         }

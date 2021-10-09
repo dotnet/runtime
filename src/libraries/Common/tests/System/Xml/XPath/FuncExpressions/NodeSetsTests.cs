@@ -53,7 +53,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "\n   XPath test\n   Direct content\n "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -106,7 +105,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "\n   XPath test\n   Direct content\n "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -151,7 +149,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "\n   XPath test\n   Direct content\n "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -194,7 +191,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "Second paragraph "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -237,7 +233,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "Second paragraph "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -271,7 +266,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "Second paragraph "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -306,7 +300,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "\n   XPath test\n   Direct content\n "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }
@@ -331,7 +324,6 @@ namespace XPathTests.FunctionalTests.Expressions
                     HasNameTable = true,
                     Value = "First paragraph  Nested  Paragraph  End of first paragraph "
                 });
-            ;
 
             Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
         }

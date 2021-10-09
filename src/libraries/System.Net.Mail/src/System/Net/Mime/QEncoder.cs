@@ -3,7 +3,7 @@
 
 namespace System.Net.Mime
 {
-    internal class QEncoder : ByteEncoder
+    internal sealed class QEncoder : ByteEncoder
     {
         private const int SizeOfQEncodedChar = 3; // e.g. "=3A"
 

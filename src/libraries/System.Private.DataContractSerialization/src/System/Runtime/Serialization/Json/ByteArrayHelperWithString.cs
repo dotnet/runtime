@@ -8,7 +8,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization.Json
 {
-    internal class ByteArrayHelperWithString : ArrayHelper<string, byte>
+    internal sealed class ByteArrayHelperWithString : ArrayHelper<string, byte>
     {
         public static readonly ByteArrayHelperWithString Instance = new ByteArrayHelperWithString();
 

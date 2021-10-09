@@ -3,7 +3,7 @@
 
 namespace System.Threading
 {
-    internal partial class TimerQueue
+    internal sealed partial class TimerQueue
     {
         private static long TickCount64 => Environment.TickCount64;
     }

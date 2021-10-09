@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.IO;
 using Xunit;
 
 namespace System.IO.Tests
 {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class FileStream_ctor_str_fm_fa_fs_buffer_async : FileStream_ctor_str_fm_fa_fs_buffer
     {
         protected sealed override FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize)
@@ -20,15 +18,15 @@ namespace System.IO.Tests
             return new FileStream(path, mode, access, share, bufferSize, useAsync);
         }
 
-        [Fact]
-        public void ValidUseAsync()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ValidUseAsync(bool isAsync)
         {
-            using (CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, true))
-            { }
-
-            using (CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, false))
-            { }
+            using (FileStream fs = CreateFileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, c_DefaultBufferSize, isAsync))
+            {
+                Assert.Equal(isAsync, fs.IsAsync);
+            }
         }
-
     }
 }

@@ -8,21 +8,12 @@ using Xunit;
 
 namespace System.Security.Cryptography.Algorithms.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
-    public class AesGcmTests : AesAEADTests
+    [ConditionalClass(typeof(AesGcm), nameof(AesGcm.IsSupported))]
+    public class AesGcmTests : CommonAEADTests
     {
         [Theory]
-        [InlineData(0, 1)]
-        [InlineData(0, 30)]
-        [InlineData(1, 1)]
-        [InlineData(1, 100)]
-        [InlineData(7, 12)]
-        [InlineData(16, 16)]
-        [InlineData(17, 29)]
-        [InlineData(32, 7)]
-        [InlineData(41, 25)]
-        [InlineData(48, 22)]
-        [InlineData(50, 5)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
         {
             byte[] additionalData = new byte[additionalDataLength];
@@ -63,6 +54,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidNonceSizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void InvalidNonceSize(int nonceSize)
         {
             int dataLength = 30;
@@ -82,6 +74,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetValidNonceSizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void ValidNonceSize(int nonceSize)
         {
             const int dataLength = 35;
@@ -105,6 +98,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetInvalidTagSizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void InvalidTagSize(int tagSize)
         {
             int dataLength = 30;
@@ -124,6 +118,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetValidTagSizes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void ValidTagSize(int tagSize)
         {
             const int dataLength = 35;
@@ -146,6 +141,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void TwoEncryptionsAndDecryptionsUsingOneInstance()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -190,12 +186,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Theory]
-        [InlineData(0, 1)]
-        [InlineData(1, 0)]
-        [InlineData(3, 4)]
-        [InlineData(4, 3)]
-        [InlineData(20, 120)]
-        [InlineData(120, 20)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [MemberData(nameof(PlaintextAndCiphertextSizeDifferTestInputs))]
         public static void PlaintextAndCiphertextSizeDiffer(int ptLen, int ctLen)
         {
             byte[] key = new byte[16];
@@ -218,6 +210,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void EncryptDecryptNullNonce()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -233,6 +226,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void EncryptDecryptNullPlaintext()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -248,6 +242,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void EncryptDecryptNullCiphertext()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -263,6 +258,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void EncryptDecryptNullTag()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
@@ -278,7 +274,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
-        public static void InplaceEncrypDecrypt()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public static void InplaceEncryptDecrypt()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -298,7 +295,8 @@ namespace System.Security.Cryptography.Algorithms.Tests
         }
 
         [Fact]
-        public static void InplaceEncrypTamperTagDecrypt()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public static void InplaceEncryptTamperTagDecrypt()
         {
             byte[] key = "d5a194ed90cfe08abecd4691997ceb2c".HexToByteArray();
             byte[] nonce = new byte[12];
@@ -322,6 +320,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTests(AEADTest testCase)
         {
             using (var aesGcm = new AesGcm(testCase.Key))
@@ -340,6 +339,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCases))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperTag(AEADTest testCase)
         {
             using (var aesGcm = new AesGcm(testCase.Key))
@@ -362,6 +362,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
 
         [Theory]
         [MemberData(nameof(GetNistGcmTestCasesWithNonEmptyPT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperCiphertext(AEADTest testCase)
         {
             using (var aesGcm = new AesGcm(testCase.Key))
@@ -850,5 +851,36 @@ namespace System.Security.Cryptography.Algorithms.Tests
                 Tag = "4ce8aff15debc1b23c50665b9c".HexToByteArray(),
             },
         };
+    }
+
+    public class AesGcmIsSupportedTests
+    {
+        public static bool RuntimeSaysIsNotSupported => !AesGcm.IsSupported;
+
+        [ConditionalFact(nameof(RuntimeSaysIsNotSupported))]
+        public static void CtorThrowsPNSEIfNotSupported()
+        {
+            byte[] key = RandomNumberGenerator.GetBytes(256 / 8);
+
+            Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key));
+            Assert.Throws<PlatformNotSupportedException>(() => new AesGcm(key.AsSpan()));
+        }
+
+        [Fact]
+        public static void CheckIsSupported()
+        {
+            bool expectedIsSupported = !PlatformDetection.IsBrowser;
+
+            if (PlatformDetection.IsOSX)
+            {
+                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
+            }
+            else if (PlatformDetection.UsesMobileAppleCrypto)
+            {
+                expectedIsSupported = false;
+            }
+
+            Assert.Equal(expectedIsSupported, AesGcm.IsSupported);
+        }
     }
 }

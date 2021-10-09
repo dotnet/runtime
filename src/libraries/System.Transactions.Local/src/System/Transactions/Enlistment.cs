@@ -226,8 +226,7 @@ namespace System.Transactions
                                 temp = new EnlistmentTraceIdentifier(
                                     Guid.Empty,
                                     new TransactionTraceIdentifier(
-                                        InternalTransaction.InstanceIdentifier +
-                                            Convert.ToString(Interlocked.Increment(ref InternalTransaction._nextHash), CultureInfo.InvariantCulture),
+                                        string.Create(CultureInfo.InvariantCulture, $"{InternalTransaction.InstanceIdentifier}{Interlocked.Increment(ref InternalTransaction._nextHash)}"),
                                         0),
                                     _enlistmentId);
                             }
@@ -355,7 +354,7 @@ namespace System.Transactions
     // Since RecoveringInternalEnlistment does not have a transaction it must take
     // a separate object as its sync root.
     //
-    internal class RecoveringInternalEnlistment : DurableInternalEnlistment
+    internal sealed class RecoveringInternalEnlistment : DurableInternalEnlistment
     {
         private readonly object _syncRoot;
 
@@ -368,7 +367,7 @@ namespace System.Transactions
         internal override object SyncRoot => _syncRoot;
     }
 
-    internal class PromotableInternalEnlistment : InternalEnlistment
+    internal sealed class PromotableInternalEnlistment : InternalEnlistment
     {
         // This class acts as the durable single phase enlistment for a
         // promotable single phase enlistment.
@@ -390,7 +389,7 @@ namespace System.Transactions
 
     // This class supports volatile enlistments
     //
-    internal class Phase1VolatileEnlistment : InternalEnlistment
+    internal sealed class Phase1VolatileEnlistment : InternalEnlistment
     {
         public Phase1VolatileEnlistment(
             Enlistment enlistment,

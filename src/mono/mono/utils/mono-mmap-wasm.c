@@ -190,8 +190,6 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		mflags |= MAP_SHARED;
 	if (flags & MONO_MMAP_FIXED)
 		mflags |= MAP_FIXED;
-	if (flags & MONO_MMAP_32BIT)
-		mflags |= MAP_32BIT;
 
 	if (length == 0)
 		/* emscripten throws an exception on 0 length */
@@ -235,7 +233,7 @@ void*
 mono_shared_area (void)
 {
 	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (getpid ());
+		malloced_shared_area = mono_malloc_shared_area (mono_process_current_pid ());
 	/* get the pid here */
 	return malloced_shared_area;
 }

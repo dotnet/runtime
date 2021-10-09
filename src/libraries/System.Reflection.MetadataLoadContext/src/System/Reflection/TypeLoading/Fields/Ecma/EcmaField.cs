@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading.Ecma
 {
@@ -39,7 +40,7 @@ namespace System.Reflection.TypeLoading.Ecma
 
         public sealed override int MetadataToken => _handle.GetToken();
 
-        public sealed override bool Equals(object? obj)
+        public sealed override bool Equals([NotNullWhen(true)] object? obj)
         {
             if (!(obj is EcmaField other))
                 return false;
@@ -79,12 +80,10 @@ namespace System.Reflection.TypeLoading.Ecma
             if (disposedString != null)
                 return disposedString;
 
-            StringBuilder sb = new StringBuilder();
-            string typeString = FieldDefinition.DecodeSignature(EcmaSignatureTypeProviderForToString.Instance, TypeContext);
-            sb.Append(typeString);
-            sb.Append(' ');
-            sb.Append(Name);
-            return sb.ToString();
+            return
+                FieldDefinition.DecodeSignature(EcmaSignatureTypeProviderForToString.Instance, TypeContext) +
+                " " +
+                Name;
         }
 
         private MetadataReader Reader => _module.Reader;

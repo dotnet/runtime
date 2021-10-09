@@ -8,7 +8,7 @@ internal static partial class Interop
     internal static partial class WinMM
     {
         [StructLayout(LayoutKind.Sequential)]
-        internal class MMCKINFO
+        internal sealed class MMCKINFO
         {
             internal int ckID;
             internal int cksize;

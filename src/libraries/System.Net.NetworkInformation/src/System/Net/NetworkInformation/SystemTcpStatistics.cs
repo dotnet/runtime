@@ -6,7 +6,7 @@ using System.Net.Sockets;
 namespace System.Net.NetworkInformation
 {
     // TCP specific statistics.
-    internal class SystemTcpStatistics : TcpStatistics
+    internal sealed class SystemTcpStatistics : TcpStatistics
     {
         private readonly Interop.IpHlpApi.MibTcpStats _stats;
 

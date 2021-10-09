@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup Condition="'$(BuildIdentityPackage)' == ''">
+    <BuildIdentityPackage>true</BuildIdentityPackage>
+
+    <!-- During an official build, only build identity packages on windows x64 legs -->
+    <BuildIdentityPackage Condition="'$(BuildingAnOfficialBuildLeg)' == 'true' AND ('$(OS)' != 'Windows_NT' OR '$(TargetArchitecture)' != 'x64')">false</BuildIdentityPackage>
+  </PropertyGroup>
+
+  <Target Name="FilterProjects" BeforeTargets="Build;Pack">
+    <Error Condition="'$(OutputRid)' == ''" Text="'OutputRid' property must be specified."/>
+
+    <!-- Only build packages for current RID or non-RID-specific -->
+    <ItemGroup>
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(OutputRid)'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(BuildIdentityPackage)' == 'true'">
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == ''" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="@(_projectsToBuild)" />
+    </ItemGroup>
+  </Target>
+</Project>

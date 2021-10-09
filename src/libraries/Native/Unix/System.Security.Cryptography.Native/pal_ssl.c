@@ -5,7 +5,6 @@
 #include "openssl.h"
 #include "pal_evp_pkey.h"
 #include "pal_evp_pkey_rsa.h"
-#include "pal_rsa.h"
 #include "pal_x509.h"
 
 #include <assert.h>
@@ -40,21 +39,29 @@ static void EnsureLibSsl10Initialized()
 #endif
 
 static int32_t g_config_specified_ciphersuites = 0;
+static char* g_emptyAlpn = "";
 
 static void DetectCiphersuiteConfiguration()
 {
-    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
-    // Always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.
 #ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+
     if (API_EXISTS(SSL_state))
     {
+        // For portable builds NEED_OPENSSL_1_1 is always set.
+        // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
         g_config_specified_ciphersuites = 1;
         return;
     }
-#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-    g_config_specified_ciphersuites = 1;
-    return;
+
 #endif
+
+    // This routine will always produce g_config_specified_ciphersuites = 1 on OpenSSL 1.0.x,
+    // so if we're building direct for 1.0.x (the only time NEED_OPENSSL_1_1 is undefined) then
+    // just omit all the code here.
+    //
+    // The method uses OpenSSL 1.0.x API, except for the fallback function SSL_CTX_config, to
+    // make the portable version easier.
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
 
     // Check to see if there's a registered default CipherString. If not, we will use our own.
     SSL_CTX* ctx = SSL_CTX_new(TLS_method());
@@ -100,13 +107,20 @@ static void DetectCiphersuiteConfiguration()
     {
         ssl = SSL_new(ctx);
         assert(ssl != NULL);
-        int systemDefaultCount = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
+        int after = sk_SSL_CIPHER_num(SSL_get_ciphers(ssl));
         SSL_free(ssl);
 
-        g_config_specified_ciphersuites = (allCount != systemDefaultCount);
+        g_config_specified_ciphersuites = (allCount != after);
     }
 
     SSL_CTX_free(ctx);
+
+#else
+
+    // OpenSSL 1.0 does not support CipherSuites so there is no way for caller to override default
+    g_config_specified_ciphersuites = 1;
+
+#endif
 }
 
 void CryptoNative_EnsureLibSslInitialized()
@@ -197,14 +211,14 @@ static long TrySetECDHNamedCurve(SSL_CTX* ctx)
         }
     }
 
-	return result;
+    return result;
 #else
     (void)ctx;
     return 1;
 #endif
 }
 
-static void ResetProtocolRestrictions(SSL_CTX* ctx)
+static void ResetCtxProtocolRestrictions(SSL_CTX* ctx)
 {
 #ifndef SSL_CTRL_SET_MIN_PROTO_VERSION
 #define SSL_CTRL_SET_MIN_PROTO_VERSION 123
@@ -217,7 +231,7 @@ static void ResetProtocolRestrictions(SSL_CTX* ctx)
     SSL_CTX_ctrl(ctx, SSL_CTRL_SET_MAX_PROTO_VERSION, 0, NULL);
 }
 
-void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
+void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
     // Ensure that ECDHE is available
     if (TrySetECDHNamedCurve(ctx) == 0)
@@ -265,7 +279,7 @@ void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 
     // We manually set protocols - we need to reset OpenSSL restrictions
     // to a maximum possible range
-    ResetProtocolRestrictions(ctx);
+    ResetCtxProtocolRestrictions(ctx);
 
     // OpenSSL 1.0 calls this long, OpenSSL 1.1 calls it unsigned long.
 #pragma clang diagnostic push
@@ -354,8 +368,36 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num)
     return SSL_read(ssl, buf, num);
 }
 
+static int verify_callback(int preverify_ok, X509_STORE_CTX* store)
+{
+    (void)preverify_ok;
+    (void)store;
+    // We don't care. Real verification happens in managed code.
+    return 1;
+}
+
+int32_t CryptoNative_SslRenegotiate(SSL* ssl)
+{
+    // The openssl context is destroyed so we can't use ticket or session resumption.
+    SSL_set_options(ssl, SSL_OP_NO_TICKET | SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+
+    int pending = SSL_renegotiate_pending(ssl);
+    if (!pending)
+    {
+        SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+        int ret = SSL_renegotiate(ssl);
+        if(ret != 1)
+            return ret;
+
+        return SSL_do_handshake(ssl);
+    }
+
+    return 0;
+}
+
 int32_t CryptoNative_IsSslRenegotiatePending(SSL* ssl)
 {
+    SSL_peek(ssl, NULL, 0);
     return SSL_renegotiate_pending(ssl) != 0;
 }
 
@@ -383,7 +425,7 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
-    return SSL_get_peer_certificate(ssl);
+    return SSL_get1_peer_certificate(ssl);
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
@@ -428,7 +470,12 @@ void CryptoNative_SslCtxSetVerify(SSL_CTX* ctx, SslCtxSetVerifyCallback callback
     SSL_CTX_set_verify(ctx, mode, callback);
 }
 
-int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
+void CryptoNative_SslSetVerifyPeer(SSL* ssl)
+{
+    SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
+}
+
+int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
     switch (policy)
     {
@@ -436,7 +483,7 @@ int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
         case NoEncryption:
             // No minimum security policy, same as OpenSSL 1.0
             SSL_CTX_set_security_level(ctx, 0);
-            ResetProtocolRestrictions(ctx);
+            ResetCtxProtocolRestrictions(ctx);
             return true;
         case RequireEncryption:
             return true;
@@ -445,7 +492,7 @@ int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
     return false;
 }
 
-int32_t CryptoNative_SetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
+int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
 {
     int32_t ret = true;
 
@@ -464,6 +511,33 @@ int32_t CryptoNative_SetCiphers(SSL_CTX* ctx, const char* cipherList, const char
     if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
     {
         ret &= SSL_CTX_set_ciphersuites(ctx, cipherSuites);
+    }
+#else
+    (void)cipherSuites;
+#endif
+
+    return ret;
+}
+
+int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites)
+{
+    int32_t ret = true;
+
+    // for < TLS 1.3
+    if (cipherList != NULL)
+    {
+        ret &= SSL_set_cipher_list(ssl, cipherList);
+        if (!ret)
+        {
+            return ret;
+        }
+    }
+
+    // for TLS 1.3
+#if HAVE_OPENSSL_SET_CIPHERSUITES
+    if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
+    {
+        ret &= SSL_set_ciphersuites(ssl, cipherSuites);
     }
 #else
     (void)cipherSuites;
@@ -541,15 +615,14 @@ int32_t CryptoNative_Tls13Supported()
 #endif
 }
 
-int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
+int32_t CryptoNative_SslCtxAddExtraChainCert(SSL_CTX* ctx, X509* x509)
 {
-    if (!x509 || !ssl)
+    if (!x509 || !ctx)
     {
         return 0;
     }
 
-    SSL_CTX* ssl_ctx = SSL_get_SSL_CTX(ssl);
-    if (SSL_CTX_add_extra_chain_cert(ssl_ctx, x509) == 1)
+    if (SSL_CTX_add_extra_chain_cert(ctx, x509) == 1)
     {
         return 1;
     }
@@ -562,7 +635,8 @@ void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, 
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_CTX_set_alpn_select_cb))
     {
-        SSL_CTX_set_alpn_select_cb(ctx, cb, arg);
+        (void)arg;
+        SSL_CTX_set_alpn_select_cb(ctx, cb, g_emptyAlpn);
     }
 #else
     (void)ctx;
@@ -571,12 +645,23 @@ void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, 
 #endif
 }
 
-int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const uint8_t* protos, uint32_t protos_len)
+int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
+{
+    return SSL_set_ex_data(ssl, 0, ptr);
+}
+
+void* CryptoNative_SslGetData(SSL* ssl)
+{
+//    void* data = SSL_get_ex_data(ssl, 0, ptr);
+    return SSL_get_ex_data(ssl, 0);
+}
+
+int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len)
 {
 #if HAVE_OPENSSL_ALPN
     if (API_EXISTS(SSL_CTX_set_alpn_protos))
     {
-        return SSL_CTX_set_alpn_protos(ctx, protos, protos_len);
+        return SSL_set_alpn_protos(ssl, protos, protos_len);
     }
     else
 #else
@@ -630,18 +715,24 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 // This function generates key pair and creates simple certificate.
 static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
 {
-    RSA* rsa = CryptoNative_RsaCreate();
+    RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();
-    BIGNUM* bn = BN_new();
-    BN_set_word(bn, RSA_F4);
     X509_NAME * asnName;
     unsigned char * name = (unsigned char*)"localhost";
 
     int ret = 0;
 
-    if (rsa != NULL && CryptoNative_RsaGenerateKeyEx(rsa, 2048, bn) == 1)
+    EVP_PKEY* pkey = CryptoNative_RsaGenerateKey(2048);
+
+    if (pkey != NULL)
     {
-        if (CryptoNative_EvpPkeySetRsa(evp, rsa) == 1)
+        rsa = EVP_PKEY_get1_RSA(pkey);
+        EVP_PKEY_free(pkey);
+    }
+
+    if (rsa != NULL)
+    {
+        if (EVP_PKEY_set1_RSA(evp, rsa) == 1)
         {
             rsa = NULL;
         }
@@ -659,11 +750,6 @@ static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
         X509_set1_notAfter(cert, time);
 
         ret = X509_sign(cert, evp, EVP_sha256());
-    }
-
-    if (bn != NULL)
-    {
-        BN_free(bn);
     }
 
     if (rsa != NULL)
@@ -695,8 +781,8 @@ int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol)
 
     if (clientCtx != NULL && serverCtx != NULL && cert != NULL && evp != NULL && bio1 != NULL && bio2 != NULL)
     {
-        CryptoNative_SetProtocolOptions(serverCtx, protocol);
-        CryptoNative_SetProtocolOptions(clientCtx, protocol);
+        CryptoNative_SslCtxSetProtocolOptions(serverCtx, protocol);
+        CryptoNative_SslCtxSetProtocolOptions(clientCtx, protocol);
         SSL_CTX_set_verify(clientCtx, SSL_VERIFY_NONE, NULL);
         SSL_CTX_set_verify(serverCtx, SSL_VERIFY_NONE, NULL);
 

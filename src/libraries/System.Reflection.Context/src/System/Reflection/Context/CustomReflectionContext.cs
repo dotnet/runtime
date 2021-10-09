@@ -8,7 +8,7 @@ using System.Reflection.Context.Virtual;
 
 namespace System.Reflection.Context
 {
-    internal class IdentityReflectionContext : ReflectionContext
+    internal sealed class IdentityReflectionContext : ReflectionContext
     {
         public override Assembly MapAssembly(Assembly assembly) { return assembly; }
         public override TypeInfo MapType(TypeInfo type) { return type; }
@@ -66,8 +66,8 @@ namespace System.Reflection.Context
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
-            Func<object, object>? getter,
-            Action<object, object>? setter)
+            Func<object, object?>? getter,
+            Action<object, object?>? setter)
         {
             return new VirtualPropertyInfo(
                 name,
@@ -83,8 +83,8 @@ namespace System.Reflection.Context
         protected PropertyInfo CreateProperty(
             Type propertyType,
             string name,
-            Func<object, object>? getter,
-            Action<object, object>? setter,
+            Func<object, object?>? getter,
+            Action<object, object?>? setter,
             IEnumerable<Attribute>? propertyCustomAttributes,
             IEnumerable<Attribute>? getterCustomAttributes,
             IEnumerable<Attribute>? setterCustomAttributes)
@@ -115,7 +115,7 @@ namespace System.Reflection.Context
                 if (prop == null)
                     throw new InvalidOperationException(SR.InvalidOperation_AddNullProperty);
 
-                VirtualPropertyBase vp = prop as VirtualPropertyBase;
+                VirtualPropertyBase? vp = prop as VirtualPropertyBase;
                 if (vp == null || vp.ReflectionContext != this)
                     throw new InvalidOperationException(SR.InvalidOperation_AddPropertyDifferentContext);
 

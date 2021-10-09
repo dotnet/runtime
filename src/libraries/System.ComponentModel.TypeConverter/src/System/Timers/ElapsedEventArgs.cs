@@ -5,9 +5,9 @@ namespace System.Timers
 {
     public class ElapsedEventArgs : EventArgs
     {
-        internal ElapsedEventArgs(long fileTime)
+        internal ElapsedEventArgs(DateTime localTime)
         {
-            SignalTime = DateTime.FromFileTime(fileTime);
+            SignalTime = localTime;
         }
 
         public DateTime SignalTime { get; }

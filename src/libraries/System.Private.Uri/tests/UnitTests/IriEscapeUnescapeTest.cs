@@ -210,9 +210,9 @@ namespace System.Net.Test.Uri.IriTest
 
             unsafe
             {
-                fixed (char* pInput = hc.HeapBlock)
+                fixed (char* pInput = hc.Buffer)
                 {
-                    ret = IriHelper.EscapeUnescapeIri(pInput + hc.Offset, 0, uriInput.Length, component);
+                    ret = IriHelper.EscapeUnescapeIri(pInput + HeapCheck.PaddingLength, 0, uriInput.Length, component);
                 }
             }
 
@@ -222,212 +222,44 @@ namespace System.Net.Test.Uri.IriTest
             return ret;
         }
 
-        [Fact]
-        public void Iri_MatchUTF8Sequence_valid_utf_followed_by_invalid_utf_5byte()
-        {
-            byte[] bytes = new byte[] { 0xF4, 0x80, 0x80, 0xBA, 0xFD, 0x80, 0x80, 0xBA, 0xCD };
-            MatchUTF8SequenceTest(bytes, bytes.Length);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_invalid_utf_followed_by_valid_ucschar()
-        {
-            byte[] bytes = new byte[] { 0xCA, 0xE4, 0x88, 0xB2, 0, 0, 0, 0, 0, 0, 0, 0 };
-            MatchUTF8SequenceTest(bytes, 4);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_iprivate_4byte()
-        {
-            // Area-B, Supplemental Private use 0x100000 - 0x10FFFF
-            byte[] bytes = new byte[] { 0xF4, 0x80, 0x80, 0xBA, 0, 0, 0, 0, 0, 0, 0, 0 };
-            MatchUTF8SequenceTest(bytes, 4);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_two_iprivate_8byte()
-        {
-            // Area-B, Supplemental Private use 0x100000 - 0x10FFFF
-            byte[] bytes = new byte[] { 0xF0, 0xA0, 0x80, 0x80, 0xF0, 0xA0, 0x80, 0x81, 0, 0, 0, 0 };
-            MatchUTF8SequenceTest(bytes, 8);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_bidichar_3byte()
-        {
-            byte[] bytes = new byte[] { 0xE2, 0x80, 0x8E, 0, 0, 0, 0, 0, 0 };
-            MatchUTF8SequenceTest(bytes, 3);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_ucschar_3byte()
-        {
-            // Char Block: 3400..4DBF-CJK Unified Ideographs Extension A
-            byte[] bytes = new byte[] { 0xE4, 0x88, 0xB2, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-            MatchUTF8SequenceTest(bytes, 3);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_bidi_followed_by_valid_highsurr_6byte()
-        {
-            // BIDI: \u200E (E2 80 8E); SURR: \uD801 \uDC02 (F0 90 90 82)
-            byte[] bytes = new byte[] { 0xE2, 0x80, 0x8E, 0xE3, 0x82, 0xAF, 0xE3, 0x82, 0xAF, 0xE3, 0x82, 0xAF };
-            MatchUTF8SequenceTest(bytes, bytes.Length);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_bidi_followed_by_invalid_highsurr_6byte()
-        {
-            // BIDI: \u200E (E2 80 8E); SURR: \uD801 \uDC02 (F0 90 90 82)
-            byte[] bytes = new byte[] { 0xE2, 0x80, 0x8E, 0xF0, 0x90, 0x90, 0, 0, 0, 0, 0, 0 };
-            MatchUTF8SequenceTest(bytes, 6);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_decoder_different_from_encoder()
-        {
-            // Found by fuzzing:
-            // Input string:                %98%C8%D4%F3%D4%A8%7A%CF%DE%41%16
-            // Valid Unicode sequences:           %D4      %A8%7A      %41%16
-
-            byte[] bytes = new byte[] { 0x98, 0xC8, 0xD4, 0xF3, 0xD4, 0xA8, 0x7A, 0xCF, 0xDE, 0x41, 0x16 };
-            MatchUTF8SequenceTest(bytes, bytes.Length);
-        }
-
-        [Fact]
-        public void Iri_MatchUTF8Sequence_invalid_ucschars_invalid()
-        {
-            // %C6%F3%BC%A1%B8%B5
-            byte[] bytes = new byte[] { 0xC6, 0xF3, 0xBC, 0xA1, 0xB8, 0xB5 };
-            MatchUTF8SequenceTest(bytes, bytes.Length);
-        }
-
-        private void MatchUTF8SequenceTest(byte[] inbytes, int numBytes)
-        {
-            MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, false);
-            MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, true);
-            MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, false);
-            MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, true);
-
-            using (new ThreadCultureChange("zh-cn"))
-            {
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, false);
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, true, true);
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, false);
-                MatchUTF8SequenceOverrunTest(inbytes, numBytes, false, true);
-            }
-        }
-
-        private void MatchUTF8SequenceOverrunTest(byte[] inbytes, int numBytes, bool isQuery, bool iriParsing)
-        {
-            Encoding noFallbackCharUTF8 = Encoding.GetEncoding(
-                Encoding.UTF8.CodePage,
-                new EncoderReplacementFallback(""),
-                new DecoderReplacementFallback(""));
-
-            char[] chars = noFallbackCharUTF8.GetChars(inbytes, 0, numBytes);
-
-            Assert.False(
-                chars.Length == 0,
-                "Invalid test: MatchUTF8Sequence cannot be called when no Unicode characters can be decoded.");
-
-            char[] unescapedChars = new char[inbytes.Length];
-            chars.CopyTo(unescapedChars, 0);
-
-            int expectedLength = inbytes.Length * 3;
-            ValueStringBuilder vsb = HeapCheck.CreateFilledPooledArray(expectedLength);
-
-            vsb.Length = 32;
-            UriHelper.MatchUTF8Sequence(
-                ref vsb,
-                unescapedChars,
-                chars.Length,
-                inbytes,
-                numBytes,
-                isQuery,
-                iriParsing);
-
-            // Check for buffer under and overruns.
-            HeapCheck.ValidatePadding(vsb, expectedLength);
-        }
-
         private class HeapCheck
         {
-            private const char paddingValue = (char)0xDEAD;
-            private const int padding = 32;
-            private int _len;
-            private char[] _memblock;
+            public const int PaddingLength = 32;
+            private const char PaddingValue = (char)0xDEAD;
+
+            private readonly int _length;
+            public char[] Buffer { get; }
 
             private HeapCheck(int length)
             {
-                _len = length;
-
-                _memblock = new char[_len + padding * 2];
-                for (int i = 0; i < _memblock.Length; i++)
-                {
-                    _memblock[i] = paddingValue;
-                }
+                _length = length;
+                Buffer = new char[_length + PaddingLength * 2];
+                Array.Fill(Buffer, PaddingValue);
             }
 
             public HeapCheck(string input) : this(input.Length)
             {
-                input.CopyTo(0, _memblock, padding, _len);
-            }
-
-            public HeapCheck(char[] input) : this(input.Length)
-            {
-                input.CopyTo(_memblock, padding);
-            }
-
-            public char[] HeapBlock
-            {
-                get { return _memblock; }
-            }
-
-            public int Offset
-            {
-                get { return padding; }
+                input.CopyTo(0, Buffer, PaddingLength, _length);
             }
 
             public void ValidatePadding()
             {
-                for (int i = 0; i < _memblock.Length; i++)
+                ReadOnlySpan<char> front = Buffer.AsSpan(0, PaddingLength);
+                for (int i = 0; i < front.Length; i++)
                 {
-                    AssertValidPadding(i, _len, _memblock[i]);
-                }
-            }
-
-            public static void ValidatePadding(ValueStringBuilder pooledArray, int expectedLength)
-            {
-                for (int i = 0; i < pooledArray.Length; i++)
-                {
-                    if ((i < padding) || (i >= padding + expectedLength))
+                    if (front[i] != PaddingValue)
                     {
-                        AssertValidPadding(i, expectedLength, pooledArray[i]);
+                        Assert.True(false, "Heap corruption detected: unexpected padding value at index: " + i);
                     }
                 }
-            }
 
-            public static ValueStringBuilder CreateFilledPooledArray(int length)
-            {
-                int size = length + padding * 2;
-                ValueStringBuilder vsb = new ValueStringBuilder(size);
-                vsb.Length = size;
-                for (int i = 0; i < vsb.Length; i++)
+                ReadOnlySpan<char> back = Buffer.AsSpan(PaddingLength + _length);
+                for (int i = 0; i < back.Length; i++)
                 {
-                    vsb[i] = paddingValue;
-                }
-                return vsb;
-            }
-
-            private static void AssertValidPadding(int i, int len, char memValue)
-            {
-                if ((i < padding) || (i >= padding + len))
-                {
-                    Assert.True(
-                        (int)paddingValue == (int)memValue,
-                        "Heap corruption detected: unexpected padding value at index: " + i +
-                        " Data allocated at idx: " + padding + " - " + (len + padding - 1));
+                    if (back[i] != PaddingValue)
+                    {
+                        Assert.True(false, "Heap corruption detected: unexpected padding value at index: " + (PaddingLength + _length + i));
+                    }
                 }
             }
         }

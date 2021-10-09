@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
@@ -10,6 +11,7 @@
     <Compile Include="AsEnumerableTests.cs" />
     <Compile Include="AverageTests.cs" />
     <Compile Include="CastTests.cs" />
+    <Compile Include="ChunkTests.cs" />
     <Compile Include="ConcatTests.cs" />
     <Compile Include="ConsistencyTests.cs" />
     <Compile Include="ContainsTests.cs" />

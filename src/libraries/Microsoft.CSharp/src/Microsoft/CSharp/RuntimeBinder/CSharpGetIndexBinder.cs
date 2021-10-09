@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -19,12 +20,14 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Expr indexerArguments = runtimeBinder.CreateArgumentListEXPR(arguments, locals, 1, arguments.Length);
             return runtimeBinder.BindProperty(this, arguments[0], locals[0], indexerArguments);
         }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public void PopulateSymbolTableWithName(Type callingType, ArgumentObject[] arguments)
             => SymbolTable.PopulateSymbolTableWithName(SpecialNames.Indexer, null, arguments[0].Type);
 
@@ -43,6 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public CSharpGetIndexBinder(
             Type callingContext,
             IEnumerable<CSharpArgumentInfo> argumentInfo) :
@@ -85,6 +89,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="indexes">The arguments of the dynamic get index operation.</param>
         /// <param name="errorSuggestion">The binding result to use if binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override DynamicMetaObject FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion)
         {
 #if ENABLECOMBINDER

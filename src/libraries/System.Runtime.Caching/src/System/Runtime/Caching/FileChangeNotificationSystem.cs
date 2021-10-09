@@ -7,20 +7,27 @@ using System.Runtime.Caching.Resources;
 using System.Collections;
 using System.IO;
 using System.Security;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.Caching
 {
+#if NET5_0_OR_GREATER
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
+#endif
     internal sealed class FileChangeNotificationSystem : IFileChangeNotificationSystem
     {
         private readonly Hashtable _dirMonitors;
         private readonly object _lock;
 
-        internal class DirectoryMonitor
+        internal sealed class DirectoryMonitor
         {
             internal FileSystemWatcher Fsw;
         }
 
-        internal class FileChangeEventTarget
+        internal sealed class FileChangeEventTarget
         {
             private readonly string _fileName;
             private readonly OnChangedCallback _onChangedCallback;

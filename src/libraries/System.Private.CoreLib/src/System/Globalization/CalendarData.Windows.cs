@@ -7,7 +7,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
-    internal partial class CalendarData
+    internal sealed partial class CalendarData
     {
         private const uint CAL_ICALINTVALUE = 0x00000001;
         private const uint CAL_RETURN_GENITIVE_NAMES = 0x10000000;
@@ -388,7 +388,7 @@ namespace System.Globalization
                     count = count < calendars.Length ? count + 1 : count;
                     Span<CalendarId> tmpSpan = stackalloc CalendarId[count]; // should be 23 max.
                     tmpSpan[0] = userOverride;
-                    calendars.AsSpan().Slice(0, count - 1).CopyTo(tmpSpan.Slice(1));
+                    calendars.AsSpan(0, count - 1).CopyTo(tmpSpan.Slice(1));
                     tmpSpan.CopyTo(calendars);
                 }
             }

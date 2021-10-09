@@ -20,12 +20,12 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingEvent.Attributes; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return UnderlyingEvent.DeclaringType; }
         }
 
-        public override Type EventHandlerType
+        public override Type? EventHandlerType
         {
             get { return UnderlyingEvent.EventHandlerType; }
         }
@@ -50,19 +50,19 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingEvent.Name; }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return UnderlyingEvent.ReflectedType; }
         }
 
         public EventInfo UnderlyingEvent { get; }
 
-        public override void AddEventHandler(object target, Delegate handler)
+        public override void AddEventHandler(object? target, Delegate? handler)
         {
             UnderlyingEvent.AddEventHandler(target, handler);
         }
 
-        public override MethodInfo GetAddMethod(bool nonPublic)
+        public override MethodInfo? GetAddMethod(bool nonPublic)
         {
             return UnderlyingEvent.GetAddMethod(nonPublic);
         }
@@ -72,12 +72,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingEvent.GetOtherMethods(nonPublic);
         }
 
-        public override MethodInfo GetRaiseMethod(bool nonPublic)
+        public override MethodInfo? GetRaiseMethod(bool nonPublic)
         {
             return UnderlyingEvent.GetRaiseMethod(nonPublic);
         }
 
-        public override MethodInfo GetRemoveMethod(bool nonPublic)
+        public override MethodInfo? GetRemoveMethod(bool nonPublic)
         {
             return UnderlyingEvent.GetRemoveMethod(nonPublic);
         }
@@ -102,12 +102,12 @@ namespace System.Reflection.Context.Delegation
             return UnderlyingEvent.IsDefined(attributeType, inherit);
         }
 
-        public override void RemoveEventHandler(object target, Delegate handler)
+        public override void RemoveEventHandler(object? target, Delegate? handler)
         {
             UnderlyingEvent.RemoveEventHandler(target, handler);
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return UnderlyingEvent.ToString();
         }

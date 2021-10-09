@@ -353,7 +353,7 @@ namespace OLEDB.Test.ModuleCore
                     case TEST_WARNING:
                         eErrorLevel = tagERRORLEVEL.HR_WARNING;
                         break;
-                };
+                }
             }
 
             //Note: We don't use Exception.ToString as the details for the log since that also includes

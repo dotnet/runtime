@@ -148,17 +148,16 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
             if (!CanRead && !CanWrite)
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(null);
 
             if (!destination.CanRead && !destination.CanWrite)
-                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
+                ThrowHelper.ThrowObjectDisposedException_StreamClosed(nameof(destination));
 
             if (!CanRead)
-                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
+                ThrowHelper.ThrowNotSupportedException_UnreadableStream();
 
             if (!destination.CanWrite)
-                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
-
+                ThrowHelper.ThrowNotSupportedException_UnwritableStream();
 
             return _unmanagedStream.CopyToAsync(destination, bufferSize, cancellationToken);
         }

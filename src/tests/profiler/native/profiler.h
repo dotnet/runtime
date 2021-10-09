@@ -7,6 +7,8 @@
 
 #include <atomic>
 #include <cstdio>
+#include <thread>
+#include <chrono>
 #include "cor.h"
 #include "corprof.h"
 #include "holder.h"
@@ -23,22 +25,88 @@
 #define STRING_LENGTH  256
 #define LONG_LENGTH   1024
 
-class Profiler : public ICorProfilerCallback10
+typedef void (*ProfilerCallback) (void);
+
+class ShutdownGuard
+{
+
+private:
+    static std::atomic<bool> s_preventHooks;
+    static std::atomic<int> s_hooksInProgress;
+
+public:
+    ShutdownGuard()
+    {
+        ++s_hooksInProgress;
+    }
+
+    ~ShutdownGuard()
+    {
+        --s_hooksInProgress;
+    }
+
+    static void Initialize()
+    {
+        s_preventHooks = false;
+        s_hooksInProgress = 0;
+    }
+
+    static bool HasShutdownStarted()
+    {
+        return s_preventHooks.load();
+    }
+
+    static void WaitForInProgressHooks()
+    {
+        s_preventHooks = true;
+
+        while (s_hooksInProgress.load() > 0)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+    }
+};
+
+// Managed code can keep running after Shutdown() is called, and things like
+// ELT hooks will continue to be called. We would AV if we tried to call
+// in to freed resources.
+#define SHUTDOWNGUARD()                         \
+    ShutdownGuard shutdownGuard;                \
+    if (ShutdownGuard::HasShutdownStarted())    \
+    {                                           \
+        return S_OK;                            \
+    }
+
+#define SHUTDOWNGUARD_RETVOID()                 \
+    ShutdownGuard shutdownGuard;                \
+    if (ShutdownGuard::HasShutdownStarted())    \
+    {                                           \
+        return;                                 \
+    }
+
+class Profiler : public ICorProfilerCallback11
 {
 private:
     std::atomic<int> refCount;
+    static ProfilerCallback s_callback;
+    static ManualEvent s_callbackSet;
+    
 
 protected:
+    static void NotifyManagedCodeViaCallback(ICorProfilerInfo11 *pCorProfilerInfo);
+
     String GetClassIDName(ClassID classId);
     String GetFunctionIDName(FunctionID funcId);
     String GetModuleIDName(ModuleID modId);
 
 public:
+    static Profiler *Instance;
+    static void SetCallback(ProfilerCallback callback);
+
     ICorProfilerInfo11* pCorProfilerInfo;
 
     Profiler();
     virtual ~Profiler();
-	virtual GUID GetClsid() = 0;
     HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk) override;
     HRESULT STDMETHODCALLTYPE Shutdown() override;
     HRESULT STDMETHODCALLTYPE AppDomainCreationStarted(AppDomainID appDomainId) override;
@@ -145,6 +213,7 @@ public:
         ULONG numStackFrames,
         UINT_PTR stackFrames[]) override;
     HRESULT STDMETHODCALLTYPE EventPipeProviderCreated(EVENTPIPE_PROVIDER provider) override;
+    HRESULT STDMETHODCALLTYPE LoadAsNotficationOnly(BOOL *pbNotificationOnly) override;
 
     HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void **ppvObject) override;
     ULONG STDMETHODCALLTYPE AddRef(void) override;

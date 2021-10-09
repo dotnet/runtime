@@ -227,7 +227,7 @@ namespace System.Drawing
         public static Font FromHfont(IntPtr hfont)
         {
             Interop.User32.LOGFONT logFont = default;
-            SafeNativeMethods.GetObject(new HandleRef(null, hfont), ref logFont);
+            Interop.Gdi32.GetObject(new HandleRef(null, hfont), ref logFont);
 
             using (ScreenDC dc = ScreenDC.Create())
             {

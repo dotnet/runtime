@@ -111,7 +111,7 @@ namespace System.Security.Cryptography.Xml.Tests
             int b = s.ReadByte();
             while (b != -1)
             {
-                sb.Append(b.ToString("X2"));
+                sb.Append($"{b:X2}");
                 b = s.ReadByte();
             }
             return sb.ToString();

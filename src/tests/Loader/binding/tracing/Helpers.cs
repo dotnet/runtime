@@ -75,8 +75,6 @@ namespace BinderTracingTests
             string extension = isExe ? "exe" : "dll";
             switch (pathSource)
             {
-                case ProbedPath.PathSource.AppNativeImagePaths:
-                    return Path.Combine(baseDirectory, $"{assemblyName}.ni.{extension}");
                 case ProbedPath.PathSource.AppPaths:
                 case ProbedPath.PathSource.SatelliteSubdirectory:
                     return Path.Combine(baseDirectory, $"{assemblyName}.{extension}");
@@ -87,8 +85,14 @@ namespace BinderTracingTests
 
         public static bool AssemblyNamesMatch(AssemblyName name1, AssemblyName name2)
         {
-            if (name1 == null || name2 == null)
-                return name1 == null && name2 == null;
+            if (name1 == null)
+            {
+                return name2 == null || name2.Name == "NULL";
+            }
+            else if (name2 == null)
+            {
+                return name1 == null || name1.Name == "NULL";
+            }
 
             return name1.Name == name2.Name
                 && ((name1.Version == null && name2.Version == null) || name1.Version == name2.Version)
@@ -133,7 +137,7 @@ namespace BinderTracingTests
                         && h.HandlerName == match.HandlerName
                         && h.AssemblyLoadContext == match.AssemblyLoadContext
                         && AssemblyNamesMatch(h.ResultAssemblyName, match.ResultAssemblyName)
-                        && h.ResultAssemblyPath == match.ResultAssemblyPath;
+                        && (h.ResultAssemblyPath == match.ResultAssemblyPath || h.ResultAssemblyPath == "NULL" && match.ResultAssemblyPath == null);
                 Assert.IsTrue(actual.Exists(pred), $"Handler invocation not found: {match.ToString()}");
             }
         }
@@ -150,7 +154,15 @@ namespace BinderTracingTests
             ValidateAssemblyName(expected.AssemblyName, actual.AssemblyName, nameof(LoadFromHandlerInvocation.AssemblyName));
             Assert.AreEqual(expected.IsTrackedLoad, actual.IsTrackedLoad, $"Unexpected value for {nameof(LoadFromHandlerInvocation.IsTrackedLoad)} on event");
             Assert.AreEqual(expected.RequestingAssemblyPath, actual.RequestingAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.RequestingAssemblyPath)} on event");
-            Assert.AreEqual(expected.ComputedRequestedAssemblyPath, actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
+
+            if (expected.ComputedRequestedAssemblyPath == null)
+            {
+                Assert.AreEqual("NULL", actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
+            }
+            else
+            {
+                Assert.AreEqual(expected.ComputedRequestedAssemblyPath, actual.ComputedRequestedAssemblyPath, $"Unexpected value for {nameof(LoadFromHandlerInvocation.ComputedRequestedAssemblyPath)} on event");
+            }
         }
 
         private static void ValidateProbedPaths(List<ProbedPath> expected, List<ProbedPath> actual)

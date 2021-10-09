@@ -3,7 +3,7 @@
 
 namespace System.Configuration
 {
-    internal class StreamUpdate
+    internal sealed class StreamUpdate
     {
         internal StreamUpdate(string newStreamname)
         {

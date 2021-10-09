@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.ComponentModel
 {
     /// <summary>
@@ -19,7 +21,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.DefaultBindingPropertyAttribute'/> class.
         /// </summary>
-        public DefaultBindingPropertyAttribute(string name)
+        public DefaultBindingPropertyAttribute(string? name)
         {
             Name = name;
         }
@@ -28,7 +30,7 @@ namespace System.ComponentModel
         /// Gets the name of the default binding property for the component this attribute is
         /// bound to.
         /// </summary>
-        public string Name { get; }
+        public string? Name { get; }
 
         /// <summary>
         /// Specifies the default value for the <see cref='System.ComponentModel.DefaultBindingPropertyAttribute'/>, which is <see langword='null'/>. This
@@ -36,7 +38,7 @@ namespace System.ComponentModel
         /// </summary>
         public static readonly DefaultBindingPropertyAttribute Default = new DefaultBindingPropertyAttribute();
 
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is DefaultBindingPropertyAttribute other && other.Name == Name;
         }

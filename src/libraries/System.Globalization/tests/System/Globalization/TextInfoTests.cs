@@ -120,10 +120,42 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new CultureInfo(name).TextInfo.IsRightToLeft);
         }
 
-        [Fact]
-        public void ListSeparator_EnUS()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData("ar-SA", ";")]
+        [InlineData("as-IN", ",")]
+        [InlineData("ba-RU", ";")]
+        [InlineData("bs-cyrl-BA", ";")]
+        [InlineData("de-DE", ";")]
+        [InlineData("dv-MV", "\u060C")]
+        [InlineData("en-GB", ",")]
+        [InlineData("en-US", ",")]
+        [InlineData("es-ES", ";")]
+        [InlineData("es-MX", ",")]
+        [InlineData("fa-IR", "\u061B")]
+        [InlineData("fr-FR", ";")]
+        [InlineData("hr-HR", ";")]
+        [InlineData("it-IT", ";")]
+        [InlineData("ko-KR", ",")]
+        [InlineData("ku-arab-iq", "\u061B")]
+        [InlineData("nl-NL", ";")]
+        [InlineData("pl-pl", ";")]
+        [InlineData("pt-PT", ";")]
+        [InlineData("ru-RU", ";")]
+        [InlineData("sv-SE", ";")]
+        [InlineData("th-TH", ",")]
+        [InlineData("ja-jp", ",")]
+        [InlineData("zh-CN", ",")]
+        [InlineData("", ",")]
+        public void ListSeparatorTest(string cultureName, string separator)
         {
-            Assert.NotEqual(string.Empty, new CultureInfo("en-US").TextInfo.ListSeparator);
+            try
+            {
+                Assert.Equal(separator, CultureInfo.GetCultureInfo(cultureName).TextInfo.ListSeparator);
+            }
+            catch (CultureNotFoundException)
+            {
+                // Ignore the cultures we cannot create on downlevel versions.
+            }
         }
 
         [Theory]
@@ -193,9 +225,9 @@ namespace System.Globalization.Tests
             yield return "tr";
             yield return "tr-TR";
 
-            if (PlatformDetection.IsNotBrowser)
+            if (PlatformDetection.IsNotUsingLimitedCultures)
             {
-                // Browser's ICU doesn't contain these locales
+                // Mobile / Browser ICU doesn't contain these locales
                 yield return "az";
                 yield return "az-Latn-AZ";
             }
@@ -246,17 +278,22 @@ namespace System.Globalization.Tests
 
             foreach (string cultureName in GetTestLocales())
             {
+                // Android has its own ICU, which doesn't work well with tr
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { cultureName, "I", "\u0131" };
+                    yield return new object[] { cultureName, "HI!", "h\u0131!" };
+                    yield return new object[] { cultureName, "HI\n\0H\u0130\t!", "h\u0131\n\0hi\u0009!" };
+                }
                 yield return new object[] { cultureName, "\u0130", "i" };
                 yield return new object[] { cultureName, "i", "i" };
-                yield return new object[] { cultureName, "I", "\u0131" };
-                yield return new object[] { cultureName, "HI!", "h\u0131!" };
-                yield return new object[] { cultureName, "HI\n\0H\u0130\t!", "h\u0131\n\0hi\u0009!" };
+                
             }
 
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
             // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
             // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows && PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "en-US-POSIX", "I", "i" };
             }
@@ -369,17 +406,21 @@ namespace System.Globalization.Tests
             // Turkish i
             foreach (string cultureName in GetTestLocales())
             {
-                yield return new object[] { cultureName, "i", "\u0130" };
+                // Android has its own ICU, which doesn't work well with tr
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { cultureName, "i", "\u0130" };
+                    yield return new object[] { cultureName, "H\u0131\n\0Hi\u0009!", "HI\n\0H\u0130\t!" };
+                }
                 yield return new object[] { cultureName, "\u0130", "\u0130" };
                 yield return new object[] { cultureName, "\u0131", "I" };
                 yield return new object[] { cultureName, "I", "I" };
-                yield return new object[] { cultureName, "H\u0131\n\0Hi\u0009!", "HI\n\0H\u0130\t!" };
             }
 
             // ICU has special tailoring for the en-US-POSIX locale which treats "i" and "I" as different letters
             // instead of two letters with a case difference during collation.  Make sure this doesn't confuse our
             // casing implementation, which uses collation to understand if we need to do Turkish casing or not.
-            if (!PlatformDetection.IsWindows)
+            if (!PlatformDetection.IsWindows && PlatformDetection.IsNotBrowser)
             {
                 yield return new object[] { "en-US-POSIX", "i", "I" };
             }

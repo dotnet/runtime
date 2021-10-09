@@ -12,7 +12,7 @@ public class ThreadSafety
     const int NumberOfIterations = 100;
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void OpenStandardXXXCanBeCalledConcurrently()
     {
         Parallel.For(0, NumberOfIterations, i =>
@@ -41,7 +41,7 @@ public class ThreadSafety
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void SetStandardXXXCanBeCalledConcurrently()
     {
         TextReader savedStandardInput = Console.In;
@@ -84,7 +84,7 @@ public class ThreadSafety
     }
 
     [Fact]
-    [PlatformSpecific(~TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public static void ReadMayBeCalledConcurrently()
     {
         const char TestChar = '+';

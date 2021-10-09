@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(TargetFrameworkForNETCoreTasks);$(TargetFrameworkForNETFrameworkTasks)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <NoWarn>$(NoWarn),CA1050</NoWarn>
+    <!-- Ignore nullable warnings on net4* -->
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
+    <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <Compile Include="..\Common\IsExternalInit.cs" />
+    <Compile Include="$(RepoRoot)src\libraries\System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/NullableAttributes.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Common\Utils.cs" />
+    <Compile Include="..\Common\LogAsErrorException.cs" />
+
+    <PackageReference Include="Microsoft.Build" Version="$(RefOnlyMicrosoftBuildVersion)" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="$(RefOnlyMicrosoftBuildFrameworkVersion)" />
+    <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(RefOnlyMicrosoftBuildTasksCoreVersion)" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="$(RefOnlyMicrosoftBuildUtilitiesCoreVersion)" />
+    <PackageReference Include="System.Reflection.MetadataLoadContext" Version="4.7.1" />
+  </ItemGroup>
+
+  <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
+    <ItemGroup>
+      <!-- non-net4* -->
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\$(MSBuildProjectName)*"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\System.Reflection.MetadataLoadContext.dll"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+
+      <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*"
+                      TargetPath="tasks\$(TargetFrameworkForNETFrameworkTasks)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

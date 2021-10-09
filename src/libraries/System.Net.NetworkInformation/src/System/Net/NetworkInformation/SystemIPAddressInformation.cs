@@ -5,7 +5,7 @@ namespace System.Net.NetworkInformation
 {
     // This is the main addressinformation class that contains the ipaddress
     // and other properties.
-    internal class SystemIPAddressInformation : IPAddressInformation
+    internal sealed class SystemIPAddressInformation : IPAddressInformation
     {
         private readonly IPAddress _address;
         internal readonly bool Transient;

@@ -202,7 +202,7 @@ public class Tests {
 
 			return 0;
 		}
-		Console.WriteLine ("Failed, expected an exception because there is no paramterless ctor");
+		Console.WriteLine ("Failed, expected an exception because there is no parameterless ctor");
 		return 1;
 	}
 	

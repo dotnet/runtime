@@ -1,54 +1,114 @@
-# Running Tests using Mono Runtime
+# Running test suites using Mono
 
-## Running Runtime Tests
-We currently only support running tests against coreclr.  There are additional mono runtime tests in mono/mono, but they
-have not been moved over yet. Simply run the following command:
+Before running tests, [build Mono](../../building/mono/README.md) using the desired configuration.
 
-```
-dotnet build /t:RunCoreClrTests $(REPO_ROOT)/src/mono/mono.proj
-```
+## Runtime Tests
+### Desktop Mono:
 
-If you want to run individual tests, execute this command:
+To build the runtime tests for Mono JIT or interpreter:
 
-```
-dotnet build /t:RunCoreClrTest /p:CoreClrTest="<TestName>" $(REPO_ROOT)/src/mono/mono.proj
-```
-
-## Running Library Tests
-Running library tests against Mono is straightforward regardless of configuration.  Simply run the following commands:
-
-1. Build and set the RuntimeFlavor
-
-```bash
-./build.sh /p:RuntimeFlavor=mono
-```
-or on Windows
-```bat
-build.cmd /p:RuntimeFlavor=mono
-```
-
-2. cd into the test library of your choice (`cd src/libraries/<library>/tests`)
-
-3. Run the tests
+1. Build CoreCLR - the `clr.native` subset is enough but you can build the whole thing, optionally.  From the `$(REPO_ROOT)`:
 
 ```
-dotnet build /t:Test /p:RuntimeFlavor=mono
+./build.sh clr.native -c <release|debug>
 ```
 
-# Patching Local dotnet (.dotnet-mono)
-Another way to test mono out is by 'patching' a local dotnet with our runtime bits.  This is a good way to write simple
-test programs and get a glimpse of how mono will work with the dotnet tooling.
-
-To generate a local .dotnet-mono, execute this command:
+2. Build the tests (in `$(REPO_ROOT)/src/tests`)
 
 ```
-dotnet build /t:PatchLocalMonoDotnet $(REPO_ROOT)/src/mono/mono.proj
+cd src/tests
+./build.sh excludemonofailures <release|debug>
 ```
 
-You can then, for example, run our HelloWorld sample via:
+Run individual test:
+```
+cd src/mono
+make run-tests-coreclr CoreClrTest="bash ../../artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh"
+```
+
+Run all tests:
+```
+cd src/mono
+make run-tests-coreclr-all
+```
+
+### WebAssembly:
+Build the runtime tests for WebAssembly
+```
+$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Browser wasm <Release/Debug>
+```
+
+The last few lines of the build log should contain something like this:
+```
+--------------------------------------------------
+ Example run.sh command
+
+ src/tests/run.sh --coreOverlayDir=<repo_root>artifacts/tests/coreclr/Browser.wasm.Release/Tests/Core_Root --testNativeBinDir=<repo_root>/artifacts/obj/coreclr/Browser.wasm.Release/tests --testRootDir=<repo_root>/artifacts/tests/coreclr/Browser.wasm.Release --copyNativeTestBin Release
+--------------------------------------------------
+```
+
+To run all tests, execute that command, adding `wasm` to the end.
+
+### Android:
+Build the runtime tests for Android x64/ARM64
+```
+$(REPO_ROOT)/src/tests/build.sh -excludemonofailures os Android <x64/arm64> <Release/Debug>
+```
+
+Run one test wrapper from repo root
+```
+export CORE_ROOT=<path_to_folder_Core_Root>
+./dotnet.sh <path_to_xunit.console.dll> <path_to_*.XUnitWrapper.dll>
+```
+
+### Additional Documents
+For more details about internals of the runtime tests, please refer to the [CoreCLR testing documents](../coreclr)
+
+## Libraries tests
+### Desktop Mono
+Build and run library tests against Mono JIT or interpreter
+```
+$(REPO_ROOT)/dotnet.sh build /t:Test /p:RuntimeFlavor=mono /p:Configuration=<Release/Debug> $(REPO_ROOT)/src/libraries/<library>/tests
+```
+Alternatively, you could execute the following command from `$(REPO_ROOT)/src/mono`
+```
+make run-tests-corefx-<library>
+```
+For example, the following command is for running System.Runtime tests:
+```
+make run-tests-corefx-System.Runtime
+```
+### Mobile targets and WebAssembly
+Build and run library tests against Webassembly, Android or iOS. See instructions located in [Library testing document folder](../libraries/)
+
+# Running the Mono samples
+There are a few convenient samples located in `$(REPO_ROOT)/src/mono/sample`, which could help you test your program easily with different flavors of Mono or do a sanity check on the build. The samples are set up to work with a specific configuration; please refer to the relevant Makefile for specifics. If you would like to work with a different configuration, you can edit the Makefile.
+
+## Desktop Mono
+To run the desktop Mono sample, cd to `HelloWorld` and execute:
 
 ```
-dotnet build -c Release $(REPO_ROOT)/src/mono/netcore/sample/HelloWorld
-MONO_ENV_OPTIONS="" COMPlus_DebugWriteToStdErr=1 \
-$(REPO_ROOT)/.dotnet-mono/dotnet $(REPO_ROOT)/src/mono/netcore/sample/HelloWorld/bin/HelloWorld.dll
+make run
+```
+Note that the default configuration of this sample is LLVM JIT.
+
+## WebAssembly
+To run the WebAssembly sample, cd to `wasm`.  There are two sub-folders `browser` and `console`. One is set up to run the progam in browser, the other is set up to run the program in console. Enter the desirable sub-folder and execute
+
+```
+make build && make run
+```
+
+## Android
+To run the Android sample, cd to `Android` and execute
+
+```
+make run
+```
+
+## iOS
+To run the iOS sample, cd to `iOS` and execute
+
+```
+make run
 ```

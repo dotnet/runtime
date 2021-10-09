@@ -18,7 +18,7 @@ public:
     MetaDataGetDispenser();
     virtual ~MetaDataGetDispenser();
 
-    virtual GUID GetClsid();
+    static GUID GetClsid();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
 

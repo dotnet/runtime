@@ -103,8 +103,23 @@
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
+  <data name="Chain_EmptyCustomTrustNotSupported" xml:space="preserve">
+    <value>An empty custom trust store is not supported on this platform.</value>
+  </data>
   <data name="Chain_NoPolicyMatch" xml:space="preserve">
     <value>The certificate has invalid policy.</value>
+  </data>
+  <data name="Chain_PartialChain" xml:space="preserve">
+    <value>The certificate chain is incomplete.</value>
+  </data>
+  <data name="Chain_RevocationStatusUnknown" xml:space="preserve">
+    <value>The certificate's revocation status could not be determined.</value>
+  </data>
+  <data name="Chain_SettingNotSupported" xml:space="preserve">
+    <value>The certificate chain setting '{0}' is not supported on this platform.</value>
+  </data>
+  <data name="Chain_VerificationFlagNotSupported" xml:space="preserve">
+    <value>The verification flag '{0}' is not supported on this platform.</value>
   </data>
   <data name="Cryptography_BadHashSize_ForAlgorithm" xml:space="preserve">
     <value>The provided value of {0} bytes does not match the expected size of {1} bytes for the algorithm ({2}).</value>
@@ -247,6 +262,9 @@
   <data name="Cryptography_UnknownKeyAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known key algorithm.</value>
   </data>
+  <data name="Cryptography_UnknownSignatureFormat" xml:space="preserve">
+    <value>The signature format '{0}' is unknown.</value>
+  </data>
   <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
     <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
   </data>
@@ -274,6 +292,15 @@
   <data name="Cryptography_X509_PKCS7_NoSigner" xml:space="preserve">
     <value>Cannot find the original signer.</value>
   </data>
+  <data name="Cryptography_X509_PKCS7_Unsupported" xml:space="preserve">
+    <value>PKCS#7 certificate format is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_PersistKeySetNotSupported" xml:space="preserve">
+    <value>The PKCS#12 PersistKeySet flag is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_PKCS12_ExportableNotSupported" xml:space="preserve">
+    <value>The PKCS#12 Exportable flag is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_X509_StoreAddFailure" xml:space="preserve">
     <value>The X509 certificate could not be added to the store.</value>
   </data>
@@ -289,14 +316,29 @@
   <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
     <value>The X509 certificate store is read-only.</value>
   </data>
+  <data name="Cryptography_X509_StoreRemoveFailure" xml:space="preserve">
+    <value>The X509 certificate could not be removed from the store.</value>
+  </data>
   <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
     <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
+  </data>
+  <data name="Cryptography_X509_StoreDSAPrivateKeyNotSupported" xml:space="preserve">
+    <value>Adding a DSA private key to the store is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_X509_StoreEnumerateFailure" xml:space="preserve">
+    <value>Failed to enumerate certificates from the store.</value>
+  </data>
+  <data name="Cryptography_X509_Store_RootUnsupported" xml:space="preserve">
+    <value>Root certificate store is not supported on this platform.</value>
   </data>
   <data name="Cryptography_X509_NoPemCertificate" xml:space="preserve">
     <value>The certificate contents do not contain a PEM with a CERTIFICATE label, or the content is malformed.</value>
   </data>
   <data name="Cryptography_X509_NoOrMismatchedPemKey" xml:space="preserve">
     <value>The key contents do not contain a PEM, the content is malformed, or the key does not match the certificate.</value>
+  </data>
+  <data name="Cryptography_X509_CertificateCorrupted" xml:space="preserve">
+    <value>Certificate '{0}' is corrupted.</value>
   </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started. Call MoveNext.</value>
@@ -330,6 +372,9 @@
   </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
+  </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
   <data name="Cryptography_FileStatusError" xml:space="preserve">
     <value>Unable to get file status.</value>
@@ -441,5 +486,8 @@
   </data>
   <data name="Cryptography_TlsRequires64ByteSeed" xml:space="preserve">
     <value>The TLS key derivation function requires a seed value of exactly 64 bytes.</value>
+  </data>
+  <data name="Cryptography_UnknownCertContentType" xml:space="preserve">
+    <value>The certificate content type could not be determined.</value>
   </data>
 </root>

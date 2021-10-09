@@ -1,73 +1,88 @@
+include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/gen-eventing.cmake)
 
-set(eventpipe_sources_base
-	ds-dump-protocol.c
-	ds-dump-protocol.h
-	ds-eventpipe-protocol.c
-	ds-eventpipe-protocol.h
-	ds-getter-setter.h
-	ds-ipc.c
-	ds-ipc.h
-	ds-ipc-posix.c
-	ds-ipc-posix.h
-	ds-process-protocol.c
-	ds-process-protocol.h
-	ds-profiler-protocol.c
-	ds-profiler-protocol.h
-	ds-protocol.c
-	ds-protocol.h
-	ds-rt.h
-	ds-rt-config.h
-	ds-rt-mono.c
-	ds-rt-mono.h
-	ds-rt-types.h
-	ds-rt-types-mono.h
-	ds-server.c
-	ds-server.h
-	ds-types.h
-	ep.c
-	ep.h
-	ep-block.c
-	ep-block.h
-	ep-buffer.c
-	ep-buffer.h
-	ep-buffer-manager.c
-	ep-buffer-manager.h
-	ep-config.c
-	ep-config.h
-	ep-config-internals.h
-	ep-event.c
-	ep-event.h
-	ep-event-instance.h
-	ep-event-instance.c
-	ep-event-payload.c
-	ep-event-payload.h
-	ep-event-source.c
-	ep-event-source.h
-	ep-file.c
-	ep-file.h
-	ep-getter-setter.h
-	ep-metadata-generator.c
-	ep-metadata-generator.h
-	ep-provider.c
-	ep-provider.h
-	ep-provider-internals.h
-	ep-rt.h
-	ep-rt-config.h
-	ep-rt-config-mono.h
-	ep-rt-mono.c
-	ep-rt-mono.h
-	ep-rt-types.h
-	ep-rt-types-mono.h
-	ep-thread.c
-	ep-thread.h
-	ep-types.h
-	ep-session.c
-	ep-session.h
-	ep-session-provider.c
-	ep-stack-contents.c
-	ep-stack-contents.h
-	ep-stream.c
-	ep-stream.h)
 if(ENABLE_PERFTRACING)
-  addprefix(eventpipe_sources ../eventpipe  "${eventpipe_sources_base}")
-endif()
+
+    if (FEATURE_PERFTRACING_PAL_TCP)
+        add_definitions(-DENABLE_PERFTRACING_PAL_TCP)
+    endif (FEATURE_PERFTRACING_PAL_TCP)
+
+    if (FEATURE_PERFTRACING_DISABLE_LISTEN_PORTS)
+        add_definitions(-DDISABLE_PERFTRACING_LISTEN_PORTS)
+    endif (FEATURE_PERFTRACING_DISABLE_LISTEN_PORTS)
+
+    if (FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT)
+        add_definitions(-DDISABLE_PERFTRACING_DEFAULT_LISTEN_PORT)
+    endif (FEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT)
+
+    if (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
+        add_definitions(-DDISABLE_PERFTRACING_CONNECT_PORTS)
+    endif (FEATURE_PERFTRACING_DISABLE_CONNECT_PORTS)
+
+    include (${SHARED_EVENTPIPE_SOURCE_PATH}CMakeLists.txt)
+
+    set(MONO_EVENTPIPE_SHIM_SOURCES "")
+    set(MONO_EVENTPIPE_SHIM_HEADERS "")
+
+    set(MONO_DIAGNOSTIC_SERVER_SHIM_SOURCES "")
+    set(MONO_DIAGNOSTIC_SERVER_SHIM_HEADERS "")
+
+    list(APPEND MONO_EVENTPIPE_SHIM_SOURCES
+        ep-rt-mono.c
+    )
+
+    list(APPEND MONO_DIAGNOSTIC_SERVER_SHIM_SOURCES
+        ds-rt-mono.c
+    )
+
+    list(APPEND MONO_EVENTPIPE_SHIM_HEADERS
+        ep-rt-config-mono.h
+        ep-rt-mono.h
+        ep-rt-types-mono.h
+    )
+
+    list(APPEND MONO_DIAGNOSTIC_SERVER_SHIM_HEADERS
+        ds-rt-mono.h
+        ds-rt-types-mono.h
+    )
+
+    set(shared_eventpipe_sources_base "")
+    set(mono_eventpipe_shim_sources_base "")
+
+    set(shared_diagnostic_server_sources_base "")
+    set(mono_diagnostic_server_shim_sources_base "")
+
+    list(APPEND shared_eventpipe_sources_base
+        ${SHARED_EVENTPIPE_SOURCES}
+        ${SHARED_EVENTPIPE_HEADERS}
+    )
+
+    list(APPEND shared_diagnostic_server_sources_base
+        ${SHARED_DIAGNOSTIC_SERVER_SOURCES}
+        ${SHARED_DIAGNOSTIC_SERVER_HEADERS}
+        ${SHARED_DIAGNOSTIC_SERVER_PAL_SOURCES}
+        ${SHARED_DIAGNOSTIC_SERVER_PAL_HEADERS}
+    )
+
+    list(APPEND mono_eventpipe_shim_sources_base
+        ${MONO_EVENTPIPE_SHIM_SOURCES}
+        ${MONO_EVENTPIPE_SHIM_HEADERS}
+    )
+
+    list(APPEND mono_diagnostic_server_shim_sources_base
+        ${MONO_DIAGNOSTIC_SERVER_SHIM_SOURCES}
+        ${MONO_DIAGNOSTIC_SERVER_SHIM_HEADERS}
+    )
+
+    addprefix(shared_eventpipe_sources_base ${SHARED_EVENTPIPE_SOURCE_PATH} "${shared_eventpipe_sources_base}")
+    addprefix(mono_eventpipe_shim_sources_base ${MONO_EVENTPIPE_SHIM_SOURCE_PATH} "${mono_eventpipe_shim_sources_base}")
+
+    addprefix(shared_diagnostic_server_sources_base ${SHARED_EVENTPIPE_SOURCE_PATH} "${shared_diagnostic_server_sources_base}")
+    addprefix(mono_diagnostic_server_shim_sources_base ${MONO_EVENTPIPE_SHIM_SOURCE_PATH} "${mono_diagnostic_server_shim_sources_base}")
+
+    set(eventpipe_sources ${shared_eventpipe_sources_base} ${mono_eventpipe_shim_sources_base} ${MONO_EVENTPIPE_GEN_HEADERS} ${MONO_EVENTPIPE_GEN_SOURCES})
+    set(diagnostic_server_sources ${shared_diagnostic_server_sources_base} ${mono_diagnostic_server_shim_sources_base})
+
+    set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ep-sources.c PROPERTIES COMPILE_DEFINITIONS EP_FORCE_INCLUDE_SOURCE_FILES)
+    set_source_files_properties(${SHARED_EVENTPIPE_SOURCE_PATH}/ds-sources.c PROPERTIES COMPILE_DEFINITIONS DS_FORCE_INCLUDE_SOURCE_FILES)
+
+endif(ENABLE_PERFTRACING)

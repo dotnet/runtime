@@ -40,7 +40,7 @@ namespace PInvokeTests
             int arg2 = 20;
             double arg3 = 12.5;
 
-            string expected = $"{arg1}, {arg2}, {arg3:F1}";
+            string expected = FormattableString.Invariant($"{arg1}, {arg2}, {arg3:F1}");
 
             StringBuilder builder;
 

@@ -35,7 +35,7 @@ namespace System.Xml.Serialization
             {
                 return string.Create(identifier.Length, identifier, static (buffer, identifier) =>
                 {
-                    identifier.AsSpan().CopyTo(buffer);
+                    identifier.CopyTo(buffer);
                     buffer[0] = char.ToUpperInvariant(buffer[0]); // convert only first char to uppercase; leave all else as-is
                 });
             }
@@ -59,7 +59,7 @@ namespace System.Xml.Serialization
             {
                 return string.Create(identifier.Length, identifier, static (buffer, identifier) =>
                 {
-                    identifier.AsSpan().CopyTo(buffer);
+                    identifier.CopyTo(buffer);
                     buffer[0] = char.ToLowerInvariant(buffer[0]); // convert only first char to lowercase; leave all else as-is
                 });
             }
@@ -234,7 +234,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Array.Empty<Type>();
+            Type[] arguments = t.IsGenericType || t.ContainsGenericParameters ? t.GetGenericArguments() : Type.EmptyTypes;
             GetCSharpName(t, arguments, 0, sb);
             for (int i = 0; i < rank; i++)
             {
@@ -283,7 +283,7 @@ namespace System.Xml.Serialization
             {
                 if (separator >= 0)
                 {
-                    sb.Append(originalIdentifier.Substring(separator, 1));
+                    sb.Append(originalIdentifier[separator]);
                 }
                 separator++;
                 separator += names[i].Length;

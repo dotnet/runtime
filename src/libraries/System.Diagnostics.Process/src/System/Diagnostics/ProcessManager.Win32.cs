@@ -42,7 +42,7 @@ namespace System.Diagnostics
 
         private static bool IsMainWindow(IntPtr handle)
         {
-            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle);
+            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle) != Interop.BOOL.FALSE;
         }
 
         [UnmanagedCallersOnly]
@@ -51,7 +51,7 @@ namespace System.Diagnostics
             MainWindowFinder* instance = (MainWindowFinder*)extraParameter;
 
             int processId = 0; // Avoid uninitialized variable if the window got closed in the meantime
-            Interop.User32.GetWindowThreadProcessId(handle, out processId);
+            Interop.User32.GetWindowThreadProcessId(handle, &processId);
 
             if ((processId == instance->_processId) && IsMainWindow(handle))
             {
@@ -131,7 +131,13 @@ namespace System.Diagnostics
 
                 var modules = new ProcessModuleCollection(firstModuleOnly ? 1 : modulesCount);
 
-                char[] chars = ArrayPool<char>.Shared.Rent(1024);
+                const int StartLength =
+#if DEBUG
+                    1; // in debug, validate ArrayPool growth
+#else
+                    Interop.Kernel32.MAX_PATH;
+#endif
+                char[]? chars = ArrayPool<char>.Shared.Rent(StartLength);
                 try
                 {
                     for (int i = 0; i < modulesCount; i++)
@@ -162,25 +168,44 @@ namespace System.Diagnostics
                             BaseAddress = ntModuleInfo.BaseOfDll
                         };
 
-                        int length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length);
+                        int length = 0;
+                        while ((length = Interop.Kernel32.GetModuleBaseName(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            char[] toReturn = chars;
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
+                        }
+
                         if (length == 0)
                         {
+                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
                         module.ModuleName = new string(chars, 0, length);
 
-                        length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length);
+                        while ((length = Interop.Kernel32.GetModuleFileNameEx(processHandle, moduleHandle, chars, chars.Length)) == chars.Length)
+                        {
+                            char[] toReturn = chars;
+                            chars = ArrayPool<char>.Shared.Rent(length * 2);
+                            ArrayPool<char>.Shared.Return(toReturn);
+                        }
+
                         if (length == 0)
                         {
+                            module.Dispose();
                             HandleLastWin32Error();
                             continue;
                         }
 
-                        module.FileName = (length >= 4 && chars[0] == '\\' && chars[1] == '\\' && chars[2] == '?' && chars[3] == '\\') ?
-                            new string(chars, 4, length - 4) :
-                            new string(chars, 0, length);
+                        const string NtPathPrefix = @"\\?\";
+                        ReadOnlySpan<char> charsSpan = chars.AsSpan(0, length);
+                        if (charsSpan.StartsWith(NtPathPrefix))
+                        {
+                            charsSpan = charsSpan.Slice(NtPathPrefix.Length);
+                        }
+                        module.FileName = charsSpan.ToString();
 
                         modules.Add(module);
                     }
@@ -242,107 +267,62 @@ namespace System.Diagnostics
 
     internal static class NtProcessInfoHelper
     {
-        // Cache a single buffer for use in GetProcessInfos().
-        private static long[]? CachedBuffer;
-
         // Use a smaller buffer size on debug to ensure we hit the retry path.
+        private const uint DefaultCachedBufferSize = 1024 *
 #if DEBUG
-        private const int DefaultCachedBufferSize = 1024;
+            8;
 #else
-        private const int DefaultCachedBufferSize = 128 * 1024;
+            1024;
 #endif
+        private static uint MostRecentSize = DefaultCachedBufferSize;
 
-        internal static ProcessInfo[] GetProcessInfos(Predicate<int>? processIdFilter = null)
+        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
         {
-            ProcessInfo[] processInfos;
-
             // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize;
+            uint bufferSize = MostRecentSize;
 
-            // Get the cached buffer.
-            long[]? buffer = Interlocked.Exchange(ref CachedBuffer, null);
-
-            try
+            while (true)
             {
-                while (true)
+                void* bufferPtr = NativeMemory.Alloc(bufferSize); // some platforms require the buffer to be 64-bit aligned and NativeLibrary.Alloc guarantees sufficient alignment.
+
+                try
                 {
-                    if (buffer == null)
-                    {
-                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
-                        buffer = new long[(bufferSize + 7) / 8];
-                    }
+                    uint actualSize = 0;
+                    uint status = Interop.NtDll.NtQuerySystemInformation(
+                        Interop.NtDll.SystemProcessInformation,
+                        bufferPtr,
+                        bufferSize,
+                        &actualSize);
 
-                    uint requiredSize = 0;
-
-                    unsafe
+                    if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                     {
-                        // Note that the buffer will contain pointers to itself and it needs to be pinned while it is being processed
-                        // by GetProcessInfos below
-                        fixed (long* bufferPtr = buffer)
+                        // see definition of NT_SUCCESS(Status) in SDK
+                        if ((int)status < 0)
                         {
-                            uint status = Interop.NtDll.NtQuerySystemInformation(
-                                Interop.NtDll.SystemProcessInformation,
-                                bufferPtr,
-                                (uint)(buffer.Length * sizeof(long)),
-                                &requiredSize);
-
-                            if (status != Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
-                            {
-                                // see definition of NT_SUCCESS(Status) in SDK
-                                if ((int)status < 0)
-                                {
-                                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
-                                }
-
-                                // Parse the data block to get process information
-                                processInfos = GetProcessInfos(MemoryMarshal.AsBytes<long>(buffer), processIdFilter);
-                                break;
-                            }
+                            throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception((int)status));
                         }
+
+                        Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                        MostRecentSize = GetEstimatedBufferSize(actualSize);
+                        // Parse the data block to get process information
+                        return GetProcessInfos(new ReadOnlySpan<byte>(bufferPtr, (int)actualSize), processIdFilter);
                     }
 
-                    buffer = null;
-                    bufferSize = GetNewBufferSize(bufferSize, (int)requiredSize);
+                    Debug.Assert(actualSize > bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
+                    bufferSize = GetEstimatedBufferSize(actualSize);
+                }
+                finally
+                {
+                    NativeMemory.Free(bufferPtr);
                 }
             }
-            finally
-            {
-                // Cache the final buffer for use on the next call.
-                Interlocked.Exchange(ref CachedBuffer, buffer);
-            }
-
-            return processInfos;
         }
 
-        private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
-        {
-            int newSize;
+        // allocating a few more kilo bytes just in case there are some new process
+        // kicked in since new call to NtQuerySystemInformation
+        private static uint GetEstimatedBufferSize(uint actualSize) => actualSize + 1024 * 10;
 
-            if (requiredSize == 0)
-            {
-                //
-                // On some old OS like win2000, requiredSize will not be set if the buffer
-                // passed to NtQuerySystemInformation is not enough.
-                //
-                newSize = existingBufferSize * 2;
-            }
-            else
-            {
-                // allocating a few more kilo bytes just in case there are some new process
-                // kicked in since new call to NtQuerySystemInformation
-                newSize = requiredSize + 1024 * 10;
-            }
-
-            if (newSize < 0)
-            {
-                // In reality, we should never overflow.
-                // Adding the code here just in case it happens.
-                throw new OutOfMemoryException();
-            }
-            return newSize;
-        }
-
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, Predicate<int>? processIdFilter)
+        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -356,7 +336,7 @@ namespace System.Diagnostics
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processInfoProcessId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter(processInfoProcessId))
+                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processInfoProcessId)
                 {
                     // get information for a process
                     ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)

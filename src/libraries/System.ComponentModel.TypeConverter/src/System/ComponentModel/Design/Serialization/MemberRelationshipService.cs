@@ -107,7 +107,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             if (_relationships.TryGetValue(new RelationshipEntry(source), out RelationshipEntry retVal) && retVal._owner.IsAlive)
             {
-                return new MemberRelationship(retVal._owner.Target, retVal._member);
+                return new MemberRelationship(retVal._owner.Target!, retVal._member);
             }
 
             return MemberRelationship.Empty;
@@ -122,20 +122,27 @@ namespace System.ComponentModel.Design.Serialization
         {
             if (!relationship.IsEmpty && !SupportsRelationship(source, relationship))
             {
-                string sourceName = TypeDescriptor.GetComponentName(source.Owner);
-                string relName = TypeDescriptor.GetComponentName(relationship.Owner);
-                if (sourceName == null)
-                {
-                    sourceName = source.Owner.ToString();
-                }
-                if (relName == null)
-                {
-                    relName = relationship.Owner.ToString();
-                }
-                throw new ArgumentException(SR.Format(SR.MemberRelationshipService_RelationshipNotSupported, sourceName, source.Member.Name, relName, relationship.Member.Name));
+                ThrowRelationshipNotSupported(source, relationship);
             }
 
             _relationships[new RelationshipEntry(source)] = new RelationshipEntry(relationship);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "GetComponentName is only used to create a nice exception message, and has a fallback when null is returned.")]
+        private static void ThrowRelationshipNotSupported(MemberRelationship source, MemberRelationship relationship)
+        {
+            string? sourceName = TypeDescriptor.GetComponentName(source.Owner!);
+            string? relName = TypeDescriptor.GetComponentName(relationship.Owner!);
+            if (sourceName == null)
+            {
+                sourceName = source.Owner!.ToString();
+            }
+            if (relName == null)
+            {
+                relName = relationship.Owner!.ToString();
+            }
+            throw new ArgumentException(SR.Format(SR.MemberRelationshipService_RelationshipNotSupported, sourceName, source.Member.Name, relName, relationship.Member.Name));
         }
 
         /// <summary>
@@ -159,7 +166,7 @@ namespace System.ComponentModel.Design.Serialization
                 _hashCode = rel.Owner == null ? 0 : rel.Owner.GetHashCode();
             }
 
-            public override bool Equals(object o)
+            public override bool Equals([NotNullWhen(true)] object? o)
             {
                 Debug.Assert(o is RelationshipEntry, "This is only called indirectly from a dictionary only containing RelationshipEntry structs.");
                 return this == (RelationshipEntry)o;
@@ -167,8 +174,8 @@ namespace System.ComponentModel.Design.Serialization
 
             public static bool operator ==(RelationshipEntry re1, RelationshipEntry re2)
             {
-                object owner1 = (re1._owner.IsAlive ? re1._owner.Target : null);
-                object owner2 = (re2._owner.IsAlive ? re2._owner.Target : null);
+                object? owner1 = (re1._owner.IsAlive ? re1._owner.Target : null);
+                object? owner2 = (re2._owner.IsAlive ? re2._owner.Target : null);
                 return owner1 == owner2 && re1._member.Equals(re2._member);
             }
 
@@ -210,12 +217,12 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// The object owning the member.
         /// </summary>
-        public object Owner { get; }
+        public object? Owner { get; }
 
         /// <summary>
         /// Infrastructure support to make this a first class struct
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is MemberRelationship rel && rel.Owner == Owner && rel.Member == Member;
         }

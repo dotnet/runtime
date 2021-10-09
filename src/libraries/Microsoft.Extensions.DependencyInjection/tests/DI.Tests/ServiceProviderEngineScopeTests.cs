@@ -9,13 +9,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
     public class ServiceProviderEngineScopeTests
     {
         [Fact]
-        public void Dispose_DoesntClearResolvedServices()
+        public void DoubleDisposeWorks()
         {
-            var serviceProviderEngineScope = new ServiceProviderEngineScope(null);
+            var provider = new ServiceProvider(new ServiceCollection(), ServiceProviderOptions.Default);
+            var serviceProviderEngineScope = new ServiceProviderEngineScope(provider, isRootScope: true);
             serviceProviderEngineScope.ResolvedServices.Add(new ServiceCacheKey(typeof(IFakeService), 0), null);
             serviceProviderEngineScope.Dispose();
-
-            Assert.Single(serviceProviderEngineScope.ResolvedServices);
+            serviceProviderEngineScope.Dispose();
         }
     }
 }

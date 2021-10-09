@@ -8,8 +8,10 @@ namespace System.Threading.Channels
     internal partial class AsyncOperation<TResult>
     {
         private void UnsafeQueueSetCompletionAndInvokeContinuation() =>
-            Task.Factory.StartNew(s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this,
-                CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            ThreadPool.UnsafeQueueUserWorkItem(static s => ((AsyncOperation<TResult>)s).SetCompletionAndInvokeContinuation(), this);
+
+        private void UnsafeQueueUserWorkItem(Action<object?> action, object? state) =>
+            QueueUserWorkItem(action, state);
 
         private static void QueueUserWorkItem(Action<object?> action, object? state) =>
             Task.Factory.StartNew(action, state,

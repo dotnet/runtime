@@ -126,6 +126,7 @@ namespace System.ComponentModel.Composition.Primitives
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadedFiles_ContainsMultipleDllsAndSomeNonDll_ShouldOnlyContainDlls()
         {
             string directoryPath = GetTemporaryDirectory();

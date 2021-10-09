@@ -112,8 +112,7 @@ namespace System.Collections
 
             version++;
             DictionaryNode? last = null;
-            DictionaryNode? node;
-            for (node = head; node != null; node = node.next)
+            for (DictionaryNode? node = head; node != null; node = node.next)
             {
                 if (node.key.Equals(key))
                 {
@@ -121,12 +120,7 @@ namespace System.Collections
                 }
                 last = node;
             }
-            if (node != null)
-            {
-                // Found it
-                node.value = value;
-                return;
-            }
+
             // Not found, so add a new one
             DictionaryNode newNode = new DictionaryNode();
             newNode.key = key;
@@ -228,7 +222,7 @@ namespace System.Collections
             count--;
         }
 
-        private class NodeEnumerator : IDictionaryEnumerator
+        private sealed class NodeEnumerator : IDictionaryEnumerator
         {
             private readonly ListDictionaryInternal list;
             private DictionaryNode? current;
@@ -313,7 +307,7 @@ namespace System.Collections
             }
         }
 
-        private class NodeKeyValueCollection : ICollection
+        private sealed class NodeKeyValueCollection : ICollection
         {
             private readonly ListDictionaryInternal list;
             private readonly bool isKeys;
@@ -363,7 +357,7 @@ namespace System.Collections
                 return new NodeKeyValueEnumerator(list, isKeys);
             }
 
-            private class NodeKeyValueEnumerator : IEnumerator
+            private sealed class NodeKeyValueEnumerator : IEnumerator
             {
                 private readonly ListDictionaryInternal list;
                 private DictionaryNode? current;
@@ -426,7 +420,7 @@ namespace System.Collections
         }
 
         [Serializable]
-        private class DictionaryNode
+        private sealed class DictionaryNode
         {
             public object key = null!;
             public object? value;

@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace System.Composition.Hosting.Providers.ImportMany
 {
-    internal class ImportManyExportDescriptorProvider : ExportDescriptorProvider
+    internal sealed class ImportManyExportDescriptorProvider : ExportDescriptorProvider
     {
         private static readonly MethodInfo s_getImportManyDefinitionMethod = typeof(ImportManyExportDescriptorProvider).GetTypeInfo().GetDeclaredMethod("GetImportManyDescriptor");
         private static readonly Type[] s_supportedContractTypes = new[] { typeof(IList<>), typeof(ICollection<>), typeof(IEnumerable<>) };

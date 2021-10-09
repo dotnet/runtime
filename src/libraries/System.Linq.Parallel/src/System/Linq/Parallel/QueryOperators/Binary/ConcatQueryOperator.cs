@@ -226,7 +226,7 @@ namespace System.Linq.Parallel
         // results were indexable.
         //
 
-        private class ConcatQueryOperatorResults : BinaryQueryOperatorResults
+        private sealed class ConcatQueryOperatorResults : BinaryQueryOperatorResults
         {
             private readonly int _leftChildCount; // The number of elements in the left child result set
             private readonly int _rightChildCount; // The number of elements in the right child result set
@@ -329,7 +329,7 @@ namespace System.Linq.Parallel
         // according to the corresponding order key.
         //
 
-        private class ConcatKeyComparer : IComparer<ConcatKey<TLeftKey, TRightKey>>
+        private sealed class ConcatKeyComparer : IComparer<ConcatKey<TLeftKey, TRightKey>>
         {
             private readonly IComparer<TLeftKey> _leftComparer;
             private readonly IComparer<TRightKey> _rightComparer;

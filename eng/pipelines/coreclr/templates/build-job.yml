@@ -8,6 +8,7 @@ parameters:
   container: ''
   crossBuild: false
   crossrootfsDir: ''
+  dependOnEvaluatePaths: false
   isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
@@ -19,6 +20,7 @@ parameters:
   testGroup: ''
   timeoutInMinutes: ''
   variables: {}
+  pgoType: ''
 
 ### Product build
 jobs:
@@ -35,14 +37,26 @@ jobs:
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
       name: ${{ format('coreclr_{0}_product_build_{1}{1}_{3}_{4}', parameters.compilerName, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR GCC Product Build {0}{1} {2} {3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
     ${{ if and(ne(parameters.testGroup, 'clrTools'), ne(parameters.compilerName, 'gcc')) }}:
-      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+      name: ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}{5}',
+        parameters.runtimeVariant,
+        parameters.osGroup,
+        parameters.osSubgroup,
+        parameters.archType,
+        parameters.buildConfig,
+        parameters.pgoType) }}
+      displayName: ${{ format('CoreCLR {0} Product Build {1}{2} {3} {4} {5}',
+        parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup,
+        parameters.archType,
+        parameters.buildConfig,
+        parameters.pgoType) }}
     ${{ if eq(parameters.testGroup, 'clrTools') }}:
       name: ${{ format('coreclr_{0}_tools_unittests_{1}{2}_{3}_{4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
       displayName: ${{ format('CoreCLR {0} Tools Unit Tests {1}{2} {3} {4}', parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -102,7 +116,7 @@ jobs:
     - name: enforcePgoArg
       value: ''
     # The EnforcePGO script is only supported on Windows and is not supported on arm or arm64.
-    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))))) }}:
+    - ${{ if and(eq(parameters.buildConfig, 'Release'), and(eq(parameters.osGroup, 'windows'), not(or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm')))), ne(parameters.pgoType, 'pgo')) }}:
       - name: enforcePgoArg
         value: '-enforcepgo'
 
@@ -111,44 +125,25 @@ jobs:
     - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
       - name: clrInterpreterBuildArg
         value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
-    
+
     - name: clrBuildPALTestsBuildArg
       value: ''
     - ${{ if ne(parameters.testGroup, 'innerloop') }}:
       - name: clrBuildPALTestsBuildArg
-        value: '-paltests '
+        value: '-component runtime -component alljits -component paltests '
 
-    - name: ninjaArg
+    - name: pgoInstrumentArg
       value: ''
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - name: ninjaArg
-        value: '-ninja'
-  
+    - ${{ if eq(parameters.pgoType, 'PGO' )}}:
+      - name: pgoInstrumentArg
+        value: '-pgoinstrument '
+
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
     - ${{ parameters.variables }}
 
     steps:
-
-    # Install MicroBuild for signing the DAC and DBI
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - task: NuGetAuthenticate@0
-
-      - ${{ if eq(parameters.osGroup, 'windows') }}:
-        # NuGet's http cache lasts 30 minutes. If we're on a static machine, this may interfere with
-        # auto-update PRs by preventing the CI build from fetching the new version. Delete the cache.
-        - powershell: Remove-Item -Recurse -ErrorAction Ignore "$env:LocalAppData\NuGet\v3-cache"
-          displayName: Clear NuGet http cache (if exists)
-
-        - task: MicroBuildSigningPlugin@2
-          displayName: Install MicroBuild plugin for Signing
-          inputs:
-            signType: $(SignType)
-            zipSources: false
-            feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
-          continueOnError: false
-          condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
@@ -169,7 +164,18 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    # Install MicroBuild for signing the DAC and DBI
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), eq(parameters.signBinaries, true), eq(parameters.osGroup, 'windows')) }}:
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin for Signing
+        inputs:
+          signType: $(SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+        continueOnError: false
+        condition: and(succeeded(), in(variables['SignType'], 'real', 'test'))
+
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -177,25 +183,25 @@ jobs:
 
     # Build DacTableGen (Windows-only)
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/logs/$(buildConfig)/DacTools.binlog
-        displayName: Build managed product components and packages
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/DacTools.binlog
+        displayName: Build DAC utility tools
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(ninjaArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(ninjaArg) $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
@@ -205,7 +211,7 @@ jobs:
 
     # Build native test components
     - ${{ if ne(parameters.isOfficialBuild, true) }}:
-      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
     # Sign and add entitlements to these MacOS binaries
@@ -231,12 +237,14 @@ jobs:
             overWrite: true
 
     # Sign diagnostic files on Windows
-    - ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.signBinaries, true)) }}:
       - powershell: >-
-          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0
+          eng\common\build.ps1 -ci -sign -restore -configuration:$(buildConfig) -warnaserror:0 $(officialBuildIdArg)
           /p:DiagnosticsFilesRoot="$(buildProductRootFolderPath)"
           /p:SignDiagnostics=true
           /p:DotNetSignType=$(SignType)
+          -noBl
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfig)/SignDiagnostics.binlog
           -projects $(Build.SourcesDirectory)\eng\empty.csproj
         displayName: Sign Diagnostic Binaries
 
@@ -261,7 +269,7 @@ jobs:
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
 
-    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
       - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
         parameters:
           archType: ${{ parameters.archType }}
@@ -270,7 +278,7 @@ jobs:
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.
-      - ${{ if ne(parameters.isOfficialBuild, true) }}:
+      - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
           parameters:
             rootFolder: $(nativeTestArtifactRootFolderPath)
@@ -291,7 +299,7 @@ jobs:
 
     # Save packages using the prepare-signed-artifacts format.
     - ${{ if and(eq(parameters.isOfficialBuild, true), ne(parameters.testGroup, 'clrTools')) }}:
-      - template: /eng/pipelines/common/upload-unsigned-artifacts-step.yml
+      - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         parameters:
           name: ${{ parameters.platform }}
 
@@ -311,6 +319,6 @@ jobs:
       displayName: Publish Logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: '$(publishLogsArtifactPrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        artifactName: '$(publishLogsArtifactPrefix)${{ parameters.pgoType }}_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()

@@ -21,6 +21,8 @@ namespace System.Linq.Expressions
     [DebuggerTypeProxy(typeof(LambdaExpressionProxy))]
     public abstract class LambdaExpression : Expression, IParameterProvider
     {
+        private static readonly MethodInfo s_expressionCompileMethodInfo = typeof(Expression<>).GetMethod("Compile", Type.EmptyTypes)!;
+
         private readonly Expression _body;
 
         internal LambdaExpression(Expression body)
@@ -100,6 +102,26 @@ namespace System.Linq.Expressions
             {
                 throw ContractUtils.Unreachable;
             }
+        }
+
+        /// <summary>
+        /// Gets the Compile() MethodInfo on the specified LambdaExpression type.
+        /// </summary>
+        /// <remarks>
+        /// Note that Expression{TDelegate} defines a 'new' Compile() method that hides the base
+        /// LambdaExpression.Compile() method.
+        /// </remarks>
+        internal static MethodInfo GetCompileMethod(Type lambdaExpressionType)
+        {
+            Debug.Assert(lambdaExpressionType.IsAssignableTo(typeof(LambdaExpression)));
+
+            if (lambdaExpressionType == typeof(LambdaExpression))
+            {
+                // use a hard-coded type directly so the method doesn't get trimmed
+                return typeof(LambdaExpression).GetMethod("Compile", Type.EmptyTypes)!;
+            }
+
+            return (MethodInfo)lambdaExpressionType.GetMemberWithSameMetadataDefinitionAs(s_expressionCompileMethodInfo);
         }
 
         /// <summary>
@@ -219,7 +241,7 @@ namespace System.Linq.Expressions
         /// <param name="body">The <see cref="LambdaExpression.Body" /> property of the result.</param>
         /// <param name="parameters">The <see cref="LambdaExpression.Parameters" /> property of the result.</param>
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
-        public Expression<TDelegate>? Update(Expression body, IEnumerable<ParameterExpression>? parameters)
+        public Expression<TDelegate> Update(Expression body, IEnumerable<ParameterExpression>? parameters)
         {
             if (body == Body)
             {
@@ -305,7 +327,7 @@ namespace System.Linq.Expressions
 
 #if !FEATURE_COMPILE
     // Separate expression creation class to hide the CreateExpressionFunc function from users reflecting on Expression<T>
-    public class ExpressionCreator<TDelegate>
+    internal static class ExpressionCreator<TDelegate>
     {
         public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {

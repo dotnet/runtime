@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="de" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateMessage">
+        <source>Argument '{0}' is not referenced from the logging message</source>
+        <target state="translated">Auf das Argument „{0}“ wird in der Protokollierungsnachricht nicht verwiesen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ArgumentHasNoCorrespondingTemplateTitle">
+        <source>Argument is not referenced from the logging message</source>
+        <target state="translated">Auf das Argument wird in der Protokollierungsmeldung nicht verwiesen</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GeneratingForMax6ArgumentsMessage">
+        <source>Generating more than 6 arguments is not supported</source>
+        <target state="translated">Das Generieren von mehr als 6 Argumenten wird nicht unterstützt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InconsistentTemplateCasingMessage">
+        <source>Can't have the same template with different casing</source>
+        <target state="translated">Die gleiche Vorlage darf nicht mit einer anderen Groß-/Kleinschreibung vorliegen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodNameMessage">
+        <source>Logging method names cannot start with _</source>
+        <target state="translated">Namen für die Protokollierungsmethode dürfen nicht mit "_" beginnen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLoggingMethodParameterNameMessage">
+        <source>Logging method parameter names cannot start with _</source>
+        <target state="translated">Parameternamen für die Protokollierungsmethode dürfen nicht mit "_" beginnen.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodHasBodyMessage">
+        <source>Logging methods cannot have a body</source>
+        <target state="translated">Protokollierungsmethoden dürfen keinen Text enthalten.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodIsGenericMessage">
+        <source>Logging methods cannot be generic</source>
+        <target state="translated">Protokollierungsmethoden können nicht generisch sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustBePartialMessage">
+        <source>Logging methods must be partial</source>
+        <target state="translated">Protokollierungsmethoden müssen partiell sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodMustReturnVoidMessage">
+        <source>Logging methods must return void</source>
+        <target state="translated">Protokollierungsmethoden müssen leer zurückgegeben werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LoggingMethodShouldBeStaticMessage">
+        <source>Logging methods must be static</source>
+        <target state="translated">Protokollierungsmethoden müssen statisch sein.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MalformedFormatStringsMessage">
+        <source>Can't have malformed format strings (like dangling {, etc)</source>
+        <target state="translated">Nicht wohlgeformte Formatzeichenfolgen (beispielsweise mit überzähligen geschweiften Klammern) sind unzulässig.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLogLevelMessage">
+        <source>A LogLevel value must be supplied in the LoggerMessage attribute or as a parameter to the logging method</source>
+        <target state="translated">Ein LogLevel-Wert muss im LoggerMessage-Attribut oder als Parameter für die Protokollierungsmethode angegeben werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentMessage">
+        <source>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">Eines der Argumente für die statische Protokollierungsmethode „{0}“ muss die Microsoft.Extensions.Logging.ILogger-Schnittstelle implementieren.</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerArgumentTitle">
+        <source>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</source>
+        <target state="translated">Eines der Argumente für eine statische Protokollierungsmethode muss die Microsoft.Extensions.Logging.ILogger-Schnittstelle implementieren.</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldMessage">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">In der Klasse "{0}" wurde kein Feld vom Typ "Microsoft.Extensions.Logging.ILogger" gefunden.</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingLoggerFieldTitle">
+        <source>Couldn't find a field of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">Feld vom Typ "Microsoft.Extensions.Logging.ILogger" nicht gefunden</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeMessage">
+        <source>Could not find definition for type {0}</source>
+        <target state="translated">Die Definition für den Typ "{0}" wurde nicht gefunden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingRequiredTypeTitle">
+        <source>Could not find a required type definition</source>
+        <target state="translated">Erforderliche Typdefinition nicht gefunden</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsMessage">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger in class {0}</source>
+        <target state="translated">In der Klasse "{0}" wurden mehrere Felder vom Typ "Microsoft.Extensions.Logging.ILogger" gefunden.</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="MultipleLoggerFieldsTitle">
+        <source>Found multiple fields of type Microsoft.Extensions.Logging.ILogger</source>
+        <target state="translated">Mehrere Felder vom Typ "Microsoft.Extensions.Logging.ILogger" gefunden</target>
+        <note>{Locked="Microsoft.Extensions.Logging.ILogger"}</note>
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageMessage">
+        <source>Remove redundant qualifier (Info:, Warning:, Error:, etc) from the logging message since it is implicit in the specified log level.</source>
+        <target state="translated">Entfernen Sie den redundanten Qualifizierer (z. B. "Info:", "Warnung:" oder "Fehler:") aus der Protokollierungsmeldung, weil er auf der angegebenen Protokollebene implizit enthalten ist.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RedundantQualifierInMessageTitle">
+        <source>Redundant qualifier in logging message</source>
+        <target state="translated">Redundanter Qualifizierer in Protokollierungsmeldung</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionExceptionInMessageTitle">
+        <source>Don't include exception parameters as templates in the logging message</source>
+        <target state="translated">Ausnahmeparameter nicht als Vorlagen in die Protokollierungsmeldung einbeziehen</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionInTemplateMessage">
+        <source>Don't include a template for {0} in the logging message since it is implicitly taken care of</source>
+        <target state="translated">Fügen Sie in der Protokollierungsmeldung keine Vorlage für "{0}" ein, weil dies implizit berücksichtigt wird.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLogLevelInMessageTitle">
+        <source>Don't include log level parameters as templates in the logging message</source>
+        <target state="translated">Protokolliergradparameter nicht als Vorlagen in die Protokollierungsmeldung einbeziehen</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntMentionLoggerInMessageTitle">
+        <source>Don't include logger parameters as templates in the logging message</source>
+        <target state="translated">Protokollierungsparameter nicht als Vorlagen in die Protokollierungsmeldung einbeziehen</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsMessage">
+        <source>Multiple logging methods are using event id {0} in class {1}</source>
+        <target state="translated">Die Ereignis-ID "{0}" wird von mehreren Protokollierungsmethoden in der Klasse "{1}" verwendet.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ShouldntReuseEventIdsTitle">
+        <source>Multiple logging methods cannot use the same event id within a class</source>
+        <target state="translated">Dieselbe Ereignis-ID kann nicht von mehreren Protokollierungsmethoden innerhalb einer Klasse verwendet werden</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentMessage">
+        <source>Template '{0}' is not provided as argument to the logging method</source>
+        <target state="translated">Die Vorlage „{0}“ wird nicht als Argument für die Protokollierungsmethode bereitgestellt</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TemplateHasNoCorrespondingArgumentTitle">
+        <source>Logging template has no corresponding method argument</source>
+        <target state="translated">Protokollierungsvorlage weist kein entsprechendes Methodenargument auf</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

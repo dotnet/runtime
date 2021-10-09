@@ -33,6 +33,40 @@ namespace Internal.Cryptography
 
         internal static class OneShotHashProvider
         {
+            public static unsafe int MacData(
+                string hashAlgorithmId,
+                ReadOnlySpan<byte> key,
+                ReadOnlySpan<byte> source,
+                Span<byte> destination)
+            {
+                Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
+
+                fixed (byte* pKey = key)
+                fixed (byte* pSource = source)
+                fixed (byte* pDestination = destination)
+                {
+                    int ret = Interop.AppleCrypto.HmacOneShot(
+                        algorithm,
+                        pKey,
+                        key.Length,
+                        pSource,
+                        source.Length,
+                        pDestination,
+                        destination.Length,
+                        out int digestSize);
+
+                    if (ret != 1)
+                    {
+                        Debug.Fail($"MacData return value {ret} was not 1");
+                        throw new CryptographicException();
+                    }
+
+                    Debug.Assert(digestSize <= destination.Length);
+
+                    return digestSize;
+                }
+            }
+
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
             {
                 Interop.AppleCrypto.PAL_HashAlgorithm algorithm = HashAlgorithmToPal(hashAlgorithmId);
@@ -157,14 +191,17 @@ namespace Internal.Cryptography
                 if (disposing)
                 {
                     _ctx?.Dispose();
-                    Array.Clear(_key, 0, _key.Length);
+                    Array.Clear(_key);
                 }
             }
+
+            public override void Reset() => _running = false;
         }
 
         private sealed class AppleDigestProvider : HashProvider
         {
             private readonly SafeDigestCtxHandle _ctx;
+            private bool _running;
 
             public override int HashSizeInBytes { get; }
 
@@ -193,6 +230,7 @@ namespace Internal.Cryptography
 
             public override void AppendHashData(ReadOnlySpan<byte> data)
             {
+                _running = true;
                 int ret = Interop.AppleCrypto.DigestUpdate(_ctx, data);
 
                 if (ret != 1)
@@ -207,6 +245,7 @@ namespace Internal.Cryptography
                 Debug.Assert(destination.Length >= HashSizeInBytes);
 
                 int ret = Interop.AppleCrypto.DigestFinal(_ctx, destination);
+                _running = false;
 
                 if (ret != 1)
                 {
@@ -230,6 +269,22 @@ namespace Internal.Cryptography
                 }
 
                 return HashSizeInBytes;
+            }
+
+            public override void Reset()
+            {
+                if (_running)
+                {
+                    int ret = Interop.AppleCrypto.DigestReset(_ctx);
+
+                    if (ret != 1)
+                    {
+                        Debug.Assert(ret == 0, $"DigestReset return value {ret} was not 0 or 1");
+                        throw new CryptographicException();
+                    }
+
+                    _running = false;
+                }
             }
 
             public override void Dispose(bool disposing)

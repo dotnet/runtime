@@ -362,7 +362,8 @@ namespace System.Net.Security.Tests
                     return true;
                 }))
             {
-                string serverName = _serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+                // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
+                string serverName = TestHelper.GetTestSNIName(nameof(ServerAsyncSslHelper), clientSslProtocols, serverSslProtocols);
 
                 _log.WriteLine("Connected on {0} {1} ({2} {3})", clientStream.Socket.LocalEndPoint, clientStream.Socket.RemoteEndPoint, clientStream.Socket.Handle, serverStream.Socket.Handle);
                 _log.WriteLine("client SslStream#{0} server SslStream#{1}", sslClientStream.GetHashCode(),  sslServerStream.GetHashCode());
@@ -383,7 +384,7 @@ namespace System.Net.Security.Tests
 
                 try
                 {
-                    await clientAuthentication.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    await clientAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
                     _logVerbose.WriteLine("ServerAsyncAuthenticateTest.clientAuthentication complete.");
                 }
                 catch (Exception ex)
@@ -393,7 +394,7 @@ namespace System.Net.Security.Tests
                     clientStream.Socket.Shutdown(SocketShutdown.Send);
                 }
 
-                await serverAuthentication.TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await serverAuthentication.WaitAsync(TestConfiguration.PassingTestTimeout);
                 _logVerbose.WriteLine("ServerAsyncAuthenticateTest.serverAuthentication complete.");
 
                 _log.WriteLine(

@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class ADDNConstraintLinkedAttrSet : ADDNLinkedAttrSet
+    internal sealed class ADDNConstraintLinkedAttrSet : ADDNLinkedAttrSet
     {
         ///
         /// <summary>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading;
 using Xunit;
@@ -385,14 +386,7 @@ namespace System.IO.Tests
                 if (attemptsCompleted > 1)
                 {
                     // Re-create the watcher to get a clean iteration.
-                    watcher = new FileSystemWatcher()
-                    {
-                        IncludeSubdirectories = watcher.IncludeSubdirectories,
-                        NotifyFilter = watcher.NotifyFilter,
-                        Filter = watcher.Filter,
-                        Path = watcher.Path,
-                        InternalBufferSize = watcher.InternalBufferSize
-                    };
+                    watcher = RecreateWatcher(watcher);
                     // Most intermittent failures in FSW are caused by either a shortage of resources (e.g. inotify instances)
                     // or by insufficient time to execute (e.g. CI gets bogged down). Immediately re-running a failed test
                     // won't resolve the first issue, so we wait a little while hoping that things clear up for the next run.
@@ -430,63 +424,6 @@ namespace System.IO.Tests
             return result;
         }
 
-        /// <summary>
-        /// In some cases (such as when running without elevated privileges),
-        /// the symbolic link may fail to create. Only run this test if it creates
-        /// links successfully.
-        /// </summary>
-        protected static bool CanCreateSymbolicLinks
-        {
-            get
-            {
-                bool success = true;
-
-                // Verify file symlink creation
-                string path = Path.GetTempFileName();
-                string linkPath = path + ".link";
-                success = CreateSymLink(path, linkPath, isDirectory: false);
-                try { File.Delete(path); } catch { }
-                try { File.Delete(linkPath); } catch { }
-
-                // Verify directory symlink creation
-                path = Path.GetTempFileName();
-                linkPath = path + ".link";
-                success = success && CreateSymLink(path, linkPath, isDirectory: true);
-                try { Directory.Delete(path); } catch { }
-                try { Directory.Delete(linkPath); } catch { }
-
-                return success;
-            }
-        }
-
-        public static bool CreateSymLink(string targetPath, string linkPath, bool isDirectory)
-        {
-            Process symLinkProcess = new Process();
-            if (OperatingSystem.IsWindows())
-            {
-                symLinkProcess.StartInfo.FileName = "cmd";
-                symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", Path.GetFullPath(linkPath), Path.GetFullPath(targetPath));
-            }
-            else
-            {
-                symLinkProcess.StartInfo.FileName = "/bin/ln";
-                symLinkProcess.StartInfo.Arguments = string.Format("-s \"{0}\" \"{1}\"", Path.GetFullPath(targetPath), Path.GetFullPath(linkPath));
-            }
-            symLinkProcess.StartInfo.RedirectStandardOutput = true;
-            symLinkProcess.Start();
-
-            if (symLinkProcess != null)
-            {
-                symLinkProcess.WaitForExit();
-                return (0 == symLinkProcess.ExitCode);
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-
         public static IEnumerable<object[]> FilterTypes()
         {
             foreach (NotifyFilters filter in Enum.GetValues(typeof(NotifyFilters)))
@@ -521,7 +458,8 @@ namespace System.IO.Tests
                 IncludeSubdirectories = watcher.IncludeSubdirectories,
                 NotifyFilter = watcher.NotifyFilter,
                 Path = watcher.Path,
-                InternalBufferSize = watcher.InternalBufferSize
+                InternalBufferSize = watcher.InternalBufferSize,
+                SynchronizingObject = watcher.SynchronizingObject,
             };
 
             foreach (string filter in watcher.Filters)
@@ -606,6 +544,26 @@ namespace System.IO.Tests
                     eventsOccured.Set();
                 }
             }
+        }
+
+        internal class TestISynchronizeInvoke : ISynchronizeInvoke
+        {
+            public bool BeginInvoke_Called;
+            public Delegate ExpectedDelegate;
+
+            public IAsyncResult BeginInvoke(Delegate method, object[] args)
+            {
+                if (ExpectedDelegate != null)
+                    Assert.Equal(ExpectedDelegate, method);
+
+                BeginInvoke_Called = true;
+                method.DynamicInvoke(args[0], args[1]);
+                return null;
+            }
+
+            public bool InvokeRequired => true;
+            public object EndInvoke(IAsyncResult result) => null;
+            public object Invoke(Delegate method, object[] args) => null;
         }
     }
 }

@@ -1,5 +1,0 @@
-<linker>
-    <assembly fullname="reflectobj">
-        <type fullname="*" required="true" />
-    </assembly>
-</linker>

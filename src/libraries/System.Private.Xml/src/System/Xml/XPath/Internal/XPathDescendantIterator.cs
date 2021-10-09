@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class XPathDescendantIterator : XPathAxisIterator
+    internal sealed class XPathDescendantIterator : XPathAxisIterator
     {
         private int _level;
 

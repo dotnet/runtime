@@ -12,14 +12,14 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextLinear(ILinearPattern pattern)
         {
-            Pattern = pattern;
+            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
         }
 
         public override PatternTestResult Test(FileInfoBase file)
         {
             if (IsStackEmpty())
             {
-                throw new InvalidOperationException("Can't test file before entering a directory.");
+                throw new InvalidOperationException(SR.CannotTestFile);
             }
 
             if (!Frame.IsNotApplicable && IsLastSegment() && TestMatchingSegment(file.Name))
@@ -67,17 +67,11 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
             public bool IsNotApplicable;
             public int SegmentIndex;
             public bool InStem;
-            private IList<string> _stemItems;
+            private IList<string>? _stemItems;
 
-            public IList<string> StemItems
-            {
-                get { return _stemItems ?? (_stemItems = new List<string>()); }
-            }
+            public IList<string> StemItems => _stemItems ??= new List<string>();
 
-            public string Stem
-            {
-                get { return _stemItems == null ? null : string.Join("/", _stemItems); }
-            }
+            public string? Stem => _stemItems == null ? null : string.Join("/", _stemItems);
         }
 
         protected ILinearPattern Pattern { get; }

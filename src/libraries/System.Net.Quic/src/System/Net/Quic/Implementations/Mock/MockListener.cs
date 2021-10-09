@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Threading;
@@ -70,19 +69,8 @@ namespace System.Net.Quic.Implementations.Mock
         // Returns false if backlog queue is full.
         internal bool TryConnect(MockConnection.ConnectionState state)
         {
+            state._serverStreamLimit = new MockConnection.PeerStreamLimit(_options.MaxUnidirectionalStreams, _options.MaxBidirectionalStreams);
             return _listenQueue.Writer.TryWrite(state);
-        }
-
-        internal override void Start()
-        {
-            CheckDisposed();
-
-            // TODO: Track start
-        }
-
-        internal override void Close()
-        {
-            Dispose();
         }
 
         private void CheckDisposed()

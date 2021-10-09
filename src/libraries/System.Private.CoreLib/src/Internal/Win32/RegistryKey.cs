@@ -15,7 +15,7 @@ using Internal.Win32.SafeHandles;
 // A minimal version of RegistryKey that supports just what CoreLib needs.
 //
 // Internal.Win32 namespace avoids confusion with the public standalone Microsoft.Win32.Registry implementation
-// that lives in https://github.com/dotnet/runtime/tree/master/src/libraries/Microsoft.Win32.Registry
+// that lives in https://github.com/dotnet/runtime/tree/main/src/libraries/Microsoft.Win32.Registry
 //
 namespace Internal.Win32
 {
@@ -67,7 +67,7 @@ namespace Internal.Win32
             }
             // We really should throw an exception here if errorCode was bad,
             // but we can't for compatibility reasons.
-            Debug.Assert(errorCode == 0, "RegDeleteValue failed.  Here's your error code: " + errorCode);
+            Debug.Assert(errorCode == 0, $"RegDeleteValue failed.  Here's your error code: {errorCode}");
         }
 
         internal static RegistryKey OpenBaseKey(IntPtr hKey)

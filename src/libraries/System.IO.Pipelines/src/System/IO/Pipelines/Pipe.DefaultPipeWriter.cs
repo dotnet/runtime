@@ -7,9 +7,7 @@ using System.Threading.Tasks.Sources;
 
 namespace System.IO.Pipelines
 {
-    /// <summary>
-    /// Default <see cref="PipeWriter"/> and <see cref="PipeReader"/> implementation.
-    /// </summary>
+    /// <summary>The default <see cref="System.IO.Pipelines.PipeWriter" /> and <see cref="System.IO.Pipelines.PipeReader" /> implementation.</summary>
     public sealed partial class Pipe
     {
         private sealed class DefaultPipeWriter : PipeWriter, IValueTaskSource<FlushResult>
@@ -24,6 +22,8 @@ namespace System.IO.Pipelines
             public override void Complete(Exception? exception = null) => _pipe.CompleteWriter(exception);
 
             public override void CancelPendingFlush() => _pipe.CancelPendingFlush();
+
+            public override bool CanGetUnflushedBytes => true;
 
 #pragma warning disable CS0672 // Member overrides obsolete member
             public override void OnReaderCompleted(Action<Exception?, object?> callback, object? state) => _pipe.OnReaderCompleted(callback, state);
@@ -42,6 +42,8 @@ namespace System.IO.Pipelines
             public FlushResult GetResult(short token) => _pipe.GetFlushAsyncResult();
 
             public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) => _pipe.OnFlushAsyncCompleted(continuation, state, flags);
+
+            public override long UnflushedBytes => _pipe.GetUnflushedBytes();
 
             public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {

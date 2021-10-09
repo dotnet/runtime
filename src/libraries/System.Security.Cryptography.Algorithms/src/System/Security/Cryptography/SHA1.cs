@@ -3,6 +3,7 @@
 
 using Internal.Cryptography;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography
 {
@@ -22,9 +23,10 @@ namespace System.Security.Cryptography
             HashSizeValue = HashSizeBits;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA1? Create(string hashName) => (SHA1?)CryptoConfig.CreateFromName(hashName);
 
         /// <summary>
@@ -124,11 +126,7 @@ namespace System.Security.Cryptography
             protected sealed override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
                 _hashProvider.TryFinalizeHashAndReset(destination, out bytesWritten);
 
-            public sealed override void Initialize()
-            {
-                // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the
-                // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
-            }
+            public sealed override void Initialize() => _hashProvider.Reset();
 
             protected sealed override void Dispose(bool disposing)
             {

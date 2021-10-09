@@ -3,6 +3,7 @@
 
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 
@@ -18,7 +19,7 @@ namespace System.ComponentModel
         /// Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid
         /// for the specified type.
         /// </summary>
-        protected virtual bool IsKeyValid(string key, Type type)
+        protected virtual bool IsKeyValid(string? key, Type type)
         {
             if (key != null)
             {
@@ -40,16 +41,20 @@ namespace System.ComponentModel
         /// <summary>
         /// Gets a license for the instance of the component and determines if it is valid.
         /// </summary>
-        public override License GetLicense(LicenseContext context, Type type, object instance, bool allowExceptions)
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:RequiresAssemblyFiles",
+            Justification = "Only used for when Location is non-empty")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000:RequiresAssemblyFiles",
+            Justification = "Location is checked for empty")]
+        public override License? GetLicense(LicenseContext context, Type type, object? instance, bool allowExceptions)
         {
-            LicFileLicense lic = null;
+            LicFileLicense? lic = null;
 
             Debug.Assert(context != null, "No context provided!");
             if (context != null)
             {
                 if (context.UsageMode == LicenseUsageMode.Runtime)
                 {
-                    string key = context.GetSavedLicenseKey(type, null);
+                    string? key = context.GetSavedLicenseKey(type, null);
                     if (key != null && IsKeyValid(key, type))
                     {
                         lic = new LicFileLicense(this, key);
@@ -58,48 +63,51 @@ namespace System.ComponentModel
 
                 if (lic == null)
                 {
-                    string modulePath = null;
+                    string? modulePath = null;
 
                     if (context != null)
                     {
-                        ITypeResolutionService resolver = (ITypeResolutionService)context.GetService(typeof(ITypeResolutionService));
+                        ITypeResolutionService? resolver = (ITypeResolutionService?)context.GetService(typeof(ITypeResolutionService));
                         if (resolver != null)
                         {
                             modulePath = resolver.GetPathOfAssembly(type.Assembly.GetName());
                         }
                     }
 
-                    if (modulePath == null)
+                    if (type.Assembly.Location.Length != 0)
                     {
-                        modulePath = type.Module.FullyQualifiedName;
-                    }
-
-                    string moduleDir = Path.GetDirectoryName(modulePath);
-                    string licenseFile = moduleDir + "\\" + type.FullName + ".lic";
-
-                    Debug.WriteLine($"Looking for license in: {licenseFile}");
-                    if (File.Exists(licenseFile))
-                    {
-                        Stream licStream = new FileStream(licenseFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        StreamReader sr = new StreamReader(licStream);
-                        string s = sr.ReadLine();
-                        sr.Close();
-                        if (IsKeyValid(s, type))
+                        if (modulePath == null)
                         {
-                            lic = new LicFileLicense(this, GetKey(type));
+                            modulePath = type.Module.FullyQualifiedName;
                         }
-                    }
 
-                    if (lic != null)
-                    {
-                        context.SetSavedLicenseKey(type, lic.LicenseKey);
+                        string? moduleDir = Path.GetDirectoryName(modulePath);
+                        string licenseFile = moduleDir + "\\" + type.FullName + ".lic";
+
+                        Debug.WriteLine($"Looking for license in: {licenseFile}");
+                        if (File.Exists(licenseFile))
+                        {
+                            Stream licStream = new FileStream(licenseFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            StreamReader sr = new StreamReader(licStream);
+                            string? s = sr.ReadLine();
+                            sr.Close();
+                            if (IsKeyValid(s, type))
+                            {
+                                lic = new LicFileLicense(this, GetKey(type));
+                            }
+                        }
+
+                        if (lic != null)
+                        {
+                            context!.SetSavedLicenseKey(type, lic.LicenseKey);
+                        }
                     }
                 }
             }
             return lic;
         }
 
-        private class LicFileLicense : License
+        private sealed class LicFileLicense : License
         {
             private readonly LicFileLicenseProvider _owner;
 

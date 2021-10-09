@@ -2,22 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
-    internal class JsonConsoleFormatter : ConsoleFormatter, IDisposable
+    internal sealed class JsonConsoleFormatter : ConsoleFormatter, IDisposable
     {
         private IDisposable _optionsReloadToken;
 
@@ -113,11 +109,11 @@ namespace Microsoft.Extensions.Logging.Console
                 writer.WriteStartArray("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>
                 {
-                    if (scope is IReadOnlyCollection<KeyValuePair<string, object>> scopes)
+                    if (scope is IEnumerable<KeyValuePair<string, object>> scopeItems)
                     {
                         state.WriteStartObject();
                         state.WriteString("Message", scope.ToString());
-                        foreach (KeyValuePair<string, object> item in scopes)
+                        foreach (KeyValuePair<string, object> item in scopeItems)
                         {
                             WriteItem(state, item);
                         }

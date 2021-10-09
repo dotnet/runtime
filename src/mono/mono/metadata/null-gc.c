@@ -79,6 +79,12 @@ mono_gc_get_generation  (MonoObject *object)
 	return 0;
 }
 
+int64_t
+mono_gc_get_generation_size (int generation)
+{
+	return 0;
+}
+
 int
 mono_gc_collection_count (int generation)
 {
@@ -86,15 +92,15 @@ mono_gc_collection_count (int generation)
 }
 
 void
-mono_gc_stop_world ()
+mono_stop_world (MonoThreadInfoFlags flags)
 {
-	g_assert ("mono_gc_stop_world is not supported in null GC");
+	g_assert ("mono_stop_world is not supported in null GC");
 }
 
 void
-mono_gc_restart_world ()
+mono_restart_world (MonoThreadInfoFlags flags)
 {
-	g_assert ("mono_gc_restart_world is not supported in null GC");
+	g_assert ("mono_restart_world is not supported in null GC");
 }
 
 void
@@ -635,17 +641,30 @@ guint64 mono_gc_get_total_allocated_bytes (MonoBoolean precise)
 }
 
 void
-mono_gc_get_gcmemoryinfo (gint64* high_memory_load_threshold_bytes,
-						  gint64* memory_load_bytes,
-						  gint64* total_available_memory_bytes,
-						  gint64* heap_size_bytes,
-						  gint64* fragmented_bytes)
+mono_gc_get_gcmemoryinfo (
+	gint64 *high_memory_load_threshold_bytes,
+	gint64 *memory_load_bytes,
+	gint64 *total_available_memory_bytes,
+	gint64 *total_committed_bytes,
+	gint64 *heap_size_bytes,
+	gint64 *fragmented_bytes)
 {
 	*high_memory_load_threshold_bytes = 0;
 	*memory_load_bytes = 0;
 	*total_available_memory_bytes = 0;
+	*total_committed_bytes = 0;
 	*heap_size_bytes = 0;
 	*fragmented_bytes = 0;
+}
+
+void mono_gc_get_gctimeinfo (
+	guint64 *time_last_gc_100ns,
+	guint64 *time_since_last_gc_100ns,
+	guint64 *time_max_gc_100ns)
+{
+	*time_last_gc_100ns = 0;
+	*time_since_last_gc_100ns = 0;
+	*time_max_gc_100ns = 0;
 }
 
 #else

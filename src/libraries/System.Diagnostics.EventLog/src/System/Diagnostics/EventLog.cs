@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -23,6 +24,7 @@ namespace System.Diagnostics
     {
         private const string EventLogKey = "SYSTEM\\CurrentControlSet\\Services\\EventLog";
         internal const string DllName = "EventLogMessages.dll";
+        internal const string AltDllName = "System.Diagnostics.EventLog.Messages.dll";
         private const string eventLogMutexName = "netfxeventlog.1.0";
         private const int DefaultMaxSize = 512 * 1024;
 
@@ -235,7 +237,7 @@ namespace System.Diagnostics
             CreateEventSource(new EventSourceCreationData(source, logName, "."));
         }
 
-        [Obsolete("This method has been deprecated.  Please use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("EventLog.CreateEventSource has been deprecated. Use System.Diagnostics.EventLog.CreateEventSource(EventSourceCreationData sourceData) instead.")]
         public static void CreateEventSource(string source, string logName, string machineName)
         {
             CreateEventSource(new EventSourceCreationData(source, logName, machineName));
@@ -690,9 +692,27 @@ namespace System.Diagnostics
             return null;
         }
 
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "The code handles if the path is null by calling AppContext.BaseDirectory")]
         internal static string GetDllPath(string machineName)
         {
-            return Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
+            string dllPath = Path.Combine(NetFrameworkUtils.GetLatestBuildDllDirectory(machineName), DllName);
+
+            if (machineName == "." && !File.Exists(dllPath))
+            {
+                // use this assembly directory
+                string assmLocation = typeof(EventLog).Assembly.Location;
+                if (!string.IsNullOrEmpty(assmLocation))
+                {
+                    dllPath = Path.Combine(Path.GetDirectoryName(assmLocation), AltDllName);
+                }
+                else
+                {
+                    dllPath = Path.Combine(AppContext.BaseDirectory, AltDllName);
+                }
+            }
+
+            return dllPath;
         }
 
         public static bool SourceExists(string source)

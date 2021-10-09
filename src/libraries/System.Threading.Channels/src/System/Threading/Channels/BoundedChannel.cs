@@ -15,6 +15,8 @@ namespace System.Threading.Channels
     {
         /// <summary>The mode used when the channel hits its bound.</summary>
         private readonly BoundedChannelFullMode _mode;
+        /// <summary>The delegate that will be invoked when the channel hits its bound and an item is dropped from the channel.</summary>
+        private readonly Action<T>? _itemDropped;
         /// <summary>Task signaled when the channel has completed.</summary>
         private readonly TaskCompletionSource _completion;
         /// <summary>The maximum capacity of the channel.</summary>
@@ -40,12 +42,14 @@ namespace System.Threading.Channels
         /// <param name="bufferedCapacity">The positive bounded capacity for the channel.</param>
         /// <param name="mode">The mode used when writing to a full channel.</param>
         /// <param name="runContinuationsAsynchronously">Whether to force continuations to be executed asynchronously.</param>
-        internal BoundedChannel(int bufferedCapacity, BoundedChannelFullMode mode, bool runContinuationsAsynchronously)
+        /// <param name="itemDropped">Delegate that will be invoked when an item is dropped from the channel. See <see cref="BoundedChannelFullMode"/>.</param>
+        internal BoundedChannel(int bufferedCapacity, BoundedChannelFullMode mode, bool runContinuationsAsynchronously, Action<T>? itemDropped)
         {
             Debug.Assert(bufferedCapacity > 0);
             _bufferedCapacity = bufferedCapacity;
             _mode = mode;
             _runContinuationsAsynchronously = runContinuationsAsynchronously;
+            _itemDropped = itemDropped;
             _completion = new TaskCompletionSource(runContinuationsAsynchronously ? TaskCreationOptions.RunContinuationsAsynchronously : TaskCreationOptions.None);
             Reader = new BoundedChannelReader(this);
             Writer = new BoundedChannelWriter(this);
@@ -69,6 +73,8 @@ namespace System.Threading.Channels
             public override Task Completion => _parent._completion.Task;
 
             public override bool CanCount => true;
+
+            public override bool CanPeek => true;
 
             public override int Count
             {
@@ -101,6 +107,25 @@ namespace System.Threading.Channels
                     if (!parent._items.IsEmpty)
                     {
                         item = DequeueItemAndPostProcess();
+                        return true;
+                    }
+                }
+
+                item = default;
+                return false;
+            }
+
+            public override bool TryPeek([MaybeNullWhen(false)] out T item)
+            {
+                BoundedChannel<T> parent = _parent;
+                lock (parent.SyncObj)
+                {
+                    parent.AssertInvariants();
+
+                    // Peek at an item if there is one.
+                    if (!parent._items.IsEmpty)
+                    {
+                        item = parent._items.PeekHead();
                         return true;
                     }
                 }
@@ -332,8 +357,12 @@ namespace System.Threading.Channels
                 AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
-                lock (parent.SyncObj)
+
+                bool releaseLock = false;
+                try
                 {
+                    Monitor.Enter(parent.SyncObj, ref releaseLock);
+
                     parent.AssertInvariants();
 
                     // If we're done writing, nothing more to do.
@@ -393,22 +422,33 @@ namespace System.Threading.Channels
                     {
                         // The channel is full.  Just ignore the item being added
                         // but say we added it.
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        parent._itemDropped?.Invoke(item);
                         return true;
                     }
                     else
                     {
                         // The channel is full, and we're in a dropping mode.
-                        // Drop either the oldest or the newest and write the new item.
-                        if (parent._mode == BoundedChannelFullMode.DropNewest)
-                        {
-                            parent._items.DequeueTail();
-                        }
-                        else
-                        {
+                        // Drop either the oldest or the newest
+                        T droppedItem = parent._mode == BoundedChannelFullMode.DropNewest ?
+                            parent._items.DequeueTail() :
                             parent._items.DequeueHead();
-                        }
+
                         parent._items.EnqueueTail(item);
+
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        parent._itemDropped?.Invoke(droppedItem);
+
                         return true;
+                    }
+                }
+                finally
+                {
+                    if (releaseLock)
+                    {
+                        Monitor.Exit(parent.SyncObj);
                     }
                 }
 
@@ -492,8 +532,12 @@ namespace System.Threading.Channels
                 AsyncOperation<bool>? waitingReadersTail = null;
 
                 BoundedChannel<T> parent = _parent;
-                lock (parent.SyncObj)
+
+                bool releaseLock = false;
+                try
                 {
+                    Monitor.Enter(parent.SyncObj, ref releaseLock);
+
                     parent.AssertInvariants();
 
                     // If we're done writing, trying to write is an error.
@@ -569,22 +613,33 @@ namespace System.Threading.Channels
                     {
                         // The channel is full and we're in ignore mode.
                         // Ignore the item but say we accepted it.
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        parent._itemDropped?.Invoke(item);
                         return default;
                     }
                     else
                     {
                         // The channel is full, and we're in a dropping mode.
                         // Drop either the oldest or the newest and write the new item.
-                        if (parent._mode == BoundedChannelFullMode.DropNewest)
-                        {
-                            parent._items.DequeueTail();
-                        }
-                        else
-                        {
+                        T droppedItem = parent._mode == BoundedChannelFullMode.DropNewest ?
+                            parent._items.DequeueTail() :
                             parent._items.DequeueHead();
-                        }
+
                         parent._items.EnqueueTail(item);
+
+                        Monitor.Exit(parent.SyncObj);
+                        releaseLock = false;
+                        parent._itemDropped?.Invoke(droppedItem);
+
                         return default;
+                    }
+                }
+                finally
+                {
+                    if (releaseLock)
+                    {
+                        Monitor.Exit(parent.SyncObj);
                     }
                 }
 

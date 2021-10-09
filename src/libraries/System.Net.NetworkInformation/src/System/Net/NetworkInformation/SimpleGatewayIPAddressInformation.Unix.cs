@@ -3,7 +3,7 @@
 
 namespace System.Net.NetworkInformation
 {
-    internal class SimpleGatewayIPAddressInformation : GatewayIPAddressInformation
+    internal sealed class SimpleGatewayIPAddressInformation : GatewayIPAddressInformation
     {
         private readonly IPAddress _address;
 

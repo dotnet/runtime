@@ -1432,7 +1432,7 @@ namespace SerializationTestTypes
 
         public bool Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<DC> GetEnumerator()
@@ -1518,7 +1518,7 @@ namespace SerializationTestTypes
 
         public bool Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<DC> GetEnumerator()
@@ -1604,7 +1604,7 @@ namespace SerializationTestTypes
 
         public bool Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<DC> GetEnumerator()
@@ -1690,7 +1690,7 @@ namespace SerializationTestTypes
 
         bool ICollection<DC>.Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
@@ -1776,7 +1776,7 @@ namespace SerializationTestTypes
 
         bool ICollection<DC>.Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
@@ -1862,7 +1862,7 @@ namespace SerializationTestTypes
 
         bool ICollection<DC>.Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
@@ -1948,7 +1948,7 @@ namespace SerializationTestTypes
 
         bool ICollection<PublicDCClassPrivateDM>.Remove(PublicDCClassPrivateDM item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<PublicDCClassPrivateDM> IEnumerable<PublicDCClassPrivateDM>.GetEnumerator()
@@ -2034,7 +2034,7 @@ namespace SerializationTestTypes
 
         bool ICollection<PrivateDC>.Remove(PrivateDC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<PrivateDC> IEnumerable<PrivateDC>.GetEnumerator()
@@ -2094,7 +2094,7 @@ namespace SerializationTestTypes
 
         public bool Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<DC> GetEnumerator()
@@ -2153,7 +2153,7 @@ namespace SerializationTestTypes
 
         public bool Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<DC> GetEnumerator()
@@ -2212,7 +2212,7 @@ namespace SerializationTestTypes
 
         public bool Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         public IEnumerator<DC> GetEnumerator()
@@ -2271,7 +2271,7 @@ namespace SerializationTestTypes
 
         bool ICollection<DC>.Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
@@ -2330,7 +2330,7 @@ namespace SerializationTestTypes
 
         bool ICollection<DC>.Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
@@ -2389,7 +2389,7 @@ namespace SerializationTestTypes
 
         bool ICollection<DC>.Remove(DC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<DC> IEnumerable<DC>.GetEnumerator()
@@ -2448,7 +2448,7 @@ namespace SerializationTestTypes
 
         bool ICollection<PrivateDC>.Remove(PrivateDC item)
         {
-            return _internalList.Remove(item); ;
+            return _internalList.Remove(item);
         }
 
         IEnumerator<PrivateDC> IEnumerable<PrivateDC>.GetEnumerator()
@@ -3245,7 +3245,7 @@ namespace SerializationTestTypes
             }
             set
             {
-                _data[key] = value; ;
+                _data[key] = value;
             }
         }
 
@@ -3343,7 +3343,7 @@ namespace SerializationTestTypes
             }
             set
             {
-                _data[key] = value; ;
+                _data[key] = value;
             }
         }
 
@@ -3441,7 +3441,7 @@ namespace SerializationTestTypes
             }
             set
             {
-                _data[key] = value; ;
+                _data[key] = value;
             }
         }
 
@@ -3536,7 +3536,7 @@ namespace SerializationTestTypes
             }
             set
             {
-                _data[key] = value; ;
+                _data[key] = value;
             }
         }
 
@@ -3684,7 +3684,7 @@ namespace SerializationTestTypes
             }
             set
             {
-                _data[key] = value; ;
+                _data[key] = value;
             }
         }
 
@@ -3844,7 +3844,7 @@ namespace SerializationTestTypes
             }
             set
             {
-                _data[key] = value; ;
+                _data[key] = value;
             }
         }
 

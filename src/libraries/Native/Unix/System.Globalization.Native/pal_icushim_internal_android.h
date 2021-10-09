@@ -25,6 +25,7 @@ typedef struct UBreakIterator UBreakIterator;
 typedef int8_t UBool;
 typedef uint16_t UChar;
 typedef int32_t UChar32;
+typedef double UDate;
 typedef uint8_t UVersionInfo[U_MAX_VERSION_LENGTH];
 
 typedef void* UNumberFormat;
@@ -93,6 +94,7 @@ typedef void* UCalendar;
 
 typedef enum UErrorCode {
     U_STRING_NOT_TERMINATED_WARNING = -124,
+    U_USING_DEFAULT_WARNING = -127,
     U_ZERO_ERROR =  0,
     U_ILLEGAL_ARGUMENT_ERROR = 1,
     U_INTERNAL_PROGRAM_ERROR = 5,
@@ -369,6 +371,12 @@ typedef enum UCollationResult {
     UCOL_LESS = -1
 } UCollationResult;
 
+typedef enum USystemTimeZoneType {
+    UCAL_ZONE_TYPE_ANY,
+    UCAL_ZONE_TYPE_CANONICAL,
+    UCAL_ZONE_TYPE_CANONICAL_LOCATION
+} USystemTimeZoneType;
+
 enum {
     UIDNA_ERROR_EMPTY_LABEL = 1,
     UIDNA_ERROR_LABEL_TOO_LONG = 2,
@@ -419,23 +427,37 @@ typedef struct UIDNAInfo {
     int32_t reservedI3;
 } UIDNAInfo;
 
-
+typedef struct UFieldPosition {
+    int32_t field;
+    int32_t beginIndex;
+    int32_t endIndex;
+} UFieldPosition;
 
 void u_charsToUChars(const char * cs, UChar * us, int32_t length);
 void u_getVersion(UVersionInfo versionArray);
 int32_t u_strlen(const UChar * s);
+int32_t u_strcmp(const UChar * s1, const UChar * s2);
+UChar * u_strcpy(UChar * dst, const UChar * src);
 UChar * u_strncpy(UChar * dst, const UChar * src, int32_t n);
 UChar32 u_tolower(UChar32 c);
 UChar32 u_toupper(UChar32 c);
+UChar* u_uastrncpy(UChar * dst, const char * src, int32_t n);
+void ubrk_close(UBreakIterator * bi);
+UBreakIterator* ubrk_openRules(const UChar * rules, int32_t rulesLength, const UChar * text, int32_t textLength, UParseError * parseErr, UErrorCode * status);
 void ucal_add(UCalendar * cal, UCalendarDateFields field, int32_t amount, UErrorCode * status);
 void ucal_close(UCalendar * cal);
 int32_t ucal_get(const UCalendar * cal, UCalendarDateFields field, UErrorCode * status);
 int32_t ucal_getAttribute(const UCalendar * cal, UCalendarAttribute attr);
 UEnumeration * ucal_getKeywordValuesForLocale(const char * key, const char * locale, UBool commonlyUsed, UErrorCode * status);
 int32_t ucal_getLimit(const UCalendar * cal, UCalendarDateFields field, UCalendarLimitType type, UErrorCode * status);
+UDate ucal_getNow(void);
 int32_t ucal_getTimeZoneDisplayName(const UCalendar * cal, UCalendarDisplayNameType type, const char * locale, UChar * result, int32_t resultLength, UErrorCode * status);
+int32_t ucal_getTimeZoneIDForWindowsID(const UChar * winid, int32_t	len, const char * region, UChar * id, int32_t idCapacity, UErrorCode * status);
+int32_t ucal_getWindowsTimeZoneID(const UChar *	id, int32_t	len, UChar * winid, int32_t	winidCapacity, UErrorCode * status);
 UCalendar * ucal_open(const UChar * zoneID, int32_t len, const char * locale, UCalendarType type, UErrorCode * status);
+UEnumeration * ucal_openTimeZoneIDEnumeration(USystemTimeZoneType zoneType, const char * region, const int32_t * rawOffset, UErrorCode * ec);
 void ucal_set(UCalendar * cal, UCalendarDateFields field, int32_t value);
+void ucal_setMillis(UCalendar * cal, UDate dateTime, UErrorCode * status);
 void ucol_close(UCollator * coll);
 void ucol_closeElements(UCollationElements * elems);
 int32_t ucol_getOffset(const UCollationElements *elems);
@@ -455,6 +477,7 @@ int32_t ucurr_forLocale(const char * locale, UChar * buff, int32_t buffCapacity,
 const UChar * ucurr_getName(const UChar * currency, const char * locale, UCurrNameStyle nameStyle, UBool * isChoiceFormat, int32_t * len, UErrorCode * ec);
 void udat_close(UDateFormat * format);
 int32_t udat_countSymbols(const UDateFormat * fmt, UDateFormatSymbolType type);
+int32_t udat_format(const UDateFormat * format, UDate dateToFormat, UChar * result, int32_t resultLength, UFieldPosition * position, UErrorCode * status);
 int32_t udat_getSymbols(const UDateFormat * fmt, UDateFormatSymbolType type, int32_t symbolIndex, UChar * result, int32_t resultLength, UErrorCode * status);
 UDateFormat * udat_open(UDateFormatStyle timeStyle, UDateFormatStyle dateStyle, const char * locale, const UChar * tzID, int32_t tzIDLength, const UChar * pattern, int32_t patternLength, UErrorCode * status);
 void udat_setCalendar(UDateFormat * fmt, const UCalendar * calendarToSet);
@@ -510,6 +533,7 @@ const UChar * ures_getStringByIndex(const UResourceBundle * resourceBundle, int3
 UResourceBundle * ures_open(const char * packageName, const char * locale, UErrorCode * status);
 void usearch_close(UStringSearch * searchiter);
 int32_t usearch_first(UStringSearch * strsrch, UErrorCode * status);
+const UBreakIterator* usearch_getBreakIterator(const UStringSearch * strsrch);
 int32_t usearch_getMatchedLength(const UStringSearch * strsrch);
 int32_t usearch_last(UStringSearch * strsrch, UErrorCode * status);
 UStringSearch * usearch_openFromCollator(const UChar * pattern, int32_t patternlength, const UChar * text, int32_t textlength, const UCollator * collator, UBreakIterator * breakiter, UErrorCode * status);

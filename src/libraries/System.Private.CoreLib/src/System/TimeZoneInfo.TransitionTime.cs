@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 
 namespace System
@@ -29,7 +30,7 @@ namespace System
 
             public bool IsFixedDateRule => _isFixedDateRule;
 
-            public override bool Equals(object? obj) =>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is TransitionTime && Equals((TransitionTime)obj);
 
             public static bool operator ==(TransitionTime t1, TransitionTime t2) => t1.Equals(t2);

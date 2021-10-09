@@ -1,7 +1,7 @@
 <Project>
 
   <ItemGroup>
-    <PackageDownload Include="$(MicrosoftPrivateIntellisensePackage)" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+    <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
   </ItemGroup>
 
   <!-- the intellisense package doesn't use nuget conventions so we need to select manually -->

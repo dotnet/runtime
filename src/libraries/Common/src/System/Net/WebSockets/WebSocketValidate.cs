@@ -9,6 +9,19 @@ namespace System.Net.WebSockets
 {
     internal static partial class WebSocketValidate
     {
+        /// <summary>
+        /// The minimum value for window bits that the websocket per-message-deflate extension can support.<para />
+        /// For the current implementation of deflate(), a windowBits value of 8 (a window size of 256 bytes) is not supported.
+        /// We cannot use silently 9 instead of 8, because the websocket produces raw deflate stream
+        /// and thus it needs to know the window bits in advance.
+        /// </summary>
+        internal const int MinDeflateWindowBits = 9;
+
+        /// <summary>
+        /// The maximum value for window bits that the websocket per-message-deflate extension can support.
+        /// </summary>
+        internal const int MaxDeflateWindowBits = 15;
+
         internal const int MaxControlFramePayloadLength = 123;
         private const int CloseStatusCodeAbort = 1006;
         private const int CloseStatusCodeFailedTLSHandshake = 1015;
@@ -58,7 +71,7 @@ namespace System.Net.WebSockets
                 char ch = subProtocol[i];
                 if (ch < 0x21 || ch > 0x7e)
                 {
-                    invalidChar = string.Format(CultureInfo.InvariantCulture, "[{0}]", (int)ch);
+                    invalidChar = $"[{(int)ch}]";
                     break;
                 }
 

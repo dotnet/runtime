@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 {
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public abstract class HmacTests
     {
         // RFC2202 defines the test vectors for HMACMD5 and HMACSHA1
@@ -15,30 +15,36 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         // They share the same datasets for cases 1-5, but cases 6 and 7 differ.
         private readonly byte[][] _testKeys;
         private readonly byte[][] _testData;
+        private readonly byte[][] _testMacs;
 
-        protected HmacTests(byte[][] testKeys, byte[][] testData)
+        protected HmacTests(byte[][] testKeys, byte[][] testData, byte[][] testMacs)
         {
             _testKeys = testKeys;
             _testData = testData;
+            _testMacs = testMacs;
         }
 
         protected abstract HMAC Create();
 
         protected abstract HashAlgorithm CreateHashAlgorithm();
+        protected abstract byte[] HashDataOneShot(byte[] key, byte[] source);
+        protected abstract byte[] HashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source);
+        protected abstract int HashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination);
+        protected abstract bool TryHashDataOneShot(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int written);
 
         protected abstract int BlockSize { get; }
+        protected abstract int MacSize { get; }
 
-        protected void VerifyHmac(
-            int testCaseId,
-            string digest,
-            int truncateSize = -1)
+        protected void VerifyHmac(int testCaseId, byte[] digestBytes)
         {
-            byte[] digestBytes = ByteUtils.HexToByteArray(digest);
+            byte[] data = _testData[testCaseId];
             byte[] computedDigest;
+            int truncateSize = digestBytes.Length;
+            AssertExtensions.LessThanOrEqualTo(truncateSize, MacSize);
 
             using (HMAC hmac = Create())
             {
-                Assert.True(hmac.HashSize > 0);
+                Assert.Equal(MacSize, hmac.HashSize / 8);
 
                 byte[] key = (byte[])_testKeys[testCaseId].Clone();
                 hmac.Key = key;
@@ -51,17 +57,40 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 key[0] = (byte)(key[0] + 1);
                 Assert.NotEqual<byte>(key, hmac.Key);
 
-                computedDigest = hmac.ComputeHash(_testData[testCaseId]);
+                computedDigest = hmac.ComputeHash(data);
             }
 
-            if (truncateSize != -1)
-            {
-                byte[] tmp = new byte[truncateSize];
-                Array.Copy(computedDigest, tmp, truncateSize);
-                computedDigest = tmp;
-            }
-
+            computedDigest = Truncate(computedDigest, truncateSize);
             Assert.Equal(digestBytes, computedDigest);
+
+            using (HMAC hmac = Create())
+            {
+                byte[] key = (byte[])_testKeys[testCaseId].Clone();
+                hmac.Key = key;
+
+                hmac.TransformBlock(data, 0, data.Length, null, 0);
+                hmac.Initialize();
+                hmac.TransformBlock(data, 0, data.Length, null, 0);
+                hmac.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                computedDigest = hmac.Hash;
+            }
+
+            computedDigest = Truncate(computedDigest, truncateSize);
+            Assert.Equal(digestBytes, computedDigest);
+
+            // One shot - allocating and byte array inputs
+            computedDigest = HashDataOneShot(_testKeys[testCaseId], data);
+
+            computedDigest = Truncate(computedDigest, truncateSize);
+            Assert.Equal(digestBytes, computedDigest);
+
+            static byte[] Truncate(byte[] digest, int truncateSize)
+            {
+                if (truncateSize == -1)
+                    return digest;
+
+                return digest.AsSpan(0, truncateSize).ToArray();
+            }
         }
 
         protected void VerifyHmac_KeyAlreadySet(
@@ -208,6 +237,153 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             using (HMAC hash = Create())
             {
                 AssertExtensions.Throws<ArgumentNullException>("value", () => hash.Key = null);
+            }
+        }
+
+        [Fact]
+        public void OneShot_NullKey_ArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("key", () =>
+                HashDataOneShot(key: (byte[])null, source: Array.Empty<byte>()));
+        }
+
+        [Fact]
+        public void OneShot_NullSource_ArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", () =>
+                HashDataOneShot(key: Array.Empty<byte>(), source: (byte[])null));
+        }
+
+        [Fact]
+        public void OneShot_ExistingBuffer_TooSmall()
+        {
+            byte[] buffer = new byte[MacSize - 1];
+            byte[] key = _testKeys[1];
+            byte[] data = _testData[1];
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                HashDataOneShot(key, data, buffer));
+
+            AssertExtensions.FilledWith<byte>(0, buffer);
+        }
+
+        [Fact]
+        public void OneShot_TryExistingBuffer_TooSmall()
+        {
+            byte[] buffer = new byte[MacSize - 1];
+            byte[] key = _testKeys[1];
+            byte[] data = _testData[1];
+
+            Assert.False(TryHashDataOneShot(key, data, buffer, out int written));
+            Assert.Equal(0, written);
+            AssertExtensions.FilledWith<byte>(0, buffer);
+        }
+
+        [Fact]
+        public void OneShot_TryExistingBuffer_Exact()
+        {
+            for (int caseId = 1; caseId <= 7; caseId++)
+            {
+                byte[] buffer = new byte[MacSize];
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+
+                Assert.True(TryHashDataOneShot(key, data, buffer, out int written));
+                Assert.Equal(MacSize, written);
+
+                ReadOnlySpan<byte> expectedMac = _testMacs[caseId];
+                Span<byte> truncatedBuffer = buffer.AsSpan(0, expectedMac.Length);
+                AssertExtensions.SequenceEqual(expectedMac, truncatedBuffer);
+            }
+        }
+
+        [Fact]
+        public void OneShot_TryExistingBuffer_Larger()
+        {
+            for (int caseId = 1; caseId <= 7; caseId++)
+            {
+                Span<byte> buffer = new byte[MacSize + 20];
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+
+                buffer.Fill(0xCC);
+                Span<byte> writeBuffer = buffer.Slice(10, MacSize);
+
+                Assert.True(TryHashDataOneShot(key, data, writeBuffer, out int written));
+                Assert.Equal(MacSize, written);
+
+                ReadOnlySpan<byte> expectedMac = _testMacs[caseId];
+                Span<byte> truncatedWriteBuffer = writeBuffer.Slice(0, expectedMac.Length);
+                AssertExtensions.SequenceEqual(expectedMac, truncatedWriteBuffer);
+                AssertExtensions.FilledWith<byte>(0xCC, buffer[..10]);
+                AssertExtensions.FilledWith<byte>(0xCC, buffer[^10..]);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(10, 10)]
+        [InlineData(10, 0)]
+        [InlineData(10, 20)]
+        public void OneShot_TryExistingBuffer_OverlapsKey(int keyOffset, int bufferOffset)
+        {
+            for (int caseId = 1; caseId <= 7; caseId++)
+            {
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                Span<byte> buffer = new byte[Math.Max(key.Length, MacSize) + Math.Max(keyOffset, bufferOffset)];
+
+                Span<byte> writeBuffer = buffer.Slice(bufferOffset, MacSize);
+                Span<byte> keyBuffer = buffer.Slice(keyOffset, key.Length);
+                key.AsSpan().CopyTo(keyBuffer);
+
+                Assert.True(TryHashDataOneShot(keyBuffer, data, writeBuffer, out int written));
+                Assert.Equal(MacSize, written);
+
+                ReadOnlySpan<byte> expectedMac = _testMacs[caseId];
+                Span<byte> truncatedWriteBuffer = writeBuffer.Slice(0, expectedMac.Length);
+                AssertExtensions.SequenceEqual(expectedMac, truncatedWriteBuffer);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(10, 10)]
+        [InlineData(10, 0)]
+        [InlineData(10, 20)]
+        public void OneShot_TryExistingBuffer_OverlapsSource(int sourceOffset, int bufferOffset)
+        {
+            for (int caseId = 1; caseId <= 7; caseId++)
+            {
+                byte[] key = _testKeys[caseId];
+                byte[] data = _testData[caseId];
+                Span<byte> buffer = new byte[Math.Max(data.Length, MacSize) + Math.Max(sourceOffset, bufferOffset)];
+
+                Span<byte> writeBuffer = buffer.Slice(bufferOffset, MacSize);
+                Span<byte> dataBuffer = buffer.Slice(sourceOffset, data.Length);
+                data.AsSpan().CopyTo(dataBuffer);
+
+                Assert.True(TryHashDataOneShot(key, dataBuffer, writeBuffer, out int written));
+                Assert.Equal(MacSize, written);
+
+                ReadOnlySpan<byte> expectedMac = _testMacs[caseId];
+                Span<byte> truncatedWriteBuffer = writeBuffer.Slice(0, expectedMac.Length);
+                AssertExtensions.SequenceEqual(expectedMac, truncatedWriteBuffer);
+            }
+        }
+
+        [Theory]
+        [InlineData(new byte[0], new byte[] { 1 })]
+        [InlineData(new byte[] { 1 }, new byte[0])]
+        public void OneShot_Empty_Matches_Instances(byte[] key, byte[] source)
+        {
+            using (HMAC hash = Create())
+            {
+                hash.Key = key;
+                byte[] mac = hash.ComputeHash(source, 0, source.Length);
+
+                byte[] oneShot = HashDataOneShot(key, source);
+                Assert.Equal(mac, oneShot);
             }
         }
     }

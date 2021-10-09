@@ -29,6 +29,8 @@
 #endif
 #if HAVE_NET_IFMEDIA_H
 #include <net/if_media.h>
+#elif HAVE_IOS_NET_IFMEDIA_H
+#include "ios/net/if_media.h"
 #endif
 
 #if defined(AF_PACKET)
@@ -95,7 +97,8 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 }
 #endif
 
-int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
+int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
+                                               IPv4AddressFound onIpv4Found,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
@@ -142,7 +145,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 // ifa_netmask can be NULL according to documentation, probably P2P interfaces.
                 iai.PrefixLength = mask_sain != NULL ? mask2prefix((uint8_t*)&mask_sain->sin_addr.s_addr, NUM_BYTES_IN_IPV4_ADDRESS) : NUM_BYTES_IN_IPV4_ADDRESS * 8;
 
-                onIpv4Found(actualName, &iai);
+                onIpv4Found(context, actualName, &iai);
             }
         }
         else if (family == AF_INET6)
@@ -160,7 +163,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 
                 struct sockaddr_in6* mask_sain6 = (struct sockaddr_in6*)current->ifa_netmask;
                 iai.PrefixLength = mask_sain6 != NULL ? mask2prefix((uint8_t*)&mask_sain6->sin6_addr.s6_addr, NUM_BYTES_IN_IPV6_ADDRESS) : NUM_BYTES_IN_IPV6_ADDRESS * 8;
-                onIpv6Found(actualName, &iai, &scopeId);
+                onIpv6Found(context, actualName, &iai, &scopeId);
             }
         }
 #if defined(AF_PACKET)
@@ -186,7 +189,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 lla.HardwareType = MapHardwareType(sall->sll_hatype);
 
                 memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
-                onLinkLayerFound(current->ifa_name, &lla);
+                onLinkLayerFound(context, current->ifa_name, &lla);
             }
         }
 #elif defined(AF_LINK)
@@ -202,7 +205,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 lla.NumAddressBytes = sadl->sdl_alen;
                 lla.HardwareType = MapHardwareType(sadl->sdl_type);
 
-#if HAVE_NET_IFMEDIA_H
+#if HAVE_NET_IFMEDIA_H || HAVE_IOS_NET_IFMEDIA_H
                 if (lla.HardwareType == NetworkInterfaceType_Ethernet)
                 {
                     // WI-FI and Ethernet have same address type so we can try to distinguish more
@@ -223,7 +226,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
                 }
 #endif
                 memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), sadl->sdl_alen);
-                onLinkLayerFound(current->ifa_name, &lla);
+                onLinkLayerFound(context, current->ifa_name, &lla);
             }
         }
 #endif
@@ -233,6 +236,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
     return 0;
 #else
     // Not supported on e.g. Android. Also, prevent a compiler error because parameters are unused
+    (void)context;
     (void)onIpv4Found;
     (void)onIpv6Found;
     (void)onLinkLayerFound;
@@ -325,8 +329,9 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
                 nii->SupportsMulticast = 1;
             }
 
-            // Get administrative state as best guess for now.
-            nii->OperationalState = (ifaddrsEntry->ifa_flags & IFF_UP) ? OperationalStatus_Up : OperationalStatus_Down;
+            // OperationalState returns whether the interface can transmit data packets.
+            // The administrator must have enabled the interface (IFF_UP), and the cable must be plugged in (IFF_RUNNING).
+            nii->OperationalState = ((ifaddrsEntry->ifa_flags & (IFF_UP|IFF_RUNNING)) == (IFF_UP|IFF_RUNNING)) ? OperationalStatus_Up : OperationalStatus_Down;
         }
 
         if (ifaddrsEntry->ifa_addr == NULL)
@@ -380,7 +385,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), &sall->sll_addr, sall->sll_halen);
 
             struct ifreq ifr;
-            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name)-1);
+            strncpy(ifr.ifr_name, nii->Name, sizeof(ifr.ifr_name));
+            ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 
             if (socketfd == -1)
             {
@@ -459,7 +465,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 }
 
 #if HAVE_RT_MSGHDR && defined(CTL_NET)
-int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
+int32_t SystemNative_EnumerateGatewayAddressesForInterface(void* context, uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
     static struct in6_addr anyaddr = IN6ADDR_ANY_INIT;
     int routeDumpName[] = {CTL_NET, AF_ROUTE, 0, 0, NET_RT_DUMP, 0};
@@ -557,11 +563,20 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
                 // Ignore other address families.
                 continue;
             }
-            onGatewayFound(&iai);
+            onGatewayFound(context, &iai);
         }
     }
 
     free(buffer);
     return 0;
+}
+#else
+int32_t SystemNative_EnumerateGatewayAddressesForInterface(void* context, uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
+{
+    (void)context;
+    (void)interfaceIndex;
+    (void)onGatewayFound;
+    errno = ENOTSUP;
+    return -1;
 }
 #endif // HAVE_RT_MSGHDR

@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace System.Composition.TypedParts.Discovery
 {
-    internal class DiscoveredPropertyExport : DiscoveredExport
+    internal sealed class DiscoveredPropertyExport : DiscoveredExport
     {
         private static readonly MethodInfo s_activatorInvoke = typeof(CompositeActivator).GetRuntimeMethod("Invoke", new[] { typeof(LifetimeContext), typeof(CompositionOperation) });
 

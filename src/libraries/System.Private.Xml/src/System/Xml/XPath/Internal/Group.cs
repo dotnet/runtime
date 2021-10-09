@@ -5,7 +5,7 @@ using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal class Group : AstNode
+    internal sealed class Group : AstNode
     {
         private readonly AstNode _groupNode;
 

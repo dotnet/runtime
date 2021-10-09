@@ -12,7 +12,7 @@ namespace System.Runtime.Serialization.Json
     // This wrapper does not support seek.
     // Supports: UTF-8, Unicode, BigEndianUnicode
     // ASSUMPTION (Microsoft): This class will only be used for EITHER reading OR writing.  It can be done, it would just mean more buffers.
-    internal class JsonEncodingStreamWrapper : Stream
+    internal sealed class JsonEncodingStreamWrapper : Stream
     {
         private static readonly UnicodeEncoding s_validatingBEUTF16 = new UnicodeEncoding(true, false, true);
 
@@ -439,8 +439,7 @@ namespace System.Runtime.Serialization.Json
         {
             try
             {
-                //this.stream = new BufferedStream(inputStream);
-                _stream = inputStream;
+                _stream = new BufferedStream(inputStream);
 
                 SupportedEncoding expectedEnc = GetSupportedEncoding(expectedEncoding);
                 SupportedEncoding dataEnc = ReadEncoding();
@@ -472,8 +471,7 @@ namespace System.Runtime.Serialization.Json
         private void InitForWriting(Stream outputStream, Encoding writeEncoding)
         {
             _encoding = writeEncoding;
-            //this.stream = new BufferedStream(outputStream);
-            _stream = outputStream;
+            _stream = new BufferedStream(outputStream);
 
             // Set the encoding code
             _encodingCode = GetSupportedEncoding(writeEncoding);

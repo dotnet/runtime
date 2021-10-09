@@ -1,0 +1,9 @@
+<Project>
+  <Import Project="..\..\libraries\Directory.Build.targets" />
+
+  <PropertyGroup>
+    <BundleDir>$(OutDir)</BundleDir>
+    <RunScriptOutputPath  Condition="'$(OS)' != 'Windows_NT'">$(OutDir)\RunTests.sh</RunScriptOutputPath>
+    <RunScriptOutputPath  Condition="'$(OS)' == 'Windows_NT'">$(OutDir)\RunTests.cmd</RunScriptOutputPath>
+  </PropertyGroup>
+</Project>

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
@@ -14,7 +15,7 @@ namespace System.Xml.Xsl.IlGen
     /// This internal class maintains a list of unique values.  Each unique value is assigned a unique ID, which can
     /// be used to quickly access the value, since it corresponds to the value's position in the list.
     /// </summary>
-    internal class UniqueList<T> where T : notnull
+    internal sealed class UniqueList<T> where T : notnull
     {
         private readonly Dictionary<T, int> _lookup = new Dictionary<T, int>();
         private readonly List<T> _list = new List<T>();
@@ -58,7 +59,7 @@ namespace System.Xml.Xsl.IlGen
     ///   3. All Xml types that will be used at run-time
     ///   4. All global variables and parameters
     /// </summary>
-    internal class StaticDataManager
+    internal sealed class StaticDataManager
     {
         private UniqueList<string>? _uniqueNames;
         private UniqueList<Int32Pair>? _uniqueFilters;
@@ -172,7 +173,7 @@ namespace System.Xml.Xsl.IlGen
         /// Add early bound information to a list that is used by this query.  Return the index of
         /// the early bound information in the list.
         /// </summary>
-        public int DeclareEarlyBound(string namespaceUri, Type ebType)
+        public int DeclareEarlyBound(string namespaceUri, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type ebType)
         {
             if (_earlyInfo == null)
                 _earlyInfo = new UniqueList<EarlyBoundInfo>();

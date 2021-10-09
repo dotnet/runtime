@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -37,7 +38,7 @@ namespace System.Globalization
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
         // Invariant text info
-        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true);
+        internal static readonly TextInfo Invariant = new TextInfo(CultureData.Invariant, readOnly: true) { _isAsciiCasingSameAsInvariant = Tristate.True };
 
         internal TextInfo(CultureData cultureData)
         {
@@ -143,7 +144,12 @@ namespace System.Globalization
         /// </summary>
         public char ToLower(char c)
         {
-            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant)
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -153,7 +159,12 @@ namespace System.Globalization
 
         internal static char ToLowerInvariant(char c)
         {
-            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToLower(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToLowerAsciiInvariant(c);
             }
@@ -170,7 +181,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return ToLowerAsciiInvariant(str);
+                return InvariantModeCasing.ToLower(str);
             }
 
             return ChangeCaseCommon<ToLowerConversion>(str);
@@ -547,7 +558,12 @@ namespace System.Globalization
         /// </summary>
         public char ToUpper(char c)
         {
-            if (GlobalizationMode.Invariant || (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c) && IsAsciiCasingSameAsInvariant)
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -557,7 +573,12 @@ namespace System.Globalization
 
         internal static char ToUpperInvariant(char c)
         {
-            if (GlobalizationMode.Invariant || UnicodeUtility.IsAsciiCodePoint(c))
+            if (GlobalizationMode.Invariant)
+            {
+                return InvariantModeCasing.ToUpper(c);
+            }
+
+            if (UnicodeUtility.IsAsciiCodePoint(c))
             {
                 return ToUpperAsciiInvariant(c);
             }
@@ -574,7 +595,7 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                return ToUpperAsciiInvariant(str);
+                return InvariantModeCasing.ToUpper(str);
             }
 
             return ChangeCaseCommon<ToUpperConversion>(str);
@@ -618,7 +639,7 @@ namespace System.Globalization
         /// </summary>
         public bool IsRightToLeft => _cultureData.IsRightToLeft;
 
-        public override bool Equals(object? obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
             return obj is TextInfo otherTextInfo
                 && CultureName.Equals(otherTextInfo.CultureName);
@@ -788,7 +809,9 @@ namespace System.Globalization
                 ReadOnlySpan<char> src = input.AsSpan(inputIndex, 2);
                 if (GlobalizationMode.Invariant)
                 {
-                    result.Append(src); // surrogate pair in invariant mode, so changing case is a nop
+                    SurrogateCasing.ToUpper(src[0], src[1], out char h, out char l);
+                    result.Append(h);
+                    result.Append(l);
                 }
                 else
                 {
@@ -824,7 +847,7 @@ namespace System.Globalization
                         result.Append((char)0x01F2);
                         break;
                     default:
-                        result.Append(ToUpper(input[inputIndex]));
+                        result.Append(GlobalizationMode.Invariant ? InvariantModeCasing.ToUpper(input[inputIndex]) : ToUpper(input[inputIndex]));
                         break;
                 }
             }

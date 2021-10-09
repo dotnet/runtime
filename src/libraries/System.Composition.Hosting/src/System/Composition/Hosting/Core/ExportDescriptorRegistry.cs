@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Composition.Hosting.Core
 {
-    internal class ExportDescriptorRegistry
+    internal sealed class ExportDescriptorRegistry
     {
         private readonly object _thisLock = new object();
         private readonly ExportDescriptorProvider[] _exportDescriptorProviders;

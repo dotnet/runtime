@@ -80,7 +80,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class NullableDecimalAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<decimal, long>>
+        private sealed class NullableDecimalAverageAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<Pair<decimal, long>>
         {
             private readonly QueryOperatorEnumerator<decimal?, TKey> _source; // The source data.
 
@@ -114,7 +114,7 @@ namespace System.Linq.Parallel
                 while (source.MoveNext(ref current, ref currentKey))
                 {
                     if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                        _cancellationToken.ThrowIfCancellationRequested();;
+                        _cancellationToken.ThrowIfCancellationRequested();
 
                     if (current.HasValue)
                     {

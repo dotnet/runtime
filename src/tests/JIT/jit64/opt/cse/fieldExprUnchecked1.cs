@@ -72,15 +72,15 @@ namespace CseTest
                             break;
 
                         case 2:
-                            v2 = (s.d + ((s.a + s.b) + s.c)) + System.Int32.MaxValue; ;
+                            v2 = (s.d + ((s.a + s.b) + s.c)) + System.Int32.MaxValue;
                             break;
 
                         case 3:
-                            v3 = ((s.a + s.b) + s.c) + System.Int32.MaxValue; ;
+                            v3 = ((s.a + s.b) + s.c) + System.Int32.MaxValue;
                             break;
 
                         case 4:
-                            v4 = (s.c + (s.a + s.b)) + System.Int32.MaxValue; ;
+                            v4 = (s.c + (s.a + s.b)) + System.Int32.MaxValue;
                             break;
 
                         case 5:
@@ -88,15 +88,15 @@ namespace CseTest
                             break;
 
                         case 6:
-                            v6 = (s.b + s.a) + System.Int32.MaxValue; ;
+                            v6 = (s.b + s.a) + System.Int32.MaxValue;
                             break;
 
                         case 7:
-                            v7 = (s.a + s.b) + System.Int32.MaxValue; ;
+                            v7 = (s.a + s.b) + System.Int32.MaxValue;
                             break;
 
                         case 8:
-                            v8 = (s.b + s.a) + System.Int32.MaxValue; ;
+                            v8 = (s.b + s.a) + System.Int32.MaxValue;
                             break;
 
                         case 9:

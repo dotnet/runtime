@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Logging.Console.Test
             // Act
             using (logger.BeginScope("Scope with named parameter {namedParameter}", 123))
             using (logger.BeginScope("SimpleScope"))
-                logger.Log(LogLevel.Warning, 0, "Message with {args}", 73, _defaultFormatter);
+                logger.Log(LogLevel.Warning, 0, "Message with {args}", 73);
 
             // Assert
             Assert.Equal(1, sink.Writes.Count);
@@ -342,6 +342,35 @@ namespace Microsoft.Extensions.Logging.Console.Test
             Assert.Contains("\"LogKey\":null", message);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Log_ScopeIsIEnumerable_SerializesKeyValuePair()
+        {
+            // Arrange
+            var t = SetUp(
+                new ConsoleLoggerOptions { FormatterName = ConsoleFormatterNames.Json },
+                simpleOptions: null,
+                systemdOptions: null,
+                jsonOptions: new JsonConsoleFormatterOptions
+                {
+                    JsonWriterOptions = new JsonWriterOptions() { Indented = false },
+                    IncludeScopes = true
+                }
+            );
+            var logger = (ILogger)t.Logger;
+            var sink = t.Sink;
+
+            // Act
+            using (logger.BeginScope(new[] { 2 }.Select(x => new KeyValuePair<string, object>("Value", x))))
+            {
+                logger.LogInformation("{LogEntryNumber}", 1);
+            }
+
+            // Assert
+            string message = sink.Writes[0].Message;
+            Assert.Contains("\"Message\":\"System.Linq.Enumerable", message);
+            Assert.Contains("\"Value\":" + 2, message);
+        }
+
         public static TheoryData<object, string> SpecialCaseValues
         {
             get
@@ -377,8 +406,8 @@ namespace Microsoft.Extensions.Logging.Console.Test
                     // Dynamic object serialized as string
                     { new { a = 1, b = 2 }, "\"{ a = 1, b = 2 }\"" },
 
-                    // null serialized as special string
-                    { null, "\"(null)\"" }
+                    // null should not be serialized as special string in the state value, only in message
+                    { null, "null" }
                 };
                 return data;
             }

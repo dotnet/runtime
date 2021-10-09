@@ -828,7 +828,7 @@ namespace System.Xml.Xsl.XPath
             return FunctionTable.ContainsKey(localName);
         }
 
-        internal class FixupVisitor : QilReplaceVisitor
+        internal sealed class FixupVisitor : QilReplaceVisitor
         {
             private new readonly QilPatternFactory f;
             private readonly QilNode _fixupCurrent, _fixupPosition, _fixupLast; // fixup nodes we are replacing
@@ -975,7 +975,7 @@ namespace System.Xml.Xsl.XPath
 #endif
         }
 
-        internal class FunctionInfo<T>
+        internal sealed class FunctionInfo<T>
         {
             public T id;
             public int minArgs;

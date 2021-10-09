@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 
 namespace System.Text.Json
 {
@@ -24,8 +25,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -52,6 +53,24 @@ namespace System.Text.Json
             return document.RootElement;
         }
 
+        internal static JsonElement ParseValue(Stream utf8Json, JsonDocumentOptions options)
+        {
+            JsonDocument document = JsonDocument.ParseValue(utf8Json, options);
+            return document.RootElement;
+        }
+
+        internal static JsonElement ParseValue(ReadOnlySpan<byte> utf8Json, JsonDocumentOptions options)
+        {
+            JsonDocument document = JsonDocument.ParseValue(utf8Json, options);
+            return document.RootElement;
+        }
+
+        internal static JsonElement ParseValue(string json, JsonDocumentOptions options)
+        {
+            JsonDocument document = JsonDocument.ParseValue(json, options);
+            return document.RootElement;
+        }
+
         /// <summary>
         ///   Attempts to parse one JSON value (including objects or arrays) from the provided reader.
         /// </summary>
@@ -71,7 +90,7 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown, or <see langword="false"/>
         ///     is returned, the reader is reset to the state it was in when the method was called.
         ///   </para>

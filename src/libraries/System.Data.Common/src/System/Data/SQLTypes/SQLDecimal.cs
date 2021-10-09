@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Data.SqlTypes
 {
@@ -1910,7 +1911,7 @@ namespace System.Data.SqlTypes
 
         private bool FGt10_38(Span<uint> rglData)
         {
-            Debug.Assert(rglData.Length == 4, "rglData.Length == 4", "Wrong array length: " + rglData.Length.ToString(CultureInfo.InvariantCulture));
+            Debug.Assert(rglData.Length == 4, "rglData.Length == 4", $"Wrong array length: {rglData.Length}");
 
             return rglData[3] >= 0x4b3b4ca8L &&
             ((rglData[3] > 0x4b3b4ca8L) || (rglData[2] > 0x5a86c47aL) ||
@@ -3279,7 +3280,7 @@ namespace System.Data.SqlTypes
         }
 
         // Compares this instance with a specified object
-        public override bool Equals(object? value)
+        public override bool Equals([NotNullWhen(true)] object? value)
         {
             if (!(value is SqlDecimal))
             {

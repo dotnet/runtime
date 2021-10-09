@@ -2,6 +2,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+
+    <!-- these tests depend on the pdb files -->
+    <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(TargetOS)' == 'Browser'">true</DebuggerSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="StackFrameExtensionsTests.cs" />
@@ -16,5 +20,8 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ExceptionTestAssembly\ExceptionTestAssembly.csproj" />
   </ItemGroup>
 </Project>

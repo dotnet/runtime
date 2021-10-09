@@ -15,7 +15,7 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     [EventData]
-    internal class CounterPayload : IEnumerable<KeyValuePair<string, object?>>
+    internal sealed class CounterPayload : IEnumerable<KeyValuePair<string, object?>>
     {
         public string? Name { get; set; }
 
@@ -76,7 +76,7 @@ namespace System.Diagnostics.Tracing
     }
 
     [EventData]
-    internal class IncrementingCounterPayload : IEnumerable<KeyValuePair<string, object?>>
+    internal sealed class IncrementingCounterPayload : IEnumerable<KeyValuePair<string, object?>>
     {
         public string? Name { get; set; }
 

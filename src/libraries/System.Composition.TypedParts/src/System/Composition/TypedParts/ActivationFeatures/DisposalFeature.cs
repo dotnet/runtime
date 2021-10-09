@@ -10,7 +10,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
     /// <summary>
     /// Modifies the activator so that disposable instances are bound to the appropriate scope.
     /// </summary>
-    internal class DisposalFeature : ActivationFeature
+    internal sealed class DisposalFeature : ActivationFeature
     {
         public override CompositeActivator RewriteActivator(
             TypeInfo partType,

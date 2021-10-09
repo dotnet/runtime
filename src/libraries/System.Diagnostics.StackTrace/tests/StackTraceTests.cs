@@ -1,11 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics
@@ -38,6 +43,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_Default()
         {
             var stackTrace = new StackTrace();
@@ -45,6 +51,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_FNeedFileInfo(bool fNeedFileInfo)
@@ -54,6 +61,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_SkipFrames(int skipFrames)
@@ -77,6 +85,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0, true)]
         [InlineData(1, true)]
         [InlineData(0, false)]
@@ -104,6 +113,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void Ctor_ThrownException_GetFramesReturnsExpected()
         {
             var stackTrace = new StackTrace(InvokeException());
@@ -121,6 +131,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(true)]
         [InlineData(false)]
         public void Ctor_Bool_ThrownException_GetFramesReturnsExpected(bool fNeedFileInfo)
@@ -143,6 +154,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31796", TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [InlineData(0)]
         [InlineData(1)]
         public void Ctor_Exception_SkipFrames(int skipFrames)
@@ -298,6 +310,71 @@ namespace System.Diagnostics.Tests
         {
             var stackTrace = new StackTrace((StackFrame)null);
             Assert.Equal(Environment.NewLine, stackTrace.ToString());
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ToString_ShowILOffset()
+        {
+            string AssemblyName = "ExceptionTestAssembly.dll";
+            string SourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, AssemblyName);
+            string regPattern = @":token 0x([a-f0-9]*)\+0x([a-f0-9]*)";
+
+            // Normal loading case
+            RemoteExecutor.Invoke((asmPath, asmName, p) =>
+            {
+                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                var asm = Assembly.LoadFrom(asmPath);
+                try
+                {
+                    asm.GetType("Program").GetMethod("Foo").Invoke(null, null);
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains(asmName, e.InnerException.StackTrace);
+                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                }
+            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
+
+            // Assembly.Load(Byte[]) case
+            RemoteExecutor.Invoke((asmPath, asmName, p) =>
+            {
+                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                var inMemBlob = File.ReadAllBytes(asmPath);
+                var asm2 = Assembly.Load(inMemBlob);
+                try
+                {
+                    asm2.GetType("Program").GetMethod("Foo").Invoke(null, null);
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains(asmName, e.InnerException.StackTrace);
+                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                }
+            }, SourceTestAssemblyPath, AssemblyName, regPattern).Dispose();
+
+            // AssmblyBuilder.DefineDynamicAssembly() case
+            RemoteExecutor.Invoke((p) =>
+            {
+                AppContext.SetSwitch("Switch.System.Diagnostics.StackTrace.ShowILOffsets", true);
+                AssemblyName asmName = new AssemblyName("ExceptionTestAssembly");
+                AssemblyBuilder asmBldr = AssemblyBuilder.DefineDynamicAssembly(asmName, AssemblyBuilderAccess.Run);
+                ModuleBuilder modBldr = asmBldr.DefineDynamicModule(asmName.Name);
+                TypeBuilder tBldr = modBldr.DefineType("Program");
+                MethodBuilder mBldr = tBldr.DefineMethod("Foo", MethodAttributes.Public | MethodAttributes.Static, null, null);
+                ILGenerator ilGen = mBldr.GetILGenerator();
+                ilGen.ThrowException(typeof(NullReferenceException));
+                ilGen.Emit(OpCodes.Ret);
+                Type t = tBldr.CreateType();
+                try
+                {
+                    t.InvokeMember("Foo", BindingFlags.InvokeMethod, null, null, null);
+                }
+                catch (Exception e)
+                {
+                    Assert.Contains("RefEmit_InMemoryManifestModule", e.InnerException.StackTrace);
+                    Assert.True(Regex.Match(e.InnerException.StackTrace, p).Success);
+                }
+            }, regPattern).Dispose();
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

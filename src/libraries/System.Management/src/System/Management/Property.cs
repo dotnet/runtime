@@ -16,7 +16,7 @@ namespace System.Management
     // RuntimeHelpers.GetObjectValue.  This returns reference types right back to the caller, but if passed
     // a boxed non-primitive value type, it will return a boxed copy.  We cannot use GetObjectValue for primitives
     // because its implementation does not copy boxed primitives.
-    internal class ValueTypeSafety
+    internal static class ValueTypeSafety
     {
         public static object GetSafeObject(object theValue)
         {

@@ -130,11 +130,16 @@ namespace System.Net.NetworkInformation
         public abstract System.Net.NetworkInformation.NetBiosNodeType NodeType { get; }
         public virtual System.IAsyncResult BeginGetUnicastAddresses(System.AsyncCallback? callback, object? state) { throw null; }
         public virtual System.Net.NetworkInformation.UnicastIPAddressInformationCollection EndGetUnicastAddresses(System.IAsyncResult asyncResult) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.NetworkInformation.TcpConnectionInformation[] GetActiveTcpConnections();
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.IPEndPoint[] GetActiveTcpListeners();
+        [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
         public abstract System.Net.IPEndPoint[] GetActiveUdpListeners();
         public abstract System.Net.NetworkInformation.IcmpV4Statistics GetIcmpV4Statistics();
         public abstract System.Net.NetworkInformation.IcmpV6Statistics GetIcmpV6Statistics();
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static System.Net.NetworkInformation.IPGlobalProperties GetIPGlobalProperties() { throw null; }
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv4GlobalStatistics();
         public abstract System.Net.NetworkInformation.IPGlobalStatistics GetIPv6GlobalStatistics();
@@ -307,10 +312,14 @@ namespace System.Net.NetworkInformation
         public virtual System.Net.NetworkInformation.OperationalStatus OperationalStatus { get { throw null; } }
         public virtual long Speed { get { throw null; } }
         public virtual bool SupportsMulticast { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static System.Net.NetworkInformation.NetworkInterface[] GetAllNetworkInterfaces() { throw null; }
         public virtual System.Net.NetworkInformation.IPInterfaceProperties GetIPProperties() { throw null; }
         public virtual System.Net.NetworkInformation.IPInterfaceStatistics GetIPStatistics() { throw null; }
         public virtual System.Net.NetworkInformation.IPv4InterfaceStatistics GetIPv4Statistics() { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static bool GetIsNetworkAvailable() { throw null; }
         public virtual System.Net.NetworkInformation.PhysicalAddress GetPhysicalAddress() { throw null; }
         public virtual bool Supports(System.Net.NetworkInformation.NetworkInterfaceComponent networkInterfaceComponent) { throw null; }
@@ -365,7 +374,7 @@ namespace System.Net.NetworkInformation
     {
         public static readonly System.Net.NetworkInformation.PhysicalAddress None;
         public PhysicalAddress(byte[] address) { }
-        public override bool Equals(object? comparand) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Net.NetworkInformation.PhysicalAddress Parse(string? address) { throw null; }

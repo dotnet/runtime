@@ -20,51 +20,33 @@ async function run() {
   const github = require("@actions/github");
   const exec = require("@actions/exec");
 
-  if (github.context.eventName !== "issue_comment") throw "Error: This action only works on issue_comment events.";
-
-  const run_id = process.env.GITHUB_RUN_ID;
   const repo_owner = github.context.payload.repository.owner.login;
   const repo_name = github.context.payload.repository.name;
   const pr_number = github.context.payload.issue.number;
-  const pr_source_ref = process.env.GITHUB_REF;
   const comment_user = github.context.payload.comment.user.login;
 
-  let octokit = github.getOctokit(core.getInput("auth_token"));
-  let target_branch = "";
+  let octokit = github.getOctokit(core.getInput("auth_token", { required: true }));
+  let target_branch = core.getInput("target_branch", { required: true });
 
   try {
     // verify the comment user is a repo collaborator
     try {
-      await octokit.repos.checkCollaborator({
+      await octokit.rest.repos.checkCollaborator({
         owner: repo_owner,
         repo: repo_name,
         username: comment_user
       });
       console.log(`Verified ${comment_user} is a repo collaborator.`);
-    } catch {
+    } catch (error) {
+      console.log(error);
       throw new BackportException(`Error: @${comment_user} is not a repo collaborator, backporting is not allowed.`);
     }
 
-    // extract the target branch name from the trigger phrase containing these characters: a-z, A-Z, digits, forward slash, dot, hyphen, underscore
-    console.log(`Extracting target branch`);
-    const regex = /\/backport to ([a-zA-Z\d\/\.\-\_]+)/;
-    target_branch = regex.exec(github.context.payload.comment.body)[1];
-    if (target_branch == null) throw new BackportException("Error: No backport branch found in the trigger phrase.");
     try { await exec.exec(`git ls-remote --exit-code --heads origin ${target_branch}`) } catch { throw new BackportException(`Error: The specified backport target branch ${target_branch} wasn't found in the repo.`); }
     console.log(`Backport target branch: ${target_branch}`);
 
-    // Post backport started comment to pull request
-    const backport_start_body = `Started backporting to ${target_branch}: https://github.com/${repo_owner}/${repo_name}/actions/runs/${run_id}`;
-    await octokit.issues.createComment({
-      owner: repo_owner,
-      repo: repo_name,
-      issue_number: pr_number,
-      body: backport_start_body
-    });
-
     console.log("Applying backport patch");
 
-    await exec.exec(`git -c protocol.version=2 fetch --no-tags --progress --no-recurse-submodules origin ${target_branch} ${pr_source_ref}`);
     await exec.exec(`git checkout ${target_branch}`);
     await exec.exec(`git clean -xdff`);
 
@@ -104,7 +86,7 @@ async function run() {
 
     if (git_am_failed) {
       const git_am_failed_body = `@${github.context.payload.comment.user.login} backporting to ${target_branch} failed, the patch most likely resulted in conflicts:\n\n\`\`\`shell\n${git_am_output}\n\`\`\`\n\nPlease backport manually!`;
-      await octokit.issues.createComment({
+      await octokit.rest.issues.createComment({
         owner: repo_owner,
         repo: repo_name,
         issue_number: pr_number,
@@ -144,7 +126,7 @@ async function run() {
       .replace(/%cc_users%/g, cc_users);
 
     // open the GitHub PR
-    await octokit.pulls.create({
+    await octokit.rest.pulls.create({
       owner: repo_owner,
       repo: repo_name,
       title: backport_pr_title,
@@ -161,7 +143,7 @@ async function run() {
     if (error.postToGitHub === undefined || error.postToGitHub == true) {
       // post failure to GitHub comment
       const unknown_error_body = `@${comment_user} an error occurred while backporting to ${target_branch}, please check the run log for details!\n\n${error.message}`;
-      await octokit.issues.createComment({
+      await octokit.rest.issues.createComment({
         owner: repo_owner,
         repo: repo_name,
         issue_number: pr_number,

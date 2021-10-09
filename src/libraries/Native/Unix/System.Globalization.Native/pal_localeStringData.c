@@ -3,6 +3,7 @@
 //
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -206,11 +207,14 @@ Returns 1 for success, 0 otherwise
 int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                 LocaleStringData localeStringData,
                                                 UChar* value,
-                                                int32_t valueLength)
+                                                int32_t valueLength,
+                                                const UChar* uiLocaleName)
 {
     UErrorCode status = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
+    char locale[ULOC_FULLNAME_CAPACITY] = "";
+    char uiLocale[ULOC_FULLNAME_CAPACITY] = "";
+
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &status);
 
     if (U_FAILURE(status))
     {
@@ -220,31 +224,60 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
     switch (localeStringData)
     {
         case LocaleString_LocalizedDisplayName:
-            uloc_getDisplayName(locale, DetectDefaultLocaleName(), value, valueLength, &status);
+            assert(uiLocaleName != NULL);
+            GetLocale(uiLocaleName, uiLocale, ULOC_FULLNAME_CAPACITY, false, &status);
+            uloc_getDisplayName(locale, uiLocale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // The default locale data was used. i.e. couldn't find suitable resources for the requested UI language. Fallback to English then.
+                uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
             break;
         case LocaleString_EnglishDisplayName:
             uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case LocaleString_NativeDisplayName:
             uloc_getDisplayName(locale, locale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // The default locale data was used. i.e. couldn't find suitable resources for the requested input locale. Fallback to English instead.
+                uloc_getDisplayName(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
+
             break;
         case LocaleString_LocalizedLanguageName:
-            uloc_getDisplayLanguage(locale, DetectDefaultLocaleName(), value, valueLength, &status);
+            assert(uiLocaleName != NULL);
+            GetLocale(uiLocaleName, uiLocale, ULOC_FULLNAME_CAPACITY, false, &status);
+            uloc_getDisplayLanguage(locale, uiLocale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // No data was found from the locale resources and a case canonicalized language code is placed into language as fallback. Fallback to English instead.
+                uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
+
             break;
         case LocaleString_EnglishLanguageName:
             uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case LocaleString_NativeLanguageName:
             uloc_getDisplayLanguage(locale, locale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // No data was found from the locale resources and a case canonicalized language code is placed into language as fallback. Fallback to English instead.
+                uloc_getDisplayLanguage(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
             break;
         case LocaleString_EnglishCountryName:
             uloc_getDisplayCountry(locale, ULOC_ENGLISH, value, valueLength, &status);
             break;
         case LocaleString_NativeCountryName:
             uloc_getDisplayCountry(locale, locale, value, valueLength, &status);
+            if (status == U_USING_DEFAULT_WARNING)
+            {
+                // No data was found from the locale resources and a case canonicalized language code is placed into language as fallback. Fallback to English instead.
+                uloc_getDisplayCountry(locale, ULOC_ENGLISH, value, valueLength, &status);
+            }
             break;
-        case LocaleString_ListSeparator:
-        // fall through
         case LocaleString_ThousandSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
@@ -268,10 +301,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_INTL_CURRENCY_SYMBOL, value, valueLength);
             break;
         case LocaleString_CurrencyEnglishName:
-            status = GetLocaleCurrencyName(locale, FALSE, value, valueLength);
+            status = GetLocaleCurrencyName(locale, false, value, valueLength);
             break;
         case LocaleString_CurrencyNativeName:
-            status = GetLocaleCurrencyName(locale, TRUE, value, valueLength);
+            status = GetLocaleCurrencyName(locale, true, value, valueLength);
             break;
         case LocaleString_MonetaryDecimalSeparator:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_SEPARATOR_SYMBOL, value, valueLength);
@@ -281,10 +314,10 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                 GetLocaleInfoDecimalFormatSymbol(locale, UNUM_MONETARY_GROUPING_SEPARATOR_SYMBOL, value, valueLength);
             break;
         case LocaleString_AMDesignator:
-            status = GetLocaleInfoAmPm(locale, TRUE, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, true, value, valueLength);
             break;
         case LocaleString_PMDesignator:
-            status = GetLocaleInfoAmPm(locale, FALSE, value, valueLength);
+            status = GetLocaleInfoAmPm(locale, false, value, valueLength);
             break;
         case LocaleString_PositiveSign:
             status = GetLocaleInfoDecimalFormatSymbol(locale, UNUM_PLUS_SIGN_SYMBOL, value, valueLength);
@@ -352,10 +385,10 @@ int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
 {
     UErrorCode err = U_ZERO_ERROR;
     char locale[ULOC_FULLNAME_CAPACITY];
-    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
+    GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, false, &err);
     UDateFormatStyle style = (shortFormat != 0) ? UDAT_SHORT : UDAT_MEDIUM;
     UDateFormat* pFormat = udat_open(style, UDAT_NONE, locale, NULL, 0, NULL, 0, &err);
-    udat_toPattern(pFormat, FALSE, value, valueLength, &err);
+    udat_toPattern(pFormat, false, value, valueLength, &err);
     udat_close(pFormat);
     return UErrorCodeToBool(err);
 }

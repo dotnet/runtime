@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     It stores things like the list of disposable exports used to satisfy the imports as
         ///     well as the caching of the exports discovered during previewing of a part.
         /// </summary>
-        private class PartManager
+        private sealed class PartManager
         {
             private Dictionary<ImportDefinition, List<IDisposable>>? _importedDisposableExports;
             private Dictionary<ImportDefinition, Export[]?>? _importCache;

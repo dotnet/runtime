@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -49,6 +50,37 @@ namespace System.IO.Tests
                 Assert.Equal(0, stream.Length);
                 Assert.Equal(0, stream.Position);
             }
+        }
+
+        [Fact]
+        public void CreateAndOverwrite()
+        {
+            const byte initialContent = 1;
+
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+            string testFile = Path.Combine(testDir.FullName, GetTestFileName());
+
+            // Create
+            using (FileStream stream = Create(testFile))
+            {
+                Assert.True(File.Exists(testFile));
+
+                stream.WriteByte(initialContent);
+
+                Assert.Equal(1, stream.Length);
+                Assert.Equal(1, stream.Position);
+            }
+
+            Assert.Equal(initialContent, File.ReadAllBytes(testFile).Single());
+
+            // Overwrite
+            using (FileStream stream = Create(testFile))
+            {
+                Assert.Equal(0, stream.Length);
+                Assert.Equal(0, stream.Position);
+            }
+
+            Assert.Empty(File.ReadAllBytes(testFile));
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
@@ -110,8 +142,7 @@ namespace System.IO.Tests
             Assert.Throws<DirectoryNotFoundException>(() => Create(testFile));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void FileInUse()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -150,7 +181,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Browser platform volume does not limit segments
+        [SkipOnPlatform(TestPlatforms.Browser, "Browser platform volume does not limit segments")]
         public void LongPathSegment()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -188,6 +219,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void CaseSensitive()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
@@ -334,7 +366,7 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => Create(GetTestFilePath(), -100));
         }
     }
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class File_Create_str_i_fo : File_Create_str_i
     {
         public override FileStream Create(string path)

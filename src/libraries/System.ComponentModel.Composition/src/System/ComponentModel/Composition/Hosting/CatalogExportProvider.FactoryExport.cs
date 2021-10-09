@@ -56,7 +56,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public abstract Export CreateExportProduct();
 
-            private class FactoryExportPartDefinition : ComposablePartDefinition
+            private sealed class FactoryExportPartDefinition : ComposablePartDefinition
             {
                 private readonly FactoryExport _FactoryExport;
 

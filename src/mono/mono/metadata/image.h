@@ -24,7 +24,7 @@ typedef enum {
 } MonoImageOpenStatus;
 
 MONO_API void          mono_images_init    (void);
-MONO_API void          mono_images_cleanup (void);
+MONO_API MONO_RT_EXTERNAL_ONLY void          mono_images_cleanup (void);
 
 MONO_API MonoImage    *mono_image_open     (const char *fname,
 				   MonoImageOpenStatus *status);

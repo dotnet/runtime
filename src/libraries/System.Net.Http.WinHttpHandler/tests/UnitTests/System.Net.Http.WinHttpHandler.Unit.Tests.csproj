@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <DefineConstants>UNITTEST</DefineConstants>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -64,6 +65,8 @@
              Link="ProductionCode\WinHttpAuthHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpChannelBinding.cs"
              Link="ProductionCode\WinHttpChannelBinding.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpChunkMode.cs"
+             Link="ProductionCode\WinHttpChunkMode.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpCookieContainerAdapter.cs"
              Link="ProductionCode\WinHttpCookieContainerAdapter.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpException.cs"
@@ -84,6 +87,8 @@
              Link="ProductionCode\WinHttpResponseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTraceHelper.cs"
              Link="ProductionCode\WinHttpTraceHelper.cs" />
+    <Compile Include="..\..\src\System\Net\Http\WinHttpTrailersHelper.cs"
+             Link="ProductionCode\WinHttpTrailersHelper.cs" />
     <Compile Include="..\..\src\System\Net\Http\WinHttpTransportContext.cs"
              Link="ProductionCode\WinHttpTransportContext.cs" />
     <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs"

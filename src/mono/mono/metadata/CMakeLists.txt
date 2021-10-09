@@ -30,33 +30,17 @@ set(ilgen_sources ${ilgen_base_sources})
 endif()
 
 set(metadata_win32_sources
-    console-win32.c
     w32file-win32.c
-    icall-windows.c
-    marshal-windows.c
-    mono-security-windows.c
-    w32mutex-win32.c
-    w32semaphore-win32.c
     w32event-win32.c
-    w32process-win32.c
-    w32socket-win32.c
     w32error-win32.c)
 
 set(metadata_unix_sources
-    console-unix.c
-    w32mutex-unix.c
-    w32semaphore-unix.c
     w32event-unix.c
-    w32process-unix.c
-    w32process-unix-internals.h
     w32process-unix-osx.c
     w32process-unix-bsd.c
     w32process-unix-haiku.c
     w32process-unix-default.c
-    w32socket-unix.c
     w32file-unix.c
-    w32file-unix-glob.c
-    w32file-unix-glob.h
     w32error-unix.c)
 
 if(HOST_WIN32)
@@ -71,8 +55,6 @@ set(metadata_common_sources
     appdomain-icalls.h
     assembly.c
     assembly-internals.h
-    attach.h
-    attach.c
     cil-coff.h
     class.c
     class-getters.h
@@ -86,7 +68,8 @@ set(metadata_common_sources
     class-setup-vtable.c
     cominterop.c
     cominterop.h
-    console-io.h
+    components.h
+    components.c
     coree.c
     coree.h
     coree-internals.h
@@ -101,11 +84,7 @@ set(metadata_common_sources
     exception.c
     exception.h
     exception-internals.h
-    w32file.c
     w32file.h
-    w32file-internals.h
-    filewatcher.c
-    filewatcher.h
     gc-internals.h
     icall.c
     icall-internals.h
@@ -114,6 +93,7 @@ set(metadata_common_sources
     icall-eventpipe.c
     image.c
     image-internals.h
+    jit-info.h
     jit-info.c
     loader.c
     lock-tracer.c
@@ -121,12 +101,14 @@ set(metadata_common_sources
     marshal.c
     marshal.h
     marshal-internals.h
+    marshal-noilgen.c
     mempool.c
     mempool.h
     mempool-internals.h
     metadata.c
-    metadata-verify.c
     metadata-internals.h
+    metadata-update.h
+    metadata-update.c
     method-builder.h
     method-builder-internals.h
     method-builder.c
@@ -142,55 +124,28 @@ set(metadata_common_sources
     mono-hash.h
     mono-conc-hash.c
     mono-conc-hash.h
-    mono-mlist.c
-    mono-mlist.h
     mono-perfcounters.c
     mono-perfcounters.h
     mono-perfcounters-def.h
     mono-ptr-array.h
-    mono-route.c
     monitor.h
-    normalization-tables.h
-    number-formatter.h
-    number-ms.h
     object.c
     object-forward.h
     object-internals.h
     opcodes.c
     property-bag.h
     property-bag.c
-    w32socket.c
-    w32socket.h
-    w32socket-internals.h
-    w32process.c
     w32process.h
-    w32process-internals.h
     profiler.c
     profiler-private.h
-    rand.h
-    rand.c
-    remoting.h
-    remoting.c
     runtime.c
-    mono-security.c
-    security.h
-    security-core-clr.c
-    security-core-clr.h
-    security-manager.c
-    security-manager.h
     string-icalls.c
     string-icalls.h
     sysmath.c
     tabledefs.h
     threads.c
     threads-types.h
-    threadpool.c
-    threadpool.h
-    threadpool-worker.h
-    threadpool-io.c
-    threadpool-io.h
     verify.c
-    verify-internals.h
     wrapper-types.h
     dynamic-image-internals.h
     dynamic-stream.c
@@ -199,9 +154,6 @@ set(metadata_common_sources
     custom-attrs-internals.h
     sre-internals.h
     reflection-internals.h
-    file-mmap-posix.c
-    file-mmap-windows.c
-    file-mmap.h
     object-offsets.h
     abi-details.h
     class-abi-details.h
@@ -210,11 +162,7 @@ set(metadata_common_sources
     seq-points-data.c
     handle.c
     handle.h
-    w32mutex.h
-    w32semaphore.h
     w32event.h
-    w32handle-namespace.h
-    w32handle-namespace.c
     w32handle.h
     w32handle.c
     w32error.h
@@ -222,7 +170,6 @@ set(metadata_common_sources
     dynamic-image.c
     sre.c
     sre-encode.c
-    sre-save.c
     custom-attrs.c
     fdhandle.h
     fdhandle.c
@@ -236,7 +183,6 @@ set(metadata_common_sources
     qcall-def.h
     loaded-images-internals.h
     loaded-images.c
-    loaded-images-netcore.c
     abi-details.h
     abi.c
     memory-manager.c

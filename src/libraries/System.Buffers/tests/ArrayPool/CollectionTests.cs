@@ -15,96 +15,84 @@ namespace System.Buffers.ArrayPool.Tests
     public class CollectionTests : ArrayPoolTest
     {
         [OuterLoop("This is a long running test (over 2 minutes)")]
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported)),
-            InlineData(true),
-            InlineData(false)]
-        public void BuffersAreCollectedWhenStale(bool trim)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void BuffersAreCollectedWhenStale()
         {
-            RemoteInvokeWithTrimming((trimString) =>
+            RemoteInvokeWithTrimming(() =>
             {
-                // Check that our environment is as we expect
-                Assert.Equal(trimString, Environment.GetEnvironmentVariable(TrimSwitchName));
-
                 const int BufferCount = 8;
                 const int BufferSize = 1025;
-
-                // Get the pool and check our trim setting
-                var pool = ArrayPool<int>.Shared;
-                bool parsedTrim = ValidateTrimState(pool, trimString);
 
                 List<int[]> rentedBuffers = new List<int[]>();
 
                 // Rent and return a set of buffers
                 for (int i = 0; i < BufferCount; i++)
                 {
-                    rentedBuffers.Add(pool.Rent(BufferSize));
+                    rentedBuffers.Add(ArrayPool<int>.Shared.Rent(BufferSize));
                 }
                 for (int i = 0; i < BufferCount; i++)
                 {
-                    pool.Return(rentedBuffers[i]);
+                    ArrayPool<int>.Shared.Return(rentedBuffers[i]);
                 }
 
                 // Rent what we returned and ensure they are the same
                 for (int i = 0; i < BufferCount; i++)
                 {
-                    var buffer = pool.Rent(BufferSize);
+                    var buffer = ArrayPool<int>.Shared.Rent(BufferSize);
                     Assert.Contains(rentedBuffers, item => ReferenceEquals(item, buffer));
                 }
                 for (int i = 0; i < BufferCount; i++)
                 {
-                    pool.Return(rentedBuffers[i]);
+                    ArrayPool<int>.Shared.Return(rentedBuffers[i]);
+                }
+
+                // Trigger a few Gen2 GCs to make sure the pool has appropriately time stamped buffers.
+                for (int i = 0; i < 2; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
                 }
 
                 // Now wait a little over a minute and force a GC to get some buffers returned
                 Console.WriteLine("Waiting a minute for buffers to go stale...");
                 Thread.Sleep(61 * 1000);
-                GC.Collect(2);
+                GC.Collect();
                 GC.WaitForPendingFinalizers();
                 bool foundNewBuffer = false;
                 for (int i = 0; i < BufferCount; i++)
                 {
-                    var buffer = pool.Rent(BufferSize);
+                    var buffer = ArrayPool<int>.Shared.Rent(BufferSize);
                     if (!rentedBuffers.Any(item => ReferenceEquals(item, buffer)))
                     {
                         foundNewBuffer = true;
                     }
                 }
 
-                // Should only have found a new buffer if we're trimming
-                Assert.Equal(parsedTrim, foundNewBuffer);
-            }, trim, 3 * 60 * 1000); // This test has to wait for the buffers to go stale (give it three minutes)
+                Assert.True(foundNewBuffer);
+            }, 3 * 60 * 1000); // This test has to wait for the buffers to go stale (give it three minutes)
         }
 
         private static bool IsStressModeEnabledAndRemoteExecutorSupported => TestEnvironment.IsStressModeEnabled && RemoteExecutor.IsSupported;
 
         // This test can cause problems for other tests run in parallel (from other assemblies) as
         // it pushes the physical memory usage above 80% temporarily.
-        [ConditionalTheory(nameof(IsStressModeEnabledAndRemoteExecutorSupported)),
-            InlineData(true),
-            InlineData(false)]
-        public unsafe void ThreadLocalIsCollectedUnderHighPressure(bool trim)
+        [ConditionalFact(nameof(IsStressModeEnabledAndRemoteExecutorSupported))]
+        public unsafe void ThreadLocalIsCollectedUnderHighPressure()
         {
-            RemoteInvokeWithTrimming((trimString) =>
+            RemoteInvokeWithTrimming(() =>
             {
-                // Check that our environment is as we expect
-                Assert.Equal(trimString, Environment.GetEnvironmentVariable(TrimSwitchName));
-
-                // Get the pool and check our trim setting
-                var pool = ArrayPool<byte>.Shared;
-                bool parsedTrim = ValidateTrimState(pool, trimString);
-
                 // Create our buffer, return it, re-rent it and ensure we have the same one
                 const int BufferSize = 4097;
-                var buffer = pool.Rent(BufferSize);
-                pool.Return(buffer);
-                Assert.Same(buffer, pool.Rent(BufferSize));
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                ArrayPool<byte>.Shared.Return(buffer);
+                Assert.Same(buffer, ArrayPool<byte>.Shared.Rent(BufferSize));
 
                 // Return it and put memory pressure on to get it cleared
-                pool.Return(buffer);
+                ArrayPool<byte>.Shared.Return(buffer);
 
                 const int AllocSize = 1024 * 1024 * 64;
                 int PageSize = Environment.SystemPageSize;
-                var pressureMethod = pool.GetType().GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
+                var pressureMethod = ArrayPool<byte>.Shared.GetType().GetMethod("GetMemoryPressure", BindingFlags.Static | BindingFlags.NonPublic);
                 do
                 {
                     Span<byte> native = new Span<byte>(Marshal.AllocHGlobal(AllocSize).ToPointer(), AllocSize);
@@ -119,42 +107,57 @@ namespace System.Buffers.ArrayPool.Tests
                 } while ((int)pressureMethod.Invoke(null, null) != 2);
 
                 GC.WaitForPendingFinalizers();
-                if (parsedTrim)
-                {
-                    // Should have a new buffer now
-                    Assert.NotSame(buffer, pool.Rent(BufferSize));
-                }
-                else
-                {
-                    // Disabled, should not have trimmed buffer
-                    Assert.Same(buffer, pool.Rent(BufferSize));
-                }
-            }, trim);
+
+                // Should have a new buffer now
+                Assert.NotSame(buffer, ArrayPool<byte>.Shared.Rent(BufferSize));
+            });
         }
 
-        private static bool ValidateTrimState(object pool, string trimString)
+        // This test can cause problems for other tests run in parallel (from other assemblies) as
+        // it pushes the physical memory usage above 80% temporarily.
+        [OuterLoop("This is a long running test (over 2 minutes)")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public unsafe void ThreadLocalIsCollectedUnderNormalPressure()
         {
-            Assert.StartsWith("TlsOverPerCoreLockedStacksArrayPool", pool.GetType().Name);
-            bool parsedTrim = bool.Parse(trimString);
-            var trimField = pool.GetType().GetField("s_trimBuffers", BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.Equal(parsedTrim, (bool)trimField.GetValue(null));
-            return parsedTrim;
+            RemoteInvokeWithTrimming(() =>
+            {
+                // Create our buffer, return it, re-rent it and ensure we have the same one
+                const int BufferSize = 4097;
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(BufferSize);
+                ArrayPool<byte>.Shared.Return(buffer);
+                Assert.Same(buffer, ArrayPool<byte>.Shared.Rent(BufferSize));
+
+                // Return it and put memory pressure on to get it cleared
+                ArrayPool<byte>.Shared.Return(buffer);
+
+                // Make sure buffer gets time stamped
+                for (int i = 0; i < 2; i++)
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+
+                // Now wait for enough time to pass and force a GC to get buffers dropped
+                Console.WriteLine("Waiting a minute for buffers to go stale...");
+                Thread.Sleep(61 * 1000);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                // Should have a new buffer now
+                Assert.NotSame(buffer, ArrayPool<byte>.Shared.Rent(BufferSize));
+            }, 3 * 60 * 1000); // This test has to wait for the buffers to go stale (give it three minutes)
         }
 
         private static bool IsPreciseGcSupportedAndRemoteExecutorSupported => PlatformDetection.IsPreciseGcSupported && RemoteExecutor.IsSupported;
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/44037")]
-        [ConditionalTheory(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void PollingEventFires(bool trim)
+        [ConditionalFact(nameof(IsPreciseGcSupportedAndRemoteExecutorSupported))]
+        public void PollingEventFires()
         {
-            RemoteInvokeWithTrimming((trimString) =>
+            RemoteInvokeWithTrimming(() =>
             {
-                var pool = ArrayPool<float>.Shared;
-                bool parsedTrim = ValidateTrimState(pool, trimString);
                 bool pollEventFired = false;
-                var buffer = pool.Rent(10);
+                float[] buffer = ArrayPool<float>.Shared.Rent(10);
 
                 // Polling doesn't start until the thread locals are created for a pool.
                 // Try before the return then after.
@@ -172,7 +175,7 @@ namespace System.Buffers.ArrayPool.Tests
                 });
 
                 Assert.False(pollEventFired, "collection isn't hooked up until the first item is returned");
-                pool.Return(buffer);
+                ArrayPool<float>.Shared.Return(buffer);
 
                 RunWithListener(() =>
                 {
@@ -187,8 +190,8 @@ namespace System.Buffers.ArrayPool.Tests
                 });
 
                 // Polling events should only fire when trimming is enabled
-                Assert.Equal(parsedTrim, pollEventFired);
-            }, trim);
+                Assert.True(pollEventFired);
+            });
         }
     }
 }

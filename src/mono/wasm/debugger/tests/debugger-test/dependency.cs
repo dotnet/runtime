@@ -10,12 +10,14 @@ namespace Simple
         public int A { get; set; }
         public string B { get; set; }
         object c;
+        public int d;
 
         public Complex(int a, string b)
         {
             A = a;
             B = b;
             this.c = this;
+            d = 15;
         }
 
         public int DoStuff()

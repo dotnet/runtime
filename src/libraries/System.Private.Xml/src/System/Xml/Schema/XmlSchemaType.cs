@@ -125,7 +125,7 @@ namespace System.Xml.Schema
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [XmlIgnore]
-        [Obsolete("This property has been deprecated. Please use BaseXmlSchemaType property that returns a strongly typed base schema type. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("XmlSchemaType.BaseSchemaType has been deprecated. Use the BaseXmlSchemaType property that returns a strongly typed base schema type instead.")]
         public object? BaseSchemaType
         {
             get
@@ -176,7 +176,7 @@ namespace System.Xml.Schema
         public virtual bool IsMixed
         {
             get { return false; }
-            set {; }
+            set { }
         }
 
         [XmlIgnore]
@@ -280,7 +280,7 @@ namespace System.Xml.Schema
             _contentType = value;
         }
 
-        public static bool IsDerivedFrom(XmlSchemaType? derivedType, XmlSchemaType? baseType, XmlSchemaDerivationMethod except)
+        public static bool IsDerivedFrom([NotNullWhen(true)] XmlSchemaType? derivedType, [NotNullWhen(true)] XmlSchemaType? baseType, XmlSchemaDerivationMethod except)
         {
             if (derivedType == null || baseType == null)
             {

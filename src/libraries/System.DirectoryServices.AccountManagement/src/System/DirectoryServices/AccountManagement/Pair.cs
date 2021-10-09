@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class Pair<J, K>
+    internal sealed class Pair<J, K>
     {
         //
         // Constructor

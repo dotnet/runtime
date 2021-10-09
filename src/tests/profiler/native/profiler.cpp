@@ -3,8 +3,21 @@
 
 #include "profiler.h"
 
+#include <thread>
+
+using std::thread;
+
+Profiler *Profiler::Instance = nullptr;
+
+std::atomic<bool> ShutdownGuard::s_preventHooks(false);
+std::atomic<int> ShutdownGuard::s_hooksInProgress(0);
+
+ProfilerCallback Profiler::s_callback;
+ManualEvent Profiler::s_callbackSet;
+
 Profiler::Profiler() : refCount(0), pCorProfilerInfo(nullptr)
 {
+    Profiler::Instance = this;
 }
 
 Profiler::~Profiler()
@@ -18,6 +31,8 @@ Profiler::~Profiler()
 
 HRESULT STDMETHODCALLTYPE Profiler::Initialize(IUnknown *pICorProfilerInfoUnk)
 {
+    ShutdownGuard::Initialize();
+
     printf("Profiler.dll!Profiler::Initialize\n");
     fflush(stdout);
 
@@ -35,6 +50,9 @@ HRESULT STDMETHODCALLTYPE Profiler::Shutdown()
 {
     printf("Profiler.dll!Profiler::Shutdown\n");
     fflush(stdout);
+
+    // Wait for any in progress profiler callbacks to finish.
+    ShutdownGuard::WaitForInProgressHooks();
 
     if (this->pCorProfilerInfo != nullptr)
     {
@@ -517,9 +535,16 @@ HRESULT STDMETHODCALLTYPE Profiler::EventPipeProviderCreated(EVENTPIPE_PROVIDER 
     return S_OK;
 }
 
+HRESULT STDMETHODCALLTYPE Profiler::LoadAsNotficationOnly(BOOL *pbNotificationOnly)
+{
+    *pbNotificationOnly = FALSE;
+    return S_OK;
+}
+
 HRESULT STDMETHODCALLTYPE Profiler::QueryInterface(REFIID riid, void **ppvObject)
 {
-    if (riid == __uuidof(ICorProfilerCallback10) ||
+    if (riid == __uuidof(ICorProfilerCallback11) ||
+        riid == __uuidof(ICorProfilerCallback10) ||
         riid == __uuidof(ICorProfilerCallback9) ||
         riid == __uuidof(ICorProfilerCallback8) ||
         riid == __uuidof(ICorProfilerCallback7) ||
@@ -751,6 +776,34 @@ String Profiler::GetModuleIDName(ModuleID modId)
     }
 
     return moduleName;
+}
+
+void Profiler::SetCallback(ProfilerCallback cb)
+{
+    assert(cb != NULL);
+    s_callback = cb;
+    s_callbackSet.Signal();
+}
+
+void Profiler::NotifyManagedCodeViaCallback(ICorProfilerInfo11 *pCorProfilerInfo)
+{
+    s_callbackSet.Wait();
+
+    thread callbackThread([&]()
+    {
+        // The destructor will be called from the profiler detach thread, which causes
+        // some crst order asserts if we call back in to managed code. Spin up
+        // a new thread to avoid that.
+        pCorProfilerInfo->InitializeCurrentThread();
+        s_callback();
+    });
+
+    callbackThread.join();
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE PassCallbackToProfiler(ProfilerCallback callback)
+{
+    Profiler::SetCallback(callback);
 }
 
 #ifndef WIN32

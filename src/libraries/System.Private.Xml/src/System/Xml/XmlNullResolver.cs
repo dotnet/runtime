@@ -5,7 +5,7 @@ using System.Net;
 
 namespace System.Xml
 {
-    internal class XmlNullResolver : XmlResolver
+    internal sealed class XmlNullResolver : XmlResolver
     {
         public static readonly XmlNullResolver Singleton = new XmlNullResolver();
 

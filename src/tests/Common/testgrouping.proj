@@ -25,6 +25,21 @@
       <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\Arm\**">
+      <TestGroup>JIT.HardwareIntrinsics.Arm</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\General\**">
+      <TestGroup>JIT.HardwareIntrinsics.General</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\X86\**">
+      <TestGroup>JIT.HardwareIntrinsics.X86</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
     <TestGrouping Include="$(TestBinDir)JIT\Methodical\a*\**;
                            $(TestBinDir)JIT\Methodical\b*\**;
                            $(TestBinDir)JIT\Methodical\c*\**;
@@ -45,7 +60,7 @@
     <TestGrouping Include="$(TestBinDir)JIT\Methodical\e*\**;
                            $(TestBinDir)JIT\Methodical\E*\**"
                   Exclude="$(TestBinDir)JIT\Methodical\eh\**">
-      <TestGroup>JIT.Methodical.e-iE-I</TestGroup>
+      <TestGroup>JIT.Methodical.eE</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
@@ -57,7 +72,7 @@
                            $(TestBinDir)JIT\Methodical\G*\**;
                            $(TestBinDir)JIT\Methodical\H*\**;
                            $(TestBinDir)JIT\Methodical\I*\**">
-      <TestGroup>JIT.Methodical.e-iE-I</TestGroup>
+      <TestGroup>JIT.Methodical.f-iF-I</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 

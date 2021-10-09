@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
@@ -43,11 +44,12 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "")
 
-add_compile_definitions("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
+add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Debug;BUILDENV_DEBUG=1>")
+add_compile_definitions("$<$<CONFIG:CHECKED>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_linker_flag(/GUARD:CF)
+  add_linker_flag(/guard:cf)
 
   # Linker flags
   #
@@ -63,10 +65,6 @@ if (MSVC)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO")
   # can handle addresses larger than 2 gigabytes
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
-  #Compatible with Data Execution Prevention
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /NXCOMPAT")
-  #Use address space layout randomization
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /DYNAMICBASE")
   #shrink pdb size
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /PDBCOMPRESS")
 
@@ -79,10 +77,6 @@ if (MSVC)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
-
-  # Debug build specific flags
-  set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /NOVCFEATURE")
-  set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "${CMAKE_SHARED_LINKER_FLAGS_CHECKED} /NOVCFEATURE")
 
   # Checked build specific flags
   add_linker_flag(/INCREMENTAL:NO CHECKED) # prevent "warning LNK4075: ignoring '/INCREMENTAL' due to '/OPT:REF' specification"
@@ -169,6 +163,13 @@ elseif (CLR_CMAKE_HOST_UNIX)
       add_linker_flag("-Wl,--gc-sections" DEBUG CHECKED)
     endif ()
   endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+
+  if(CLR_CMAKE_HOST_BROWSER)
+    # The emscripten build has additional warnings so -Werror breaks
+    add_compile_options(-Wno-unused-parameter)
+    add_compile_options(-Wno-alloca)
+    add_compile_options(-Wno-implicit-int-float-conversion)
+  endif()
 endif(MSVC)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
@@ -194,7 +195,10 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
-  add_definitions(-D__EXTENSIONS__)
+  add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
+  add_definitions(-D_XOPEN_SOURCE)
+  add_linker_flag("-Wl,-bind_at_load")
 endif()
 
 #------------------------------------
@@ -202,22 +206,25 @@ endif()
 #-----------------------------------
 if (CLR_CMAKE_HOST_ARCH_AMD64)
   set(ARCH_HOST_NAME x64)
-  add_definitions(-DHOST_AMD64)
-  add_definitions(-DHOST_64BIT)
+  add_definitions(-DHOST_AMD64 -DHOST_64BIT)
 elseif (CLR_CMAKE_HOST_ARCH_I386)
   set(ARCH_HOST_NAME x86)
   add_definitions(-DHOST_X86)
 elseif (CLR_CMAKE_HOST_ARCH_ARM)
-  if (ARM_SOFTFP)
-    set(ARCH_HOST_NAME armel)
-  else ()
-    set(ARCH_HOST_NAME arm)
-  endif ()
+  set(ARCH_HOST_NAME arm)
   add_definitions(-DHOST_ARM)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   set(ARCH_HOST_NAME arm64)
-  add_definitions(-DHOST_ARM64)
-  add_definitions(-DHOST_64BIT)
+  add_definitions(-DHOST_ARM64 -DHOST_64BIT)
+elseif (CLR_CMAKE_HOST_ARCH_S390X)
+  set(ARCH_HOST_NAME s390x)
+  add_definitions(-DHOST_S390X -DHOST_64BIT -DBIGENDIAN)
+elseif (CLR_CMAKE_HOST_ARCH_WASM)
+  set(ARCH_HOST_NAME wasm)
+  add_definitions(-DHOST_WASM -DHOST_32BIT=1)
+elseif (CLR_CMAKE_HOST_ARCH_MIPS64)
+  set(ARCH_HOST_NAME mips64)
+  add_definitions(-DHOST_MIPS64 -DHOST_64BIT=1)
 else ()
   clr_unknown_arch()
 endif ()
@@ -232,6 +239,8 @@ if (CLR_CMAKE_HOST_UNIX)
       message("Detected Linux ARM64")
     elseif(CLR_CMAKE_HOST_UNIX_X86)
       message("Detected Linux i686")
+    elseif(CLR_CMAKE_HOST_UNIX_S390X)
+      message("Detected Linux s390x")
     else()
       clr_unknown_arch()
     endif()
@@ -241,7 +250,7 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (CLR_CMAKE_HOST_UNIX)
   add_definitions(-DHOST_UNIX)
 
-  if(CLR_CMAKE_HOST_OSX)
+  if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     add_definitions(-DHOST_OSX)
     if(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected OSX x86_64")
@@ -256,7 +265,7 @@ if (CLR_CMAKE_HOST_UNIX)
     message("Detected NetBSD amd64")
   elseif(CLR_CMAKE_HOST_SUNOS)
     message("Detected SunOS amd64")
-  endif(CLR_CMAKE_HOST_OSX)
+  endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 endif(CLR_CMAKE_HOST_UNIX)
 
 if (CLR_CMAKE_HOST_WIN32)
@@ -267,6 +276,9 @@ if (CLR_CMAKE_HOST_WIN32)
   set(STATIC_MT_VCRT_LIB  "libvcruntime$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
   set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
 endif(CLR_CMAKE_HOST_WIN32)
+
+# Unconditionally define _FILE_OFFSET_BITS as 64 on all platforms.
+add_definitions(-D_FILE_OFFSET_BITS=64)
 
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
@@ -283,10 +295,27 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
     set(ARCH_TARGET_NAME arm)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_TARGET_NAME x86)
     set(ARCH_SOURCES_DIR i386)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_X86>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_S390X)
+    set(ARCH_TARGET_NAME s390x)
+    set(ARCH_SOURCES_DIR s390x)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_S390X>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
+    set(ARCH_TARGET_NAME wasm)
+    set(ARCH_SOURCES_DIR wasm)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_WASM>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
+    set(ARCH_TARGET_NAME mips64)
+    set(ARCH_SOURCES_DIR mips64)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_MIPS64>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 else ()
     clr_unknown_arch()
 endif ()
@@ -307,15 +336,15 @@ if (CLR_CMAKE_HOST_UNIX)
   # using twos-complement representation (this is normally undefined according to the C++ spec).
   add_compile_options(-fwrapv)
 
-  if(CLR_CMAKE_HOST_OSX)
+  if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
-  else()
-    check_cxx_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
+  elseif(NOT CLR_CMAKE_HOST_BROWSER)
+    check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
     if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
       add_compile_options(-fstack-protector-strong)
     endif()
-  endif(CLR_CMAKE_HOST_OSX)
+  endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
   if (PRERELEASE)
@@ -327,8 +356,10 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-tautological-compare)
+  add_compile_options(-Wno-unknown-pragmas)
 
-  check_cxx_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  # Explicitly enabled warnings
+  check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
   if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
     add_compile_options(-Wimplicit-fallthrough)
   endif()
@@ -336,7 +367,9 @@ if (CLR_CMAKE_HOST_UNIX)
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wno-unknown-warning-option)
+
     # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
     # after hitting just about 20 errors.
     add_compile_options(-ferror-limit=4096)
@@ -353,25 +386,26 @@ if (CLR_CMAKE_HOST_UNIX)
     # a header file.
     add_compile_options(-Wno-pragma-pack)
 
-    add_compile_options(-Wno-unknown-warning-option)
-
     # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
     # to a struct or a class that has virtual members or a base class. In that case, clang
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
   else()
     add_compile_options(-Wno-unused-but-set-variable)
-    add_compile_options(-Wno-unknown-pragmas)
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
     add_compile_options(-Wno-array-bounds)
-    check_cxx_compiler_flag(-Wclass-memaccess COMPILER_SUPPORTS_W_CLASS_MEMACCESS)
-    if (COMPILER_SUPPORTS_W_CLASS_MEMACCESS)
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
-    endif()
-    check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
-    if (COMPILER_SUPPORTS_F_ALIGNED_NEW)
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-faligned-new>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-misleading-indentation>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
+
+    if (CMAKE_CXX_COMPILER_ID)
+      check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
+      if (COMPILER_SUPPORTS_F_ALIGNED_NEW)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-faligned-new>)
+      endif()
     endif()
   endif()
 
@@ -383,38 +417,60 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-fvisibility=hidden)
 
   # Specify the minimum supported version of macOS
-  if(CLR_CMAKE_HOST_OSX)
+  # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
+  if(CLR_CMAKE_HOST_MACCATALYST)
+    # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
+    # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
+    # replaced with a default value, and always gets expanded to an OS version.
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    # We need to disable the warning that -tagret replaces -mmacosx-version-min
+    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
+    add_link_options(-Wno-overriding-t-option)
     if(CLR_CMAKE_HOST_ARCH_ARM64)
-      # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
-      set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
+      set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
+      add_link_options(-target arm64-apple-ios14.2-macabi)
+    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+      set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
+      add_link_options(-target x86_64-apple-ios13.5-macabi)
+    else()
+      clr_unknown_arch()
+    endif()
+    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+    # add_compile_options so that they take effect on the configuration functions
+    # in various configure.cmake files.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+  elseif(CLR_CMAKE_HOST_OSX)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
       add_compile_options(-arch arm64)
     elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-      set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
       add_compile_options(-arch x86_64)
     else()
       clr_unknown_arch()
     endif()
-    add_compile_options(${MACOS_VERSION_MIN_FLAGS})
-    add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
-  endif(CLR_CMAKE_HOST_OSX)
+  endif(CLR_CMAKE_HOST_MACCATALYST)
+
 endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_UNIX>)
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
-  if(CLR_CMAKE_TARGET_OSX)
+  if(CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_OSX>)
   elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_FREEBSD>)
+  elseif(CLR_CMAKE_TARGET_ANDROID)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
   elseif(CLR_CMAKE_TARGET_SUNOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_SUNOS>)
-  elseif(CLR_CMAKE_TARGET_ANDROID)
-    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   endif()
 else(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)
@@ -451,9 +507,12 @@ endif(CLR_CMAKE_HOST_UNIX)
 if (MSVC)
   # Compile options for targeting windows
 
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/TP>) # compile all files as C++
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/nologo>) # Suppress Startup Banner
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W3>) # set warning level to 3
+  # /W3 is added by default by CMake, so remove it
+  string(REPLACE "/W3" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  string(REPLACE "/W3" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+  # set default warning level to 3 but allow targets to override it.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/W$<GENEX_EVAL:$<IF:$<BOOL:$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>>,$<TARGET_PROPERTY:MSVC_WARNING_LEVEL>,3>>>)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oi>) # enable intrinsics
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Oy->) # disable suppressing of the creation of frame pointers on the call stack for quicker function calls
@@ -476,59 +535,45 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:inline>) # All inline functions must have their definition available in the current translation unit.
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zc:forScope>) # Enforce standards-compliant for scope.
 
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4960>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4961>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4603>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4627>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4838>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4456>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4457>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4458>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4459>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4091>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4640>)
-
   # Disable Warnings:
-  # 4291: Delete not defined for new, c++ exception may cause leak.
-  # 5105: Windows SDK headers use 'defined' operator in some macros
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4291>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd5105>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4065>) # switch statement contains 'default' but no 'case' labels
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4100>) # 'identifier' : unreferenced formal parameter
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4127>) # conditional expression is constant
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4189>) # local variable is initialized but not referenced
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4200>) # nonstandard extension used : zero-sized array in struct/union
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4201>) # nonstandard extension used : nameless struct/union
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4245>) # conversion from 'type1' to 'type2', signed/unsigned mismatch
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4291>) # no matching operator delete found; memory will not be freed if initialization throws an exception
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4456>) # declaration of 'identifier' hides previous local declaration
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4457>) # declaration of 'identifier' hides function parameter
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4458>) # declaration of 'identifier' hides class member
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4733>) # Inline asm assigning to 'FS:0' : handler not registered as safe handler
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4838>) # conversion from 'type_1' to 'type_2' requires a narrowing conversion
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4960>) # 'function' is too big to be profiled
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd4961>) # No profile data was merged into '.pgd file', profile-guided optimizations disabled
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/wd5105>) # macro expansion producing 'defined' has undefined behavior
 
   # Treat Warnings as Errors:
-  # 4007: 'main' : must be __cdecl.
-  # 4013: 'function' undefined - assuming extern returning int.
-  # 4102: "'%$S' : unreferenced label".
-  # 4551: Function call missing argument list.
-  # 4700: Local used w/o being initialized.
-  # 4806: Unsafe operation involving type 'bool'.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4007>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4013>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4102>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4551>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4700>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4806>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4007>) # 'main' : must be __cdecl.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4013>) # 'function' undefined - assuming extern returning int.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4102>) # "'%$S' : unreferenced label".
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4551>) # Function call missing argument list.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4700>) # Local used w/o being initialized.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4640>) # 'instance' : construction of local static object is not thread-safe
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/we4806>) # Unsafe operation involving type 'bool'.
 
   # Set Warning Level 3:
-  # 4092: Sizeof returns 'unsigned long'.
-  # 4121: Structure is sensitive to alignment.
-  # 4125: Decimal digit in octal sequence.
-  # 4130: Logical operation on address of string constant.
-  # 4132: Const object should be initialized.
-  # 4212: Function declaration used ellipsis.
-  # 4530: C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
-  # 35038: data member 'member1' will be initialized after data member 'member2'.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34092>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34121>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34125>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34130>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34132>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34212>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34530>)
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w35038>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34092>) # Sizeof returns 'unsigned long'.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34121>) # Structure is sensitive to alignment.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34125>) # Decimal digit in octal sequence.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34130>) # Logical operation on address of string constant.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34132>) # Const object should be initialized.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34212>) # Function declaration used ellipsis.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w34530>) # C++ exception handler used, but unwind semantics are not enabled. Specify -GX.
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w35038>) # data member 'member1' will be initialized after data member 'member2'.
 
   # Set Warning Level 4:
-  # 4177: Pragma data_seg s/b at global scope.
-  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>)
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/w44177>) # Pragma data_seg s/b at global scope.
 
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/Zi>) # enable debugging information
   add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/ZH:SHA_256>) # use SHA256 for generating hashes of compiler processed source files.
@@ -549,6 +594,16 @@ if (MSVC)
   # Added using variables instead of add_compile_options to let individual projects override it
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
+
+  # Enable EH-continuation table and CET-compatibility for native components for amd64 builds except for components of the Mono
+  # runtime. Added some switches using variables instead of add_compile_options to let individual projects override it.
+  if (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+    set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /guard:ehcont")
+    add_linker_flag(/guard:ehcont)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
+  endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
 
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
   # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
@@ -639,26 +694,7 @@ if (CLR_CMAKE_HOST_WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-else (CLR_CMAKE_HOST_WIN32)
+elseif (NOT CLR_CMAKE_HOST_BROWSER)
     enable_language(ASM)
 
-    # Ensure that awk is present
-    find_program(AWK awk)
-    if (AWK STREQUAL "AWK-NOTFOUND")
-        message(FATAL_ERROR "AWK not found")
-    endif()
-
-    # detect linker
-    set(ldVersion ${CMAKE_C_COMPILER};-Wl,--version)
-    execute_process(COMMAND ${ldVersion}
-        ERROR_QUIET
-        OUTPUT_VARIABLE ldVersionOutput)
-
-    if("${ldVersionOutput}" MATCHES "GNU ld" OR "${ldVersionOutput}" MATCHES "GNU gold")
-        set(LD_GNU 1)
-    elseif("${ldVersionOutput}" MATCHES "Solaris Link")
-        set(LD_SOLARIS 1)
-    else(CLR_CMAKE_HOST_OSX)
-        set(LD_OSX 1)
-    endif()
 endif(CLR_CMAKE_HOST_WIN32)

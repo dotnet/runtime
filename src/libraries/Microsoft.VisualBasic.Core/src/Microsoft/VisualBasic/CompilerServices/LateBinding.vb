@@ -3,6 +3,7 @@
 
 Imports System
 Imports System.Diagnostics
+Imports System.Diagnostics.CodeAnalysis
 Imports System.Reflection
 Imports System.Runtime.InteropServices
 
@@ -19,7 +20,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Private Const DefaultCallType As CallType = CType(0, CallType)
 
-        Private Shared Function GetMostDerivedMemberInfo(ByVal objIReflect As IReflect, ByVal name As String, ByVal flags As BindingFlags) As MemberInfo
+        Private Shared Function GetMostDerivedMemberInfo(
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objIReflect As IReflect,
+                ByVal name As String,
+                ByVal flags As BindingFlags) As MemberInfo
             Dim mi() As MemberInfo
             Dim i As Integer
             Dim Selected As MemberInfo
@@ -43,8 +48,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
+        Private Const LateBindingTrimmerMessage As String = "Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed"
+
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Function LateGet(ByVal o As Object,
+                                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
                                 ByVal objType As Type,
                                 ByVal name As String,
                                 ByVal args() As Object,
@@ -202,9 +211,16 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        Public Shared Sub LateSetComplex(ByVal o As Object, ByVal objType As Type, ByVal name As String,
-                                  ByVal args() As Object, ByVal paramnames() As String,
-                                  ByVal OptimisticSet As Boolean, ByVal RValueBase As Boolean)
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
+        Public Shared Sub LateSetComplex(
+                ByVal o As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objType As Type,
+                ByVal name As String,
+                ByVal args() As Object,
+                ByVal paramnames() As String,
+                ByVal OptimisticSet As Boolean,
+                ByVal RValueBase As Boolean)
 
             Try
                 InternalLateSet(o, objType, name, args, paramnames, OptimisticSet, DefaultCallType)
@@ -221,15 +237,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        Public Shared Sub LateSet(ByVal o As Object, ByVal objType As Type, ByVal name As String,
-                           ByVal args() As Object, ByVal paramnames() As String)
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
+        Public Shared Sub LateSet(
+                ByVal o As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objType As Type,
+                ByVal name As String,
+                ByVal args() As Object,
+                ByVal paramnames() As String)
 
             InternalLateSet(o, objType, name, args, paramnames, False, DefaultCallType)
 
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Friend Shared Sub InternalLateSet(ByVal o As Object,
+                                   <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
                                    ByRef objType As Type,
                                    ByVal name As String,
                                    ByVal args() As Object,
@@ -467,6 +491,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Function LateIndexGet(ByVal o As Object, ByVal args() As Object, ByVal paramnames() As String) As Object
 
             Dim objType As Type
@@ -628,7 +653,12 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End If
         End Function
 
-        Private Shared Function GetDefaultMembers(ByVal typ As Type, ByVal objIReflect As IReflect, ByRef DefaultName As String) As MemberInfo()
+        Private Shared Function GetDefaultMembers(
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal typ As Type,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objIReflect As IReflect,
+                ByRef DefaultName As String) As MemberInfo()
 
             Dim attributeList As Object()
             Dim members As MemberInfo()
@@ -682,6 +712,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateIndexSetComplex(ByVal o As Object, ByVal args() As Object, ByVal paramnames() As String,
                                        ByVal OptimisticSet As Boolean, ByVal RValueBase As Boolean)
 
@@ -697,6 +728,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
         Public Shared Sub LateIndexSet(ByVal o As Object, ByVal args() As Object, ByVal paramnames() As String)
 
             Dim objType As Type
@@ -885,15 +917,30 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        Public Shared Sub LateCall(ByVal o As Object, ByVal objType As Type, ByVal name As String,
-                            ByVal args() As Object, ByVal paramnames() As String, ByVal CopyBack() As Boolean)
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
+        Public Shared Sub LateCall(
+                ByVal o As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objType As Type,
+                ByVal name As String,
+                ByVal args() As Object,
+                ByVal paramnames() As String,
+                ByVal CopyBack() As Boolean)
 
             InternalLateCall(o, objType, name, args, paramnames, CopyBack, True)
         End Sub
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        Friend Shared Function InternalLateCall(ByVal o As Object, ByVal objType As Type, ByVal name As String,
-                                         ByVal args() As Object, ByVal paramnames() As String, ByVal CopyBack() As Boolean, ByVal IgnoreReturn As Boolean) As Object
+        <RequiresUnreferencedCode(LateBindingTrimmerMessage)>
+        Friend Shared Function InternalLateCall(
+                ByVal o As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objType As Type,
+                ByVal name As String,
+                ByVal args() As Object,
+                ByVal paramnames() As String,
+                ByVal CopyBack() As Boolean,
+                ByVal IgnoreReturn As Boolean) As Object
             Dim flags As BindingFlags
 
             flags = BindingFlags.IgnoreCase Or
@@ -1014,7 +1061,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         <DebuggerHiddenAttribute(), DebuggerStepThroughAttribute()>
-        Private Shared Function FastCall(ByVal o As Object, ByVal method As MethodBase, ByVal Parameters As ParameterInfo(), ByVal args As Object(), ByVal objType As Type, ByVal objIReflect As IReflect) As Object
+        Private Shared Function FastCall(
+                ByVal o As Object,
+                ByVal method As MethodBase,
+                ByVal Parameters As ParameterInfo(),
+                ByVal args As Object(),
+                ByVal objType As Type,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objIReflect As IReflect) As Object
 
             Dim oArg As Object
             Dim Parameter As ParameterInfo
@@ -1049,7 +1103,11 @@ Namespace Microsoft.VisualBasic.CompilerServices
             '
         End Function
 
-        Private Shared Function GetMembersByName(ByVal objIReflect As IReflect, ByVal name As String, ByVal flags As BindingFlags) As MemberInfo()
+        Private Shared Function GetMembersByName(
+            <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+            ByVal objIReflect As IReflect,
+            ByVal name As String,
+            ByVal flags As BindingFlags) As MemberInfo()
 
             ' Filter out generic methods for compatibility with the WHidbey framework
             GetMembersByName = GetNonGenericMembers(objIReflect.GetMember(name, flags))
@@ -1121,7 +1179,13 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                                        BindingFlags.Instance Or
                                                        BindingFlags.Public
 
-        Friend Shared Function InvokeMemberOnIReflect(ByVal objIReflect As IReflect, ByVal member As MemberInfo, ByVal flags As BindingFlags, ByVal target As Object, ByVal args As Object()) As Object
+        Friend Shared Function InvokeMemberOnIReflect(
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objIReflect As IReflect,
+                ByVal member As MemberInfo,
+                ByVal flags As BindingFlags,
+                ByVal target As Object,
+                ByVal args As Object()) As Object
 
             Dim binder As New VBBinder(Nothing)
             binder.CacheMember(member)
@@ -1130,12 +1194,14 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
-        Private Shared Function GetCorrectIReflect(ByVal o As Object, ByVal objType As Type) As IReflect
+        Private Shared Function GetCorrectIReflect(
+                ByVal o As Object,
+                <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)>
+                ByVal objType As Type) As <DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)> IReflect
 
             ' For a System.Type Object, we always use the underlying System.Type's IReflect implementation, because a System.Type's Implementation
             ' returns information about the Type it represents and not its own information. If we did not do this, latebound calls to a System.Type
             ' Object would fail.
-
             Return DirectCast(objType, IReflect)
         End Function
 

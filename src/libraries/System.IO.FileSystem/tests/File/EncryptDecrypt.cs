@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34583", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public class EncryptDecrypt : FileSystemTest
     {
         [Fact]
@@ -43,9 +43,11 @@ namespace System.IO.Tests
                 {
                     File.Encrypt(tmpFileName);
                 }
-                catch (IOException e) when (e.HResult == unchecked((int)0x80070490))
+                catch (IOException e) when (e.HResult == unchecked((int)0x80070490) ||
+                                           (e.HResult == unchecked((int)0x80071776)))
                 {
                     // Ignore ERROR_NOT_FOUND 1168 (0x490). It is reported when EFS is disabled by domain policy.
+                    // Ignore ERROR_NO_USER_KEYS (0x1776). This occurs when no user key exists to encrypt with.
                     return;
                 }
 

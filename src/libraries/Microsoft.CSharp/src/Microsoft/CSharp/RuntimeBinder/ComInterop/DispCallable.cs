@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Globalization;
 using System.Linq.Expressions;
@@ -19,10 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
             DispId = dispId;
         }
 
-        public override string ToString()
-        {
-            return string.Format(CultureInfo.CurrentCulture, "<bound dispmethod {0}>", MemberName);
-        }
+        public override string ToString() => $"<bound dispmethod {MemberName}>";
 
         public IDispatchComObject DispatchComObject { get; }
 
@@ -32,6 +30,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 
         public int DispId { get; }
 
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public DynamicMetaObject GetMetaObject(Expression parameter)
         {
             return new DispCallableMetaObject(parameter, this);

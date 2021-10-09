@@ -1,21 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class WinHttp
+    internal static partial class WinHttp
     {
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern SafeWinHttpHandle WinHttpOpen(
             IntPtr userAgent,
             uint accessType,
-            string proxyName,
-            string proxyBypass, int flags);
+            string? proxyName,
+            string? proxyBypass, int flags);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -34,7 +33,7 @@ internal partial class Interop
             SafeWinHttpHandle connectHandle,
             string verb,
             string objectName,
-            string version,
+            string? version,
             string referrer,
             string acceptTypes,
             uint flags);
@@ -162,8 +161,8 @@ internal partial class Interop
             SafeWinHttpHandle requestHandle,
             uint authTargets,
             uint authScheme,
-            string userName,
-            string password,
+            string? userName,
+            string? password,
             IntPtr reserved);
 
         [DllImport(Interop.Libraries.WinHttp, CharSet = CharSet.Unicode, SetLastError = true)]

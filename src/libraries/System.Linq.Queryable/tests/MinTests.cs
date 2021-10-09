@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using Xunit;
 
@@ -556,6 +557,54 @@ namespace System.Linq.Tests
         {
             var val = (new int[] { 0, 2, 1 }).AsQueryable().Min(n => n);
             Assert.Equal(0, val);
+        }
+
+        [Fact]
+        public void Min_CustomComparer_NullSource_ThrowsArgumentNullException()
+        {
+            IQueryable<int> source = null;
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.Min(Comparer<int>.Default));
+        }
+
+        [Fact]
+        public void Min_CustomComparer()
+        {
+            IComparer<int> comparer = Comparer<int>.Create((x, y) => -x.CompareTo(y));
+            IQueryable<int> source = Enumerable.Range(1, 10).AsQueryable();
+            Assert.Equal(10, source.Min(comparer));
+        }
+
+        [Fact]
+        public void MinBy_NullSource_ThrowsArgumentNullException()
+        {
+            IQueryable<int> source = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.MinBy(x => x));
+            AssertExtensions.Throws<ArgumentNullException>("source", () => source.MinBy(x => x, Comparer<int>.Default));
+        }
+
+        [Fact]
+        public void MinBy_NullKeySelector_ThrowsArgumentNullException()
+        {
+            IQueryable<int> source = Enumerable.Empty<int>().AsQueryable();
+            Expression<Func<int, int>> keySelector = null;
+
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.MinBy(keySelector));
+            AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.MinBy(keySelector, Comparer<int>.Default));
+        }
+
+        [Fact]
+        public void MinBy()
+        {
+            IQueryable<int> source = Enumerable.Range(1, 20).AsQueryable();
+            Assert.Equal(20, source.MinBy(x => -x));
+        }
+
+        [Fact]
+        public void MinBy_CustomComparer()
+        {
+            IQueryable<int> source = Enumerable.Range(1, 20).AsQueryable();
+            Assert.Equal(1, source.MinBy(x => -x, Comparer<int>.Create((x, y) => -x.CompareTo(y))));
         }
     }
 }

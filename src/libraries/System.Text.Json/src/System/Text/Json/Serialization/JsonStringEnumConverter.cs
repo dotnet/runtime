@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
 using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
@@ -12,7 +11,7 @@ namespace System.Text.Json.Serialization
     /// <remarks>
     /// Reading is case insensitive, writing can be customized via a <see cref="JsonNamingPolicy" />.
     /// </remarks>
-    public sealed class JsonStringEnumConverter : JsonConverterFactory
+    public class JsonStringEnumConverter : JsonConverterFactory
     {
         private readonly JsonNamingPolicy? _namingPolicy;
         private readonly EnumConverterOptions _converterOptions;
@@ -46,22 +45,13 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        public override bool CanConvert(Type typeToConvert)
+        public sealed override bool CanConvert(Type typeToConvert)
         {
             return typeToConvert.IsEnum;
         }
 
         /// <inheritdoc />
-        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
-        {
-            JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(EnumConverter<>).MakeGenericType(typeToConvert),
-                BindingFlags.Instance | BindingFlags.Public,
-                binder: null,
-                new object?[] { _converterOptions, _namingPolicy, options },
-                culture: null)!;
-
-            return converter;
-        }
+        public sealed override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options) =>
+            EnumConverterFactory.Create(typeToConvert, _converterOptions, _namingPolicy, options);
     }
 }

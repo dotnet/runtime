@@ -17,7 +17,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
-        public virtual Type AssociatedSystemType => throw Error.InternalCompilerError();
+        public virtual Type AssociatedSystemType
+        {
+            [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+            get => throw Error.InternalCompilerError();
+        }
 
         public TypeKind TypeKind { get; }
 
@@ -122,6 +126,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public virtual bool IsReferenceType => false;
 
         [ExcludeFromCodeCoverage(Justification = "Should only be called through override")]
+        [RequiresUnreferencedCode(Binder.TrimmerWarning)]
         public virtual AggregateType GetAts()
         {
             Debug.Fail("Bad type for AsAggregateType");

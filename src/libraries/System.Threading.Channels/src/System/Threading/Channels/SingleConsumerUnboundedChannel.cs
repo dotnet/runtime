@@ -65,6 +65,8 @@ namespace System.Threading.Channels
 
             public override Task Completion => _parent._completion.Task;
 
+            public override bool CanPeek => true;
+
             public override ValueTask<T> ReadAsync(CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -131,6 +133,9 @@ namespace System.Threading.Channels
                 }
                 return false;
             }
+
+            public override bool TryPeek([MaybeNullWhen(false)] out T item) =>
+                _parent._items.TryPeek(out item);
 
             public override ValueTask<bool> WaitToReadAsync(CancellationToken cancellationToken)
             {

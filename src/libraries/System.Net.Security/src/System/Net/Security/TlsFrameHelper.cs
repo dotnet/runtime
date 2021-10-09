@@ -90,9 +90,14 @@ namespace System.Net.Security
         public int Length;
 
         public override string ToString() => $"{Version}:{Type}[{Length}]";
+
+        public int GetFrameSize()
+        {
+            return Length + TlsFrameHelper.HeaderSize;
+        }
     }
 
-    internal class TlsFrameHelper
+    internal static class TlsFrameHelper
     {
         public const int HeaderSize = 5;
 

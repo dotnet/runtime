@@ -20,6 +20,7 @@ namespace System.Drawing
         public const string GdiPlusIsAvailableNotWindows7 = nameof(Helpers) + "." + nameof(GetGdiPlusIsAvailableNotWindows7);
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
         public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
+        public const string IsWindows = nameof(Helpers) + "." + nameof(GetIsWindows);
 
         public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
 
@@ -52,6 +53,8 @@ namespace System.Drawing
 
             return installedVersion.Major >= 6;
         }
+
+        public static bool GetIsWindows() => PlatformDetection.IsDrawingSupported && PlatformDetection.IsWindows;
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
@@ -181,6 +184,9 @@ namespace System.Drawing
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", ExactSpelling = true, SetLastError = true)]
+        public static extern int GetGuiResources(IntPtr hProcess, uint flags);
 
         [DllImport("user32.dll", SetLastError = true)]
         public static extern IntPtr GetDC(IntPtr hWnd);

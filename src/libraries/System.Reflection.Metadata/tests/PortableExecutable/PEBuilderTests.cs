@@ -134,7 +134,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography isn't supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void BasicValidationSigned()
         {
             using (var peStream = new MemoryStream())
@@ -655,7 +655,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography isn't supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void Checksum()
         {
             Assert.True(TestChecksumAndAuthenticodeSignature(new MemoryStream(Misc.Signed), Misc.KeyPair));
@@ -663,7 +663,7 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // System.Security.Cryptography isn't supported on browser
+        [SkipOnPlatform(TestPlatforms.Browser, "System.Security.Cryptography isn't supported on browser")]
         public void ChecksumFXAssemblies()
         {
             var paths = new[]

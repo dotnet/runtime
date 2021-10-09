@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -373,14 +374,20 @@ namespace System.Linq.Expressions.Interpreter
             internal MutableValue(int index, Type type)
                 : base(index)
             {
+                Debug.Assert(type.IsValueType, "MutableValue only supports value types.");
+
                 _type = type;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 try
                 {
-                    frame.Data[_index] = Activator.CreateInstance(_type);
+                    frame.Data[_index] = _type.IsNullableType() ?
+                        Activator.CreateInstance(_type) :
+                        RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {
@@ -406,16 +413,22 @@ namespace System.Linq.Expressions.Interpreter
             internal MutableBox(int index, Type type)
                 : base(index)
             {
+                Debug.Assert(type.IsValueType, "MutableBox only supports value types.");
+
                 _type = type;
             }
 
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2077:UnrecognizedReflectionPattern",
+                Justification = "_type is a ValueType. You can always get an uninitialized ValueType.")]
             public override int Run(InterpretedFrame frame)
             {
                 object? value;
 
                 try
                 {
-                    value = Activator.CreateInstance(_type);
+                    value = _type.IsNullableType() ?
+                        Activator.CreateInstance(_type) :
+                        RuntimeHelpers.GetUninitializedObject(_type);
                 }
                 catch (TargetInvocationException e)
                 {

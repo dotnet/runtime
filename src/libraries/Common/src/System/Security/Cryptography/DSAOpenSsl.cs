@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
@@ -12,7 +11,7 @@ namespace System.Security.Cryptography
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class DSA : AsymmetricAlgorithm
     {
-        public static new DSA Create()
+        private static DSA CreateCore()
         {
             return new DSAImplementation.DSAOpenSsl();
         }
@@ -42,6 +41,7 @@ namespace System.Security.Cryptography
 
             public DSAOpenSsl(int keySize)
             {
+                ThrowIfNotSupported();
                 LegalKeySizesValue = s_legalKeySizes;
                 base.KeySize = keySize;
                 _key = new Lazy<SafeDsaHandle>(GenerateKey);
@@ -416,6 +416,8 @@ namespace System.Security.Cryptography
 
                 _key = new Lazy<SafeDsaHandle>(newKey);
             }
+
+            static partial void ThrowIfNotSupported();
 
             private static readonly KeySizes[] s_legalKeySizes = new KeySizes[] { new KeySizes(minSize: 512, maxSize: 3072, skipSize: 64) };
         }

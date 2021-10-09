@@ -13,7 +13,7 @@ namespace System
         //
         // All public ctors go through here
         //
-        private void CreateThis(string? uri, bool dontEscape, UriKind uriKind)
+        private void CreateThis(string? uri, bool dontEscape, UriKind uriKind, in UriCreationOptions creationOptions = default)
         {
             DebugAssertInCtor();
 
@@ -30,6 +30,9 @@ namespace System
 
             if (dontEscape)
                 _flags |= Flags.UserEscaped;
+
+            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
+                _flags |= Flags.DisablePathAndQueryCanonicalization;
 
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
 
@@ -246,7 +249,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate(string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -255,6 +258,26 @@ namespace System
             }
             UriFormatException? e = null;
             result = CreateHelper(uriString, false, uriKind, ref e);
+            result?.DebugSetLeftCtor();
+            return e is null && result != null;
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="Uri"/> using the specified <see cref="string"/> instance and <see cref="UriCreationOptions"/>.
+        /// </summary>
+        /// <param name="uriString">The string representation of the <see cref="Uri"/>.</param>
+        /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
+        /// <param name="result">The constructed <see cref="Uri"/>.</param>
+        /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
+        public static bool TryCreate([NotNullWhen(true)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
+        {
+            if (uriString is null)
+            {
+                result = null;
+                return false;
+            }
+            UriFormatException? e = null;
+            result = CreateHelper(uriString, false, UriKind.Absolute, ref e, in creationOptions);
             result?.DebugSetLeftCtor();
             return e is null && result != null;
         }
@@ -309,6 +332,16 @@ namespace System
         }
 
         public string GetComponents(UriComponents components, UriFormat format)
+        {
+            if (DisablePathAndQueryCanonicalization && (components & (UriComponents.Path | UriComponents.Query)) != 0)
+            {
+                throw new InvalidOperationException(SR.net_uri_GetComponentsCalledWhenCanonicalizationDisabled);
+            }
+
+            return InternalGetComponents(components, format);
+        }
+
+        private string InternalGetComponents(UriComponents components, UriFormat format)
         {
             if (((components & UriComponents.SerializationInfoString) != 0) && components != UriComponents.SerializationInfoString)
                 throw new ArgumentOutOfRangeException(nameof(components), components, SR.net_uri_NotJustSerialization);
@@ -534,7 +567,7 @@ namespace System
             if (position == -1)
                 return stringToUnescape;
 
-            var vsb = new ValueStringBuilder(stackalloc char[256]);
+            var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
             vsb.EnsureCapacity(stringToUnescape.Length);
 
             vsb.Append(stringToUnescape.AsSpan(0, position));
@@ -590,7 +623,7 @@ namespace System
         //
         // a Uri.TryCreate() method goes through here.
         //
-        internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e)
+        internal static Uri? CreateHelper(string uriString, bool dontEscape, UriKind uriKind, ref UriFormatException? e, in UriCreationOptions creationOptions = default)
         {
             // if (!Enum.IsDefined(typeof(UriKind), uriKind)) -- We currently believe that Enum.IsDefined() is too slow
             // to be used here.
@@ -605,6 +638,9 @@ namespace System
 
             if (dontEscape)
                 flags |= Flags.UserEscaped;
+
+            if (creationOptions.DangerousDisablePathAndQueryCanonicalization)
+                flags |= Flags.DisablePathAndQueryCanonicalization;
 
             // We won't use User factory for these errors
             if (err != ParsingError.None)
@@ -744,11 +780,9 @@ namespace System
                 if (_string.Length == 0)
                     return string.Empty;
 
-                char[] dest = new char[_string.Length];
-                int position = 0;
-                dest = UriHelper.UnescapeString(_string, 0, _string.Length, dest, ref position, c_DummyChar,
-                    c_DummyChar, c_DummyChar, UnescapeMode.EscapeUnescape, null, false);
-                return new string(dest, 0, position);
+                var vsb = new ValueStringBuilder(stackalloc char[StackallocThreshold]);
+                UriHelper.UnescapeString(_string, ref vsb, c_DummyChar, c_DummyChar, c_DummyChar, UnescapeMode.EscapeUnescape, null, false);
+                return vsb.ToString();
             }
             else
             {

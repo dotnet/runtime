@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection
+    internal sealed partial class HttpConnection
     {
         private sealed class ChunkedEncodingReadStream : HttpContentReadStream
         {
@@ -425,7 +425,7 @@ namespace System.Net.Http
                 Done
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => CanReadFromConnection;
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {

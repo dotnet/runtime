@@ -8,7 +8,7 @@ namespace System.ComponentModel.Composition.Primitives
     // Represents the ICompositionElement placeholder for an
     // object that does not implement ICompositionElement
     [DebuggerTypeProxy(typeof(CompositionElementDebuggerProxy))]
-    internal class CompositionElement : ICompositionElement
+    internal sealed class CompositionElement : ICompositionElement
     {
         private readonly string _displayName;
         private readonly ICompositionElement? _origin;

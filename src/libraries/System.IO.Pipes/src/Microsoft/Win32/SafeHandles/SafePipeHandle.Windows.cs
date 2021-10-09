@@ -15,5 +15,10 @@ namespace Microsoft.Win32.SafeHandles
         {
             return Interop.Kernel32.CloseHandle(handle);
         }
+
+        internal void SetHandle(IntPtr descriptor, bool ownsHandle = true)
+        {
+            base.SetHandle(descriptor);
+        }
     }
 }

@@ -429,7 +429,9 @@ namespace System.Security
             // A local copy of byte length to be able to access it in ReleaseHandle without the risk of throwing exceptions
             private int _byteLength;
 
+#pragma warning disable CA1419 // not intended for use with P/Invoke
             private UnmanagedBuffer() : base(true) { }
+#pragma warning restore CA1419
 
             public static UnmanagedBuffer Allocate(int byteLength)
             {

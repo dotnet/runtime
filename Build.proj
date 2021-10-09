@@ -1,29 +1,21 @@
 <Project Sdk="Microsoft.Build.Traversal">
 
-  <PropertyGroup>
-    <TraversalGlobalProperties Condition="'$(BuildAllConfigurations)' != 'true'">BuildTargetFramework=$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))</TraversalGlobalProperties>
-  </PropertyGroup>
-
-  <!--
-    Subsets are already imported by Directory.Build.props.
-    Reference the projects for traversal build. Ordering matters here.
-  -->
   <ItemGroup>
+    <!-- Subsets are already imported by Directory.Build.props. -->
     <ProjectReference Include="@(ProjectToBuild)" />
+    <!-- Only include tasks.proj during restore and build incrementally via a target. -->
+    <ProjectReference Include="$(RepoTasksDir)tasks.proj" Condition="'$(MSBuildRestoreSessionId)' != ''" />
   </ItemGroup>
-
-  <!-- Custom arcade target which isn't available in Microsoft.Build.Traversal. -->
-  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
   <Import Project="$(RepositoryEngineeringDir)SubsetValidation.targets" />
 
   <!-- Upfront restore hooks -->
   <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
 
   <Target Name="BuildLocalTasks"
-          BeforeTargets="Restore">
+          BeforeTargets="Build">
     <MSBuild Projects="$(RepoTasksDir)tasks.proj"
-             Targets="BuildAndRestoreIncrementally"/>
+             Targets="BuildIncrementally" />
   </Target>
 </Project>

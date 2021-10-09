@@ -118,7 +118,7 @@ class Test
             ReportFailure("Method Marshal_As_Out[Managed Side],The parameter value is changed", boolManaged, boolValue9);
         }
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             TestVariantBool();
         }

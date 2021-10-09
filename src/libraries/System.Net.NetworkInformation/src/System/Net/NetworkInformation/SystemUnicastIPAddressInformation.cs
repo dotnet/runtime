@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 namespace System.Net.NetworkInformation
 {
     // Specifies the unicast addresses for an interface.
-    internal class SystemUnicastIPAddressInformation : UnicastIPAddressInformation
+    internal sealed class SystemUnicastIPAddressInformation : UnicastIPAddressInformation
     {
         private readonly long _dhcpLeaseLifetime;
         private readonly SystemIPAddressInformation _innerInfo;

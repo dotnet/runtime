@@ -23,7 +23,7 @@ namespace System.Net.Sockets.Tests
         private const int SmallTimeoutMicroseconds = 10 * 1000;
         private const int FailTimeoutMicroseconds  = 30 * 1000 * 1000;
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
+        [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         [Theory]
         [InlineData(90, 0)]
         [InlineData(0, 90)]
@@ -109,8 +109,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
+        [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_ReadError_NoneReady_ManySockets()
         {
             Select_ReadError_NoneReady(45, 45);
@@ -142,7 +143,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
+        [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
         public void Select_Read_OneReadyAtATime_ManySockets()
         {
             Select_Read_OneReadyAtATime(90); // value larger than the internal value in SocketPal.Unix that swaps between stack and heap allocation
@@ -176,8 +177,9 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(~TestPlatforms.OSX)] // typical OSX install has very low max open file descriptors value
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue("https://github.com/dotnet/runtime/issues/18258")]
+        [SkipOnPlatform(TestPlatforms.OSX, "typical OSX install has very low max open file descriptors value")]
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Select_Error_OneReadyAtATime()
         {
             const int Errors = 90; // value larger than the internal value in SocketPal.Unix that swaps between stack and heap allocation
@@ -225,6 +227,7 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(FailTimeoutMicroseconds)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Poll_ReadReady_LongTimeouts(int microsecondsTimeout)
         {
             KeyValuePair<Socket, Socket> pair = CreateConnectedSockets();
@@ -272,7 +275,11 @@ namespace System.Net.Sockets.Tests
                 Assert.True(pair.Value.SafeHandle.IsClosed);
             }
         }
+    }
 
+    [Collection(nameof(NoParallelTests))]
+    public class SelectTest_NonParallel
+    {
         [OuterLoop]
         [Fact]
         public static async Task Select_AcceptNonBlocking_Success()
@@ -298,7 +305,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 // Give the task 5 seconds to complete; if not, assume it's hung.
-                await t.TimeoutAfter(5000);
+                await t.WaitAsync(TimeSpan.FromSeconds(5));
             }
         }
 

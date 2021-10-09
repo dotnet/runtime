@@ -39,7 +39,7 @@ public class RunInALC
 
     static void Run(AssemblyLoadContext context)
     {
-        string currentAssemblyDirectory = Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).AbsolutePath);
+        string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         Assembly inContextAssembly = context.LoadFromAssemblyPath(Path.Combine(currentAssemblyDirectory, "CustomMarshaler.dll"));
         Type inContextType = inContextAssembly.GetType("CustomMarshalers.CustomMarshalerTest");
         object instance = Activator.CreateInstance(inContextType);
@@ -54,7 +54,7 @@ class UnloadableLoadContext : AssemblyLoadContext
     public UnloadableLoadContext()
         :base(true)
     {
-        
+
     }
 
     protected override Assembly Load(AssemblyName assemblyName)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -26,6 +27,8 @@ namespace System.ComponentModel.DataAnnotations
         // Also we use this ability in Validator.CreateValidationContext()??
         : IServiceProvider
     {
+        internal const string InstanceTypeNotStaticallyDiscovered = "The Type of instance cannot be statically discovered.";
+
         #region Member Fields
 
         private readonly Dictionary<object, object?> _items;
@@ -41,6 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="instance">The object instance being validated.  It cannot be <c>null</c>.</param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
+        [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
         public ValidationContext(object instance)
             : this(instance, null, null)
         {
@@ -57,6 +61,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     new dictionary, preventing consumers from modifying the original dictionary.
         /// </param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
+        [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
         public ValidationContext(object instance, IDictionary<object, object?>? items)
             : this(instance, null, items)
         {
@@ -78,6 +83,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     new dictionary, preventing consumers from modifying the original dictionary.
         /// </param>
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
+        [RequiresUnreferencedCode(InstanceTypeNotStaticallyDiscovered)]
         public ValidationContext(object instance, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
         {
             if (instance == null)
@@ -87,7 +93,8 @@ namespace System.ComponentModel.DataAnnotations
 
             if (serviceProvider != null)
             {
-                InitializeServiceProvider(serviceType => serviceProvider.GetService(serviceType));
+                IServiceProvider localServiceProvider = serviceProvider;
+                InitializeServiceProvider(serviceType => localServiceProvider.GetService(serviceType));
             }
 
             _items = items != null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();
@@ -174,6 +181,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Looks up the display name using the DisplayAttribute attached to the respective type or property.
         /// </summary>
         /// <returns>A display-friendly name of the member represented by the <see cref="MemberName" />.</returns>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "The ctors are marked with RequiresUnreferencedCode.")]
         private string? GetDisplayName()
         {
             string? displayName = null;

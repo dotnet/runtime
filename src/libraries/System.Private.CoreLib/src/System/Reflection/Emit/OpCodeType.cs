@@ -15,7 +15,7 @@ namespace System.Reflection.Emit
 {
     public enum OpCodeType
     {
-        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("OpCodeType.Annotation has been deprecated and is not supported.")]
         Annotation = 0,
         Macro = 1,
         Nternal = 2,

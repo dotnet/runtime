@@ -4,7 +4,7 @@
 namespace System.Configuration
 {
     // LocationUpdates contains all the updates that share the same location characteristics.
-    internal class LocationUpdates
+    internal sealed class LocationUpdates
     {
         internal LocationUpdates(OverrideModeSetting overrideMode, bool inheritInChildApps)
         {

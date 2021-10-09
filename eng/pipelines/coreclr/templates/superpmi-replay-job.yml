@@ -1,0 +1,43 @@
+parameters:
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  pool: ''
+  stagedBuild: false
+  timeoutInMinutes: 320           # build timeout
+  framework: net5.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
+  variables: {}
+  dependOnEvaluatePaths: false
+  runJobTemplate: '/eng/pipelines/coreclr/templates/run-superpmi-replay-job.yml'
+
+jobs:
+- template: ${{ parameters.runJobTemplate }}
+  parameters:
+    jobName: ${{ format('superpmibuild_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+    displayName: ${{ format('SuperPMI replay {0} {1}', parameters.osGroup, parameters.archType) }}
+    pool: ${{ parameters.pool }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+    additionalSetupParameters: ${{ parameters.additionalSetupParameters }}
+    dependsOn:
+     - ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+
+    variables: ${{ parameters.variables }}
+
+    frameworks:
+      - ${{ parameters.framework }}
+
+    steps:
+
+    # Download jit builds
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        unpackFolder: $(buildProductRootFolderPath)
+        artifactFileName: '$(buildProductArtifactName)$(archiveExtension)'
+        artifactName: '$(buildProductArtifactName)'
+        displayName: 'JIT product build'

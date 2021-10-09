@@ -18,7 +18,7 @@ namespace System.Xml
     // ASSUMPTION (Microsoft): The byte buffer is large enough to hold the declaration
     // ASSUMPTION (Microsoft): The buffer manipulation methods (FillBuffer/Compare/etc.) will only be used to parse the declaration
     //                      during construction.
-    internal class EncodingStreamWrapper : Stream
+    internal sealed class EncodingStreamWrapper : Stream
     {
         private enum SupportedEncoding { UTF8, UTF16LE, UTF16BE, None }
         private static readonly UTF8Encoding s_safeUTF8 = new UTF8Encoding(false, false);

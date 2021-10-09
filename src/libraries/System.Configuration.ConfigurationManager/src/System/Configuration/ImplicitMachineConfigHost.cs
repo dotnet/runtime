@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Configuration
 {
-    internal class ImplicitMachineConfigHost : DelegatingConfigHost
+    internal sealed class ImplicitMachineConfigHost : DelegatingConfigHost
     {
         private string _machineStreamName;
         private ConfigurationFileMap _fileMap;

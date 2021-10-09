@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
     {
         /// <summary>
         /// Gets or sets the name of the environment. The host automatically sets this property to the value of the
-        /// of the "environment" key as specified in configuration.
+        /// "environment" key as specified in configuration.
         /// </summary>
         string EnvironmentName { get; set; }
 

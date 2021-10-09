@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
@@ -12,7 +13,7 @@ using static System.Linq.Expressions.CachedReflectionInfo;
 
 namespace System.Linq.Expressions.Compiler
 {
-    internal partial class LambdaCompiler
+    internal sealed partial class LambdaCompiler
     {
         private void EmitBlockExpression(Expression expr, CompilationFlags flags)
         {
@@ -737,7 +738,7 @@ namespace System.Linq.Expressions.Compiler
                         Expression.Equal(switchValue, Expression.Constant(null, typeof(string))),
                         Expression.Assign(switchIndex, Utils.Constant(nullCase)),
                         Expression.IfThenElse(
-                            Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex),
+                            CallTryGetValue(dictInit, switchValue, switchIndex),
                             Utils.Empty,
                             Expression.Assign(switchIndex, Utils.Constant(-1))
                         )
@@ -748,6 +749,14 @@ namespace System.Linq.Expressions.Compiler
 
             EmitExpression(reduced, flags);
             return true;
+        }
+
+        [DynamicDependency("TryGetValue", typeof(Dictionary<,>))]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "The method will be preserved by the DynamicDependency.")]
+        private static MethodCallExpression CallTryGetValue(Expression dictInit, ParameterExpression switchValue, ParameterExpression switchIndex)
+        {
+            return Expression.Call(dictInit, "TryGetValue", null, switchValue, switchIndex);
         }
 
         #endregion

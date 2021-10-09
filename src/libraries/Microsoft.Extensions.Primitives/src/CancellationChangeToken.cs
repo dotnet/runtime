@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Primitives
         private CancellationToken Token { get; }
 
         /// <inheritdoc />
-        public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+        public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
 #if NETCOREAPP || NETSTANDARD2_1
             try
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Primitives
             return NullDisposable.Instance;
         }
 
-        private class NullDisposable : IDisposable
+        private sealed class NullDisposable : IDisposable
         {
             public static readonly NullDisposable Instance = new NullDisposable();
 

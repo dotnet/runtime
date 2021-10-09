@@ -15,7 +15,7 @@ namespace System.Xml
     //
     // XmlCharCheckingWriter
     //
-    internal partial class XmlCharCheckingWriter : XmlWrappingWriter
+    internal sealed partial class XmlCharCheckingWriter : XmlWrappingWriter
     {
         public override Task WriteDocTypeAsync(string name, string? pubid, string? sysid, string? subset)
         {

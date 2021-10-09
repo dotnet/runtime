@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
+  </PropertyGroup>
+  
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
@@ -49,14 +53,40 @@
    -->
   <PropertyGroup>
     <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
-  </PropertyGroup>
+    <CLRTestPriorityToBuild Condition="'$(__Priority)' != ''">$(__Priority)</CLRTestPriorityToBuild>
 
-  <!-- Which tests can we build? Default: Build managed tests for this target.
-    At the command-line, the user can specify:
-    +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
-   -->
-  <PropertyGroup>
-    <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
+    <WindowsHost>$([MSBuild]::IsOSPlatform(Windows))</WindowsHost>
+
+    <TargetsWindows>false</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
+
+    <ScriptExt>.sh</ScriptExt>
+    <ScriptExt Condition="$(WindowsHost)">.cmd</ScriptExt>
+
+    <DotNetCli>"$(RepoRoot)\dotnet$(ScriptExt)"</DotNetCli>
+
+    <XunitTestBinBase Condition="'$(XunitTestBinBase)' == ''">$(__TestBinDir)</XunitTestBinBase>
+    <XunitTestBinBase>$([MSBuild]::NormalizeDirectory('$(XunitTestBinBase)/'))</XunitTestBinBase>
+    <CORE_ROOT Condition="'$(CORE_ROOT)' == ''">$(XunitTestBinBase)Tests/Core_Root</CORE_ROOT>
+
+    <TestBuildMode Condition="'$(__TestBuildMode)' != ''">$(__TestBuildMode)</TestBuildMode>
+    <RuntimeFlavor Condition="'$(__RuntimeFlavor)' != ''">$(__RuntimeFlavor)</RuntimeFlavor>
+
+    <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+
+    <UsePartialNGENOptimization Condition="'$(UsePartialNGENOptimization)' == ''">false</UsePartialNGENOptimization>
+
+    <RunWithAndroid>false</RunWithAndroid>
+    <RunWithAndroid Condition="'$(TargetOS)' == 'Android'">true</RunWithAndroid>
+
+    <MonoAot>false</MonoAot>
+    <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
+
+    <MonoFullAot>false</MonoFullAot>
+    <MonoFullAot Condition="'$(__MonoFullAot)' == '1'">true</MonoFullAot>
+
+    <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
   </PropertyGroup>
 
   <!-- Language settings -->
@@ -66,19 +96,16 @@
 
   <!-- Setup Default symbol and optimization for Configuration -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">pdbonly</DebugType>
     <DefineConstants>$(DefineConstants);TRACE;XUNIT_PERF</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
-    <DebugSymbols Condition="'$(DebugSymbols)' == ''">true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
     <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>$(DefineConstants);DEBUG;TRACE;XUNIT_PERF</DefineConstants>
@@ -95,7 +122,7 @@
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
     <!-- Disable some C# warnings for the tests. -->
-    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008,SYSLIB0004,SYSLIB0011,SYSLIB0012</NoWarn>
+    <NoWarn>78,162,164,168,169,219,251,252,414,429,618,642,649,652,659,675,1691,1717,1718,3001,3002,3003,3005,3008</NoWarn>
     <RunAnalyzers>false</RunAnalyzers>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <SkipSigning Condition="'$(CrossGen)' == 'true'">true</SkipSigning>
@@ -106,85 +133,11 @@
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
-  <!-- Setup properties per TargetOS -->
-  <Choose>
-    <When Condition="'$(TargetOS)'=='AnyOS'">
-      <PropertyGroup>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='windows'">
-      <PropertyGroup>
-        <!-- Since cross compilation of test builds on Windows is possible, the
-             TargetsWindows property may already be set. Only set the property if
-             it is not already defined -->
-        <TargetsWindows Condition="'$(TargetsWindows)' == ''" >true</TargetsWindows>
-        <TestNugetRuntimeId>win-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='Linux'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsLinux>true</TargetsLinux>
-        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='OSX'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsOSX>true</TargetsOSX>
-        <TestNugetRuntimeId>osx.10.12-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='FreeBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsFreeBSD>true</TargetsFreeBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='NetBSD'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsNetBSD>true</TargetsNetBSD>
-        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='illumos'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsIllumos>true</TargetsIllumos>
-        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-    <When Condition="'$(TargetOS)'=='Solaris'">
-      <PropertyGroup>
-        <TargetsUnix>true</TargetsUnix>
-        <TargetsSolaris>true</TargetsSolaris>
-        <TestNugetRuntimeId>ubuntu.14.04-$(TargetArchitecture)</TestNugetRuntimeId>
-      </PropertyGroup>
-    </When>
-  </Choose>
-
   <!-- Set arch specific properties -->
   <PropertyGroup>
     <TargetBits>32</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='x64'">64</TargetBits>
     <TargetBits Condition="'$(TargetArchitecture)'=='arm64'">64</TargetBits>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetRid>$(__RuntimeId)</TargetRid>
-    <TargetRid Condition="'$(TargetRid)' == ''">$(TestNugetRuntimeId)</TargetRid>
-  </PropertyGroup>
-
-  <!-- The IL SDK adds a packagereference to the native ilasm package,
-       but does not detect musl or rhel, so we set the RID
-       ourselves. If we passed in a proper host RID from the build
-       scripts, we could also use that instead of relying on the IL
-       SDK RID detection. -->
-  <PropertyGroup>
-    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'linux-musl-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
-    <MicrosoftNetCoreIlasmPackageRuntimeId Condition=" '$(TargetRid)' == 'rhel.6-x64' ">$(TargetRid)</MicrosoftNetCoreIlasmPackageRuntimeId>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -208,5 +161,22 @@
     <!-- Specify the target framework of the common test dependency project.json. -->
     <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
+  </PropertyGroup>
+
+  <!-- Set Test Wrapper running host OS -->
+  <PropertyGroup>
+    <TestWrapperTargetsWindows>false</TestWrapperTargetsWindows>
+    <TestWrapperTargetsWindows Condition=" ('$(TargetsWindows)' != '' And '$(TargetsWindows)' ) OR ('$(TargetOS)' == 'Android' And '$(TargetArchitecture)' == 'arm64' )">true</TestWrapperTargetsWindows>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Scenario tests install this version of Microsoft.NetCore.App, then patch coreclr binaries via xcopy. At the moment it is
+         updated manually whenever breaking changes require it to move forward, but it would be nice if we could update it automatically
+         as we do with many of the package versions above -->
+    <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
   </PropertyGroup>
 </Project>

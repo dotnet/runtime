@@ -5,7 +5,7 @@ using System.Reflection.Context.Projection;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class CustomAssembly : ProjectingAssembly
+    internal sealed class CustomAssembly : ProjectingAssembly
     {
         public CustomAssembly(Assembly template, CustomReflectionContext context)
             : base(template, context.Projector)

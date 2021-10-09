@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ILTestAssembly</AssemblyName>
+    <SkipTestRun>true</SkipTestRun>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Main has to be the first file. Do not put anything before Main.il -->
+    <Compile Include="Main.il" />
+
+    <Compile Include="ILDisassembler.il" />
+    <Compile Include="InstanceFieldLayout.il" />
+    <Compile Include="StaticFieldLayout.il" />
+    <Compile Include="VirtualFunctionOverride.il" />
+    <Compile Include="Signature.il" />
+    <Compile Include="MethodImplOverride1.il" />
+    <Compile Include="MDArrayFunctionResolution.il" />
+  </ItemGroup>
+
+</Project>

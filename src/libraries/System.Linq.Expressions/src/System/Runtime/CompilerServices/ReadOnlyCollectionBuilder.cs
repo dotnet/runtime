@@ -488,7 +488,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private class Enumerator : IEnumerator<T>, IEnumerator
+        private sealed class Enumerator : IEnumerator<T>, IEnumerator
         {
             private readonly ReadOnlyCollectionBuilder<T> _builder;
             private readonly int _version;

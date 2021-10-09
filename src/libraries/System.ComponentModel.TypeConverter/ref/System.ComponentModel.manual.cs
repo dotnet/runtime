@@ -7,6 +7,6 @@ namespace System.ComponentModel.Design
     {
         [System.ComponentModel.TypeConverter(typeof(DesignerOptionConverter))]
         public sealed partial class DesignerOptionCollection { }
-        internal class DesignerOptionConverter { }
+        internal sealed class DesignerOptionConverter { }
     }
 }

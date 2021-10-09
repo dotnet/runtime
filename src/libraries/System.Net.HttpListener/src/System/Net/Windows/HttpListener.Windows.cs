@@ -926,9 +926,7 @@ namespace System.Net
                             if (decodedOutgoingBlob != null)
                             {
                                 // Prefix SPNEGO token/NTLM challenge with scheme per RFC 4559, MS-NTHT
-                                outBlob = string.Format("{0} {1}",
-                                    headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate,
-                                    Convert.ToBase64String(decodedOutgoingBlob));
+                                outBlob = $"{(headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate)} {Convert.ToBase64String(decodedOutgoingBlob)}";
                             }
 
                             if (!error)
@@ -964,7 +962,7 @@ namespace System.Net
                                                 if (NetEventSource.Log.IsEnabled())
                                                 {
                                                     NetEventSource.Info(this,
-                                                        $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle().ToString("x8")}");
+                                                        $"HandleAuthentication creating new WindowsIdentity from user context: {userContext.DangerousGetHandle():x8}");
                                                 }
 
                                                 WindowsPrincipal windowsPrincipal = new WindowsPrincipal(
@@ -1780,7 +1778,7 @@ namespace System.Net
         }
 
 
-        private class DisconnectAsyncResult : IAsyncResult
+        private sealed class DisconnectAsyncResult : IAsyncResult
         {
             private static readonly IOCompletionCallback s_IOCallback = new IOCompletionCallback(WaitCallback);
 
@@ -1883,7 +1881,7 @@ namespace System.Net
 
             private static unsafe void WaitCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {((IntPtr)nativeOverlapped).ToString("x")}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"errorCode: {errorCode}, numBytes: {numBytes}, nativeOverlapped: {(IntPtr)nativeOverlapped:x}");
                 // take the DisconnectAsyncResult object from the state
                 DisconnectAsyncResult asyncResult = (DisconnectAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
                 IOCompleted(asyncResult, errorCode, numBytes, nativeOverlapped);

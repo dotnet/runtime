@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Runtime.Versioning;
@@ -28,14 +29,24 @@ namespace System.Security.Cryptography
 
         protected DSA() { }
 
+        [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new DSA? Create(string algName)
         {
             return (DSA?)CryptoConfig.CreateFromName(algName);
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        public static new DSA Create()
+        {
+            return CreateCore();
+        }
+
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static DSA Create(int keySizeInBits)
         {
-            DSA dsa = Create();
+            DSA dsa = CreateCore();
 
             try
             {
@@ -49,9 +60,11 @@ namespace System.Security.Cryptography
             }
         }
 
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
         public static DSA Create(DSAParameters parameters)
         {
-            DSA dsa = Create();
+            DSA dsa = CreateCore();
 
             try
             {

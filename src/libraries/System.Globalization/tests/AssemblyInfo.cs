@@ -4,4 +4,3 @@
 using System;
 using Xunit;
 
-[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS)]

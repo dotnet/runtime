@@ -15,11 +15,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 
-using Internal.IO;
-
 namespace System.Resources
 {
-    internal class FileBasedResourceGroveler : IResourceGroveler
+    internal sealed class FileBasedResourceGroveler : IResourceGroveler
     {
         private readonly ResourceManager.ResourceManagerMediator _mediator;
 
@@ -51,7 +49,8 @@ namespace System.Resources
                     {
                         // We really don't think this should happen - we always
                         // expect the neutral locale's resources to be present.
-                        throw new MissingManifestResourceException(SR.MissingManifestResource_NoNeutralDisk + Environment.NewLineConst + "baseName: " + _mediator.BaseNameField + "  locationInfo: " + (_mediator.LocationInfo == null ? "<null>" : _mediator.LocationInfo.FullName) + "  fileName: " + _mediator.GetResourceFileName(culture));
+                        string? locationInfo = _mediator.LocationInfo == null ? "<null>" : _mediator.LocationInfo.FullName;
+                        throw new MissingManifestResourceException($"{SR.MissingManifestResource_NoNeutralDisk}{Environment.NewLineConst}baseName: {_mediator.BaseNameField}  locationInfo: {locationInfo}  fileName: {_mediator.GetResourceFileName(culture)}");
                     }
                 }
             }

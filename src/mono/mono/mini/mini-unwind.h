@@ -186,8 +186,6 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 
 void mono_unwind_init (void);
 
-void mono_unwind_cleanup (void);
-
 guint32 mono_cache_unwind_info (guint8 *unwind_info, guint32 unwind_info_len);
 
 guint8* mono_get_cached_unwind_info (guint32 index, guint32 *unwind_info_len);

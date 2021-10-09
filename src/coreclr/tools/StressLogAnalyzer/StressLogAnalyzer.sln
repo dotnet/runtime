@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StressLogAnalyzer", "StressLogAnalyzer.vcxproj", "{C6955B43-4176-4259-8831-9A60596E373D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA} = {6BADDA84-5ED3-40EF-B4A5-553C446D43AA}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StressLogPlugin", "StressLogPlugin\StressLogPlugin.vcxproj", "{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C6955B43-4176-4259-8831-9A60596E373D}.Debug|x64.ActiveCfg = Debug|x64
+		{C6955B43-4176-4259-8831-9A60596E373D}.Debug|x64.Build.0 = Debug|x64
+		{C6955B43-4176-4259-8831-9A60596E373D}.Debug|x86.ActiveCfg = Debug|Win32
+		{C6955B43-4176-4259-8831-9A60596E373D}.Debug|x86.Build.0 = Debug|Win32
+		{C6955B43-4176-4259-8831-9A60596E373D}.Release|x64.ActiveCfg = Release|x64
+		{C6955B43-4176-4259-8831-9A60596E373D}.Release|x64.Build.0 = Release|x64
+		{C6955B43-4176-4259-8831-9A60596E373D}.Release|x86.ActiveCfg = Release|Win32
+		{C6955B43-4176-4259-8831-9A60596E373D}.Release|x86.Build.0 = Release|Win32
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Debug|x64.ActiveCfg = Debug|x64
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Debug|x64.Build.0 = Debug|x64
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Debug|x86.ActiveCfg = Debug|Win32
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Debug|x86.Build.0 = Debug|Win32
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Release|x64.ActiveCfg = Release|x64
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Release|x64.Build.0 = Release|x64
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Release|x86.ActiveCfg = Release|Win32
+		{6BADDA84-5ED3-40EF-B4A5-553C446D43AA}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BB9CFD6B-BEF2-43F8-A459-AD8B42CF37A9}
+	EndGlobalSection
+EndGlobal

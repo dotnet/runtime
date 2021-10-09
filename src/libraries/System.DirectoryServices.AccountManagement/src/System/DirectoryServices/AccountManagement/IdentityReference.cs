@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class IdentityReference
+    internal sealed class IdentityReference
     {
         public string UrnValue
         {

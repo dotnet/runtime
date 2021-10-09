@@ -12,7 +12,7 @@ namespace System.Xml.Xsl.Xslt
     using XPathParser = XPathParser<QilNode>;
     using XPathNodeType = System.Xml.XPath.XPathNodeType;
 
-    internal class XPathPatternParser
+    internal sealed class XPathPatternParser
     {
         public interface IPatternBuilder : IXPathBuilder<QilNode>
         {

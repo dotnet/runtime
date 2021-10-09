@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ChooseAction : ContainerAction
+    internal sealed class ChooseAction : ContainerAction
     {
         internal override void Compile(Compiler compiler)
         {

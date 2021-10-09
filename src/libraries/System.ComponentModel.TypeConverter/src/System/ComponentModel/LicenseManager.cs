@@ -4,6 +4,7 @@
 using System.Collections;
 using System.ComponentModel.Design;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -18,10 +19,10 @@ namespace System.ComponentModel
     {
         private static readonly object s_selfLock = new object();
 
-        private static volatile LicenseContext s_context;
-        private static object s_contextLockHolder;
-        private static volatile Hashtable s_providers;
-        private static volatile Hashtable s_providerInstances;
+        private static volatile LicenseContext? s_context;
+        private static object? s_contextLockHolder;
+        private static volatile Hashtable? s_providers;
+        private static volatile Hashtable? s_providerInstances;
         private static readonly object s_internalSyncObject = new object();
 
         // not creatable...
@@ -84,7 +85,7 @@ namespace System.ComponentModel
         /// Caches the provider, both in the instance cache, and the type
         /// cache.
         /// </summary>
-        private static void CacheProvider(Type type, LicenseProvider provider)
+        private static void CacheProvider(Type type, LicenseProvider? provider)
         {
             if (s_providers == null)
             {
@@ -118,7 +119,9 @@ namespace System.ComponentModel
         /// as the context in which the licensed instance can be used.
         /// </summary>
         [UnsupportedOSPlatform("browser")]
-        public static object CreateWithContext(Type type, LicenseContext creationContext)
+        public static object? CreateWithContext(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+            LicenseContext creationContext)
         {
             return CreateWithContext(type, creationContext, Array.Empty<object>());
         }
@@ -129,9 +132,12 @@ namespace System.ComponentModel
         /// instance can be used.
         /// </summary>
         [UnsupportedOSPlatform("browser")]
-        public static object CreateWithContext(Type type, LicenseContext creationContext, object[] args)
+        public static object? CreateWithContext(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+            LicenseContext creationContext,
+            object[] args)
         {
-            object created = null;
+            object? created = null;
 
             lock (s_internalSyncObject)
             {
@@ -146,7 +152,7 @@ namespace System.ComponentModel
                     }
                     catch (TargetInvocationException e)
                     {
-                        throw e.InnerException;
+                        throw e.InnerException!;
                     }
                 }
                 finally
@@ -178,9 +184,9 @@ namespace System.ComponentModel
         /// Retrieves a cached instance of the provider associated with the
         /// specified type.
         /// </summary>
-        private static LicenseProvider GetCachedProvider(Type type)
+        private static LicenseProvider? GetCachedProvider(Type type)
         {
-            return (LicenseProvider)s_providers?[type];
+            return (LicenseProvider?)s_providers?[type];
         }
 
 
@@ -188,10 +194,10 @@ namespace System.ComponentModel
         /// Retrieves a cached instance of the provider of the specified
         /// type.
         /// </summary>
-        private static LicenseProvider GetCachedProviderInstance(Type providerType)
+        private static LicenseProvider? GetCachedProviderInstance(Type providerType)
         {
             Debug.Assert(providerType != null, "Type cannot ever be null");
-            return (LicenseProvider)s_providerInstances?[providerType];
+            return (LicenseProvider?)s_providerInstances?[providerType];
         }
 
         /// <summary>
@@ -200,7 +206,7 @@ namespace System.ComponentModel
         public static bool IsLicensed(Type type)
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
-            bool value = ValidateInternal(type, null, false, out License license);
+            bool value = ValidateInternal(type, null, false, out License? license);
             if (license != null)
             {
                 license.Dispose();
@@ -215,7 +221,7 @@ namespace System.ComponentModel
         public static bool IsValid(Type type)
         {
             Debug.Assert(type != null, "IsValid Type cannot ever be null");
-            bool value = ValidateInternal(type, null, false, out License license);
+            bool value = ValidateInternal(type, null, false, out License? license);
             if (license != null)
             {
                 license.Dispose();
@@ -228,7 +234,7 @@ namespace System.ComponentModel
         /// Determines if a valid license can be granted for the
         /// specified instance of the type. This method creates a valid <see cref='System.ComponentModel.License'/>.
         /// </summary>
-        public static bool IsValid(Type type, object instance, out License license)
+        public static bool IsValid(Type type, object? instance, out License? license)
         {
             return ValidateInternal(type, instance, false, out license);
         }
@@ -260,14 +266,14 @@ namespace System.ComponentModel
         /// <summary>
         /// Internal validation helper.
         /// </summary>
-        private static bool ValidateInternal(Type type, object instance, bool allowExceptions, out License license)
+        private static bool ValidateInternal(Type type, object? instance, bool allowExceptions, out License? license)
         {
             return ValidateInternalRecursive(CurrentContext,
                                              type,
                                              instance,
                                              allowExceptions,
                                              out license,
-                                             out string licenseKey);
+                                             out string? licenseKey);
         }
 
 
@@ -276,18 +282,18 @@ namespace System.ComponentModel
         /// give an instance, we need another helper method to walk up
         /// the chain...
         /// </summary>
-        private static bool ValidateInternalRecursive(LicenseContext context, Type type, object instance, bool allowExceptions, out License license, out string licenseKey)
+        private static bool ValidateInternalRecursive(LicenseContext context, Type type, object? instance, bool allowExceptions, out License? license, out string? licenseKey)
         {
-            LicenseProvider provider = GetCachedProvider(type);
+            LicenseProvider? provider = GetCachedProvider(type);
             if (provider == null && !GetCachedNoLicenseProvider(type))
             {
                 // NOTE : Must look directly at the class, we want no inheritance.
-                LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
+                LicenseProviderAttribute? attr = (LicenseProviderAttribute?)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
 
                 if (attr != null)
                 {
-                    Type providerType = attr.LicenseProvider;
-                    provider = GetCachedProviderInstance(providerType) ?? (LicenseProvider)Activator.CreateInstance(providerType);
+                    Type providerType = attr.LicenseProvider!;
+                    provider = GetCachedProviderInstance(providerType) ?? (LicenseProvider)Activator.CreateInstance(providerType)!;
                 }
 
                 CacheProvider(type, provider);
@@ -317,7 +323,7 @@ namespace System.ComponentModel
             // from more than one provider.
             if (isValid && instance == null)
             {
-                Type baseType = type.BaseType;
+                Type? baseType = type.BaseType;
                 if (baseType != typeof(object) && baseType != null)
                 {
                     if (license != null)
@@ -325,7 +331,7 @@ namespace System.ComponentModel
                         license.Dispose();
                         license = null;
                     }
-                    string temp;
+                    string? temp;
                     isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out temp);
                     if (license != null)
                     {
@@ -344,7 +350,7 @@ namespace System.ComponentModel
         /// </summary>
         public static void Validate(Type type)
         {
-            if (!ValidateInternal(type, null, true, out License lic))
+            if (!ValidateInternal(type, null, true, out License? lic))
             {
                 throw new LicenseException(type);
             }
@@ -360,9 +366,9 @@ namespace System.ComponentModel
         /// <summary>
         /// Determines if a license can be granted for the instance of the specified type.
         /// </summary>
-        public static License Validate(Type type, object instance)
+        public static License? Validate(Type type, object? instance)
         {
-            if (!ValidateInternal(type, instance, true, out License lic))
+            if (!ValidateInternal(type, instance, true, out License? lic))
             {
                 throw new LicenseException(type, instance);
             }

@@ -189,7 +189,7 @@ namespace System
 #region Match method by parameter type
                 for (j = 0; j < argsToCheck; j++)
                 {
-#region Classic argument coersion checks
+#region Classic argument coercion checks
                     // get the formal type
                     pCls = par[j].ParameterType;
 
@@ -527,7 +527,7 @@ namespace System
             for (i = 0; i < types.Length; i++)
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
-                if (!(realTypes[i].IsRuntimeImplemented() || realTypes[i] is SignatureType))
+                if (!(realTypes[i] is RuntimeType || realTypes[i] is SignatureType))
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
@@ -566,8 +566,8 @@ namespace System
 
                     if (pCls.IsPrimitive)
                     {
-                        if (!type.UnderlyingSystemType.IsRuntimeImplemented() ||
-                            !CanChangePrimitive(type.UnderlyingSystemType, pCls.UnderlyingSystemType))
+                        if (type.UnderlyingSystemType is not RuntimeType rtType ||
+                            !CanChangePrimitive(rtType, pCls.UnderlyingSystemType))
                             break;
                     }
                     else
@@ -653,8 +653,8 @@ namespace System
 
                         if (pCls.IsPrimitive)
                         {
-                            if (!indexes[j].UnderlyingSystemType.IsRuntimeImplemented() ||
-                                !CanChangePrimitive(indexes[j].UnderlyingSystemType, pCls.UnderlyingSystemType))
+                            if (indexes[j].UnderlyingSystemType is not RuntimeType rtType ||
+                                !CanChangePrimitive(rtType, pCls.UnderlyingSystemType))
                                 break;
                         }
                         else
@@ -671,8 +671,8 @@ namespace System
                     {
                         if (candidates[i].PropertyType.IsPrimitive)
                         {
-                            if (!returnType.UnderlyingSystemType.IsRuntimeImplemented() ||
-                                !CanChangePrimitive(returnType.UnderlyingSystemType, candidates[i].PropertyType.UnderlyingSystemType))
+                            if (returnType.UnderlyingSystemType is not RuntimeType rtType ||
+                                !CanChangePrimitive(rtType, candidates[i].PropertyType.UnderlyingSystemType))
                                 continue;
                         }
                         else
@@ -1257,7 +1257,7 @@ namespace System
             String = 1 << TypeCode.String,
         }
 
-        internal class BinderState
+        internal sealed class BinderState
         {
             internal readonly int[] _argsMap;
             internal readonly int _originalSize;

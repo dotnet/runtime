@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Runtime.Versioning;
 
 namespace System.IO.IsolatedStorage
 {
@@ -321,17 +322,19 @@ namespace System.IO.IsolatedStorage
             _fs.EndWrite(asyncResult);
         }
 
-        [Obsolete("This property has been deprecated.  Please use IsolatedStorageFileStream's SafeFileHandle property instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("IsolatedStorageFileStream.Handle has been deprecated. Use IsolatedStorageFileStream's SafeFileHandle property instead.")]
         public override IntPtr Handle
         {
             get { return _fs.Handle; }
         }
 
+        [UnsupportedOSPlatform("macos")]
         public override void Unlock(long position, long length)
         {
             _fs.Unlock(position, length);
         }
 
+        [UnsupportedOSPlatform("macos")]
         public override void Lock(long position, long length)
         {
             _fs.Lock(position, length);

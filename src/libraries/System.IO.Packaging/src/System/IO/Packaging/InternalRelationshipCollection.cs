@@ -25,7 +25,7 @@ namespace System.IO.Packaging
     /// <summary>
     /// Collection of all the relationships corresponding to a given source PackagePart
     /// </summary>
-    internal class InternalRelationshipCollection : IEnumerable<PackageRelationship>
+    internal sealed class InternalRelationshipCollection : IEnumerable<PackageRelationship>
     {
         // Mono will parse a URI starting with '/' as an absolute URI, while .NET Core and
         // .NET Framework will parse this as relative. This will break internal relationships

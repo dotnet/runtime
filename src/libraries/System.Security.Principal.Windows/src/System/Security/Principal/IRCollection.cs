@@ -374,7 +374,7 @@ namespace System.Security.Principal
         #endregion
     }
 
-    internal class IdentityReferenceEnumerator : IEnumerator<IdentityReference>, IDisposable
+    internal sealed class IdentityReferenceEnumerator : IEnumerator<IdentityReference>, IDisposable
     {
         #region Private members
 

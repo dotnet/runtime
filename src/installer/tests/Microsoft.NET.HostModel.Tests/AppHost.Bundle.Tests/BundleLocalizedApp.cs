@@ -26,7 +26,7 @@ namespace AppHost.Bundle.Tests
             var fixture = sharedTestState.TestFixture.Copy();
             var singleFile = BundleSelfContainedApp(fixture);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 // Set code page to output unicode characters.
                 Command.Create("chcp 65001").Execute();

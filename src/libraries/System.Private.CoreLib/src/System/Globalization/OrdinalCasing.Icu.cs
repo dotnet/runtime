@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text;
 using System.Diagnostics;
+using System.Threading;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
@@ -40,40 +42,84 @@ namespace System.Globalization
         // s_casingTable is covering the Unicode BMP plane only. Surrogate casing is handled separately.
         // Every cell in the table is covering the casing of 256 characters in the BMP.
         // Every cell is array of 512 character for uppercasing mapping.
-        private static ushort []?[] s_casingTable =
+        private static ushort []?[] s_casingTable = InitCasingTable();
+
+        /*
+         The table is initialized to:
         {
-            /* 0000-07FF */       s_basicLatin,            null,            null,            null,            null,            null,            null,            null,
-            /* 0800-0FFF */               null,            null,            null,            null,            null,            null,            null,            null,
-            /* 1000-17FF */               null,  s_noCasingPage,            null,            null,  s_noCasingPage,  s_noCasingPage,            null,            null,
-            /* 1800-1FFF */               null,            null,            null,            null,            null,            null,            null,            null,
-            /* 2000-27FF */               null,            null,  s_noCasingPage,  s_noCasingPage,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 2800-2FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,            null,            null,            null,            null,
-            /* 3000-37FF */               null,            null,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 3800-3FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 4000-47FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 4800-4FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 5000-57FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 5800-5FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 6000-67FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 6800-6FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 7000-77FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 7800-7FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 8000-87FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 8800-8FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 9000-97FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* 9800-9FFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,
-            /* A000-A7FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,  s_noCasingPage,            null,            null,
-            /* A800-AFFF */               null,            null,            null,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* B000-B7FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* B800-BFFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* C000-C7FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* C800-CFFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* D000-D7FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,
-            /* D800-DFFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* E000-E7FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* E800-EFFF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* F000-F7FF */     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
-            /* F800-FFFF */     s_noCasingPage,  s_noCasingPage,            null,            null,  s_noCasingPage,            null,            null,            null,
+            // 0000-07FF //       s_basicLatin,            null,            null,            null,            null,            null,            null,            null,
+            // 0800-0FFF //               null,            null,            null,            null,            null,            null,            null,            null,
+            // 1000-17FF //               null,  s_noCasingPage,            null,            null,  s_noCasingPage,  s_noCasingPage,            null,            null,
+            // 1800-1FFF //               null,            null,            null,            null,            null,            null,            null,            null,
+            // 2000-27FF //               null,            null,  s_noCasingPage,  s_noCasingPage,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 2800-2FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,            null,            null,            null,            null,
+            // 3000-37FF //               null,            null,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 3800-3FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 4000-47FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 4800-4FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 5000-57FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 5800-5FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 6000-67FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 6800-6FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 7000-77FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 7800-7FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 8000-87FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 8800-8FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 9000-97FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // 9800-9FFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,
+            // A000-A7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,  s_noCasingPage,            null,            null,
+            // A800-AFFF //               null,            null,            null,            null,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // B000-B7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // B800-BFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // C000-C7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // C800-CFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // D000-D7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,            null,
+            // D800-DFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // E000-E7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // E800-EFFF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // F000-F7FF //     s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,  s_noCasingPage,
+            // F800-FFFF //     s_noCasingPage,  s_noCasingPage,            null,            null,  s_noCasingPage,            null,            null,            null,
+        };
+*/
+
+        // 0 - null
+        // 1 - s_noCasingPage
+        // The bits are in reverse order for readability, i.e. the highest order bit refers to
+        // the lowest index.
+        private static ReadOnlySpan<byte> s_casingTableInit => new byte[32]
+        {
+            /* 0000-07FF */    0b00000000,
+            /* 0800-0FFF */    0b00000000,
+            /* 1000-17FF */    0b01001100,
+            /* 1800-1FFF */    0b00000000,
+            /* 2000-27FF */    0b00110111,
+            /* 2800-2FFF */    0b11100000,
+            /* 3000-37FF */    0b00011111,
+            /* 3800-3FFF */    0b11111111,
+            /* 4000-47FF */    0b11111111,
+            /* 4800-4FFF */    0b11111111,
+            /* 5000-57FF */    0b11111111,
+            /* 5800-5FFF */    0b11111111,
+            /* 6000-67FF */    0b11111111,
+            /* 6800-6FFF */    0b11111111,
+            /* 7000-77FF */    0b11111111,
+            /* 7800-7FFF */    0b11111111,
+            /* 8000-87FF */    0b11111111,
+            /* 8800-8FFF */    0b11111111,
+            /* 9000-97FF */    0b11111111,
+            /* 9800-9FFF */    0b11111110,
+            /* A000-A7FF */    0b11110100,
+            /* A800-AFFF */    0b00001111,
+            /* B000-B7FF */    0b11111111,
+            /* B800-BFFF */    0b11111111,
+            /* C000-C7FF */    0b11111111,
+            /* C800-CFFF */    0b11111111,
+            /* D000-D7FF */    0b11111110,
+            /* D800-DFFF */    0b11111111,
+            /* E000-E7FF */    0b11111111,
+            /* E800-EFFF */    0b11111111,
+            /* F000-F7FF */    0b11111111,
+            /* F800-FFFF */    0b11001000,
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -125,98 +171,20 @@ namespace System.Globalization
                     continue;
                 }
 
-                if (char.IsHighSurrogate(c) && i < source.Length - 1 && char.IsLowSurrogate(source[i + 1]))
+                if (char.IsHighSurrogate(c) && i < source.Length - 1)
                 {
-                    // well formed surrogates
-                    ToUpperSurrogate(c, source[i + 1], out ushort h, out ushort l);
-                    destination[i]   = (char)h;
-                    destination[i+1] = (char)l;
-                    i++; // skip the low surrogate
-                    continue;
+                    char cl = source[i + 1];
+                    if (char.IsLowSurrogate(cl))
+                    {
+                        // well formed surrogates
+                        SurrogateCasing.ToUpper(c, cl, out destination[i], out destination[i+1]);
+                        i++; // skip the low surrogate
+                        continue;
+                    }
                 }
 
                 destination[i] = ToUpper(c);
             }
-        }
-
-        // For simplicity ToUpper doesn't expect the Surrogate be formed with
-        //  S = ((H - 0xD800) * 0x400) + (L - 0xDC00) + 0x10000
-        // Instead it expect to have it in the form (H << 16) | L
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void ToUpperSurrogate(ushort h, ushort l, out ushort hr, out ushort lr)
-        {
-            switch (h)
-            {
-                case 0xD801:
-                    // DESERET SMALL LETTERS 10428 ~ 1044F
-                    if ((uint) (l - 0xdc28) <= (uint) (0xdc4f - 0xdc28))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdc28) +  0xdc00);
-                        return;
-                    }
-
-                    // OSAGE SMALL LETTERS 104D8 ~ 104FB
-                    if ((uint) (l - 0xdcd8) <= (uint) (0xdcfb - 0xdcd8))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdcd8) +  0xdcb0);
-                        return;
-                    }
-                    break;
-
-                case 0xd803:
-                    // OLD HUNGARIAN SMALL LETTERS 10CC0 ~ 10CF2
-                    if ((uint) (l - 0xdcc0) <= (uint) (0xdcf2 - 0xdcc0))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdcc0) +  0xdc80);
-                        return;
-                    }
-                    break;
-
-                case 0xd806:
-                    // WARANG CITI SMALL LETTERS 118C0 ~ 118DF
-                    if ((uint) (l - 0xdcc0) <= (uint) (0xdcdf - 0xdcc0))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdcc0) +  0xdca0);
-                        return;
-                    }
-                    break;
-
-                case 0xd81b:
-                    // MEDEFAIDRIN SMALL LETTERS 16E60 ~ 16E7F
-                    if ((uint) (l - 0xde60) <= (uint) (0xde7f - 0xde60))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xde60) +  0xde40);
-                        return;
-                    }
-                    break;
-
-                case 0xd83a:
-                    // ADLAM SMALL LETTERS 1E922 ~ 1E943
-                    if ((uint) (l - 0xdd22) <= (uint) (0xdd43 - 0xdd22))
-                    {
-                        hr = h;
-                        lr = (ushort) ((l - 0xdd22) +  0xdd00);
-                        return;
-                    }
-                    break;
-            }
-
-            hr = h;
-            lr = l;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool EqualSurrogate(char h1, char l1, char h2, char l2)
-        {
-            ToUpperSurrogate(h1, l1, out ushort hr1, out ushort lr1);
-            ToUpperSurrogate(h2, l2, out ushort hr2, out ushort lr2);
-
-            return hr1 == hr2 && lr1 == lr2;
         }
 
         internal static int CompareStringIgnoreCase(ref char strA, int lengthA, ref char strB, int lengthB)
@@ -229,72 +197,93 @@ namespace System.Globalization
             ref char charA = ref strA;
             ref char charB = ref strB;
 
-            while (length != 0)
+            int index = 0;
+
+            while (index < length)
             {
-                 // optimize for Ascii cases
-                if (charA <= '\u00FF' || length == 1 || !char.IsHighSurrogate(charA) || !char.IsHighSurrogate(charB))
-                {
-                    if (charA == charB)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    char aUpper = OrdinalCasing.ToUpper(charA);
-                    char bUpper = OrdinalCasing.ToUpper(charB);
-
-                    if (aUpper == bUpper)
-                    {
-                        length--;
-                        charA = ref Unsafe.Add(ref charA, 1);
-                        charB = ref Unsafe.Add(ref charB, 1);
-                        continue;
-                    }
-
-                    return aUpper - bUpper;
-                }
-
-                // We come here only of we have valid high surrogates and length > 1
-
                 char a = charA;
                 char b = charB;
+                char lowSurrogateA = '\0';
 
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
-
-                if (!char.IsLowSurrogate(charA) || !char.IsLowSurrogate(charB))
+                if (!char.IsHighSurrogate(a) || index >= lengthA - 1 || !char.IsLowSurrogate(lowSurrogateA = Unsafe.Add(ref charA, 1)))
                 {
-                    // malformed Surrogates - should be rare cases
-                    if (a != b)
+                    if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(Unsafe.Add(ref charB, 1)))
                     {
+                        //
+                        // Neither A or B are surrogates
+                        //
+
+                        if (b == a)
+                        {
+                            index++;
+                            charA = ref Unsafe.Add(ref charA, 1);
+                            charB = ref Unsafe.Add(ref charB, 1);
+                            continue;
+                        }
+
+                        char aUpper = OrdinalCasing.ToUpper(a);
+                        char bUpper = OrdinalCasing.ToUpper(b);
+
+                        if (aUpper == bUpper)
+                        {
+                            index++;
+                            charA = ref Unsafe.Add(ref charA, 1);
+                            charB = ref Unsafe.Add(ref charB, 1);
+                            continue;
+                        }
+
                         return a - b;
                     }
 
-                    // Should be pointing to the right characters in the string to resume at.
-                    // Just in case we could be pointing at high surrogate now.
+                    //
+                    // charA is not surrogate and charB is valid surrogate
+                    //
+
+                    return -1;
+                }
+
+                //
+                // A is Surrogate
+                //
+
+                char lowSurrogateB = '\0';
+
+                if (!char.IsHighSurrogate(b) || index >= lengthB - 1 || !char.IsLowSurrogate(lowSurrogateB = Unsafe.Add(ref charB, 1)))
+                {
+                    //
+                    // charB is not surrogate and charA is surrogate
+                    //
+
+                    return 1;
+                }
+
+                //
+                // charA and charB are surrogates
+                //
+
+                Debug.Assert(lowSurrogateA != '\0');
+                Debug.Assert(lowSurrogateB != '\0');
+
+                if (a == b && lowSurrogateA == lowSurrogateB)
+                {
+                    index += 2;
+                    charA = ref Unsafe.Add(ref charA, 2);
+                    charB = ref Unsafe.Add(ref charB, 2);
                     continue;
                 }
 
-                // we come here only if we have valid full surrogates
-                ToUpperSurrogate(a, charA, out ushort h1, out ushort l1);
-                ToUpperSurrogate(b, charB, out ushort h2, out ushort l2);
+                uint upperSurrogateA = CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(a, lowSurrogateA));
+                uint upperSurrogateB = CharUnicodeInfo.ToUpper(UnicodeUtility.GetScalarFromUtf16SurrogatePair(b, lowSurrogateB));
 
-                if (h1 != h2)
+                if (upperSurrogateA == upperSurrogateB)
                 {
-                    return (int)h1 - (int)h2;
+                    index += 2;
+                    charA = ref Unsafe.Add(ref charA, 2);
+                    charB = ref Unsafe.Add(ref charB, 2);
+                    continue;
                 }
 
-                if (l1 != l2)
-                {
-                    return (int)l1 - (int)l2;
-                }
-
-                length--;
-                charA = ref Unsafe.Add(ref charA, 1);
-                charB = ref Unsafe.Add(ref charB, 1);
+                return (int)upperSurrogateA - (int)upperSurrogateB;
             }
 
             return lengthA - lengthB;
@@ -336,7 +325,7 @@ namespace System.Globalization
                         {
                             // Well formed surrogates
                             // both the source and the Value have well-formed surrogates.
-                            if (!EqualSurrogate(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
+                            if (!SurrogateCasing.Equal(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
                                 break; // no match
 
                             pSrc += 2;
@@ -399,7 +388,7 @@ namespace System.Globalization
                         {
                             // Well formed surrogates
                             // both the source and the Value have well-formed surrogates.
-                            if (!EqualSurrogate(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
+                            if (!SurrogateCasing.Equal(*pSrc, *(pSrc + 1), *pVal, *(pVal + 1)))
                                 break; // no match
 
                             pSrc += 2;
@@ -427,17 +416,31 @@ namespace System.Globalization
             }
         }
 
+        private static ushort[]?[] InitCasingTable()
+        {
+            ushort[]?[] table = new ushort[]?[s_casingTableInit.Length * 8];
+            for (int i = 0; i < s_casingTableInit.Length * 8; ++i)
+            {
+                // The bits are in reverse order
+                byte val = (byte)(s_casingTableInit[i / 8] >> (7 - (i % 8)));
+                if ((val & 1) == 1)
+                    table[i] = s_noCasingPage;
+            }
+            table[0] = s_basicLatin;
+            return table;
+        }
+
         private static unsafe ushort [] InitOrdinalCasingPage(int pageNumber)
         {
             Debug.Assert(pageNumber >= 0 && pageNumber < 256);
 
-            ushort [] casingTable = new ushort[256];
+            ushort[] casingTable = new ushort[256];
             fixed (ushort* table = casingTable)
             {
                 char* pTable = (char*)table;
                 Interop.Globalization.InitOrdinalCasingPage(pageNumber, pTable);
             }
-            s_casingTable[pageNumber] = casingTable;
+            Volatile.Write(ref s_casingTable[pageNumber], casingTable);
             return casingTable;
         }
     }

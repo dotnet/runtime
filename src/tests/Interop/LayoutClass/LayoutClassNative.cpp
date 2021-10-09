@@ -5,7 +5,16 @@
 #include <xplatform.h>
 
 typedef void *voidPtr;
- 
+
+struct EmptyBase
+{
+};
+
+struct DerivedSeqClass : public EmptyBase
+{
+    int a;
+};
+
 struct SeqClass
 {
     int a;
@@ -14,7 +23,7 @@ struct SeqClass
 };
 
 struct ExpClass
-{ 
+{
     int a;
     int padding; //padding needs to be added here as we have added 8 byte offset.
     union
@@ -47,6 +56,23 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleSeqLayoutClassByRef(SeqClass* p)
 }
 
 extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleSeqLayoutClassByRefNull(SeqClass* p)
+{
+    return p == NULL ? TRUE : FALSE;
+}
+
+extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE DerivedSeqLayoutClassByRef(EmptyBase* p, int expected)
+{
+    if(((DerivedSeqClass*)p)->a != expected)
+    {
+        printf("FAIL: p->a=%d, expected %d\n", ((DerivedSeqClass*)p)->a, expected);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+extern "C"
 DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleExpLayoutClassByRef(ExpClass* p)
 {
     if((p->a != 0) || (p->udata.i != 10))
@@ -58,30 +84,34 @@ DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleExpLayoutClassByRef(ExpClass* p)
 }
 
 extern "C"
-DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClassByRef(BlittableClass* p)
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_UpdateField(BlittableClass* p)
 {
     if(p->a != 10)
     {
         printf("FAIL: p->a=%d\n", p->a);
         return FALSE;
     }
-    return TRUE;
-}
-
-extern "C"
-DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClassByOutAttr(BlittableClass* p)
-{
-    if(!SimpleBlittableSeqLayoutClassByRef(p))
-        return FALSE;
 
     p->a++;
     return TRUE;
 }
 
 extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleBlittableSeqLayoutClass_Null(BlittableClass* p)
+{
+    return p == NULL ? TRUE : FALSE;
+}
+
+extern "C"
 DLL_EXPORT BOOL STDMETHODCALLTYPE SimpleNestedLayoutClassByValue(NestedLayoutClass v)
 {
     return SimpleSeqLayoutClassByRef(&v.str);
+}
+
+extern "C"
+DLL_EXPORT BOOL STDMETHODCALLTYPE PointersEqual(void* ptr, void* ptr2)
+{
+    return ptr == ptr2 ? TRUE : FALSE;
 }
 
 extern "C"

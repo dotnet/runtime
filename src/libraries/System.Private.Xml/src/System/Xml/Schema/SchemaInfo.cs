@@ -22,7 +22,7 @@ namespace System.Xml.Schema
         ValidateAttributeInvalidCall,
     }
 
-    internal class SchemaInfo : IDtdInfo
+    internal sealed class SchemaInfo : IDtdInfo
     {
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _elementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
         private readonly Dictionary<XmlQualifiedName, SchemaElementDecl> _undeclaredElementDecls = new Dictionary<XmlQualifiedName, SchemaElementDecl>();
@@ -182,7 +182,7 @@ namespace System.Xml.Schema
             SchemaAttDef? attdef = null;
             if (ed != null)
             {
-                attdef = ed.GetAttDef(qname); ;
+                attdef = ed.GetAttDef(qname);
                 if (attdef == null)
                 {
                     if (!ed.ContentValidator!.IsOpen || qname.Namespace.Length == 0)

@@ -3,7 +3,6 @@
 
 #include "pal_config.h"
 #include "pal_networking.h"
-#include "pal_io.h"
 #include "pal_safecrt.h"
 #include "pal_utilities.h"
 #include <pal_networking_common.h>
@@ -555,13 +554,13 @@ static inline NativeFlagsType ConvertGetNameInfoFlagsToNative(int32_t flags)
 }
 
 int32_t SystemNative_GetNameInfo(const uint8_t* address,
-                               int32_t addressLength,
-                               int8_t isIPv6,
-                               uint8_t* host,
-                               int32_t hostLength,
-                               uint8_t* service,
-                               int32_t serviceLength,
-                               int32_t flags)
+                                 int32_t addressLength,
+                                 int8_t isIPv6,
+                                 uint8_t* host,
+                                 int32_t hostLength,
+                                 uint8_t* service,
+                                 int32_t serviceLength,
+                                 int32_t flags)
 {
     assert(address != NULL);
     assert(addressLength > 0);
@@ -2031,7 +2030,14 @@ int32_t SystemNative_GetSockOpt(
     {
         if (socketOptionName == SocketOptionName_SO_IP_DONTFRAGMENT)
         {
-            *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            if (optLen >= (socklen_t)sizeof(int))
+            {
+                *(int*)optionValue = *(int*)optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            }
+            else
+            {
+                *optionValue = *optionValue == IP_PMTUDISC_DO ? 1 : 0;
+            }
         }
     }
 #endif
@@ -2139,7 +2145,14 @@ SystemNative_SetSockOpt(intptr_t socket, int32_t socketOptionLevel, int32_t sock
     {
         if (socketOptionName == SocketOptionName_SO_IP_DONTFRAGMENT)
         {
-            *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            if ((socklen_t)optionLen >= (socklen_t)sizeof(int))
+            {
+                *(int*)optionValue = *(int*)optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            }
+            else
+            {
+                *optionValue = *optionValue != 0 ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            }
         }
     }
 #endif
@@ -3090,11 +3103,11 @@ int32_t SystemNative_Disconnect(intptr_t socket)
     addr.sa_family = AF_UNSPEC;
 
     err = connect(fd, &addr, sizeof(addr));
-    if (err != 0) 
+    if (err != 0)
     {
         // On some older kernels connect(AF_UNSPEC) may fail. Fall back to shutdown in these cases:
         err = shutdown(fd, SHUT_RDWR);
-    } 
+    }
 #elif HAVE_DISCONNECTX
     // disconnectx causes a FIN close on OSX. It's the best we can do.
     err = disconnectx(fd, SAE_ASSOCID_ANY, SAE_CONNID_ANY);

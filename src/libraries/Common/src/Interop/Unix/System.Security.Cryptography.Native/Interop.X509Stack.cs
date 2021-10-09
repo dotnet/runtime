@@ -63,7 +63,7 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeX509StackHandle : SafeHandle
     {
-        private SafeX509StackHandle() :
+        public SafeX509StackHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }
@@ -100,7 +100,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         internal static readonly SafeSharedX509StackHandle InvalidHandle = new SafeSharedX509StackHandle();
 
-        private SafeSharedX509StackHandle() :
+        public SafeSharedX509StackHandle() :
             base(IntPtr.Zero, ownsHandle: true)
         {
         }

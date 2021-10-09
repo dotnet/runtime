@@ -4,12 +4,12 @@
 using System;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class User32
+    internal static partial class User32
     {
         [DllImport(Libraries.User32, ExactSpelling = true)]
-        public static extern int GetWindowThreadProcessId(IntPtr handle, out int processId);
+        public static unsafe extern int GetWindowThreadProcessId(IntPtr handle, int* processId);
 
         [DllImport(Libraries.User32, ExactSpelling = true)]
         public static extern int GetWindowThreadProcessId(HandleRef handle, out int processId);

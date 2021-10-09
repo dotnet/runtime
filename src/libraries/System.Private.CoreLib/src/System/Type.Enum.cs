@@ -124,7 +124,7 @@ namespace System
             // Insertion Sort these values in ascending order.
             // We use this O(n^2) algorithm, but it turns out that most of the time the elements are already in sorted order and
             // the common case performance will be faster than quick sorting this.
-            IComparer comparer = Comparer<object>.Default;
+            Comparer comparer = Comparer.Default;
             for (int i = 1; i < values.Length; i++)
             {
                 int j = i;

@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text;
+using System.IO;
 
 namespace System.Net.Sockets
 {
@@ -14,12 +15,21 @@ namespace System.Net.Sockets
         private readonly string _path;
         private readonly byte[] _encodedPath;
 
+        // Tracks the file Socket should delete on Dispose.
+        internal string? BoundFileName { get; }
+
         public UnixDomainSocketEndPoint(string path)
+            : this(path, null)
+        { }
+
+        private UnixDomainSocketEndPoint(string path, string? boundFileName)
         {
             if (path == null)
             {
                 throw new ArgumentNullException(nameof(path));
             }
+
+            BoundFileName = boundFileName;
 
             // Pathname socket addresses should be null-terminated.
             // Linux abstract socket addresses start with a zero byte, they must not be null-terminated.
@@ -118,6 +128,24 @@ namespace System.Net.Sockets
             {
                 return _path;
             }
+        }
+
+        internal UnixDomainSocketEndPoint CreateBoundEndPoint()
+        {
+            if (IsAbstract(_path))
+            {
+                return this;
+            }
+            return new UnixDomainSocketEndPoint(_path, Path.GetFullPath(_path));
+        }
+
+        internal UnixDomainSocketEndPoint CreateUnboundEndPoint()
+        {
+            if (IsAbstract(_path) || BoundFileName is null)
+            {
+                return this;
+            }
+            return new UnixDomainSocketEndPoint(_path, null);
         }
 
         private static bool IsAbstract(string path) => path.Length > 0 && path[0] == '\0';

@@ -2,37 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        // Members accessed by the serializer when serializing.
-        private const DynamicallyAccessedMemberTypes MembersAccessedOnWrite = DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicFields;
-
-        private static void WriteCore<TValue>(
-            Utf8JsonWriter writer,
-            in TValue value,
-            Type inputType,
-            JsonSerializerOptions options)
-        {
-            Debug.Assert(writer != null);
-
-            //  We treat typeof(object) special and allow polymorphic behavior.
-            if (value != null && inputType == JsonClassInfo.ObjectType)
-            {
-                inputType = value!.GetType();
-            }
-
-            WriteStack state = default;
-            JsonConverter jsonConverter = state.Initialize(inputType, options, supportContinuation: false);
-
-            bool success = WriteCore(jsonConverter, writer, value, options, ref state);
-            Debug.Assert(success);
-        }
-
         private static bool WriteCore<TValue>(
             JsonConverter jsonConverter,
             Utf8JsonWriter writer,
@@ -57,6 +33,91 @@ namespace System.Text.Json
 
             writer.Flush();
             return success;
+        }
+
+        private static void WriteUsingGeneratedSerializer<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
+        {
+            Debug.Assert(writer != null);
+
+            if (jsonTypeInfo.HasSerialize &&
+                jsonTypeInfo is JsonTypeInfo<TValue> typedInfo &&
+                typedInfo.Options._context?.CanUseSerializationLogic == true)
+            {
+                Debug.Assert(typedInfo.SerializeHandler != null);
+                typedInfo.SerializeHandler(writer, value);
+                writer.Flush();
+            }
+            else
+            {
+                WriteUsingSerializer(writer, value, jsonTypeInfo);
+            }
+        }
+
+        private static void WriteUsingSerializer<TValue>(Utf8JsonWriter writer, in TValue value, JsonTypeInfo jsonTypeInfo)
+        {
+            Debug.Assert(writer != null);
+
+            Debug.Assert(!jsonTypeInfo.HasSerialize ||
+                jsonTypeInfo is not JsonTypeInfo<TValue> ||
+                jsonTypeInfo.Options._context == null ||
+                !jsonTypeInfo.Options._context.CanUseSerializationLogic,
+                "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
+
+            WriteStack state = default;
+            state.Initialize(jsonTypeInfo, supportContinuation: false);
+
+            JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+            Debug.Assert(converter != null);
+            Debug.Assert(jsonTypeInfo.Options != null);
+
+            // For performance, the code below is a lifted WriteCore() above.
+            if (converter is JsonConverter<TValue> typedConverter)
+            {
+                // Call the strongly-typed WriteCore that will not box structs.
+                typedConverter.WriteCore(writer, value, jsonTypeInfo.Options, ref state);
+            }
+            else
+            {
+                // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
+                converter.WriteCoreAsObject(writer, value, jsonTypeInfo.Options, ref state);
+            }
+
+            writer.Flush();
+        }
+
+        private static Type GetRuntimeType<TValue>(in TValue value)
+        {
+            Type type = typeof(TValue);
+            if (type == JsonTypeInfo.ObjectType && value is not null)
+            {
+                type = value.GetType();
+            }
+
+            return type;
+        }
+
+        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType)
+        {
+            if (inputType is null)
+            {
+                throw new ArgumentNullException(nameof(inputType));
+            }
+
+            if (value is not null)
+            {
+                Type runtimeType = value.GetType();
+                if (!inputType.IsAssignableFrom(runtimeType))
+                {
+                    ThrowHelper.ThrowArgumentException_DeserializeWrongType(inputType, value);
+                }
+
+                if (inputType == JsonTypeInfo.ObjectType)
+                {
+                    return runtimeType;
+                }
+            }
+
+            return inputType;
         }
     }
 }

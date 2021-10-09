@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Logging.Debug
     /// <summary>
     /// A logger that writes messages in the debug output window only when a debugger is attached.
     /// </summary>
-    internal partial class DebugLogger : ILogger
+    internal sealed partial class DebugLogger : ILogger
     {
         private readonly string _name;
 

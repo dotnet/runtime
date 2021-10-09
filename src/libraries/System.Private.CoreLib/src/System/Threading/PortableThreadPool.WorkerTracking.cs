@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
-    internal partial class PortableThreadPool
+    internal sealed partial class PortableThreadPool
     {
         private CountsOfThreadsProcessingUserCallbacks _countsOfThreadsProcessingUserCallbacks;
 
@@ -118,7 +119,7 @@ namespace System.Threading
                 CountsOfThreadsProcessingUserCallbacks lhs,
                 CountsOfThreadsProcessingUserCallbacks rhs) => lhs._data != rhs._data;
 
-            public override bool Equals(object? obj) =>
+            public override bool Equals([NotNullWhen(true)] object? obj) =>
                 obj is CountsOfThreadsProcessingUserCallbacks other && _data == other._data;
             public override int GetHashCode() => (int)_data;
         }

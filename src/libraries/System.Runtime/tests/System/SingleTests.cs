@@ -11,14 +11,9 @@ using Xunit;
 
 namespace System.Tests
 {
-    public partial class SingleTests
+    public class SingleTests
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
-
-        private static uint SingleToUInt32Bits(float value)
-        {
-            return Unsafe.As<float, uint>(ref value);
-        }
 
         [Theory]
         [InlineData("a")]
@@ -44,6 +39,10 @@ namespace System.Tests
         [InlineData(float.NegativeInfinity, float.MinValue, -1)]
         [InlineData(-0f, float.NegativeInfinity, 1)]
         [InlineData(float.NegativeInfinity, -0f, -1)]
+        [InlineData(float.NegativeInfinity, float.NegativeInfinity, 0)]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, -1)]
+        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, 1)]
         public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)
@@ -105,7 +104,7 @@ namespace System.Tests
         public static void Epsilon()
         {
             Assert.Equal(1.40129846E-45f, float.Epsilon);
-            Assert.Equal(0x00000001u, SingleToUInt32Bits(float.Epsilon));
+            Assert.Equal(0x00000001u, BitConverter.SingleToUInt32Bits(float.Epsilon));
         }
 
         [Theory]
@@ -223,28 +222,28 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
-            Assert.Equal(0x7F7FFFFFu,  SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0x7F7FFFFFu, BitConverter.SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
         public static void MinValue()
         {
             Assert.Equal(-3.40282347E+38f, float.MinValue);
-            Assert.Equal(0xFF7FFFFFu, SingleToUInt32Bits(float.MinValue));
+            Assert.Equal(0xFF7FFFFFu, BitConverter.SingleToUInt32Bits(float.MinValue));
         }
 
         [Fact]
         public static void NaN()
         {
             Assert.Equal(0.0f / 0.0f, float.NaN);
-            Assert.Equal(0xFFC00000u, SingleToUInt32Bits(float.NaN));
+            Assert.Equal(0xFFC00000u, BitConverter.SingleToUInt32Bits(float.NaN));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
             Assert.Equal(-1.0f / 0.0f, float.NegativeInfinity);
-            Assert.Equal(0xFF800000u, SingleToUInt32Bits(float.NegativeInfinity));
+            Assert.Equal(0xFF800000u, BitConverter.SingleToUInt32Bits(float.NegativeInfinity));
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -273,6 +272,34 @@ namespace System.Tests
             yield return new object[] { (567.89f).ToString(), defaultStyle, null, 567.89f };
             yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
             yield return new object[] { "1E23", defaultStyle, null, 1E23f };
+
+            // 2^24 + 1. Not exactly representable
+            yield return new object[] { "16777217.0", defaultStyle, invariantFormat, 16777216.0f };
+            yield return new object[] { "16777217.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };
+            yield return new object[] { "16777217.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };
+            yield return new object[] { "16777217.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", defaultStyle, invariantFormat, 16777218.0f };
+            yield return new object[] { "5.005", defaultStyle, invariantFormat, 5.005f };
+            yield return new object[] { "5.050", defaultStyle, invariantFormat, 5.05f };
+            yield return new object[] { "5.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005", defaultStyle, invariantFormat, 5.0f };
+            yield return new object[] { "5.005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005f };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005f };
+            yield return new object[] { "5.0050000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5.005f };
+
+            yield return new object[] { "5005.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 5005.0f };
+            yield return new object[] { "50050.0", defaultStyle, invariantFormat, 50050.0f };
+            yield return new object[] { "5005", defaultStyle, invariantFormat, 5005.0f };
+            yield return new object[] { "050050", defaultStyle, invariantFormat, 50050.0f };
+            yield return new object[] { "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", defaultStyle, invariantFormat, 0.0f };
+            yield return new object[] { "0.005", defaultStyle, invariantFormat, 0.005f };
+            yield return new object[] { "0.0500", defaultStyle, invariantFormat, 0.05f };
+            yield return new object[] { "6250000000000000000000000000000000e-12", defaultStyle, invariantFormat, 6.25e21f };
+            yield return new object[] { "6250000e0", defaultStyle, invariantFormat, 6.25e6f };
+            yield return new object[] { "6250100e-5", defaultStyle, invariantFormat, 62.501f };
+            yield return new object[] { "625010.00e-4", defaultStyle, invariantFormat, 62.501f };
+            yield return new object[] { "62500e-4", defaultStyle, invariantFormat, 6.25f };
+            yield return new object[] { "62500", defaultStyle, invariantFormat, 62500.0f };
 
             yield return new object[] { (123.1f).ToString(), NumberStyles.AllowDecimalPoint, null, 123.1f };
             yield return new object[] { (1000.0f).ToString("N0"), NumberStyles.AllowThousands, null, 1000.0f };
@@ -390,11 +417,68 @@ namespace System.Tests
             }
         }
 
+        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
+        {
+            foreach (object[] inputs in Parse_Valid_TestData())
+            {
+                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
+            }
+
+            const NumberStyles DefaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+
+            yield return new object[] { "-123", 1, 3, DefaultStyle, null, (float)123 };
+            yield return new object[] { "-123", 0, 3, DefaultStyle, null, (float)-12 };
+            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, (float)1E2 };
+            yield return new object[] { "123", 0, 2, NumberStyles.Float, new NumberFormatInfo(), (float)12 };
+            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," }, (float)10 };
+            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, (float)123 };
+            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, float.PositiveInfinity };
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+            float result;
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(float.TryParse(value.AsSpan(offset, count), out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, float.Parse(value.AsSpan(offset, count)));
+                }
+
+                Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), provider: provider));
+            }
+
+            Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), style, provider));
+
+            Assert.True(float.TryParse(value.AsSpan(offset, count), style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
+
+                Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
+                Assert.Equal(0, result);
+            }
+        }
+
         [Fact]
         public static void PositiveInfinity()
         {
             Assert.Equal(1.0f / 0.0f, float.PositiveInfinity);
-            Assert.Equal(0x7F800000u, SingleToUInt32Bits(float.PositiveInfinity));
+            Assert.Equal(0x7F800000u, BitConverter.SingleToUInt32Bits(float.PositiveInfinity));
         }
 
         public static IEnumerable<object[]> ToString_TestData()
@@ -443,6 +527,7 @@ namespace System.Tests
                 yield return testData;
             }
 
+
             yield return new object[] { float.MinValue, "G", null, "-3.4028235E+38" };
             yield return new object[] { float.MaxValue, "G", null, "3.4028235E+38" };
 
@@ -450,6 +535,11 @@ namespace System.Tests
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { float.Epsilon, "G", invariantFormat, "1E-45" };
+            yield return new object[] { 32.5f, "C100", invariantFormat, "¤32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "P100", invariantFormat, "3,250.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
+            yield return new object[] { 32.5f, "E100", invariantFormat, "3.2500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E+001" };
+            yield return new object[] { 32.5f, "F100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
+            yield return new object[] { 32.5f, "N100", invariantFormat, "32.5000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
         }
 
         [Fact]
@@ -493,6 +583,9 @@ namespace System.Tests
             float f = 123.0f;
             Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            long intMaxPlus1 = (long)int.MaxValue + 1;
+            string intMaxPlus1String = intMaxPlus1.ToString();
+            Assert.Throws<FormatException>(() => f.ToString("E" + intMaxPlus1String));
         }
 
         [Theory]
@@ -569,63 +662,6 @@ namespace System.Tests
         public static void IsSubnormal(float d, bool expected)
         {
             Assert.Equal(expected, float.IsSubnormal(d));
-        }
-
-        public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
-        {
-            foreach (object[] inputs in Parse_Valid_TestData())
-            {
-                yield return new object[] { inputs[0], 0, ((string)inputs[0]).Length, inputs[1], inputs[2], inputs[3] };
-            }
-
-            const NumberStyles DefaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
-
-            yield return new object[] { "-123", 1, 3, DefaultStyle, null, (float)123 };
-            yield return new object[] { "-123", 0, 3, DefaultStyle, null, (float)-12 };
-            yield return new object[] { "1E23", 0, 3, DefaultStyle, null, (float)1E2 };
-            yield return new object[] { "123", 0, 2, NumberStyles.Float, new NumberFormatInfo(), (float)12 };
-            yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$", CurrencyGroupSeparator = "," }, (float)10 };
-            yield return new object[] { "(123)", 1, 3, NumberStyles.AllowParentheses, new NumberFormatInfo() { NumberDecimalSeparator = "." }, (float)123 };
-            yield return new object[] { "-Infinity", 1, 8, NumberStyles.Any, NumberFormatInfo.InvariantInfo, float.PositiveInfinity };
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
-        public static void Parse_Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expected)
-        {
-            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
-            float result;
-            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
-            {
-                // Use Parse(string) or Parse(string, IFormatProvider)
-                if (isDefaultProvider)
-                {
-                    Assert.True(float.TryParse(value.AsSpan(offset, count), out result));
-                    Assert.Equal(expected, result);
-
-                    Assert.Equal(expected, float.Parse(value.AsSpan(offset, count)));
-                }
-
-                Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), provider: provider));
-            }
-
-            Assert.Equal(expected, float.Parse(value.AsSpan(offset, count), style, provider));
-
-            Assert.True(float.TryParse(value.AsSpan(offset, count), style, provider, out result));
-            Assert.Equal(expected, result);
-        }
-
-        [Theory]
-        [MemberData(nameof(Parse_Invalid_TestData))]
-        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
-        {
-            if (value != null)
-            {
-                Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
-
-                Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
-                Assert.Equal(0, result);
-            }
         }
 
         [Fact]

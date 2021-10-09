@@ -2,39 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class NtDll
+    internal static partial class NtDll
     {
         // https://msdn.microsoft.com/en-us/library/bb432380.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff566424.aspx
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        private static extern unsafe int NtCreateFile(
-            out IntPtr FileHandle,
+        private static extern unsafe uint NtCreateFile(
+            IntPtr* FileHandle,
             DesiredAccess DesiredAccess,
-            ref OBJECT_ATTRIBUTES ObjectAttributes,
-            out IO_STATUS_BLOCK IoStatusBlock,
+            OBJECT_ATTRIBUTES* ObjectAttributes,
+            IO_STATUS_BLOCK* IoStatusBlock,
             long* AllocationSize,
-            System.IO.FileAttributes FileAttributes,
-            System.IO.FileShare ShareAccess,
+            FileAttributes FileAttributes,
+            FileShare ShareAccess,
             CreateDisposition CreateDisposition,
             CreateOptions CreateOptions,
             void* EaBuffer,
             uint EaLength);
 
-        internal static unsafe (int status, IntPtr handle) CreateFile(
+        internal static unsafe (uint status, IntPtr handle) CreateFile(
             ReadOnlySpan<char> path,
             IntPtr rootDirectory,
             CreateDisposition createDisposition,
             DesiredAccess desiredAccess = DesiredAccess.FILE_GENERIC_READ | DesiredAccess.SYNCHRONIZE,
-            System.IO.FileShare shareAccess = System.IO.FileShare.ReadWrite | System.IO.FileShare.Delete,
-            System.IO.FileAttributes fileAttributes = 0,
+            FileShare shareAccess = FileShare.ReadWrite | FileShare.Delete,
+            FileAttributes fileAttributes = 0,
             CreateOptions createOptions = CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT,
             ObjectAttributes objectAttributes = ObjectAttributes.OBJ_CASE_INSENSITIVE,
             void* eaBuffer = null,
-            uint eaLength = 0)
+            uint eaLength = 0,
+            long* preallocationSize = null,
+            SECURITY_QUALITY_OF_SERVICE* securityQualityOfService = null)
         {
             fixed (char* c = &MemoryMarshal.GetReference(path))
             {
@@ -48,14 +52,17 @@ internal partial class Interop
                 OBJECT_ATTRIBUTES attributes = new OBJECT_ATTRIBUTES(
                     &name,
                     objectAttributes,
-                    rootDirectory);
+                    rootDirectory,
+                    securityQualityOfService);
 
-                int status = NtCreateFile(
-                    out IntPtr handle,
+                IntPtr handle;
+                IO_STATUS_BLOCK statusBlock;
+                uint status = NtCreateFile(
+                    &handle,
                     desiredAccess,
-                    ref attributes,
-                    out IO_STATUS_BLOCK statusBlock,
-                    AllocationSize: null,
+                    &attributes,
+                    &statusBlock,
+                    AllocationSize: preallocationSize,
                     fileAttributes,
                     shareAccess,
                     createDisposition,
@@ -66,6 +73,119 @@ internal partial class Interop
                 return (status, handle);
             }
         }
+
+        internal static unsafe (uint status, IntPtr handle) NtCreateFile(ReadOnlySpan<char> path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize)
+        {
+            // For mitigating local elevation of privilege attack through named pipes
+            // make sure we always call NtCreateFile with SECURITY_ANONYMOUS so that the
+            // named pipe server can't impersonate a high privileged client security context
+            SECURITY_QUALITY_OF_SERVICE securityQualityOfService = new SECURITY_QUALITY_OF_SERVICE(
+                ImpersonationLevel.Anonymous, // SECURITY_ANONYMOUS
+                ContextTrackingMode.Static,
+                effectiveOnly: false);
+
+            return CreateFile(
+                path: path,
+                rootDirectory: IntPtr.Zero,
+                createDisposition: GetCreateDisposition(mode),
+                desiredAccess: GetDesiredAccess(access, mode, options),
+                shareAccess: GetShareAccess(share),
+                fileAttributes: GetFileAttributes(options),
+                createOptions: GetCreateOptions(options),
+                objectAttributes: GetObjectAttributes(share),
+                preallocationSize: &preallocationSize,
+                securityQualityOfService: &securityQualityOfService);
+        }
+
+        private static CreateDisposition GetCreateDisposition(FileMode mode)
+        {
+            switch (mode)
+            {
+                case FileMode.CreateNew:
+                    return CreateDisposition.FILE_CREATE;
+                case FileMode.Create:
+                    return CreateDisposition.FILE_SUPERSEDE;
+                case FileMode.OpenOrCreate:
+                case FileMode.Append: // has extra handling in GetDesiredAccess
+                    return CreateDisposition.FILE_OPEN_IF;
+                case FileMode.Truncate:
+                    return CreateDisposition.FILE_OVERWRITE;
+                default:
+                    Debug.Assert(mode == FileMode.Open); // the enum value is validated in FileStream ctor
+                    return CreateDisposition.FILE_OPEN;
+            }
+        }
+
+        private static DesiredAccess GetDesiredAccess(FileAccess access, FileMode fileMode, FileOptions options)
+        {
+            DesiredAccess result = DesiredAccess.FILE_READ_ATTRIBUTES | DesiredAccess.SYNCHRONIZE; // default values used by CreateFileW
+
+            if ((access & FileAccess.Read) != 0)
+            {
+                result |= DesiredAccess.FILE_GENERIC_READ;
+            }
+            if ((access & FileAccess.Write) != 0)
+            {
+                result |= DesiredAccess.FILE_GENERIC_WRITE;
+            }
+            if (fileMode == FileMode.Append)
+            {
+                result |= DesiredAccess.FILE_APPEND_DATA;
+            }
+            if ((options & FileOptions.DeleteOnClose) != 0)
+            {
+                result |= DesiredAccess.DELETE; // required by FILE_DELETE_ON_CLOSE
+            }
+
+            return result;
+        }
+
+        private static FileShare GetShareAccess(FileShare share)
+            => share & ~FileShare.Inheritable; // FileShare.Inheritable is handled in GetObjectAttributes
+
+        private static FileAttributes GetFileAttributes(FileOptions options)
+            => (options & FileOptions.Encrypted) != 0 ? FileAttributes.Encrypted : 0;
+
+        // FileOptions.Encrypted is handled in GetFileAttributes
+        private static CreateOptions GetCreateOptions(FileOptions options)
+        {
+            // Every directory is just a directory FILE.
+            // FileStream does not allow for opening directories on purpose.
+            // FILE_NON_DIRECTORY_FILE is used to ensure that
+            CreateOptions result = CreateOptions.FILE_NON_DIRECTORY_FILE;
+
+            if ((options & FileOptions.WriteThrough) != 0)
+            {
+                result |= CreateOptions.FILE_WRITE_THROUGH;
+            }
+            if ((options & FileOptions.RandomAccess) != 0)
+            {
+                result |= CreateOptions.FILE_RANDOM_ACCESS;
+            }
+            if ((options & FileOptions.SequentialScan) != 0)
+            {
+                result |= CreateOptions.FILE_SEQUENTIAL_ONLY;
+            }
+            if ((options & FileOptions.DeleteOnClose) != 0)
+            {
+                result |= CreateOptions.FILE_DELETE_ON_CLOSE; // has extra handling in GetDesiredAccess
+            }
+            if ((options & FileOptions.Asynchronous) == 0)
+            {
+                // it's async by default, so we need to disable it when async was not requested
+                result |= CreateOptions.FILE_SYNCHRONOUS_IO_NONALERT; // has extra handling in GetDesiredAccess
+            }
+            if (((int)options & 0x20000000) != 0) // NoBuffering
+            {
+                result |= CreateOptions.FILE_NO_INTERMEDIATE_BUFFERING;
+            }
+
+            return result;
+        }
+
+        private static ObjectAttributes GetObjectAttributes(FileShare share)
+            => ObjectAttributes.OBJ_CASE_INSENSITIVE | // default value used by CreateFileW
+                ((share & FileShare.Inheritable) != 0 ? ObjectAttributes.OBJ_INHERIT : 0);
 
         /// <summary>
         /// File creation disposition when calling directly to NT APIs.

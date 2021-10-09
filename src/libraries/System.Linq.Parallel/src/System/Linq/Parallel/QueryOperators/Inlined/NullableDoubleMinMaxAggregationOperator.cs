@@ -105,7 +105,7 @@ namespace System.Linq.Parallel
         // (possibly partitioned) data source.
         //
 
-        private class NullableDoubleMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<double?>
+        private sealed class NullableDoubleMinMaxAggregationOperatorEnumerator<TKey> : InlinedAggregationOperatorEnumerator<double?>
         {
             private readonly QueryOperatorEnumerator<double?, TKey> _source; // The source data.
             private readonly int _sign; // The sign for comparisons (-1 means min, 1 means max).
@@ -144,7 +144,7 @@ namespace System.Linq.Parallel
                         while (source.MoveNext(ref elem, ref keyUnused))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                _cancellationToken.ThrowIfCancellationRequested();;
+                                _cancellationToken.ThrowIfCancellationRequested();
 
                             if (elem == null) continue;
                             if (currentElement == null || elem < currentElement || double.IsNaN(elem.GetValueOrDefault()))
@@ -159,7 +159,7 @@ namespace System.Linq.Parallel
                         while (source.MoveNext(ref elem, ref keyUnused))
                         {
                             if ((i++ & CancellationState.POLL_INTERVAL) == 0)
-                                _cancellationToken.ThrowIfCancellationRequested();;
+                                _cancellationToken.ThrowIfCancellationRequested();
 
                             if (elem == null) continue;
                             if (currentElement == null || elem > currentElement || double.IsNaN(currentElement.GetValueOrDefault()))

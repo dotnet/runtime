@@ -431,6 +431,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50875", TestPlatforms.Android)]
         public void MultipleWildcardsAreNotAllowed()
         {
             var options = new LoggerFilterOptions()

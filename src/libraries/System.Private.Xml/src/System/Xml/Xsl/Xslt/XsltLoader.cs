@@ -21,7 +21,7 @@ namespace System.Xml.Xsl.Xslt
     using QName = XsltInput.DelayedQName;
     using XsltAttribute = XsltInput.XsltAttribute;
 
-    internal class XsltLoader : IErrorHelper
+    internal sealed class XsltLoader : IErrorHelper
     {
         private Compiler _compiler = null!;
         private XmlResolver _xmlResolver = null!;
@@ -2069,7 +2069,7 @@ namespace System.Xml.Xsl.Xslt
         {
             ContextInfo ctxInfo = _input.GetAttributes(_elementAttributes);
 
-            string name = ParseNCNameAttribute(0); ;
+            string name = ParseNCNameAttribute(0);
             string? ns = ParseStringAttribute(1, "namespace");
             CheckError(ns == XmlReservedNs.NsXmlNs, /*[XT_024]*/SR.Xslt_ReservedNS, ns);
 

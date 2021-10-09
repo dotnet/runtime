@@ -5,6 +5,8 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+#pragma warning disable SYSLIB0022 // Rijndael types are obsolete
+
 namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 {
     using Rijndael = System.Security.Cryptography.Rijndael;
@@ -13,7 +15,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
     /// Since RijndaelImplementation (from Rijndael.Create()) and RijndaelManaged classes wrap Aes,
     /// we only test minimally here.
     /// </summary>
-    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public class RijndaelTests
     {
         [Fact]
@@ -25,6 +27,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
                 Assert.Equal(128, alg.LegalBlockSizes[0].MinSize);
                 Assert.Equal(128, alg.LegalBlockSizes[0].MaxSize);
                 Assert.Equal(128, alg.BlockSize);
+                Assert.Equal(128, alg.FeedbackSize);
 
                 // Different exception since we have different supported BlockSizes than desktop
                 Assert.Throws<PlatformNotSupportedException>(() => alg.BlockSize = 192);
@@ -32,6 +35,7 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
                 // Normal exception for rest
                 Assert.Throws<CryptographicException>(() => alg.BlockSize = 111);
+                Assert.Throws<CryptographicException>(() => alg.FeedbackSize = 15);
 
                 Assert.Equal(CipherMode.CBC, alg.Mode);
                 Assert.Equal(PaddingMode.PKCS7, alg.Padding);
@@ -169,6 +173,9 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
                 alg.Padding = PaddingMode.PKCS7;
                 Assert.Equal(PaddingMode.PKCS7, alg.Padding);
+
+                alg.FeedbackSize = 8;
+                Assert.Equal(8, alg.FeedbackSize);
             }
 
             using (var alg = Rijndael.Create())
@@ -289,6 +296,51 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
 
             string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
             Assert.Equal(ExpectedOutput, decrypted);
+        }
+
+        [Theory]
+        [InlineData(128)]
+        [InlineData(8)]
+        [InlineData(null)]
+        public static void CfbFeedbackSizeIsRespected(int? feedbackSize)
+        {
+            // Windows 7 CFB only supports CFB8.
+            if (PlatformDetection.IsWindows7 && feedbackSize != 8)
+                return;
+
+            void Test(Rijndael alg)
+            {
+                alg.Mode = CipherMode.CFB;
+
+                if (feedbackSize == null)
+                {
+                    feedbackSize = alg.FeedbackSize;
+                }
+                else
+                {
+                    alg.FeedbackSize = feedbackSize.Value;
+                }
+
+                int feedbackSizeBytes = feedbackSize.Value / 8;
+                byte[] input = new byte[feedbackSizeBytes + 1];
+
+                using ICryptoTransform transform = alg.CreateEncryptor();
+
+                byte[] output = transform.TransformFinalBlock(input, 0, input.Length);
+                int expectedOutputSize = (input.Length / feedbackSizeBytes) * feedbackSizeBytes + feedbackSizeBytes;
+
+                Assert.Equal(expectedOutputSize, output.Length);
+            }
+
+            using (Rijndael alg = new RijndaelManaged())
+            {
+                Test(alg);
+            }
+
+            using (Rijndael alg = Rijndael.Create())
+            {
+                Test(alg);
+            }
         }
 
         private class RijndaelLegalSizesBreaker : RijndaelMinimal
@@ -412,3 +464,5 @@ namespace System.Security.Cryptography.Encryption.Rijndael.Tests
         }
     }
 }
+
+#pragma warning restore SYSLIB0022

@@ -3,7 +3,7 @@
 
 namespace System.Configuration
 {
-    internal class DateTimeConfigurationElement : ConfigurationElement
+    internal sealed class DateTimeConfigurationElement : ConfigurationElement
     {
         private static readonly ConfigurationProperty s_propValue =
             new ConfigurationProperty("value", typeof(DateTime), DateTime.MinValue, ConfigurationPropertyOptions.IsKey);

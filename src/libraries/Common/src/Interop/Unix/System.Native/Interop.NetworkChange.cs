@@ -13,12 +13,8 @@ internal static partial class Interop
             None = -1,
             AddressAdded = 0,
             AddressRemoved = 1,
-            LinkAdded = 2,
-            LinkRemoved = 3,
-            AvailabilityChanged = 4
+            AvailabilityChanged = 2
         }
-
-        public delegate void NetworkChangeEvent(int socket, NetworkChangeKind kind);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_CreateNetworkChangeListenerSocket")]
         public static extern Error CreateNetworkChangeListenerSocket(out int socket);
@@ -27,6 +23,6 @@ internal static partial class Interop
         public static extern Error CloseNetworkChangeListenerSocket(int socket);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadEvents")]
-        public static extern void ReadEvents(int socket, NetworkChangeEvent onNetworkChange);
+        public static extern unsafe void ReadEvents(int socket, delegate* unmanaged<int, NetworkChangeKind, void> onNetworkChange);
     }
 }

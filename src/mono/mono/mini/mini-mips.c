@@ -1987,7 +1987,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
-			} else {
+			} else if (ins->inst_imm > 0) {
 				int power2 = mono_is_power_of_two (ins->inst_imm);
 				if (power2 > 0) {
 					ins->opcode = OP_SHL_IMM;
@@ -2666,7 +2666,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm = mono_is_power_of_two (ins->inst_imm);
+			imm = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
 			if (imm > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm;
@@ -4475,65 +4475,52 @@ mono_arch_register_lowlevel_calls (void)
 }
 
 void
-mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain, guint8 *code, MonoJumpInfo *ji, gboolean run_cctors, MonoError *error)
+mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpointer target)
 {
-	MonoJumpInfo *patch_info;
+	unsigned char *ip = ji->ip.i + code;
 
-	error_init (error);
+	switch (ji->type) {
+	case MONO_PATCH_INFO_IP:
+		patch_lui_addiu ((guint32 *)(void *)ip, (guint32)ip);
+		continue;
+	case MONO_PATCH_INFO_SWITCH: {
+		gpointer *table = (gpointer *)ji->data.table->table;
+		int i;
 
-	for (patch_info = ji; patch_info; patch_info = patch_info->next) {
-		unsigned char *ip = patch_info->ip.i + code;
-		const unsigned char *target = NULL;
+		patch_lui_addiu ((guint32 *)(void *)ip, (guint32)table);
 
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_IP:
-			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)ip);
-			continue;
-		case MONO_PATCH_INFO_SWITCH: {
-			gpointer *table = (gpointer *)patch_info->data.table->table;
-			int i;
-
-			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)table);
-
-			for (i = 0; i < patch_info->data.table->table_size; i++) { 
-				table [i] = (int)patch_info->data.table->table [i] + code;
-			}
-			continue;
+		for (i = 0; i < ji->data.table->table_size; i++) {
+			table [i] = (int)ji->data.table->table [i] + code;
 		}
-		case MONO_PATCH_INFO_METHODCONST:
-		case MONO_PATCH_INFO_CLASS:
-		case MONO_PATCH_INFO_IMAGE:
-		case MONO_PATCH_INFO_FIELD:
-		case MONO_PATCH_INFO_VTABLE:
-		case MONO_PATCH_INFO_IID:
-		case MONO_PATCH_INFO_SFLDA:
-		case MONO_PATCH_INFO_LDSTR:
-		case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		case MONO_PATCH_INFO_LDTOKEN:
-		case MONO_PATCH_INFO_R4:
-		case MONO_PATCH_INFO_R8:
-			/* from OP_AOTCONST : lui + addiu */
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, error);
-			return_if_nok (error);
-
-			patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
-			continue;
+		continue;
+	}
+	case MONO_PATCH_INFO_METHODCONST:
+	case MONO_PATCH_INFO_CLASS:
+	case MONO_PATCH_INFO_IMAGE:
+	case MONO_PATCH_INFO_FIELD:
+	case MONO_PATCH_INFO_VTABLE:
+	case MONO_PATCH_INFO_IID:
+	case MONO_PATCH_INFO_SFLDA:
+	case MONO_PATCH_INFO_LDSTR:
+	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
+	case MONO_PATCH_INFO_LDTOKEN:
+	case MONO_PATCH_INFO_R4:
+	case MONO_PATCH_INFO_R8:
+		/* from OP_AOTCONST : lui + addiu */
+		patch_lui_addiu ((guint32 *)(void *)ip, (guint32)target);
+		continue;
 #if 0
-		case MONO_PATCH_INFO_EXC_NAME:
-			g_assert_not_reached ();
-			*((gconstpointer *)(void *)(ip + 1)) = patch_info->data.name;
-			continue;
+	case MONO_PATCH_INFO_EXC_NAME:
+		g_assert_not_reached ();
+		*((gconstpointer *)(void *)(ip + 1)) = target;
+		continue;
 #endif
-		case MONO_PATCH_INFO_NONE:
-			/* everything is dealt with at epilog output time */
-			continue;
-		default:
-			target = mono_resolve_patch_target (method, domain, code, patch_info, run_cctors, error);
-			return_if_nok (error);
-
-			mips_patch ((guint32 *)(void *)ip, (guint32)target);
-			break;
-		}
+	case MONO_PATCH_INFO_NONE:
+		/* everything is dealt with at epilog output time */
+		continue;
+	default:
+		mips_patch ((guint32 *)(void *)ip, (guint32)target);
+		break;
 	}
 }
 
@@ -5289,6 +5276,12 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 	return ctx->sc_regs [reg];
 }
 
+host_mgreg_t*
+mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
+{
+	return &ctx->sc_regs [reg];
+}
+
 #define ENABLE_WRONG_METHOD_CHECK 0
 
 #define MIPS_LOAD_SEQUENCE_LENGTH	8
@@ -5300,11 +5293,8 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 #define LOAD_CONST_SIZE			8
 #define JUMP_JR_SIZE			8
 
-/*
- * LOCKING: called with the domain lock held
- */
 gpointer
-mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTCheckItem **imt_entries, int count,
+mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoIMTCheckItem **imt_entries, int count,
 								gpointer fail_tramp)
 {
 	int i;
@@ -5343,9 +5333,9 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	/* the initial load of the vtable address */
 	size += MIPS_LOAD_SEQUENCE_LENGTH;
 	if (fail_tramp) {
-		code = mono_method_alloc_generic_virtual_trampoline (mono_domain_ambient_memory_manager (domain), size);
+		code = (guint8 *)mini_alloc_generic_virtual_trampoline (vtable, size);
 	} else {
-		MonoMemoryManager *mem_manager = m_class_get_mem_manager (domain, vtable->klass);
+		MonoMemoryManager *mem_manager = m_class_get_mem_manager (vtable->klass);
 		code = mono_mem_manager_code_reserve (mem_manager, size);
 	}
 	start = code;
@@ -5437,7 +5427,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	mono_arch_flush_icache (start, size);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
-	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), domain);
+	mono_tramp_info_register (mono_tramp_info_create (NULL, start, code - start, NULL, NULL), NULL);
 
 	return start;
 }
@@ -5573,7 +5563,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
  *   See mini-amd64.c for docs.
  */
 SeqPointInfo*
-mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
+mono_arch_get_seq_point_info (guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;

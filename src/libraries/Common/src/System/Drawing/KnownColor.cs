@@ -7,12 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Drawing
 {
     [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-#if NETCOREAPP2_0
-    internal
-#else
-    public
-#endif
-    enum KnownColor
+    public enum KnownColor
     {
         // This enum is order dependent!!!
         //
@@ -21,7 +16,7 @@ namespace System.Drawing
 
         // 0 - reserved for "not a known color"
 
-        // "System" colors
+        // "System" colors, Part 1
         ActiveBorder = 1,
         ActiveCaption,
         ActiveCaptionText,
@@ -49,7 +44,7 @@ namespace System.Drawing
         WindowFrame,
         WindowText,
 
-        // "Web" Colors
+        // "Web" Colors, Part 1
         Transparent,
         AliceBlue,
         AntiqueWhite,
@@ -192,14 +187,19 @@ namespace System.Drawing
         Yellow,
         YellowGreen,
 
-        // New system color additions in Visual Studio 2005 (.NET Framework 2.0)
-
+        // "System" colors, Part 2
         ButtonFace,
         ButtonHighlight,
         ButtonShadow,
         GradientActiveCaption,
         GradientInactiveCaption,
         MenuBar,
-        MenuHighlight
+        MenuHighlight,
+
+        // "Web" colors, Part 2
+        /// <summary>
+        /// A system defined color representing the ARGB value <c>#663399</c>.
+        /// </summary>
+        RebeccaPurple,
     }
 }

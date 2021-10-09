@@ -108,7 +108,6 @@ namespace GCTest
         {
             GCLatencyMode oldMode = GCSettings.LatencyMode;
 
-            RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 // Load Data

@@ -4,4 +4,4 @@
 using System;
 using Xunit;
 
-[assembly: SkipOnMono("System.IO.Compression.Brotli is not supported on Browser", TestPlatforms.Browser)]
+[assembly: SkipOnPlatform(TestPlatforms.Browser, "System.IO.Compression.Brotli is not supported on Browser")]

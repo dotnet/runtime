@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class SAMMembersSet : BookmarkableResultSet
+    internal sealed class SAMMembersSet : BookmarkableResultSet
     {
         internal SAMMembersSet(string groupPath, UnsafeNativeMethods.IADsGroup group, bool recursive, SAMStoreCtx storeCtx, DirectoryEntry ctxBase)
         {
@@ -597,7 +597,7 @@ namespace System.DirectoryServices.AccountManagement
         private ResultSet _foreignResultSet; // current foreign group's ResultSet (if enumerating via proxy to foreign group)
     }
 
-    internal class SAMMembersSetBookmark : ResultSetBookmark
+    internal sealed class SAMMembersSetBookmark : ResultSetBookmark
     {
         public List<string> groupsToVisit;
         public List<string> groupsVisited;

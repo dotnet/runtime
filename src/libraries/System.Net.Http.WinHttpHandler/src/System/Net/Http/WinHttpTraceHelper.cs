@@ -9,17 +9,17 @@ namespace System.Net.Http
 {
     internal static class WinHttpTraceHelper
     {
-        public static void TraceCallbackStatus(object thisOrContextObject, IntPtr handle, IntPtr context, uint status, [CallerMemberName] string memberName = null)
+        public static void TraceCallbackStatus(object? thisOrContextObject, IntPtr handle, IntPtr context, uint status, [CallerMemberName] string? memberName = null)
         {
             Debug.Assert(NetEventSource.Log.IsEnabled());
 
             NetEventSource.Info(
                 thisOrContextObject,
-                $"handle=0x{handle.ToString("X")}, context=0x{context.ToString("X")}, {GetStringFromInternetStatus(status)}",
+                $"handle=0x{handle:X}, context=0x{context:X}, {GetStringFromInternetStatus(status)}",
                 memberName);
         }
 
-        public static void TraceAsyncError(object thisOrContextObject, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult, [CallerMemberName] string memberName = null)
+        public static void TraceAsyncError(object thisOrContextObject, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult, [CallerMemberName] string? memberName = null)
         {
             Debug.Assert(NetEventSource.Log.IsEnabled());
 
@@ -92,7 +92,7 @@ namespace System.Net.Http
                 Interop.WinHttp.WINHTTP_CALLBACK_STATUS_GETPROXYFORURL_COMPLETE => "STATUS_GETPROXYFORURL_COMPLETE",
                 Interop.WinHttp.WINHTTP_CALLBACK_STATUS_CLOSE_COMPLETE => "STATUS_CLOSE_COMPLETE",
                 Interop.WinHttp.WINHTTP_CALLBACK_STATUS_SHUTDOWN_COMPLETE => "STATUS_SHUTDOWN_COMPLETE",
-                _ => string.Format("0x{0:X}", status),
+                _ => $"0x{status:X}",
             };
     }
 }

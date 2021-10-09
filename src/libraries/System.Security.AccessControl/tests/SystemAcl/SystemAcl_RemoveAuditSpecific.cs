@@ -196,7 +196,7 @@ new SecurityIdentifier(Utils.TranslateStringConstFormatSidToStandardFormatSid(si
                 rawAcl = new RawAcl(0, 1);
                 opaque = new byte[4];
                 gAce = new CustomAce(AceType.MaxDefinedAceType + 1,
-                    AceFlags.InheritanceFlags | AceFlags.AuditFlags, opaque); ;
+                    AceFlags.InheritanceFlags | AceFlags.AuditFlags, opaque);
                 rawAcl.InsertAce(0, gAce);
                 systemAcl = new SystemAcl(isContainer, isDS, rawAcl);
                 //After Mark changes design to make ACL with any CustomAce, CompoundAce uncanonical and

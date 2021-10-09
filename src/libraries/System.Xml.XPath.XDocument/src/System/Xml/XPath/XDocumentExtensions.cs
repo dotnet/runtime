@@ -7,7 +7,7 @@ namespace System.Xml.XPath
 {
     public static class XDocumentExtensions
     {
-        private class XDocumentNavigable : IXPathNavigable
+        private sealed class XDocumentNavigable : IXPathNavigable
         {
             private readonly XNode _node;
             public XDocumentNavigable(XNode n)

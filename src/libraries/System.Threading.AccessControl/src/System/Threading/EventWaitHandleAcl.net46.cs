@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Security.AccessControl;
 
 namespace System.Threading
@@ -22,7 +23,7 @@ namespace System.Threading
             return EventWaitHandle.OpenExisting(name, rights);
         }
 
-        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, out EventWaitHandle result)
+        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, [NotNullWhen(true)] out EventWaitHandle result)
         {
             return EventWaitHandle.TryOpenExisting(name, rights, out result);
         }

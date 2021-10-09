@@ -109,7 +109,7 @@ namespace System.Text.Unicode
         /// <remarks>
         /// See https://www.unicode.org/reports/tr44/#PropList.txt.
         /// </remarks>
-        public CodePointFlags Flags { get; } = default; // default is "no flags"
+        public CodePointFlags Flags { get; } // default is "no flags"
 
         /// <summary>
         /// The general Unicode category of this code point.

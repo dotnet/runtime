@@ -7,6 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.RijndaelMessage, DiagnosticId = Obsoletions.RijndaelDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     [UnsupportedOSPlatform("browser")]
     public sealed class RijndaelManaged : Rijndael
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography
 
             // This class wraps Aes
             _impl = Aes.Create();
+            _impl.FeedbackSize = 128;
         }
 
         public override int BlockSize
@@ -36,6 +38,12 @@ namespace System.Security.Cryptography
                 if (value != 128)
                     throw new CryptographicException(SR.Cryptography_Rijndael_BlockSize);
             }
+        }
+
+        public override int FeedbackSize
+        {
+            get => _impl.FeedbackSize;
+            set => _impl.FeedbackSize = value;
         }
 
         public override byte[] IV

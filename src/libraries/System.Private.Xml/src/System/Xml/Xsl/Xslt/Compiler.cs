@@ -6,16 +6,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
-using System.Xml.Xsl.XPath;
-using System.Runtime.Versioning;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using TypeFactory = XmlQueryTypeFactory;
-#if DEBUG && FEATURE_COMPILED_XSL
-    using XmlILTrace = System.Xml.Xsl.IlGen.XmlILTrace;
-#endif
-
     internal enum XslVersion
     {
         Version10 = 0,
@@ -29,7 +22,7 @@ namespace System.Xml.Xsl.Xslt
     // One more reason to for this design is to normolize apply-templates and apply-imports to one concept:
     // apply-templates is apply-imports(compiler.Root).
     // For now I don't create new files for these new classes to simplify integrations WebData <-> WebData_xsl
-    internal class RootLevel : StylesheetLevel
+    internal sealed class RootLevel : StylesheetLevel
     {
         public RootLevel(Stylesheet principal)
         {
@@ -37,7 +30,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class Compiler
+    internal sealed class Compiler
     {
         public XsltSettings Settings;
         public bool IsDebug;
@@ -362,7 +355,7 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        private class CompilerErrorComparer : IComparer<CompilerError>
+        private sealed class CompilerErrorComparer : IComparer<CompilerError>
         {
             private readonly Dictionary<string, int> _moduleOrder;
 
@@ -407,7 +400,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class Output
+    internal sealed class Output
     {
         public XmlWriterSettings Settings;
         public string? Version;
@@ -437,7 +430,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class DecimalFormats : KeyedCollection<XmlQualifiedName, DecimalFormatDecl>
+    internal sealed class DecimalFormats : KeyedCollection<XmlQualifiedName, DecimalFormatDecl>
     {
         protected override XmlQualifiedName GetKeyForItem(DecimalFormatDecl format)
         {
@@ -445,7 +438,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class DecimalFormatDecl
+    internal sealed class DecimalFormatDecl
     {
         public readonly XmlQualifiedName Name;
         public readonly string InfinitySymbol;
@@ -464,7 +457,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal class NsAlias
+    internal sealed class NsAlias
     {
         public readonly string ResultNsUri;
         public readonly string? ResultPrefix;

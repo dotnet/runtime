@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -11,6 +12,10 @@ namespace System.Linq.Expressions.Compiler
 {
     internal static class ILGen
     {
+        private static readonly MethodInfo s_nullableHasValueGetter = typeof(Nullable<>).GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
+        private static readonly MethodInfo s_nullableValueGetter = typeof(Nullable<>).GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
+        private static readonly MethodInfo s_nullableGetValueOrDefault = typeof(Nullable<>).GetMethod("GetValueOrDefault", Type.EmptyTypes)!;
+
         internal static void Emit(this ILGenerator il, OpCode opcode, MethodBase methodBase)
         {
             Debug.Assert(methodBase is MethodInfo || methodBase is ConstructorInfo);
@@ -484,7 +489,7 @@ namespace System.Linq.Expressions.Compiler
 
                 if (TryEmitILConstant(il, value, nonNullType))
                 {
-                    il.Emit(OpCodes.Newobj, type.GetConstructor(new[] { nonNullType })!);
+                    il.Emit(OpCodes.Newobj, TypeUtils.GetNullableConstructor(type));
                     return true;
                 }
 
@@ -825,7 +830,7 @@ namespace System.Linq.Expressions.Compiler
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(nnTypeFrom, nnTypeTo, isChecked, locals);
             // construct result type
-            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo })!;
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo);
             il.Emit(OpCodes.Newobj, ci);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
@@ -839,17 +844,15 @@ namespace System.Linq.Expressions.Compiler
             il.MarkLabel(labEnd);
         }
 
-
         private static void EmitNonNullableToNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
             Debug.Assert(!typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
-            ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo })!;
+            ConstructorInfo ci = TypeUtils.GetNullableConstructor(typeTo);
             il.Emit(OpCodes.Newobj, ci);
         }
-
 
         private static void EmitNullableToNonNullableConversion(this ILGenerator il, Type typeFrom, Type typeTo, bool isChecked, ILocalCache locals)
         {
@@ -899,26 +902,29 @@ namespace System.Linq.Expressions.Compiler
                 il.EmitNonNullableToNullableConversion(typeFrom, typeTo, isChecked, locals);
         }
 
-
         internal static void EmitHasValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("get_HasValue", BindingFlags.Instance | BindingFlags.Public)!;
+            Debug.Assert(nullableType.IsNullableType());
+
+            MethodInfo mi = (MethodInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableHasValueGetter);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
-
 
         internal static void EmitGetValue(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("get_Value", BindingFlags.Instance | BindingFlags.Public)!;
+            Debug.Assert(nullableType.IsNullableType());
+
+            MethodInfo mi = (MethodInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableValueGetter);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
 
-
         internal static void EmitGetValueOrDefault(this ILGenerator il, Type nullableType)
         {
-            MethodInfo mi = nullableType.GetMethod("GetValueOrDefault", System.Type.EmptyTypes)!;
+            Debug.Assert(nullableType.IsNullableType());
+
+            MethodInfo mi = (MethodInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableGetValueOrDefault);
             Debug.Assert(nullableType.IsValueType);
             il.Emit(OpCodes.Call, mi);
         }
@@ -965,6 +971,8 @@ namespace System.Linq.Expressions.Compiler
         /// The code assumes that bounds for all dimensions
         /// are already emitted.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+            Justification = "The Array ctor is dynamically constructed and is not included in IL. It is not subject to trimming.")]
         internal static void EmitArray(this ILGenerator il, Type arrayType)
         {
             Debug.Assert(arrayType != null);

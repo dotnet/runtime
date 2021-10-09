@@ -21,14 +21,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
         public void FrameworkHiveSelection_GlobalHiveWithBetterMatch()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multiple hives are only supported on Windows.
-                return;
-            }
-
             RunTest(
                 runtimeConfig => runtimeConfig
                     .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
@@ -36,14 +31,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
         public void FrameworkHiveSelection_MainHiveWithBetterMatch()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multiple hives are only supported on Windows.
-                return;
-            }
-
             RunTest(
                 runtimeConfig => runtimeConfig
                     .WithFramework(MicrosoftNETCoreApp, "6.0.0"))
@@ -51,14 +41,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // Multiple hives are only supported on Windows.
         public void FrameworkHiveSelection_CurrentDirectoryIsIgnored()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // Multiple hives are only supported on Windows.
-                return;
-            }
-
             RunTest(
                 SharedState.DotNetMainHive,
                 SharedState.FrameworkReferenceApp,
@@ -78,7 +63,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     SharedState.FrameworkReferenceApp,
                     new TestSettings()
                         .WithRuntimeConfigCustomizer(runtimeConfig)
-                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath),
+                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath)
+                        .WithEnvironment( // Redirect the default install location to an invalid location so that a machine-wide install is not used
+                            Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
+                            System.IO.Path.Combine(SharedState.DotNetMainHive.BinPath, "invalid")),
                     // Must enable multi-level lookup otherwise multiple hives are not enabled
                     multiLevelLookup: true);
             }

@@ -1,0 +1,45 @@
+<Project>
+  <!-- If $(Emscripten*ToolsPath) etc propeties are *not* set (by the workload pack),
+  then try to construct the same properties based on $(EMSDK_PATH) -->
+
+  <PropertyGroup>
+    <EmscriptenSdkToolsPath>$([MSBuild]::EnsureTrailingSlash($(EMSDK_PATH)))</EmscriptenSdkToolsPath>
+    <EmscriptenUpstreamBinPath>$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'bin'))</EmscriptenUpstreamBinPath>
+
+    <_NodeToolsBasePath>$(EmscriptenSdkToolsPath)node</_NodeToolsBasePath>
+
+    <!-- gets the path like emsdk/python/3.7.4-2_64bit -->
+    <_NodeToolsVersionedPath Condition="Exists($(_NodeToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_NodeToolsBasePath)))</_NodeToolsVersionedPath>
+    <EmscriptenNodeToolsPath Condition="'$(_NodeToolsVersionedPath)' != ''">$(_NodeToolsVersionedPath)</EmscriptenNodeToolsPath>
+    <EmscriptenNodeToolsPath Condition="'$(EmscriptenNodeToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenNodeToolsPath)))</EmscriptenNodeToolsPath>
+
+    <_UsingEMSDK_PATH>true</_UsingEMSDK_PATH>
+  </PropertyGroup>
+
+  <!-- Emscripten uses system python on Linux, so we don't need $(EmscriptenPythonToolsPath) -->
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('linux'))">
+    <_PythonToolsBasePath>$(EmscriptenSdkToolsPath)python</_PythonToolsBasePath>
+    <_PythonToolsVersionedPath Condition="Exists($(_PythonToolsBasePath))">$([System.IO.Directory]::GetDirectories($(_PythonToolsBasePath)))</_PythonToolsVersionedPath>
+    <EmscriptenPythonToolsPath Condition="'$(_PythonToolsVersionedPath)' != ''">$(_PythonToolsVersionedPath)</EmscriptenPythonToolsPath>
+    <EmscriptenPythonToolsPath Condition="'$(EmscriptenPythonToolsPath)' != ''">$([MSBuild]::NormalizeDirectory($(EmscriptenPythonToolsPath)))</EmscriptenPythonToolsPath>
+
+    <_EMSDKMissingPaths Condition="'$(_EMSDKMissingPaths)' == '' and ('$(EmscriptenPythonToolsPath)' == '' or !Exists('$(EmscriptenPythonToolsPath)'))">%24(EmscriptenPythonToolsPath)=$(EmscriptenPythonToolsPath) </_EMSDKMissingPaths>
+  </PropertyGroup>
+
+  <!-- Paths to be added to environment variable `PATH` -->
+  <ItemGroup>
+    <EmscriptenPrependPATH Include="$(EmscriptenSdkToolsPath)" />
+    <EmscriptenPrependPATH Include="$(EmscriptenUpstreamBinPath)" />
+    <EmscriptenPrependPATH Include="$([MSBuild]::NormalizeDirectory($(EmscriptenSdkToolsPath), 'upstream', 'emscripten'))" />
+
+    <EmscriptenPrependPATH Include="$(EmscriptenNodeToolsPath)bin" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EmscriptenPythonToolsPath)' != ''">
+    <EmscriptenPrependPATH Include="$(EmscriptenPythonToolsPath)"    Condition="$([MSBuild]::IsOSPlatform('windows'))" />
+    <EmscriptenPrependPATH Include="$(EmscriptenPythonToolsPath)bin" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)\bin%3B$([MSBuild]::Escape($(PYTHONPATH)))" Condition="$([MSBuild]::IsOSPlatform('windows'))" />
+    <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath):$([MSBuild]::Escape($(PYTHONPATH)))"       Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+  </ItemGroup>
+</Project>

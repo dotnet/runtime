@@ -511,11 +511,11 @@ dump_coverage (MonoProfiler *prof)
 
 		MonoString *extra_arg = NULL;
 		if (prof->config->send_to_arg) {
-			extra_arg = mono_string_new_checked (mono_domain_get (), prof->config->send_to_arg, error);
+			extra_arg = mono_string_new_checked (prof->config->send_to_arg, error);
 			mono_error_assert_ok (error);
 		}
 
-		MonoString *data = mono_string_new_checked (mono_domain_get (), s->str, error);
+		MonoString *data = mono_string_new_checked (s->str, error);
 		mono_error_assert_ok (error);
 
 		MonoObject *exc;
@@ -1196,7 +1196,6 @@ mono_profiler_init_coverage (const char *desc)
 
 	MonoProfilerHandle handle = coverage_profiler.handle = mono_profiler_create (&coverage_profiler);
 
-	mono_profiler_set_runtime_shutdown_end_callback (handle, cov_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_assembly_loaded_callback (handle, assembly_loaded);
 

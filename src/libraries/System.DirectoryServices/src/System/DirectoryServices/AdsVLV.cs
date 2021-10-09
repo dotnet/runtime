@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 namespace System.DirectoryServices
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal class AdsVLV
+    internal sealed class AdsVLV
     {
         public int beforeCount;
         public int afterCount;

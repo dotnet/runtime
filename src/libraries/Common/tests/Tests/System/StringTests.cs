@@ -317,7 +317,7 @@ namespace System.Tests
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [OuterLoop] // mini-stress test that likely runs for several seconds
         public static void Concat_String_ConcurrencySafe()
         {
@@ -480,6 +480,42 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(s.Length, dst, 0, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(s.Length - 1, dst, 0, 2));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => s.CopyTo(0, dst, 0, 6));
+        }
+
+        [Theory]
+        [InlineData("", 0)]
+        [InlineData("", 1)]
+        [InlineData("a", 1)]
+        [InlineData("a", 0)]
+        [InlineData("a", 2)]
+        [InlineData("abc", 2)]
+        [InlineData("abc", 3)]
+        [InlineData("abc", 4)]
+        [InlineData("Hello world", 20)]
+        public static void CopyTo_Span(string s, int destinationLength)
+        {
+            char[] destination = new char[destinationLength];
+
+            if (s.Length > destinationLength)
+            {
+                AssertExtensions.Throws<ArgumentException>("destination", () => s.CopyTo(destination));
+                Assert.All(destination, c => Assert.Equal(0, c));
+
+                Assert.False(s.TryCopyTo(destination));
+                Assert.All(destination, c => Assert.Equal(0, c));
+            }
+            else
+            {
+                s.CopyTo(destination);
+                Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
+                Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
+
+                Array.Clear(destination);
+
+                Assert.True(s.TryCopyTo(destination));
+                Assert.Equal(s, new Span<char>(destination, 0, s.Length).ToString());
+                Assert.All(destination.AsSpan(s.Length).ToArray(), c => Assert.Equal(0, c));
+            }
         }
 
         public static IEnumerable<object[]> Compare_TestData()
@@ -1821,7 +1857,7 @@ namespace System.Tests
         [Fact]
         public static void LengthMismatchEndsWith_Char()
         {
-            string value = "456";;
+            string value = "456";
 
             string s1 = value.Substring(0, 2);
             string s2 = value.Substring(0, 3);
@@ -2567,8 +2603,7 @@ namespace System.Tests
         {
             string source = "encyclop\u00e6dia";
             string target = "encyclopaedia";
-
-            using (new ThreadCultureChange("se-SE"))
+            using (new ThreadCultureChange(PlatformDetection.IsBrowser ?"pl-PL" : "se-SE"))
             {
                 Assert.Equal(expected, string.Equals(source, target, comparison));
                 Assert.Equal(expected, source.AsSpan().Equals(target.AsSpan(), comparison));
@@ -4497,7 +4532,7 @@ namespace System.Tests
         [InlineData("", 0, 0, "")]
         public static void Remove(string s, int startIndex, int count, string expected)
         {
-            if (startIndex + count == s.Length && count != 0)
+            if (startIndex + count == s.Length)
             {
                 Assert.Equal(expected, s.Remove(startIndex));
             }
@@ -4513,8 +4548,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(-1, 0));
 
-            // Start index >= string.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(s.Length));
+            // Start index > string.Length
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => s.Remove(s.Length + 1));
 
             // Count < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => s.Remove(0, -1));
@@ -7313,9 +7348,11 @@ namespace System.Tests
             Assert.False(s.IsNormalized(NormalizationForm.FormC), "String should be not normalized when checking with FormC");
             Assert.False(s.IsNormalized(NormalizationForm.FormD), "String should be not normalized when checking with FormD");
 
-            if (PlatformDetection.IsNotBrowser)
+            // Browser's, iOS's, MacCatalyst's, and tvOS's ICU do not support FormKC and FormKD
+            bool supportsKCKD = !PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IsMacCatalyst && !PlatformDetection.IstvOS;
+
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 Assert.False(s.IsNormalized(NormalizationForm.FormKC), "String should be not normalized when checking with FormKC");
                 Assert.False(s.IsNormalized(NormalizationForm.FormKD), "String should be not normalized when checking with FormKD");
             }
@@ -7331,9 +7368,8 @@ namespace System.Tests
             normalized = s.Normalize(NormalizationForm.FormD);
             Assert.True(normalized.IsNormalized(NormalizationForm.FormD), "Expected to have the normalized string with FormD");
 
-            if (PlatformDetection.IsNotBrowser)
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 normalized = s.Normalize(NormalizationForm.FormKC);
                 Assert.True(normalized.IsNormalized(NormalizationForm.FormKC), "Expected to have the normalized string with FormKC");
 
@@ -7346,9 +7382,8 @@ namespace System.Tests
             Assert.True(s.IsNormalized(NormalizationForm.FormC));
             Assert.True(s.IsNormalized(NormalizationForm.FormD));
 
-            if (PlatformDetection.IsNotBrowser)
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 Assert.True(s.IsNormalized(NormalizationForm.FormKC));
                 Assert.True(s.IsNormalized(NormalizationForm.FormKD));
             }
@@ -7357,9 +7392,8 @@ namespace System.Tests
             Assert.Same(s, s.Normalize(NormalizationForm.FormC));
             Assert.Same(s, s.Normalize(NormalizationForm.FormD));
 
-            if (PlatformDetection.IsNotBrowser)
+            if (supportsKCKD)
             {
-                // Browser's ICU doesn't support FormKC and FormKD
                 Assert.Same(s, s.Normalize(NormalizationForm.FormKC));
                 Assert.Same(s, s.Normalize(NormalizationForm.FormKD));
             }

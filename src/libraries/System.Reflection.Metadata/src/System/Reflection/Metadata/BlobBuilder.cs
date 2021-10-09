@@ -956,10 +956,9 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                byte[] bytes = Encoding.Unicode.GetBytes(value);
-                fixed (byte* ptr = &bytes[0])
+                for (int i = 0; i < value.Length; i++)
                 {
-                    WriteBytesUnchecked((byte*)ptr, bytes.Length);
+                    WriteUInt16((ushort)value[i]);
                 }
             }
         }
@@ -990,10 +989,9 @@ namespace System.Reflection.Metadata
             }
             else
             {
-                byte[] bytes = Encoding.Unicode.GetBytes(value);
-                fixed (byte* ptr = bytes)
+                for (int i = 0; i < value.Length; i++)
                 {
-                    WriteBytesUnchecked((byte*)ptr, bytes.Length);
+                    WriteUInt16((ushort)value[i]);
                 }
             }
         }

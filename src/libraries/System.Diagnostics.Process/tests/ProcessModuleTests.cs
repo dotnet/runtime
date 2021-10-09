@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessModuleTests : ProcessTestBase
+    public partial class ProcessModuleTests : ProcessTestBase
     {
         [Fact]
         public void TestModuleProperties()

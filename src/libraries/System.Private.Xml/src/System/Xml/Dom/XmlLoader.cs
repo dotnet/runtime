@@ -10,7 +10,7 @@ using System.Xml.Schema;
 
 namespace System.Xml
 {
-    internal class XmlLoader
+    internal sealed class XmlLoader
     {
         private XmlDocument? _doc;
         private XmlReader? _reader;

@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace System.Linq.Parallel
 {
-    internal class UnorderedHashRepartitionStream<TInputOutput, THashKey, TIgnoreKey> : HashRepartitionStream<TInputOutput, THashKey, int>
+    internal sealed class UnorderedHashRepartitionStream<TInputOutput, THashKey, TIgnoreKey> : HashRepartitionStream<TInputOutput, THashKey, int>
     {
         //---------------------------------------------------------------------------------------
         // Creates a new partition exchange operator.

@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
     /// <see cref="JsonSerializerOptions.Converters"/> or there is another <see cref="JsonConverterAttribute"/> on a property or field
     /// of the same type.
     /// </remarks>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class JsonConverterAttribute : JsonAttribute
     {
         /// <summary>

@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     yield return new object[] { protocol, true };
 #pragma warning disable 0618 // SSL2/3 are deprecated
-                     // On certain platforms these are completely disabled and cannot be used at all.
+                    // On certain platforms these are completely disabled and cannot be used at all.
                     if (protocol != SslProtocols.Ssl2 && protocol != SslProtocols.Ssl3)
                     {
                         yield return new object[] { protocol, false };
@@ -121,20 +121,35 @@ namespace System.Net.Http.Functional.Tests
 #if !NETFRAMEWORK
                     handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
 #else
-                    handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
+                    handler.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | (SslProtocols)12288;
 #endif
 #pragma warning restore 0618
                 }
+
+                // Use a different SNI for each connection to prevent TLS 1.3 renegotiation issue: https://github.com/dotnet/runtime/issues/47378
+                client.DefaultRequestHeaders.Host = GetTestSNIName();
 
                 var options = new LoopbackServer.Options { UseSsl = true, SslProtocols = acceptedProtocol };
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     await TestHelper.WhenAllCompletedOrAnyFailed(
-                        server.AcceptConnectionSendResponseAndCloseAsync(),
-                        client.GetAsync(url));
+                      server.AcceptConnectionSendResponseAndCloseAsync(),
+                      client.GetAsync(url));
                 }, options);
 
                 Assert.Equal(1, count);
+            }
+
+            string GetTestSNIName()
+            {
+                string name = $"{nameof(GetAsync_AllowedSSLVersion_Succeeds)}_{acceptedProtocol}_{requestOnlyThisProtocol}";
+                if (PlatformDetection.IsAndroid)
+                {
+                    // Android does not support underscores in host names
+                    name = name.Replace("_", string.Empty);
+                }
+
+                return name;
             }
         }
 

@@ -10,7 +10,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using KeywordsTable = System.Xml.Xsl.Xslt.KeywordsTable;
 
-    internal class NavigatorInput
+    internal sealed class NavigatorInput
     {
         private XPathNavigator? _Navigator;
         private PositionInfo? _PositionInfo;

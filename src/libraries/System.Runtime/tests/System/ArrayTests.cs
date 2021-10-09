@@ -831,20 +831,43 @@ namespace System.Tests
         {
             if (index == 0 && length == array.Length)
             {
-                // Use IList.Clear()
+                // Use Array.Clear()
                 Array arrayClone1 = (Array)array.Clone();
-                ((IList)arrayClone1).Clear();
+                Array.Clear(arrayClone1);
                 Assert.Equal(expected, arrayClone1);
+
+                // Use IList.Clear()
+                Array arrayClone2 = (Array)array.Clone();
+                ((IList)arrayClone2).Clear();
+                Assert.Equal(expected, arrayClone2);
             }
-            Array arrayClone2 = (Array)array.Clone();
-            Array.Clear(arrayClone2, index, length);
-            Assert.Equal(expected, arrayClone2);
+
+            Array arrayClone3 = (Array)array.Clone();
+            Array.Clear(arrayClone3, index, length);
+            Assert.Equal(expected, arrayClone3);
         }
 
         [Fact]
         public static void Clear_Struct_WithReferenceAndValueTypeFields_Array()
         {
             var array = new NonGenericStruct[]
+            {
+            new NonGenericStruct { x = 1, s = "Hello", z = 2 },
+            new NonGenericStruct { x = 2, s = "Hello", z = 3 },
+            new NonGenericStruct { x = 3, s = "Hello", z = 4 },
+            new NonGenericStruct { x = 4, s = "Hello", z = 5 },
+            new NonGenericStruct { x = 5, s = "Hello", z = 6 }
+            };
+
+            Array.Clear(array);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.Equal(0, array[i].x);
+                Assert.Null(array[i].s);
+                Assert.Equal(0, array[i].z);
+            }
+
+            array = new NonGenericStruct[]
             {
             new NonGenericStruct { x = 1, s = "Hello", z = 2 },
             new NonGenericStruct { x = 2, s = "Hello", z = 3 },
@@ -891,6 +914,7 @@ namespace System.Tests
         [Fact]
         public static void Clear_Invalid()
         {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null)); // Array is null
             AssertExtensions.Throws<ArgumentNullException>("array", () => Array.Clear(null, 0, 0)); // Array is null
 
             Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], -1, 0)); // Index < 0
@@ -3241,7 +3265,7 @@ namespace System.Tests
             Assert.Throws<RankException>(() => Array.Reverse((Array)new int[10, 10], 0, 0));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [InlineData(0)]
         [InlineData(-1)]
         public static void Reverse_IndexLessThanLowerBound_ThrowsArgumentOutOfRangeException(int lowerBound)
@@ -3249,7 +3273,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], lowerBound), lowerBound - 1, 0));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public static void Reverse_IndexLessThanPositiveLowerBound_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", "length", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], 1), 0, 0));
@@ -4251,6 +4275,76 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Array.Fill(new string[arrayLength], "", startIndex, count));
         }
 
+        public class Bar : IEquatable<Bar>
+        {
+            public string Value { get; set; }
+
+            public bool Equals(Bar other) => string.Equals(Value, other.Value);
+        }
+
+        public class Foo
+        {
+        }
+
+        private static Bar[] CreateBarArray()
+        {
+            return new Bar[]
+            {
+                new Bar() { Value = "0" },
+                new Bar() { Value = "1" },
+                new Bar() { Value = "2" },
+                new Bar() { Value = "3" },
+            };
+        }
+
+        [Fact]
+        public static void Fill_Downcast()
+        {
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" });
+            Assert.Equal(new string[] { "x", "x", "x", "x" }, barArray.Select(e => e.Value));
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Downcast()
+        {
+            Bar[] barArray = CreateBarArray();
+            Array.Fill<object>(barArray, new Bar() { Value = "x" }, 1, 2);
+            Assert.Equal(new string[] { "0", "x", "x", "3" }, barArray.Select(e => e.Value));
+        }
+
+        [Fact]
+        public static void Fill_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42);
+            Assert.Equal(new int[] { 42, 42, 42, 42 }, (int[])(object)uintArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_Sidecast()
+        {
+            uint[] uintArray = (uint[])(object)new int[] { 0, 1, 2, 3 };
+            Array.Fill<uint>(uintArray, 42, 1, 2);
+            Assert.Equal(new int[] { 0, 42, 42, 3 }, (int[])(object)uintArray);
+        }
+
+        [Fact]
+        public static void Fill_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo()));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
+        [Fact]
+        public static void FillWithStartIndexAndCount_ThrowsArrayTypeMismatchException()
+        {
+            Bar[] barArray = CreateBarArray();
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Fill<object>(barArray, new Foo(), 1, 2));
+            Assert.Equal(CreateBarArray(), barArray);
+        }
+
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
         {
             // TODO: use (or merge this data into) Reverse_TestData if/when xunit/xunit#965 is merged
@@ -4312,7 +4406,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Array.Reverse(new string[arrayLength], index, length));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public static void Reverse_NonSZArrayWithMinValueLowerBound()
         {
             Array array = NonZeroLowerBoundArray(new int[] { 1, 2, 3 }, int.MinValue);
@@ -4320,6 +4414,12 @@ namespace System.Tests
             Reverse(array, int.MinValue, 0, new int[] { 1, 2, 3 });
             Reverse(array, int.MinValue, 1, new int[] { 1, 2, 3 });
             Reverse(array, int.MinValue, 2, new int[] { 2, 1, 3 });
+        }
+
+        [Fact]
+        public static void MaxSizes()
+        {
+            Assert.Equal(0x7FFFFFC7, Array.MaxLength);
         }
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
@@ -4646,21 +4746,64 @@ namespace System.Tests
             // If this test is run in a 32-bit process, the large allocation will fail.
             if (IntPtr.Size != sizeof(long))
             {
-                return;
+                throw new SkipTestException("Unable to allocate enough memory");
             }
 
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
+            }
+
+            short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
+            a[0, 1] = 42;
+            Array.Copy(a, 1, a, Int32.MaxValue, 2);
+            Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
+
+            Array.Clear(a, Int32.MaxValue - 1, 3);
+            Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+        }
+
+        [OuterLoop] // Allocates large array
+        [ConditionalFact]
+        public static void Clear_LargeMultiDimensionalArray()
+        {
+            // If this test is run in a 32-bit process, the large allocation will fail.
+            if (IntPtr.Size != sizeof(long))
+            {
+                throw new SkipTestException("Unable to allocate enough memory");
+            }
+
+            if (PlatformDetection.IsUbuntu1804 || PlatformDetection.IsSLES)
+            {
+                // On these platforms, occasionally the OOM Killer will terminate the
+                // tests when they're using ~1GB, before they complete.
+                throw new SkipTestException("Prone to OOM killer");
+            }
+
+            short[,] a = AllocateLargeMDArray(2, 2_000_000_000);
+
+            // Test 1: use Array.Clear
+            a[1, 1_999_999_999] = 0x1234;
+            Array.Clear(a);
+            Assert.Equal(0, a[1, 1_999_999_999]);
+
+            // Test 2: use IList.Clear
+            a[1, 1_999_999_999] = 0x1234;
+            ((IList)a).Clear();
+            Assert.Equal(0, a[1, 1_999_999_999]);
+        }
+
+        private static short[,] AllocateLargeMDArray(int dim0Length, int dim1Length)
+        {
             try
             {
-                short[,] a = new short[2, 2_000_000_000];
-                a[0, 1] = 42;
-                Array.Copy(a, 1, a, Int32.MaxValue, 2);
-                Assert.Equal(42, a[1, Int32.MaxValue - 2_000_000_000]);
-
-                Array.Clear(a, Int32.MaxValue - 1, 3);
-                Assert.Equal(0, a[1, Int32.MaxValue - 2_000_000_000]);
+                return new short[dim0Length, dim1Length];
             }
             catch (OutOfMemoryException)
             {
+                // not a fatal error - we'll just skip the test in this case
                 throw new SkipTestException("Unable to allocate enough memory");
             }
         }

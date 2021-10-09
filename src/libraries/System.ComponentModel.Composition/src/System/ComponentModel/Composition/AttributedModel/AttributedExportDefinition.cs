@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace System.ComponentModel.Composition.AttributedModel
 {
-    internal class AttributedExportDefinition : ExportDefinition
+    internal sealed class AttributedExportDefinition : ExportDefinition
     {
         private readonly AttributedPartCreationInfo _partCreationInfo;
         private readonly MemberInfo _member;

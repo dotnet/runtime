@@ -27,7 +27,7 @@ isMSBuildOnNETCoreSupported()
         return
     fi
 
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" ) ]]; then
+    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
         __IsMSBuildOnNETCoreSupported=1
     elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
         __IsMSBuildOnNETCoreSupported=1
@@ -50,14 +50,14 @@ check_prereqs()
 
     if [[ "$__HostOS" == "OSX" ]]; then
         # Check presence of pkg-config on the path
-        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+        command -v pkg-config 2>/dev/null || { echo >&2 "Please install pkg-config before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
 
         if ! pkg-config openssl ; then
             # We export the proper PKG_CONFIG_PATH where openssl was installed by Homebrew
             # It's important to _export_ it since build-commons.sh is sourced by other scripts such as build-native.sh
-            export PKG_CONFIG_PATH=/usr/local/opt/openssl@1.1/lib/pkgconfig:/usr/local/opt/openssl/lib/pkgconfig
+            export PKG_CONFIG_PATH=$(brew --prefix)/opt/openssl@1.1/lib/pkgconfig:$(brew --prefix)/opt/openssl/lib/pkgconfig
             # We try again with the PKG_CONFIG_PATH in place, if pkg-config still can't find OpenSSL, exit with an error, cmake won't find OpenSSL either
-            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/master/docs/workflow/requirements/macos-requirements.md"; exit 1; }
+            pkg-config openssl || { echo >&2 "Please install openssl before running this script, see https://github.com/dotnet/runtime/blob/main/docs/workflow/requirements/macos-requirements.md"; exit 1; }
         fi
     fi
 
@@ -71,21 +71,51 @@ build_native()
     targetOS="$1"
     platformArch="$2"
     cmakeDir="$3"
-    tryrunDir="$4"
-    intermediatesDir="$5"
+    intermediatesDir="$4"
+    target="$5"
     cmakeArgs="$6"
     message="$7"
 
     # All set to commence the build
-    echo "Commencing build of \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
+    echo "Commencing build of \"$target\" target in \"$message\" for $__TargetOS.$__BuildArch.$__BuildType in $intermediatesDir"
 
-    if [[ "$targetOS" == OSX ]]; then
+    if [[ "$targetOS" == OSX || "$targetOS" == MacCatalyst ]]; then
         if [[ "$platformArch" == x64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"x86_64\" $cmakeArgs"
         elif [[ "$platformArch" == arm64 ]]; then
             cmakeArgs="-DCMAKE_OSX_ARCHITECTURES=\"arm64\" $cmakeArgs"
         else
             echo "Error: Unknown OSX architecture $platformArch."
+            exit 1
+        fi
+    fi
+
+    if [[ "$targetOS" == MacCatalyst ]]; then
+        cmakeArgs="-DCMAKE_SYSTEM_VARIANT=MacCatalyst $cmakeArgs"
+    fi
+
+    if [[ "$targetOS" == Android && -z "$ROOTFS_DIR" ]]; then
+        if [[ -z "$ANDROID_NDK_ROOT" ]]; then
+            echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
+            exit 1
+        fi
+
+        # keep ANDROID_NATIVE_API_LEVEL in sync with src/mono/Directory.Build.props
+        cmakeArgs="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake -DANDROID_NATIVE_API_LEVEL=21 $cmakeArgs"
+
+        # Don't try to set CC/CXX in init-compiler.sh - it's handled in android.toolchain.cmake already
+        __Compiler="default"
+
+        if [[ "$platformArch" == x64 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86_64 $cmakeArgs"
+        elif [[ "$platformArch" == x86 ]]; then
+            cmakeArgs="-DANDROID_ABI=x86 $cmakeArgs"
+        elif [[ "$platformArch" == arm64 ]]; then
+            cmakeArgs="-DANDROID_ABI=arm64-v8a $cmakeArgs"
+        elif [[ "$platformArch" == arm ]]; then
+            cmakeArgs="-DANDROID_ABI=armeabi-v7a $cmakeArgs"
+        else
+            echo "Error: Unknown Android architecture $platformArch."
             exit 1
         fi
     fi
@@ -146,9 +176,7 @@ EOF
             scan_build=scan-build
         fi
 
-        engNativeDir="$__RepoRootDir/eng/native"
-        cmakeArgs="-DCLR_ENG_NATIVE_DIR=\"$engNativeDir\" $cmakeArgs"
-        nextCommand="\"$engNativeDir/gen-buildsys.sh\" \"$cmakeDir\" \"$tryrunDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
+        nextCommand="\"$__RepoRootDir/eng/native/gen-buildsys.sh\" \"$cmakeDir\" \"$intermediatesDir\" $platformArch $__Compiler \"$__CompilerMajorVersion\" \"$__CompilerMinorVersion\" $__BuildType \"$generator\" $scan_build $cmakeArgs"
         echo "Invoking $nextCommand"
         eval $nextCommand
 
@@ -187,20 +215,29 @@ EOF
         pushd "$intermediatesDir"
 
         buildTool="$SCAN_BUILD_COMMAND -o $__BinDir/scan-build-log $buildTool"
-        echo "Executing $buildTool install -j $__NumProc"
-        "$buildTool" install -j "$__NumProc"
+        echo "Executing $buildTool $target -j $__NumProc"
+        "$buildTool" $target -j "$__NumProc"
         exit_code="$?"
 
         popd
     else
         cmake_command=cmake
         if [[ "$build_arch" == "wasm" ]]; then
-            cmake_command="emcmake $cmake_command"
-        fi
+            cmake_command="emcmake cmake"
+            echo "Executing $cmake_command --build \"$intermediatesDir\" --target $target -- -j $__NumProc"
+            $cmake_command --build "$intermediatesDir" --target $target -- -j "$__NumProc"
+            exit_code="$?"
+        else
+            # For non-wasm Unix scenarios, we may have to use an old version of CMake that doesn't support
+            # multiple targets. Instead, directly invoke the build tool to build multiple targets in one invocation.
+            pushd "$intermediatesDir"
 
-        echo "Executing $cmake_command --build \"$intermediatesDir\" --target install -- -j $__NumProc"
-        $cmake_command --build "$intermediatesDir" --target install -- -j "$__NumProc"
-        exit_code="$?"
+            echo "Executing $buildTool $target -j $__NumProc"
+            "$buildTool" $target -j "$__NumProc"
+            exit_code="$?"
+
+            popd
+        fi
     fi
 
     CFLAGS="${SAVED_CFLAGS}"
@@ -219,7 +256,7 @@ usage()
     echo ""
     echo "Common Options:"
     echo ""
-    echo "BuildArch can be: -arm, -armel, -arm64, x64, x86, -wasm"
+    echo "BuildArch can be: -arm, -armel, -arm64, -s390x, x64, x86, -wasm"
     echo "BuildType can be: -debug, -checked, -release"
     echo "-os: target OS (defaults to running OS)"
     echo "-bindir: output directory (defaults to $__ProjectRoot/artifacts)"
@@ -265,13 +302,19 @@ __msbuildonunsupportedplatform=0
 # processors available to a single process.
 platform="$(uname)"
 if [[ "$platform" == "FreeBSD" ]]; then
-  __NumProc=$(sysctl hw.ncpu | awk '{ print $2+1 }')
+  __NumProc=$(($(sysctl -n hw.ncpu)+1))
 elif [[ "$platform" == "NetBSD" || "$platform" == "SunOS" ]]; then
   __NumProc=$(($(getconf NPROCESSORS_ONLN)+1))
 elif [[ "$platform" == "Darwin" ]]; then
   __NumProc=$(($(getconf _NPROCESSORS_ONLN)+1))
 else
-  __NumProc=$(nproc --all)
+  if command -v nproc > /dev/null 2>&1; then
+    __NumProc=$(nproc --all)
+  elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
+    __NumProc=$(getconf _NPROCESSORS_ONLN)
+  else
+    __NumProc=1
+  fi
 fi
 
 while :; do
@@ -279,7 +322,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | awk '{print tolower($0)}')"
+    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
@@ -418,6 +461,10 @@ while :; do
             __BuildArch=x64
             ;;
 
+        s390x|-s390x)
+            __BuildArch=s390x
+            ;;
+
         wasm|-wasm)
             __BuildArch=wasm
             ;;
@@ -455,6 +502,22 @@ fi
 
 if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
+fi
+
+if [[ "$__BuildArch" == wasm ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == iOS || "$__TargetOS" == iOSSimulator ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == tvOS || "$__TargetOS" == tvOSSimulator ]]; then
+    # nothing to do here
+    true
+elif [[ "$__TargetOS" == Android ]]; then
+    # nothing to do here
+    true
+else
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
 fi
 
 # Configure environment if we are doing a cross compile.

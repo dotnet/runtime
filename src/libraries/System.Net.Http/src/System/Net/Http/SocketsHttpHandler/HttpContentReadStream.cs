@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal partial class HttpConnection
+    internal sealed partial class HttpConnection
     {
         internal abstract class HttpContentReadStream : HttpContentStream
         {
@@ -27,6 +27,17 @@ namespace System.Net.Http
             public virtual bool NeedsDrain => false;
 
             protected bool IsDisposed => _disposed == 1;
+
+            protected bool CanReadFromConnection
+            {
+                get
+                {
+                    // _connection == null typically means that we have finished reading the response.
+                    // Cancellation may lead to a state where a disposed _connection is not null.
+                    HttpConnection? connection = _connection;
+                    return connection != null && connection._disposed != Status_Disposed;
+                }
+            }
 
             public virtual ValueTask<bool> DrainAsync(int maxDrainBytes)
             {

@@ -5,7 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class RSAPKCS1SHA1SignatureDescription : RSAPKCS1SignatureDescription
+    internal sealed class RSAPKCS1SHA1SignatureDescription : RSAPKCS1SignatureDescription
     {
         public RSAPKCS1SHA1SignatureDescription() : base("SHA1")
         {

@@ -25,7 +25,7 @@ namespace System.Linq.Parallel
     /// no extra cost for ordering.
     /// </summary>
     /// <typeparam name="TInputOutput"></typeparam>
-    internal class ArrayMergeHelper<TInputOutput> : IMergeHelper<TInputOutput>
+    internal sealed class ArrayMergeHelper<TInputOutput> : IMergeHelper<TInputOutput>
     {
         private readonly QueryResults<TInputOutput> _queryResults; // Indexable query results
         private readonly TInputOutput[] _outputArray; // The output array.

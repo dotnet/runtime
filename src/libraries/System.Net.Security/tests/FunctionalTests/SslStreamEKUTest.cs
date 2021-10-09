@@ -46,7 +46,7 @@ namespace System.Net.Security.Tests
                 tasks[0] = server.AcceptHttpsClientAsync();
                 tasks[1] = client.HttpsRequestAsync();
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestTimeoutMilliseconds);
+                await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMilliseconds(TestTimeoutMilliseconds));
             }
         }
 
@@ -94,7 +94,7 @@ namespace System.Net.Security.Tests
                 tasks[0] = server.AcceptHttpsClientAsync();
                 tasks[1] = client.HttpsRequestAsync();
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestTimeoutMilliseconds);
+                await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMilliseconds(TestTimeoutMilliseconds));
             }
         }
 
@@ -156,7 +156,7 @@ namespace System.Net.Security.Tests
                 tasks[0] = server.AcceptHttpsClientAsync();
                 tasks[1] = client.HttpsRequestAsync();
 
-                await Task.WhenAll(tasks).TimeoutAfter(TestTimeoutMilliseconds);
+                await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromMilliseconds(TestTimeoutMilliseconds));
             }
         }
     }

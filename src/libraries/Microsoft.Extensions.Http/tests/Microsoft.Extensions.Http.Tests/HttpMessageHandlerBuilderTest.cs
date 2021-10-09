@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.Http.Test
     public class HttpMessageHandlerBuilderTest
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerIsNull_ThrowsException()
         {
             // Arrange
@@ -29,6 +30,7 @@ namespace Microsoft.Extensions.Http.Test
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException()
         {
             // Arrange

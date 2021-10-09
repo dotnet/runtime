@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -172,6 +173,7 @@ namespace System.Threading
         /// </summary>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait()
         {
             // Call wait with infinite timeout
@@ -188,6 +190,7 @@ namespace System.Threading
         /// canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">The current instance has already been
         /// disposed.</exception>
+        [UnsupportedOSPlatform("browser")]
         public void Wait(CancellationToken cancellationToken)
         {
             // Call wait with infinite timeout
@@ -206,6 +209,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout)
         {
             // Validate the timeout
@@ -236,6 +240,7 @@ namespace System.Threading
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/>.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(TimeSpan timeout, CancellationToken cancellationToken)
         {
             // Validate the timeout
@@ -260,6 +265,7 @@ namespace System.Threading
         /// otherwise, false.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a
         /// negative number other than -1, which represents an infinite time-out.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout)
         {
             return Wait(millisecondsTimeout, CancellationToken.None);
@@ -277,6 +283,7 @@ namespace System.Threading
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is a negative number other than -1,
         /// which represents an infinite time-out.</exception>
         /// <exception cref="System.OperationCanceledException"><paramref name="cancellationToken"/> was canceled.</exception>
+        [UnsupportedOSPlatform("browser")]
         public bool Wait(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             CheckDispose();
@@ -334,17 +341,8 @@ namespace System.Threading
                         }
                     }
                 }
-                // entering the lock and incrementing waiters must not suffer a thread-abort, else we cannot
-                // clean up m_waitCount correctly, which may lead to deadlock due to non-woken waiters.
-                try { }
-                finally
-                {
-                    Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
-                    if (lockTaken)
-                    {
-                        m_waitCount++;
-                    }
-                }
+                Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
+                m_waitCount++;
 
                 // If there are any async waiters, for fairness we'll get in line behind
                 // then by translating our synchronous wait into an asynchronous one that we
@@ -432,6 +430,7 @@ namespace System.Threading
         /// <param name="startTime">The start ticks to calculate the elapsed time</param>
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
         /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
+        [UnsupportedOSPlatform("browser")]
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
@@ -702,35 +701,22 @@ namespace System.Threading
             Debug.Assert(asyncWaiter != null, "Waiter should have been constructed");
             Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
-            if (millisecondsTimeout != Timeout.Infinite)
+            await new ConfiguredNoThrowAwaiter<bool>(asyncWaiter.WaitAsync(TimeSpan.FromMilliseconds(millisecondsTimeout), cancellationToken));
+
+            if (cancellationToken.IsCancellationRequested)
             {
-                // Wait until either the task is completed, cancellation is requested, or the timeout occurs.
-                // We need to ensure that the Task.Delay task is appropriately cleaned up if the await
-                // completes due to the asyncWaiter completing, so we use our own token that we can explicitly
-                // cancel, and we chain the caller's supplied token into it.
-                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-                {
-                    if (asyncWaiter == await Task.WhenAny(asyncWaiter, Task.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
-                    {
-                        cts.Cancel(); // ensure that the Task.Delay task is cleaned up
-                        return true; // successfully acquired
-                    }
-                }
-            }
-            else // millisecondsTimeout == Timeout.Infinite
-            {
-                // Wait until either the task is completed or cancellation is requested.
-                var cancellationTask = new Task(null, TaskCreationOptions.RunContinuationsAsynchronously, promiseStyle: true);
-                using (cancellationToken.UnsafeRegister(static s => ((Task)s!).TrySetResult(), cancellationTask))
-                {
-                    if (asyncWaiter == await Task.WhenAny(asyncWaiter, cancellationTask).ConfigureAwait(false))
-                    {
-                        return true; // successfully acquired
-                    }
-                }
+                // If we might be running as part of a cancellation callback, force the completion to be asynchronous
+                // so as to maintain semantics similar to when no token is passed (neither Release nor Cancel would invoke
+                // continuations off of this task).
+                await TaskScheduler.Default;
             }
 
-            // If we get here, the wait has timed out or been canceled.
+            if (asyncWaiter.IsCompleted)
+            {
+                return true; // successfully acquired
+            }
+
+            // The wait has timed out or been canceled.
 
             // If the await completed synchronously, we still hold the lock.  If it didn't,
             // we no longer hold the lock.  As such, acquire it.
@@ -749,6 +735,19 @@ namespace System.Threading
             // The waiter had already been removed, which means it's already completed or is about to
             // complete, so let it, and don't return until it does.
             return await asyncWaiter.ConfigureAwait(false);
+        }
+
+        // TODO https://github.com/dotnet/runtime/issues/22144: Replace with official nothrow await solution once available.
+        /// <summary>Awaiter used to await a task.ConfigureAwait(false) but without throwing any exceptions for faulted or canceled tasks.</summary>
+        private readonly struct ConfiguredNoThrowAwaiter<T> : ICriticalNotifyCompletion
+        {
+            private readonly Task<T> _task;
+            public ConfiguredNoThrowAwaiter(Task<T> task) => _task = task;
+            public ConfiguredNoThrowAwaiter<T> GetAwaiter() => this;
+            public bool IsCompleted => _task.IsCompleted;
+            public void GetResult() { }
+            public void UnsafeOnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().UnsafeOnCompleted(continuation);
+            public void OnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().OnCompleted(continuation);
         }
 
         /// <summary>

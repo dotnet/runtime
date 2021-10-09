@@ -24,10 +24,10 @@ namespace System.Diagnostics
         private volatile bool _initialized;
         private bool _initializing;
         private volatile string _switchValueString = string.Empty;
-        private readonly string? _defaultValue;
+        private readonly string _defaultValue;
         private object? _initializedLock;
 
-        private static readonly List<WeakReference> s_switches = new List<WeakReference>();
+        private static readonly List<WeakReference<Switch>> s_switches = new List<WeakReference<Switch>>();
         private static int s_LastCollectionCount;
         private StringDictionary? _attributes;
 
@@ -53,7 +53,7 @@ namespace System.Diagnostics
         {
         }
 
-        protected Switch(string displayName, string? description, string? defaultSwitchValue)
+        protected Switch(string displayName, string? description, string defaultSwitchValue)
         {
             // displayName is used as a hashtable key, so it can never
             // be null.
@@ -66,7 +66,7 @@ namespace System.Diagnostics
             lock (s_switches)
             {
                 _pruneCachedSwitches();
-                s_switches.Add(new WeakReference(this));
+                s_switches.Add(new WeakReference<Switch>(this));
             }
 
             _defaultValue = defaultSwitchValue;
@@ -78,11 +78,10 @@ namespace System.Diagnostics
             {
                 if (s_LastCollectionCount != GC.CollectionCount(2))
                 {
-                    List<WeakReference> buffer = new List<WeakReference>(s_switches.Count);
+                    List<WeakReference<Switch>> buffer = new List<WeakReference<Switch>>(s_switches.Count);
                     for (int i = 0; i < s_switches.Count; i++)
                     {
-                        Switch? s = ((Switch?)s_switches[i].Target);
-                        if (s != null)
+                        if (s_switches[i].TryGetTarget(out _))
                         {
                             buffer.Add(s_switches[i]);
                         }
@@ -204,7 +203,7 @@ namespace System.Diagnostics
                     // called again, we don't want to get caught in an infinite loop.
                     _initializing = true;
 
-                    _switchValueString = _defaultValue!;
+                    _switchValueString = _defaultValue;
                     OnValueChanged();
                     _initialized = true;
                     _initializing = false;
@@ -236,8 +235,7 @@ namespace System.Diagnostics
                 _pruneCachedSwitches();
                 for (int i = 0; i < s_switches.Count; i++)
                 {
-                    Switch? swtch = ((Switch?)s_switches[i].Target);
-                    if (swtch != null)
+                    if (s_switches[i].TryGetTarget(out Switch? swtch))
                     {
                         swtch.Refresh();
                     }

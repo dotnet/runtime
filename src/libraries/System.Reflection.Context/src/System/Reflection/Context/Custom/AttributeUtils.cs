@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Reflection.Context.Custom
 {
-    internal class AttributeUtils
+    internal static class AttributeUtils
     {
         public static object[] GetCustomAttributes(CustomReflectionContext context, CustomType type, Type attributeFilterType, bool inherit)
         {
@@ -15,7 +15,7 @@ namespace System.Reflection.Context.Custom
             if (!inherit)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
 
-            CustomType baseMember = type.BaseType as CustomType;
+            CustomType? baseMember = type.BaseType as CustomType;
 
             if (baseMember == null)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
@@ -55,7 +55,7 @@ namespace System.Reflection.Context.Custom
             if (!inherit)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
 
-            CustomMethodInfo baseMember = method.GetBaseDefinition() as CustomMethodInfo;
+            CustomMethodInfo? baseMember = method.GetBaseDefinition() as CustomMethodInfo;
 
             if (baseMember == null || baseMember.Equals(method))
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);

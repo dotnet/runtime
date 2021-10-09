@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.Xslt
 
     // Everywhere in this code in case of error in the stylesheet we should call ReportError or ReportWarning
 
-    internal class ReferenceReplacer : QilReplaceVisitor
+    internal sealed class ReferenceReplacer : QilReplaceVisitor
     {
         private QilReference? _lookFor, _replaceBy;
 
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl.Xslt
         }
     }
 
-    internal partial class QilGenerator : IErrorHelper
+    internal sealed partial class QilGenerator : IErrorHelper
     {
         private readonly CompilerScopeManager<QilIterator> _scope;
         private readonly OutputScopeManager _outputScope;
@@ -196,13 +196,14 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // Create list of all early bound objects
-            Dictionary<string, Type?> scriptClasses = compiler.Scripts.ScriptClasses;
+            Scripts.TrimSafeDictionary scriptClasses = compiler.Scripts.ScriptClasses;
             List<EarlyBoundInfo> ebTypes = new List<EarlyBoundInfo>(scriptClasses.Count);
-            foreach (KeyValuePair<string, Type?> pair in scriptClasses)
+            foreach (string key in scriptClasses.Keys)
             {
-                if (pair.Value != null)
+                Type? value = scriptClasses[key];
+                if (value != null)
                 {
-                    ebTypes.Add(new EarlyBoundInfo(pair.Key, pair.Value));
+                    ebTypes.Add(new EarlyBoundInfo(key, value));
                 }
             }
 
@@ -410,7 +411,7 @@ namespace System.Xml.Xsl.Xslt
 
             switch (var.Flags & XslFlags.TypeFilter)
             {
-                case XslFlags.String: return T.StringX; ;
+                case XslFlags.String: return T.StringX;
                 case XslFlags.Number: return T.DoubleX;
                 case XslFlags.Boolean: return T.BooleanX;
                 case XslFlags.Node: return T.NodeNotRtf;
@@ -2853,7 +2854,7 @@ namespace System.Xml.Xsl.Xslt
         }
 
         // This helper internal class is used for compiling sort's and with-param's
-        private class VariableHelper
+        private sealed class VariableHelper
         {
             private readonly Stack<QilIterator> _vars = new Stack<QilIterator>();
             private readonly XPathQilFactory _f;

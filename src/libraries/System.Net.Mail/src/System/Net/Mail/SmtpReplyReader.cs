@@ -7,7 +7,7 @@ using System.IO;
 namespace System.Net.Mail
 {
     //streams are read only; return of 0 means end of server's reply
-    internal class SmtpReplyReader
+    internal sealed class SmtpReplyReader
     {
         private readonly SmtpReplyReaderFactory _reader;
 

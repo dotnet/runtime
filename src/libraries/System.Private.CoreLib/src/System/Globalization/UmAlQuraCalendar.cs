@@ -330,7 +330,7 @@ namespace System.Globalization
             CheckYearRange(year, era);
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), month, SR.ArgumentOutOfRange_Month);
+                ThrowHelper.ThrowArgumentOutOfRange_Month(month);
             }
         }
 
@@ -459,10 +459,7 @@ namespace System.Globalization
             return GetDatePart(time, DatePartDay);
         }
 
-        public override DayOfWeek GetDayOfWeek(DateTime time)
-        {
-            return (DayOfWeek)((int)(time.Ticks / TicksPerDay + 1) % 7);
-        }
+        public override DayOfWeek GetDayOfWeek(DateTime time) => time.DayOfWeek;
 
         public override int GetDayOfYear(DateTime time)
         {

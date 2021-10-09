@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Tests
         public static void CheckNewWithTwoParametersCustom2Test(bool useInterpreter)
         {
             int[] array1 = { 0, 1, -1, int.MinValue, int.MaxValue };
-            string[] array2 = { null, "", "a", "foo" }; ;
+            string[] array2 = { null, "", "a", "foo" };
             for (int i = 0; i < array1.Length; i++)
             {
                 for (int j = 0; j < array2.Length; j++)

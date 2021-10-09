@@ -2,10 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Net.Http
 {
     [Serializable]
+    [SupportedOSPlatform("windows")]
+    [SupportedOSPlatform("linux")]
+    [SupportedOSPlatform("macos")]
     internal class Http3ProtocolException : Exception
     {
         public Http3ErrorCode ErrorCode { get; }

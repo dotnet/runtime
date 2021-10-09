@@ -3,14 +3,14 @@
 
 namespace System.Security.Permissions
 {
-#if NET50_OBSOLETIONS
+#if NET5_0_OR_GREATER
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     [AttributeUsage((AttributeTargets)(109), AllowMultiple = true, Inherited = false)]
     public sealed partial class RegistryPermissionAttribute : CodeAccessSecurityAttribute
     {
         public RegistryPermissionAttribute(SecurityAction action) : base(default(SecurityAction)) { }
-        [Obsolete("Please use the ViewAndModify property instead.")]
+        [Obsolete("RegistryPermissionAttribute.Add has been deprecated. Use ViewAndModify instead.")]
         public string All { get; set; }
         public string ChangeAccessControl { get; set; }
         public string Create { get; set; }

@@ -29,16 +29,14 @@ namespace System.Net.Security.Tests
             using (var server = new SslStream(stream2, true, FailClientCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
-                int timeout = TestConfiguration.PassingTestTimeoutMilliseconds;
-
                 Task serverAuth = server.AuthenticateAsServerAsync(certificate);
-                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false)).TimeoutAfter(timeout);
+                await client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false)).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 byte[] buffer = new byte[1024];
 
                 // Schannel semantics require that Decrypt is called to receive an alert.
                 await client.WriteAsync(buffer, 0, buffer.Length);
-                var exception = await Assert.ThrowsAsync<IOException>(() => client.ReadAsync(buffer, 0, buffer.Length)).TimeoutAfter(timeout);
+                var exception = await Assert.ThrowsAsync<IOException>(() => client.ReadAsync(buffer, 0, buffer.Length)).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 Assert.IsType<Win32Exception>(exception.InnerException);
                 var win32ex = (Win32Exception)exception.InnerException;
@@ -47,7 +45,7 @@ namespace System.Net.Security.Tests
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd721886(v=vs.85).aspx
                 Assert.Equal(SEC_E_CERT_UNKNOWN, unchecked((uint)win32ex.NativeErrorCode));
 
-                await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth).TimeoutAfter(timeout);
+                await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => server.WriteAsync(buffer, 0, buffer.Length));
                 await Assert.ThrowsAsync<AuthenticationException>(() => server.ReadAsync(buffer, 0, buffer.Length));
@@ -67,7 +65,7 @@ namespace System.Net.Security.Tests
                 handshake[0] = server.AuthenticateAsServerAsync(certificate);
                 handshake[1] = client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
 
-                await Task.WhenAll(handshake).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(handshake).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 var readBuffer = new byte[1024];
 
@@ -100,7 +98,7 @@ namespace System.Net.Security.Tests
                 handshake[0] = server.AuthenticateAsServerAsync(certificate);
                 handshake[1] = client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
 
-                await Task.WhenAll(handshake).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(handshake).WaitAsync(TestConfiguration.PassingTestTimeout);
 
 
                 var readBuffer = new byte[1024];
@@ -110,7 +108,7 @@ namespace System.Net.Security.Tests
                     // Send some data before shutting down. This may matter for TLS13.
                     handshake[0] = server.WriteAsync(readBuffer, 0, 1);
                     handshake[1] = client.ReadAsync(readBuffer, 0, 1);
-                    await Task.WhenAll(handshake).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                    await Task.WhenAll(handshake).WaitAsync(TestConfiguration.PassingTestTimeout);
                 }
 
                 await client.ShutdownAsync();
@@ -137,7 +135,7 @@ namespace System.Net.Security.Tests
                 handshake[0] = server.AuthenticateAsServerAsync(certificate);
                 handshake[1] = client.AuthenticateAsClientAsync(certificate.GetNameInfo(X509NameType.SimpleName, false));
 
-                await Task.WhenAll(handshake).TimeoutAfter(TestConfiguration.PassingTestTimeoutMilliseconds);
+                await Task.WhenAll(handshake).WaitAsync(TestConfiguration.PassingTestTimeout);
 
                 var buffer = new byte[1024];
 

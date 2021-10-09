@@ -25,16 +25,18 @@ namespace System.Net.Sockets.Tests
         private const string TestMessage = "test123!";
         private static ArraySegment<byte> TestBytes => Encoding.ASCII.GetBytes(TestMessage);
         private static string GetMessageString(ArraySegment<byte> data, int count) =>
-            Encoding.ASCII.GetString(data.AsSpan().Slice(0, count));
+            Encoding.ASCII.GetString(data.AsSpan(0, count));
 
         [Fact]
         public void UseOnlyOverlappedIO_AlwaysFalse()
         {
             using Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
+#pragma warning disable 0618
             Assert.False(s.UseOnlyOverlappedIO);
             s.UseOnlyOverlappedIO = true;
             Assert.False(s.UseOnlyOverlappedIO);
+#pragma warning restore 0618
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]

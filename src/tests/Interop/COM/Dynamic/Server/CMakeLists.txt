@@ -11,7 +11,7 @@ add_custom_command(
     COMMAND ${MIDL} ${MIDL_INCLUDE_DIRECTORIES}
         /h ${IDL_OUTPUT_DIRECTORY}/${IDL_NAME}.h ${MIDL_DEFINITIONS}
         /out ${IDL_OUTPUT_DIRECTORY}
-        /tlb ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/DynamicTestServer.tlb
+        /tlb $<TARGET_FILE_DIR:${PROJECT_NAME}>/DynamicTestServer.tlb
         ${IDL_SOURCE}
     DEPENDS ${IDL_SOURCE}
     COMMENT "Compiling ${IDL_SOURCE}")
@@ -37,7 +37,7 @@ add_library (${PROJECT_NAME} SHARED ${SOURCES})
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBRARIES_ADDITIONAL})
 
 # Copy manifest file to project output
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/DynamicTestServer.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/DynamicTestServer.X.manifest)
+file(GENERATE OUTPUT $<TARGET_FILE_DIR:${PROJECT_NAME}>/DynamicTestServer.X.manifest INPUT ${CMAKE_CURRENT_SOURCE_DIR}/DynamicTestServer.X.manifest)
 
 # add the install targets
 install (TARGETS ${PROJECT_NAME} DESTINATION bin)

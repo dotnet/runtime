@@ -27,8 +27,8 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         private bool _disposed;
         private DirectoryEntry _schemaEntry;
-        private DirectoryEntry _abstractSchemaEntry;
-        private DirectoryServer _cachedSchemaRoleOwner;
+        private DirectoryEntry? _abstractSchemaEntry;
+        private DirectoryServer? _cachedSchemaRoleOwner;
 
         #region constructors
         internal ActiveDirectorySchema(DirectoryContext context, string distinguishedName)
@@ -64,7 +64,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (_schemaEntry != null)
                         {
                             _schemaEntry.Dispose();
-                            _schemaEntry = null;
+                            _schemaEntry = null!;
                         }
                         // dispose the abstract schema entry
                         if (_abstractSchemaEntry != null)
@@ -128,7 +128,7 @@ namespace System.DirectoryServices.ActiveDirectory
             context = new DirectoryContext(context);
 
             DirectoryEntryManager directoryEntryMgr = new DirectoryEntryManager(context);
-            string schemaNC = null;
+            string schemaNC;
             try
             {
                 DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
@@ -138,7 +138,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ServerNotFound, context.Name), typeof(ActiveDirectorySchema), null);
                 }
 
-                schemaNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.SchemaNamingContext);
+                schemaNC = (string)PropertyManager.GetPropertyValue(context, rootDSE, PropertyManager.SchemaNamingContext)!;
             }
             catch (COMException e)
             {
@@ -183,7 +183,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
 
             // Refresh the schema on the server
-            DirectoryEntry rootDSE = null;
+            DirectoryEntry? rootDSE = null;
             try
             {
                 rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
@@ -428,13 +428,13 @@ namespace System.DirectoryServices.ActiveDirectory
             propertiesToLoad[2] = PropertyManager.IsDefunct;
 
             ADSearcher searcher = new ADSearcher(schemaEntry, filter, propertiesToLoad, SearchScope.OneLevel);
-            SearchResultCollection resCol = null;
+            SearchResultCollection? resCol = null;
             try
             {
                 resCol = searcher.FindAll();
                 foreach (SearchResult res in resCol)
                 {
-                    string ldapDisplayName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.LdapDisplayName);
+                    string ldapDisplayName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.LdapDisplayName)!;
                     DirectoryEntry directoryEntry = res.GetDirectoryEntry();
 
                     directoryEntry.AuthenticationType = Utils.DefaultAuthType;
@@ -445,12 +445,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if ((res.Properties[PropertyManager.IsDefunct] != null) && (res.Properties[PropertyManager.IsDefunct].Count > 0))
                     {
-                        isDefunct = (bool)res.Properties[PropertyManager.IsDefunct][0];
+                        isDefunct = (bool)res.Properties[PropertyManager.IsDefunct][0]!;
                     }
 
                     if (isDefunct)
                     {
-                        string commonName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.Cn);
+                        string commonName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.Cn)!;
                         propertyList.Add(new ActiveDirectorySchemaProperty(context, commonName, ldapDisplayName, directoryEntry, schemaEntry));
                     }
                     else
@@ -485,13 +485,13 @@ namespace System.DirectoryServices.ActiveDirectory
             propertiesToLoad[2] = PropertyManager.IsDefunct;
 
             ADSearcher searcher = new ADSearcher(schemaEntry, filter, propertiesToLoad, SearchScope.OneLevel);
-            SearchResultCollection resCol = null;
+            SearchResultCollection? resCol = null;
             try
             {
                 resCol = searcher.FindAll();
                 foreach (SearchResult res in resCol)
                 {
-                    string ldapDisplayName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.LdapDisplayName);
+                    string ldapDisplayName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.LdapDisplayName)!;
                     DirectoryEntry directoryEntry = res.GetDirectoryEntry();
 
                     directoryEntry.AuthenticationType = Utils.DefaultAuthType;
@@ -502,12 +502,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if ((res.Properties[PropertyManager.IsDefunct] != null) && (res.Properties[PropertyManager.IsDefunct].Count > 0))
                     {
-                        isDefunct = (bool)res.Properties[PropertyManager.IsDefunct][0];
+                        isDefunct = (bool)res.Properties[PropertyManager.IsDefunct][0]!;
                     }
 
                     if (isDefunct)
                     {
-                        string commonName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.Cn);
+                        string commonName = (string)PropertyManager.GetSearchResultPropertyValue(res, PropertyManager.Cn)!;
                         classList.Add(new ActiveDirectorySchemaClass(context, commonName, ldapDisplayName, directoryEntry, schemaEntry));
                     }
                     else
@@ -541,7 +541,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (context.isADAMConfigSet())
                 {
                     // ADAM
-                    string adamInstName = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, _schemaEntry, PropertyManager.FsmoRoleOwner));
+                    string adamInstName = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, _schemaEntry, PropertyManager.FsmoRoleOwner)!);
                     DirectoryContext adamInstContext = Utils.GetNewDirectoryContext(adamInstName, DirectoryContextType.DirectoryServer, context);
                     return new AdamInstance(adamInstContext, adamInstName);
                 }
@@ -549,19 +549,19 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // could be AD or adam server
 
-                    DirectoryServer server = null;
+                    DirectoryServer? server = null;
                     DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
 
                     if (Utils.CheckCapability(rootDSE, Capability.ActiveDirectory))
                     {
-                        string dcName = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, _schemaEntry, PropertyManager.FsmoRoleOwner));
+                        string dcName = Utils.GetDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, _schemaEntry, PropertyManager.FsmoRoleOwner)!);
                         DirectoryContext dcContext = Utils.GetNewDirectoryContext(dcName, DirectoryContextType.DirectoryServer, context);
                         server = new DomainController(dcContext, dcName);
                     }
                     else
                     {
                         // ADAM case again
-                        string adamInstName = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, _schemaEntry, PropertyManager.FsmoRoleOwner));
+                        string adamInstName = Utils.GetAdamDnsHostNameFromNTDSA(context, (string)PropertyManager.GetPropertyValue(context, _schemaEntry, PropertyManager.FsmoRoleOwner)!);
                         DirectoryContext adamInstContext = Utils.GetNewDirectoryContext(adamInstName, DirectoryContextType.DirectoryServer, context);
                         server = new AdamInstance(adamInstContext, adamInstName);
                     }

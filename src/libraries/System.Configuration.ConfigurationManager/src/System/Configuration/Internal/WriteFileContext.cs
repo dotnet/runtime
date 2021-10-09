@@ -15,7 +15,7 @@ using System.IO.Internal;
 
 namespace System.Configuration.Internal
 {
-    internal class WriteFileContext
+    internal sealed class WriteFileContext
     {
         private const int SavingTimeout = 10000;        // 10 seconds
         private const int SavingRetryInterval = 100;    // 100 milliseconds

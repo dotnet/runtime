@@ -1021,14 +1021,14 @@ namespace System.Drawing.Printing
         }
     }
 
-    internal class SysPrn
+    internal static class SysPrn
     {
         internal static void GetPrintDialogInfo(string printer, ref string port, ref string type, ref string status, ref string comment)
         {
             PrintingServices.GetPrintDialogInfo(printer, ref port, ref type, ref status, ref comment);
         }
 
-        internal class Printer
+        internal sealed class Printer
         {
             public readonly string Comment;
             public readonly string Port;
@@ -1046,7 +1046,7 @@ namespace System.Drawing.Printing
         }
     }
 
-    internal class GraphicsPrinter
+    internal sealed class GraphicsPrinter
     {
         private Graphics? graphics;
         private IntPtr hDC;

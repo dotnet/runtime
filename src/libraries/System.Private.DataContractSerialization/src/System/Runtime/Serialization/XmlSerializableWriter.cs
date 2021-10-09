@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-    internal class XmlSerializableWriter : XmlWriter
+    internal sealed class XmlSerializableWriter : XmlWriter
     {
         private XmlWriter _xmlWriter = null!; // initialized in BeginWrite
         private int _depth;

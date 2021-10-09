@@ -1,0 +1,7 @@
+<linker>
+  <assembly fullname="Microsoft.Extensions.DependencyInjection">
+    <type fullname="Microsoft.Extensions.DependencyInjection.ServiceProvider">
+      <method signature="System.Boolean get_VerifyOpenGenericServiceTrimmability()" body="stub" value="true" feature="Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability" featurevalue="true" />
+    </type>
+  </assembly>
+</linker>

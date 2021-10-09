@@ -19,7 +19,6 @@ typedef enum
     LocaleString_NativeLanguageName = 0x04,
     LocaleString_EnglishCountryName = 0x00001002,
     LocaleString_NativeCountryName = 0x08,
-    LocaleString_ListSeparator = 0x0C,
     LocaleString_DecimalSeparator = 0x0E,
     LocaleString_ThousandSeparator = 0x0F,
     LocaleString_Digits = 0x00000013,
@@ -47,7 +46,8 @@ typedef enum
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                           LocaleStringData localeStringData,
                                                           UChar* value,
-                                                          int32_t valueLength);
+                                                          int32_t valueLength,
+                                                          const UChar* uiLocaleName);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,

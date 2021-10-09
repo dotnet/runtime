@@ -99,19 +99,23 @@ certain tailcalls to generic methods.
 The second IL stub extracts the arguments and calls the target function. For the
 above case a function like the following will be generated:
 ```csharp
-void IL_STUB_CallTailCallTarget(IntPtr argBuffer, IntPtr result, IntPtr* retAddr)
+void IL_STUB_CallTailCallTarget(IntPtr argBuffer, IntPtr result, PortableTailCallFrame* pFrame)
 {
-    int arg1 = *(int*)argBuffer;
-    RuntimeHelpers.FreeTailCallArgBuffer();
-    *retAddr = StubHelpers.NextCallReturnAddress();
+    pFrame->NextCall = null;
+    pFrame->TailCallAwareReturnAddress = StubHelpers.NextCallReturnAddress();
+    int arg1 = *(int*)(argBuffer + 4);
+    *argBuffer = TAILCALLARGBUFFER_ABANDONED;
     *(bool*)result = IsOdd(arg1);
 }
 ```
-It matches the function above but also includes a call to
-`StubHelpers.NextCallReturnAddress`. This is a JIT intrinsic that represents the
-address of where the next call will return to. This is part of how the mechanism
-detects that there is a previous dispatcher that should be used, which will be
-described in the next section.
+It matches the function above by loading the argument that was written, and
+then writing a sentinel value that communicates to GC that the arg buffer does
+not need to be scanned anymore, to avoid extending the lifetime of (by-)refs
+unnecessarily. In addition, it also includes a call to
+`StubHelpers.NextCallReturnAddress`. This is a JIT intrinsic that represents
+the address of where the next call will return to. This is part of how the
+mechanism detects that there is a previous dispatcher that should be used,
+which will be described in the next section.
 
 As described above there are cases when the runtime needs to be passed the
 target function pointer. In those cases this stub will instead load the function
@@ -128,16 +132,14 @@ to be set up again since returning would not return directly back to the
 previous dispatcher.
 
 The mechanism uses some data structures to describe the dispatchers that are
-currently live on the stack and to facilitate detection of previous dispatchers.
-The dispatchers themselves are described by a linked list of
-`PortableTailCallFrame` entries. These entries are in a one-to-one
-correspondence with each live instance of the dispatcher in the current stack.
-This structure looks like the following:
+currently live on the stack and to facilitate detection of previous
+dispatchers. The dispatchers themselves are described by a series of
+`PortableTailCallFrame` entries. These entries are stored on the stack in each
+live instance of the dispatcher. This structure looks like the following:
 
 ```csharp
 struct PortableTailCallFrame
 {
-    public PortableTailCallFrame* Prev;
     public IntPtr TailCallAwareReturnAddress;
     public IntPtr NextCall;
 }
@@ -147,8 +149,8 @@ Here the `TailCallAwareReturnAddress` is an address that can be used to detect
 whether a return would go to that particular dispatcher. `NextCall` is what the
 dispatcher uses to perform the next tailcall of a sequence.
 
-The head of this linked list is stored in TLS, along with information about the
-currently allocated argument buffer that can be used by GC:
+The current frame is stored in TLS along with information about the currently
+allocated argument buffer that can be used by GC:
 
 ```csharp
 struct TailCallTls
@@ -162,35 +164,44 @@ struct TailCallTls
 
 Finally, the dispatcher follows:
 ```csharp
-void DispatchTailCalls(IntPtr callTarget, IntPtr result, IntPtr callersRetAddrSlot)
+private static unsafe void DispatchTailCalls(
+    IntPtr callersRetAddrSlot,
+    delegate*<IntPtr, IntPtr, PortableTailCallFrame*, void> callTarget,
+    IntPtr retVal)
 {
     IntPtr callersRetAddr;
-    TailCallTls* tls =
-        RuntimeHelpers.GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
-    TailCallFrame* prevDispatcher = tls->Frame;
-    if (callersRetAddr == prevDispatcher->TailCallAwareReturnAddress)
+    TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
+    PortableTailCallFrame* prevFrame = tls->Frame;
+    if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
     {
-        prevDispatcher->NextCall = callTarget;
+        prevFrame->NextCall = callTarget;
         return;
     }
 
-    PortableTailCallFrame frame;
-    frame.Prev = prevDispatcher;
+    PortableTailCallFrame newFrame;
+    // GC uses NextCall to keep LoaderAllocator alive after we link it below,
+    // so we must null it out before that.
+    newFrame.NextCall = null;
+
     try
     {
-        tls->Frame = &frame;
+        tls->Frame = &newFrame;
 
         do
         {
-            frame.NextCall = IntPtr.Zero;
-            var fptr = (func* void(IntPtr, IntPtr, IntPtr*))callTarget;
-            fptr(tls->ArgBuffer, result, &frame.TailCallAwareReturnAddress);
-            callTarget = frame.NextCall;
-        } while (frame.NextCall != IntPtr.Zero);
+            callTarget(tls->ArgBuffer, retVal, &newFrame);
+            callTarget = newFrame.NextCall;
+        } while (callTarget != null);
     }
     finally
     {
-        tls->Frame = prevDispatcher;
+        tls->Frame = prevFrame;
+
+        // If the arg buffer is reporting inst argument, it is safe to abandon it now
+        if (tls->ArgBuffer != IntPtr.Zero && *(int*)tls->ArgBuffer == 1 /* TAILCALLARGBUFFER_INSTARG_ONLY */)
+        {
+            *(int*)tls->ArgBuffer = 2 /* TAILCALLARGBUFFER_ABANDONED */;
+        }
     }
 }
 ```
@@ -198,16 +209,16 @@ void DispatchTailCalls(IntPtr callTarget, IntPtr result, IntPtr callersRetAddrSl
 It is first responsible for detecting whether we can return and let a previous
 dispatcher perform the tailcall. To do this it needs to obtain the caller's
 return address (i.e. an address in the caller's caller). Furthermode, it needs
-to obtain information about the linked list of dispatcher frames. Due to return
-address hijacking in the VM it is not enough to simply read the return address
-directly from the stack -- instead, assistance from the VM is required in the
-form of a helper. This helper both returns the TLS information and the correct
-return address.
+to obtain information about the current, existing dispatcher frame. Due to
+return address hijacking in the VM it is not enough to simply read the return
+address directly from the stack -- instead, assistance from the VM is required
+in the form of a helper. This helper both returns the TLS information and the
+correct return address.
 
 In the case a return would go back to a dispatcher we simply record the next
 call by saving the `callTarget` parameter, a function pointer to a
-`CallTailCallTarget` stub.  Otherwise a new entry in the linked list is set up
-and a loop is entered that starts dispatching tailcalls.
+`CallTailCallTarget` stub. Otherwise the new dispatcher is recorded and a loop
+is entered that starts dispatching tailcalls.
 
 This loop calls into the `CallTailCallTarget` stubs so it is from these stubs
 that we need to store the return address for comparisons in the future. These
@@ -216,6 +227,12 @@ site, and it is if this function does a tailcall that we will need to detect
 whether we can use a previous dispatcher. This will be the case when we return
 directly to a `CallTailCallTarget` stub which will then return to the
 dispatcher.
+
+Note that we take care to zero out PortableTailCallFrame.NextCall from the
+CallTailCallTarget stub instead of doing it in the dispatcher before calling
+the stub. This is because GC will use NextCall to keep collectible assemblies
+alive in the event that there is a GC inside the dispatcher. Once control has
+been transfered to CallTailCallTarget we can safely reset the field.
 
 ## The JIT's transformation
 Based on these functions the JIT needs to do a relatively simple transformation

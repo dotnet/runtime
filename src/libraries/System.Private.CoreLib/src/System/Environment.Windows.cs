@@ -41,7 +41,7 @@ namespace System
             {
                 if (!Interop.Kernel32.SetCurrentDirectory(value))
                 {
-                    int errorCode = Marshal.GetLastWin32Error();
+                    int errorCode = Marshal.GetLastPInvokeError();
                     throw Win32Marshal.GetExceptionForWin32Error(
                         errorCode == Interop.Errors.ERROR_FILE_NOT_FOUND ? Interop.Errors.ERROR_PATH_NOT_FOUND : errorCode,
                         value);
@@ -53,13 +53,10 @@ namespace System
 
         internal const string NewLineConst = "\r\n";
 
-        public static int SystemPageSize
+        private static int GetSystemPageSize()
         {
-            get
-            {
-                Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
-                return info.dwPageSize;
-            }
+            Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
+            return info.dwPageSize;
         }
 
         private static string ExpandEnvironmentVariablesCore(string name)

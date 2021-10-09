@@ -21,11 +21,8 @@ export PYTHON
 usage_list+=("-nopgooptimize: do not use profile guided optimizations.")
 usage_list+=("-pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.")
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
-usage_list+=("-staticanalyzer: skip native image generation.")
-usage_list+=("-skipjit: skip building jit.")
-usage_list+=("-skipalljits: skip building crosstargetting jits.")
-usage_list+=("-skipruntime: skip building runtime.")
-usage_list+=("-paltests: build the pal tests.")
+usage_list+=("-staticanalyzer: use scan_build static analyzer.")
+usage_list+=("-component: Build individual components instead of the full project. Available options are 'jit', 'runtime', 'paltests', 'alljits', and 'iltools'. Can be specified multiple times.")
 
 setup_dirs_local()
 {
@@ -41,28 +38,21 @@ setup_dirs_local()
 
 restore_optdata()
 {
-    local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
-    if [[ "$__SkipRestoreOptData" == 0 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        echo "Restoring the OptimizationData package"
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs \
-                                               $OptDataProjectFilePath /t:Restore /m \
-                                               -bl:"$__LogsDir/OptRestore_$__ConfigTriplet.binlog" \
-                                               $__CommonMSBuildArgs $__UnprocessedBuildArgs \
-                                               /nodereuse:false
-        local exit_code="$?"
-        if [[ "$exit_code" != 0 ]]; then
-            echo "${__ErrMsgPrefix}Failed to restore the optimization data package."
-            exit "$exit_code"
-        fi
-    fi
+    local OptDataProjectFilePath="$__ProjectRoot/.nuget/optdata/optdata.csproj"
 
     if [[ "$__PgoOptimize" == 1 && "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
         local PgoDataPackagePathOutputFile="${__IntermediatesDir}/optdatapath.txt"
 
+        local RestoreArg=""
+
+        if [[ "$__SkipRestoreOptData" == "0" ]]; then
+            RestoreArg="/restore"
+        fi
+
         # Writes into ${PgoDataPackagePathOutputFile}
-        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath /t:DumpPgoDataPackagePath \
+        "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary $__ArcadeScriptArgs $OptDataProjectFilePath $RestoreArg /t:DumpPgoDataPackagePath \
                                             ${__CommonMSBuildArgs} /p:PgoDataPackagePathOutputFile=${PgoDataPackagePathOutputFile} \
                                             -bl:"$__LogsDir/PgoVersionRead_$__ConfigTriplet.binlog" > /dev/null 2>&1
         local exit_code="$?"
@@ -99,7 +89,7 @@ build_cross_architecture_components()
     export __CMakeBinDir CROSSCOMPILE
 
     __CMakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CROSS_COMPONENTS_BUILD=1 $__CMakeArgs"
-    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$__ProjectRoot" "$intermediatesForBuild" "$__CMakeArgs" "cross-architecture components"
+    build_native "$__TargetOS" "$__CrossArch" "$__ProjectRoot" "$intermediatesForBuild" "crosscomponents" "$__CMakeArgs" "cross-architecture components"
 
     CROSSCOMPILE=1
     export CROSSCOMPILE
@@ -125,20 +115,9 @@ handle_arguments_local() {
             __StaticAnalyzer=1
             ;;
 
-        skipjit|-skipjit)
-            __BuildJit=0
-            ;;
-
-        skipalljits|-skipalljits)
-            __BuildAllJits=0
-            ;;
-
-        skipruntime|-skipruntime)
-            __BuildRuntime=0
-            ;;
-
-        paltests|-paltests)
-            __BuildPALTests=1
+        component|-component)
+            __RequestedBuildComponents="$__RequestedBuildComponents $2"
+            __ShiftArgs=1
             ;;
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
@@ -190,11 +169,8 @@ __StaticAnalyzer=0
 __UnprocessedBuildArgs=
 __UseNinja=0
 __VerboseBuild=0
-__ValidateCrossArg=1
 __CMakeArgs=""
-__BuildPALTests=0
-__BuildAllJits=1
-__BuildRuntime=1
+__RequestedBuildComponents=""
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -246,18 +222,25 @@ check_prereqs
 restore_optdata
 
 # Build the coreclr (native) components.
-__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize -DCLR_REPO_ROOT_DIR=\"$__RepoRootDir\" $__CMakeArgs"
-__CMakeArgs="-DCLR_CMAKE_BUILD_SUBSET_JIT=$__BuildJit -DCLR_CMAKE_BUILD_SUBSET_ALLJITS=$__BuildAllJits -DCLR_CMAKE_BUILD_SUBSET_RUNTIME=$__BuildRuntime $__CMakeArgs"
-__CMakeArgs="-DCLR_CMAKE_BUILD_TESTS=$__BuildPALTests $__CMakeArgs"
+__CMakeArgs="-DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_PATH=$__PgoOptDataPath -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize $__CMakeArgs"
 
 if [[ "$__SkipConfigure" == 0 && "$__CodeCoverage" == 1 ]]; then
     __CMakeArgs="-DCLR_CMAKE_ENABLE_CODE_COVERAGE=1 $__CMakeArgs"
 fi
 
+__CMakeTarget=""
+if [[ -n "$__RequestedBuildComponents" ]]; then
+    __CMakeTarget=" $__RequestedBuildComponents "
+    __CMakeTarget="${__CMakeTarget// paltests / paltests_install }"
+fi
+if [[ -z "$__CMakeTarget" ]]; then
+    __CMakeTarget="install"
+fi
+
 if [[ "$__SkipNative" == 1 ]]; then
     echo "Skipping CoreCLR component build."
 else
-    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeArgs" "CoreCLR component"
+    build_native "$__TargetOS" "$__BuildArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
     # Build cross-architecture components
     if [[ "$__SkipCrossArchNative" != 1 ]]; then

@@ -20,7 +20,7 @@ namespace System.Xml.Xsl.IlGen
         Raw = 2,        // Raw method which should not add an implicit first argument of type XmlQueryRuntime
     }
 
-    internal class XmlILModule
+    internal sealed class XmlILModule
     {
         private static long s_assemblyId;                                     // Unique identifier used to ensure that assembly names are unique within AppDomain
         private static readonly ModuleBuilder s_LREModule = CreateLREModule();         // Module used to emit dynamic lightweight-reflection-emit (LRE) methods

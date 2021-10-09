@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
@@ -28,7 +26,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptions<>), typeof(OptionsManager<>)));
+            services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptions<>), typeof(UnnamedOptionsManager<>)));
             services.TryAdd(ServiceDescriptor.Scoped(typeof(IOptionsSnapshot<>), typeof(OptionsManager<>)));
             services.TryAdd(ServiceDescriptor.Singleton(typeof(IOptionsMonitor<>), typeof(OptionsMonitor<>)));
             services.TryAdd(ServiceDescriptor.Transient(typeof(IOptionsFactory<>), typeof(OptionsFactory<>)));
@@ -146,28 +144,38 @@ namespace Microsoft.Extensions.DependencyInjection
             where TConfigureOptions : class
                 => services.ConfigureOptions(typeof(TConfigureOptions));
 
-        private static bool IsAction(Type type)
-            => (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>));
-
         private static IEnumerable<Type> FindConfigurationServices(Type type)
         {
-            IEnumerable<Type> serviceTypes = type
-                .GetTypeInfo()
-                .ImplementedInterfaces
-                .Where(t => t.GetTypeInfo().IsGenericType)
-                .Where(t =>
-                    t.GetGenericTypeDefinition() == typeof(IConfigureOptions<>) ||
-                    t.GetGenericTypeDefinition() == typeof(IPostConfigureOptions<>) ||
-                    t.GetGenericTypeDefinition() == typeof(IValidateOptions<>));
-            if (!serviceTypes.Any())
+            foreach (Type t in GetInterfacesOnType(type))
             {
-                throw new InvalidOperationException(
-                    IsAction(type)
-                    ? SR.Error_NoConfigurationServicesAndAction
-                    : SR.Error_NoConfigurationServices);
+                if (t.IsGenericType)
+                {
+                    Type gtd = t.GetGenericTypeDefinition();
+                    if (gtd == typeof(IConfigureOptions<>) ||
+                        gtd == typeof(IPostConfigureOptions<>) ||
+                        gtd == typeof(IValidateOptions<>))
+                    {
+                        yield return t;
+                    }
+                }
             }
-            return serviceTypes;
+
+            // Extracted the suppression to a local function as trimmer currently doesn't handle suppressions
+            // on iterator methods correctly.
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification="This method only looks for interfaces referenced in its code. " +
+                    "The trimmer will keep the interface and thus all of its implementations in that case. " +
+                    "The call to GetInterfaces may return less results in trimmed apps, but it will " +
+                    "include the interfaces this method looks for if they should be there.")]
+            static Type[] GetInterfacesOnType(Type t)
+                => t.GetInterfaces();
         }
+
+        private static void ThrowNoConfigServices(Type type) =>
+            throw new InvalidOperationException(
+                type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Action<>) ?
+                    SR.Error_NoConfigurationServicesAndAction :
+                    SR.Error_NoConfigurationServices);
 
         /// <summary>
         /// Registers a type that will have all of its <see cref="IConfigureOptions{TOptions}"/>,
@@ -182,11 +190,19 @@ namespace Microsoft.Extensions.DependencyInjection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type configureType)
         {
             services.AddOptions();
-            IEnumerable<Type> serviceTypes = FindConfigurationServices(configureType);
-            foreach (Type serviceType in serviceTypes)
+
+            bool added = false;
+            foreach (Type serviceType in FindConfigurationServices(configureType))
             {
                 services.AddTransient(serviceType, configureType);
+                added = true;
             }
+
+            if (!added)
+            {
+                ThrowNoConfigServices(configureType);
+            }
+
             return services;
         }
 
@@ -201,11 +217,20 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureOptions(this IServiceCollection services, object configureInstance)
         {
             services.AddOptions();
-            IEnumerable<Type> serviceTypes = FindConfigurationServices(configureInstance.GetType());
-            foreach (Type serviceType in serviceTypes)
+            Type configureType = configureInstance.GetType();
+
+            bool added = false;
+            foreach (Type serviceType in FindConfigurationServices(configureType))
             {
                 services.AddSingleton(serviceType, configureInstance);
+                added = true;
             }
+
+            if (!added)
+            {
+                ThrowNoConfigServices(configureType);
+            }
+
             return services;
         }
 

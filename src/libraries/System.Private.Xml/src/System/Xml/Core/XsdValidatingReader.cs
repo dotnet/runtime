@@ -16,7 +16,7 @@ namespace System.Xml
 {
     internal delegate void CachingEventHandler(XsdCachingReader cachingReader);
 
-    internal class AttributePSVIInfo
+    internal sealed class AttributePSVIInfo
     {
         internal string? localName;
         internal string? namespaceUri;
@@ -37,7 +37,7 @@ namespace System.Xml
         }
     }
 
-    internal partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
+    internal sealed partial class XsdValidatingReader : XmlReader, IXmlSchemaInfo, IXmlLineInfo, IXmlNamespaceResolver
     {
         private enum ValidatingReaderState
         {
@@ -2015,12 +2015,12 @@ namespace System.Xml
 
                 case XmlNodeType.Whitespace:
                 case XmlNodeType.SignificantWhitespace:
-                    _validator.ValidateWhitespace(GetStringValue);
+                    _validator.ValidateWhitespace(_valueGetter);
                     break;
 
                 case XmlNodeType.Text:          // text inside a node
                 case XmlNodeType.CDATA:         // <![CDATA[...]]>
-                    _validator.ValidateText(GetStringValue);
+                    _validator.ValidateText(_valueGetter);
                     break;
 
                 case XmlNodeType.EndElement:
@@ -2543,12 +2543,12 @@ namespace System.Xml
 
                         case XmlNodeType.Text:
                         case XmlNodeType.CDATA:
-                            _validator.ValidateText(GetStringValue);
+                            _validator.ValidateText(_valueGetter);
                             break;
 
                         case XmlNodeType.Whitespace:
                         case XmlNodeType.SignificantWhitespace:
-                            _validator.ValidateWhitespace(GetStringValue);
+                            _validator.ValidateWhitespace(_valueGetter);
                             break;
 
                         case XmlNodeType.Comment:
@@ -2611,12 +2611,12 @@ namespace System.Xml
 
                     case XmlNodeType.Text:
                     case XmlNodeType.CDATA:
-                        _validator.ValidateText(GetStringValue);
+                        _validator.ValidateText(_valueGetter);
                         break;
 
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        _validator.ValidateWhitespace(GetStringValue);
+                        _validator.ValidateWhitespace(_valueGetter);
                         break;
 
                     case XmlNodeType.Comment:
@@ -2672,12 +2672,12 @@ namespace System.Xml
 
                             case XmlNodeType.Text:
                             case XmlNodeType.CDATA:
-                                _validator.ValidateText(GetStringValue);
+                                _validator.ValidateText(_valueGetter);
                                 break;
 
                             case XmlNodeType.Whitespace:
                             case XmlNodeType.SignificantWhitespace:
-                                _validator.ValidateWhitespace(GetStringValue);
+                                _validator.ValidateWhitespace(_valueGetter);
                                 break;
 
                             case XmlNodeType.Comment:

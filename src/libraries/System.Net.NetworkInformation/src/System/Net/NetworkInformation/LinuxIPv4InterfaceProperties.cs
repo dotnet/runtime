@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
-    internal class LinuxIPv4InterfaceProperties : UnixIPv4InterfaceProperties
+    internal sealed class LinuxIPv4InterfaceProperties : UnixIPv4InterfaceProperties
     {
         private readonly LinuxNetworkInterface _linuxNetworkInterface;
         private readonly bool _isForwardingEnabled;
@@ -17,10 +18,13 @@ namespace System.Net.NetworkInformation
             _isForwardingEnabled = GetIsForwardingEnabled();
         }
 
+        [UnsupportedOSPlatform("linux")]
         public override bool IsAutomaticPrivateAddressingActive { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("linux")]
         public override bool IsAutomaticPrivateAddressingEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
+        [UnsupportedOSPlatform("linux")]
         public override bool IsDhcpEnabled { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override bool IsForwardingEnabled { get { return _isForwardingEnabled; } }

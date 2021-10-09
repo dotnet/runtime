@@ -3,11 +3,11 @@
 
 using System.Runtime.InteropServices;
 
-internal partial class Interop
+internal static partial class Interop
 {
-    internal partial class Sys
+    internal static partial class Sys
     {
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForSigChld")]
-        internal static extern unsafe void RegisterForSigChld(delegate* unmanaged<int, void> handler);
+        internal static extern unsafe void RegisterForSigChld(delegate* unmanaged<int, int, int> handler);
     }
 }

@@ -12,7 +12,7 @@ using System.Net;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    internal class SidList
+    internal sealed class SidList
     {
         internal SidList(List<byte[]> sidListByteFormat) : this(sidListByteFormat, null, null)
         {
@@ -66,7 +66,7 @@ namespace System.DirectoryServices.AccountManagement
             TranslateSids(null, pSids);
         }
 
-        protected void TranslateSids(string target, IntPtr[] pSids)
+        private void TranslateSids(string target, IntPtr[] pSids)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "SidList: processing {0} SIDs", pSids.Length);
 
@@ -305,7 +305,7 @@ namespace System.DirectoryServices.AccountManagement
 
             }
     ********/
-    internal class SidListEntry : IDisposable
+    internal sealed class SidListEntry : IDisposable
     {
         public IntPtr pSid = IntPtr.Zero;
         public string name;
@@ -313,7 +313,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IDisposable
         //
-        public virtual void Dispose()
+        public void Dispose()
         {
             if (pSid != IntPtr.Zero)
             {

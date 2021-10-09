@@ -9,6 +9,13 @@ namespace VectorMathTests
     class Program
     {
 		const float EPS = Single.Epsilon * 5;
+        public const int DefaultSeed = 20010415;
+        public static int Seed = Environment.GetEnvironmentVariable("CORECLR_SEED") switch
+        {
+            string seedStr when seedStr.Equals("random", StringComparison.OrdinalIgnoreCase) => new Random().Next(),
+            string seedStr when int.TryParse(seedStr, out int envSeed) => envSeed,
+            _ => DefaultSeed
+        };
 		
         static float NextFloat(Random random)
         {
@@ -135,7 +142,7 @@ namespace VectorMathTests
 
         static int Main(string[] args)
         {
-            Random random = new Random(13);
+            Random random = new Random(Seed);
             int count = Point.Count;
             int N = count * 1000;
             double[] color = generateColor(N, random);

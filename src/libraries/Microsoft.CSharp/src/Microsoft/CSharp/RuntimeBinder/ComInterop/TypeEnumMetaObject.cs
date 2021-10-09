@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 
 namespace Microsoft.CSharp.RuntimeBinder.ComInterop
 {
-    internal class TypeEnumMetaObject : DynamicMetaObject {
+    internal sealed class TypeEnumMetaObject : DynamicMetaObject {
         private readonly ComTypeEnumDesc _desc;
 
         internal TypeEnumMetaObject(ComTypeEnumDesc desc, Expression expression)

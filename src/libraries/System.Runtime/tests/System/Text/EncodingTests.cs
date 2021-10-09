@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Moq;
 using Xunit;
 
@@ -29,7 +30,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(codePage, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
 #pragma warning disable xUnit1026 // Theory methods should use all of their parameters
         public void GetEncoding_FromProvider_ByCodePage_WithDisallowedEncoding_Throws(string encodingName, int codePage)
@@ -59,7 +60,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => Encoding.GetEncoding(encodingName, EncoderFallback.ReplacementFallback, DecoderFallback.ReplacementFallback));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncoding_FromProvider_ByEncodingName_WithDisallowedEncoding_Throws(string encodingName, int codePage)
         {
@@ -88,7 +89,7 @@ namespace System.Text.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))] // Moq uses Reflection.Emit
         [MemberData(nameof(DisallowedEncodings))]
         public void GetEncodings_FromProvider_DoesNotContainDisallowedEncodings(string encodingName, int codePage)
         {
@@ -104,6 +105,25 @@ namespace System.Text.Tests
                     Assert.NotEqual(codePage, encodingInfo.CodePage);
                 }
             });
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RegisterProvider_EncodingsAreUsable()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    Encoding.RegisterProvider(new NullEncodingProvider());
+                    Assert.Same(Encoding.UTF8, Encoding.GetEncoding(65001));
+                }
+            }).Dispose();
+        }
+
+        private sealed class NullEncodingProvider : EncodingProvider
+        {
+            public override Encoding GetEncoding(int codepage) => null;
+            public override Encoding GetEncoding(string name) => null;
         }
 
         private sealed class ThreadStaticEncodingProvider : EncodingProvider

@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     X509Chain chain = holder.Chain;
                     responder.ResponseDelay = delay;
-                    responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
+                    responder.DelayedActions = DelayedActionsFlag.All;
 
                     // This needs to be greater than delay, but less than 2x delay to ensure
                     // that the time is a timeout for individual fetches, not a running total.
@@ -59,7 +59,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                     // OCSP/CRL to root to get intermediate statuses. It should take at least 2x the delay
                     // plus other non-network time, so we can at least ensure it took as long as
                     // the delay for each fetch.
-                    Assert.True(watch.Elapsed >= delay * 2, $"watch.Elapsed: {watch.Elapsed}");
+                    // We expect the chain to build in at least 16 seconds (2 * delay) since each fetch
+                    // should take `delay` number of seconds, and there are two fetchs that need to be
+                    // performed. We allow a small amount of leeway to account for differences between
+                    // how long the the delay is performed and the stopwatch.
+                    Assert.True(watch.Elapsed >= delay * 2 - TimeSpan.FromSeconds(1), $"watch.Elapsed: {watch.Elapsed}");
                 }
             });
         }
@@ -90,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
-                responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
+                responder.DelayedActions = DelayedActionsFlag.All;
 
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(1);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -148,7 +152,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
-                responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
+                responder.DelayedActions = DelayedActionsFlag.All;
 
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromMinutes(2);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -200,9 +204,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     X509Chain chain = holder.Chain;
                     responder.ResponseDelay = delay;
-                    responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
+                    responder.DelayedActions = DelayedActionsFlag.All;
 
                     chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromMinutes(-1);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+                    chain.ChainPolicy.ExtraStore.Add(intermediateCert);
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+                    chain.ChainPolicy.RevocationFlag = X509RevocationFlag.EndCertificateOnly;
+
+                    chain.ChainPolicy.DisableCertificateDownloads = true;
+
+                    Assert.True(chain.Build(endEntityCert), $"chain.Build; Chain status: {chain.AllStatusFlags()}");
+                }
+            });
+        }
+
+        [Theory]
+        [InlineData(DelayedActionsFlag.Ocsp)]
+        [InlineData(DelayedActionsFlag.Crl)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public static void RevocationCheckingTimeoutFallbackToOther(DelayedActionsFlag delayFlags)
+        {
+            RetryHelper.Execute(() => {
+                CertificateAuthority.BuildPrivatePki(
+                    PkiOptions.AllRevocation,
+                    out RevocationResponder responder,
+                    out CertificateAuthority rootAuthority,
+                    out CertificateAuthority intermediateAuthority,
+                    out X509Certificate2 endEntityCert,
+                    nameof(RevocationCheckingTimeoutFallbackToOther));
+
+                using (responder)
+                using (rootAuthority)
+                using (intermediateAuthority)
+                using (endEntityCert)
+                using (ChainHolder holder = new ChainHolder())
+                using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
+                using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
+                {
+                    X509Chain chain = holder.Chain;
+                    responder.ResponseDelay = TimeSpan.FromSeconds(8);
+                    responder.DelayedActions = delayFlags;
+
+                    chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(4);
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                     chain.ChainPolicy.CustomTrustStore.Add(rootCert);
                     chain.ChainPolicy.ExtraStore.Add(intermediateCert);
@@ -241,7 +286,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
 
                     X509Chain chain = holder.Chain;
                     responder.ResponseDelay = delay;
-                    responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
+                    responder.DelayedActions = DelayedActionsFlag.All;
 
                     chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(15);
                     chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -277,11 +322,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediateAuthority.CloneIssuerCert())
             {
-                TimeSpan delay = TimeSpan.FromSeconds(3);
+                TimeSpan delay = TimeSpan.FromSeconds(10);
 
                 X509Chain chain = holder.Chain;
                 responder.ResponseDelay = delay;
-                responder.DelayedActions = RevocationResponder.DelayedActionsFlag.All;
+                responder.DelayedActions = DelayedActionsFlag.All;
 
                 chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(2);
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -299,7 +344,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
         }
 
         private static X509ChainStatusFlags GetFlags(X509Chain chain, string thumbprint) =>
-            chain.ChainElements.OfType<X509ChainElement>().
+            chain.ChainElements.
                 Single(e => e.Certificate.Thumbprint == thumbprint).
                 ChainElementStatus.Aggregate((X509ChainStatusFlags)0, (a, e) => a | e.Status);
     }

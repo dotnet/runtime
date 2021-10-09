@@ -513,7 +513,7 @@ namespace System.Text.Json
 
             int length = checked(text.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
 
-            if (length > JsonConstants.StackallocThreshold)
+            if (length > JsonConstants.StackallocByteThreshold)
             {
                 otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length);
                 otherUtf8Text = otherUtf8TextArray;
@@ -523,8 +523,8 @@ namespace System.Text.Json
                 // Cannot create a span directly since it gets passed to instance methods on a ref struct.
                 unsafe
                 {
-                    byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
-                    otherUtf8Text = new Span<byte>(ptr, JsonConstants.StackallocThreshold);
+                    byte* ptr = stackalloc byte[JsonConstants.StackallocByteThreshold];
+                    otherUtf8Text = new Span<byte>(ptr, JsonConstants.StackallocByteThreshold);
                 }
             }
 
@@ -997,7 +997,7 @@ namespace System.Text.Json
             {
                 byte val = localBuffer[_consumed];
 
-                // JSON RFC 8259 section 2 says only these 4 characters count, not all of the Unicode defintions of whitespace.
+                // JSON RFC 8259 section 2 says only these 4 characters count, not all of the Unicode definitions of whitespace.
                 if (val != JsonConstants.Space &&
                     val != JsonConstants.CarriageReturn &&
                     val != JsonConstants.LineFeed &&

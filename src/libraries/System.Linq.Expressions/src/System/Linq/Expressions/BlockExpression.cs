@@ -676,7 +676,7 @@ namespace System.Linq.Expressions
     /// optimization.  See IArgumentProvider for more general information on the Expression
     /// tree optimizations being used here.
     /// </summary>
-    internal class BlockExpressionList : IList<Expression>
+    internal sealed class BlockExpressionList : IList<Expression>
     {
         private readonly BlockExpression _block;
         private readonly Expression _arg0;

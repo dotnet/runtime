@@ -37,7 +37,11 @@ typedef enum {
 	MONO_CALL_STDCALL,
 	MONO_CALL_THISCALL,
 	MONO_CALL_FASTCALL,
-	MONO_CALL_VARARG
+	MONO_CALL_VARARG = 0x05,
+	/* unused, */
+	/* unused, */
+	/* unused, */
+	MONO_CALL_UNMANAGED_MD = 0x09, /* default unmanaged calling convention, with additional attributed encoded in modopts */
 } MonoCallConvention;
 
 /* ECMA lamespec: the old spec had more info... */
@@ -225,7 +229,8 @@ MONO_API int mono_metadata_compute_size (MonoImage   *meta,
  *
  */
 MONO_API const char    *mono_metadata_locate        (MonoImage *meta, int table, int idx);
-MONO_API const char    *mono_metadata_locate_token  (MonoImage *meta, uint32_t token);
+MONO_API MONO_RT_EXTERNAL_ONLY
+const char    *mono_metadata_locate_token  (MonoImage *meta, uint32_t token);
 
 MONO_API const char    *mono_metadata_string_heap   (MonoImage *meta, uint32_t table_index);
 MONO_API const char    *mono_metadata_blob_heap     (MonoImage *meta, uint32_t table_index);

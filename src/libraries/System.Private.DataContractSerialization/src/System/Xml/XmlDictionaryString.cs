@@ -86,7 +86,7 @@ namespace System.Xml
             return _value;
         }
 
-        private class EmptyStringDictionary : IXmlDictionary
+        private sealed class EmptyStringDictionary : IXmlDictionary
         {
             private readonly XmlDictionaryString _empty;
 

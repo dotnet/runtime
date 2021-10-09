@@ -171,7 +171,6 @@ namespace System.Reflection.Tests
                 Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyReferencesTestImage);
                 AssemblyName[] ans = a.GetReferencedAssemblies();
                 Assert.Equal(3, ans.Length);
-
                 {
                     AssemblyName an = ans.Single(an2 => an2.Name == "mscorlib");
                     Assert.Equal(default(AssemblyNameFlags), an.Flags);
@@ -211,7 +210,7 @@ namespace System.Reflection.Tests
                     Assert.Equal(2, v.Minor);
                     Assert.Equal(3, v.Build);
                     Assert.Equal(4, v.Revision);
-                    Assert.Equal("ar-LY", an.CultureName);
+                    Assert.Equal("pl-PL", an.CultureName);
                     Assert.Null(an.GetPublicKey());
                     Assert.Equal(0, an.GetPublicKeyToken().Length);
                 }
@@ -601,6 +600,28 @@ namespace System.Reflection.Tests
                 Type bt = nt.BaseType;
                 Type expected = a.GetType("Outer+Inner+ReallyInner", throwOnError: true);
                 Assert.Equal(expected, bt);
+            }
+        }
+
+        [Fact]
+        public static void ResourceDoesNotExist_GetManifestResourceInfo_ReturnsNull()
+        {
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
+                ManifestResourceInfo? r = a.GetManifestResourceInfo("ResourceThatDoesNotExist");
+                Assert.Null(r);
+            }
+        }
+
+        [Fact]
+        public static void ResourceDoesNotExist_GetManifestResourceStream_ReturnsNull()
+        {
+            using (MetadataLoadContext lc = new MetadataLoadContext(new SimpleAssemblyResolver()))
+            {
+                Assembly a = lc.LoadFromByteArray(TestData.s_AssemblyWithEmbeddedResourcesImage);
+                Stream? r = a.GetManifestResourceStream("ResourceThatDoesNotExist");
+                Assert.Null(r);
             }
         }
     }

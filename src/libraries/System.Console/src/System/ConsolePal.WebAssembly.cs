@@ -224,14 +224,5 @@ namespace System
         public static void SetWindowPosition(int left, int top) => throw new PlatformNotSupportedException();
 
         public static void SetWindowSize(int width, int height) => throw new PlatformNotSupportedException();
-
-        internal sealed class ControlCHandlerRegistrar
-        {
-            internal ControlCHandlerRegistrar() => throw new PlatformNotSupportedException();
-
-            internal void Register() => throw new PlatformNotSupportedException();
-
-            internal void Unregister() => throw new PlatformNotSupportedException();
-        }
     }
 }

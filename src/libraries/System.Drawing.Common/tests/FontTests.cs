@@ -978,5 +978,22 @@ namespace System.Drawing.Tests
             Assert.False(font.IsSystemFont);
             Assert.Empty(font.SystemFontName);
         }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetHashCode doesn't include font name in .NET Framework")]
+        public void GetHashCode_DifferentNameSameSizeStyleUnit_HashCodeIsNotSame()
+        {
+            using FontFamily family1 = FontFamily.GenericSansSerif;
+            using var font1 = new Font(family1, 1, FontStyle.Bold, GraphicsUnit.Point);
+
+            using FontFamily family2 = FontFamily.GenericMonospace;
+            using var font2 = new Font(family2, 1, FontStyle.Bold, GraphicsUnit.Point);
+            // This test depends on machine setup and whether the fonts we use are installed or not.
+            // If not installed we could get the same font for the two Font families we are testing for.
+            if (font1.Name.Equals(font2.Name, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            Assert.NotEqual(font1.GetHashCode(), font2.GetHashCode());
+        }
     }
 }

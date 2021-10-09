@@ -344,7 +344,7 @@ namespace System.Threading.Tests
                             }
                             else
                             {
-                                Assert.True(m2Index < notAbandonedWaitIndex);
+                                Assert.True(!isNotAbandonedWaitObjectSignaled || m2Index < notAbandonedWaitIndex);
                                 Assert.Equal(m2Index, ame.MutexIndex);
                             }
 

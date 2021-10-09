@@ -5,18 +5,8 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.Protocols
 {
-    internal class Utility
+    internal static class Utility
     {
-        internal static bool IsLdapError(LdapError error)
-        {
-            if (error == LdapError.IsLeaf || error == LdapError.InvalidCredentials || error == LdapError.SendTimeOut)
-            {
-                return true;
-            }
-
-            return (error >= LdapError.ServerDown && error <= LdapError.ReferralLimitExceeded);
-        }
-
         internal static bool IsResultCode(ResultCode code)
         {
             if (code >= ResultCode.Success && code <= ResultCode.SaslBindInProgress)

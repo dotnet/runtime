@@ -7,7 +7,7 @@ using System.Threading;
 namespace System.Net
 {
     /// <summary>Provides a stream that notifies an event when the Close method is called.</summary>
-    internal class ClosableStream : DelegatedStream
+    internal sealed class ClosableStream : DelegatedStream
     {
         private readonly EventHandler? _onClose;
         private int _closed;

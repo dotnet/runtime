@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Xml
 {
-    internal class XmlElementList : XmlNodeList
+    internal sealed class XmlElementList : XmlNodeList
     {
         private readonly string _asterisk = null!;
         private int _changeCount; //recording the total number that the dom tree has been changed ( insertion and deletion )
@@ -22,7 +22,7 @@ namespace System.Xml
         private bool _atomized;     //whether the localname and namespaceuri are atomized
         private int _matchCount;   // cached list count. -1 means it needs reconstruction
 
-        private WeakReference? _listener;   // XmlElementListListener
+        private WeakReference<XmlElementListListener>? _listener;
 
         private XmlElementList(XmlNode parent)
         {
@@ -37,7 +37,7 @@ namespace System.Xml
             _atomized = true;
             _matchCount = -1;
             // This can be a regular reference, but it would cause some kind of loop inside the GC
-            _listener = new WeakReference(new XmlElementListListener(parent.Document, this));
+            _listener = new WeakReference<XmlElementListListener>(new XmlElementListListener(parent.Document, this));
         }
 
         ~XmlElementList()
@@ -280,12 +280,11 @@ namespace System.Xml
             Dispose(true);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_listener != null)
             {
-                XmlElementListListener? listener = (XmlElementListListener?)_listener.Target;
-                if (listener != null)
+                if (_listener.TryGetTarget(out XmlElementListListener? listener))
                 {
                     listener.Unregister();
                 }
@@ -295,7 +294,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlElementListEnumerator : IEnumerator
+    internal sealed class XmlElementListEnumerator : IEnumerator
     {
         private readonly XmlElementList _list;
         private XmlNode? _curElem;
@@ -335,7 +334,7 @@ namespace System.Xml
         }
     }
 
-    internal class XmlEmptyElementListEnumerator : IEnumerator
+    internal sealed class XmlEmptyElementListEnumerator : IEnumerator
     {
         public XmlEmptyElementListEnumerator(XmlElementList list)
         {
@@ -356,16 +355,16 @@ namespace System.Xml
         }
     }
 
-    internal class XmlElementListListener
+    internal sealed class XmlElementListListener
     {
-        private WeakReference? _elemList;
+        private WeakReference<XmlElementList>? _elemList;
         private readonly XmlDocument _doc;
         private readonly XmlNodeChangedEventHandler _nodeChangeHandler;
 
         internal XmlElementListListener(XmlDocument doc, XmlElementList elemList)
         {
             _doc = doc;
-            _elemList = new WeakReference(elemList);
+            _elemList = new WeakReference<XmlElementList>(elemList);
             _nodeChangeHandler = new XmlNodeChangedEventHandler(this.OnListChanged);
             doc.NodeInserted += _nodeChangeHandler;
             doc.NodeRemoved += _nodeChangeHandler;
@@ -377,8 +376,7 @@ namespace System.Xml
             {
                 if (_elemList != null)
                 {
-                    XmlElementList? el = (XmlElementList?)_elemList.Target;
-                    if (null != el)
+                    if (_elemList.TryGetTarget(out XmlElementList? el))
                     {
                         el.ConcurrencyCheck(args);
                     }

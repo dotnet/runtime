@@ -1,67 +1,107 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 // -*- mode: js; js-indent-level: 4; -*-
 //
 // Run runtime tests under a JS shell or a browser
 //
+"use strict";
 
 //glue code to deal with the differences between chrome, ch, d8, jsc and sm.
 var is_browser = typeof window != "undefined";
-var consoleWebSocket;
-var print;
+
+// if the engine doesn't provide a console
+if (typeof (console) === "undefined") {
+	var console = {
+		log: globalThis.print,
+		clear: function () { }
+	};
+}
+globalThis.testConsole = console;
+
+//define arguments for later
+var allRuntimeArguments = null;
+try {
+	if (is_browser) {
+		// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+		const url = new URL(decodeURI(window.location));
+		allRuntimeArguments = [];
+		for (let param of url.searchParams) {
+			if (param[0] == "arg") {
+				allRuntimeArguments.push(param[1]);
+			}
+		}
+
+	} else if (typeof arguments !== "undefined" && typeof arguments !== "null") {
+		allRuntimeArguments = arguments;
+	} else if (typeof process !== 'undefined' && typeof process.argv !== "undefined") {
+		allRuntimeArguments = process.argv.slice(2);
+	} else if (typeof scriptArgs !== "undefined") {
+		allRuntimeArguments = scriptArgs;
+	} else if (typeof WScript !== "undefined" && WScript.Arguments) {
+		allRuntimeArguments = WScript.Arguments;
+	} else {
+		allRuntimeArguments = [];
+	}
+} catch (e) {
+	console.log(e);
+}
+
+function proxyMethod (prefix, func, asJson) {
+	return function() {
+		const args = [...arguments];
+		var payload= args[0];
+		if(payload === undefined) payload = 'undefined';
+		else if(payload === null) payload = 'null';
+		else if(typeof payload === 'function') payload = payload.toString();
+		else if(typeof payload !== 'string') {
+			try{
+				payload = JSON.stringify(payload);
+			}catch(e){
+				payload = payload.toString();
+			}
+		}
+
+		if (asJson) {
+			func (JSON.stringify({
+				method: prefix,
+				payload: payload,
+				arguments: args
+			}));
+		} else {
+			func([prefix + payload, ...args.slice(1)]);
+		}
+	};
+};
+
+var methods = ["debug", "trace", "warn", "info", "error"];
+for (var m of methods) {
+	if (typeof(console[m]) != "function") {
+		console[m] = proxyMethod(`console.${m}: `, console.log, false);
+	}
+}
+
+function proxyJson (func) {
+	for (var m of ["log", ...methods])
+		console[m] = proxyMethod(`console.${m}`,func, true);
+}
 
 if (is_browser) {
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-	window.real_print = console.log;
-	print = function(_msg) { window.real_print(_msg); };
-	console.log = print;
-	console.debug = print;
-	console.error = print;
-	console.trace = print;
-	console.warn = print;
-	console.info = print;
-
 	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
-	consoleWebSocket = new WebSocket(consoleUrl);
+	let consoleWebSocket = new WebSocket(consoleUrl);
 	consoleWebSocket.onopen = function(event) {
-		consoleWebSocket.send("browser: Console websocket connected.");
-
-		window.real_print = function(msg) {
-			consoleWebSocket.send(msg);
-		};
+		proxyJson(function (msg) { consoleWebSocket.send (msg); });
+		globalThis.testConsole.log("browser: Console websocket connected.");
 	};
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
 	};
-
-	var url = new URL (decodeURI (window.location));
-	arguments = [];
-	for (var v of url.searchParams) {
-		if (v [0] == "arg") {
-			console.log ("URL ARG: " + v [0] + "=" + v [1]);
-			arguments.push (v [1]);
-		}
-	}
 }
+//proxyJson(console.log);
 
-// JavaScript core does not have a console defined
-if (typeof console === "undefined") {
-	var Console = function () {
-		this.log = function(msg){ print(msg) };
-		this.clear = function() { };
-	};
-	console = new Console();
-}
 
-if (typeof console !== "undefined") {
-	if (!console.debug)
-		console.debug = console.log;
-	if (!console.trace)
-		console.trace = console.log;
-	if (!console.warn)
-		console.warn = console.log;
-	if (!console.error)
-		console.error = console.log;
-}
+let print = globalThis.testConsole.log;
+let printErr = globalThis.testConsole.error;
 
 if (typeof crypto === 'undefined') {
 	// **NOTE** this is a simple insecure polyfill for testing purposes only
@@ -84,35 +124,13 @@ if (typeof performance == 'undefined') {
 	}
 }
 
-try {
-	if (typeof arguments == "undefined")
-		arguments = WScript.Arguments;
-	load = WScript.LoadScriptFile;
-	read = WScript.LoadBinaryFile;
-} catch (e) {
-}
-
-try {
-	if (typeof arguments == "undefined") {
-		if (typeof scriptArgs !== "undefined")
-			arguments = scriptArgs;
-	}
-} catch (e) {
-}
-
-if (arguments === undefined)
-	arguments = [];
-
 //end of all the nice shell glue code.
-
-// set up a global variable to be accessed in App.init
-var testArguments = arguments;
 
 function test_exit (exit_code) {
 	if (is_browser) {
 		// Notify the selenium script
 		Module.exit_code = exit_code;
-		print ("WASM EXIT " + exit_code);
+		Module.print ("WASM EXIT " + exit_code);
 		var tests_done_elem = document.createElement ("label");
 		tests_done_elem.id = "tests_done";
 		tests_done_elem.innerHTML = exit_code.toString ();
@@ -123,7 +141,7 @@ function test_exit (exit_code) {
 }
 
 function fail_exec (reason) {
-	print (reason);
+	Module.print (reason);
 	test_exit (1);
 }
 
@@ -137,44 +155,42 @@ function inspect_object (o) {
 }
 
 // Preprocess arguments
-var args = testArguments;
-print("Arguments: " + testArguments);
-profilers = [];
-setenv = {};
-runtime_args = [];
-enable_gc = true;
-enable_zoneinfo = false;
-working_dir='/';
-while (args !== undefined && args.length > 0) {
-	if (args [0].startsWith ("--profile=")) {
-		var arg = args [0].substring ("--profile=".length);
+console.info("Arguments: " + allRuntimeArguments);
+var profilers = [];
+var setenv = {};
+var runtime_args = [];
+var enable_gc = true;
+var enable_zoneinfo = false;
+var working_dir='/';
+while (allRuntimeArguments !== undefined && allRuntimeArguments.length > 0) {
+	if (allRuntimeArguments [0].startsWith ("--profile=")) {
+		var arg = allRuntimeArguments [0].substring ("--profile=".length);
 
 		profilers.push (arg);
 
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--setenv=")) {
-		var arg = args [0].substring ("--setenv=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--setenv=")) {
+		var arg = allRuntimeArguments [0].substring ("--setenv=".length);
 		var parts = arg.split ('=');
 		if (parts.length != 2)
-			fail_exec ("Error: malformed argument: '" + args [0]);
+			fail_exec ("Error: malformed argument: '" + allRuntimeArguments [0]);
 		setenv [parts [0]] = parts [1];
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--runtime-arg=")) {
-		var arg = args [0].substring ("--runtime-arg=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--runtime-arg=")) {
+		var arg = allRuntimeArguments [0].substring ("--runtime-arg=".length);
 		runtime_args.push (arg);
-		args = args.slice (1);
-	} else if (args [0] == "--disable-on-demand-gc") {
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0] == "--disable-on-demand-gc") {
 		enable_gc = false;
-		args = args.slice (1);
-	} else if (args [0].startsWith ("--working-dir=")) {
-		var arg = args [0].substring ("--working-dir=".length);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
+	} else if (allRuntimeArguments [0].startsWith ("--working-dir=")) {
+		var arg = allRuntimeArguments [0].substring ("--working-dir=".length);
 		working_dir = arg;
-		args = args.slice (1);
+		allRuntimeArguments = allRuntimeArguments.slice (1);
 	} else {
 		break;
 	}
 }
-testArguments = args;
 
 // cheap way to let the testing infrastructure know we're running in a browser context (or not)
 setenv["IsBrowserDomSupported"] = is_browser.toString().toLowerCase();
@@ -197,13 +213,15 @@ function loadScript (url)
 	}
 }
 
-loadScript ("mono-config.js");
-
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
+	config: null,
+	print,
+	printErr,
 
-	print: print,
-	printErr: function(x) { print ("WASM-ERR: " + x) },
+    preInit: async function() {
+        await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
+    },
 
 	onAbort: function(x) {
 		print ("ABORT: " + x);
@@ -223,7 +241,7 @@ var Module = {
 			Module.ccall ('mono_wasm_enable_on_demand_gc', 'void', ['number'], [0]);
 		}
 
-		config.loaded_cb = function () {
+		Module.config.loaded_cb = function () {
 			let wds = FS.stat (working_dir);
 			if (wds === undefined || !FS.isDir (wds.mode)) {
 				fail_exec (`Could not find working directory ${working_dir}`);
@@ -233,13 +251,13 @@ var Module = {
 			FS.chdir (working_dir);
 			App.init ();
 		};
-		config.fetch_file_cb = function (asset) {
+		Module.config.fetch_file_cb = function (asset) {
 			// console.log("fetch_file_cb('" + asset + "')");
 			// for testing purposes add BCL assets to VFS until we special case File.Open
 			// to identify when an assembly from the BCL is being open and resolve it correctly.
 			/*
 			var content = new Uint8Array (read (asset, 'binary'));
-			var path = asset.substr(config.deploy_prefix.length);
+			var path = asset.substr(Module.config.deploy_prefix.length);
 			writeContentToFile(content, path);
 			*/
 
@@ -256,6 +274,7 @@ var Module = {
 					try {
 						bytes = read (asset, 'binary');
 					} catch (exc) {
+						console.log('v8 file read failed ' + asset + ' ' + exc)
 						error = exc;
 					}
 					var response = { ok: (bytes && !error), url: asset,
@@ -273,31 +292,21 @@ var Module = {
 			}
 		};
 
-		MONO.mono_load_runtime_and_bcl_args (config);
+		MONO.mono_load_runtime_and_bcl_args (Module.config);
 	},
 };
-
 loadScript ("dotnet.js");
 
 const IGNORE_PARAM_COUNT = -1;
 
 var App = {
 	init: function () {
-
-		var assembly_load = Module.cwrap ('mono_wasm_assembly_load', 'number', ['string'])
-		var runtime_invoke = Module.cwrap ('mono_wasm_invoke_method', 'number', ['number', 'number', 'number', 'number']);
-		var string_from_js = Module.cwrap ('mono_wasm_string_from_js', 'number', ['string']);
-		var assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
-		var string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'string', ['number']);
-		var string_array_new = Module.cwrap ('mono_wasm_string_array_new', 'number', ['number']);
-		var obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
-		var unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
 
 		Module.wasm_exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
 
-		Module.print("Initializing.....");
+		console.info("Initializing.....");
 
 		for (var i = 0; i < profilers.length; ++i) {
 			var init = Module.cwrap ('mono_wasm_load_profiler_' + profilers [i], 'void', ['string'])
@@ -305,17 +314,17 @@ var App = {
 			init ("");
 		}
 
-		if (args.length == 0) {
+		if (allRuntimeArguments.length == 0) {
 			fail_exec ("Missing required --run argument");
 			return;
 		}
 
-		if (args[0] == "--regression") {
+		if (allRuntimeArguments[0] == "--regression") {
 			var exec_regression = Module.cwrap ('mono_wasm_exec_regression', 'number', ['number', 'string'])
 
 			var res = 0;
 				try {
-					res = exec_regression (10, args[1]);
+					res = exec_regression (10, allRuntimeArguments[1]);
 					Module.print ("REGRESSION RESULT: " + res);
 				} catch (e) {
 					Module.print ("ABORT: " + e);
@@ -332,72 +341,54 @@ var App = {
 		if (runtime_args.length > 0)
 			MONO.mono_wasm_set_runtime_options (runtime_args);
 
-		if (args[0] == "--run") {
+		if (allRuntimeArguments[0] == "--run") {
 			// Run an exe
-			if (args.length == 1) {
+			if (allRuntimeArguments.length == 1) {
 				fail_exec ("Error: Missing main executable argument.");
 				return;
 			}
 
-			main_assembly_name = args[1];
-			var app_args = string_array_new (args.length - 2);
-			for (var i = 2; i < args.length; ++i) {
-				obj_array_set (app_args, i - 2, string_from_js (args [i]));
-			}
+			var main_assembly_name = allRuntimeArguments[1];
+			var app_args = allRuntimeArguments.slice (2);
 
-			var main_argc = args.length - 2 + 1;
+			var main_argc = allRuntimeArguments.length - 2 + 1;
 			var main_argv = Module._malloc (main_argc * 4);
-			aindex = 0;
-			Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [1]), "i32")
+			var aindex = 0;
+			Module.setValue (main_argv + (aindex * 4), wasm_strdup (allRuntimeArguments [1]), "i32")
 			aindex += 1;
-			for (var i = 2; i < args.length; ++i) {
-				Module.setValue (main_argv + (aindex * 4), wasm_strdup (args [i]), "i32");
+			for (var i = 2; i < allRuntimeArguments.length; ++i) {
+				Module.setValue (main_argv + (aindex * 4), wasm_strdup (allRuntimeArguments [i]), "i32");
 				aindex += 1;
 			}
 			wasm_set_main_args (main_argc, main_argv);
 
-			function isThenable (js_obj) {
-				// When using an external Promise library the Promise.resolve may not be sufficient
-				// to identify the object as a Promise.
-				return Promise.resolve (js_obj) === js_obj ||
-						((typeof js_obj === "object" || typeof js_obj === "function") && typeof js_obj.then === "function")
-			}
+			// Automatic signature isn't working correctly
+			let result = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
+			let onError = function (error)
+			{
+				console.error (error);
+				if (error.stack)
+					console.error (error.stack);
 
-			try {
-				// Automatic signature isn't working correctly
-				let exit_code = Module.mono_call_assembly_entry_point (main_assembly_name, [app_args], "m");
-
-				if (isThenable (exit_code))
-				{
-					exit_code.then (
-						(result) => {
-							test_exit (result);
-						},
-						(reason) => {
-							console.error (reason);
-							test_exit (1);
-						});
-				} else {
-					test_exit (exit_code);
-					return;
-				}
-			} catch (ex) {
-				print ("JS exception: " + ex);
-				print (ex.stack);
 				test_exit (1);
-				return;
 			}
+			try {
+				result.then (test_exit).catch (onError);
+			} catch (error) {
+				onError(error);
+			}
+
 		} else {
-			fail_exec ("Unhandled argument: " + args [0]);
+			fail_exec ("Unhandled argument: " + allRuntimeArguments [0]);
 		}
 	},
-	call_test_method: function (method_name, args) {
-		if (arguments.length > 2)
+	call_test_method: function (method_name, args, signature) {
+		if ((arguments.length > 2) && (typeof (signature) !== "string"))
 			throw new Error("Invalid number of arguments for call_test_method");
 
 		var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
 		try {
-			return BINDING.call_static_method(fqn, args || []);
+			return BINDING.call_static_method(fqn, args || [], signature);
 		} catch (exc) {
 			console.error("exception thrown in", fqn);
 			throw exc;

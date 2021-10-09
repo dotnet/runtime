@@ -63,7 +63,7 @@ Handle macros/functions
 #endif
 
 #define TYPED_HANDLE_DECL(TYPE)							\
-	typedef struct {							\
+	typedef struct _ ## TYPE ## Handle {				\
 		MONO_IF_CPLUSPLUS (						\
 			MONO_ALWAYS_INLINE					\
 			TYPE * GetRaw () const { return __raw ? *__raw : NULL; } \
