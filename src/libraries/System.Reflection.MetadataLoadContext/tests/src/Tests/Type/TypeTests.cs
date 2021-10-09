@@ -618,6 +618,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "BCL assemblies enumeration and loading is not supported on Browser.")]
         public static void WindowsRuntimeMetadataDelegateType()
         {
             // Get the array of runtime assemblies.
