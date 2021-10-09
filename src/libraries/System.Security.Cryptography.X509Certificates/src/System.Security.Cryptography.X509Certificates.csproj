@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CA5384</NoWarn>
@@ -297,8 +297,6 @@
              Link="Common\Interop\Windows\Crypt32\Interop.ExpectedContentTypeFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ExpectedFormatTypeFlags.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.ExpectedFormatTypeFlags.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FILETIME.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.FILETIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FormatType.cs"
@@ -325,8 +323,14 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeBCryptKeyHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertContextHandle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCertStoreHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCertStoreHandle.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs"
              Link="Common\Microsoft\Win32\SafeHandles\SafeCrypt32Handle.cs" />
+    <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs"
+             Link="Common\Microsoft\Win32\SafeHandles\SafeCryptMsgHandle.cs" />
   </ItemGroup>
   <!-- Used in Unix except Android (native crypto) and Apple -->
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'">

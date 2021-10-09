@@ -285,8 +285,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
              Link="Common\Interop\Windows\Crypt32\Interop.DATA_BLOB.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.ErrorCode.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.ErrorCode.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FILETIME.cs"
-             Link="Common\Interop\Windows\Crypt32\Interop.FILETIME.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.FindOidInfo.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.MsgControlType.cs"
