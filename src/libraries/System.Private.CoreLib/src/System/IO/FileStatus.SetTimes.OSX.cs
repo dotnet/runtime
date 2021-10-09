@@ -17,7 +17,9 @@ namespace System.IO
             // Note: the unix fallback implementation doesn't have a test as we are
             // yet to determine which volume types it can fail on, so modify with
             // great care.
-            Interop.Error error = SetCreationTimeCore(path, time);
+            long seconds = time.ToUnixTimeSeconds();
+            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
+            Interop.Error error = SetCreationTimeCore(path, seconds, nanoseconds);
 
             if (error == Interop.Error.SUCCESS)
             {
@@ -33,12 +35,9 @@ namespace System.IO
             }
         }
 
-        private unsafe Interop.Error SetCreationTimeCore(string path, DateTimeOffset time)
+        private unsafe Interop.Error SetCreationTimeCore(string path, long seconds, long nanoseconds)
         {
             Interop.Sys.TimeSpec timeSpec = default;
-
-            long seconds = time.ToUnixTimeSeconds();
-            long nanoseconds = UnixTimeSecondsToNanoseconds(time, seconds);
 
             timeSpec.TvSec = seconds;
             timeSpec.TvNsec = nanoseconds;

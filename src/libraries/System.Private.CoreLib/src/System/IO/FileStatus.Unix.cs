@@ -332,7 +332,7 @@ namespace System.IO
 
             if (updateCreationTime)
             {
-                Interop.Error error = SetCreationTimeCore(path, UnixTimeToDateTimeOffset(_fileCache.BirthTime, _fileCache.BirthTimeNsec));
+                Interop.Error error = SetCreationTimeCore(path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
                 if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
                 {
                     Interop.CheckIo(error, path, InitiallyDirectory);

@@ -115,9 +115,7 @@ namespace System.IO.Tests
                 DateTime dt3 = new DateTime(2000, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
                 if (reverse) //reverse the order of setting dates
                 {
-                    var swap = dt3;
-                    dt3 = dt1;
-                    dt1 = swap;
+                    (dt1, dt3) = (dt3, dt1);
                 }
                 function1.Setter(item, dt1);
                 function2.Setter(item, dt2);
@@ -127,6 +125,72 @@ namespace System.IO.Tests
                 Assert.Equal(dt3, result1);
                 Assert.Equal(dt2, result2);
             });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
+        public void SettingOneTimeMaintainsOtherDefaultTimes()
+        {
+            // Browser is excluded as there is only 1 effective time store.
+
+            T item = GetExistingItem();
+            
+            // Only bother with UTC as we're only interested in 1 function per time value
+            IEnumerable<TimeFunction> functions = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+
+            Assert.All(functions, (function) =>
+            {
+                // Here we are resetting all of the times to 'default' and then storing what its value is
+                IEnumerable<DateTime> ResetTimes()
+                {
+                    foreach (TimeFunction function2 in functions)
+                    {
+                        function2.Setter(item, default(DateTime));
+                        yield return function2.GetTime(item);
+                    }
+                }
+                DateTime[] defaultTimeValues = ResetTimes().ToArray();
+
+                // Now we set that specific time value
+                function.SetTime(item, DateTime.UtcNow);
+
+                // Now we compare the times to what they should be, except for the function that we're currently testing
+                int defaultTimeValuesIndex = 0;
+                Assert.All(functions, (function2) =>
+                {
+                    if (function != function2)
+                    {
+                        Assert.Equal(function2.GetTime(item), defaultTimeValues[defaultTimeValuesIndex]);
+                    }
+                    defaultTimeValuesIndex++;
+                });
+            });
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
+        public void AllDefaultTimesAreSame()
+        {
+            // Browser is excluded as there is only 1 effective time store.
+
+            T item = GetExistingItem();
+            
+            // Only bother with UTC as we're only interested in 1 function per time value
+            IEnumerable<TimeFunction> functions = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+
+            // Here we are resetting all of the times to 'default' and then storing what its value is
+            IEnumerable<DateTime> ResetTimes()
+            {
+                foreach (TimeFunction function2 in functions)
+                {
+                    function2.Setter(item, default(DateTime));
+                    yield return function2.GetTime(item);
+                }
+            }
+            DateTime[] defaultTimeValues = ResetTimes().ToArray();
+            
+            // Here we are comparing it (it's easy to just compare the first item to the rest)
+            Assert.Equal(Enumerable.Repeat(defaultTimeValues[0], defaultTimeValues.Length), defaultTimeValues);
         }
 
         [Fact]
