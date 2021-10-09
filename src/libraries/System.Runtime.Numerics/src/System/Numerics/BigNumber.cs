@@ -691,6 +691,7 @@ namespace System.Numerics
                         multiplier[0] = TenPowMaxPartial;
 
                         int blockSize = 1;
+                        // This loop is executed ceil(log_2(bufferSize)) times.
                         while (true)
                         {
                             fixed (uint* bufPtr = buffer, newBufPtr = newBuffer, mulPtr = multiplier)
@@ -701,7 +702,7 @@ namespace System.Numerics
                                 // When buffer represents:
                                 // |     A     |     B     |     C     |     D     |
                                 // Make newBuffer like:
-                                // |  A + B * multiplier   |  C * multiplier + D   |
+                                // |  A + B * multiplier   |  C + D * multiplier   |
                                 for (int i = 0; i < bufferSize; i += blockSize * 2)
                                 {
                                     int len = Math.Min(bufferSize - i, blockSize * 2);
@@ -826,6 +827,7 @@ namespace System.Numerics
                 return new BigInteger(sign, bits);
             }
 
+            // This function should only be used for result buffer.
             void MultiplyAdd(ref Span<uint> currentBuffer, uint multiplier, uint addValue)
             {
                 Span<uint> curBits = currentBuffer.Slice(0, currentBufferSize);
