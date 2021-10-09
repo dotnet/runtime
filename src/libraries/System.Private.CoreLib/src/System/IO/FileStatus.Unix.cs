@@ -327,7 +327,7 @@ namespace System.IO
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(path, continueOnError);
-            return _fileCache.Size;
+            return IsFileCacheInitialized ? _fileCache.Size : 0;
         }
 
         // Tries to refresh the lstat cache (_fileCache).
