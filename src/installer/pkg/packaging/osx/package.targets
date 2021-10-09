@@ -17,21 +17,19 @@
         <OSXPackages Include="sharedframework">
             <Id>$(SharedFxComponentId)</Id>
             <Root>$(SharedFrameworkPublishRoot)</Root>
-            <Script>$(OSXScriptRoot)sharedframework/scripts</Script>
             <OutFile>$(PackagesIntermediateDir)$(SharedFxComponentId).pkg</OutFile>
             <InstallerFile>$(SharedFrameworkInstallerFile)</InstallerFile>
         </OSXPackages>
         <OSXPackages Include="sharedhost">
             <Id>$(SharedHostComponentId)</Id>
             <Root>$(SharedHostPublishRoot)</Root>
-            <Script>$(OSXScriptRoot)sharedhost/scripts</Script>
             <OutFile>$(PackagesIntermediateDir)$(SharedHostComponentId).pkg</OutFile>
             <InstallerFile>$(SharedHostInstallerFile)</InstallerFile>
+            <AdditionalArgs>--scripts $(OSXScriptRoot)sharedhost/scripts</AdditionalArgs>
         </OSXPackages>
         <OSXPackages Include="hostfxr">
             <Id>$(HostFxrComponentId)</Id>
             <Root>$(HostFxrPublishRoot)</Root>
-            <Script>$(OSXScriptRoot)hostfxr/scripts</Script>
             <OutFile>$(PackagesIntermediateDir)$(HostFxrComponentId).pkg</OutFile>
             <InstallerFile>$(HostFxrInstallerFile)</InstallerFile>
         </OSXPackages>
@@ -42,7 +40,7 @@
         <CommonArgs>--version $(SharedFrameworkNugetVersion) --install-location $(InstallLocation)</CommonArgs>
     </PropertyGroup>
 
-    <Exec Command="pkgbuild --root %(OSXPackages.Root) --identifier %(OSXPackages.Id)  $(CommonArgs) --scripts %(OSXPackages.Script) %(OSXPackages.OutFile)" />
+    <Exec Command="pkgbuild --root %(OSXPackages.Root) --identifier %(OSXPackages.Id)  $(CommonArgs) %(OSXPackages.AdditionalArgs) %(OSXPackages.OutFile)" />
 
     <Copy SourceFiles="%(OSXPackages.OutFile)" DestinationFiles="%(OSXPackages.InstallerFile)" />
 
