@@ -2402,6 +2402,41 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     }
 #endif // DEBUG
 
+#ifdef TARGET_ARMARCH
+    // Avoid emitting redundant memory barriers on arm/arm64 if they belong to the same IG
+    // and there were no memory accesses in-between them
+    emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
+    if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    {
+        BarrierKind prevBarrierKind = BARRIER_FULL;
+        if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHLD)
+        {
+            prevBarrierKind = BARRIER_LOAD_ONLY;
+        }
+        else
+        {
+            // Currently we only emit three kinds of barriers:
+            //  Full (system) - only on arm32
+            //  Full (inner shareable domain)
+            //  LoadOnly (inner shareable domain)
+            assert((lastMemBarrier->idSmallCns() == INS_BARRIER_ISH) ||
+                   (lastMemBarrier->idSmallCns() == INS_BARRIER_SY));
+        }
+
+        if ((prevBarrierKind == barrierKind) || (prevBarrierKind == BARRIER_FULL))
+        {
+            // Previous memory barrier was either the same or full
+            return;
+        }
+
+        // Previous memory barrier: load-only, current: full
+        // Upgrade the previous one to full
+        assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
+        lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
+        return;
+    }
+#endif
+
 #if defined(TARGET_XARCH)
     // only full barrier needs to be emitted on Xarch
     if (barrierKind != BARRIER_FULL)
@@ -2413,11 +2448,16 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
 #elif defined(TARGET_ARM)
     // ARM has only full barriers, so all barriers need to be emitted as full.
-    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
+    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, INS_BARRIER_SY);
 #elif defined(TARGET_ARM64)
     GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
 #else
 #error "Unknown TARGET"
+#endif
+
+#ifdef TARGET_ARMARCH
+    assert(GetEmitter()->emitLastIns->idIns() == INS_dmb);
+    GetEmitter()->emitLastMemBarrier = GetEmitter()->emitLastIns;
 #endif
 }
 

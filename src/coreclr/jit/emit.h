@@ -1883,6 +1883,7 @@ private:
     }
 
     instrDesc* emitLastIns;
+    instrDesc* emitLastMemBarrier;
 
 #ifdef DEBUG
     void emitCheckIGoffsets();
