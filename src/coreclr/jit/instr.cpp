@@ -2406,7 +2406,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     // Avoid emitting redundant memory barriers on arm/arm64 if they belong to the same IG
     // and there were no memory accesses in-between them
     emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
-    if ((lastMemBarrier != nullptr) && !compiler->opts.IsMinOptsSet())
+    if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
     {
 #ifdef TARGET_ARM64
         BarrierKind prevBarrierKind = BARRIER_FULL;
