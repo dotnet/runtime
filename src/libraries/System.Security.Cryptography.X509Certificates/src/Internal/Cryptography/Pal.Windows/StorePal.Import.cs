@@ -41,13 +41,13 @@ namespace Internal.Cryptography.Pal
 
                         void* pvObject = fromFile ? (void*)pFileName : (void*)&blob;
 
-                        ContentType contentType;
+                        Interop.Crypt32.ContentType contentType;
                         SafeCertStoreHandle certStore;
-                        if (!Interop.crypt32.CryptQueryObject(
-                            fromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
+                        if (!Interop.Crypt32.CryptQueryObject(
+                            fromFile ? Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_FILE : Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
                             pvObject,
                             StoreExpectedContentFlags,
-                            ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
+                            Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
                             0,
                             IntPtr.Zero,
                             out contentType,
@@ -60,7 +60,7 @@ namespace Internal.Cryptography.Pal
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
                         }
 
-                        if (contentType == ContentType.CERT_QUERY_CONTENT_PFX)
+                        if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
                         {
                             certStore.Dispose();
 
@@ -87,7 +87,7 @@ namespace Internal.Cryptography.Pal
                                 while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
                                 {
                                     CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
-                                    if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
+                                    if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
                                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                                 }
                             }
@@ -216,13 +216,13 @@ namespace Internal.Cryptography.Pal
             return dwFlags;
         }
 
-        private const ExpectedContentTypeFlags StoreExpectedContentFlags =
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX |
-            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE;
+        private const Interop.Crypt32.ExpectedContentTypeFlags StoreExpectedContentFlags =
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX |
+            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE;
     }
 }
