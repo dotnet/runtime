@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "sourceMap": false,
+    "target": "ES2015",
+    "moduleResolution": "Node",
+    "lib": [
+      "esnext",
+      "dom"
+    ],
+    "strict": true,
+    "allowJs": true,
+    "outDir": "bin",
+  },
+  "exclude": [
+    "bin"
+  ]
+}

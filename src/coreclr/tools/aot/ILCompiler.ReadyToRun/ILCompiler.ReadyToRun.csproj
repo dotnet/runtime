@@ -95,6 +95,7 @@
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\Compiler\Logging\CompilerGeneratedState.cs" Link="Compiler\Logging\CompilerGeneratedState.cs" />
     <Compile Include="..\..\Common\Compiler\Logging\MessageContainer.cs" Link="Compiler\Logging\MessageContainer.cs" />
     <Compile Include="..\..\Common\Compiler\Logging\MessageOrigin.cs" Link="Compiler\Logging\MessageOrigin.cs" />
     <Compile Include="..\..\Common\Compiler\Logger.cs" Link="Compiler\Logger.cs" />

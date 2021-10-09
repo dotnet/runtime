@@ -198,7 +198,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             // Types with properties in custom converters do not support fast path serialization.
-            Assert.True(DefaultContext.ClassWithCustomConverterProperty.Serialize is null);
+            Assert.True(DefaultContext.ClassWithCustomConverterProperty.SerializeHandler is null);
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -225,7 +225,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             };
 
             // Types with properties in custom converters do not support fast path serialization.
-            Assert.True(DefaultContext.StructWithCustomConverterProperty.Serialize is null);
+            Assert.True(DefaultContext.StructWithCustomConverterProperty.SerializeHandler is null);
 
             if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
             {
@@ -640,6 +640,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void SerializeByteArray()
+        {
+            byte[] value = new byte[] { 1, 2, 3 };
+            const string expectedJson = "\"AQID\"";
+
+            string actualJson = JsonSerializer.Serialize(value, DefaultContext.ByteArray);
+            Assert.Equal(expectedJson, actualJson);
+
+            byte[] arr = JsonSerializer.Deserialize(actualJson, DefaultContext.ByteArray);
+            Assert.Equal(value, arr);
+        }
+
+        [Fact]
         public virtual void HandlesNestedTypes()
         {
             string json = @"{""MyInt"":5}";
@@ -734,6 +747,62 @@ namespace System.Text.Json.SourceGeneration.Tests
             public DayOfWeek? NullableDay { get; set; }
         }
 
+        [Fact]
+        public virtual void ClassWithNullableProperties_Roundtrip()
+        {
+            RunTest(new ClassWithNullableProperties
+            {
+                Uri = new Uri("http://contoso.com"),
+                Array = new int[] { 42 },
+                Poco = new ClassWithNullableProperties.MyPoco(),
+
+                NullableUri = new Uri("http://contoso.com"),
+                NullableArray = new int[] { 42 },
+                NullablePoco = new ClassWithNullableProperties.MyPoco()
+            });
+
+            RunTest(new ClassWithNullableProperties());
+
+            void RunTest(ClassWithNullableProperties expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+                ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, DefaultContext.ClassWithNullableProperties);
+
+                Assert.Equal(expected.Uri, actual.Uri);
+                Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.Poco, actual.Poco);
+
+                Assert.Equal(expected.NullableUri, actual.NullableUri);
+                Assert.Equal(expected.NullableArray, actual.NullableArray);
+                Assert.Equal(expected.NullablePoco, actual.NullablePoco);
+
+                Assert.Equal(expected.NullableUriParameter, actual.NullableUriParameter);
+                Assert.Equal(expected.NullableArrayParameter, actual.NullableArrayParameter);
+                Assert.Equal(expected.NullablePocoParameter, actual.NullablePocoParameter);
+            }
+        }
+
+        public class ClassWithNullableProperties
+        {
+            public Uri Uri { get; set; }
+            public int[] Array { get; set; }
+            public MyPoco Poco { get; set; }
+
+            public Uri? NullableUri { get; set; }
+            public int[]? NullableArray { get; set; }
+            public MyPoco? NullablePoco { get; set; }
+
+            // struct types containing nullable reference types as generic parameters
+            public GenericStruct<Uri?> NullableUriParameter { get; set; }
+            public GenericStruct<int[]?> NullableArrayParameter { get; set; }
+            public GenericStruct<MyPoco?> NullablePocoParameter { get; set; }
+
+            public (string? x, int y)? NullableArgumentOfNullableStruct { get; set; }
+
+            public record MyPoco { }
+            public struct GenericStruct<T> { }
+        }
+
         private const string ExceptionMessageFromCustomContext = "Exception thrown from custom context.";
 
         [Fact]
@@ -757,13 +826,15 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         internal class CustomContext : JsonSerializerContext
         {
-            public CustomContext(JsonSerializerOptions options) : base(options, null) { }
+            public CustomContext(JsonSerializerOptions options) : base(options) { }
 
             private JsonTypeInfo<object> _object;
             public JsonTypeInfo<object> Object => _object ??= JsonMetadataServices.CreateValueInfo<object>(Options, JsonMetadataServices.ObjectConverter);
 
             private JsonTypeInfo<object[]> _objectArray;
-            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, Object, default, serializeFunc: null);
+            public JsonTypeInfo<object[]> ObjectArray => _objectArray ??= JsonMetadataServices.CreateArrayInfo<object>(Options, new JsonCollectionInfoValues<object[]> { ElementInfo = Object });
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
 
             public override JsonTypeInfo GetTypeInfo(Type type)
             {
@@ -780,7 +851,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             using MemoryStream ms = new();
             using Utf8JsonWriter writer = new(ms);
-            typeInfo.Serialize!(writer, value);
+            typeInfo.SerializeHandler!(writer, value);
             writer.Flush();
 
             JsonTestHelper.AssertJsonEqual(expectedJson, Encoding.UTF8.GetString(ms.ToArray()));

@@ -1502,18 +1502,22 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     // or enregistered, on x86 -- it is believed that we can enregister pinned (more properly, "pinning")
     // references when using the general GC encoding.
     unsigned lclNum = (unsigned)(varDsc - compiler->lvaTable);
-    if (varDsc->lvAddrExposed || !varDsc->IsEnregisterableType() ||
+    if (varDsc->IsAddressExposed() || !varDsc->IsEnregisterableType() ||
         (!compiler->compEnregStructLocals() && (varDsc->lvType == TYP_STRUCT)))
     {
 #ifdef DEBUG
-        Compiler::DoNotEnregisterReason dner;
-        if (varDsc->lvAddrExposed)
+        DoNotEnregisterReason dner;
+        if (varDsc->IsAddressExposed())
         {
-            dner = Compiler::DNER_AddrExposed;
+            dner = DoNotEnregisterReason::AddrExposed;
+        }
+        else if (!varDsc->IsEnregisterableType())
+        {
+            dner = DoNotEnregisterReason::NotRegSizeStruct;
         }
         else
         {
-            dner = Compiler::DNER_IsStruct;
+            dner = DoNotEnregisterReason::DontEnregStructs;
         }
 #endif // DEBUG
         compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(dner));
@@ -1523,7 +1527,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     {
         varDsc->lvTracked = 0;
 #ifdef JIT32_GCENCODER
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_PinningRef));
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::PinningRef));
 #endif // JIT32_GCENCODER
         return false;
     }
@@ -1534,7 +1538,7 @@ bool LinearScan::isRegCandidate(LclVarDsc* varDsc)
     //
     if (compiler->opts.MinOpts() && compiler->compHndBBtabCount > 0)
     {
-        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_LiveInOutOfHandler));
+        compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LiveInOutOfHandler));
     }
 
     if (varDsc->lvDoNotEnregister)
@@ -1763,7 +1767,7 @@ void LinearScan::identifyCandidates()
                 if (parentVarDsc->lvIsMultiRegRet && !parentVarDsc->lvDoNotEnregister)
                 {
                     JITDUMP("Setting multi-reg struct V%02u as not enregisterable:", varDsc->lvParentLcl);
-                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(Compiler::DNER_BlockOp));
+                    compiler->lvaSetVarDoNotEnregister(varDsc->lvParentLcl DEBUGARG(DoNotEnregisterReason::BlockOp));
                     for (unsigned int i = 0; i < parentVarDsc->lvFieldCnt; i++)
                     {
                         LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(parentVarDsc->lvFieldLclStart + i);
@@ -4729,15 +4733,26 @@ void LinearScan::allocateRegisters()
                             if (assignedInterval->isActive)
                             {
                                 // If this is not the register most recently allocated, it must be from a copyReg,
-                                // or it was placed there by the inVarToRegMap. In either case it must be a lclVar.
+                                // it was placed there by the inVarToRegMap or it might be one of the upper vector
+                                // save/restore refPosition.
+                                // In either case it must be a lclVar.
 
                                 if (!isAssignedToInterval(assignedInterval, physRegRecord))
                                 {
-                                    assert(assignedInterval->isLocalVar);
                                     // We'd like to assert that this was either set by the inVarToRegMap, or by
                                     // a copyReg, but we can't traverse backward to check for a copyReg, because
                                     // we only have recentRefPosition, and there may be a previous RefPosition
                                     // at the same Location with a copyReg.
+
+                                    bool sanityCheck = assignedInterval->isLocalVar;
+                                    // For upper vector interval, make sure it was one of the save/restore only.
+                                    if (assignedInterval->IsUpperVector())
+                                    {
+                                        sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
+                                                       (recentRefPosition->refType == RefTypeUpperVectorRestore);
+                                    }
+
+                                    assert(sanityCheck);
                                 }
                                 if (isAssignedReg)
                                 {
@@ -6227,7 +6242,7 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
         // Insert the copy/reload after the spilled node and replace the use of the original node with a use
         // of the copy/reload.
         blockRange.InsertAfter(tree, newNode);
-        treeUse.ReplaceWith(compiler, newNode);
+        treeUse.ReplaceWith(newNode);
     }
 }
 
@@ -6474,6 +6489,8 @@ void LinearScan::recordMaxSpill()
         maxSpill[TYP_FLOAT] += 1;
     }
 #endif // TARGET_X86
+
+    compiler->codeGen->regSet.tmpBeginPreAllocateTemps();
     for (int i = 0; i < TYP_COUNT; i++)
     {
         if (var_types(i) != RegSet::tmpNormalizeType(var_types(i)))
@@ -6913,7 +6930,7 @@ void LinearScan::resolveRegisters()
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #ifdef TARGET_ARM
-                            else if (treeNode->OperIsMultiRegOp())
+                            else if (compFeatureArgSplit() && treeNode->OperIsMultiRegOp())
                             {
                                 GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
                                 multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
@@ -10156,7 +10173,7 @@ void LinearScan::dumpNewBlock(BasicBlock* currentBlock, LsraLocation location)
     if (activeRefPosition->refType == RefTypeDummyDef)
     {
         dumpEmptyRefPosition();
-        printf("DDefs   ");
+        printf("DDefs    ");
         printf(regNameFormat, "");
         return;
     }

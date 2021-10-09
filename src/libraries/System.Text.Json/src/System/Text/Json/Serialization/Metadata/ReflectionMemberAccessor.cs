@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Metadata
 {
     internal sealed class ReflectionMemberAccessor : MemberAccessor
     {
-        private class ConstructorContext
+        private sealed class ConstructorContext
         {
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
             private readonly Type _type;

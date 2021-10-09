@@ -2839,7 +2839,7 @@ namespace System
         public virtual string Message { get { throw null; } }
         public virtual string? Source { get { throw null; } set { } }
         public virtual string? StackTrace { get { throw null; } }
-        public System.Reflection.MethodBase? TargetSite { get { throw null; } }
+        public System.Reflection.MethodBase? TargetSite { [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")] get { throw null; } }
         [System.ObsoleteAttribute("BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.", DiagnosticId = "SYSLIB0011", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         protected event System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>? SerializeObjectState { add { } remove { } }
         public virtual System.Exception GetBaseException() { throw null; }
@@ -7716,6 +7716,7 @@ namespace System
         public Uri(string uriString) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(string) instead.")]
         public Uri(string uriString, bool dontEscape) { }
+        public Uri(string uriString, in System.UriCreationOptions creationOptions) { }
         public Uri(string uriString, System.UriKind uriKind) { }
         public Uri(System.Uri baseUri, string? relativeUri) { }
         [System.ObsoleteAttribute("This constructor has been deprecated; the dontEscape parameter is always false. Use Uri(Uri, string) instead.")]
@@ -7785,6 +7786,7 @@ namespace System
         protected virtual void Parse() { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
+        public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, in System.UriCreationOptions creationOptions, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? uriString, System.UriKind uriKind, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, string? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         public static bool TryCreate(System.Uri? baseUri, System.Uri? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
@@ -7820,6 +7822,10 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? rparam) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
+    }
+    public partial struct UriCreationOptions
+    {
+        public bool DangerousDisablePathAndQueryCanonicalization { readonly get { throw null; } set { } }
     }
     [System.FlagsAttribute]
     public enum UriComponents
@@ -11073,36 +11079,54 @@ namespace System.Numerics
         public static bool IsPow2(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool IsPow2(ulong value) { throw null; }
+        public static bool IsPow2(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool IsPow2(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int LeadingZeroCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static int LeadingZeroCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static int Log2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int Log2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int Log2(nuint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int PopCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int PopCount(ulong value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static int PopCount(nuint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint RotateLeft(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateLeft(ulong value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RotateLeft(nuint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint RotateRight(uint value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RotateRight(ulong value, int offset) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static nuint RotateRight(nuint value, int offset) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint RoundUpToPowerOf2(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong RoundUpToPowerOf2(ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static nuint RoundUpToPowerOf2(nuint value) { throw null; }
         public static int TrailingZeroCount(int value) { throw null; }
         public static int TrailingZeroCount(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static int TrailingZeroCount(ulong value) { throw null; }
+        public static int TrailingZeroCount(nint value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static int TrailingZeroCount(nuint value) { throw null; }
     }
 }
 namespace System.Reflection
@@ -11849,6 +11873,7 @@ namespace System.Reflection
         public abstract System.RuntimeMethodHandle MethodHandle { get; }
         public virtual System.Reflection.MethodImplAttributes MethodImplementationFlags { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Metadata for the method might be incomplete or removed")]
         public static System.Reflection.MethodBase? GetCurrentMethod() { throw null; }
         public virtual System.Type[] GetGenericArguments() { throw null; }
         public override int GetHashCode() { throw null; }

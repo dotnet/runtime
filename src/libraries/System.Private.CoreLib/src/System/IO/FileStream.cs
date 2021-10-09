@@ -197,6 +197,11 @@ namespace System.IO
                 }
             }
 
+            if (options.PreallocationSize > 0)
+            {
+                FileStreamHelpers.ValidateArgumentsForPreallocation(options.Mode, options.Access);
+            }
+
             FileStreamHelpers.SerializationGuard(options.Access);
 
             _strategy = FileStreamHelpers.ChooseStrategy(

@@ -2372,7 +2372,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlElementNode : XmlNode
+        protected sealed class XmlElementNode : XmlNode
         {
             private readonly XmlEndElementNode _endElementNode;
             private int _bufferOffset;
@@ -2421,7 +2421,7 @@ namespace System.Xml
             public int NameLength;
         }
 
-        protected class XmlAttributeNode : XmlNode
+        protected sealed class XmlAttributeNode : XmlNode
         {
             public XmlAttributeNode(XmlBufferReader bufferReader)
                 : this(new PrefixHandle(bufferReader), new StringHandle(bufferReader), new ValueHandle(bufferReader))
@@ -2441,7 +2441,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlEndElementNode : XmlNode
+        protected sealed class XmlEndElementNode : XmlNode
         {
             public XmlEndElementNode(PrefixHandle prefix, StringHandle localName, ValueHandle value)
                 : base(XmlNodeType.EndElement,
@@ -2472,7 +2472,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlAtomicTextNode : XmlTextNode
+        protected  sealed class XmlAtomicTextNode : XmlTextNode
         {
             public XmlAtomicTextNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.Text,
@@ -2487,7 +2487,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlComplexTextNode : XmlTextNode
+        protected sealed class XmlComplexTextNode : XmlTextNode
         {
             public XmlComplexTextNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.Text,
@@ -2502,7 +2502,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlWhitespaceTextNode : XmlTextNode
+        protected sealed class XmlWhitespaceTextNode : XmlTextNode
         {
             public XmlWhitespaceTextNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.Whitespace,
@@ -2517,7 +2517,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlCDataNode : XmlTextNode
+        protected sealed class XmlCDataNode : XmlTextNode
         {
             public XmlCDataNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.CDATA,
@@ -2532,7 +2532,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlAttributeTextNode : XmlTextNode
+        protected sealed class XmlAttributeTextNode : XmlTextNode
         {
             public XmlAttributeTextNode(PrefixHandle prefix, StringHandle localName, ValueHandle value)
                 : base(XmlNodeType.Text,
@@ -2547,7 +2547,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlInitialNode : XmlNode
+        protected sealed class XmlInitialNode : XmlNode
         {
             public XmlInitialNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.None,
@@ -2562,7 +2562,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlDeclarationNode : XmlNode
+        protected sealed class XmlDeclarationNode : XmlNode
         {
             public XmlDeclarationNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.XmlDeclaration,
@@ -2577,7 +2577,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlCommentNode : XmlNode
+        protected sealed class XmlCommentNode : XmlNode
         {
             public XmlCommentNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.Comment,
@@ -2591,7 +2591,7 @@ namespace System.Xml
             {
             }
         }
-        protected class XmlEndOfFileNode : XmlNode
+        protected sealed class XmlEndOfFileNode : XmlNode
         {
             public XmlEndOfFileNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.None,
@@ -2606,7 +2606,7 @@ namespace System.Xml
             }
         }
 
-        protected class XmlClosedNode : XmlNode
+        protected sealed class XmlClosedNode : XmlNode
         {
             public XmlClosedNode(XmlBufferReader bufferReader)
                 : base(XmlNodeType.None,
@@ -3055,7 +3055,7 @@ namespace System.Xml
                 }
             }
         }
-        protected class Namespace
+        protected sealed class Namespace
         {
             private readonly PrefixHandle _prefix;
             private readonly StringHandle _uri;

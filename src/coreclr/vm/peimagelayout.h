@@ -31,7 +31,6 @@ typedef VPTR(class PEImageLayout) PTR_PEImageLayout;
 class PEImageLayout : public PEDecoder
 {
     VPTR_BASE_CONCRETE_VTABLE_CLASS(PEImageLayout)
-    friend class PEModule;
 public:
     // ------------------------------------------------------------
     // Public constants
@@ -59,8 +58,6 @@ public:
 #endif
     PEImageLayout();
     virtual ~PEImageLayout();
-    static void Startup();
-    static CHECK CheckStartup();
     static BOOL CompareBase(UPTR path, UPTR mapping);
 
     // Refcount above images.

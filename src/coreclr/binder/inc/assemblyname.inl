@@ -98,31 +98,21 @@ void AssemblyName::SetIsRetargetable(BOOL fIsRetargetable)
 {
     if (fIsRetargetable)
     {
-        m_dwNameFlags |= NAME_FLAG_RETARGETABLE;
         SetHave(AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE);
     }
     else
     {
-        m_dwNameFlags &= ~NAME_FLAG_RETARGETABLE;
         SetClear(AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE);
     }
 }
 
 BOOL AssemblyName::GetIsDefinition()
 {
-    return ((m_dwNameFlags & NAME_FLAG_DEFINITION) != 0);
+    return m_isDefinition;
 }
 
 void AssemblyName::SetIsDefinition(BOOL fIsDefinition)
 {
-    if (fIsDefinition)
-    {
-        m_dwNameFlags |= NAME_FLAG_DEFINITION;
-    }
-    else
-    {
-        m_dwNameFlags &= ~NAME_FLAG_DEFINITION;
-    }
+    m_isDefinition = fIsDefinition;
 }
-
 #endif

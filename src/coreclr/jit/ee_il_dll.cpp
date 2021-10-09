@@ -300,6 +300,27 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
     memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
 }
 
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+bool TargetOS::OSSettingConfigured = false;
+bool TargetOS::IsWindows           = false;
+bool TargetOS::IsUnix              = false;
+bool TargetOS::IsMacOS             = false;
+#endif
+
+/*****************************************************************************
+ * Set the OS that this JIT should be generating code for. The contract with the VM
+ * is that this must be called before compileMethod is called.
+ */
+void CILJit::setTargetOS(CORINFO_OS os)
+{
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    TargetOS::IsMacOS             = os == CORINFO_MACOS;
+    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::OSSettingConfigured = true;
+#endif
+}
+
 /*****************************************************************************
  * Determine the maximum length of SIMD vector supported by this JIT.
  */
@@ -418,15 +439,13 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             if (structSize > (2 * TARGET_POINTER_SIZE))
             {
 
-#ifndef TARGET_UNIX
-                if (info.compIsVarArgs)
+                if (TargetOS::IsWindows && info.compIsVarArgs)
                 {
                     // Arm64 Varargs ABI requires passing in general purpose
                     // registers. Force the decision of whether this is an HFA
                     // to false to correctly pass as if it was not an HFA.
                     isHfa = false;
                 }
-#endif // TARGET_UNIX
                 if (!isHfa)
                 {
                     // This struct is passed by reference using a single 'slot'
@@ -471,22 +490,25 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
 {
-#if defined(OSX_ARM64_ABI)
-    if (isFloatHfa)
+    if (compMacOsArm64Abi())
     {
-        assert(varTypeIsStruct(type));
-        return sizeof(float);
+        if (isFloatHfa)
+        {
+            assert(varTypeIsStruct(type));
+            return sizeof(float);
+        }
+        if (varTypeIsStruct(type))
+        {
+            return TARGET_POINTER_SIZE;
+        }
+        const unsigned argSize = genTypeSize(type);
+        assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
+        return argSize;
     }
-    if (varTypeIsStruct(type))
+    else
     {
         return TARGET_POINTER_SIZE;
     }
-    const unsigned argSize = genTypeSize(type);
-    assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
-    return argSize;
-#else
-    return TARGET_POINTER_SIZE;
-#endif
 }
 
 /*****************************************************************************/

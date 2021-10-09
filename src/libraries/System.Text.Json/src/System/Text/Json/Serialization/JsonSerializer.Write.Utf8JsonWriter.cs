@@ -12,6 +12,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
         /// <param name="options">Options to control the behavior.</param>
@@ -75,6 +76,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes one JSON value (including objects or arrays) to the provided writer.
         /// </summary>
+        /// <typeparam name="TValue">The type of the value to serialize.</typeparam>
         /// <param name="writer">The writer to write.</param>
         /// <param name="value">The value to convert and write.</param>
         /// <param name="jsonTypeInfo">Metadata about the type to convert.</param>

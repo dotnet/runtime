@@ -396,6 +396,7 @@ mono_runtime_run_module_cctor (MonoImage *image, MonoError *error)
 			MonoClass *module_klass;
 			MonoVTable *module_vtable;
 
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running module .cctor for '%s'", image->name);
 			module_klass = mono_class_get_checked (image, MONO_TOKEN_TYPE_DEF | 1, error);
 			if (!module_klass) {
 				return FALSE;
@@ -521,6 +522,11 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	if (do_initialization) {
 		MonoException *exc = NULL;
 
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE)) {
+			char* type_name = mono_type_full_name (m_class_get_byval_arg (klass));
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_TYPE, "Running class .cctor for %s from '%s'", type_name, m_class_get_image (klass)->name);
+			g_free (type_name);
+		}
 		/* We are holding the per-vtable lock, do the actual initialization */
 
 		mono_threads_begin_abort_protected_block ();
@@ -7845,7 +7851,7 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 	GString *cmd_line = NULL;
 
 	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
 		host_path = mono_w32process_get_path (getpid ());
 #elif defined(HOST_WIN32)
 		gunichar2 *host_path_ucs2 = NULL;

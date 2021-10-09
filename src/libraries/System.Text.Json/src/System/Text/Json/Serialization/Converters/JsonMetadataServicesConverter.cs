@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Converters
 {
     /// <summary>
     /// Provides a mechanism to invoke "fast-path" serialization logic via
-    /// <see cref="JsonTypeInfo{T}.Serialize"/>. This type holds an optional
+    /// <see cref="JsonTypeInfo{T}.SerializeHandler"/>. This type holds an optional
     /// reference to an actual <see cref="JsonConverter{T}"/> for the type
     /// <typeparamref name="T"/>, to provide a fallback when the fast path cannot be used.
     /// </summary>
@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
         private JsonConverter<T>? _converter;
 
         // A backing converter for when fast-path logic cannot be used.
-        private JsonConverter<T> Converter
+        internal JsonConverter<T> Converter
         {
             get
             {
@@ -75,10 +75,10 @@ namespace System.Text.Json.Serialization.Converters
 
             if (!state.SupportContinuation &&
                 jsonTypeInfo is JsonTypeInfo<T> info &&
-                info.Serialize != null &&
+                info.SerializeHandler != null &&
                 info.Options._context?.CanUseSerializationLogic == true)
             {
-                info.Serialize(writer, value);
+                info.SerializeHandler(writer, value);
                 return true;
             }
 

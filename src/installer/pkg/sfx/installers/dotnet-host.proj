@@ -15,7 +15,7 @@
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
     <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>
     <IncludeVersionInMacOSComponentName>false</IncludeVersionInMacOSComponentName>
-    <MacOSScriptsDirectory>osx_scripts/host</MacOSScriptsDirectory>
+    <MacOSScriptsTemplateDirectory>osx_scripts/host</MacOSScriptsTemplateDirectory>
     <MacOSPackageDescription>The .NET Shared Host.</MacOSPackageDescription>
     <RpmScriptsDirectory>$(MSBuildThisFileDirectory)rpm_scripts/host</RpmScriptsDirectory>
     <RpmAfterInstallScript>$(RpmScriptsDirectory)/after_install.sh</RpmAfterInstallScript>
@@ -78,4 +78,38 @@
       <RpmJsonProperty Include="@(PackageConflictsProperty)" />
     </ItemGroup>
   </Target>
+
+  <PropertyGroup>
+    <_MacOSIntermediatesPath>$(IntermediateOutputPath)macos/</_MacOSIntermediatesPath>
+    <!-- CreatePkg depends on this property being set.-->
+    <MacOSScriptsDirectory>$(_MacOSIntermediatesPath)scripts</MacOSScriptsDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <_MacOSScript Include="$(MacOSScriptsTemplateDirectory)/*" Destination="$(MacOSScriptsDirectory)/%(FileName)%(Extension)"/>
+  </ItemGroup>
+  <Target Name="ReplaceTemplateParametersInMacOsScripts" 
+          Inputs="@(_MacOSScript)"
+          Outputs="@(_MacOSScript->'%(Destination)')"
+          DependsOnTargets="_GetInstallerProperties"
+          BeforeTargets="CreatePkg">
+
+    <PropertyGroup>
+      <_UnameMachineRegex>$(InstallerTargetArchitecture)</_UnameMachineRegex>
+      <_UnameMachineRegex Condition="'$(InstallerTargetArchitecture)' == 'arm64'">arm64|aarch64</_UnameMachineRegex>
+      <_UnameMachineRegex Condition="'$(InstallerTargetArchitecture)' == 'x64'">amd64|x86_64</_UnameMachineRegex>
+      <_MacOSScriptsTemplateProperties>InstallerTargetArchitecture=$(InstallerTargetArchitecture);UnameMachineRegex=$(_UnameMachineRegex)</_MacOSScriptsTemplateProperties>
+    </PropertyGroup>
+    
+    <GenerateFileFromTemplate TemplateFile="@(_MacOSScript)" 
+                              OutputPath="@(_MacOSScript->'%(Destination)')"
+                              Properties="$(_MacOSScriptsTemplateProperties)">
+      <Output TaskParameter="ResolvedOutputPath" ItemName="FileWrites" />
+    </GenerateFileFromTemplate>
+
+    <Exec Condition="!$([MSBuild]::IsOSPlatform('windows'))" Command="chmod +x %(_MacOSScript.Destination)" />
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Templating" Version="$(MicrosoftDotNetBuildTasksTemplatingVersion)" />
+  </ItemGroup>
 </Project>

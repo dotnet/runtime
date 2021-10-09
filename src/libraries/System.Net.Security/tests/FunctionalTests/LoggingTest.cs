@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -26,6 +27,12 @@ namespace System.Net.Security.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_EventsRaisedAsExpected()
         {
+            if (PlatformDetection.IsWindows10Version22000OrGreater)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
+                throw new SkipTestException("Unstable on Windows 11");
+            }
+
             RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Security", EventLevel.Verbose))

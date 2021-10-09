@@ -40,13 +40,16 @@
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.Exceptions.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.Exceptions.cs" />
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.ParameterMatching.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.ParameterMatching.cs" />
     <Compile Include="..\Common\ConstructorTests\ConstructorTests.Stream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ConstructorTests\ConstructorTests.Stream.cs" />
+    <Compile Include="..\Common\ExtensionDataTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\ExtensionDataTests.cs" />
     <Compile Include="..\Common\JsonSerializerWrapperForStream.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForStream.cs" />
     <Compile Include="..\Common\JsonSerializerWrapperForString.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\JsonSerializerWrapperForString.cs" />
     <Compile Include="..\Common\JsonTestHelper.cs" Link="CommonTest\System\Text\Json\JsonTestHelper.cs" />
+    <Compile Include="..\Common\NodeInteropTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\NodeInteropTests.cs" />
     <Compile Include="..\Common\PropertyNameTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyNameTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.InitOnly.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.InitOnly.cs" />
     <Compile Include="..\Common\PropertyVisibilityTests.NonPublicAccessors.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\PropertyVisibilityTests.NonPublicAccessors.cs" />
+    <Compile Include="..\Common\SampleTestData.OrderPayload.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="..\Common\SerializerTests.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\SerializerTests.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.ConcurrentCollections.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.ConcurrentCollections.cs" />
     <Compile Include="..\Common\TestClasses\TestClasses.Constructor.cs" Link="CommonTest\System\Text\Json\Tests\Serialization\TestClasses\TestClasses.Constructor.cs" />
@@ -87,7 +90,6 @@
     <Compile Include="JsonNode\JsonValueTests.cs" />
     <Compile Include="JsonNode\ParseTests.cs" />
     <Compile Include="JsonNode\ParentPathRootTests.cs" />
-    <Compile Include="JsonNode\SerializerInteropTests.cs" />
     <Compile Include="JsonNode\ToStringTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonPropertyTests.cs" />
@@ -154,6 +156,7 @@
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.JsonSerializer.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.Options.cs" />
+    <Compile Include="Serialization\NodeInteropTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
     <Compile Include="Serialization\NullableTests.cs" />
@@ -172,7 +175,6 @@
     <Compile Include="Serialization\ReferenceHandlerTests.Deserialize.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.Serialize.cs" />
-    <Compile Include="Serialization\SampleTestData.OrderPayload.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\StreamTests.cs" />
     <Compile Include="Serialization\Stream.Collections.cs" />
@@ -215,6 +217,6 @@
     <ProjectReference Include="..\..\src\System.Text.Json.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

@@ -582,7 +582,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN
         {
-            internal ushort sin_family;
+#if SOCKADDR_HAS_LENGTH
+            internal byte sin_len;
+#endif
+            internal QUIC_ADDRESS_FAMILY sin_family;
             internal ushort sin_port;
             internal fixed byte sin_addr[4];
         }
@@ -591,7 +594,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         [StructLayout(LayoutKind.Sequential)]
         internal struct SOCKADDR_IN6
         {
-            internal ushort sin6_family;
+#if SOCKADDR_HAS_LENGTH
+            internal byte sin6_len;
+#endif
+            internal QUIC_ADDRESS_FAMILY sin6_family;
             internal ushort sin6_port;
             internal uint sin6_flowinfo;
             internal fixed byte sin6_addr[16];
@@ -606,8 +612,12 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             internal SOCKADDR_IN Ipv4;
             [FieldOffset(0)]
             internal SOCKADDR_IN6 Ipv6;
+#if SOCKADDR_HAS_LENGTH
+            [FieldOffset(1)]
+#else
             [FieldOffset(0)]
-            internal ushort si_family;
+#endif
+            internal QUIC_ADDRESS_FAMILY si_family;
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
