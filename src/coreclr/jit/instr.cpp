@@ -2406,8 +2406,9 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     // Avoid emitting redundant memory barriers on arm/arm64 if they belong to the same IG
     // and there were no memory accesses in-between them
     emitter::instrDesc* lastMemBarrier = GetEmitter()->emitLastMemBarrier;
-    if ((lastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    if ((lastMemBarrier != nullptr) && !compiler->opts.IsMinOptsSet())
     {
+#ifdef TARGET_ARM64
         BarrierKind prevBarrierKind = BARRIER_FULL;
         if (lastMemBarrier->idSmallCns() == INS_BARRIER_ISHLD)
         {
@@ -2419,8 +2420,7 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
             //  Full (system) - only on arm32
             //  Full (inner shareable domain)
             //  LoadOnly (inner shareable domain)
-            assert((lastMemBarrier->idSmallCns() == INS_BARRIER_ISH) ||
-                   (lastMemBarrier->idSmallCns() == INS_BARRIER_SY));
+            assert(lastMemBarrier->idSmallCns() == INS_BARRIER_ISH);
         }
 
         if ((prevBarrierKind == barrierKind) || (prevBarrierKind == BARRIER_FULL))
@@ -2433,6 +2433,9 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
         // Upgrade the previous one to full
         assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
         lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
+#else
+        assert(lastMemBarrier->idSmallCns() == INS_BARRIER_SY);
+#endif
         return;
     }
 #endif

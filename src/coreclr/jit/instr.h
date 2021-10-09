@@ -161,6 +161,10 @@ enum insOpts: unsigned
     INS_OPTS_ASR,
     INS_OPTS_ROR
 };
+enum insBarrier : unsigned
+{
+    INS_BARRIER_SY = 15
+};
 #elif defined(TARGET_ARM64)
 enum insOpts : unsigned
 {
