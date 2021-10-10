@@ -8864,7 +8864,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // R15 = caller's SP
@@ -8943,7 +8943,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // RDX = caller's SP
@@ -8984,7 +8984,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // RSI = caller's SP
