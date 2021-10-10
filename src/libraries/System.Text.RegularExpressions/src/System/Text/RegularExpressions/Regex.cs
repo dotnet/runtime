@@ -199,30 +199,17 @@ namespace System.Text.RegularExpressions
         private static RegexRunnerFactory Compile(string pattern, RegexCode code, RegexOptions options, bool hasTimeout) =>
             RegexCompiler.Compile(pattern, code, options, hasTimeout);
 
+        [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname) =>
             CompileToAssembly(regexinfos, assemblyname, null, null);
 
+        [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes) =>
             CompileToAssembly(regexinfos, assemblyname, attributes, null);
 
-        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile)
-        {
-            if (assemblyname is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.assemblyname);
-            }
-
-            if (regexinfos is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.regexinfos);
-            }
-
-#if DEBUG // until it can be fully implemented
-            RegexCompiler.CompileToAssembly(regexinfos, assemblyname, attributes, resourceFile);
-#else
+        [Obsolete(Obsoletions.RegexCompileToAssemblyMessage, DiagnosticId = Obsoletions.RegexCompileToAssemblyDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        public static void CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[]? attributes, string? resourceFile) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CompileToAssembly);
-#endif
-        }
 
         /// <summary>
         /// Escapes a minimal set of metacharacters (\, *, +, ?, |, {, [, (, ), ^, $, ., #, and

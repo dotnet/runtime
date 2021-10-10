@@ -3,7 +3,6 @@
 
 #nullable enable
 
-using Microsoft.DotNet.CoreSetup.Test.HostActivation;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

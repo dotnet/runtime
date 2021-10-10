@@ -90,7 +90,7 @@ public:
 
     BOOL IsSystem() { WRAPPER_NO_CONTRACT; return m_pManifestFile->IsSystem(); }
 
-    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinderContext, CreateDynamicAssemblyArgs *args);
+    static Assembly *CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args);
 
     MethodDesc *GetEntryPoint();
 
@@ -226,8 +226,6 @@ public:
     // system domain
     PTR_BaseDomain GetDomain();
     PTR_LoaderAllocator GetLoaderAllocator() { LIMITED_METHOD_DAC_CONTRACT; return m_pLoaderAllocator; }
-
-    BOOL GetModuleZapFile(LPCWSTR name, SString &path);
 
 #ifdef LOGGING
     LPCWSTR GetDebugName()

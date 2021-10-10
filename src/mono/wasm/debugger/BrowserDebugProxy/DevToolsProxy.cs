@@ -48,28 +48,39 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             byte[] buff = new byte[4000];
             var mem = new MemoryStream();
-            while (true)
+            try
             {
-
-                if (socket.State != WebSocketState.Open)
+                while (true)
                 {
-                    Log("error", $"DevToolsProxy: Socket is no longer open.");
-                    client_initiated_close.TrySetResult();
-                    return null;
+                    if (socket.State != WebSocketState.Open)
+                    {
+                        Log("error", $"DevToolsProxy: Socket is no longer open.");
+                        client_initiated_close.TrySetResult();
+                        return null;
+                    }
+
+                    WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        client_initiated_close.TrySetResult();
+                        return null;
+                    }
+
+                    mem.Write(buff, 0, result.Count);
+
+                    if (result.EndOfMessage)
+                        return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
                 }
-
-                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buff), token);
-                if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    client_initiated_close.TrySetResult();
-                    return null;
-                }
-
-                mem.Write(buff, 0, result.Count);
-
-                if (result.EndOfMessage)
-                    return Encoding.UTF8.GetString(mem.GetBuffer(), 0, (int)mem.Length);
             }
+            catch (WebSocketException e)
+            {
+                if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
+                {
+                    client_initiated_close.TrySetResult();
+                    return null;
+                }
+            }
+            return null;
         }
 
         private DevToolsQueue GetQueueForSocket(WebSocket ws)

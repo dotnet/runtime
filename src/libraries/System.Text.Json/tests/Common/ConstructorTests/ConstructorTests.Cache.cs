@@ -11,9 +11,6 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [OuterLoop]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task MultipleThreadsLooping()
         {
             const int Iterations = 100;
@@ -25,13 +22,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task MultipleThreads()
         {
             // Verify the test class has >32 properties since that is a threshold for using the fallback dictionary.
-            Assert.True(typeof(ClassWithConstructor_SimpleAndComplexParameters).GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 32);
+            Assert.True(typeof(ObjWCtorMixedParams).GetProperties(BindingFlags.Instance | BindingFlags.Public).Length > 32);
 
             async Task DeserializeObjectAsync(string json, Type type, JsonSerializerOptions options)
             {
@@ -60,7 +54,7 @@ namespace System.Text.Json.Serialization.Tests
 
             async Task SerializeObject(Type type, JsonSerializerOptions options)
             {
-                var obj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
+                var obj = ObjWCtorMixedParams.GetInstance();
                 await JsonSerializerWrapperForString.SerializeWrapper(obj, options);
             };
 
@@ -87,7 +81,7 @@ namespace System.Text.Json.Serialization.Tests
                 await Task.WhenAll(tasks);
             }
 
-            await RunTestAsync(typeof(ClassWithConstructor_SimpleAndComplexParameters));
+            await RunTestAsync(typeof(ObjWCtorMixedParams));
             await RunTestAsync(typeof(Person_Class));
             await RunTestAsync(typeof(Parameterized_Class_With_ComplexTuple));
         }
@@ -99,13 +93,13 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
 
             string json = "{}";
-            await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
 
-            ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
+            ObjWCtorMixedParams testObj = ObjWCtorMixedParams.GetInstance();
             testObj.Verify();
 
             json = await JsonSerializerWrapperForString.SerializeWrapper(testObj, options);
-            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
             testObj.Verify();
         }
 
@@ -115,15 +109,15 @@ namespace System.Text.Json.Serialization.Tests
             // Use local options to avoid obtaining already cached metadata from the default options.
             var options = new JsonSerializerOptions();
 
-            ClassWithConstructor_SimpleAndComplexParameters testObj = ClassWithConstructor_SimpleAndComplexParameters.GetInstance();
+            ObjWCtorMixedParams testObj = ObjWCtorMixedParams.GetInstance();
             testObj.Verify();
 
             string json = await JsonSerializerWrapperForString.SerializeWrapper(testObj, options);
-            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            testObj = await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
             testObj.Verify();
 
             json = "{}";
-            await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithConstructor_SimpleAndComplexParameters>(json, options);
+            await JsonSerializerWrapperForString.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
         }
 
         // Use a common options instance to encourage additional metadata collisions across types. Also since
@@ -132,9 +126,6 @@ namespace System.Text.Json.Serialization.Tests
 
         [Fact]
         [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Needs JsonExtensionData support.")]
-#endif
         public async Task MultipleTypes()
         {
             async Task Serialize<T>(object[] args)

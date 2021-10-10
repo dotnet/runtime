@@ -191,20 +191,19 @@ namespace System.Net.Quic.Tests
         [Fact]
         public async Task GetStreamIdWithoutStartWorks()
         {
-            using QuicListener listener = CreateQuicListener();
-            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-            ValueTask clientTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await clientTask;
+            using (clientConnection)
+            using (serverConnection)
+            {
+                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                Assert.Equal(0, clientStream.StreamId);
 
-            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
-            Assert.Equal(0, clientStream.StreamId);
-
-            // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
-            // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
-            // exception instead of AccessViolationException
-            await clientConnection.CloseAsync(0);
+                // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
+                // explicitly closing the connections seems to help, but the problem should still be investigated, we should have a meaningful
+                // exception instead of AccessViolationException
+                await clientConnection.CloseAsync(0);
+            }
         }
 
         [Fact]
@@ -257,28 +256,22 @@ namespace System.Net.Quic.Tests
         public async Task TestStreams()
         {
             using QuicListener listener = CreateQuicListener();
-            IPEndPoint listenEndPoint = listener.ListenEndPoint;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(listener);
+            using (clientConnection)
+            using (serverConnection)
+            {
+                Assert.True(clientConnection.Connected);
+                Assert.True(serverConnection.Connected);
+                Assert.Equal(listener.ListenEndPoint, serverConnection.LocalEndPoint);
+                Assert.Equal(listener.ListenEndPoint, clientConnection.RemoteEndPoint);
+                Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
 
-            using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);
-
-            Assert.False(clientConnection.Connected);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-
-            ValueTask connectTask = clientConnection.ConnectAsync();
-            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await connectTask;
-
-            Assert.True(clientConnection.Connected);
-            Assert.True(serverConnection.Connected);
-            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
-
-            await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
-            await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
-            await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
-            await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
-            await clientConnection.CloseAsync(errorCode: 0);
+                await CreateAndTestBidirectionalStream(clientConnection, serverConnection);
+                await CreateAndTestBidirectionalStream(serverConnection, clientConnection);
+                await CreateAndTestUnidirectionalStream(serverConnection, clientConnection);
+                await CreateAndTestUnidirectionalStream(clientConnection, serverConnection);
+                await clientConnection.CloseAsync(errorCode: 0);
+            }
         }
 
         private static async Task CreateAndTestBidirectionalStream(QuicConnection c1, QuicConnection c2)
@@ -766,6 +759,230 @@ namespace System.Net.Quic.Tests
 
                     // client will abort both sides, so we will receive the final event
                     await stream.ShutdownCompleted();
+                }
+            );
+        }
+
+        [Fact]
+        public async Task WaitForWriteCompletionAsync_ClientReadAborted_Throws()
+        {
+            const int ExpectedErrorCode = 0xfffffff;
+
+            TaskCompletionSource<long> waitForAbortTcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+            SemaphoreSlim sem = new SemaphoreSlim(0);
+
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1], endStream: true);
+
+                    // Wait for server to read data
+                    await sem.WaitAsync();
+
+                    clientStream.AbortRead(ExpectedErrorCode);
+                },
+                async serverStream =>
+                {
+                    var writeCompletionTask = ReleaseOnWriteCompletionAsync();
+
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+
+                    Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
+
+                    // Tell client that data has been read and it can abort its reads.
+                    sem.Release();
+
+                    long sendAbortErrorCode = await waitForAbortTcs.Task;
+                    Assert.Equal(ExpectedErrorCode, sendAbortErrorCode);
+
+                    await writeCompletionTask;
+
+                    async ValueTask ReleaseOnWriteCompletionAsync()
+                    {
+                        try
+                        {
+                            await serverStream.WaitForWriteCompletionAsync();
+                            waitForAbortTcs.SetException(new Exception("WaitForWriteCompletionAsync didn't throw stream aborted."));
+                        }
+                        catch (QuicStreamAbortedException ex)
+                        {
+                            waitForAbortTcs.SetResult(ex.ErrorCode);
+                        }
+                        catch (Exception ex)
+                        {
+                            waitForAbortTcs.SetException(ex);
+                        }
+                    };
+                });
+        }
+
+        [Fact]
+        public async Task WaitForWriteCompletionAsync_ServerWriteAborted_Throws()
+        {
+            const int ExpectedErrorCode = 0xfffffff;
+
+            TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1], endStream: true);
+                },
+                async serverStream =>
+                {
+                    var writeCompletionTask = ReleaseOnWriteCompletionAsync();
+
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+
+                    Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
+
+                    serverStream.AbortWrite(ExpectedErrorCode);
+
+                    await waitForAbortTcs.Task;
+                    await writeCompletionTask;
+
+                    async ValueTask ReleaseOnWriteCompletionAsync()
+                    {
+                        try
+                        {
+                            await serverStream.WaitForWriteCompletionAsync();
+                            waitForAbortTcs.SetException(new Exception("WaitForWriteCompletionAsync didn't throw stream aborted."));
+                        }
+                        catch (QuicOperationAbortedException)
+                        {
+                            waitForAbortTcs.SetResult();
+                        }
+                        catch (Exception ex)
+                        {
+                            waitForAbortTcs.SetException(ex);
+                        }
+                    };
+                });
+        }
+
+        [Fact]
+        public async Task WaitForWriteCompletionAsync_ServerShutdown_Success()
+        {
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1], endStream: true);
+
+                    int readCount = await clientStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, readCount);
+
+                    readCount = await clientStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, readCount);
+                },
+                async serverStream =>
+                {
+                    var writeCompletionTask = serverStream.WaitForWriteCompletionAsync();
+
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+
+                    await serverStream.WriteAsync(new byte[1]);
+
+                    Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
+
+                    serverStream.Shutdown();
+
+                    await writeCompletionTask;
+                });
+        }
+
+        [Fact]
+        public async Task WaitForWriteCompletionAsync_GracefulShutdown_Success()
+        {
+            await RunBidirectionalClientServer(
+                async clientStream =>
+                {
+                    await clientStream.WriteAsync(new byte[1], endStream: true);
+
+                    int readCount = await clientStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, readCount);
+
+                    readCount = await clientStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, readCount);
+                },
+                async serverStream =>
+                {
+                    var writeCompletionTask = serverStream.WaitForWriteCompletionAsync();
+
+                    int received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    received = await serverStream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+
+                    Assert.False(writeCompletionTask.IsCompleted, "Server is still writing.");
+
+                    await serverStream.WriteAsync(new byte[1], endStream: true);
+
+                    await writeCompletionTask;
+                });
+        }
+
+        [Fact]
+        public async Task WaitForWriteCompletionAsync_ConnectionClosed_Throws()
+        {
+            const int ExpectedErrorCode = 0xfffffff;
+
+            using SemaphoreSlim sem = new SemaphoreSlim(0);
+            TaskCompletionSource<long> waitForAbortTcs = new TaskCompletionSource<long>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+
+                    var writeCompletionTask = ReleaseOnWriteCompletionAsync();
+
+                    int received = await stream.ReadAsync(new byte[1]);
+                    Assert.Equal(1, received);
+                    received = await stream.ReadAsync(new byte[1]);
+                    Assert.Equal(0, received);
+
+                    // Signal that the server has read data
+                    sem.Release();
+
+                    long closeErrorCode = await waitForAbortTcs.Task;
+                    Assert.Equal(ExpectedErrorCode, closeErrorCode);
+
+                    await writeCompletionTask;
+
+                    async ValueTask ReleaseOnWriteCompletionAsync()
+                    {
+                        try
+                        {
+                            await stream.WaitForWriteCompletionAsync();
+                            waitForAbortTcs.SetException(new Exception("WaitForWriteCompletionAsync didn't throw connection aborted."));
+                        }
+                        catch (QuicConnectionAbortedException ex)
+                        {
+                            waitForAbortTcs.SetResult(ex.ErrorCode);
+                        }
+                    };
+                },
+                clientFunction: async connection =>
+                {
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
+
+                    await stream.WriteAsync(new byte[1], endStream: true);
+
+                    await stream.WaitForWriteCompletionAsync();
+
+                    // Wait for the server to read data before closing the connection
+                    await sem.WaitAsync();
+
+                    await connection.CloseAsync(ExpectedErrorCode);
                 }
             );
         }

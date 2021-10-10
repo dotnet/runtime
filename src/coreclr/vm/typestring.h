@@ -35,7 +35,7 @@ private:
     friend class TypeString;
     friend SString* TypeName::ToString(SString*, BOOL, BOOL, BOOL);
     friend TypeHandle TypeName::GetTypeWorker(BOOL, BOOL, Assembly*, BOOL, BOOL, Assembly*,
-        AssemblyBinder * pPrivHostBinder,
+        AssemblyBinder * pBinder,
         OBJECTREF *);
     HRESULT OpenGenericArguments();
     HRESULT CloseGenericArguments();

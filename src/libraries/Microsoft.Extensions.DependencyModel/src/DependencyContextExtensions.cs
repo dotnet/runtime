@@ -182,8 +182,8 @@ namespace Microsoft.Extensions.DependencyModel
             string runtimeIdentifier,
             IEnumerable<RuntimeAssetGroup> assets)
         {
-            RuntimeFallbacks fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
-            IEnumerable<string> rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
+            RuntimeFallbacks? fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
+            IEnumerable<string?> rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string?>());
             return SelectAssets(rids, assets);
         }
 
@@ -192,16 +192,16 @@ namespace Microsoft.Extensions.DependencyModel
             string runtimeIdentifier,
             IEnumerable<RuntimeAssetGroup> assets)
         {
-            RuntimeFallbacks fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
-            IEnumerable<string> rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string>());
+            RuntimeFallbacks? fallbacks = context.RuntimeGraph.FirstOrDefault(f => f.Runtime == runtimeIdentifier);
+            IEnumerable<string?> rids = Enumerable.Concat(new[] { runtimeIdentifier }, fallbacks?.Fallbacks ?? Enumerable.Empty<string?>());
             return SelectRuntimeFiles(rids, assets);
         }
 
-        private static IEnumerable<string> SelectAssets(IEnumerable<string> rids, IEnumerable<RuntimeAssetGroup> groups)
+        private static IEnumerable<string> SelectAssets(IEnumerable<string?> rids, IEnumerable<RuntimeAssetGroup> groups)
         {
-            foreach (string rid in rids)
+            foreach (string? rid in rids)
             {
-                RuntimeAssetGroup group = groups.FirstOrDefault(g => g.Runtime == rid);
+                RuntimeAssetGroup? group = groups.FirstOrDefault(g => g.Runtime == rid);
                 if (group != null)
                 {
                     return group.AssetPaths;
@@ -212,11 +212,11 @@ namespace Microsoft.Extensions.DependencyModel
             return groups.GetDefaultAssets();
         }
 
-        private static IEnumerable<RuntimeFile> SelectRuntimeFiles(IEnumerable<string> rids, IEnumerable<RuntimeAssetGroup> groups)
+        private static IEnumerable<RuntimeFile> SelectRuntimeFiles(IEnumerable<string?> rids, IEnumerable<RuntimeAssetGroup> groups)
         {
-            foreach (string rid in rids)
+            foreach (string? rid in rids)
             {
-                RuntimeAssetGroup group = groups.FirstOrDefault(g => g.Runtime == rid);
+                RuntimeAssetGroup? group = groups.FirstOrDefault(g => g.Runtime == rid);
                 if (group != null)
                 {
                     return group.RuntimeFiles;

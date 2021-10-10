@@ -3331,11 +3331,16 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 STRESS_LOG3(LF_SYNC, LL_INFO10000, "    Inspecting thread 0x%x ID 0x%x coop mode = %d\n",
                     thread, thread->GetThreadId(), thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier());
 
+
                 // ::FlushProcessWriteBuffers above guarantees that the state that we see here
                 // is after the trap flag is visible to the other thread.
                 //
                 // In other words: any threads seen in preemptive mode are no longer interesting to us.
                 // if they try switch to cooperative, they would see the flag set. 
+#ifdef FEATURE_PERFTRACING
+                // Mark that the thread is currently in managed code.
+                thread->SaveGCModeOnSuspension();
+#endif // FEATURE_PERFTRACING
                 if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
                 {
                     _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendFlags));
@@ -5809,11 +5814,6 @@ void HandleSuspensionForInterruptedThread(CONTEXT *interruptedContext)
 
     if (pThread->PreemptiveGCDisabled() != TRUE)
         return;
-
-#ifdef FEATURE_PERFTRACING
-    // Mark that the thread is currently in managed code.
-    pThread->SaveGCModeOnSuspension();
-#endif // FEATURE_PERFTRACING
 
     PCODE ip = GetIP(interruptedContext);
 

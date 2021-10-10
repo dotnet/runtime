@@ -1547,7 +1547,7 @@ type_from_parsed_name (MonoTypeNameParse *info, MonoStackCrawlMark *stack_mark, 
 
 	if (info->assembly.name) {
 		MonoAssemblyByNameRequest req;
-		mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+		mono_assembly_request_prepare_byname (&req, alc);
 		req.requesting_assembly = assembly;
 		req.basedir = assembly ? assembly->basedir : NULL;
 		assembly = mono_assembly_request_byname (&info->assembly, &req, NULL);
@@ -3613,18 +3613,6 @@ return_null:
 	return MONO_HANDLE_NEW (MonoObject, NULL);
 }
 
-MonoBoolean
-ves_icall_System_Enum_InternalHasFlag (MonoObjectHandle a, MonoObjectHandle b, MonoError *error)
-{
-	int size = mono_class_value_size (mono_handle_class (a), NULL);
-	guint64 a_val = 0, b_val = 0;
-
-	memcpy (&a_val, mono_handle_unbox_unsafe (a), size);
-	memcpy (&b_val, mono_handle_unbox_unsafe (b), size);
-
-	return (a_val & b_val) == b_val;
-}
-
 MonoReflectionTypeHandle
 ves_icall_System_Enum_get_underlying_type (MonoReflectionTypeHandle type, MonoError *error)
 {
@@ -5188,7 +5176,7 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
-	image = mono_image_open_a_lot (alc, filename, &status, FALSE);
+	image = mono_image_open_a_lot (alc, filename, &status);
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)

@@ -840,7 +840,7 @@ void SyncBlockCache::Grow()
 
     if (!(newSyncTableSize > m_SyncTableSize)) // Make sure we actually found room to grow!
     {
-        COMPlusThrowOM();
+        EX_THROW(EEMessageException, (kOutOfMemoryException, IDS_EE_OUT_OF_SYNCBLOCKS));
     }
 
     newSyncTable = new SyncTableEntry[newSyncTableSize];

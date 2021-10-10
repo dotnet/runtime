@@ -278,8 +278,6 @@ struct ZapInlineeRecord
         m_key = rid;
     }
 
-    void InitForNGen(RID rid, LPCUTF8 simpleName);
-
     bool operator <(const ZapInlineeRecord& other) const
     {
         LIMITED_METHOD_DAC_CONTRACT;

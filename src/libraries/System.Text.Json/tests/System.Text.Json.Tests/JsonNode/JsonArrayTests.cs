@@ -199,7 +199,7 @@ namespace System.Text.Json.Nodes.Tests
         [Fact]
         public static void ConvertJSONArrayToIListOfJsonNode()
         {
-            dynamic obj = JsonSerializer.Deserialize<JsonArray>("[42]");
+            JsonArray obj = JsonSerializer.Deserialize<JsonArray>("[42]");
             Assert.Equal(42, (int)obj[0]);
 
             IList<JsonNode> ilist = obj;

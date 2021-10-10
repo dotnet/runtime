@@ -468,7 +468,7 @@ static or instance members) or overrides (for virtual instance methods) a member
 simply substitute each generic parameter with its generic argument, and compare the resulting member
 signatures. [*Example*: The following illustrates this point:
 
-### II.9.11, Constrains on Generic Parameters
+### II.9.11, Constraints on Generic Parameters
 
 (Change first paragraph)
 

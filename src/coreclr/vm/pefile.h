@@ -42,12 +42,9 @@ class Module;
 class EditAndContinueModule;
 
 class PEFile;
-class PEModule;
 class PEAssembly;
 class SimpleRWLock;
-class AssemblyLoadContext;
 
-typedef VPTR(PEModule) PTR_PEModule;
 typedef VPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
@@ -79,9 +76,6 @@ typedef VPTR(PEAssembly) PTR_PEAssembly;
 //
 // 4. Dynamic - these are not actual PE images at all, but are placeholders
 //    for reflection-based modules.
-//
-// PEFiles are segmented into two subtypes: PEAssembly and PEModule.  The formere
-// is a file to be loaded as an assembly, and the latter is to be loaded as a module.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // See code:Module for more on modules
@@ -121,7 +115,6 @@ private:
     // ------------------------------------------------------------
 
     friend class DomainFile;
-    friend class PEModule;
 
 public:
     void LoadLibrary(BOOL allowNativeSkip = TRUE);
@@ -200,8 +193,6 @@ public:
 
     BOOL IsAssembly() const;
     PTR_PEAssembly AsAssembly();
-    BOOL IsModule() const;
-    PTR_PEModule AsModule();
     BOOL IsSystem() const;
     BOOL IsDynamic() const;
     BOOL IsResource() const;
@@ -319,7 +310,6 @@ public:
     // in some cases.
     PTR_PEImageLayout GetLoaded();
     PTR_PEImageLayout GetLoadedIL();
-    PTR_PEImageLayout GetAnyILWithRef();        //AddRefs!
     IStream * GetPdbStream();
     void ClearPdbStream();
     BOOL IsLoaded(BOOL bAllowNativeSkip=TRUE) ;
@@ -348,7 +338,6 @@ protected:
     {
         PEFILE_SYSTEM                 = 0x01,
         PEFILE_ASSEMBLY               = 0x02,
-        PEFILE_MODULE                 = 0x04,
     };
 
     // ------------------------------------------------------------
@@ -363,7 +352,6 @@ protected:
 #endif
 
     void OpenMDImport();
-    void RestoreMDImport(IMDInternalImport* pImport);
     void OpenMDImport_Unsafe();
     void OpenImporter();
     void OpenEmitter();
@@ -408,9 +396,6 @@ protected:
     SimpleRWLock            *m_pMetadataLock;
     Volatile<LONG>           m_refCount;
     int                      m_flags;
-
-    // AssemblyLoadContext that this PEFile is associated with
-    PTR_AssemblyLoadContext  m_pAssemblyLoadContext;
 
 public:
 
@@ -459,7 +444,7 @@ public:
     LPCWSTR GetPathForErrorMessages();
 
     static PEFile* Dummy();
-    void MarkNativeImageInvalidIfOwned();
+
     void ConvertMDInternalToReadWrite();
 
 protected:
@@ -469,17 +454,10 @@ protected:
     // An example is Ref-Emitted assemblies. Thus, when such assemblies trigger load of their dependencies,
     // we need to ensure they are loaded in appropriate load context.
     //
-    // To enable this, we maintain a concept of "Fallback LoadContext", which will be set to the Binder of the
+    // To enable this, we maintain a concept of "FallbackBinder", which will be set to the Binder of the
     // assembly that created the dynamic assembly. If the creator assembly is dynamic itself, then its fallback
     // load context would be propagated to the assembly being dynamically generated.
-    PTR_AssemblyBinder m_pFallbackLoadContextBinder;
-
-protected:
-
-#ifndef DACCESS_COMPILE
-    void SetHostAssembly(BINDER_SPACE::Assembly * pHostAssembly)
-    { LIMITED_METHOD_CONTRACT; m_pHostAssembly = clr::SafeAddRef(pHostAssembly); }
-#endif //DACCESS_COMPILE
+    PTR_AssemblyBinder m_pFallbackBinder;
 
 public:
     // Returns a non-AddRef'ed BINDER_SPACE::Assembly*
@@ -490,37 +468,26 @@ public:
     }
 
     // Returns the AssemblyBinder* instance associated with the PEFile
-    PTR_AssemblyBinder GetBindingContext();
+    // which owns the context into which the current PEFile was loaded.
+    PTR_AssemblyBinder GetAssemblyBinder();
 
 #ifndef DACCESS_COMPILE
-    void SetupAssemblyLoadContext();
-
-    void SetFallbackLoadContextBinder(PTR_AssemblyBinder pFallbackLoadContextBinder)
+    void SetFallbackBinder(PTR_AssemblyBinder pFallbackBinder)
     {
         LIMITED_METHOD_CONTRACT;
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
-        SetupAssemblyLoadContext();
+        m_pFallbackBinder = pFallbackBinder;
     }
 
 #endif //!DACCESS_COMPILE
 
-    // Returns AssemblyLoadContext into which the current PEFile was loaded.
-    PTR_AssemblyLoadContext GetAssemblyLoadContext()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        _ASSERTE(m_pAssemblyLoadContext != NULL);
-        return m_pAssemblyLoadContext;
-    }
-
     bool HasHostAssembly()
     { STATIC_CONTRACT_WRAPPER; return GetHostAssembly() != nullptr; }
 
-    PTR_AssemblyBinder GetFallbackLoadContextBinder()
+    PTR_AssemblyBinder GetFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackLoadContextBinder;
+        return m_pFallbackBinder;
     }
 };  // class PEFile
 
@@ -553,7 +520,7 @@ class PEAssembly : public PEFile
 #endif
 
     static PEAssembly *Open(
-        CoreBindResult* pBindResult,
+        BINDER_SPACE::Assembly* pBindResult,
         BOOL isSystem);
 
     static PEAssembly *Create(
@@ -606,7 +573,7 @@ class PEAssembly : public PEFile
 
 #ifndef DACCESS_COMPILE
     PEAssembly(
-        CoreBindResult* pBindResultInfo,
+        BINDER_SPACE::Assembly* pBindResultInfo,
         IMetaDataEmit *pEmit,
         PEFile *creator,
         BOOL system,

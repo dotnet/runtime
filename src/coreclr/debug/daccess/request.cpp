@@ -3765,7 +3765,7 @@ ClrDataAccess::EnumWksGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     if (g_gcDacGlobals->generation_table.IsValid())
     {
-        ULONG first = IsRegion() ? 0 : (*g_gcDacGlobals->max_gen);
+        ULONG first = IsRegionGCEnabled() ? 0 : (*g_gcDacGlobals->max_gen);
         // enumerating the first to max + 2 gives you
         // the segment list for all the normal segments plus the pinned heap segment (max + 2)
         // this is the convention in the GC so it is repeated here
@@ -4769,9 +4769,9 @@ HRESULT ClrDataAccess::GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDA
     PTR_Module pModule = pMT->GetModule();
 
     PTR_PEFile pPEFile = pModule->GetFile();
-    PTR_AssemblyLoadContext pAssemblyLoadContext = pPEFile->GetAssemblyLoadContext();
+    PTR_AssemblyBinder pBinder = pPEFile->GetAssemblyBinder();
 
-    INT_PTR managedAssemblyLoadContextHandle = pAssemblyLoadContext->GetManagedAssemblyLoadContext();
+    INT_PTR managedAssemblyLoadContextHandle = pBinder->GetManagedAssemblyLoadContext();
 
     TADDR managedAssemblyLoadContextAddr = 0;
     if (managedAssemblyLoadContextHandle != 0)

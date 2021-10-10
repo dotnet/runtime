@@ -147,6 +147,22 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
             await VerifyAgainstBaselineUsingFile("TestWithNestedClass.generated.txt", testSourceCode);
         }
 
+#if ROSLYN4_0_OR_GREATER
+        [Fact]
+        public async Task TestBaseline_TestWithFileScopedNamespace_Success()
+        {
+            string testSourceCode = @"
+namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses;
+
+internal static partial class TestWithDefaultValues
+{
+    [LoggerMessage]
+    public static partial void M0(ILogger logger, LogLevel level);
+}";
+            await VerifyAgainstBaselineUsingFile("TestWithDefaultValues.generated.txt", testSourceCode);
+        }
+#endif
+
         private async Task VerifyAgainstBaselineUsingFile(string filename, string testSourceCode)
         {
             string baseline = await File.ReadAllTextAsync(Path.Combine("Baselines", filename)).ConfigureAwait(false);
