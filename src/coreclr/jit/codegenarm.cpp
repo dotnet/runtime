@@ -1907,11 +1907,12 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
     if ((GetEmitter()->emitLastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
     {
         assert(GetEmitter()->emitLastMemBarrier->idSmallCns() == INS_BARRIER_SY);
-        return;
     }
-
-    // ARM has only full barriers, so all barriers need to be emitted as full.
-    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, INS_BARRIER_SY);
+    else
+    {
+        // ARM has only full barriers, so all barriers need to be emitted as full.
+        GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, INS_BARRIER_SY);
+    }
 }
 
 #endif // TARGET_ARM

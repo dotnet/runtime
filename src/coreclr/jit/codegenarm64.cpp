@@ -9546,20 +9546,18 @@ void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
             assert(lastMemBarrier->idSmallCns() == INS_BARRIER_ISH);
         }
 
-        if ((prevBarrierKind == barrierKind) || (prevBarrierKind == BARRIER_FULL))
+        if ((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL))
         {
-            // Previous memory barrier was either the same or full
-            return;
+            // Previous memory barrier: load-only, current: full
+            // Upgrade the previous one to full
+            assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
+            lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
         }
-
-        // Previous memory barrier: load-only, current: full
-        // Upgrade the previous one to full
-        assert((prevBarrierKind == BARRIER_LOAD_ONLY) && (barrierKind == BARRIER_FULL));
-        lastMemBarrier->idSmallCns(INS_BARRIER_ISH);
-        return;
     }
-
-    GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
+    else
+    {
+        GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
+    }
 }
 
 #endif // TARGET_ARM64
