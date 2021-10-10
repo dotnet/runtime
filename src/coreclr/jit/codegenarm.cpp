@@ -264,7 +264,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 regNumber tmpReg = tree->GetSingleTempReg();
 
                 float f = forceCastToFloat(constValue);
-                instGen_Set_Reg_To_Imm(EA_4BYTE, targetReg, *((int*)(&f)));
+                instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, *((int*)(&f)));
                 GetEmitter()->emitIns_Mov(INS_vmov_i2f, EA_4BYTE, targetReg, tmpReg, /* canSkip */ false);
             }
             else
