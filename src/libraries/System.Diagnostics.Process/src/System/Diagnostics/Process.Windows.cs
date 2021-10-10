@@ -897,6 +897,11 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
 
+                if (_processInfo?.ProcessName != null)
+                {
+                    return _processInfo!.ProcessName;
+                }
+
                 if (_processName == null)
                 {
                     EnsureState(State.HaveId);
