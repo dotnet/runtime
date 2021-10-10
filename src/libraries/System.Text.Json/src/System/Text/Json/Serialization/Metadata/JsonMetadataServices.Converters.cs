@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Converters;
 
@@ -201,6 +200,13 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<Version> VersionConverter => s_versionConverter ??= new VersionConverter();
         private static JsonConverter<Version>? s_versionConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonDocument"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<JsonDocument> DocumentConverter => s_documentConverter ??= new JsonDocumentConverter();
+        private static JsonConverter<JsonDocument>? s_documentConverter;
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.

@@ -112,7 +112,7 @@ namespace System.Text.Json
             Add(JsonMetadataServices.Int32Converter);
             Add(JsonMetadataServices.Int64Converter);
             Add(new JsonElementConverter());
-            Add(new JsonDocumentConverter());
+            Add(JsonMetadataServices.DocumentConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
