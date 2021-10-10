@@ -9,6 +9,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class QueryInterfaceTests
     {
+        public const string IID_IDISPATCH = "00020400-0000-0000-C000-000000000046";
         public const string IID_IINSPECTABLE = "AF86E2E0-B12D-4c6a-9C5A-D7AA65101E90";
 
         public static IEnumerable<object[]> QueryInterface_ValidComObjectInterface_TestData()
@@ -45,7 +46,25 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(QueryInterface_ValidComObjectInterface_TestData))]
         public void QueryInterface_ValidComObjectInterface_Success(object o, string iidString)
         {
-            QueryInterface_ValidInterface_Success(o, iidString);
+            IntPtr ptr = Marshal.GetIUnknownForObject(o);
+            try
+            {
+                Guid guid = new Guid(iidString);
+                Assert.Equal(0, Marshal.QueryInterface(ptr, ref guid, out IntPtr ppv));
+                Assert.NotEqual(IntPtr.Zero, ppv);
+                try
+                {
+                    Assert.Equal(new Guid(iidString), guid);
+                }
+                finally
+                {
+                    Marshal.Release(ppv);
+                }
+            }
+            finally
+            {
+                Marshal.Release(ptr);
+            }
         }
 
         public static IEnumerable<object[]> QueryInterface_NoSuchComObjectInterface_TestData()
@@ -83,7 +102,18 @@ namespace System.Runtime.InteropServices.Tests
         [MemberData(nameof(QueryInterface_NoSuchComObjectInterface_TestData))]
         public void QueryInterface_NoSuchComObjectInterface_Success(object o, string iidString)
         {
-            QueryInterface_NoSuchInterface_Success(o, iidString);
+            IntPtr ptr = Marshal.GetIUnknownForObject(o);
+            try
+            {
+                Guid iid = new Guid(iidString);
+                Assert.Equal(E_NOINTERFACE, Marshal.QueryInterface(ptr, ref iid, out IntPtr ppv));
+                Assert.Equal(IntPtr.Zero, ppv);
+                Assert.Equal(new Guid(iidString), iid);
+            }
+            finally
+            {
+                Marshal.Release(ptr);
+            }
         }
     }
 }

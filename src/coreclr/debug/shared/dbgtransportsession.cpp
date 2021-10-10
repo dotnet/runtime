@@ -628,6 +628,13 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
         // queue).
         pMessage->m_sHeader.m_dwLastSeenId = m_dwLastMessageIdSeen;
 
+        // Check the session state.
+        if (m_eState == SS_Closed)
+        {
+            // SS_Closed is bad news, we'll never recover from that so error the send immediately.
+            return E_ABORT;
+        }
+
         // If the caller isn't waiting around for a reply we must make a copy of the message to place on the
         // send queue.
         pMessage->m_pOrigMessage = pMessage;
@@ -668,16 +675,14 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
             pMessage = pMessageCopy;
         }
 
-        // Check the session state.
-        if (m_eState == SS_Closed)
+        // If the state is SS_Open we can send the message now.
+        if (m_eState == SS_Open)
         {
-            // SS_Closed is bad news, we'll never recover from that so error the send immediately.
-            if (pMessageCopy)
-                delete pMessageCopy;
-            if (pDataBlockCopy)
-                delete [] pDataBlockCopy;
-
-            return E_ABORT;
+            // Send the message header block followed by the data block if it's provided. Any network error will
+            // be reported internally by SendBlock and result in a transition to the SS_Resync_NC state (and an
+            // eventual resend of the data).
+            if (SendBlock((PBYTE)&pMessage->m_sHeader, sizeof(MessageHeader)) && pMessage->m_pbDataBlock)
+                SendBlock(pMessage->m_pbDataBlock, pMessage->m_cbDataBlock);
         }
 
         // Don't queue session management messages. We always recreate these if we need to re-send them.
@@ -700,15 +705,12 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
                 pMessage->m_pNext = NULL;
             }
         }
-
-        // If the state is SS_Open we can send the message now.
-        if (m_eState == SS_Open)
+        else
         {
-            // Send the message header block followed by the data block if it's provided. Any network error will
-            // be reported internally by SendBlock and result in a transition to the SS_Resync_NC state (and an
-            // eventual resend of the data).
-            if (SendBlock((PBYTE)&pMessage->m_sHeader, sizeof(MessageHeader)) && pMessage->m_pbDataBlock)
-                SendBlock(pMessage->m_pbDataBlock, pMessage->m_cbDataBlock);
+            if (pMessageCopy)
+                delete pMessageCopy;
+            if (pDataBlockCopy)
+                delete [] pDataBlockCopy;
         }
 
         // If the state wasn't open there's nothing more to be done. The state will eventually transition to

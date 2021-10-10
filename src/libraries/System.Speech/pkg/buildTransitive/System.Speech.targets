@@ -1,7 +1,0 @@
-<Project InitialTargets="_ErrorForSystemSpeechOnNetCoreApp20">
-  <Target Name="_ErrorForSystemSpeechOnNetCoreApp20"
-          Condition="'$(SuppressTfmSupportBuildWarnings)' == ''">
-    <Error Text="System.Speech doesn't support netcoreapp2.0. Consider updating your TargetFramework to netcoreapp2.1 or later."
-           Code="SYSLIB9000" />
-  </Target>
-</Project>

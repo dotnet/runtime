@@ -4,12 +4,13 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Xml;
 using System.Xml.XPath;
 
 namespace MS.Internal.Xml.XPath
 {
-    internal sealed class XPathScanner
+    internal struct XPathScanner
     {
         private readonly string _xpathExpr;
         private int _xpathExprIndex;
@@ -18,16 +19,17 @@ namespace MS.Internal.Xml.XPath
         private string? _name;
         private string? _prefix;
         private string? _stringValue;
-        private double _numberValue = double.NaN;
+        private double _numberValue;
         private bool _canBeFunction;
 
-        public XPathScanner(string xpathExpr)
+        public XPathScanner(string xpathExpr) : this()
         {
             if (xpathExpr == null)
             {
                 throw XPathException.Create(SR.Xp_ExprExpected, string.Empty);
             }
             _xpathExpr = xpathExpr;
+            _numberValue = double.NaN;
             NextChar();
             NextLex();
         }
@@ -39,16 +41,18 @@ namespace MS.Internal.Xml.XPath
         private bool NextChar()
         {
             Debug.Assert(0 <= _xpathExprIndex && _xpathExprIndex <= _xpathExpr.Length);
-            if (_xpathExprIndex < _xpathExpr.Length)
+
+            string expr = _xpathExpr;
+            int index = _xpathExprIndex;
+            if ((uint)index < (uint)expr.Length)
             {
-                _currentChar = _xpathExpr[_xpathExprIndex++];
+                _currentChar = expr[index];
+                _xpathExprIndex = index + 1;
                 return true;
             }
-            else
-            {
-                _currentChar = '\0';
-                return false;
-            }
+
+            _currentChar = '\0';
+            return false;
         }
 
         public LexKind Kind { get { return _kind; } }
@@ -104,9 +108,19 @@ namespace MS.Internal.Xml.XPath
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SkipSpace()
         {
-            while (XmlCharType.IsWhiteSpace(CurrentChar) && NextChar()) ;
+            if (XmlCharType.IsWhiteSpace(CurrentChar))
+            {
+                SkipKnownSpace();
+            }
+        }
+
+        private void SkipKnownSpace()
+        {
+            Debug.Assert(XmlCharType.IsWhiteSpace(CurrentChar));
+            while (NextChar() && XmlCharType.IsWhiteSpace(CurrentChar));
         }
 
         public bool NextLex()
@@ -312,23 +326,26 @@ namespace MS.Internal.Xml.XPath
 
         private string ScanName()
         {
-            Debug.Assert(XmlCharType.IsStartNCNameSingleChar(CurrentChar));
-            int start = _xpathExprIndex - 1;
-            int len = 0;
+            ReadOnlySpan<char> span = _xpathExpr.AsSpan(_xpathExprIndex - 1);
 
-            while (true)
+            Debug.Assert(!span.IsEmpty);
+            Debug.Assert(span[0] == CurrentChar);
+            Debug.Assert(XmlCharType.IsStartNCNameSingleChar(span[0]));
+            Debug.Assert(XmlCharType.IsNCNameSingleChar(span[0]));
+
+            int i;
+            for (i = 1; i < span.Length && XmlCharType.IsNCNameSingleChar(span[i]); i++);
+
+            if ((uint)i < (uint)span.Length)
             {
-                if (XmlCharType.IsNCNameSingleChar(CurrentChar))
-                {
-                    NextChar();
-                    len++;
-                }
-                else
-                {
-                    break;
-                }
+                _currentChar = span[i];
+                _xpathExprIndex += i;
+                return span.Slice(0, i).ToString();
             }
-            return _xpathExpr.Substring(start, len);
+
+            _currentChar = '\0';
+            _xpathExprIndex += i - 1;
+            return span.ToString();
         }
 
         public enum LexKind

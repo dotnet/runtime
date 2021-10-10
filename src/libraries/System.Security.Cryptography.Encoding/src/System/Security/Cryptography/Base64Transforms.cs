@@ -23,30 +23,36 @@ namespace System.Security.Cryptography
         // converting to Base64 takes 3 bytes input and generates 4 bytes output
         public int InputBlockSize => 3;
         public int OutputBlockSize => 4;
-        public bool CanTransformMultipleBlocks => false;
+        public bool CanTransformMultipleBlocks => true;
         public virtual bool CanReuseTransform => true;
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            // inputCount < InputBlockSize is not allowed
-            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount, InputBlockSize);
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
+
+            int inputBlocks = Math.DivRem(inputCount, InputBlockSize, out int inputRemainder);
+
+            if (inputBlocks == 0)
+                ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.inputCount);
 
             if (outputBuffer == null)
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
-            // For now, only convert 3 bytes to 4
-            Span<byte> input = inputBuffer.AsSpan(inputOffset, InputBlockSize);
-            Span<byte> output = outputBuffer.AsSpan(outputOffset, OutputBlockSize);
+            if (inputRemainder != 0)
+                ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.inputCount);
+
+            int requiredOutputLength = checked(inputBlocks * OutputBlockSize);
+            if (requiredOutputLength > outputBuffer.Length - outputOffset)
+                ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.outputBuffer);
+
+            Span<byte> input = inputBuffer.AsSpan(inputOffset, inputCount);
+            Span<byte> output = outputBuffer.AsSpan(outputOffset, requiredOutputLength);
 
             OperationStatus status = Base64.EncodeToUtf8(input, output, out int consumed, out int written, isFinalBlock: false);
 
-            if (written != OutputBlockSize)
-            {
-                ThrowHelper.ThrowCryptographicException();
-            }
-
             Debug.Assert(status == OperationStatus.Done);
-            Debug.Assert(consumed == InputBlockSize);
+            Debug.Assert(consumed == input.Length);
+            Debug.Assert(written == output.Length);
 
             return written;
         }
@@ -56,28 +62,20 @@ namespace System.Security.Cryptography
             // inputCount <= InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            // Convert.ToBase64CharArray already does padding, so all we have to check is that
-            // the inputCount wasn't 0
+            // Convert.ToBase64CharArray already does padding, so all we have to check is that the inputCount wasn't 0
             if (inputCount == 0)
-            {
                 return Array.Empty<byte>();
-            }
-            else if (inputCount > InputBlockSize)
-            {
-                ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.inputCount);
-            }
 
-            // Again, for now only a block at a time
             Span<byte> input = inputBuffer.AsSpan(inputOffset, inputCount);
-            byte[] output = new byte[OutputBlockSize];
+
+            int inputBlocks = Math.DivRem(inputCount, InputBlockSize, out int inputRemainder);
+            int outputBlocks = inputBlocks + (inputRemainder != 0 ? 1 : 0);
+
+            byte[] output = new byte[outputBlocks * OutputBlockSize];
 
             OperationStatus status = Base64.EncodeToUtf8(input, output, out int consumed, out int written, isFinalBlock: true);
 
-            if (written != OutputBlockSize)
-            {
-                ThrowHelper.ThrowCryptographicException();
-            }
-
+            Debug.Assert(written == output.Length);
             Debug.Assert(status == OperationStatus.Done);
             Debug.Assert(consumed == inputCount);
 
@@ -388,14 +386,6 @@ namespace System.Security.Cryptography
 
             if ((inputBuffer.Length - inputCount) < inputOffset)
                 ThrowInvalidOffLen();
-        }
-
-        public static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, int inputBlockSize)
-        {
-            ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-
-            if (inputCount < inputBlockSize)
-                ThrowArgumentOutOfRange(ExceptionArgument.inputCount);
         }
 
         [DoesNotReturn]

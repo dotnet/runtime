@@ -48,6 +48,7 @@ struct Agnostic_CompileMethod
 {
     Agnostic_CORINFO_METHOD_INFO info;
     DWORD                        flags;
+    DWORD                        os;
 };
 
 struct Agnostic_InitClass
@@ -491,6 +492,7 @@ struct Agnostic_GetPgoInstrumentationResults
     DWORD data_index;
     DWORD dataByteCount;
     DWORD result;
+    DWORD pgoSource;
 };
 
 struct Agnostic_GetProfilingHandle
@@ -556,17 +558,22 @@ struct Agnostic_GetSystemVAmd64PassStructInRegisterDescriptor
 
 struct Agnostic_ResolveVirtualMethodKey
 {
-    DWORDLONG virtualMethod;
-    DWORDLONG objClass;
-    DWORDLONG context;
+    DWORDLONG                       virtualMethod;
+    DWORDLONG                       objClass;
+    DWORDLONG                       context;
+    DWORD                           pResolvedTokenVirtualMethodNonNull;
+    Agnostic_CORINFO_RESOLVED_TOKEN pResolvedTokenVirtualMethod;
 };
 
 struct Agnostic_ResolveVirtualMethodResult
 {
-    bool      returnValue;
-    DWORDLONG devirtualizedMethod;
-    bool      requiresInstMethodTableArg;
-    DWORDLONG exactContext;
+    bool                            returnValue;
+    DWORDLONG                       devirtualizedMethod;
+    bool                            requiresInstMethodTableArg;
+    DWORDLONG                       exactContext;
+    DWORD                           detail;
+    Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedMethod;
+    Agnostic_CORINFO_RESOLVED_TOKEN resolvedTokenDevirtualizedUnboxedMethod;
 };
 
 struct ResolveTokenValue

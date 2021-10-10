@@ -32,7 +32,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(GoogleTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DecompressFile(string fileName)
         {
             byte[] bytes = File.ReadAllBytes(CompressedTestFile(fileName));
@@ -43,7 +42,6 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(GoogleTestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36884", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RoundtripCompressDecompressFile(string fileName)
         {
             byte[] bytes = File.ReadAllBytes(fileName);

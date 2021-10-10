@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>System.Runtime</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <FeatureGenericMath>true</FeatureGenericMath>
+    <!-- It is a core assembly because it defines System.Object so we need to pass RuntimeMetadataVersion to the compiler -->
+    <RuntimeMetadataVersion>v4.0.30319</RuntimeMetadataVersion>
+    <!-- disable warnings about obsolete APIs,
+        Remove warning disable when nullable attributes are respected,
+        Type has no accessible constructors which use only CLS-compliant types -->
+    <NoWarn>$(NoWarn);0809;0618;CS8614;CS3015;NU5131</NoWarn>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(FeatureGenericMath)' == 'true'">
+    <!-- Place this assembly in the nuget ref folder -->
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <DefineConstants>$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
+    <IsPackable>true</IsPackable>
+    <PackageDescription>Exposes new experimental APIs from System.Runtime</PackageDescription>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <!-- TODO: Remove when the package shipped with NET6. -->
+    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.cs" />
+  </ItemGroup>
+  <Target Name="_ExperimentalUpdateFileVersion"
+          AfterTargets="_InitializeAssemblyVersion">
+    <PropertyGroup>
+      <_FileVersionMaj>$(FileVersion.Split('.')[0])</_FileVersionMaj>
+      <_FileVersionMin>$(FileVersion.Split('.')[1])</_FileVersionMin>
+      <_FileVersionBld>$(FileVersion.Split('.')[2])</_FileVersionBld>
+      <_FileVersionRev>$(FileVersion.Split('.')[3])</_FileVersionRev>
+      <FileVersion>$(_FileVersionMaj).$(_FileVersionMin).$([MSBuild]::Add($(_FileVersionBld), 100)).$(_FileVersionRev)</FileVersion>
+    </PropertyGroup>
+  </Target>
+</Project>

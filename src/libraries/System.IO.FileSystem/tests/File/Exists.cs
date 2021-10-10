@@ -180,7 +180,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(CaseSensitivePlatforms)]
-        public void DoesCaseSensitiveComparions()
+        public void DoesCaseSensitiveComparisons()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();

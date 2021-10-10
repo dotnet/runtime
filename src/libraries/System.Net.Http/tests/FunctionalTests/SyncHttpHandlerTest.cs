@@ -26,6 +26,7 @@ namespace System.Net.Http.Functional.Tests
         protected override bool TestAsync => false;
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class SyncHttpHandler_PostScenarioTest : PostScenarioTest
     {
         public SyncHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
@@ -82,7 +83,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SyncHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Http11_Cancellation_Test
+    public sealed class SyncHttpHandler_HttpClientHandler_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
         public SyncHttpHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
         protected override bool TestAsync => false;

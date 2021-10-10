@@ -118,10 +118,10 @@ struct JitInterfaceCallbacks
     JITINTERFACE_HRESULT (* GetErrorHRESULT)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
     uint32_t (* GetErrorMessage)(void * thisHandle, CorInfoExceptionClass** ppException, char16_t* buffer, uint32_t bufferLength);
     int (* FilterException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
-    void (* HandleException)(void * thisHandle, CorInfoExceptionClass** ppException, struct _EXCEPTION_POINTERS* pExceptionPointers);
     void (* ThrowExceptionForJitResult)(void * thisHandle, CorInfoExceptionClass** ppException, JITINTERFACE_HRESULT result);
     void (* ThrowExceptionForHelper)(void * thisHandle, CorInfoExceptionClass** ppException, const CORINFO_HELPER_DESC* throwHelper);
     bool (* runWithErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
+    bool (* runWithSPMIErrorTrap)(void * thisHandle, CorInfoExceptionClass** ppException, ICorJitInfo::errorTrapFunction function, void* parameter);
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     const char16_t* (* getJitTimeLogFilename)(void * thisHandle, CorInfoExceptionClass** ppException);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
@@ -167,6 +167,7 @@ struct JitInterfaceCallbacks
     bool (* getTailCallHelpers)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* callToken, CORINFO_SIG_INFO* sig, CORINFO_GET_TAILCALL_HELPERS_FLAGS flags, CORINFO_TAILCALL_HELPERS* pResult);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool mustConvert);
     bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_InstructionSet instructionSet, bool supportEnabled);
+    void (* updateEntryPointForTailCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* entryPoint);
     void (* allocMem)(void * thisHandle, CorInfoExceptionClass** ppException, AllocMemArgs* pArgs);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, bool isFunclet, bool isColdCode, uint32_t unwindSize);
     void (* allocUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, uint8_t* pHotCode, uint8_t* pColdCode, uint32_t startOffset, uint32_t endOffset, uint32_t unwindSize, uint8_t* pUnwindBlock, CorJitFuncKind funcKind);
@@ -176,13 +177,14 @@ struct JitInterfaceCallbacks
     bool (* logMsg)(void * thisHandle, CorInfoExceptionClass** ppException, unsigned level, const char* fmt, va_list args);
     int (* doAssert)(void * thisHandle, CorInfoExceptionClass** ppException, const char* szFile, int iLine, const char* szExpr);
     void (* reportFatalError)(void * thisHandle, CorInfoExceptionClass** ppException, CorJitResult result);
-    JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData);
+    JITINTERFACE_HRESULT (* getPgoInstrumentationResults)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema** pSchema, uint32_t* pCountSchemaItems, uint8_t** pInstrumentationData, ICorJitInfo::PgoSource* pgoSource);
     JITINTERFACE_HRESULT (* allocPgoInstrumentationBySchema)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftnHnd, ICorJitInfo::PgoInstrumentationSchema* pSchema, uint32_t countSchemaItems, uint8_t** pInstrumentationData);
     void (* recordCallSite)(void * thisHandle, CorInfoExceptionClass** ppException, uint32_t instrOffset, CORINFO_SIG_INFO* callSig, CORINFO_METHOD_HANDLE methodHandle);
     void (* recordRelocation)(void * thisHandle, CorInfoExceptionClass** ppException, void* location, void* locationRW, void* target, uint16_t fRelocType, uint16_t slotNum, int32_t addlDelta);
     uint16_t (* getRelocTypeHint)(void * thisHandle, CorInfoExceptionClass** ppException, void* target);
     uint32_t (* getExpectedTargetArchitecture)(void * thisHandle, CorInfoExceptionClass** ppException);
     uint32_t (* getJitFlags)(void * thisHandle, CorInfoExceptionClass** ppException, CORJIT_FLAGS* flags, uint32_t sizeInBytes);
+    bool (* doesFieldBelongToClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls);
 
 };
 
@@ -1231,9 +1233,6 @@ public:
     virtual int FilterException(
           struct _EXCEPTION_POINTERS* pExceptionPointers);
 
-    virtual void HandleException(
-          struct _EXCEPTION_POINTERS* pExceptionPointers);
-
     virtual void ThrowExceptionForJitResult(
           JITINTERFACE_HRESULT result)
 {
@@ -1251,6 +1250,10 @@ public:
 }
 
     virtual bool runWithErrorTrap(
+          ICorJitInfo::errorTrapFunction function,
+          void* parameter);
+
+    virtual bool runWithSPMIErrorTrap(
           ICorJitInfo::errorTrapFunction function,
           void* parameter);
 
@@ -1694,6 +1697,14 @@ public:
     return temp;
 }
 
+    virtual void updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    _callbacks->updateEntryPointForTailCall(_thisHandle, &pException, entryPoint);
+    if (pException != nullptr) throw pException;
+}
+
     virtual void allocMem(
           AllocMemArgs* pArgs)
 {
@@ -1786,10 +1797,11 @@ public:
           CORINFO_METHOD_HANDLE ftnHnd,
           ICorJitInfo::PgoInstrumentationSchema** pSchema,
           uint32_t* pCountSchemaItems,
-          uint8_t** pInstrumentationData)
+          uint8_t** pInstrumentationData,
+          ICorJitInfo::PgoSource* pgoSource)
 {
     CorInfoExceptionClass* pException = nullptr;
-    JITINTERFACE_HRESULT temp = _callbacks->getPgoInstrumentationResults(_thisHandle, &pException, ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    JITINTERFACE_HRESULT temp = _callbacks->getPgoInstrumentationResults(_thisHandle, &pException, ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pgoSource);
     if (pException != nullptr) throw pException;
     return temp;
 }
@@ -1852,6 +1864,16 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     uint32_t temp = _callbacks->getJitFlags(_thisHandle, &pException, flags, sizeInBytes);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual bool doesFieldBelongToClass(
+          CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    bool temp = _callbacks->doesFieldBelongToClass(_thisHandle, &pException, fldHnd, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

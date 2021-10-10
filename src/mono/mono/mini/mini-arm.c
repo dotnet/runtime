@@ -18,6 +18,7 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-helpers.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/mono-memory-model.h>
@@ -29,7 +30,6 @@
 #include "mini-arm.h"
 #include "cpu-arm.h"
 #include "ir-emit.h"
-#include "debugger-agent.h"
 #include "mini-gc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
@@ -873,6 +873,8 @@ mono_arch_init (void)
 	   have a way to properly detect CPU features on it. */
 	thumb_supported = TRUE;
 	iphone_abi = TRUE;
+#elif defined(TARGET_ANDROID)
+	thumb_supported = TRUE;
 #else
 	thumb_supported = mono_hwcap_arm_has_thumb;
 	thumb2_supported = mono_hwcap_arm_has_thumb2;
@@ -2311,10 +2313,13 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 	 *   in 1 or 2 integer registers.
 	 */
 	switch (cinfo->ret.storage) {
-	case RegTypeGeneral:
 	case RegTypeNone:
+		linfo->ret.storage = LLVMArgNone;
+		break;
+	case RegTypeGeneral:
 	case RegTypeFP:
 	case RegTypeIRegPair:
+		linfo->ret.storage = LLVMArgNormal;
 		break;
 	case RegTypeStructByAddr:
 		if (sig->pinvoke) {
@@ -3462,7 +3467,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm8 = mono_is_power_of_two (ins->inst_imm);
+			imm8 = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
 			if (imm8 > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm8;

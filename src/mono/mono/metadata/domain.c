@@ -485,10 +485,8 @@ void
 mono_close_exe_image (void)
 {
 	gboolean do_close = exe_image != NULL;
-#ifdef ENABLE_METADATA_UPDATE
 	/* FIXME: shutdown hack. We mess something up and try to double-close/free it. */
-	do_close = do_close && !exe_image->delta_image;
-#endif
+	do_close = do_close && !exe_image->has_updates;
 	if (do_close)
 		mono_image_close (exe_image);
 }
@@ -569,7 +567,7 @@ mono_domain_assembly_open_internal (MonoAssemblyLoadContext *alc, const char *na
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoAssemblyOpenRequest req;
-	mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, alc);
+	mono_assembly_request_prepare_open (&req, alc);
 	ass = mono_assembly_request_open (name, &req, NULL);
 
 	// On netcore, this is necessary because we check the AppContext.BaseDirectory property as part of the assembly lookup algorithm

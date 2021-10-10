@@ -1134,12 +1134,6 @@ int MyICJI::FilterException(struct _EXCEPTION_POINTERS* pExceptionPointers)
     return result;
 }
 
-// Cleans up internal EE tracking when an exception is caught.
-void MyICJI::HandleException(struct _EXCEPTION_POINTERS* pExceptionPointers)
-{
-    jitInstance->mc->cr->AddCall("HandleException");
-}
-
 void MyICJI::ThrowExceptionForJitResult(HRESULT result)
 {
     jitInstance->mc->cr->AddCall("ThrowExceptionForJitResult");
@@ -1562,6 +1556,12 @@ bool MyICJI::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet, bo
     return supported;
 }
 
+void MyICJI::updateEntryPointForTailCall(CORINFO_CONST_LOOKUP* entryPoint)
+{
+    jitInstance->mc->cr->AddCall("updateEntryPointForTailCall");
+    jitInstance->mc->repUpdateEntryPointForTailCall(entryPoint);
+}
+
 // Stuff directly on ICorJitInfo
 
 // Returns extended flags for a particular compilation instance.
@@ -1580,12 +1580,27 @@ uint32_t MyICJI::getJitFlags(CORJIT_FLAGS* jitFlags, uint32_t sizeInBytes)
     return ret;
 }
 
+bool MyICJI::doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("doesFieldBelongToClass");
+    bool result = jitInstance->mc->repDoesFieldBelongToClass(fldHnd, cls);
+    return result;
+}
+
 // Runs the given function with the given parameter under an error trap
 // and returns true if the function completes successfully. We fake this
 // up a bit for SuperPMI and simply catch all exceptions.
 bool MyICJI::runWithErrorTrap(void (*function)(void*), void* param)
 {
     return RunWithErrorTrap(function, param);
+}
+
+// Runs the given function with the given parameter under an error trap
+// and returns true if the function completes successfully. This catches
+// all SPMI exceptions and lets others through.
+bool MyICJI::runWithSPMIErrorTrap(void (*function)(void*), void* param)
+{
+    return RunWithSPMIErrorTrap(function, param);
 }
 
 // Ideally we'd just use the copies of this in standardmacros.h
@@ -1815,10 +1830,12 @@ HRESULT MyICJI::allocPgoInstrumentationBySchema(CORINFO_METHOD_HANDLE ftnHnd,
 HRESULT MyICJI::getPgoInstrumentationResults(CORINFO_METHOD_HANDLE      ftnHnd,
                                              PgoInstrumentationSchema **pSchema,                    // pointer to the schema table which describes the instrumentation results (pointer will not remain valid after jit completes)
                                              uint32_t *                 pCountSchemaItems,          // pointer to the count schema items
-                                             uint8_t **                 pInstrumentationData)       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                             uint8_t **                 pInstrumentationData,       // pointer to the actual instrumentation data (pointer will not remain valid after jit completes)
+                                             PgoSource*                 pPgoSource)
+
 {
     jitInstance->mc->cr->AddCall("getPgoInstrumentationResults");
-    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData);
+    return jitInstance->mc->repGetPgoInstrumentationResults(ftnHnd, pSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with
@@ -1857,7 +1874,7 @@ uint16_t MyICJI::getRelocTypeHint(void* target)
 
 // For what machine does the VM expect the JIT to generate code? The VM
 // returns one of the IMAGE_FILE_MACHINE_* values. Note that if the VM
-// is cross-compiling (such as the case for crossgen), it will return a
+// is cross-compiling (such as the case for crossgen2), it will return a
 // different value than if it was compiling for the host architecture.
 //
 uint32_t MyICJI::getExpectedTargetArchitecture()

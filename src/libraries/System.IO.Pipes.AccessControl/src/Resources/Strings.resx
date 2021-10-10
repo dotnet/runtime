@@ -57,15 +57,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArgumentOutOfRange_NeedValidPipeAccessRights" xml:space="preserve">
-    <value>Invalid PipeAccessRights value.</value>
-  </data>
-  <data name="Argument_NonContainerInvalidAnyFlag" xml:space="preserve">
-    <value>This flag may not be set on a pipe.</value>
-  </data>
-  <data name="IO_IO_PipeBroken" xml:space="preserve">
-    <value>Pipe is broken.</value>
-  </data>
   <data name="PlatformNotSupported_AccessControl" xml:space="preserve">
     <value>Access Control List (ACL) APIs are part of resource management on Windows and are not supported on this platform.</value>
   </data>

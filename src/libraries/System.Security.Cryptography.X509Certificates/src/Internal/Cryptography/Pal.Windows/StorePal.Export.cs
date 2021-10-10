@@ -118,6 +118,16 @@ namespace Internal.Cryptography.Pal
                     if (!Interop.crypt32.CertSaveStore(_certStore, CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
+
+                // When calling CertSaveStore to get the initial length, it returns a cbData that is big enough but
+                // not exactly the right size, at least in the case of PKCS7. So we need to right-size it once we
+                // know exactly how much was written.
+                if (exportedData.Length != blob.cbData)
+                {
+                    return exportedData[0..blob.cbData];
+                }
+
+                // If CertSaveStore calculation got the size right on the first try, then return the buffer as-is.
                 return exportedData;
             }
         }

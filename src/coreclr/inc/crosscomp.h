@@ -41,7 +41,9 @@
 #define ARM_MAX_BREAKPOINTS     8
 #define ARM_MAX_WATCHPOINTS     1
 
+#ifndef CONTEXT_UNWOUND_TO_CALL
 #define CONTEXT_UNWOUND_TO_CALL 0x20000000
+#endif
 
 #if !defined(HOST_ARM64)
 typedef struct _NEON128 {
@@ -422,6 +424,8 @@ enum
 #define DAC_CS_NATIVE_DATA_SIZE 76
 #elif defined(TARGET_LINUX) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
+#elif defined(TARGET_LINUX) && defined(TARGET_S390X)
+#define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_NETBSD) && defined(TARGET_AMD64)
 #define DAC_CS_NATIVE_DATA_SIZE 96
 #elif defined(TARGET_NETBSD) && defined(TARGET_ARM)
@@ -457,6 +461,3 @@ struct T_CRITICAL_SECTION {
 #define T_CRITICAL_SECTION CRITICAL_SECTION
 #endif
 
-#ifdef CROSSGEN_COMPILE
-void CrossGenNotSupported(const char * message);
-#endif

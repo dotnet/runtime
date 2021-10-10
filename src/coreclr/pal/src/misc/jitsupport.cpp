@@ -82,7 +82,7 @@ static const CpuCapability CpuCapabilities[] = {
 // If the capability name is not recognized or unused at present, zero is returned.
 static unsigned long LookupCpuCapabilityFlag(const char* start, size_t length)
 {
-    for (int i = 0; i < _countof(CpuCapabilities); i++)
+    for (size_t i = 0; i < _countof(CpuCapabilities); i++)
     {
         const char* capabilityName = CpuCapabilities[i].name;
         if ((length == strlen(capabilityName)) && (memcmp(start, capabilityName, length) == 0))

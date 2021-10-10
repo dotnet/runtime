@@ -17,15 +17,17 @@ void DumpMapHeader()
     // printf("process name,");
     printf("method name,");
     printf("full signature,");
-    printf("jit flags\n");
+    printf("jit flags,");
+    printf("os\n");
 }
 
 void DumpMap(int index, MethodContext* mc)
 {
     CORINFO_METHOD_INFO cmi;
     unsigned int        flags = 0;
+    CORINFO_OS          os;
 
-    mc->repCompileMethod(&cmi, &flags);
+    mc->repCompileMethod(&cmi, &flags, &os);
 
     const char* moduleName = nullptr;
     const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
@@ -90,7 +92,8 @@ void DumpMap(int index, MethodContext* mc)
     bool hasEdgeProfile = false;
     bool hasClassProfile = false;
     bool hasLikelyClass = false;
-    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass))
+    ICorJitInfo::PgoSource pgoSource = ICorJitInfo::PgoSource::Unknown;
+    if (mc->hasPgoData(hasEdgeProfile, hasClassProfile, hasLikelyClass, pgoSource))
     {
         rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_PGO);
 
@@ -108,9 +111,19 @@ void DumpMap(int index, MethodContext* mc)
         {
             rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS);
         }
+
+        if (pgoSource == ICorJitInfo::PgoSource::Static)
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE);
+        }
+        
+        if (pgoSource == ICorJitInfo::PgoSource::Dynamic)
+        {
+            rawFlags |= 1ULL << (EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE);
+        }
     }
 
-    printf(", %s\n", SpmiDumpHelper::DumpJitFlags(rawFlags).c_str());
+    printf(", %s, %d\n", SpmiDumpHelper::DumpJitFlags(rawFlags).c_str(), (int)os);
 }
 
 int verbDumpMap::DoWork(const char* nameOfInput)

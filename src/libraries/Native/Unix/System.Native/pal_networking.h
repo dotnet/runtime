@@ -4,6 +4,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_io.h"
 #include "pal_types.h"
 #include "pal_errno.h"
 #include <pal_networking_common.h>
@@ -274,14 +275,6 @@ typedef struct
     int32_t OnOff;   // Non-zero to enable linger
     int32_t Seconds; // Number of seconds to linger for
 } LingerOption;
-
-// NOTE: the layout of this type is intended to exactly  match the layout of a `struct iovec`. There are
-//       assertions in pal_networking.cpp that validate this.
-typedef struct
-{
-    uint8_t* Base;
-    uintptr_t Count;
-} IOVector;
 
 typedef struct
 {

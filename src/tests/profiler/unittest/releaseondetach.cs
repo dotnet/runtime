@@ -9,13 +9,9 @@ using System.Threading;
 
 namespace Profiler.Tests
 {
-    public delegate void ProfilerCallback();
-
     class ReleaseOnShutdown
     {
         private static readonly Guid ReleaseOnShutdownGuid = new Guid("B8C47A29-9C1D-4EEA-ABA0-8E8B3E3B792E");
-
-        private static ManualResetEvent _profilerDone; 
 
         [DllImport("Profiler")]
         private static extern void PassCallbackToProfiler(ProfilerCallback callback);
@@ -39,7 +35,7 @@ namespace Profiler.Tests
             string rootPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string profilerPath = Path.Combine(rootPath, profilerName);
 
-            _profilerDone = new ManualResetEvent(false);
+            ManualResetEvent _profilerDone = new ManualResetEvent(false);
             Console.WriteLine($"Attaching profiler {profilerPath} to self.");
             ProfilerControlHelpers.AttachProfilerToSelf(ReleaseOnShutdownGuid, profilerPath);
 

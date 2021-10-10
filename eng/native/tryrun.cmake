@@ -149,6 +149,6 @@ else()
   message(FATAL_ERROR "Arch is ${TARGET_ARCH_NAME}. Only armel, arm, arm64, s390x and x86 are supported!")
 endif()
 
-if(TARGET_ARCH_NAME STREQUAL "x86")
+if(TARGET_ARCH_NAME STREQUAL "x86" OR TARGET_ARCH_NAME STREQUAL "s390x")
   set_cache_value(HAVE_FUNCTIONAL_PTHREAD_ROBUST_MUTEXES_EXITCODE 0)
 endif()

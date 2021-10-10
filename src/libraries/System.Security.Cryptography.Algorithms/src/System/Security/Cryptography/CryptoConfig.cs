@@ -185,8 +185,12 @@ namespace System.Security.Cryptography
                 ht.Add("System.Security.Cryptography.RSA", RSACryptoServiceProviderType);
                 ht.Add("System.Security.Cryptography.AsymmetricAlgorithm", RSACryptoServiceProviderType);
 
-                ht.Add("DSA", DSACryptoServiceProviderType);
-                ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
+                if (!OperatingSystem.IsIOS() &&
+                    !OperatingSystem.IsTvOS())
+                {
+                    ht.Add("DSA", DSACryptoServiceProviderType);
+                    ht.Add("System.Security.Cryptography.DSA", DSACryptoServiceProviderType);
+                }
 
                 // Windows will register the public ECDsaCng type.  Non-Windows gets a special handler.
                 if (OperatingSystem.IsWindows())
@@ -503,6 +507,7 @@ namespace System.Security.Cryptography
         }
 
         [UnsupportedOSPlatform("browser")]
+        [Obsolete(Obsoletions.CryptoConfigEncodeOIDMessage, DiagnosticId = Obsoletions.CryptoConfigEncodeOIDDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static byte[] EncodeOID(string str)
         {
             if (str == null)

@@ -52,10 +52,10 @@ namespace System.Data.OleDb
             {
                 builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
             }
-            builder.Append("\tulParamSize  =" + ulParamSize.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tdwFlags     =0x" + dwFlags.ToString("X4", CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tPrecision   =" + bPrecision.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tScale       =" + bScale.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.AppendLine($"\tulParamSize  ={ulParamSize}");
+            builder.AppendLine($"\tdwFlags      =0x{dwFlags:X4}");
+            builder.AppendLine($"\tPrecision    ={bPrecision}");
+            builder.AppendLine($"\tScale        ={bScale}");
             return builder.ToString();
         }
 #endif
@@ -78,12 +78,12 @@ namespace System.Data.OleDb
             builder.Append("tagDBPARAMBINDINFO").Append(Environment.NewLine);
             if (IntPtr.Zero != pwszDataSourceType)
             {
-                builder.Append("pwszDataSourceType =").Append(Marshal.PtrToStringUni(pwszDataSourceType)).Append(Environment.NewLine);
+                builder.AppendLine($"pwszDataSourceType ={Marshal.PtrToStringUni(pwszDataSourceType)}");
             }
-            builder.Append("\tulParamSize  =" + ulParamSize.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tdwFlags     =0x" + dwFlags.ToString("X4", CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tPrecision   =" + bPrecision.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tScale       =" + bScale.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.AppendLine($"\tulParamSize  ={ulParamSize}");
+            builder.AppendLine($"\tdwFlags     =0x{dwFlags:X4}");
+            builder.AppendLine($"\tPrecision   ={bPrecision}");
+            builder.AppendLine($"\tScale       ={bScale}");
             return builder.ToString();
         }
 #endif
@@ -144,15 +144,15 @@ namespace System.Data.OleDb
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("tagDBBINDING").Append(Environment.NewLine);
-            builder.Append("\tOrdinal     =" + iOrdinal.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tValueOffset =" + obValue.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tLengthOffset=" + obLength.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tStatusOffset=" + obStatus.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tMaxLength   =" + cbMaxLen.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tDB_Type     =" + ODB.WLookup(wType)).Append(Environment.NewLine);
-            builder.Append("\tPrecision   =" + bPrecision.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\tScale       =" + bScale.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.AppendLine("tagDBBINDING");
+            builder.AppendLine($"\tOrdinal     ={iOrdinal}");
+            builder.AppendLine($"\tValueOffset ={obValue}");
+            builder.AppendLine($"\tLengthOffset={obLength}");
+            builder.AppendLine($"\tStatusOffset={obStatus}");
+            builder.AppendLine($"\tMaxLength   ={cbMaxLen}");
+            builder.AppendLine($"\tDB_Type     ={ODB.WLookup(wType)}");
+            builder.AppendLine($"\tPrecision   ={bPrecision}");
+            builder.AppendLine($"\tScale       ={bScale}");
             return builder.ToString();
         }
 #endif
@@ -442,14 +442,14 @@ namespace System.Data.OleDb
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("tagDBCOLUMNINFO: " + Convert.ToString(pwszName, CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + iOrdinal.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + "0x" + dwFlags.ToString("X8", CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + ulColumnSize.ToInt64().ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + "0x" + wType.ToString("X2", CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + bPrecision.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + bScale.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
-            builder.Append("\t" + columnid.eKind.ToString(CultureInfo.InvariantCulture)).Append(Environment.NewLine);
+            builder.AppendLine($"tagDBCOLUMNINFO: {Convert.ToString(pwszName, CultureInfo.InvariantCulture)}");
+            builder.AppendLine($"\t{iOrdinal.ToInt64().ToString(CultureInfo.InvariantCulture)}");
+            builder.AppendLine($"\t0x{dwFlags:X8}");
+            builder.AppendLine($"\t{ulColumnSize}");
+            builder.AppendLine($"\t0x{wType:X2}");
+            builder.AppendLine($"\t{bPrecision}");
+            builder.AppendLine($"\t{bScale}");
+            builder.AppendLine($"\t{columnid.eKind}");
             return builder.ToString();
         }
 #endif

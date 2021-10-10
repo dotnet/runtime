@@ -18,6 +18,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
+#include <mono/utils/mono-compiler.h>
 
 typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
@@ -30,16 +31,16 @@ typedef struct {
 	MonoMethod* (*create_method) (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
 } MonoMethodBuilderCallbacks;
 
-MonoMethodBuilder *
+MONO_COMPONENT_API MonoMethodBuilder *
 mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type);
 
 MonoMethodBuilder *
 mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType type);
 
-void
+MONO_COMPONENT_API void
 mono_mb_free (MonoMethodBuilder *mb);
 
-MonoMethod *
+MONO_COMPONENT_API MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack);
 
 guint32

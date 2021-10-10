@@ -91,7 +91,7 @@ speed up the disk operations.
 These are the general steps that are followed when doing a SuperPMI collection:
 
 1. Collect .MC files. Set up for collection, then cause the JIT to be invoked
-by either running a scenario, running tests, crossgen compiling assemblies,
+by either running a scenario, running tests, crossgen2 compiling assemblies,
 or using PMI to force the JIT to compile functions in an assembly.
 During collection, the data for each JIT compiled function is stored
 in a uniquely named file with a ".MC" filename extension (for "method context").

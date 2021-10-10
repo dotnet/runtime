@@ -44,6 +44,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -303,6 +305,32 @@ namespace System
         public void Add<T>(T value, IEqualityComparer<T>? comparer)
         {
             Add(value is null ? 0 : (comparer?.GetHashCode(value) ?? value.GetHashCode()));
+        }
+
+        /// <summary>Adds a span of bytes to the hash code.</summary>
+        /// <param name="value">The span.</param>
+        /// <remarks>
+        /// This method does not guarantee that the result of adding a span of bytes will match
+        /// the result of adding the same bytes individually.
+        /// </remarks>
+        public void AddBytes(ReadOnlySpan<byte> value)
+        {
+            ref byte pos = ref MemoryMarshal.GetReference(value);
+            ref byte end = ref Unsafe.Add(ref pos, value.Length);
+
+            // Add four bytes at a time until the input has fewer than four bytes remaining.
+            while ((nint)Unsafe.ByteOffset(ref pos, ref end) >= sizeof(int))
+            {
+                Add(Unsafe.ReadUnaligned<int>(ref pos));
+                pos = ref Unsafe.Add(ref pos, sizeof(int));
+            }
+
+            // Add the remaining bytes a single byte at a time.
+            while (Unsafe.IsAddressLessThan(ref pos, ref end))
+            {
+                Add((int)pos);
+                pos = ref Unsafe.Add(ref pos, 1);
+            }
         }
 
         private void Add(int value)

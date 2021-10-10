@@ -11,6 +11,7 @@ namespace System.ComponentModel.Tests
     public class ReflectionCachesUpdateHandlerTests
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/57456", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void ReflectionCachesUpdateHandler_CachesCleared()
         {
             AttributeCollection ac1 = TypeDescriptor.GetAttributes(typeof(ReflectionCachesUpdateHandlerTests));

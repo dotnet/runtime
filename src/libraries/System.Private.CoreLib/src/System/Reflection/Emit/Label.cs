@@ -13,6 +13,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Reflection.Emit
 {
     // The Label class is an opaque representation of a label used by the
@@ -31,7 +33,7 @@ namespace System.Reflection.Emit
 
         public override int GetHashCode() => m_label;
 
-        public override bool Equals(object? obj) =>
+        public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is Label other && Equals(other);
 
         public bool Equals(Label obj) =>

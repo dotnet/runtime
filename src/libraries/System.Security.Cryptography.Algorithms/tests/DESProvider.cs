@@ -5,10 +5,8 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
 {
     internal class DesProvider : IDESProvider
     {
-        public DES Create()
-        {
-            return DES.Create();
-        }
+        public DES Create() => DES.Create();
+        public bool OneShotSupported => true;
     }
 
     public partial class DESFactory

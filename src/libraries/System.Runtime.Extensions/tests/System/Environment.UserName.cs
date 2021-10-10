@@ -22,7 +22,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36896", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not valid on iOS or tvOS")]
         public void UserName_Valid()
         {
             string name = Environment.UserName;

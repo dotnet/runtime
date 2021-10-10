@@ -95,6 +95,34 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>(paramName, () => Marshal.SizeOf(type));
         }
 
+        [Fact]
+        public void SizeOf_GenericStruct_Value_NonGeneric()
+        {
+            GenericStruct<int> value = default;
+            Assert.Equal(8, Marshal.SizeOf((object)value));
+        }
+
+        [Fact]
+        public void SizeOf_GenericStruct_Value_Generic()
+        {
+            GenericStruct<int> value = default;
+            Assert.Equal(8, Marshal.SizeOf(value));
+        }
+
+        [Fact]
+        public void SizeOf_GenericClass_Value_NonGeneric()
+        {
+            SequentialGenericClass<int> value = new();
+            Assert.Equal(4, Marshal.SizeOf((object)value));
+        }
+
+        [Fact]
+        public void SizeOf_GenericClass_Value_Generic()
+        {
+            SequentialGenericClass<int> value = new();
+            Assert.Equal(4, Marshal.SizeOf(value));
+        }
+
         public struct TestStructWithEnumArray
         {
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]

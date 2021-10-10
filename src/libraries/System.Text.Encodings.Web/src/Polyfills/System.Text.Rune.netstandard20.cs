@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Encodings.Web;
+using System.Diagnostics.CodeAnalysis;
 
 // Contains a polyfill implementation of System.Text.Rune that works on netstandard2.0.
 // Implementation copied from:
@@ -387,7 +388,7 @@ namespace System.Text
             return OperationStatus.NeedMoreData;
         }
 
-        public override bool Equals(object? obj) => (obj is Rune other) && Equals(other);
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Rune other) && Equals(other);
 
         public bool Equals(Rune other) => this == other;
 

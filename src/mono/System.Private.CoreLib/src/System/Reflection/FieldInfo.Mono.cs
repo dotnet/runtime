@@ -85,11 +85,11 @@ namespace System.Reflection
             count = 0;
 
             if (IsNotSerialized)
-                attrsData[count++] = new CustomAttributeData((typeof(NonSerializedAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(NonSerializedAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (DeclaringType.IsExplicitLayout)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(int), GetFieldOffset()) };
-                attrsData[count++] = new CustomAttributeData(
+                attrsData[count++] = new RuntimeCustomAttributeData(
                     (typeof(FieldOffsetAttribute)).GetConstructor(new[] { typeof(int) })!,
                     ctorArgs,
                     Array.Empty<CustomAttributeNamedArgument>());
@@ -98,7 +98,7 @@ namespace System.Reflection
             if (marshalAs != null)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(UnmanagedType), marshalAs.Value) };
-                attrsData[count++] = new CustomAttributeData(
+                attrsData[count++] = new RuntimeCustomAttributeData(
                     (typeof(MarshalAsAttribute)).GetConstructor(new[] { typeof(UnmanagedType) })!,
                     ctorArgs,
                     Array.Empty<CustomAttributeNamedArgument>());//FIXME Get named params

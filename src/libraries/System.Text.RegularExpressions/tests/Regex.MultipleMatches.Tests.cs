@@ -2,48 +2,49 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public class RegexMultipleMatchTests
     {
-
-        [Fact]
-        public void Matches_MultipleCapturingGroups()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Matches_MultipleCapturingGroups(RegexEngine engine)
         {
             string[] expectedGroupValues = { "abracadabra", "abra", "cad" };
             string[] expectedGroupCaptureValues = { "abracad", "abra" };
 
             // Another example - given by Brad Merril in an article on RegularExpressions
-            Regex regex = new Regex(@"(abra(cad)?)+");
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"(abra(cad)?)+");
             string input = "abracadabra1abracadabra2abracadabra3";
             Match match = regex.Match(input);
             while (match.Success)
             {
                 string expected = "abracadabra";
-                Assert.Equal(expected, match.Value);
+                RegexAssert.Equal(expected, match);
 
                 Assert.Equal(3, match.Groups.Count);
                 for (int i = 0; i < match.Groups.Count; i++)
                 {
-                    Assert.Equal(expectedGroupValues[i], match.Groups[i].Value);
+                    RegexAssert.Equal(expectedGroupValues[i], match.Groups[i]);
                     if (i == 1)
                     {
                         Assert.Equal(2, match.Groups[i].Captures.Count);
                         for (int j = 0; j < match.Groups[i].Captures.Count; j++)
                         {
-                            Assert.Equal(expectedGroupCaptureValues[j], match.Groups[i].Captures[j].Value);
+                            RegexAssert.Equal(expectedGroupCaptureValues[j], match.Groups[i].Captures[j]);
                         }
                     }
                     else if (i == 2)
                     {
                         Assert.Equal(1, match.Groups[i].Captures.Count);
-                        Assert.Equal("cad", match.Groups[i].Captures[0].Value);
+                        RegexAssert.Equal("cad", match.Groups[i].Captures[0]);
                     }
                 }
                 Assert.Equal(1, match.Captures.Count);
-                Assert.Equal("abracadabra", match.Captures[0].Value);
+                RegexAssert.Equal("abracadabra", match.Captures[0]);
                 match = match.NextMatch();
             }
         }
@@ -291,22 +292,14 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        public static IEnumerable<object[]> Matches_TestData_WithEngine =>
+            RegexHelpers.PrependEngines(Matches_TestData());
+
         [Theory]
-        [MemberData(nameof(Matches_TestData))]
-        [MemberData(nameof(RegexCompilationHelper.TransformRegexOptions), nameof(Matches_TestData), 2, MemberType = typeof(RegexCompilationHelper))]
-        public void Matches(string pattern, string input, RegexOptions options, CaptureData[] expected)
+        [MemberData(nameof(Matches_TestData_WithEngine))]
+        public async Task Matches(RegexEngine engine, string pattern, string input, RegexOptions options, CaptureData[] expected)
         {
-            if (options == RegexOptions.None)
-            {
-                Regex regexBasic = new Regex(pattern);
-                VerifyMatches(regexBasic.Matches(input), expected);
-                VerifyMatches(regexBasic.Match(input), expected);
-
-                VerifyMatches(Regex.Matches(input, pattern), expected);
-                VerifyMatches(Regex.Match(input, pattern), expected);
-            }
-
-            Regex regexAdvanced = new Regex(pattern, options);
+            Regex regexAdvanced = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             VerifyMatches(regexAdvanced.Matches(input), expected);
             VerifyMatches(regexAdvanced.Match(input), expected);
 
@@ -334,16 +327,16 @@ namespace System.Text.RegularExpressions.Tests
         private static void VerifyMatch(Match match, CaptureData expected)
         {
             Assert.True(match.Success);
-            Assert.Equal(expected.Value, match.Value);
+            RegexAssert.Equal(expected.Value, match);
             Assert.Equal(expected.Index, match.Index);
             Assert.Equal(expected.Length, match.Length);
 
-            Assert.Equal(expected.Value, match.Groups[0].Value);
+            RegexAssert.Equal(expected.Value, match.Groups[0]);
             Assert.Equal(expected.Index, match.Groups[0].Index);
             Assert.Equal(expected.Length, match.Groups[0].Length);
 
             Assert.Equal(1, match.Captures.Count);
-            Assert.Equal(expected.Value, match.Captures[0].Value);
+            RegexAssert.Equal(expected.Value, match.Captures[0]);
             Assert.Equal(expected.Index, match.Captures[0].Index);
             Assert.Equal(expected.Length, match.Captures[0].Length);
         }

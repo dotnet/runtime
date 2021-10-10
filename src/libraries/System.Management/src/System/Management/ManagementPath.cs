@@ -634,7 +634,7 @@ namespace System.Management
                 string oldValue = Server;
 
                 // Only set if changed
-                if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(oldValue, value, StringComparison.OrdinalIgnoreCase))
                 {
                     if (null == wmiPath)
                         wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath ();
@@ -888,7 +888,7 @@ namespace System.Management
                 string oldValue = ClassName;
 
                 // Only set if changed
-                if (0 != string.Compare(oldValue, value, StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(oldValue, value, StringComparison.OrdinalIgnoreCase))
                 {
                     // isWbemPathShared handled in internal className property accessor.
                     internalClassName = value;

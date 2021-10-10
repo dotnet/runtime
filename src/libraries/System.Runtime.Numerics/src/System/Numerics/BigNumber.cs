@@ -410,11 +410,11 @@ namespace System.Numerics
             bool isNegative = HexConverter.FromChar(number.digits[0]) >= 8;
             uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
 
-            int[]? arrayFromPool = null;
+            uint[]? arrayFromPool = null;
 
-            Span<uint> bitsBuffer = (blockCount <= BigInteger.StackallocUInt32Limit)
-                ? stackalloc uint[blockCount]
-                : MemoryMarshal.Cast<int, uint>((arrayFromPool = ArrayPool<int>.Shared.Rent(blockCount)).AsSpan(0, blockCount));
+            Span<uint> bitsBuffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
 
             int bitsBufferPos = blockCount - 1;
 
@@ -467,8 +467,8 @@ namespace System.Numerics
 
                     if ((!isNegative && sign < 0) || sign == int.MinValue)
                     {
-                        sign = isNegative ? -1 : 1;
                         bits = new[] { (uint)sign };
+                        sign = isNegative ? -1 : 1;
                     }
                 }
                 else
@@ -489,7 +489,7 @@ namespace System.Numerics
             {
                 if (arrayFromPool != null)
                 {
-                    ArrayPool<int>.Shared.Return(arrayFromPool);
+                    ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
             }
         }
@@ -540,7 +540,7 @@ namespace System.Numerics
 
             bool Naive(ref BigNumberBuffer number, out BigInteger result)
             {
-                Span<uint> stackBuffer = stackalloc uint[BigInteger.StackallocUInt32Limit];
+                Span<uint> stackBuffer = stackalloc uint[BigIntegerCalculator.StackAllocThreshold];
                 Span<uint> currentBuffer = stackBuffer;
                 uint partialValue = 0;
                 int partialDigitCount = 0;
@@ -633,7 +633,7 @@ namespace System.Numerics
 
                     Span<uint> buffer = new uint[bufferSize];
                     arrayFromPoolForResultBuffer = ArrayPool<int>.Shared.Rent(bufferSize);
-                    Span<uint> newBuffer = MemoryMarshal.Cast<int, uint>(arrayFromPoolForResultBuffer);
+                    Span<uint> newBuffer = MemoryMarshal.Cast<int, uint>(arrayFromPoolForResultBuffer).Slice(0, bufferSize);
                     newBuffer.Clear();
 
                     // Separate every MaxPartialDigits digits and store them in the buffer.
@@ -684,85 +684,77 @@ namespace System.Numerics
                     Debug.Assert(currentBlock == 0);
                     Debug.Assert(bufferIndex == -1);
 
-                    unsafe
+                    int blockSize = 1;
+                    arrayFromPoolForMultiplier = ArrayPool<int>.Shared.Rent(blockSize);
+                    Span<uint> multiplier = MemoryMarshal.Cast<int, uint>(arrayFromPoolForMultiplier).Slice(0, blockSize);
+                    multiplier[0] = TenPowMaxPartial;
+
+                    // This loop is executed ceil(log_2(bufferSize)) times.
+                    while (true)
                     {
-                        arrayFromPoolForMultiplier = ArrayPool<int>.Shared.Rent(1);
-                        Span<uint> multiplier = MemoryMarshal.Cast<int, uint>(arrayFromPoolForMultiplier);
-                        multiplier[0] = TenPowMaxPartial;
-
-                        int blockSize = 1;
-                        // This loop is executed ceil(log_2(bufferSize)) times.
-                        while (true)
+                        // merge each block pairs.
+                        // When buffer represents:
+                        // |     A     |     B     |     C     |     D     |
+                        // Make newBuffer like:
+                        // |  A + B * multiplier   |  C + D * multiplier   |
+                        for (int i = 0; i < bufferSize; i += blockSize * 2)
                         {
-                            fixed (uint* bufPtr = buffer, newBufPtr = newBuffer, mulPtr = multiplier)
+                            Span<uint> curBufffer = buffer.Slice(i);
+                            Span<uint> curNewBuffer = newBuffer.Slice(i);
+
+                            int len = Math.Min(bufferSize - i, blockSize * 2);
+                            int lowerLen = Math.Min(len, blockSize);
+                            int upperLen = len - lowerLen;
+                            if (upperLen != 0)
                             {
-                                uint* curBufPtr = bufPtr;
-                                uint* curNewBufPtr = newBufPtr;
-                                // merge each block pairs.
-                                // When buffer represents:
-                                // |     A     |     B     |     C     |     D     |
-                                // Make newBuffer like:
-                                // |  A + B * multiplier   |  C + D * multiplier   |
-                                for (int i = 0; i < bufferSize; i += blockSize * 2)
+                                Debug.Assert(blockSize == lowerLen);
+                                Debug.Assert(blockSize == multiplier.Length);
+                                Debug.Assert(multiplier.Length == lowerLen);
+                                BigIntegerCalculator.Multiply(multiplier, curBufffer.Slice(blockSize, upperLen), curNewBuffer.Slice(0, len));
+                            }
+
+                            long carry = 0;
+                            int j = 0;
+                            for (; j < lowerLen; j++)
+                            {
+                                long digit = (curBufffer[j] + carry) + curNewBuffer[j];
+                                curNewBuffer[j] = unchecked((uint)digit);
+                                carry = digit >> 32;
+                            }
+                            if (carry != 0)
+                            {
+                                while (true)
                                 {
-                                    int len = Math.Min(bufferSize - i, blockSize * 2);
-                                    int lowerLen = Math.Min(len, blockSize);
-                                    int upperLen = len - lowerLen;
-                                    if (upperLen != 0)
+                                    curNewBuffer[j]++;
+                                    if (curNewBuffer[j] != 0)
                                     {
-                                        BigIntegerCalculator.Multiply(mulPtr, blockSize, curBufPtr + blockSize, upperLen, curNewBufPtr, len);
+                                        break;
                                     }
-
-                                    long carry = 0;
-                                    int j = 0;
-                                    for (; j < lowerLen; j++)
-                                    {
-                                        long digit = (curBufPtr[j] + carry) + curNewBufPtr[j];
-                                        curNewBufPtr[j] = unchecked((uint)digit);
-                                        carry = digit >> 32;
-                                    }
-                                    if (carry != 0)
-                                    {
-                                        while (true)
-                                        {
-                                            curNewBufPtr[j]++;
-                                            if (curNewBufPtr[j] != 0)
-                                            {
-                                                break;
-                                            }
-                                            j++;
-                                        }
-                                    }
-
-                                    curBufPtr += blockSize * 2;
-                                    curNewBufPtr += blockSize * 2;
+                                    j++;
                                 }
                             }
+                        }
 
-                            Span<uint> tmp = buffer;
-                            buffer = newBuffer;
-                            newBuffer = tmp;
-                            blockSize *= 2;
+                        Span<uint> tmp = buffer;
+                        buffer = newBuffer;
+                        newBuffer = tmp;
+                        blockSize *= 2;
 
-                            if (bufferSize <= blockSize)
-                            {
-                                break;
-                            }
-                            newBuffer.Clear();
-                            int[]? arrayToReturn = arrayFromPoolForMultiplier;
+                        if (bufferSize <= blockSize)
+                        {
+                            break;
+                        }
+                        newBuffer.Clear();
+                        int[]? arrayToReturn = arrayFromPoolForMultiplier;
 
-                            arrayFromPoolForMultiplier = ArrayPool<int>.Shared.Rent(blockSize);
-                            Span<uint> newMultiplier = MemoryMarshal.Cast<int, uint>(arrayFromPoolForMultiplier);
-                            newMultiplier.Clear();
-                            fixed (uint* mulPtr = multiplier, newMulPtr = newMultiplier)
-                            {
-                                BigIntegerCalculator.Square(mulPtr, blockSize / 2, newMulPtr, blockSize);
-                            }
-                            multiplier = newMultiplier;
-                            if (arrayToReturn is not null)
-                            {
-                                ArrayPool<int>.Shared.Return(arrayToReturn);
-                            }
+                        arrayFromPoolForMultiplier = ArrayPool<int>.Shared.Rent(blockSize);
+                        Span<uint> newMultiplier = MemoryMarshal.Cast<int, uint>(arrayFromPoolForMultiplier).Slice(0, blockSize);
+                        newMultiplier.Clear();
+                        BigIntegerCalculator.Square(multiplier, newMultiplier);
+                        multiplier = newMultiplier;
+                        if (arrayToReturn is not null)
+                        {
+                            ArrayPool<int>.Shared.Return(arrayToReturn);
                         }
                     }
 

@@ -12,7 +12,7 @@
 //
 // A fat function pointer is a pointer with the second least significant bit
 // (aka FAT_POINTER_MASK) set. If the bit is set, the pointer (after clearing the bit)
-// actually points to a tuple <method pointer, instantiation argument pointer> where
+// actually points to a tuple <method pointer, instantiation argument> where
 // instantiationArgument is a hidden first argument required by method pointer.
 //
 // Fat pointers are used in CoreRT as a replacement for instantiating stubs,
@@ -80,7 +80,7 @@ public:
     {
         int count = 0;
 
-        for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
+        for (BasicBlock* const block : compiler->Blocks())
         {
             count += TransformBlock(block);
         }
@@ -100,7 +100,7 @@ private:
     {
         int count = 0;
 
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             if (compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
@@ -410,17 +410,15 @@ private:
         // GetHiddenArgument: load hidden argument.
         //
         // Arguments:
-        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgumentPointer>
+        //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgument>
         //
         // Return Value:
         //    generic context hidden argument.
         GenTree* GetHiddenArgument(GenTree* fixedFptrAddress)
         {
             GenTree* fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
-            GenTree* wordSize = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
-            GenTree* hiddenArgumentPtrPtr =
-                compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
-            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_IND, pointerType, hiddenArgumentPtrPtr);
+            GenTree* wordSize          = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, genTypeSize(TYP_I_IMPL));
+            GenTree* hiddenArgumentPtr = compiler->gtNewOperNode(GT_ADD, pointerType, fixedFptrAddressCopy, wordSize);
             return compiler->gtNewOperNode(GT_IND, fixedFptrAddressCopy->TypeGet(), hiddenArgumentPtr);
         }
 
@@ -754,8 +752,8 @@ private:
             CORINFO_CONTEXT_HANDLE context                = inlineInfo->exactContextHnd;
             const bool             isLateDevirtualization = true;
             const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
-            compiler->impDevirtualizeCall(call, &methodHnd, &methodFlags, &context, nullptr, isLateDevirtualization,
-                                          explicitTailCall);
+            compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &context, nullptr,
+                                          isLateDevirtualization, explicitTailCall);
 
             // We know this call can devirtualize or we would not have set up GDV here.
             // So impDevirtualizeCall should succeed in devirtualizing.
@@ -1012,7 +1010,7 @@ private:
                 }
             };
 
-            for (Statement* nextStmt : remainderBlock->Statements())
+            for (Statement* const nextStmt : remainderBlock->Statements())
             {
                 JITDUMP(" Scouting " FMT_STMT "\n", nextStmt->GetID());
 
@@ -1273,9 +1271,9 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
     assert(!doesMethodHaveGuardedDevirtualization());
     assert(!doesMethodHaveExpRuntimeLookup());
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckForTransformableIndirectCalls);
         }

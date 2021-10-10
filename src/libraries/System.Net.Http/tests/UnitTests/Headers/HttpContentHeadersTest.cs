@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -72,7 +69,7 @@ namespace System.Net.Http.Tests
         public void ContentLength_UseAddMethod_AddedValueCanBeRetrievedUsingProperty()
         {
             _headers = new HttpContentHeaders(new ComputeLengthHttpContent(() => { throw new ShouldNotBeInvokedException(); }));
-            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, " 68 \r\n ");
+            _headers.TryAddWithoutValidation(HttpKnownHeaderNames.ContentLength, " 68 ");
 
             Assert.Equal(68, _headers.ContentLength);
         }

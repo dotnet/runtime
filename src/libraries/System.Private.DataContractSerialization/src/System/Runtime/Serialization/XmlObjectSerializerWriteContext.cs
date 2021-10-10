@@ -120,7 +120,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    SerializeWithXsiType(xmlWriter, obj, objTypeHandle, null /*type*/, declaredTypeID, declaredTypeHandle, Type.GetTypeFromHandle(declaredTypeHandle));
+                    SerializeWithXsiType(xmlWriter, obj, objTypeHandle, null /*type*/, declaredTypeID, declaredTypeHandle, Type.GetTypeFromHandle(declaredTypeHandle)!);
                 }
             }
         }
@@ -179,7 +179,7 @@ namespace System.Runtime.Serialization
                 {
                     if (objectType == null)
                     {
-                        objectType = Type.GetTypeFromHandle(objectTypeHandle);
+                        objectType = Type.GetTypeFromHandle(objectTypeHandle)!;
                     }
                     WriteResolvedTypeInfo(xmlWriter, objectType, declaredType);
                 }
@@ -221,12 +221,12 @@ namespace System.Runtime.Serialization
             if (isNew)
             {
                 xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.IdLocalName,
-                                            DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "i{0}", objectId));
+                                            DictionaryGlobals.SerializationNamespace, string.Create(CultureInfo.InvariantCulture, $"i{objectId}"));
                 return false;
             }
             else
             {
-                xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.RefLocalName, DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "i{0}", objectId));
+                xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.RefLocalName, DictionaryGlobals.SerializationNamespace, string.Create(CultureInfo.InvariantCulture, $"i{objectId}"));
                 return true;
             }
         }

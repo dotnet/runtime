@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.Emit;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
@@ -33,11 +34,10 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
         public void OffsetOf_ExplicitLayout_ReturnsExpected()
         {
             Type t = typeof(ExplicitLayoutTest);
-            Assert.Equal(56, Marshal.SizeOf(t));
+            Assert.Equal(OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86 ? 52 : 56, Marshal.SizeOf(t));
             Assert.Equal(new IntPtr(0), Marshal.OffsetOf(t, nameof(ExplicitLayoutTest.m_short1)));
             Assert.Equal(new IntPtr(2), Marshal.OffsetOf(t, nameof(ExplicitLayoutTest.m_short2)));
 
@@ -106,14 +106,17 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49872", TestPlatforms.Android)]
         public void OffsetOf_Decimal_ReturnsExpected()
         {
             Type t = typeof(FieldAlignmentTest_Decimal);
 
-            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 Assert.Equal(96, Marshal.SizeOf(t));
+            }
+            else if (OperatingSystem.IsAndroid())
+            {
+                Assert.Equal(72, Marshal.SizeOf(t));
             }
             else
             {
@@ -121,11 +124,15 @@ namespace System.Runtime.InteropServices.Tests
             }
 
             Assert.Equal(new IntPtr(0), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.b)));
-            Assert.Equal(new IntPtr(8), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.p)));
+            Assert.Equal(OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86 ? new IntPtr(4) : new IntPtr(8), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.p)));
 
-            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86 && RuntimeInformation.ProcessArchitecture != Architecture.Wasm))
+            if (OperatingSystem.IsWindows() || (RuntimeInformation.ProcessArchitecture != Architecture.X86))
             {
                 Assert.Equal(new IntPtr(88), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.s)));
+            }
+            else if (OperatingSystem.IsAndroid())
+            {
+                Assert.Equal(new IntPtr(68), Marshal.OffsetOf(t, nameof(FieldAlignmentTest_Decimal.s)));
             }
             else
             {
@@ -222,6 +229,34 @@ namespace System.Runtime.InteropServices.Tests
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.OffsetOf(typeof(NoLayoutPoint), nameof(NoLayoutPoint.x)));
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.OffsetOf<NoLayoutPoint>(nameof(NoLayoutPoint.x)));
+        }
+
+        [Fact]
+        public void OffsetOf_Field_ValueType_Generic()
+        {
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2<int>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2<ulong>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2<float>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2<double>>(nameof(Point2<int>.y)));
+
+            // [COMPAT] Non-blittable generic types with value-type generic arguments are supported in OffsetOf since they've always been allowed
+            // and it likely doesn't meet the bar to break back-compat.
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2<char>>(nameof(Point2<int>.y)));
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2<byte>>(nameof(Point2<int>.y)));
+        }
+
+        [Fact]
+        public void OffsetOf_Field_ReferenceType_Generic()
+        {
+            // [COMPAT] Generic types with value-type generic arguments are supported in OffsetOf since they've always been allowed
+            // and it likely doesn't meet the bar to break back-compat.
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2Class<int>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2Class<ulong>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)4, Marshal.OffsetOf<Point2Class<float>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)8, Marshal.OffsetOf<Point2Class<double>>(nameof(Point2Class<int>.y)));
+
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2Class<char>>(nameof(Point2Class<int>.y)));
+            Assert.Equal((IntPtr)1, Marshal.OffsetOf<Point2Class<byte>>(nameof(Point2Class<int>.y)));
         }
 
         public class NonRuntimeType : Type
@@ -449,26 +484,26 @@ namespace System.Runtime.InteropServices.Tests
         public double m_double2; // 8 bytes
         public byte m_byte3; // 1 byte
         public byte m_byte4; // 1 byte
-                             // 6 bytes of padding
+                             // 6 bytes of padding (2 bytes on Linux x86)
 
         public decimal m_decimal1; // 16 bytes
         public char m_char4; // 1 byte
-                             // 7 bytes of padding
+                             // 7 bytes of padding (3 bytes on Linux x86)
     }
     struct FieldAlignmentTest_Decimal
     {
         public byte b; // 1 byte
-                       // 7 bytes of padding
+                       // 7 bytes of padding (3 bytes on Linux x86)
 
         // The largest field in below struct is decimal (16 bytes wide).
         // However, alignment requirement for the below struct should be only  8 bytes (not 16).
         // This is because unlike fields of other types well known to mcg (like long, char etc.)
         // which need to be aligned according to their byte size, decimal is really a struct
         // with 8 byte alignment requirement.
-        public FieldAlignmentTest p; // 80 bytes (72 bytes on x86/Unix)
+        public FieldAlignmentTest p; // 80 bytes (72 bytes on Win x86/Unix) (64 bytes on Linux x86)
 
         public short s; // 2 bytes
-                        // 6 bytes of padding
+                        // 6 bytes of padding (2 bytes on Linux x86)
     }
 
     struct FieldAlignmentTest_Guid
@@ -495,6 +530,19 @@ namespace System.Runtime.InteropServices.Tests
 
         public short s; // 2 bytes
                         // 6 bytes of padding
-    };
+    }
+
+    struct Point2<T>
+    {
+        public T x;
+        public T y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    class Point2Class<T>
+    {
+        public T x;
+        public T y;
+    }
 #pragma warning restore 169, 649, 618
 }

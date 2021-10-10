@@ -49,32 +49,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration value.</returns>
         public string this[string key]
         {
-            get
-            {
-                for (int i = _providers.Count - 1; i >= 0; i--)
-                {
-                    IConfigurationProvider provider = _providers[i];
-
-                    if (provider.TryGet(key, out string value))
-                    {
-                        return value;
-                    }
-                }
-
-                return null;
-            }
-            set
-            {
-                if (_providers.Count == 0)
-                {
-                    throw new InvalidOperationException(SR.Error_NoSources);
-                }
-
-                foreach (IConfigurationProvider provider in _providers)
-                {
-                    provider.Set(key, value);
-                }
-            }
+            get => GetConfiguration(_providers, key);
+            set => SetConfiguration(_providers, key, value);
         }
 
         /// <summary>
@@ -132,6 +108,34 @@ namespace Microsoft.Extensions.Configuration
             foreach (IConfigurationProvider provider in _providers)
             {
                 (provider as IDisposable)?.Dispose();
+            }
+        }
+
+        internal static string GetConfiguration(IList<IConfigurationProvider> providers, string key)
+        {
+            for (int i = providers.Count - 1; i >= 0; i--)
+            {
+                IConfigurationProvider provider = providers[i];
+
+                if (provider.TryGet(key, out string value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+
+        internal static void SetConfiguration(IList<IConfigurationProvider> providers, string key, string value)
+        {
+            if (providers.Count == 0)
+            {
+                throw new InvalidOperationException(SR.Error_NoSources);
+            }
+
+            foreach (IConfigurationProvider provider in providers)
+            {
+                provider.Set(key, value);
             }
         }
     }

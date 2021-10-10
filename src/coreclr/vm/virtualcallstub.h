@@ -14,7 +14,6 @@
 #ifndef _VIRTUAL_CALL_STUB_H
 #define _VIRTUAL_CALL_STUB_H
 
-#ifndef CROSSGEN_COMPILE
 
 #define CHAIN_LOOKUP
 
@@ -42,13 +41,6 @@ struct VTableCallHolder;
 /////////////////////////////////////////////////////////////////////////////////////
 // Forward function declarations
 extern "C" void InContextTPQuickDispatchAsmStub();
-
-#ifdef FEATURE_PREJIT
-extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock,
-                                                 TADDR siteAddrForRegisterIndirect,
-                                                 DWORD sectionIndex,
-                                                 Module * pModule);
-#endif
 
 extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                            TADDR siteAddrForRegisterIndirect,
@@ -154,10 +146,6 @@ public:
 
     PCODE           GetReturnAddress() { LIMITED_METHOD_CONTRACT; return m_returnAddr; }
 };
-
-#ifdef FEATURE_PREJIT
-extern "C" void StubDispatchFixupStub();              // for lazy fixup of ngen call sites
-#endif
 
 // These are the assembly language entry points that the stubs use when they want to go into the EE
 
@@ -1714,6 +1702,5 @@ private:
     static FastTable* dead;             //linked list head of to be deleted (abandoned) buckets
 };
 
-#endif // !CROSSGEN_COMPILE
 
 #endif // !_VIRTUAL_CALL_STUB_H

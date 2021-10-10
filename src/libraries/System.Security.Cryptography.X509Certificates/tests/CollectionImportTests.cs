@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -69,6 +70,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerBytes_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7EmptyDerBytes))
@@ -79,6 +81,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemBytes_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7EmptyPemBytes))
@@ -89,6 +92,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerFile_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7EmptyDerFile))
@@ -99,6 +103,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemFile_Empty()
         {
             using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7EmptyPemFile))
@@ -109,6 +114,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerBytes_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7SingleDerBytes))
@@ -121,6 +127,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemBytes_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7SinglePemBytes))
@@ -133,6 +140,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerFile_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7SingleDerFile))
@@ -145,6 +153,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemFile_Single()
         {
             using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7SinglePemFile))
@@ -157,6 +166,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainDerBytes))
@@ -167,6 +177,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerByteSpan_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainDerBytes.AsSpan()))
@@ -177,6 +188,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemBytes_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes))
@@ -187,6 +199,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemByteSpan_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestData.Pkcs7ChainPemBytes.AsSpan()))
@@ -197,6 +210,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7DerFile_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7ChainDerFile))
@@ -207,6 +221,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "PKCS#7 import is not available")]
         public static void ImportPkcs7PemFile_Chain()
         {
             using (ImportedCollection ic = Cert.Import(TestFiles.Pkcs7ChainPemFile))
@@ -368,7 +383,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     "test.local",
                 };
 
-                string[] actualSubjects = certs.OfType<X509Certificate2>().
+                string[] actualSubjects = certs.
                     Select(cert => cert.GetNameInfo(X509NameType.SimpleName, false)).
                     ToArray();
 
@@ -382,7 +397,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     true,
                 };
 
-                bool[] actualHasPrivateKeys = certs.OfType<X509Certificate2>().
+                bool[] actualHasPrivateKeys = certs.
                     Select(cert => cert.HasPrivateKey).
                     ToArray();
 

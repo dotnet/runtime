@@ -15,12 +15,13 @@ namespace Sample
         public ExceptionsTask()
         {
             measurements = new Measurement[] {
+                new NoExceptionHandling(),
                 new TryCatch(),
                 new TryCatchThrow(),
                 new TryCatchFilter(),
                 new TryCatchFilterInline(),
-                //new TryCatchFilterThrow(),
-                //new TryCatchFilterThrowApplies(),
+                new TryCatchFilterThrow(),
+                new TryCatchFilterThrowApplies(),
             };
         }
 
@@ -38,13 +39,35 @@ namespace Sample
 
         public abstract class ExcMeasurement : BenchTask.Measurement
         {
-            public override int InitialSamples => 10000;
+            public override int InitialSamples => 100000;
+        }
+
+        class NoExceptionHandling : ExcMeasurement
+        {
+            public override string Name => "NoExceptionHandling";
+            public override int InitialSamples => 1000000;
+            bool increaseCounter = false;
+            int unusedCounter;
+
+            public override void RunStep()
+            {
+                DoNothing();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void DoNothing ()
+            {
+                if (increaseCounter)
+                    unusedCounter++;
+            }
         }
 
         class TryCatch : ExcMeasurement
         {
             public override string Name => "TryCatch";
             public override int InitialSamples => 1000000;
+            bool doThrow = false;
+
             public override void RunStep()
             {
                 try
@@ -58,12 +81,16 @@ namespace Sample
             [MethodImpl(MethodImplOptions.NoInlining)]
             void DoNothing ()
             {
+                if (doThrow)
+                    throw new Exception ("Reached DoThrow and throwed");
             }
         }
 
         class TryCatchThrow : ExcMeasurement
         {
             public override string Name => "TryCatchThrow";
+            bool doThrow = true;
+
             public override void RunStep()
             {
                 try
@@ -78,13 +105,16 @@ namespace Sample
             [MethodImpl(MethodImplOptions.NoInlining)]
             void DoThrow()
             {
-                throw new System.Exception("Reached DoThrow and throwed");
+                if (doThrow)
+                    throw new System.Exception("Reached DoThrow and throwed");
             }
         }
 
         class TryCatchFilter : ExcMeasurement
         {
             public override string Name => "TryCatchFilter";
+            bool doThrow = false;
+
             public override void RunStep()
             {
                 try
@@ -99,12 +129,16 @@ namespace Sample
             [MethodImpl(MethodImplOptions.NoInlining)]
             void DoNothing()
             {
+                if (doThrow)
+                    throw new Exception("Reached DoThrow and throwed");
             }
         }
 
         class TryCatchFilterInline : ExcMeasurement
         {
             public override string Name => "TryCatchFilterInline";
+            bool doThrow = false;
+
             public override void RunStep()
             {
                 try
@@ -119,12 +153,16 @@ namespace Sample
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void DoNothing()
             {
+                if (doThrow)
+                    throw new Exception("Reached DoThrow and throwed");
             }
         }
 
         class TryCatchFilterThrow : ExcMeasurement
         {
             public override string Name => "TryCatchFilterThrow";
+            bool doThrow = true;
+
             public override void RunStep()
             {
                 try
@@ -142,13 +180,16 @@ namespace Sample
             [MethodImpl(MethodImplOptions.NoInlining)]
             void DoThrow()
             {
-                throw new System.Exception("Reached DoThrow and throwed");
+                if (doThrow)
+                    throw new System.Exception("Reached DoThrow and throwed");
             }
         }
 
         class TryCatchFilterThrowApplies : ExcMeasurement
         {
             public override string Name => "TryCatchFilterThrowApplies";
+            bool doThrow = true;
+
             public override void RunStep()
             {
                 try
@@ -163,7 +204,8 @@ namespace Sample
             [MethodImpl(MethodImplOptions.NoInlining)]
             void DoThrow()
             {
-                throw new System.Exception("Reached DoThrow and throwed");
+                if (doThrow)
+                    throw new System.Exception("Reached DoThrow and throwed");
             }
         }
     }

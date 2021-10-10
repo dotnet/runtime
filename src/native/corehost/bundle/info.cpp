@@ -64,6 +64,7 @@ StatusCode info_t::process_header()
         const char* addr = map_bundle();
 
         reader_t reader(addr, m_bundle_size, m_header_offset);
+        m_offset_in_file = reader.offset_in_file();
 
         m_header = header_t::read(reader);
         m_deps_json.set_location(&m_header.deps_json_location());
@@ -107,7 +108,14 @@ char* info_t::config_t::map(const pal::string_t& path, const location_t* &locati
     // * There is no performance limitation due to a larger sized mapping, since we actually only read the pages with relevant contents.
     // * Files that are too large to be mapped (ex: that exhaust 32-bit virtual address space) are not supported. 
 
+#ifdef _WIN32
+    // Since we can't use in-situ parsing on Windows, as JSON data is encoded in
+    // UTF-8 and the host expects wide strings.
+    // We do not need COW and read-only mapping will be enough.
+    char* addr = (char*)pal::mmap_read(app->m_bundle_path);
+#else // _WIN32
     char* addr = (char*)pal::mmap_copy_on_write(app->m_bundle_path);
+#endif // _WIN32
     if (addr == nullptr)
     {
         trace::error(_X("Failure processing application bundle."));
@@ -116,13 +124,15 @@ char* info_t::config_t::map(const pal::string_t& path, const location_t* &locati
 
     trace::info(_X("Mapped bundle for [%s]"), path.c_str());
 
-    return addr + location->offset;
+    return addr + location->offset + app->m_offset_in_file;
 }
 
 void info_t::config_t::unmap(const char* addr, const location_t* location)
 {
     // Adjust to the beginning of the bundle.
-    addr -= location->offset;
+    const bundle::info_t* app = bundle::info_t::the_app;
+    addr -= location->offset - app->m_offset_in_file;
+
     bundle::info_t::the_app->unmap_bundle(addr);
 }
 

@@ -17,9 +17,34 @@ namespace Microsoft.WebAssembly.Build.Tasks
         [Required]
         public ITaskItem[]? Properties { get; set; }
 
+        public ITaskItem[] Items { get; set; } = Array.Empty<ITaskItem>();
+
         [NotNull]
         [Required]
         public string? OutputFile { get; set; }
+
+        private const string s_originalItemNameMetadata = "OriginalItemName__";
+        private const string s_conditionToUseMetadata = "ConditionToUse__";
+        private static readonly HashSet<string> s_metdataNamesToSkip = new()
+        {
+            "FullPath",
+            "RootDir",
+            "Filename",
+            "Extension",
+            "RelativeDir",
+            "Directory",
+            "RecursiveDir",
+            "Identity",
+            "ModifiedTime",
+            "CreatedTime",
+            "AccessedTime",
+            "DefiningProjectFullPath",
+            "DefiningProjectDirectory",
+            "DefiningProjectName",
+            "DefiningProjectExtension",
+            s_originalItemNameMetadata,
+            s_conditionToUseMetadata
+        };
 
         public override bool Execute()
         {
@@ -30,21 +55,50 @@ namespace Microsoft.WebAssembly.Build.Tasks
             StringBuilder sb = new();
 
             sb.AppendLine("<Project>");
-            sb.AppendLine("    <PropertyGroup>");
+            sb.AppendLine("\t<PropertyGroup>");
 
-            foreach (var prop in Properties)
+            foreach (ITaskItem2 prop in Properties)
             {
-                string value = prop.ItemSpec;
+                string value = prop.EvaluatedIncludeEscaped;
                 string? name = prop.GetMetadata("Name");
-                string? condition = prop.GetMetadata("ConditionToUse");
+                string? condition = prop.GetMetadataValueEscaped(s_conditionToUseMetadata);
 
                 if (!string.IsNullOrEmpty(condition))
-                    sb.AppendLine($"        <{name} Condition=\"{condition}\">{value}</{name}>");
+                    sb.AppendLine($"\t\t<{name} Condition=\"{condition}\">{value}</{name}>");
                 else
-                    sb.AppendLine($"        <{name}>{value}</{name}>");
+                    sb.AppendLine($"\t\t<{name}>{value}</{name}>");
             }
 
-            sb.AppendLine("    </PropertyGroup>");
+            sb.AppendLine("\t</PropertyGroup>");
+
+            sb.AppendLine("\t<ItemGroup>");
+            foreach (ITaskItem2 item in Items)
+            {
+                string value = item.EvaluatedIncludeEscaped;
+                string name = item.GetMetadata(s_originalItemNameMetadata);
+
+                if (string.IsNullOrEmpty(name))
+                {
+                    Log.LogError($"Item {value} is missing {s_originalItemNameMetadata} metadata, for the item name");
+                    return false;
+                }
+
+                sb.AppendLine($"\t\t<{name} Include=\"{value}\"");
+
+                string? condition = item.GetMetadataValueEscaped(s_conditionToUseMetadata);
+                if (!string.IsNullOrEmpty(condition))
+                    sb.AppendLine($"\t\t\tCondition=\"{condition}\"");
+
+                foreach (string mdName in item.MetadataNames)
+                {
+                    if (!s_metdataNamesToSkip.Contains(mdName))
+                        sb.AppendLine($"\t\t\t{mdName}=\"{item.GetMetadataValueEscaped(mdName)}\"");
+                }
+
+                sb.AppendLine($"\t\t/>");
+            }
+
+            sb.AppendLine("\t</ItemGroup>");
             sb.AppendLine("</Project>");
 
             File.WriteAllText(OutputFile, sb.ToString());

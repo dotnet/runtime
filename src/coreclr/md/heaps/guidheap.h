@@ -58,15 +58,6 @@ public:
         return m_GuidPool.InitOnMemReadOnly((void *)sourceData.GetDataPointer(), sourceData.GetSize());
     }
 
-#ifdef FEATURE_PREJIT
-    // Can be called multiple times.
-    inline void InitializeHotData(
-        HotHeap hotHeap)
-    {
-        m_GuidPool.InitHotData(hotHeap);
-    }
-#endif //FEATURE_PREJIT
-
     // Destroys the guid heap and all its allocated data. Can run on uninitialized guid heap.
     inline void Delete()
     {

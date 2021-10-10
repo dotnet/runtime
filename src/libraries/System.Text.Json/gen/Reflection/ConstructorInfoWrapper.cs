@@ -6,7 +6,7 @@ using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class ConstructorInfoWrapper : ConstructorInfo
     {
@@ -21,7 +21,9 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         public override Type DeclaringType => _ctor.ContainingType.AsType(_metadataLoadContext);
 
-        public override MethodAttributes Attributes => throw new NotImplementedException();
+        private MethodAttributes? _attributes;
+
+        public override MethodAttributes Attributes => _attributes ??= _ctor.GetMethodAttributes();
 
         public override RuntimeMethodHandle MethodHandle => throw new NotSupportedException();
 

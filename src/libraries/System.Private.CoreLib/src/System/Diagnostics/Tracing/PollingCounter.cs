@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
             Publish();
         }
 
-        public override string ToString() => $"PollingCounter '{Name}' Count 1 Mean {_lastVal.ToString("n3")}";
+        public override string ToString() => $"PollingCounter '{Name}' Count 1 Mean {_lastVal:n3}";
 
         private readonly Func<double> _metricProvider;
         private double _lastVal;

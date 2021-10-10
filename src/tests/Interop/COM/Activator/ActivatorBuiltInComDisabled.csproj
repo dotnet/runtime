@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Internal.Runtime.InteropServices is CoreCLR-only -->
+    <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NETServer\NETServer.csproj" />
+    <ProjectReference Include="Servers\AssemblyA.csproj" />
+    <ProjectReference Include="Servers\AssemblyB.csproj" />
+    <ProjectReference Include="Servers\AssemblyC.csproj" />
+    <ProjectReference Include="Servers\AssemblyContracts.csproj" />
+  </ItemGroup>
+  <!-- Set up an isolated directory for the server assemblies -->
+  <Target Name="SetUpIsolatedDirectory" AfterTargets="CopyFilesToOutputDirectory">
+    <PropertyGroup>
+      <ServerAssemblyDest>$(OutDir)/Servers</ServerAssemblyDest>
+    </PropertyGroup>
+    <ItemGroup>
+      <ServerAssembly Include="$(OutDir)/AssemblyA.*" />
+      <ServerAssembly Include="$(OutDir)/AssemblyB.*" />
+      <ServerAssembly Include="$(OutDir)/AssemblyC.*" />
+    </ItemGroup>
+    <Move SourceFiles="@(ServerAssembly)" DestinationFolder="$(ServerAssemblyDest)" />
+  </Target>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="false" />
+  </ItemGroup>
+</Project>

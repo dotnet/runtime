@@ -45,7 +45,6 @@ namespace System.Threading.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(GetValidNames))]
         public void Ctor_ValidName(string name)
         {
@@ -97,7 +96,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(GetValidNames))]
         public void OpenExisting(string name)
         {
@@ -132,7 +130,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void OpenExisting_UnavailableName()
         {
             string name = Guid.NewGuid().ToString("N");
@@ -228,7 +225,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [MemberData(nameof(AbandonExisting_MemberData))]
         public void AbandonExisting(
             string name,
@@ -348,7 +344,7 @@ namespace System.Threading.Tests
                             }
                             else
                             {
-                                Assert.True(m2Index < notAbandonedWaitIndex);
+                                Assert.True(!isNotAbandonedWaitObjectSignaled || m2Index < notAbandonedWaitIndex);
                                 Assert.Equal(m2Index, ame.MutexIndex);
                             }
 
@@ -406,7 +402,6 @@ namespace System.Threading.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36307", TestRuntimes.Mono)]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
         {
             string fileName = GetTestFilePath();
@@ -470,7 +465,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void NamedMutex_ThreadExitDisposeRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");
@@ -531,7 +525,6 @@ namespace System.Threading.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/48720", TestPlatforms.AnyUnix, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void NamedMutex_DisposeWhenLockedRaceTest()
         {
             var mutexName = Guid.NewGuid().ToString("N");

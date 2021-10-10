@@ -20,8 +20,6 @@ namespace System
             return _impl.Value;
         }
 
-        internal bool IsRuntimeImplemented() => this.UnderlyingSystemType is RuntimeType;
-
         internal virtual bool IsTypeBuilder() => false;
 
         public bool IsInterface
@@ -89,10 +87,10 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        public static Type GetTypeFromHandle(RuntimeTypeHandle handle)
+        public static Type? GetTypeFromHandle(RuntimeTypeHandle handle)
         {
             if (handle.Value == IntPtr.Zero)
-                return null!; // FIXME: shouldn't return null
+                return null;
 
             return internal_from_handle(handle.Value);
         }
@@ -133,13 +131,5 @@ namespace System
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern Type internal_from_handle(IntPtr handle);
-
-        [Intrinsic]
-        public static bool operator ==(Type? left, Type? right) => left == right;
-
-        public static bool operator !=(Type? left, Type? right)
-        {
-            return !(left == right);
-        }
     }
 }

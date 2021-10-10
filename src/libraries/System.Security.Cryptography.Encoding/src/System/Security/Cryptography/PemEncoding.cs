@@ -168,9 +168,9 @@ namespace System.Security.Cryptography
             {
                 int size = PostEBPrefix.Length + label.Length + Ending.Length;
                 Debug.Assert(destination.Length >= size);
-                PostEBPrefix.AsSpan().CopyTo(destination);
+                PostEBPrefix.CopyTo(destination);
                 label.CopyTo(destination.Slice(PostEBPrefix.Length));
-                Ending.AsSpan().CopyTo(destination.Slice(PostEBPrefix.Length + label.Length));
+                Ending.CopyTo(destination.Slice(PostEBPrefix.Length + label.Length));
                 return destination.Slice(0, size);
             }
         }

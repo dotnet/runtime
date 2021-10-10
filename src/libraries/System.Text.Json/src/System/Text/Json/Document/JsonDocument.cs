@@ -23,7 +23,10 @@ namespace System.Text.Json
     {
         private ReadOnlyMemory<byte> _utf8Json;
         private MetadataDb _parsedData;
-        private byte[]? _extraRentedBytes;
+
+        private byte[]? _extraRentedArrayPoolBytes;
+        private PooledByteBufferWriter? _extraPooledByteBufferWriter;
+
         private (int, string?) _lastIndexAndString = (-1, null);
 
         internal bool IsDisposable { get; }
@@ -36,19 +39,24 @@ namespace System.Text.Json
         private JsonDocument(
             ReadOnlyMemory<byte> utf8Json,
             MetadataDb parsedData,
-            byte[]? extraRentedBytes,
+            byte[]? extraRentedArrayPoolBytes = null,
+            PooledByteBufferWriter? extraPooledByteBufferWriter = null,
             bool isDisposable = true)
         {
             Debug.Assert(!utf8Json.IsEmpty);
 
+            // Both rented values better be null if we're not disposable.
+            Debug.Assert(isDisposable ||
+                (extraRentedArrayPoolBytes == null && extraPooledByteBufferWriter == null));
+
+            // Both rented values can't be specified.
+            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
+
             _utf8Json = utf8Json;
             _parsedData = parsedData;
-            _extraRentedBytes = extraRentedBytes;
-
+            _extraRentedArrayPoolBytes = extraRentedArrayPoolBytes;
+            _extraPooledByteBufferWriter = extraPooledByteBufferWriter;
             IsDisposable = isDisposable;
-
-            // extraRentedBytes better be null if we're not disposable.
-            Debug.Assert(isDisposable || extraRentedBytes == null);
         }
 
         /// <inheritdoc />
@@ -63,14 +71,22 @@ namespace System.Text.Json
             _parsedData.Dispose();
             _utf8Json = ReadOnlyMemory<byte>.Empty;
 
-            // When "extra rented bytes exist" they contain the document,
-            // and thus need to be cleared before being returned.
-            byte[]? extraRentedBytes = Interlocked.Exchange(ref _extraRentedBytes, null);
-
-            if (extraRentedBytes != null)
+            if (_extraRentedArrayPoolBytes != null)
             {
-                extraRentedBytes.AsSpan(0, length).Clear();
-                ArrayPool<byte>.Shared.Return(extraRentedBytes);
+                byte[]? extraRentedBytes = Interlocked.Exchange<byte[]?>(ref _extraRentedArrayPoolBytes, null);
+
+                if (extraRentedBytes != null)
+                {
+                    // When "extra rented bytes exist" it contains the document,
+                    // and thus needs to be cleared before being returned.
+                    extraRentedBytes.AsSpan(0, length).Clear();
+                    ArrayPool<byte>.Shared.Return(extraRentedBytes);
+                }
+            }
+            else if (_extraPooledByteBufferWriter != null)
+            {
+                PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange<PooledByteBufferWriter?>(ref _extraPooledByteBufferWriter, null);
+                extraBufferWriter?.Dispose();
             }
         }
 
@@ -184,7 +200,12 @@ namespace System.Text.Json
             return endIndex;
         }
 
-        private ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
+        internal ReadOnlyMemory<byte> GetRootRawValue()
+        {
+            return GetRawValue(0, includeQuotes : true);
+        }
+
+        internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)
         {
             CheckNotDisposed();
 
@@ -298,8 +319,8 @@ namespace System.Text.Json
             byte[]? otherUtf8TextArray = null;
 
             int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
-            Span<byte> otherUtf8Text = length <= JsonConstants.StackallocThreshold ?
-                stackalloc byte[JsonConstants.StackallocThreshold] :
+            Span<byte> otherUtf8Text = length <= JsonConstants.StackallocByteThreshold ?
+                stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
 
             ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
@@ -764,7 +785,12 @@ namespace System.Text.Json
             ReadOnlyMemory<byte> segmentCopy = GetRawValue(index, includeQuotes: true).ToArray();
 
             JsonDocument newDocument =
-                new JsonDocument(segmentCopy, newDb, extraRentedBytes: null, isDisposable: false);
+                new JsonDocument(
+                    segmentCopy,
+                    newDb,
+                    extraRentedArrayPoolBytes: null,
+                    extraPooledByteBufferWriter: null,
+                    isDisposable: false);
 
             return newDocument.RootElement;
         }

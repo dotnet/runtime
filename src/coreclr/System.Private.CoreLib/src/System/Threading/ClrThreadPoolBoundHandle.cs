@@ -124,14 +124,65 @@ namespace System.Threading
         ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
         /// </exception>
         [CLSCompliant(false)]
-        public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData)
+        public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: true);
+
+        /// <summary>
+        ///     Returns an unmanaged pointer to a <see cref="NativeOverlapped"/> structure, specifying
+        ///     a delegate that is invoked when the asynchronous I/O operation is complete, a user-provided
+        ///     object providing context, and managed objects that serve as buffers.
+        /// </summary>
+        /// <param name="callback">
+        ///     An <see cref="IOCompletionCallback"/> delegate that represents the callback method
+        ///     invoked when the asynchronous I/O operation completes.
+        /// </param>
+        /// <param name="state">
+        ///     A user-provided object that distinguishes this <see cref="NativeOverlapped"/> from other
+        ///     <see cref="NativeOverlapped"/> instances. Can be <see langword="null"/>.
+        /// </param>
+        /// <param name="pinData">
+        ///     An object or array of objects representing the input or output buffer for the operation. Each
+        ///     object represents a buffer, for example an array of bytes.  Can be <see langword="null"/>.
+        /// </param>
+        /// <returns>
+        ///     An unmanaged pointer to a <see cref="NativeOverlapped"/> structure.
+        /// </returns>
+        /// <remarks>
+        ///     <para>
+        ///         The unmanaged pointer returned by this method can be passed to the operating system in
+        ///         overlapped I/O operations. The <see cref="NativeOverlapped"/> structure is fixed in
+        ///         physical memory until <see cref="FreeNativeOverlapped(NativeOverlapped*)"/> is called.
+        ///     </para>
+        ///     <para>
+        ///         The buffer or buffers specified in <paramref name="pinData"/> must be the same as those passed
+        ///         to the unmanaged operating system function that performs the asynchronous I/O.
+        ///     </para>
+        ///     <para>
+        ///         <see cref="ExecutionContext"/> is not flowed to the invocation of the callback.
+        ///     </para>
+        ///     <note>
+        ///         The buffers specified in <paramref name="pinData"/> are pinned for the duration of
+        ///         the I/O operation.
+        ///     </note>
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="callback"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///     This method was called after the <see cref="ThreadPoolBoundHandle"/> was disposed.
+        /// </exception>
+        [CLSCompliant(false)]
+        public unsafe NativeOverlapped* UnsafeAllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData) =>
+            AllocateNativeOverlapped(callback, state, pinData, flowExecutionContext: false);
+
+        private unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData, bool flowExecutionContext)
         {
             if (callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
             EnsureNotDisposed();
 
-            ThreadPoolBoundHandleOverlapped overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, preAllocated: null);
+            ThreadPoolBoundHandleOverlapped overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, preAllocated: null, flowExecutionContext);
             overlapped._boundHandle = this;
             return overlapped._nativeOverlapped;
         }

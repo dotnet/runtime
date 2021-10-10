@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(InteropCommonDir)CheckGCMode.cs" />
     <Compile Include="SuppressGCTransitionTest.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -187,6 +187,7 @@ namespace System.Net.WebSockets
         public static bool IsApplicationTargeting45() => true;
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.")]
         public static void RegisterPrefixes()
         {
             // The current WebRequest implementation in the libraries does not support upgrading

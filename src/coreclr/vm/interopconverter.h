@@ -122,15 +122,15 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 // GetObjectRefFromComIP(IUnknown **ppUnk, MethodTable *pMTClass, ...)
 // Converts a COM IP to ObjectRef, pMTClass is the desired RCW type. If bSuppressAddRef and a new RCW is created,
 // *ppUnk will be assigned NULL to signal to the caller that it is no longer responsible for releasing the IP.
-void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, MethodTable *pItfMT, DWORD dwFlags); // ObjFromComIP::flags
+void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, DWORD dwFlags); // ObjFromComIP::flags
 
 //--------------------------------------------------------------------------------
 // GetObjectRefFromComIP(IUnknown *pUnk, MethodTable *pMTClass, ...)
 // Converts a COM IP to ObjectRef, pMTClass is the desired RCW type.
-inline void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown *pUnk, MethodTable *pMTClass = NULL, MethodTable *pItfMT = NULL, DWORD dwFlags = ObjFromComIP::NONE)
+inline void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown *pUnk, MethodTable *pMTClass = NULL, DWORD dwFlags = ObjFromComIP::NONE)
 {
     WRAPPER_NO_CONTRACT;
-    return GetObjectRefFromComIP(pObjOut, &pUnk, pMTClass, pItfMT, dwFlags);
+    return GetObjectRefFromComIP(pObjOut, &pUnk, pMTClass, dwFlags);
 }
 
 #endif // FEATURE_COMINTEROP

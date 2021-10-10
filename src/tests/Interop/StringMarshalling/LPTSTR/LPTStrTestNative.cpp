@@ -47,3 +47,15 @@ extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReverseByValStringUni(ByValStringIn
 {
     StringMarshalingTests<LPWSTR, TP_slen>::ReverseInplace(str->str);
 }
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReverseCopyByValStringAnsi(ByValStringInStructAnsi str, ByValStringInStructAnsi* out)
+{
+    *out = str;
+    StringMarshalingTests<char*, default_callconv_strlen>::ReverseInplace(out->str);
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE ReverseCopyByValStringUni(ByValStringInStructUnicode str, ByValStringInStructUnicode* out)
+{
+    *out = str;
+    StringMarshalingTests<LPWSTR, TP_slen>::ReverseInplace(out->str);
+}

@@ -150,7 +150,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task AdvanceAfterCompleteThrows()
         {
             await _pipe.Writer.WriteAsync(new byte[1]);
@@ -215,7 +214,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task ReadAsync_ThrowsIfWriterCompletedWithException()
         {
             ThrowTestException(new InvalidOperationException("Writer exception"), e => _pipe.Writer.Complete(e));
@@ -234,7 +233,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50959", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public async Task WriteAsync_ThrowsIfReaderCompletedWithException()
         {
             ThrowTestException(new InvalidOperationException("Reader exception"), e => _pipe.Reader.Complete(e));
@@ -621,7 +620,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task DoubleAsyncReadThrows()
         {
             ValueTask<ReadResult> readTask1 = _pipe.Reader.ReadAsync();
@@ -658,7 +656,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50927", TestPlatforms.Android)]
         public async Task AdvanceWithoutReadThrows()
         {
             await _pipe.Writer.WriteAsync(new byte[3]);

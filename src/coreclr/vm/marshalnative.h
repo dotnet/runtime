@@ -104,11 +104,6 @@ public:
     static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
 
     //====================================================================
-    // check if the object is classic COM component
-    //====================================================================
-    static FCDECL1(FC_BOOL_RET, IsComObject, Object* objUNSAFE);
-
-    //====================================================================
     // free the COM component and zombie this object
     // further usage of this Object might throw an exception,
     //====================================================================

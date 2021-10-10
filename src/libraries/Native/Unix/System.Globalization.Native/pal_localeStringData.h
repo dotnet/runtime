@@ -46,7 +46,8 @@ typedef enum
 PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
                                                           LocaleStringData localeStringData,
                                                           UChar* value,
-                                                          int32_t valueLength);
+                                                          int32_t valueLength,
+                                                          const UChar* uiLocaleName);
 
 PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
                                                           int shortFormat, UChar* value,

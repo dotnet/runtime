@@ -72,3 +72,13 @@ ppDataOut: Receives a CFDataRef with the exported blob
 pOSStatus: Receives the result of SecItemExport
 */
 PALEXPORT int32_t AppleCryptoNative_X509GetRawData(SecCertificateRef cert, CFDataRef* ppDataOut, int32_t* pOSStatus);
+
+/*
+Extract a string that contains a human-readable summary of the contents of the certificate
+
+Returns 1 on success, 0 on failure, any other value indicates invalid state.
+
+Output:
+ppSummaryOut: Receives a CFDataRef with the exported blob
+*/
+PALEXPORT int32_t AppleCryptoNative_X509GetSubjectSummary(SecCertificateRef cert, CFStringRef* ppSummaryOut);

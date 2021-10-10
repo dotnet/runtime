@@ -7,10 +7,12 @@ set(SOURCES
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
     eventpipeprofiler/eventpipemetadatareader.cpp
+    gcallocateprofiler/gcallocateprofiler.cpp
     gcbasicprofiler/gcbasicprofiler.cpp
     gcprofiler/gcprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
+    multiple/multiple.cpp
     nullprofiler/nullprofiler.cpp
     rejitprofiler/rejitprofiler.cpp
     rejitprofiler/ilrewriter.cpp

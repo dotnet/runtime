@@ -56,8 +56,8 @@ namespace System.Text.Json.Serialization.Metadata
             return (JsonTypeInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonTypeInfo.ConstructorDelegate));
         }
 
-        public override JsonTypeInfo.ParameterizedConstructorDelegate<T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<JsonTypeInfo.ParameterizedConstructorDelegate<T>>(CreateParameterizedConstructor(constructor));
+        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
+            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
 
         private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor)
         {
@@ -172,10 +172,12 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<TElement>, TCollection> CreateImmutableEnumerableCreateRangeDelegate<TCollection, TElement>() =>
             CreateDelegate<Func<IEnumerable<TElement>, TCollection>>(
                 CreateImmutableEnumerableCreateRangeDelegate(typeof(TCollection), typeof(TElement), typeof(IEnumerable<TElement>)));
 
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableEnumerableCreateRangeDelegate(Type collectionType, Type elementType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableEnumerableCreateRangeMethod(elementType);
@@ -196,10 +198,12 @@ namespace System.Text.Json.Serialization.Metadata
             return dynamicMethod;
         }
 
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         public override Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection> CreateImmutableDictionaryCreateRangeDelegate<TCollection, TKey, TValue>() =>
             CreateDelegate<Func<IEnumerable<KeyValuePair<TKey, TValue>>, TCollection>>(
                 CreateImmutableDictionaryCreateRangeDelegate(typeof(TCollection), typeof(TKey), typeof(TValue), typeof(IEnumerable<KeyValuePair<TKey, TValue>>)));
 
+        [RequiresUnreferencedCode(IEnumerableConverterFactoryHelpers.ImmutableConvertersUnreferencedCodeMessage)]
         private static DynamicMethod CreateImmutableDictionaryCreateRangeDelegate(Type collectionType, Type keyType, Type valueType, Type enumerableType)
         {
             MethodInfo realMethod = collectionType.GetImmutableDictionaryCreateRangeMethod(keyType, valueType);
@@ -254,6 +258,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
             {
+                // Not supported scenario: possible if declaredPropertyType == int? and runtimePropertyType == int
+                // We should catch that particular case earlier in converter generation.
+                Debug.Assert(!runtimePropertyType.IsValueType);
+
                 generator.Emit(OpCodes.Box, declaredPropertyType);
             }
 
@@ -287,6 +295,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (declaredPropertyType != runtimePropertyType && declaredPropertyType.IsValueType)
             {
+                // Not supported scenario: possible if e.g. declaredPropertyType == int? and runtimePropertyType == int
+                // We should catch that particular case earlier in converter generation.
+                Debug.Assert(!runtimePropertyType.IsValueType);
+
                 generator.Emit(OpCodes.Unbox_Any, declaredPropertyType);
             }
 

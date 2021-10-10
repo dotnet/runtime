@@ -147,8 +147,11 @@ public:
     }
 
     // Get next offset to shuffle. There has to be at least one offset left.
-    // For register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
-    // For stack arguments it returns stack offset in bytes with negative sign.
+    // It returns an offset encoded properly for a ShuffleEntry offset.
+    // - For floating register arguments it returns regNum | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK.
+    // - For register arguments it returns regNum | ShuffleEntry::REGMASK.
+    // - For stack arguments it returns stack offset index in stack slots for most architectures. For macOS-arm64,
+    //     it returns an encoded stack offset, see below.
     int GetNextOfs()
     {
         int index;
@@ -189,6 +192,8 @@ public:
         if (m_currentByteStackIndex < m_argLocDesc->m_byteStackSize)
         {
             const unsigned byteIndex = m_argLocDesc->m_byteStackIndex + m_currentByteStackIndex;
+
+#if !defined(TARGET_OSX) || !defined(TARGET_ARM64)
             index = byteIndex / TARGET_POINTER_SIZE;
             m_currentByteStackIndex += TARGET_POINTER_SIZE;
 
@@ -198,7 +203,68 @@ public:
                 COMPlusThrow(kNotSupportedException);
             }
 
-            return -(int)byteIndex;
+            // Only Apple Silicon ABI currently supports unaligned stack argument shuffling
+            _ASSERTE(byteIndex == unsigned(index * TARGET_POINTER_SIZE));
+            return index;
+#else
+            // Tha Apple Silicon ABI does not consume an entire stack slot for every argument
+            // Arguments smaller than TARGET_POINTER_SIZE are always aligned to their argument size
+            // But may not begin at the beginning of a stack slot
+            //
+            // The argument location description has been updated to describe the stack offest and
+            // size in bytes.  We will use it as our source of truth.
+            //
+            // The ShuffleEntries will be implemented by the Arm64 StubLinkerCPU::EmitLoadStoreRegImm
+            // using the 12-bit scaled immediate stack offset. The load/stores can be implemented as 1/2/4/8
+            // bytes each (natural binary sizes).
+            //
+            // Each offset is encode as a log2 size and a 12-bit unsigned scaled offset.
+            // We only emit offsets of these natural binary sizes
+            //
+            // We choose the offset based on the ABI stack alignment requirements
+            // - Small integers are shuffled based on their size
+            // - HFA are shuffled based on their element size
+            // - Others are shuffled in full 8 byte chunks.
+            int bytesRemaining = m_argLocDesc->m_byteStackSize - m_currentByteStackIndex;
+            int log2Size = 3;
+
+            // If isHFA, shuffle based on field size
+            // otherwise shuffle based on stack size
+            switch(m_argLocDesc->m_hfaFieldSize ? m_argLocDesc->m_hfaFieldSize : m_argLocDesc->m_byteStackSize)
+            {
+                case 1:
+                    log2Size = 0;
+                    break;
+                case 2:
+                    log2Size = 1;
+                    break;
+                case 4:
+                    log2Size = 2;
+                    break;
+                case 3: // Unsupported Size
+                case 5: // Unsupported Size
+                case 6: // Unsupported Size
+                case 7: // Unsupported Size
+                    _ASSERTE(false);
+                    break;
+                default: // Should be a multiple of 8 (TARGET_POINTER_SIZE)
+                    _ASSERTE(bytesRemaining >= TARGET_POINTER_SIZE);
+                    break;
+            }
+
+            m_currentByteStackIndex += (1 << log2Size);
+
+            // Delegates cannot handle overly large argument stacks due to shuffle entry encoding limitations.
+            // Arm64 current implementation only supports 12 bit unsigned scaled offset
+            if ((byteIndex >> log2Size) > 0xfff)
+            {
+                COMPlusThrow(kNotSupportedException);
+            }
+
+            _ASSERTE((byteIndex & ((1 << log2Size) - 1)) == 0);
+
+            return (byteIndex >> log2Size) | (log2Size << 12);
+#endif
         }
 
         // There are no more offsets to get, the caller should not have called us
@@ -274,31 +340,8 @@ BOOL AddNextShuffleEntryToArray(ArgLocDesc sArgSrc, ArgLocDesc sArgDst, SArray<S
         // different).
         if (srcOffset != dstOffset)
         {
-            if (srcOffset <= 0)
-            {
-                // It was a stack byte offset.
-                const unsigned srcStackByteOffset = -srcOffset;
-                _ASSERT(((srcStackByteOffset % TARGET_POINTER_SIZE) == 0) && "NYI: does not support shuffling of such args");
-                entry.srcofs = (UINT16)(srcStackByteOffset / TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                _ASSERT((srcOffset & ShuffleEntry::REGMASK) != 0);
-                entry.srcofs = (UINT16)srcOffset;
-            }
-
-            if (dstOffset <= 0)
-            {
-                // It was a stack byte offset.
-                const unsigned dstStackByteOffset = -dstOffset;
-                _ASSERT((dstStackByteOffset % TARGET_POINTER_SIZE) == 0 && "NYI: does not support shuffling of such args");
-                entry.dstofs = (UINT16)(dstStackByteOffset / TARGET_POINTER_SIZE);
-            }
-            else
-            {
-                _ASSERT((dstOffset & ShuffleEntry::REGMASK) != 0);
-                entry.dstofs = (UINT16)dstOffset;
-            }
+            entry.srcofs = (UINT16)srcOffset;
+            entry.dstofs = (UINT16)dstOffset;
 
             if (shuffleType == ShuffleComputationType::InstantiatingStub)
             {
@@ -657,7 +700,7 @@ VOID GenerateShuffleArray(MethodDesc* pInvoke, MethodDesc *pTargetMeth, SArray<S
     }
 
     entry.srcofs = ShuffleEntry::SENTINEL;
-    entry.dstofs = static_cast<UINT16>(stackSizeDelta);
+    entry.stacksizedelta = static_cast<UINT16>(stackSizeDelta);
     pShuffleEntryArray->Append(entry);
 
 #else
@@ -777,7 +820,8 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pInstRetBuffCallStub, pShuffleThunk, NULL ) != NULL)
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
             pShuffleThunk = pClass->m_pInstRetBuffCallStub;
         }
     }
@@ -785,7 +829,8 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
     {
         if (FastInterlockCompareExchangePointer(&pClass->m_pStaticCallStub, pShuffleThunk, NULL ) != NULL)
         {
-            pShuffleThunk->DecRef();
+            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
+            shuffleThunkWriterHolder.GetRW()->DecRef();
             pShuffleThunk = pClass->m_pStaticCallStub;
         }
     }
@@ -794,7 +839,6 @@ Stub* COMDelegate::SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMe
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 static PCODE GetVirtualCallStub(MethodDesc *method, TypeHandle scopeType)
 {
@@ -1001,10 +1045,6 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodInfo, Object* refThisUNSAFE, Objec
                                             flags,
                                             &fIsOpenDelegate))
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
-
         // Initialize the delegate to point to the target method.
         BindToMethod(&gc.refThis,
                      &gc.refFirstArg,
@@ -1212,15 +1252,17 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             {
                 GCX_PREEMP();
 
-                pUMThunkMarshInfo = new UMThunkMarshInfo();
-                pUMThunkMarshInfo->LoadTimeInit(pInvokeMeth);
+                pUMThunkMarshInfo = (UMThunkMarshInfo*)(void*)pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(sizeof(UMThunkMarshInfo)));
+
+                ExecutableWriterHolder<UMThunkMarshInfo> uMThunkMarshInfoWriterHolder(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
+                uMThunkMarshInfoWriterHolder.GetRW()->LoadTimeInit(pInvokeMeth);
 
                 g_IBCLogger.LogEEClassCOWTableAccess(pMT);
                 if (FastInterlockCompareExchangePointer(&(pClass->m_pUMThunkMarshInfo),
                                                         pUMThunkMarshInfo,
                                                         NULL ) != NULL)
                 {
-                    delete pUMThunkMarshInfo;
+                    pMT->GetLoaderAllocator()->GetStubHeap()->BackoutMem(pUMThunkMarshInfo, sizeof(UMThunkMarshInfo));
                     pUMThunkMarshInfo = pClass->m_pUMThunkMarshInfo;
                 }
             }
@@ -1239,8 +1281,11 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             // This target should not ever be used. We are storing it in the thunk for better diagnostics of "call on collected delegate" crashes.
             PCODE pManagedTargetForDiagnostics = (pDelegate->GetMethodPtrAux() != NULL) ? pDelegate->GetMethodPtrAux() : pDelegate->GetMethodPtr();
 
+            ExecutableWriterHolder<UMEntryThunk> uMEntryThunkWriterHolder(pUMEntryThunk, sizeof(UMEntryThunk));
+
             // MethodDesc is passed in for profiling to know the method desc of target
-            pUMEntryThunk->LoadTimeInit(
+            uMEntryThunkWriterHolder.GetRW()->LoadTimeInit(
+                pUMEntryThunk,
                 pManagedTargetForDiagnostics,
                 objhnd,
                 pUMThunkMarshInfo, pInvokeMeth);
@@ -1335,7 +1380,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     {
         GCX_PREEMP();
 
-        pMarshalStub = GetStubForInteropMethod(pMD, 0, &(pClass->m_pForwardStubMD));
+        pMarshalStub = GetStubForInteropMethod(pMD);
 
         // Save this new stub on the DelegateEEClass.
         InterlockedCompareExchangeT<PCODE>(&pClass->m_pMarshalStub, pMarshalStub, NULL);
@@ -1413,7 +1458,6 @@ PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** 
     RETURN NDirect::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 // static
@@ -1430,7 +1474,6 @@ MethodDesc* COMDelegate::GetILStubMethodDesc(EEImplMethodDesc* pDelegateMD, DWOR
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL2(FC_BOOL_RET, COMDelegate::CompareUnmanagedFunctionPtrs, Object *refDelegate1UNSAFE, Object *refDelegate2UNSAFE)
 {
@@ -1571,10 +1614,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
     // It's difficult to validate a method code pointer, but at least we'll
     // try to catch the easy garbage.
     _ASSERTE(isMemoryReadable(method, 1));
-
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
-#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     MethodTable *pMTTarg = NULL;
 
@@ -1887,7 +1926,8 @@ PCODE COMDelegate::TheDelegateInvokeStub()
         if (InterlockedCompareExchangeT<PCODE>(&s_pInvokeStub, pCandidate->GetEntryPoint(), NULL) != NULL)
         {
             // if we are here someone managed to set the stub before us so we release the current
-            pCandidate->DecRef();
+            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
+            candidateWriterHolder.GetRW()->DecRef();
         }
     }
 
@@ -1999,7 +2039,6 @@ FCIMPL2(FC_BOOL_RET, COMDelegate::InternalEqualTypes, Object* pThis, Object *pTh
 }
 FCIMPLEND
 
-#endif // CROSSGEN_COMPILE
 
 void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
 {
@@ -2043,7 +2082,6 @@ BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 // to create a wrapper delegate wrapper we need:
 // - the delegate to forward to         -> _invocationList
@@ -2306,7 +2344,9 @@ FCIMPL1(PCODE, COMDelegate::GetMulticastInvoke, Object* refThisIn)
             Stub *pCandidate = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_MULTICAST);
 
             Stub *pWinner = m_pMulticastStubCache->AttemptToSetStub(hash,pCandidate);
-            pCandidate->DecRef();
+            ExecutableWriterHolder<Stub> candidateWriterHolder(pCandidate, sizeof(Stub));
+            candidateWriterHolder.GetRW()->DecRef();
+
             if (!pWinner)
                 COMPlusThrowOM();
 
@@ -2397,7 +2437,6 @@ PCODE COMDelegate::GetWrapperInvoke(MethodDesc* pMD)
     return pStub->GetEntryPoint();
 }
 
-#endif // CROSSGEN_COMPILE
 
 
 static bool IsLocationAssignable(TypeHandle fromHandle, TypeHandle toHandle, bool relaxedMatch, bool fromHandleIsBoxed)
@@ -3103,7 +3142,7 @@ BOOL COMDelegate::IsDelegate(MethodTable *pMT)
 }
 
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 
 // Helper to construct an UnhandledExceptionEventArgs.  This may fail for out-of-memory or
@@ -3252,4 +3291,4 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
     EX_END_CATCH(SwallowAllExceptions)
 }
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE

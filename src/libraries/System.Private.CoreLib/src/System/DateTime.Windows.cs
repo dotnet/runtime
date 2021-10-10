@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -39,6 +40,7 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static unsafe bool IsValidTimeWithLeapSeconds(int year, int month, int day, int hour, int minute, DateTimeKind kind)
         {
             Interop.Kernel32.SYSTEMTIME time;
@@ -298,6 +300,7 @@ namespace System
 
             return new DateTime(dateData: dotnetDateDataAtStartOfValidityWindow + fileTimeNow - fileTimeAtStartOfValidityWindow);
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             static DateTime LowGranularityNonCachedFallback()
             {
                 // If we reached this point, one of the Win32 APIs FileTimeToSystemTime or SystemTimeToFileTime

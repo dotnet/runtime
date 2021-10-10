@@ -55,7 +55,7 @@ namespace System.Data.OleDb
         {
             Debug.Assert(null != rowbinding, "null rowbinding");
             Debug.Assert(null != bindings, "null bindings");
-            Debug.Assert(ODB.SizeOf_tagDBBINDING <= offset, "invalid offset" + offset);
+            Debug.Assert(ODB.SizeOf_tagDBBINDING <= offset, $"invalid offset {offset}");
 
             _dataReader = dataReader;
             _rowbinding = rowbinding;

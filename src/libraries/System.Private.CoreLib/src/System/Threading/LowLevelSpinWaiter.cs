@@ -71,10 +71,6 @@ namespace System.Threading
                 // the equivalent of YieldProcessor(), as that that point SwitchToThread/Sleep(0) are more likely to be able to
                 // allow other useful work to run. Long YieldProcessor() loops can help to reduce contention, but Sleep(1) is
                 // usually better for that.
-                //
-                // Thread.OptimalMaxSpinWaitsPerSpinIteration:
-                //   - See Thread::InitializeYieldProcessorNormalized(), which describes and calculates this value.
-                //
                 int n = Thread.OptimalMaxSpinWaitsPerSpinIteration;
                 if (spinIndex <= 30 && (1 << spinIndex) < n)
                 {

@@ -286,112 +286,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentTo, ReflectClassBaseObject *
 }
 FCIMPLEND
 
-// TypeEqualsHelper and TypeNotEqualsHelper are almost identical.
-// Unfortunately we cannot combime them because they need to hardcode the caller's name
-NOINLINE static BOOL TypeEqualSlow(OBJECTREF refL, OBJECTREF refR, LPVOID __me)
-{
-    BOOL ret = FALSE;
-
-    FC_INNER_PROLOG_NO_ME_SETUP();
-
-    _ASSERTE(refL != NULL && refR != NULL);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refL, refR);
-
-    MethodDescCallSite TypeEqualsMethod(METHOD__OBJECT__EQUALS, &refL);
-
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(refL),
-        ObjToArgSlot(refR)
-    };
-
-    ret = TypeEqualsMethod.Call_RetBool(args);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return ret;
-}
-
-
-
-#include <optsmallperfcritical.h>
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::TypeEQ, Object* left, Object* right)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refL = (OBJECTREF)left;
-    OBJECTREF refR = (OBJECTREF)right;
-
-    if (refL == refR)
-    {
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    if (!refL || !refR)
-    {
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    if ((refL->GetMethodTable() == g_pRuntimeTypeClass || refR->GetMethodTable() == g_pRuntimeTypeClass))
-    {
-        // Quick path for negative common case
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    // The fast path didn't get us the result
-    // Let's try the slow path: refL.Equals(refR);
-    FC_INNER_RETURN(FC_BOOL_RET, (FC_BOOL_RET)(!!TypeEqualSlow(refL, refR, __me)));
-}
-FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::TypeNEQ, Object* left, Object* right)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refL = (OBJECTREF)left;
-    OBJECTREF refR = (OBJECTREF)right;
-
-    if (refL == refR)
-    {
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    if (!refL || !refR)
-    {
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    if ((refL->GetMethodTable() == g_pRuntimeTypeClass || refR->GetMethodTable() == g_pRuntimeTypeClass))
-    {
-        // Quick path for negative common case
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    // The fast path didn't get us the result
-    // Let's try the slow path: refL.Equals(refR);
-    FC_INNER_RETURN(FC_BOOL_RET, (FC_BOOL_RET)(!TypeEqualSlow(refL, refR, __me)));
-}
-FCIMPLEND
-
-#include <optdefault.h>
-
-NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
-{
-    FC_INNER_PROLOG_NO_ME_SETUP();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-    pMethod->CheckRestore();
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return pMethod;
-}
-
 FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
@@ -414,13 +308,6 @@ FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassB
         return NULL;
 
     MethodDesc* pMethod = MethodTable::IntroducedMethodIterator::GetFirst(pMT);
-
-    // The only method that can show up here unrestored is instantiated methods. Check for it before performing the expensive IsRestored() check.
-    if (pMethod != NULL && pMethod->GetClassification() == mcInstantiated && !pMethod->IsRestored()) {
-        FC_INNER_RETURN(MethodDesc *, RestoreMethodHelper(pMethod, __me));
-    }
-
-    _ASSERTE(pMethod == NULL || pMethod->IsRestored());
     return pMethod;
 }
 FCIMPLEND
@@ -437,12 +324,6 @@ FCIMPL1(void, RuntimeTypeHandle::GetNextIntroducedMethod, MethodDesc ** ppMethod
     MethodDesc *pMethod = MethodTable::IntroducedMethodIterator::GetNext(*ppMethod);
 
     *ppMethod = pMethod;
-
-    if (pMethod != NULL && pMethod->GetClassification() == mcInstantiated && !pMethod->IsRestored()) {
-        FC_INNER_RETURN_VOID(RestoreMethodHelper(pMethod, __me));
-    }
-
-    _ASSERTE(pMethod == NULL || pMethod->IsRestored());
 }
 FCIMPLEND
 #include <optdefault.h>
@@ -793,7 +674,7 @@ void QCALLTYPE RuntimeTypeHandle::ConstructName(QCall::TypeHandle pTypeHandle, D
     END_QCALL;
 }
 
-PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, FixupPointer<TypeHandle> * prgTH2, INT32 numTypeHandles, BinderClassID arrayElemType)
+PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, INT32 numTypeHandles, BinderClassID arrayElemType)
 {
     CONTRACTL {
         THROWS;
@@ -808,11 +689,7 @@ PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, FixupPointer<TypeHandle> 
     if (numTypeHandles == 0)
         return NULL;
 
-    _ASSERTE((prgTH != NULL) || (prgTH2 != NULL));
-    if (prgTH != NULL)
-    {
-        _ASSERTE(prgTH2 == NULL);
-    }
+    _ASSERTE(prgTH != NULL);
 
     GCPROTECT_BEGIN(refArray);
     TypeHandle thRuntimeType = TypeHandle(CoreLibBinder::GetClass(arrayElemType));
@@ -823,10 +700,7 @@ PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, FixupPointer<TypeHandle> 
     {
         TypeHandle th;
 
-        if (prgTH != NULL)
-            th = prgTH[i];
-        else
-            th = prgTH2[i].GetValue();
+        th = prgTH[i];
 
         OBJECTREF refType = th.GetManagedClassObject();
         refArray->SetAt(i, refType);
@@ -857,7 +731,7 @@ void QCALLTYPE RuntimeTypeHandle::GetConstraints(QCall::TypeHandle pTypeHandle, 
     constraints = pGenericVariable->GetConstraints(&dwCount);
 
     GCX_COOP();
-    retTypeArray.Set(CopyRuntimeTypeHandles(constraints, NULL, dwCount, CLASS__TYPE));
+    retTypeArray.Set(CopyRuntimeTypeHandles(constraints, dwCount, CLASS__TYPE));
 
     END_QCALL;
 
@@ -906,7 +780,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
             MethodTable::InterfaceMapIterator it = typeHandle.GetMethodTable()->IterateInterfaceMap();
             while (it.Next())
             {
-                OBJECTREF refInterface = it.GetInterface()->GetManagedClassObject();
+                OBJECTREF refInterface = it.GetInterface(typeHandle.GetMethodTable())->GetManagedClassObject();
                 refRetVal->SetAt(i, refInterface);
                 _ASSERTE(refRetVal->GetAt(i) != NULL);
                 i++;
@@ -1032,34 +906,6 @@ RuntimeTypeHandle::IsVisible(
 
     return fIsExternallyVisible;
 } // RuntimeTypeHandle::IsVisible
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL isGenericCOM) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    BOOL ret = FALSE;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refType);
-    {
-        if (isGenericCOM)
-            ret = IsComObjectClass(typeHandle);
-        else
-            ret = IsComWrapperClass(typeHandle);
-    }
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
 
 FCIMPL1(LPCUTF8, RuntimeTypeHandle::GetUtf8Name, ReflectClassBaseObject* pTypeUNSAFE) {
     CONTRACTL {
@@ -1218,7 +1064,7 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(QCall:
 
     if (pMD->IsStatic())
     {
-        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* checkDuplicates*/ FALSE, /*allowVariantMatches */ TRUE);
+        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* verifyImplemented*/ FALSE, /*allowVariantMatches */ TRUE);
     }
     else
     {
@@ -1472,23 +1318,23 @@ void QCALLTYPE RuntimeTypeHandle::GetTypeByName(LPCWSTR pwzClassName, BOOL bThro
             COMPlusThrowArgumentNull(W("className"),W("ArgumentNull_String"));
 
     {
-        ICLRPrivBinder * pPrivHostBinder = NULL;
+        AssemblyBinder * pBinder = NULL;
 
         if (*pAssemblyLoadContext.m_ppObject != NULL)
         {
             GCX_COOP();
             ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
 
-            INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyLoadContext();
+            INT_PTR nativeAssemblyBinder = (*pAssemblyLoadContextRef)->GetNativeAssemblyBinder();
 
-            pPrivHostBinder = reinterpret_cast<ICLRPrivBinder *>(nativeAssemblyLoadContext);
+            pBinder = reinterpret_cast<AssemblyBinder *>(nativeAssemblyBinder);
         }
 
 
         typeHandle = TypeName::GetTypeManaged(pwzClassName, NULL, bThrowOnError, bIgnoreCase, /*bProhibitAsmQualifiedName =*/ FALSE,
                                               SystemDomain::GetCallersAssembly(pStackMark),
                                               (OBJECTREF*)keepAlive.m_ppObject,
-                                              pPrivHostBinder);
+                                              pBinder);
     }
 
     if (!typeHandle.IsNull())
@@ -1553,7 +1399,7 @@ void QCALLTYPE RuntimeTypeHandle::GetInstantiation(QCall::TypeHandle pType, QCal
     TypeHandle typeHandle = pType.AsTypeHandle();
     Instantiation inst = typeHandle.GetInstantiation();
     GCX_COOP();
-    retTypes.Set(CopyRuntimeTypeHandles(NULL, inst.GetRawArgs(), inst.GetNumArgs(), fAsRuntimeTypeArray ? CLASS__CLASS : CLASS__TYPE));
+    retTypes.Set(CopyRuntimeTypeHandles(inst.GetRawArgs(), inst.GetNumArgs(), fAsRuntimeTypeArray ? CLASS__CLASS : CLASS__TYPE));
     END_QCALL;
 
     return;
@@ -2231,7 +2077,7 @@ void QCALLTYPE RuntimeMethodHandle::GetMethodInstantiation(MethodDesc * pMethod,
     Instantiation inst = pMethod->LoadMethodInstantiation();
 
     GCX_COOP();
-    retTypes.Set(CopyRuntimeTypeHandles(NULL, inst.GetRawArgs(), inst.GetNumArgs(), fAsRuntimeTypeArray ? CLASS__CLASS : CLASS__TYPE));
+    retTypes.Set(CopyRuntimeTypeHandles(inst.GetRawArgs(), inst.GetNumArgs(), fAsRuntimeTypeArray ? CLASS__CLASS : CLASS__TYPE));
     END_QCALL;
 
     return;
@@ -2304,9 +2150,9 @@ void QCALLTYPE RuntimeMethodHandle::Destroy(MethodDesc * pMethod)
     // Fire Unload Dynamic Method Event here
     ETW::MethodLog::DynamicMethodDestroyed(pMethod);
 
-    BEGIN_PIN_PROFILER(CORProfilerIsMonitoringDynamicFunctionUnloads());
-    g_profControlBlock.pProfInterface->DynamicMethodUnloaded((FunctionID)pMethod);
-    END_PIN_PROFILER();
+    BEGIN_PROFILER_CALLBACK(CORProfilerTrackDynamicFunctionUnloads());
+    (&g_profControlBlock)->DynamicMethodUnloaded((FunctionID)pMethod);
+    END_PROFILER_CALLBACK();
 
     pDynamicMethodDesc->Destroy();
 
@@ -2966,21 +2812,6 @@ FCIMPL1(IMDInternalImport*, ModuleHandle::GetMetadataImport, ReflectModuleBaseOb
     return pModule->GetMDImport();
 }
 FCIMPLEND
-
-BOOL QCALLTYPE ModuleHandle::ContainsPropertyMatchingHash(QCall::ModuleHandle pModule, INT32 tkProperty, ULONG hash)
-{
-    QCALL_CONTRACT;
-
-    BOOL fContains = TRUE;
-
-    BEGIN_QCALL;
-
-    fContains = pModule->MightContainMatchingProperty(tkProperty, hash);
-
-    END_QCALL;
-
-    return fContains;
-}
 
 void QCALLTYPE ModuleHandle::ResolveType(QCall::ModuleHandle pModule, INT32 tkType, TypeHandle *typeArgs, INT32 typeArgsCount, TypeHandle *methodArgs, INT32 methodArgsCount, QCall::ObjectHandleOnStack retType)
 {

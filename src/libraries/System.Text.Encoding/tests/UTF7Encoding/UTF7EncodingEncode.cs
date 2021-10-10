@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/38433", TestPlatforms.Browser)] // wasm doesn't honor runtimeconfig.json
     public class UTF7EncodingEncode
     {
         public static IEnumerable<object[]> Encode_Basic_TestData()
@@ -61,8 +60,6 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Encode_Basic_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50573", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51394", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Encode_Basic(string source, int index, int count, byte[] expected)
         {
             Encode_Advanced(true, source, index, count, expected);

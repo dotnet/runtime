@@ -26,6 +26,10 @@ namespace NetCoreServer
             {
                 Thread.Sleep(10000);
             }
+            else if (context.Request.QueryString.HasValue && context.Request.QueryString.Value.Contains("delay20sec"))
+            {
+                Thread.Sleep(20000);
+            }
 
             try
             {
@@ -80,7 +84,7 @@ namespace NetCoreServer
                         await socket.CloseAsync(
                             closeStatus,
                             replyWithEnhancedCloseMessage ?
-                                $"Server received: {(int)closeStatus} {receiveResult.CloseStatusDescription}" :
+                                ("Server received: " + (int)closeStatus + " " + receiveResult.CloseStatusDescription) :
                                 receiveResult.CloseStatusDescription,
                             CancellationToken.None);
                     }

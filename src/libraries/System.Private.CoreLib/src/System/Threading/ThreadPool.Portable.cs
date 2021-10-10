@@ -25,9 +25,9 @@ namespace System.Threading
         internal const bool SupportsTimeSensitiveWorkItems = true;
 
 #if CORERT
-        internal const bool EnableWorkerTracking = false;
+        private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
-        internal static readonly bool EnableWorkerTracking =
+        private static readonly bool IsWorkerTrackingEnabledInConfig =
             AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.EnableWorkerTracking", false);
 #endif
 
@@ -99,6 +99,9 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs) =>
             PortableThreadPool.ThreadPoolInstance.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTimeMs);
+
+        internal static bool NotifyThreadBlocked() => PortableThreadPool.ThreadPoolInstance.NotifyThreadBlocked();
+        internal static void NotifyThreadUnblocked() => PortableThreadPool.ThreadPoolInstance.NotifyThreadUnblocked();
 
         internal static object GetOrCreateThreadLocalCompletionCountObject() =>
             PortableThreadPool.ThreadPoolInstance.GetOrCreateThreadLocalCompletionCountObject();

@@ -23,13 +23,13 @@ namespace System.ComponentModel.Design.Serialization
     /// </summary>
     public sealed class ContextStack
     {
-        private ArrayList _contextStack;
+        private ArrayList? _contextStack;
 
         /// <summary>
         /// Retrieves the current object on the stack, or null
         /// if no objects have been pushed.
         /// </summary>
-        public object Current
+        public object? Current
         {
             get
             {
@@ -45,7 +45,7 @@ namespace System.ComponentModel.Design.Serialization
         /// Retrieves the object on the stack at the given
         /// level, or null if no object exists at that level.
         /// </summary>
-        public object this[int level]
+        public object? this[int level]
         {
             get
             {
@@ -66,7 +66,7 @@ namespace System.ComponentModel.Design.Serialization
         /// inherits from or implements the given type, or
         /// null if no object on the stack implements the type.
         /// </summary>
-        public object this[Type type]
+        public object? this[Type type]
         {
             get
             {
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Design.Serialization
                     int level = _contextStack.Count;
                     while (level > 0)
                     {
-                        object value = _contextStack[--level];
+                        object value = _contextStack[--level]!;
                         if (type.IsInstanceOfType(value))
                         {
                             return value;
@@ -117,9 +117,9 @@ namespace System.ComponentModel.Design.Serialization
         /// Pops the current object off of the stack, returning
         /// its value.
         /// </summary>
-        public object Pop()
+        public object? Pop()
         {
-            object context = null;
+            object? context = null;
 
             if (_contextStack != null && _contextStack.Count > 0)
             {

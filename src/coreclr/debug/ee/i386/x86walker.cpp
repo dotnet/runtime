@@ -415,7 +415,7 @@ void NativeWalker::DecodeInstructionForPatchSkip(const BYTE *address, Instructio
         case 2:
         case 3:
             pInstrAttrib->m_fIsCall = true;
-            // fall through
+            FALLTHROUGH;
         case 4:
         case 5:
             pInstrAttrib->m_fIsAbsBranch = true;

@@ -17,6 +17,8 @@ internal static partial class Interop
 {
     internal static partial class AndroidCrypto
     {
+        private const int UNSUPPORTED_API_LEVEL = 2;
+
         internal unsafe delegate PAL_SSLStreamStatus SSLReadCallback(byte* data, int* length);
         internal unsafe delegate void SSLWriteCallback(byte* data, int length);
 
@@ -77,7 +79,9 @@ internal static partial class Interop
             string targetHost)
         {
             int ret = SSLStreamSetTargetHostImpl(sslHandle, targetHost);
-            if (ret != SUCCESS)
+            if (ret == UNSUPPORTED_API_LEVEL)
+                throw new PlatformNotSupportedException(SR.net_android_ssl_api_level_unsupported);
+            else if (ret != SUCCESS)
                 throw new SslException();
         }
 
@@ -162,7 +166,7 @@ internal static partial class Interop
             out int bytesRead);
         internal static unsafe PAL_SSLStreamStatus SSLStreamRead(
             SafeSslHandle sslHandle,
-            Span<byte> buffer,
+            ReadOnlySpan<byte> buffer,
             out int bytesRead)
         {
             fixed (byte* bufferPtr = buffer)

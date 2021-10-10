@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <LibrariesConfiguration>Release</LibrariesConfiguration>
+  </PropertyGroup>
+  
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.sdkbuild.props" Condition="'$(UsingMicrosoftNETSdk)' == 'true'"  />
   <Import Project="$(MSBuildThisFileDirectory)\Common\dir.common.props" Condition="'$(UsingMicrosoftNETSdk)' != 'true'"  />
 
@@ -49,14 +53,40 @@
    -->
   <PropertyGroup>
     <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
-  </PropertyGroup>
+    <CLRTestPriorityToBuild Condition="'$(__Priority)' != ''">$(__Priority)</CLRTestPriorityToBuild>
 
-  <!-- Which tests can we build? Default: Build managed tests for this target.
-    At the command-line, the user can specify:
-    +  /p:CLRTestBuildAllTargets=allTargets    Build managed tests for all target platforms.
-   -->
-  <PropertyGroup>
-    <CLRTestBuildAllTargets></CLRTestBuildAllTargets>
+    <WindowsHost>$([MSBuild]::IsOSPlatform(Windows))</WindowsHost>
+
+    <TargetsWindows>false</TargetsWindows>
+    <TargetsWindows Condition="'$(TargetOS)' == 'windows'">true</TargetsWindows>
+
+    <ScriptExt>.sh</ScriptExt>
+    <ScriptExt Condition="$(WindowsHost)">.cmd</ScriptExt>
+
+    <DotNetCli>"$(RepoRoot)\dotnet$(ScriptExt)"</DotNetCli>
+
+    <XunitTestBinBase Condition="'$(XunitTestBinBase)' == ''">$(__TestBinDir)</XunitTestBinBase>
+    <XunitTestBinBase>$([MSBuild]::NormalizeDirectory('$(XunitTestBinBase)/'))</XunitTestBinBase>
+    <CORE_ROOT Condition="'$(CORE_ROOT)' == ''">$(XunitTestBinBase)Tests/Core_Root</CORE_ROOT>
+
+    <TestBuildMode Condition="'$(__TestBuildMode)' != ''">$(__TestBuildMode)</TestBuildMode>
+    <RuntimeFlavor Condition="'$(__RuntimeFlavor)' != ''">$(__RuntimeFlavor)</RuntimeFlavor>
+
+    <RestoreDefaultOptimizationDataPackage Condition="'$(RestoreDefaultOptimizationDataPackage)' == ''">false</RestoreDefaultOptimizationDataPackage>
+    <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
+
+    <UsePartialNGENOptimization Condition="'$(UsePartialNGENOptimization)' == ''">false</UsePartialNGENOptimization>
+
+    <RunWithAndroid>false</RunWithAndroid>
+    <RunWithAndroid Condition="'$(TargetOS)' == 'Android'">true</RunWithAndroid>
+
+    <MonoAot>false</MonoAot>
+    <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
+
+    <MonoFullAot>false</MonoFullAot>
+    <MonoFullAot Condition="'$(__MonoFullAot)' == '1'">true</MonoFullAot>
+
+    <MonoBinDir>$(__MonoBinDir)</MonoBinDir>
   </PropertyGroup>
 
   <!-- Language settings -->
@@ -144,5 +174,9 @@
          updated manually whenever breaking changes require it to move forward, but it would be nice if we could update it automatically
          as we do with many of the package versions above -->
     <BaselineMicrosoftNetCoreAppPackageVersion>2.1.0-preview3-26416-01</BaselineMicrosoftNetCoreAppPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <CLRTestMSBuildArgs>/p:MSBuildEnableWorkloadResolver=false</CLRTestMSBuildArgs>
   </PropertyGroup>
 </Project>

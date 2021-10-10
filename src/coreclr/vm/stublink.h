@@ -59,7 +59,6 @@
 //-------------------------------------------------------------------------
 class  InstructionFormat;
 class  Stub;
-class  InterceptStub;
 class  CheckDuplicatedStructLayouts;
 class  CodeBasedStubCache;
 struct  CodeLabel;
@@ -260,7 +259,7 @@ class StubLinker
         // helper will preserve ALL registers.
         VOID EmitUnwindInfoCheck();
 
-#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO) && !defined(CROSSGEN_COMPILE)
+#if defined(_DEBUG) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
 protected:
 
         // Injects a call to the given label.
@@ -396,11 +395,11 @@ private:
 
         // Writes out the code element into memory following the
         // stub object.
-        bool EmitStub(Stub* pStub, int globalsize, LoaderHeap* pHeap);
+        bool EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap);
 
         CodeRun *GetLastCodeRunIfAny();
 
-        bool EmitUnwindInfo(Stub* pStub, int globalsize, LoaderHeap* pHeap);
+        bool EmitUnwindInfo(Stub* pStubRX, Stub* pStubRW, int globalsize, LoaderHeap* pHeap);
 
 #if defined(TARGET_AMD64) && defined(STUBLINKER_GENERATES_UNWIND_INFO)
         UNWIND_CODE *AllocUnwindInfo (UCHAR Op, UCHAR nExtraSlots = 0);
@@ -972,7 +971,7 @@ class InstructionFormat
         }
 
         virtual UINT GetSizeOfInstruction(UINT refsize, UINT variationCode) = 0;
-        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pCodeBuffer, UINT variationCode, BYTE *pDataBuffer) = 0;
+        virtual VOID EmitInstruction(UINT refsize, __int64 fixedUpReference, BYTE *pCodeBufferRX, BYTE *pCodeBufferRW, UINT variationCode, BYTE *pDataBuffer) = 0;
         virtual UINT GetHotSpotOffset(UINT refsize, UINT variationCode)
         {
             WRAPPER_NO_CONTRACT;

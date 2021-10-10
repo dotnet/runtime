@@ -9,7 +9,7 @@ The following dependencies should be installed in order to be able to run tests:
 
 OpenJDK can be installed on Linux (Ubuntu) using `apt-get`:
 ```bash
-sudo apt-get install openjdk-8 unzip
+sudo apt-get install openjdk-8 zip unzip
 ```
 
 Android SDK, NDK and OpenSSL can be automatically installed via the following script:
@@ -106,3 +106,7 @@ The emulator can be launched with a variety of options. Run `emulator -help` to 
 - `-os Android` is not supported for Windows yet (`WSL` can be used instead)
 - XHarness.CLI is not able to boot emulators yet (so you need to boot via `AVD Manager` or IDE)
 - AOT and Interpreter modes are not supported yet
+
+### Debugging the native runtime code using Android Studio
+
+See [Debugging Android](../../debugging/mono/android-debugging.md)

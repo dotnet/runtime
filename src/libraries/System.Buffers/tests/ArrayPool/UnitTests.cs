@@ -5,8 +5,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Buffers.ArrayPool.Tests
@@ -239,15 +241,11 @@ namespace System.Buffers.ArrayPool.Tests
         }
 
         [Fact]
-        public static void ReturningABufferGreaterThanMaxSizeDoesNotThrow()
+        public static void ReturningToCreatePoolABufferGreaterThanMaxSizeDoesNotThrow()
         {
             ArrayPool<byte> pool = ArrayPool<byte>.Create(maxArrayLength: 16, maxArraysPerBucket: 1);
             byte[] rented = pool.Rent(32);
             pool.Return(rented);
-
-            ArrayPool<byte>.Shared.Return(new byte[3 * 1024 * 1024]);
-            ArrayPool<char>.Shared.Return(new char[3 * 1024 * 1024]);
-            ArrayPool<string>.Shared.Return(new string[3 * 1024 * 1024]);
         }
 
         [Fact]
@@ -278,21 +276,9 @@ namespace System.Buffers.ArrayPool.Tests
             for (int i = 1; i < 10000; i++)
             {
                 byte[] buffer = pool.Rent(i);
-                Assert.Equal(i <= 16 ? 16 : RoundUpToPowerOf2(i), buffer.Length);
+                Assert.Equal(i <= 16 ? 16 : (int)BitOperations.RoundUpToPowerOf2((uint)i), buffer.Length);
                 pool.Return(buffer);
             }
-        }
-
-        private static int RoundUpToPowerOf2(int i)
-        {
-            // http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
-            --i;
-            i |= i >> 1;
-            i |= i >> 2;
-            i |= i >> 4;
-            i |= i >> 8;
-            i |= i >> 16;
-            return i + 1;
         }
 
         [Theory]
@@ -303,11 +289,11 @@ namespace System.Buffers.ArrayPool.Tests
         [InlineData(1024, 1024)]
         [InlineData(4096, 4096)]
         [InlineData(1024 * 1024, 1024 * 1024)]
-        [InlineData(1024 * 1024 + 1, 1024 * 1024 + 1)]
+        [InlineData(1024 * 1024 + 1, 1024 * 1024 * 2)]
         [InlineData(1024 * 1024 * 2, 1024 * 1024 * 2)]
         public static void RentingSpecificLengthsYieldsExpectedLengths(int requestedMinimum, int expectedLength)
         {
-            foreach (ArrayPool<byte> pool in new[] { ArrayPool<byte>.Create(), ArrayPool<byte>.Shared })
+            foreach (ArrayPool<byte> pool in new[] { ArrayPool<byte>.Create((int)BitOperations.RoundUpToPowerOf2((uint)requestedMinimum), 1), ArrayPool<byte>.Shared })
             {
                 byte[] buffer1 = pool.Rent(requestedMinimum);
                 byte[] buffer2 = pool.Rent(requestedMinimum);
@@ -324,7 +310,7 @@ namespace System.Buffers.ArrayPool.Tests
                 pool.Return(buffer1);
             }
 
-            foreach (ArrayPool<char> pool in new[] { ArrayPool<char>.Create(), ArrayPool<char>.Shared })
+            foreach (ArrayPool<char> pool in new[] { ArrayPool<char>.Create((int)BitOperations.RoundUpToPowerOf2((uint)requestedMinimum), 1), ArrayPool<char>.Shared })
             {
                 char[] buffer1 = pool.Rent(requestedMinimum);
                 char[] buffer2 = pool.Rent(requestedMinimum);
@@ -341,7 +327,7 @@ namespace System.Buffers.ArrayPool.Tests
                 pool.Return(buffer1);
             }
 
-            foreach (ArrayPool<string> pool in new[] { ArrayPool<string>.Create(), ArrayPool<string>.Shared })
+            foreach (ArrayPool<string> pool in new[] { ArrayPool<string>.Create((int)BitOperations.RoundUpToPowerOf2((uint)requestedMinimum), 1), ArrayPool<string>.Shared })
             {
                 string[] buffer1 = pool.Rent(requestedMinimum);
                 string[] buffer2 = pool.Rent(requestedMinimum);
@@ -357,6 +343,37 @@ namespace System.Buffers.ArrayPool.Tests
                 pool.Return(buffer2);
                 pool.Return(buffer1);
             }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [InlineData(1024 * 1024 * 1024 - 1, true)]
+        [InlineData(1024 * 1024 * 1024, true)]
+        [InlineData(1024 * 1024 * 1024 + 1, false)]
+        [InlineData(0X7FFFFFC7 /* Array.MaxLength */, false)]
+        [OuterLoop]
+        public static void RentingGiganticArraySucceeds(int length, bool expectPooled)
+        {
+            var options = new RemoteInvokeOptions();
+            options.StartInfo.UseShellExecute = false;
+
+            RemoteExecutor.Invoke((lengthStr, expectPooledStr) =>
+            {
+                int length = int.Parse(lengthStr);
+                byte[] array;
+                try
+                {
+                    array = ArrayPool<byte>.Shared.Rent(length);
+                }
+                catch (OutOfMemoryException)
+                {
+                    return;
+                }
+
+                Assert.InRange(array.Length, length, int.MaxValue);
+                ArrayPool<byte>.Shared.Return(array);
+
+                Assert.Equal(bool.Parse(expectPooledStr), ReferenceEquals(array, ArrayPool<byte>.Shared.Rent(length)));
+            }, length.ToString(), expectPooled.ToString(), options).Dispose();
         }
 
         [Fact]

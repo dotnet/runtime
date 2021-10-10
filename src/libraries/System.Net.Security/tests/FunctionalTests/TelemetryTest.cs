@@ -33,28 +33,54 @@ namespace System.Net.Security.Tests
             RemoteExecutor.Invoke(async () =>
             {
                 using var listener = new TestEventListener("System.Net.Security", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    events.Enqueue((e, e.ActivityId));
+
+                    if (e.EventName == "HandshakeStart")
+                    {
+                        // Wait for a new counter group so that current-tls-handshakes is guaranteed a non-zero value
+                        WaitForEventCountersAsync(events).GetAwaiter().GetResult();
+                    }
+                },
+                async () =>
                 {
                     // Invoke tests that'll cause some events to be generated
                     var test = new SslStreamStreamToStreamTest_Async();
                     await test.SslStream_StreamToStream_Authentication_Success();
-                    await Task.Delay(300);
+                    await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
-                EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "HandshakeStart").ToArray();
+                (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "HandshakeStart").ToArray();
                 Assert.Equal(2, starts.Length);
-                Assert.All(starts, s => Assert.Equal(2, s.Payload.Count));
-                Assert.Single(starts, s => s.Payload[0] is bool isServer && isServer);
-                Assert.Single(starts, s => s.Payload[1] is string targetHost && targetHost.Length == 0);
+                Assert.All(starts, s => Assert.Equal(2, s.Event.Payload.Count));
+                Assert.All(starts, s => Assert.NotEqual(Guid.Empty, s.ActivityId));
 
-                EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "HandshakeStop").ToArray();
+                // isServer
+                (EventWrittenEventArgs Event, Guid ActivityId) serverStart = Assert.Single(starts, s => (bool)s.Event.Payload[0]);
+                (EventWrittenEventArgs Event, Guid ActivityId) clientStart = Assert.Single(starts, s => !(bool)s.Event.Payload[0]);
+
+                // targetHost
+                Assert.Empty(Assert.IsType<string>(serverStart.Event.Payload[1]));
+                Assert.NotEmpty(Assert.IsType<string>(clientStart.Event.Payload[1]));
+
+                Assert.NotEqual(serverStart.ActivityId, clientStart.ActivityId);
+
+                (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == "HandshakeStop").ToArray();
                 Assert.Equal(2, stops.Length);
-                Assert.All(stops, s => ValidateHandshakeStopEventPayload(s, failure: false));
 
-                Assert.DoesNotContain(events, e => e.EventName == "HandshakeFailed");
+                EventWrittenEventArgs serverStop = Assert.Single(stops, s => s.ActivityId == serverStart.ActivityId).Event;
+                EventWrittenEventArgs clientStop = Assert.Single(stops, s => s.ActivityId == clientStart.ActivityId).Event;
+
+                SslProtocols serverProtocol = ValidateHandshakeStopEventPayload(serverStop);
+                SslProtocols clientProtocol = ValidateHandshakeStopEventPayload(clientStop);
+                Assert.Equal(serverProtocol, clientProtocol);
+
+                Assert.DoesNotContain(events, e => e.Event.EventName == "HandshakeFailed");
 
                 VerifyEventCounters(events, shouldHaveFailures: false);
             }).Dispose();
@@ -67,38 +93,67 @@ namespace System.Net.Security.Tests
             RemoteExecutor.Invoke(async () =>
             {
                 using var listener = new TestEventListener("System.Net.Security", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
 
-                var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                await listener.RunWithCallbackAsync(events.Enqueue, async () =>
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    events.Enqueue((e, e.ActivityId));
+
+                    if (e.EventName == "HandshakeStart")
+                    {
+                        // Wait for a new counter group so that current-tls-handshakes is guaranteed a non-zero value
+                        WaitForEventCountersAsync(events).GetAwaiter().GetResult();
+                    }
+                },
+                async () =>
                 {
                     // Invoke tests that'll cause some events to be generated
                     var test = new SslStreamStreamToStreamTest_Async();
                     await test.SslStream_ServerLocalCertificateSelectionCallbackReturnsNull_Throw();
-                    await Task.Delay(300);
+                    await WaitForEventCountersAsync(events);
                 });
-                Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
+                Assert.DoesNotContain(events, ev => ev.Event.EventId == 0); // errors from the EventSource itself
 
-                EventWrittenEventArgs[] starts = events.Where(e => e.EventName == "HandshakeStart").ToArray();
+                (EventWrittenEventArgs Event, Guid ActivityId)[] starts = events.Where(e => e.Event.EventName == "HandshakeStart").ToArray();
                 Assert.Equal(2, starts.Length);
-                Assert.All(starts, s => Assert.Equal(2, s.Payload.Count));
-                Assert.Single(starts, s => s.Payload[0] is bool isServer && isServer);
-                Assert.Single(starts, s => s.Payload[1] is string targetHost && targetHost.Length == 0);
+                Assert.All(starts, s => Assert.Equal(2, s.Event.Payload.Count));
+                Assert.All(starts, s => Assert.NotEqual(Guid.Empty, s.ActivityId));
 
-                EventWrittenEventArgs[] failures = events.Where(e => e.EventName == "HandshakeFailed").ToArray();
-                Assert.Equal(2, failures.Length);
-                Assert.All(failures, f => Assert.Equal(3, f.Payload.Count));
-                Assert.Single(failures, f => f.Payload[0] is bool isServer && isServer);
-                Assert.All(failures, f => Assert.NotEmpty(f.Payload[2] as string)); // exceptionMessage
+                // isServer
+                (EventWrittenEventArgs Event, Guid ActivityId) serverStart = Assert.Single(starts, s => (bool)s.Event.Payload[0]);
+                (EventWrittenEventArgs Event, Guid ActivityId) clientStart = Assert.Single(starts, s => !(bool)s.Event.Payload[0]);
 
-                EventWrittenEventArgs[] stops = events.Where(e => e.EventName == "HandshakeStop").ToArray();
+                // targetHost
+                Assert.Empty(Assert.IsType<string>(serverStart.Event.Payload[1]));
+                Assert.NotEmpty(Assert.IsType<string>(clientStart.Event.Payload[1]));
+
+                Assert.NotEqual(serverStart.ActivityId, clientStart.ActivityId);
+
+                (EventWrittenEventArgs Event, Guid ActivityId)[] stops = events.Where(e => e.Event.EventName == "HandshakeStop").ToArray();
                 Assert.Equal(2, stops.Length);
-                Assert.All(stops, s => ValidateHandshakeStopEventPayload(s, failure: true));
+                Assert.All(stops, s => ValidateHandshakeStopEventPayload(s.Event, failure: true));
+
+                EventWrittenEventArgs serverStop = Assert.Single(stops, s => s.ActivityId == serverStart.ActivityId).Event;
+                EventWrittenEventArgs clientStop = Assert.Single(stops, s => s.ActivityId == clientStart.ActivityId).Event;
+
+                (EventWrittenEventArgs Event, Guid ActivityId)[] failures = events.Where(e => e.Event.EventName == "HandshakeFailed").ToArray();
+                Assert.Equal(2, failures.Length);
+                Assert.All(failures, f => Assert.Equal(3, f.Event.Payload.Count));
+                Assert.All(failures, f => Assert.NotEmpty(f.Event.Payload[2] as string)); // exceptionMessage
+
+                EventWrittenEventArgs serverFailure = Assert.Single(failures, f => f.ActivityId == serverStart.ActivityId).Event;
+                EventWrittenEventArgs clientFailure = Assert.Single(failures, f => f.ActivityId == clientStart.ActivityId).Event;
+
+                // isServer
+                Assert.Equal(true, serverFailure.Payload[0]);
+                Assert.Equal(false, clientFailure.Payload[0]);
 
                 VerifyEventCounters(events, shouldHaveFailures: true);
             }).Dispose();
         }
 
-        private static void ValidateHandshakeStopEventPayload(EventWrittenEventArgs stopEvent, bool failure)
+        private static SslProtocols ValidateHandshakeStopEventPayload(EventWrittenEventArgs stopEvent, bool failure = false)
         {
             Assert.Equal("HandshakeStop", stopEvent.EventName);
             Assert.Equal(1, stopEvent.Payload.Count);
@@ -114,11 +169,14 @@ namespace System.Net.Security.Tests
             {
                 Assert.NotEqual(SslProtocols.None, protocol);
             }
+
+            return protocol;
         }
 
-        private static void VerifyEventCounters(ConcurrentQueue<EventWrittenEventArgs> events, bool shouldHaveFailures)
+        private static void VerifyEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, bool shouldHaveFailures)
         {
             Dictionary<string, double[]> eventCounters = events
+                .Select(e => e.Event)
                 .Where(e => e.EventName == "EventCounters")
                 .Select(e => (IDictionary<string, object>)e.Payload.Single())
                 .GroupBy(d => (string)d["Name"], d => (double)(d.ContainsKey("Mean") ? d["Mean"] : d["Increment"]))
@@ -172,6 +230,30 @@ namespace System.Net.Security.Tests
             {
                 Assert.Contains(tlsHandshakeDurations, durations => durations.Any(d => d > 0));
                 Assert.Contains(allHandshakeDurations, d => d > 0);
+            }
+        }
+
+        private static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
+        {
+            DateTime startTime = DateTime.UtcNow;
+            int startCount = events.Count;
+
+            while (events.Skip(startCount).Count(e => IsTlsHandshakeRateEventCounter(e.Event)) < 3)
+            {
+                if (DateTime.UtcNow.Subtract(startTime) > TimeSpan.FromSeconds(30))
+                    throw new TimeoutException($"Timed out waiting for EventCounters");
+
+                await Task.Delay(100);
+            }
+
+            static bool IsTlsHandshakeRateEventCounter(EventWrittenEventArgs e)
+            {
+                if (e.EventName != "EventCounters")
+                    return false;
+
+                var dictionary = (IDictionary<string, object>)e.Payload.Single();
+
+                return (string)dictionary["Name"] == "tls-handshake-rate";
             }
         }
     }

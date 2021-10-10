@@ -46,7 +46,7 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonDocumentOptions options = default)
         {
-            return Parse(utf8Json, options.GetReaderOptions(), null);
+            return Parse(utf8Json, options.GetReaderOptions());
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace System.Text.Json
 
             if (utf8Json.IsSingleSegment)
             {
-                return Parse(utf8Json.First, readerOptions, null);
+                return Parse(utf8Json.First, readerOptions);
             }
 
             int length = checked((int)utf8Json.Length);
@@ -135,6 +135,15 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(drained.Array);
                 throw;
             }
+        }
+
+        internal static JsonDocument ParseRented(PooledByteBufferWriter utf8Json, JsonDocumentOptions options = default)
+        {
+            return Parse(
+                utf8Json.WrittenMemory,
+                options.GetReaderOptions(),
+                extraRentedArrayPoolBytes: null,
+                extraPooledByteBufferWriter: utf8Json);
         }
 
         internal static JsonDocument ParseValue(Stream utf8Json, JsonDocumentOptions options)
@@ -220,7 +229,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value into a JsonDocument.
+        ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   The <see cref="ReadOnlyMemory{T}"/> value may be used for the entire lifetime of the
@@ -289,7 +298,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse text representing a single JSON value into a JsonDocument.
+        ///   Parses text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <param name="json">JSON text to parse.</param>
         /// <param name="options">Options to control the reader behavior during parsing.</param>
@@ -331,7 +340,7 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
         ///     final token in the JSON value.  If an exception is thrown, or <see langword="false"/>
         ///     is returned, the reader is reset to the state it was in when the method was called.
         ///   </para>
@@ -371,8 +380,8 @@ namespace System.Text.Json
         ///   </para>
         ///
         ///   <para>
-        ///     Upon completion of this method <paramref name="reader"/> will be positioned at the
-        ///     final token in the JSON value.  If an exception is thrown the reader is reset to
+        ///     Upon completion of this method, <paramref name="reader"/> will be positioned at the
+        ///     final token in the JSON value. If an exception is thrown, the reader is reset to
         ///     the state it was in when the method was called.
         ///   </para>
         ///
@@ -664,14 +673,15 @@ namespace System.Text.Json
             {
                 MetadataDb database = MetadataDb.CreateLocked(utf8Json.Length);
                 database.Append(tokenType, startLocation: 0, utf8Json.Length);
-                return new JsonDocument(utf8Json, database, extraRentedBytes: null);
+                return new JsonDocument(utf8Json, database);
             }
         }
 
         private static JsonDocument Parse(
             ReadOnlyMemory<byte> utf8Json,
             JsonReaderOptions readerOptions,
-            byte[]? extraRentedBytes)
+            byte[]? extraRentedArrayPoolBytes = null,
+            PooledByteBufferWriter? extraPooledByteBufferWriter = null)
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
@@ -691,7 +701,7 @@ namespace System.Text.Json
                 stack.Dispose();
             }
 
-            return new JsonDocument(utf8Json, database, extraRentedBytes);
+            return new JsonDocument(utf8Json, database, extraRentedArrayPoolBytes, extraPooledByteBufferWriter);
         }
 
         private static JsonDocument ParseUnrented(
@@ -729,7 +739,7 @@ namespace System.Text.Json
                 }
             }
 
-            return new JsonDocument(utf8Json, database, extraRentedBytes: null);
+            return new JsonDocument(utf8Json, database);
         }
 
         private static ArraySegment<byte> ReadToEnd(Stream stream)

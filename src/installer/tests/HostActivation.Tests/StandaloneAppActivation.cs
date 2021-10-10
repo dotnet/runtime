@@ -204,8 +204,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // self-contained layout since a flat layout of the shared framework is not supported.
             Command.Create(appExe)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROOT", newOutDir)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", newOutDir)
+                .DotNetRoot(newOutDir)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(fExpectedToFail: true)

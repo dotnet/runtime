@@ -450,5 +450,28 @@ namespace System.IO.Compression.Tests
                 }
             }
         }
+
+        [Fact]
+        public void CreateSetsExternalAttributesCorrectly()
+        {
+            string folderName = zfolder("normal");
+            string filepath = GetTestFilePath();
+            ZipFile.CreateFromDirectory(folderName, filepath);
+
+            using (ZipArchive archive = ZipFile.Open(filepath, ZipArchiveMode.Read))
+            {
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    if (OperatingSystem.IsWindows())
+                    {
+                        Assert.Equal(0, entry.ExternalAttributes);
+                    }
+                    else
+                    {
+                        Assert.NotEqual(0, entry.ExternalAttributes);
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,7 +1,4 @@
 <Project Sdk="Microsoft.Build.NoTargets">
-  <PropertyGroup>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-  </PropertyGroup>
 
   <PropertyGroup>
     <!-- OS name is case sensitive! -->

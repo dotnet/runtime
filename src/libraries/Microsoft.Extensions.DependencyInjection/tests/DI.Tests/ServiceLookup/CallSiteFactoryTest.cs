@@ -3,17 +3,42 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
+using Microsoft.Extensions.DependencyInjection.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     public class CallSiteFactoryTest
     {
+        [Fact]
+        public void GetService_FactoryCallSite_Transient_DoesNotFail()
+        {
+            var collection = new ServiceCollection();
+            collection.Add(ServiceDescriptor.Describe(typeof(FakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+            collection.Add(ServiceDescriptor.Describe(typeof(IFakeService), (sp) => new FakeService(), ServiceLifetime.Transient));
+
+            using ServiceProvider serviceProvider = collection.BuildServiceProvider(ServiceProviderMode.Dynamic);
+            Type expectedType = typeof(FakeService);
+
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+            Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+
+            for (int i = 0; i < 50; i++)
+            {
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(IFakeService)).GetType());
+                Assert.Equal(expectedType, serviceProvider.GetService(typeof(FakeService)).GetType());
+                Thread.Sleep(10); // Give the background thread time to compile
+            }
+        }
+
         [Fact]
         public void CreateCallSite_Throws_IfTypeHasNoPublicConstructors()
         {
@@ -557,6 +582,41 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
         [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public void GetSlotTests(int numberOfServices)
+        {
+            var serviceDescriptors = new[] {
+                ServiceDescriptor.Singleton<ICustomService, CustomService1>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService2>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService3>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService4>(),
+                ServiceDescriptor.Singleton<ICustomService, CustomService5>()
+            };
+
+            var callsiteFactory = new CallSiteFactory(serviceDescriptors.Take(numberOfServices).ToArray());
+
+            for (int i = 0; i < numberOfServices; i++)
+            {
+                Assert.Equal(numberOfServices - i - 1, callsiteFactory.GetSlot(serviceDescriptors[i]));
+            }
+        }
+
+        interface ICustomService
+        {
+
+        }
+
+        class CustomService1 : ICustomService { }
+        class CustomService2 : ICustomService { }
+        class CustomService3 : ICustomService { }
+        class CustomService4 : ICustomService { }
+        class CustomService5 : ICustomService { }
+
+        [Theory]
         [InlineData(typeof(TypeWithMultipleParameterizedConstructors))]
         [InlineData(typeof(TypeWithSupersetConstructors))]
         public void CreateCallSite_ThrowsIfTypeHasNoConstructurWithResolvableParameters(Type type)
@@ -814,6 +874,51 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is trimming)
+        public void VerifyOpenGenericTrimmabilityChecks()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability", "true");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                (Type, Type)[] invalidTestCases = new[]
+                {
+                    (typeof(IFakeOpenGenericService<>), typeof(ClassWithNewConstraint<>)),
+                    (typeof(IServiceWithoutTrimmingAnnotations<>), typeof(ServiceWithTrimmingAnnotations<>)),
+                    (typeof(IServiceWithPublicConstructors<>), typeof(ServiceWithPublicProperties<>)),
+                    (typeof(IServiceWithTwoGenerics<,>), typeof(ServiceWithTwoGenericsInvalid<,>)),
+                };
+                foreach ((Type serviceType, Type implementationType) in invalidTestCases)
+                {
+                    ServiceDescriptor[] serviceDescriptors = new[]
+                    {
+                        new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Singleton)
+                    };
+
+                    Assert.Throws<ArgumentException>(() => new CallSiteFactory(serviceDescriptors));
+                }
+
+                (Type, Type)[] validTestCases = new[]
+                {
+                    (typeof(IFakeOpenGenericService<>), typeof(FakeOpenGenericService<>)),
+                    (typeof(IServiceWithPublicConstructors<>), typeof(ServiceWithPublicConstructors<>)),
+                    (typeof(IServiceWithTwoGenerics<,>), typeof(ServiceWithTwoGenericsValid<,>)),
+                    (typeof(IServiceWithMoreMemberTypes<>), typeof(ServiceWithLessMemberTypes<>)),
+                };
+                foreach ((Type serviceType, Type implementationType) in validTestCases)
+                {
+                    ServiceDescriptor[] serviceDescriptors = new[]
+                    {
+                        new ServiceDescriptor(serviceType, implementationType, ServiceLifetime.Singleton)
+                    };
+
+                    Assert.NotNull(new CallSiteFactory(serviceDescriptors));
+                }
+            }, options);
+        }
+
         private static Func<Type, ServiceCallSite> GetCallSiteFactory(params ServiceDescriptor[] descriptors)
         {
             var collection = new ServiceCollection();
@@ -852,5 +957,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private class ClassC<T> { }
         private class ClassD { public ClassD(ClassC<string> cd) { } }
         private class ClassE { public ClassE(ClassB cb) { } }
+
+        // Open generic with trimming annotations
+        private interface IServiceWithoutTrimmingAnnotations<T> { }
+        private class ServiceWithTrimmingAnnotations<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> : IServiceWithoutTrimmingAnnotations<T> { }
+
+        private interface IServiceWithPublicConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T> { }
+        private class ServiceWithPublicProperties<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>: IServiceWithPublicConstructors<T> { }
+        private class ServiceWithPublicConstructors<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>: IServiceWithPublicConstructors<T> { }
+
+        private interface IServiceWithTwoGenerics<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T2> { }
+        private class ServiceWithTwoGenericsInvalid<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T2> : IServiceWithTwoGenerics<T1, T2> { }
+        private class ServiceWithTwoGenericsValid<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T2> : IServiceWithTwoGenerics<T1, T2> { }
+
+        private interface IServiceWithMoreMemberTypes<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)] T> { }
+        private class ServiceWithLessMemberTypes<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T> : IServiceWithMoreMemberTypes<T> { }
     }
 }

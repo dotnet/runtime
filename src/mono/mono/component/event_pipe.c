@@ -11,6 +11,8 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
+static bool _event_pipe_component_inited = false;
+
 struct _EventPipeProviderConfigurationNative {
 	gunichar2 *provider_name;
 	uint64_t keywords;
@@ -60,6 +62,17 @@ event_pipe_get_next_event (
 	EventPipeEventInstanceData *instance);
 
 static bool
+event_pipe_add_rundown_execution_checkpoint (const ep_char8_t *name);
+
+static bool
+event_pipe_add_rundown_execution_checkpoint_2 (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp);
+
+static ep_timestamp_t
+event_pipe_convert_100ns_ticks_to_timestamp_t (int64_t ticks_100ns);
+
+static bool
 event_pipe_get_session_info (
 	EventPipeSessionID session_id,
 	EventPipeSessionInfo *instance);
@@ -81,13 +94,25 @@ static MonoComponentEventPipe fn_table = {
 	&ep_get_wait_handle,
 	&ep_start_streaming,
 	&ep_write_event_2,
+	&event_pipe_add_rundown_execution_checkpoint,
+	&event_pipe_add_rundown_execution_checkpoint_2,
+	&event_pipe_convert_100ns_ticks_to_timestamp_t,
 	&ep_create_provider,
 	&ep_delete_provider,
 	&ep_get_provider,
 	&ep_provider_add_event,
 	&event_pipe_get_session_info,
 	&event_pipe_thread_ctrl_activity_id,
-	&ep_rt_mono_write_event_ee_startup_start
+	&ep_rt_mono_write_event_ee_startup_start,
+	&ep_rt_write_event_threadpool_worker_thread_start,
+	&ep_rt_write_event_threadpool_worker_thread_stop,
+	&ep_rt_write_event_threadpool_worker_thread_wait,
+	&ep_rt_write_event_threadpool_worker_thread_adjustment_sample,
+	&ep_rt_write_event_threadpool_worker_thread_adjustment_adjustment,
+	&ep_rt_write_event_threadpool_worker_thread_adjustment_stats,
+	&ep_rt_write_event_threadpool_io_enqueue,
+	&ep_rt_write_event_threadpool_io_dequeue,
+	&ep_rt_write_event_threadpool_working_thread_count
 };
 
 static bool
@@ -133,7 +158,8 @@ event_pipe_enable (
 		format,
 		rundown_requested,
 		stream,
-		sync_callback);
+		sync_callback,
+        NULL);
 
 	if (config_providers) {
 		for (int i = 0; i < providers_len; ++i) {
@@ -170,6 +196,31 @@ event_pipe_get_next_event (
 	}
 
 	return next_instance != NULL;
+}
+
+static bool
+event_pipe_add_rundown_execution_checkpoint (const ep_char8_t *name)
+{
+	return ep_add_rundown_execution_checkpoint (name, ep_perf_timestamp_get ());
+}
+
+static bool
+event_pipe_add_rundown_execution_checkpoint_2 (
+	const ep_char8_t *name,
+	ep_timestamp_t timestamp)
+{
+	return ep_add_rundown_execution_checkpoint (name, timestamp);
+}
+
+static ep_timestamp_t
+event_pipe_convert_100ns_ticks_to_timestamp_t (int64_t ticks_100ns)
+{
+	// Convert into event pipe timestamp from a relative number of 100ns ticks (+/-).
+	int64_t freq = ep_perf_frequency_query ();
+	ep_timestamp_t ticks = (ep_timestamp_t)(((double)ticks_100ns / 10000000) * freq);
+	ep_timestamp_t timestamp = ep_perf_timestamp_get () + ticks;
+
+	return timestamp > 0 ? timestamp : 0;
 }
 
 static bool
@@ -232,14 +283,14 @@ event_pipe_thread_ctrl_activity_id (
 	return result;
 }
 
-#ifndef STATIC_COMPONENTS
-MONO_COMPONENT_EXPORT_ENTRYPOINT
-MonoComponentEventPipe *
-mono_component_event_pipe_init (void);
-#endif
-
 MonoComponentEventPipe *
 mono_component_event_pipe_init (void)
 {
+	if (!_event_pipe_component_inited) {
+		extern void ep_rt_mono_component_init (void);
+		ep_rt_mono_component_init ();
+		_event_pipe_component_inited = true;
+	}
+
 	return &fn_table;
 }

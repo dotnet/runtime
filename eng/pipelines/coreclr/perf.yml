@@ -41,7 +41,7 @@ jobs:
       runtimeFlavor: mono
       buildConfig: release
       platforms:
-      - Linux_arm64
+      - Linux_x64
 
   # build coreclr and libraries
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -49,27 +49,68 @@ jobs:
       jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
       buildConfig: release
       platforms:
-      - Linux_arm64
+      - Linux_x64
       jobParameters:
         testGroup: perf
 
-  # run arm64 interpreter jobs for mono
+  # build mono on wasm
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
       buildConfig: release
       runtimeFlavor: mono
       platforms:
-      - Linux_arm64
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: wasm
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: Browser Wasm Artifacts
+          artifactName: BrowserWasm
+          archiveType: zip
+          archiveExtension: .zip
+
+  #run mono wasm microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildConfig: release
+      runtimeFlavor: wasm
+      platforms:
+      - Linux_x64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
-        runtimeType: mono
-        codeGenType: 'Interpreter'
+        runtimeType: wasm
+        codeGenType: 'wasm'
         projectFile: microbenchmarks.proj
-        runKind: micro_mono
+        runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfa64'
+        logicalmachine: 'perftiger'
+        javascriptEngine: 'javascriptcore'
+
+  #run mono wasm aot microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildconfig: release
+      runtimeflavor: wasm
+      platforms:
+      - linux_x64
+      jobparameters:
+        testgroup: perf
+        livelibrariesbuildconfig: Release
+        runtimetype: wasm
+        codegentype: 'aot'
+        projectfile: microbenchmarks.proj
+        runkind: micro
+        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        javascriptengine: 'javascriptcore'
 
 - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
 
@@ -82,9 +123,7 @@ jobs:
       - Linux_x64
       - windows_x64
       - windows_x86
-      - Linux_arm64
       - Linux_musl_x64
-      - windows_arm64
       jobParameters:
         testGroup: perf
 
@@ -131,27 +170,6 @@ jobs:
           archiveType: tar
           tarCompression: gz
 
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/common/global-build-job.yml
-      buildConfig: release
-      runtimeFlavor: mono
-      platforms:
-      - Linux_arm64
-      jobParameters:
-        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
-        nameSuffix: AOT
-        isOfficialBuild: false
-        extraStepsTemplate: /eng/pipelines/common/upload-artifact-step.yml
-        extraStepsParameters:
-          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
-          includeRootFolder: true
-          displayName: AOT Mono Artifacts
-          artifactName: LinuxMonoAOTarm64
-          archiveExtension: '.tar.gz'
-          archiveType: tar
-          tarCompression: gz
-
   # build mono Android scenarios
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -173,7 +191,28 @@ jobs:
           archiveExtension: '.tar.gz'
           archiveType: tar
           tarCompression: gz
-  
+    
+  # build mono iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - iOS_arm64
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+        nameSuffix: iOSMono
+        isOfficialBuild: false
+        extraStepsTemplate: /eng/pipelines/coreclr/templates/build-perf-sample-apps.yml
+        extraStepsParameters:
+          rootFolder: '$(Build.SourcesDirectory)/artifacts/'
+          includeRootFolder: true
+          displayName: iOS Mono Artifacts
+          artifactName: iOSMonoarm64
+          archiveExtension: '.tar.gz'
+          archiveType: tar
+          tarCompression: gz
 
   # build mono
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -199,6 +238,39 @@ jobs:
         runKind: android_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
         logicalmachine: 'perfpixel4a'
+
+  # run mono iOS scenarios
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: False
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+        - Windows_x64
+      jobParameters:
+        testGroup: perf
+        runtimeType: iOSMono
+        projectFile: ios_scenarios.proj
+        runKind: ios_scenarios
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
+        logicalmachine: 'perfpixel4a'
+        iosLlvmBuild: True
 
   # run mono microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -235,7 +307,7 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
 
-  #run mono wasm microbenchmarks perf job
+  # run mono wasm interpreter (default) microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
@@ -252,6 +324,26 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
+        javascriptEngine: 'v8'
+
+  #run mono wasm aot microbenchmarks perf job
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobtemplate: /eng/pipelines/coreclr/templates/perf-job.yml # note: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildconfig: release
+      runtimeflavor: wasm
+      platforms:
+      - linux_x64
+      jobparameters:
+        testgroup: perf
+        livelibrariesbuildconfig: Release
+        runtimetype: wasm
+        codegentype: 'aot'
+        projectfile: microbenchmarks.proj
+        runkind: micro
+        runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        javascriptEngine: 'v8'
 
   # run mono aot microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -261,7 +353,6 @@ jobs:
       runtimeFlavor: aot
       platforms:
       - Linux_x64
-      - Linux_arm64
       jobParameters:
         testGroup: perf
         liveLibrariesBuildConfig: Release
@@ -291,6 +382,55 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
 
+# run coreclr perftiger microbenchmarks pgo perf jobs
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -NoPgo
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -DynamicPgo
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
+      buildConfig: release
+      runtimeFlavor: coreclr
+      platforms:
+      - windows_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        pgoRunType: -FullPgo
+
   # run coreclr perfowl microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -307,38 +447,6 @@ jobs:
         runKind: micro
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perfowl'
-
-# run coreclr Linux arm64 microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - Linux_arm64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfa64'
-
-# run coreclr Windows arm64 microbenchmarks perf job
-  - template: /eng/pipelines/common/platform-matrix.yml
-    parameters:
-      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml
-      buildConfig: release
-      runtimeFlavor: coreclr
-      platforms:
-      - windows_arm64
-      jobParameters:
-        testGroup: perf
-        liveLibrariesBuildConfig: Release
-        projectFile: microbenchmarks.proj
-        runKind: micro
-        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
-        logicalmachine: 'perfsurf'
 
   # run coreclr crossgen perf job
   - template: /eng/pipelines/common/platform-matrix.yml

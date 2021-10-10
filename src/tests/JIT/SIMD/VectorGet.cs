@@ -5,6 +5,8 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 internal partial class VectorTest
 {
@@ -206,33 +208,35 @@ internal partial class VectorTest
         if (VectorGetTest<nuint>.VectorGet(100, 1) == Fail) returnVal = Fail;
         if (VectorGetTest<nuint>.VectorGetIndexerOutOfRange(100, 1) == Fail) returnVal = Fail;
 
-        JitLog jitLog = new JitLog();
-        if (!jitLog.Check("get_Item", "Double")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "Double")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "Single")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "Single")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "Int32")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "Int32")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "Int64")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "Int64")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "UInt16")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "UInt16")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "Byte")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "Byte")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "Int16")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "Int16")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "SByte")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "SByte")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "UInt32")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "UInt32")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "UInt64")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "UInt64")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "IntPtr")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "IntPtr")) returnVal = Fail;
-        if (!jitLog.Check("get_Item", "UIntPtr")) returnVal = Fail;
-        if (!jitLog.Check("get_Count", "UIntPtr")) returnVal = Fail;
-        jitLog.Dispose();
-
+        if (Sse41.IsSupported || AdvSimd.IsSupported)
+        {
+            JitLog jitLog = new JitLog();
+            if (!jitLog.Check("get_Item", "Double")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "Double")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "Single")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "Single")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "Int32")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "Int32")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "Int64")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "Int64")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "UInt16")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "UInt16")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "Byte")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "Byte")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "Int16")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "Int16")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "SByte")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "SByte")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "UInt32")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "UInt32")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "UInt64")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "UInt64")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "IntPtr")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "IntPtr")) returnVal = Fail;
+            if (!jitLog.Check("get_Item", "UIntPtr")) returnVal = Fail;
+            if (!jitLog.Check("get_Count", "UIntPtr")) returnVal = Fail;
+            jitLog.Dispose();
+        }
         return returnVal;
     }
 }

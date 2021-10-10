@@ -481,7 +481,7 @@ namespace System.ServiceModel.Syndication
             }
             if (link.Length != 0 && !link.AttributeExtensions.ContainsKey(s_atom10Length))
             {
-                writer.WriteAttributeString(Atom10Constants.LengthTag, Convert.ToString(link.Length, CultureInfo.InvariantCulture));
+                writer.WriteAttributeString(Atom10Constants.LengthTag, link.Length.ToString(CultureInfo.InvariantCulture));
             }
             if (!link.AttributeExtensions.ContainsKey(s_atom10Href))
             {

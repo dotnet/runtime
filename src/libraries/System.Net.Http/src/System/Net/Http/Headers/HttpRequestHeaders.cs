@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Net.Http.Headers
 {
@@ -101,6 +100,8 @@ namespace System.Net.Http.Headers
                 {
                     value = null;
                 }
+
+                CheckContainsNewLine(value);
 
                 SetOrRemoveParsedValue(KnownHeaders.From.Descriptor, value);
             }
@@ -258,11 +259,6 @@ namespace System.Net.Http.Headers
 
         internal HttpRequestHeaders()
             : base(HttpHeaderType.General | HttpHeaderType.Request | HttpHeaderType.Custom, HttpHeaderType.Response)
-        {
-        }
-
-        internal HttpRequestHeaders(bool forceHeaderStoreItems)
-            : base(HttpHeaderType.General | HttpHeaderType.Request | HttpHeaderType.Custom, HttpHeaderType.Response, forceHeaderStoreItems)
         {
         }
 

@@ -571,6 +571,45 @@ namespace std
 
 #endif
 
+    namespace detail
+    {
+        template <typename...>
+        using void_t = void;
+    }
+    // Always false dependent-value for static_asserts.
+    template <typename...>
+    struct _Always_false
+    {
+        const bool value = false;
+    };
+
+    template <class _Ty, class = void>
+    struct _Add_reference { // add reference (non-referenceable type)
+        using _Lvalue = _Ty;
+        using _Rvalue = _Ty;
+    };
+
+    template <class _Ty>
+    struct _Add_reference<_Ty, detail::void_t<_Ty&>> { // (referenceable type)
+        using _Lvalue = _Ty&;
+        using _Rvalue = _Ty&&;
+    };
+
+    template <class _Ty>
+    struct add_lvalue_reference {
+        using type = typename _Add_reference<_Ty>::_Lvalue;
+    };
+
+    template <class _Ty>
+    struct add_rvalue_reference {
+        using type = typename _Add_reference<_Ty>::_Rvalue;
+    };
+
+    template<typename _Ty>
+    typename add_rvalue_reference<_Ty>::type declval() noexcept
+    {
+        static_assert(_Always_false<_Ty>::value, "Calling declval is ill-formed, see N4892 [declval]/2.");
+    }
 } // namespace std
 
 #endif // !USE_STL

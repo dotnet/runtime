@@ -232,7 +232,7 @@ namespace System.Security.Cryptography
                     else
                     {
                         hasher.AppendData(secret);
-                        Array.Clear(secret, 0, secret.Length);
+                        Array.Clear(secret);
                     }
 
                     return null;

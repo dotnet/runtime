@@ -96,12 +96,6 @@ namespace ILCompiler.DependencyAnalysis
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode,
-            WindowsDebugNeedTypeIndicesStoreNode,
-            WindowsDebugMethodSignatureMapSectionNode,
-            WindowsDebugTypeSignatureMapSectionNode,
-            WindowsDebugManagedNativeDictionaryInfoSectionNode,
-            WindowsDebugTypeRecordsSectionNode,
-            WindowsDebugPseudoAssemblySectionNode,
         }
 
         public class EmbeddedObjectNodeComparer : IComparer<EmbeddedObjectNode>

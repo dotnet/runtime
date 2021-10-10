@@ -39,7 +39,8 @@ namespace Internal.Pgo
         Done = None, // All instrumentation schemas must end with a record which is "Done"
         BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
         BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
-        TypeHandleHistogramCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram
+        TypeHandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
+        TypeHandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
         TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
@@ -76,6 +77,14 @@ namespace Internal.Pgo
         public bool DataHeldInDataLong => (Count == 1 &&
                             (((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.FourByte) ||
                             ((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.EightByte)));
+    }
+
+    // Flags stored in 'Other' field of TypeHandleHistogram*Count entries.
+    [Flags]
+    public enum ClassProfileFlags : uint
+    {
+        IsInterface = 0x40000000,
+        IsClass = 0x80000000,
     }
 
     public class PgoProcessor
@@ -551,7 +560,8 @@ namespace Internal.Pgo
                         case PgoInstrumentationKind.BasicBlockLongCount:
                         case PgoInstrumentationKind.EdgeIntCount:
                         case PgoInstrumentationKind.EdgeLongCount:
-                        case PgoInstrumentationKind.TypeHandleHistogramCount:
+                        case PgoInstrumentationKind.TypeHandleHistogramIntCount:
+                        case PgoInstrumentationKind.TypeHandleHistogramLongCount:
                             if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {
                                 throw new Exception("Unable to merge pgo data. Invalid format");

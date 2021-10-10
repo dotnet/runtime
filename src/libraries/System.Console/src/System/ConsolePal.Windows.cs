@@ -1224,52 +1224,5 @@ namespace System
                 return errorCode;
             }
         }
-
-        internal sealed class ControlCHandlerRegistrar
-        {
-            private bool _handlerRegistered;
-            private readonly Interop.Kernel32.ConsoleCtrlHandlerRoutine _handler;
-
-            internal ControlCHandlerRegistrar()
-            {
-                _handler = new Interop.Kernel32.ConsoleCtrlHandlerRoutine(BreakEvent);
-            }
-
-            internal void Register()
-            {
-                Debug.Assert(!_handlerRegistered);
-
-                bool r = Interop.Kernel32.SetConsoleCtrlHandler(_handler, true);
-                if (!r)
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-                }
-
-                _handlerRegistered = true;
-            }
-
-            internal void Unregister()
-            {
-                Debug.Assert(_handlerRegistered);
-
-                bool r = Interop.Kernel32.SetConsoleCtrlHandler(_handler, false);
-                if (!r)
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error();
-                }
-                _handlerRegistered = false;
-            }
-
-            private static bool BreakEvent(int controlType)
-            {
-                if (controlType != Interop.Kernel32.CTRL_C_EVENT &&
-                    controlType != Interop.Kernel32.CTRL_BREAK_EVENT)
-                {
-                    return false;
-                }
-
-                return Console.HandleBreakEvent(controlType == Interop.Kernel32.CTRL_C_EVENT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak);
-            }
-        }
     }
 }

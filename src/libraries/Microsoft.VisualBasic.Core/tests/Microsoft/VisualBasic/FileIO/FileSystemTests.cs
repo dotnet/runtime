@@ -298,6 +298,7 @@ namespace Microsoft.VisualBasic.FileIO.Tests
         // path that followed the symlink.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52851", TestPlatforms.MacCatalyst)]
         public void CurrentDirectorySet()
         {
             var SavedCurrentDirectory = System.IO.Directory.GetCurrentDirectory();
