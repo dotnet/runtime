@@ -691,89 +691,6 @@ public:
 typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
-
-#ifdef FEATURE_COMINTEROP
-
-//---------------------------------------------------------------------------------------
-//
-// The type of each entry in the Guid to MT hash
-//
-typedef DPTR(GUID) PTR_GUID;
-typedef DPTR(struct GuidToMethodTableEntry) PTR_GuidToMethodTableEntry;
-struct GuidToMethodTableEntry
-{
-    PTR_GUID        m_Guid;
-    PTR_MethodTable m_pMT;
-};
-
-//---------------------------------------------------------------------------------------
-//
-// The hash type itself
-//
-typedef DPTR(class GuidToMethodTableHashTable) PTR_GuidToMethodTableHashTable;
-class GuidToMethodTableHashTable : public NgenHashTable<GuidToMethodTableHashTable, GuidToMethodTableEntry, 4>
-{
-public:
-    typedef NgenHashTable<GuidToMethodTableHashTable, GuidToMethodTableEntry, 4> Base_t;
-    friend class Base_t;
-
-#ifndef DACCESS_COMPILE
-
-private:
-    GuidToMethodTableHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets)
-        : Base_t(pModule, pHeap, cInitialBuckets)
-    { LIMITED_METHOD_CONTRACT; }
-
-public:
-    static GuidToMethodTableHashTable* Create(Module* pModule, DWORD cInitialBuckets, AllocMemTracker *pamTracker);
-
-    GuidToMethodTableEntry * InsertValue(PTR_GUID pGuid, PTR_MethodTable pMT, BOOL bReplaceIfFound, AllocMemTracker *pamTracker);
-
-#endif // !DACCESS_COMPILE
-
-public:
-    typedef Base_t::LookupContext LookupContext;
-
-    PTR_MethodTable GetValue(const GUID * pGuid, LookupContext *pContext);
-    GuidToMethodTableEntry * FindItem(const GUID * pGuid, LookupContext *pContext);
-
-private:
-    BOOL CompareKeys(PTR_GuidToMethodTableEntry pEntry, const GUID * pGuid);
-    static DWORD Hash(const GUID * pGuid);
-
-public:
-    // An iterator for the table
-    struct Iterator
-    {
-    public:
-        Iterator() : m_pTable(NULL), m_fIterating(false)
-        { LIMITED_METHOD_DAC_CONTRACT; }
-        Iterator(GuidToMethodTableHashTable * pTable) : m_pTable(pTable), m_fIterating(false)
-        { LIMITED_METHOD_DAC_CONTRACT; }
-
-    private:
-        friend class GuidToMethodTableHashTable;
-
-        GuidToMethodTableHashTable * m_pTable;
-        BaseIterator              m_sIterator;
-        bool                      m_fIterating;
-    };
-
-    BOOL FindNext(Iterator *it, GuidToMethodTableEntry **ppEntry);
-    DWORD GetCount();
-
-#ifdef DACCESS_COMPILE
-    // do not save this in mini-/heap-dumps
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-    { SUPPORTS_DAC; }
-    void EnumMemoryRegionsForEntry(GuidToMethodTableEntry *pEntry, CLRDataEnumMemoryFlags flags)
-    { SUPPORTS_DAC; }
-#endif // DACCESS_COMPILE
-};
-
-#endif // FEATURE_COMINTEROP
-
-
 //Hash for MemberRef to Desc tables (fieldDesc or MethodDesc)
 typedef DPTR(struct MemberRefToDescHashEntry) PTR_MemberRefToDescHashEntry;
 
@@ -786,14 +703,13 @@ typedef DPTR(class MemberRefToDescHashTable) PTR_MemberRefToDescHashTable;
 
 #define MEMBERREF_MAP_INITIAL_SIZE 10
 
-class MemberRefToDescHashTable: public NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>
+class MemberRefToDescHashTable: public DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>
 {
-	friend class NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>;
 #ifndef DACCESS_COMPILE
 
 private:
     MemberRefToDescHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets):
-       NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>(pModule, pHeap, cInitialBuckets)
+       DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>(pModule, pHeap, cInitialBuckets)
     { LIMITED_METHOD_CONTRACT; }
 
 public:
@@ -805,22 +721,9 @@ public:
 #endif //!DACCESS_COMPILE
 
 public:
-    typedef NgenHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>::LookupContext LookupContext;
+    typedef DacEnumerableHashTable<MemberRefToDescHashTable, MemberRefToDescHashEntry, 2>::LookupContext LookupContext;
 
     PTR_MemberRef GetValue(mdMemberRef token, BOOL *pfIsMethod);
-
-#ifdef DACCESS_COMPILE
-
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-    {
-        WRAPPER_NO_CONTRACT;
-        BaseEnumMemoryRegions(flags);
-    }
-
-    void EnumMemoryRegionsForEntry(MemberRefToDescHashEntry *pEntry, CLRDataEnumMemoryFlags flags)
-    { SUPPORTS_DAC; }
-
-#endif
 };
 
 #ifdef FEATURE_READYTORUN
@@ -1575,7 +1478,7 @@ protected:
             mdAssemblyRef       kAssemblyRef,
             IMDInternalImport * pMDImportOverride = NULL,
             BOOL                fDoNotUtilizeExtraChecks = FALSE,
-            AssemblyBinder      *pBindingContextForLoadedAssembly = NULL
+            AssemblyBinder      *pBinderForLoadedAssembly = NULL
             );
 
 public:

@@ -565,21 +565,6 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(@"\bgr[ae]y\b", RegexOptions.None, null)]
         [InlineData(@"\b((?# case sensitive comparison)D\w+)\s(?ixn)((?#case insensitive comparison)d\w+)\b", RegexOptions.None, null)]
         [InlineData(@"\{\d+(,-*\d+)*(\:\w{1,4}?)*\}(?x) # Looks for a composite format item.", RegexOptions.None, null)]
-        public void Parse(string pattern, RegexOptions options, object errorObj, int offset = -1)
-        {
-            RegexParseError? error = (RegexParseError?)errorObj;
-
-            Assert.True(error == null || offset > 0, "All tests must be given positive offsets, or null if no offset should be tested.");
-
-            // Parse the main tree and if parsing fails check if the supplied error matches.
-            ParseTree(pattern, options, error, offset);
-
-            // Assert that only ArgumentException might be thrown during parsing.
-            ParseSubTrees(pattern, options);
-        }
-
-        [Theory]
-        // Negative tests
         [InlineData(@"cat([a-\d]*)dog", RegexOptions.None, RegexParseError.ShorthandClassInCharacterRange, 9)]
         [InlineData(@"\k<1", RegexOptions.None, RegexParseError.UnrecognizedEscape, 2)]
         [InlineData(@"(?')", RegexOptions.None, RegexParseError.CaptureGroupNameInvalid, 3)]
@@ -716,67 +701,67 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[a-z-[b][", RegexOptions.None, RegexParseError.UnterminatedBracket, 9)]
         [InlineData("(?()|||||)", RegexOptions.None, RegexParseError.AlternationHasTooManyConditions, 10)]
         [InlineData("[^]", RegexOptions.None, RegexParseError.UnterminatedBracket, 3)]
-        [InlineData("\\", RegexOptions.None, RegexParseError.UnescapedEndingBackslash, 1)]
         [InlineData("??", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 1)]
         [InlineData("(?=*)", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 4)]
         [InlineData("((((((*))))))", RegexOptions.None, RegexParseError.QuantifierAfterNothing, 7)]
-        public void ParseCheckOffset(string pattern, RegexOptions options, object errorObj, int offset)
+        public void ParseCheckOffset(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
-            RegexParseError? error = (RegexParseError?)errorObj;
-
-            // Parse the main tree and if parsing fails check if the supplied error matches.
-            ParseTree(pattern, options, error, offset);
-
-            // Assert that only ArgumentException might be thrown during parsing.
-            ParseSubTrees(pattern, options);
+            Parse(pattern, options, error, offset);
         }
 
-
-        private static void ParseSubTrees(string pattern, RegexOptions options)
-        {
-            // Trim the input from the right and make sure tree invariants hold
-            for (int i = pattern.Length - 1; i > 0; i--)
-            {
-                ParseSubTree(pattern.Substring(0, i), options);
-            }
-
-            // Trim the input from the left and make sure tree invariants hold
-            for (int i = 1; i < pattern.Length; i++)
-            {
-                ParseSubTree(pattern.Substring(i), options);
-            }
-
-            // Skip middles
-            for (int i = 1; i < pattern.Length; i++)
-            {
-                ParseSubTree(pattern.Substring(0, i) + pattern.Substring(i + 1), options);
-            }
-        }
-
-        static void ParseTree(string pattern, RegexOptions options, RegexParseError? error, int offset)
+        private static void Parse(string pattern, RegexOptions options, RegexParseError? error, int offset = -1)
         {
             if (error != null)
             {
+                Assert.InRange(offset, 0, int.MaxValue);
                 Throws(error.Value, offset, () => new Regex(pattern, options));
                 return;
             }
 
+            Assert.Equal(-1, offset);
+
             // Nothing to assert here without having access to internals.
-            new Regex(pattern, options);
+            new Regex(pattern, options); // Does not throw
+
+            ParsePatternFragments(pattern, options);
         }
 
-        private static void ParseSubTree(string pattern, RegexOptions options)
+        private static void ParsePatternFragments(string pattern, RegexOptions options)
         {
-            try
+            // Trim the input in various places and parse.
+            // Verify that if it throws, it's the correct exception type
+            for (int i = pattern.Length - 1; i > 0; i--)
             {
-                new Regex(pattern, options);
+                string str = pattern.Substring(0, i);
+                MayThrow(() => new Regex(str, options));
             }
-            catch (ArgumentException)
+
+            for (int i = 1; i < pattern.Length; i++)
             {
-                // We are fine with ArgumentExceptions being thrown during sub expression parsing.
+                string str = pattern.Substring(i);
+                MayThrow(() => new Regex(str, options));
+            }
+
+            for (int i = 1; i < pattern.Length; i++)
+            {
+                string str = pattern.Substring(0, i) + pattern.Substring(i + 1);
+                MayThrow(() => new Regex(str, options));
             }
         }
 
+        /// <summary>
+        /// Checks that action throws either a RegexParseException or an ArgumentException depending on the
+        /// environment and the supplied error.
+        /// </summary>
+        /// <param name="error">The expected parse error</param>
+        /// <param name="action">The action to invoke.</param>
         static partial void Throws(RegexParseError error, int offset, Action action);
+
+        /// <summary>
+        /// Checks that action succeeds or throws either a RegexParseException or an ArgumentException depending on the
+        // environment and the action.
+        /// </summary>
+        /// <param name="action">The action to invoke.</param>
+        static partial void MayThrow(Action action);
     }
 }

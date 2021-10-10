@@ -266,7 +266,10 @@ namespace Internal.TypeSystem.Interop
                                 return MarshallerKind.CBool;
 
                             case NativeTypeKind.VariantBool:
-                                return MarshallerKind.VariantBool;
+                                if (context.Target.IsWindows)
+                                    return MarshallerKind.VariantBool;
+                                else
+                                    return MarshallerKind.Invalid;
 
                             default:
                                 return MarshallerKind.Invalid;
@@ -580,12 +583,18 @@ namespace Internal.TypeSystem.Interop
             {
                 if (nativeType == NativeTypeKind.AsAny)
                     return isAnsi ? MarshallerKind.AsAnyA : MarshallerKind.AsAnyW;
-                else if ((isField && nativeType == NativeTypeKind.Default)
-                    || nativeType == NativeTypeKind.Intf
-                    || nativeType == NativeTypeKind.IUnknown)
-                    return MarshallerKind.ComInterface;
                 else
-                    return MarshallerKind.Variant;
+                if (context.Target.IsWindows)
+                {
+                    if ((isField && nativeType == NativeTypeKind.Default)
+                        || nativeType == NativeTypeKind.Intf
+                        || nativeType == NativeTypeKind.IUnknown)
+                        return MarshallerKind.ComInterface;
+                    else
+                        return MarshallerKind.Variant;
+                }
+                else
+                    return MarshallerKind.Invalid;
             }
             else if (InteropTypes.IsStringBuilder(context, type))
             {
@@ -641,7 +650,10 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsInterface)
             {
-                return MarshallerKind.ComInterface;
+                if (context.Target.IsWindows)
+                    return MarshallerKind.ComInterface;
+                else
+                    return MarshallerKind.Invalid;
             }
             else
                 return MarshallerKind.Invalid;

@@ -632,11 +632,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		return NULL;
 
 	if (generic_virtual || variant_iface) {
-		if (m_class_is_valuetype (vt->klass)) /*FIXME is this required variant iface?*/
+		if (m_class_is_valuetype (vt->klass)  && !mini_method_is_default_method (m)) /*FIXME is this required variant iface?*/
 			need_unbox_tramp = TRUE;
 	} else if (orig_vtable_slot) {
-		if (m_class_is_valuetype (m->klass))
+		if (m_class_is_valuetype (m->klass)) {
+			g_assert (!mini_method_is_default_method (m));
 			need_unbox_tramp = TRUE;
+		}
 	}
 
 	addr = mini_add_method_trampoline (m, compiled_method, need_rgctx_tramp, need_unbox_tramp);

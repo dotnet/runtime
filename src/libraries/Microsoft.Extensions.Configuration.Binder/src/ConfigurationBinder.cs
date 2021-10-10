@@ -19,10 +19,6 @@ namespace Microsoft.Extensions.Configuration
         private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
-        private const string BindSingleElementsToArraySwitch = "Microsoft.Extensions.Configuration.BindSingleElementsToArray";
-
-        // Enable this switch by default.
-        private static bool ShouldBindSingleElementsToArray { get; } = AppContext.TryGetSwitch(BindSingleElementsToArraySwitch, out bool verifyCanBindSingleElementsToArray) ? verifyCanBindSingleElementsToArray : true;
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -366,7 +362,7 @@ namespace Microsoft.Extensions.Configuration
                 return convertedValue;
             }
 
-            if (config != null && (config.GetChildren().Any() || (configValue != null && ShouldBindSingleElementsToArray)))
+            if (config != null && config.GetChildren().Any())
             {
                 // If we don't have an instance, try to create one
                 if (instance == null)
@@ -499,7 +495,7 @@ namespace Microsoft.Extensions.Configuration
             Type itemType = collectionType.GenericTypeArguments[0];
             MethodInfo addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
 
-            foreach (IConfigurationSection section in GetChildrenOrSelf(config))
+            foreach (IConfigurationSection section in config.GetChildren())
             {
                 try
                 {
@@ -522,7 +518,7 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
         private static Array BindArray(Array source, IConfiguration config, BinderOptions options)
         {
-            IConfigurationSection[] children = GetChildrenOrSelf(config).ToArray();
+            IConfigurationSection[] children = config.GetChildren().ToArray();
             int arrayLength = source.Length;
             Type elementType = source.GetType().GetElementType();
             var newArray = Array.CreateInstance(elementType, arrayLength + children.Length);
@@ -705,27 +701,6 @@ namespace Microsoft.Extensions.Configuration
             }
 
             return property.Name;
-        }
-
-        private static IEnumerable<IConfigurationSection> GetChildrenOrSelf(IConfiguration config)
-        {
-            if (!ShouldBindSingleElementsToArray)
-            {
-                return config.GetChildren();
-            }
-
-            IEnumerable<IConfigurationSection> children;
-            // If configuration's children is an array, the configuration key will be a number
-            if (config.GetChildren().Any(a => long.TryParse(a.Key, out _)))
-            {
-                children = config.GetChildren();
-            }
-            else
-            {
-                children = new[] { config as IConfigurationSection };
-            }
-
-            return children;
         }
     }
 }

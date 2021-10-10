@@ -8,7 +8,7 @@
 
 #include "common.h"
 #include "classhash.h"
-#include "ngenhash.inl"
+#include "dacenumerablehash.inl"
 #include "fstring.h"
 #include "classhash.inl"
 
@@ -23,7 +23,7 @@ PTR_EEClassHashEntry EEClassHashEntry::GetEncloser()
     }
     CONTRACTL_END;
 
-    return m_pEncloser.Get();
+    return m_pEncloser;
 }
 
 PTR_VOID EEClassHashEntry::GetData()
@@ -64,7 +64,7 @@ void EEClassHashEntry::SetEncloser(EEClassHashEntry *pEncloser)
     }
     CONTRACTL_END;
 
-    m_pEncloser.Set(pEncloser);
+    m_pEncloser = pEncloser;
 }
 
 /*static*/
@@ -821,21 +821,3 @@ EEClassHashTable *EEClassHashTable::MakeCaseInsensitiveTable(Module *pModule, Al
     return pCaseInsTable;
 }
 #endif // !DACCESS_COMPILE
-
-#ifdef DACCESS_COMPILE
-void EEClassHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // Defer to the base class to do the bulk of this work. It calls EnumMemoryRegionsForEntry below for each
-    // entry in case we want to enumerate anything extra.
-    BaseEnumMemoryRegions(flags);
-}
-
-void EEClassHashTable::EnumMemoryRegionsForEntry(EEClassHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    // Nothing more to enumerate (the base class handles enumeration of the memory for the entry itself).
-}
-#endif // DACCESS_COMPILE

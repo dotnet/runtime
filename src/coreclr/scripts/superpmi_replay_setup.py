@@ -94,7 +94,7 @@ def match_correlation_files(full_path):
     file_name = os.path.basename(full_path)
 
     if file_name.startswith("clrjit_") and file_name.endswith(".dll") and file_name.find(
-        "osx") == -1 and file_name.find("armel") == -1:
+        "osx") == -1:
         return True
 
     if file_name == "superpmi.exe" or file_name == "mcs.exe":

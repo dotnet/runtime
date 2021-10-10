@@ -1,6 +1,12 @@
 if(CLR_CMAKE_HOST_WIN32)
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Debug>>:/Od>)
-    add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Checked>>:/O1>)
+    if (CLR_CMAKE_HOST_ARCH_I386)
+        # The Windows x86 Checked CLR has some kind of problem with exception handling
+        # when compiled with /O2. Issue: https://github.com/dotnet/runtime/issues/59845.
+        add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Checked>>:/O1>)
+    else()
+        add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Checked>>:/O2>)
+    endif()
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Release>>:/Ox>)
     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:RelWithDebInfo>>:/O2>)
 elseif(CLR_CMAKE_HOST_UNIX)

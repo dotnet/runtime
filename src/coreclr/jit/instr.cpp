@@ -105,6 +105,39 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
         curBuf = (curBuf + 1) % 4;
         return retbuf;
     }
+
+    // Some instructions have different mnemonics depending on the size.
+    switch (ins)
+    {
+        case INS_cdq:
+            switch (id->idOpSize())
+            {
+                case EA_8BYTE:
+                    return "cqo";
+                case EA_4BYTE:
+                    return "cdq";
+                case EA_2BYTE:
+                    return "cwd";
+                default:
+                    unreached();
+            }
+
+        case INS_cwde:
+            switch (id->idOpSize())
+            {
+                case EA_8BYTE:
+                    return "cdqe";
+                case EA_4BYTE:
+                    return "cwde";
+                case EA_2BYTE:
+                    return "cbw";
+                default:
+                    unreached();
+            }
+
+        default:
+            break;
+    }
 #endif // TARGET_XARCH
 
     return insName;

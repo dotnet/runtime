@@ -180,6 +180,37 @@ namespace System.IO.Tests
             Assert.Equal(content, File.ReadAllBytes(filePath));
         }
 
+        [Fact]
+        public async Task ReadWriteAsyncUsingNonPageSizedMultipleBuffers()
+        {
+            string filePath = GetTestFilePath();
+            // The Windows scatter/gather APIs accept segments that are exactly one page long.
+            // Combined with the FILE_FLAG_NO_BUFFERING's requirements, the segments must also
+            // be aligned at page size boundaries and have a size of a multiple of the page size.
+            // Using segments with a length of twice the page size adheres to the second requirement
+            // but not the first. The RandomAccess implementation will see it and issue sequential
+            // read/write syscalls per segment, instead of one scatter/gather syscall.
+            // This test verifies that fallback behavior.
+            int bufferSize = Environment.SystemPageSize * 2;
+            int fileSize = bufferSize * 2;
+            byte[] content = RandomNumberGenerator.GetBytes(fileSize);
+
+            using (SafeFileHandle handle = File.OpenHandle(filePath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None, FileOptions.Asynchronous | NoBuffering))
+            using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(fileSize))
+            {
+                Memory<byte> firstHalf = buffer.Memory.Slice(0, bufferSize);
+                Memory<byte> secondHalf = buffer.Memory.Slice(bufferSize);
+
+                content.AsSpan().CopyTo(buffer.GetSpan());
+                await RandomAccess.WriteAsync(handle, new ReadOnlyMemory<byte>[] { firstHalf, secondHalf }, 0);
+
+                buffer.GetSpan().Clear();
+                await RandomAccess.ReadAsync(handle, new Memory<byte>[] { firstHalf, secondHalf }, 0);
+            }
+
+            Assert.Equal(content, await File.ReadAllBytesAsync(filePath));
+        }
+
         // when using FileOptions.Asynchronous we are testing Scatter&Gather APIs on Windows (FILE_FLAG_OVERLAPPED requirement)
         private static FileOptions GetFileOptions(bool asyncHandle) => (asyncHandle ? FileOptions.Asynchronous : FileOptions.None) | NoBuffering; 
     }

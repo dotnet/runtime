@@ -13,7 +13,7 @@
 #ifndef _INSTMETHHASH_H
 #define _INSTMETHHASH_H
 
-#include "ngenhash.h"
+#include "dacenumerablehash.h"
 
 class AllocMemTracker;
 
@@ -67,7 +67,7 @@ private:
 
 // The method-desc hash table itself
 typedef DPTR(class InstMethodHashTable) PTR_InstMethodHashTable;
-class InstMethodHashTable : public NgenHashTable<InstMethodHashTable, InstMethodHashEntry, 4>
+class InstMethodHashTable : public DacEnumerableHashTable<InstMethodHashTable, InstMethodHashEntry, 4>
 {
 
 public:
@@ -93,11 +93,10 @@ public:
     static InstMethodHashTable* Create(LoaderAllocator *pAllocator, Module *pModule, DWORD dwNumBuckets, AllocMemTracker *pamTracker);
 
 private:
-    friend class NgenHashTable<InstMethodHashTable, InstMethodHashEntry, 4>;
 
 #ifndef DACCESS_COMPILE
     InstMethodHashTable(Module *pModule, LoaderHeap *pHeap, DWORD cInitialBuckets) :
-        NgenHashTable<InstMethodHashTable, InstMethodHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
+        DacEnumerableHashTable<InstMethodHashTable, InstMethodHashEntry, 4>(pModule, pHeap, cInitialBuckets) {}
 #endif
     void               operator delete(void *p);
 
@@ -140,7 +139,6 @@ public:
     DWORD GetCount();
 
 #ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
     void EnumMemoryRegionsForEntry(InstMethodHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags);
 #endif
 

@@ -80,6 +80,7 @@ internal static partial class Interop
             // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems", coreutils "stat.c",
             // and "wiki.debian.org/FileSystem". It can be extended over time as we find additional file systems that should
             // be recognized as a particular drive type.
+            // Keep this in sync with the UnixFileSystemTypes enum in Interop.UnixFileSystemTypes.cs
             switch (fileSystemName)
             {
                 case "cddafs":

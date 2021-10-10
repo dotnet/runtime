@@ -647,7 +647,6 @@ public:
         return GetMethodTable()->IsInterface();
     }
 
-    BOOL HasUnmanagedCallConvAttribute();
     BOOL HasUnmanagedCallersOnlyAttribute();
     BOOL ShouldSuppressGCTransition();
 

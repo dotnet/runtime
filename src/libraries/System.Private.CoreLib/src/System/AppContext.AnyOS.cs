@@ -34,6 +34,7 @@ namespace System
             return directory;
         }
 
+#if FEATURE_PERFTRACING
         internal static void LogSwitchValues(RuntimeEventSource ev)
         {
             if (s_switches is not null)
@@ -80,5 +81,6 @@ namespace System
                 }
             }
         }
+#endif // FEATURE_PERFTRACING
     }
 }

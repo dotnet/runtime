@@ -1360,7 +1360,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             instGen_MemoryBarrier();
         }
 
-        GetEmitter()->emitInsLoadStoreOp(ins_Store(type), emitActualTypeSize(type), data->GetRegNum(), tree);
+        regNumber dataReg = data->GetRegNum();
+        GetEmitter()->emitInsLoadStoreOp(ins_StoreFromSrc(dataReg, type), emitActualTypeSize(type), dataReg, tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
         genUpdateLife(tree);
@@ -1641,27 +1642,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
 }
 
-//------------------------------------------------------------------------
-// genCodeForMulLong: Generates code for int*int->long multiplication
-//
-// Arguments:
-//    node - the GT_MUL_LONG node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
-{
-    assert(node->OperGet() == GT_MUL_LONG);
-    genConsumeOperands(node);
-    GenTree*    src1 = node->gtOp1;
-    GenTree*    src2 = node->gtOp2;
-    instruction ins  = node->IsUnsigned() ? INS_umull : INS_smull;
-    GetEmitter()->emitIns_R_R_R_R(ins, EA_4BYTE, node->GetRegNum(), node->gtOtherReg, src1->GetRegNum(),
-                                  src2->GetRegNum());
-    genProduceReg(node);
-}
-
 #ifdef PROFILING_SUPPORTED
 
 //-----------------------------------------------------------------------------------
@@ -1883,6 +1863,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
                              INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
         compiler->unwindPadding();
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
 

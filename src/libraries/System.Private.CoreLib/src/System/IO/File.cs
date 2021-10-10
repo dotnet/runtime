@@ -616,7 +616,7 @@ namespace System.IO
         {
             FileStream stream = new FileStream(
                 path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize,
-                FileOptions.Asynchronous | FileOptions.SequentialScan);
+                FileOptions.Asynchronous);
 
             return new StreamWriter(stream, encoding);
         }
@@ -810,7 +810,7 @@ namespace System.IO
 
             static async Task Core(string path, byte[] bytes, CancellationToken cancellationToken)
             {
-                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                using SafeFileHandle sfh = OpenHandle(path, FileMode.Create, FileAccess.Write, FileShare.Read, FileOptions.Asynchronous);
                 await RandomAccess.WriteAtOffsetAsync(sfh, bytes, 0, cancellationToken).ConfigureAwait(false);
             }
         }

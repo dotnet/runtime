@@ -262,9 +262,9 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> SecureAndNonSecure_IPBasedUri_MemberData() =>
             from address in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }
-            from useSsl in BoolValues 
+            from useSsl in BoolValues
             // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
-            where PlatformDetection.IsNotBrowser || !useSsl 
+            where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
         [Theory]
@@ -948,12 +948,6 @@ namespace System.Net.Http.Functional.Tests
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && chunked == true)
             {
                 // Chunking is not supported on HTTP/2 and later.
-                return;
-            }
-
-            if (UseVersion == HttpVersion30 && (chunked is null || chunked is false))
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/53087")]
                 return;
             }
 

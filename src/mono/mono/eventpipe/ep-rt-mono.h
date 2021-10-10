@@ -602,7 +602,11 @@ inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
+#if SIZEOF_SIZE_T == 8
+	return (size_t)(mono_atomic_cas_i64((volatile gint64*)(target), (gint64)(value), (gint64)(expected)));
+#else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
+#endif
 }
 
 /*

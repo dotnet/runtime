@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private TimeSpan? _absoluteExpirationRelativeToNow;
         private TimeSpan? _slidingExpiration;
         private long? _size;
-        private CacheEntry _previous; // this field is not null only before the entry is added to the cache
+        private CacheEntry _previous; // this field is not null only before the entry is added to the cache and tracking is enabled
         private object _value;
         private CacheEntryState _state;
 
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-            _previous = CacheEntryHelper.EnterScope(this);
+            _previous = memoryCache.TrackLinkedCacheEntries ? CacheEntryHelper.EnterScope(this) : null;
             _state = new CacheEntryState(CacheItemPriority.Normal);
         }
 
@@ -136,7 +136,10 @@ namespace Microsoft.Extensions.Caching.Memory
             {
                 _state.IsDisposed = true;
 
-                CacheEntryHelper.ExitScope(this, _previous);
+                if (_cache.TrackLinkedCacheEntries)
+                {
+                    CacheEntryHelper.ExitScope(this, _previous);
+                }
 
                 // Don't commit or propagate options if the CacheEntry Value was never set.
                 // We assume an exception occurred causing the caller to not set the Value successfully,
