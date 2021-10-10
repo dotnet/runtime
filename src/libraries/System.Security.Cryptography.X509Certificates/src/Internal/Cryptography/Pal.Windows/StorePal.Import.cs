@@ -35,7 +35,7 @@ namespace Internal.Cryptography.Pal
                 {
                     fixed (char* pFileName = fileName)
                     {
-                        CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(fromFile ? 0 : rawData!.Length, pRawData);
+                        Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)(fromFile ? 0 : rawData!.Length));
                         bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
                         PfxCertStoreFlags certStoreFlags = MapKeyStorageFlags(keyStorageFlags);
 
@@ -70,7 +70,7 @@ namespace Internal.Cryptography.Pal
                             }
                             fixed (byte* pRawData2 = rawData)
                             {
-                                CRYPTOAPI_BLOB blob2 = new CRYPTOAPI_BLOB(rawData!.Length, pRawData2);
+                                Interop.Crypt32.DATA_BLOB blob2 = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData2), (uint)rawData!.Length);
                                 certStore = Interop.crypt32.PFXImportCertStore(ref blob2, password, certStoreFlags);
                                 if (certStore == null || certStore.IsInvalid)
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
@@ -86,7 +86,7 @@ namespace Internal.Cryptography.Pal
                                 SafeCertContextHandle? pCertContext = null;
                                 while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
                                 {
-                                    CRYPTOAPI_BLOB nullBlob = new CRYPTOAPI_BLOB(0, null);
+                                    Interop.Crypt32.DATA_BLOB nullBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                                     if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
                                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                                 }
@@ -105,7 +105,7 @@ namespace Internal.Cryptography.Pal
 
             SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
-                CertEncodingType.All,
+                Interop.Crypt32.CertEncodingType.All,
                 IntPtr.Zero,
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG | CertStoreFlags.CERT_STORE_DEFER_CLOSE_UNTIL_LAST_FREE_FLAG,
                 null);
@@ -127,7 +127,7 @@ namespace Internal.Cryptography.Pal
 
             SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
-                CertEncodingType.All,
+                Interop.Crypt32.CertEncodingType.All,
                 IntPtr.Zero,
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
                 null);
@@ -153,7 +153,7 @@ namespace Internal.Cryptography.Pal
         {
             CertStoreFlags certStoreFlags = MapX509StoreFlags(storeLocation, openFlags);
 
-            SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(CertStoreProvider.CERT_STORE_PROV_SYSTEM_W, CertEncodingType.All, IntPtr.Zero, certStoreFlags, storeName);
+            SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(CertStoreProvider.CERT_STORE_PROV_SYSTEM_W, Interop.Crypt32.CertEncodingType.All, IntPtr.Zero, certStoreFlags, storeName);
             if (certStore.IsInvalid)
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 

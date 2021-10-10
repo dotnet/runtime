@@ -202,11 +202,11 @@ namespace Internal.Cryptography.Pal
         private static byte[] DecodeKeyBlob(CryptDecodeObjectStructType lpszStructType, byte[] encodedKeyValue)
         {
             int cbDecoded = 0;
-            if (!Interop.crypt32.CryptDecodeObject(Native.CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, null, ref cbDecoded))
+            if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, null, ref cbDecoded))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             byte[] keyBlob = new byte[cbDecoded];
-            if (!Interop.crypt32.CryptDecodeObject(Native.CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, keyBlob, ref cbDecoded))
+            if (!Interop.crypt32.CryptDecodeObject(CertEncodingType.All, lpszStructType, encodedKeyValue, encodedKeyValue.Length, CryptDecodeObjectFlags.None, keyBlob, ref cbDecoded))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             return keyBlob;
@@ -288,8 +288,8 @@ namespace Internal.Cryptography.Pal
                     CryptDecodeObjectStructType.X509_DSS_PUBLICKEY,
                     static delegate (void* pvDecoded, int cbDecoded)
                     {
-                        Debug.Assert(cbDecoded >= sizeof(CRYPTOAPI_BLOB));
-                        CRYPTOAPI_BLOB* pBlob = (CRYPTOAPI_BLOB*)pvDecoded;
+                        Debug.Assert(cbDecoded >= sizeof(DATA_BLOB));
+                        DATA_BLOB* pBlob = (DATA_BLOB*)pvDecoded;
                         return pBlob->ToByteArray();
                     });
             }

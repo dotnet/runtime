@@ -49,7 +49,7 @@ namespace Internal.Cryptography.Pal
         {
             fixed (byte* pThumbPrint = thumbPrint)
             {
-                CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(thumbPrint.Length, pThumbPrint);
+                DATA_BLOB blob = new DATA_BLOB(new IntPtr(pThumbPrint), (uint)thumbPrint.Length);
                 FindCore<object>(CertFindType.CERT_FIND_HASH, &blob);
             }
         }
@@ -125,7 +125,7 @@ namespace Internal.Cryptography.Pal
 
         private unsafe void FindByTime(DateTime dateTime, int compareResult)
         {
-            Native.FILETIME fileTime = Native.FILETIME.FromDateTime(dateTime);
+            FILETIME fileTime = FILETIME.FromDateTime(dateTime);
 
             FindCore(
                 (fileTime, compareResult),
@@ -162,7 +162,7 @@ namespace Internal.Cryptography.Pal
                                 {
                                     Debug.Assert(cbDecoded >= sizeof(CERT_NAME_VALUE));
                                     CERT_NAME_VALUE* pNameValue = (CERT_NAME_VALUE*)pvDecoded;
-                                    string? actual = Marshal.PtrToStringUni(new IntPtr(pNameValue->Value.pbData));
+                                    string? actual = Marshal.PtrToStringUni(pNameValue->Value.pbData);
                                     if (templateName.Equals(actual, StringComparison.OrdinalIgnoreCase))
                                         foundMatch = true;
                                 }))
@@ -338,7 +338,7 @@ namespace Internal.Cryptography.Pal
         {
             SafeCertStoreHandle findResults = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
-                Native.CertEncodingType.All,
+                CertEncodingType.All,
                 IntPtr.Zero,
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
                 null);

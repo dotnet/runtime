@@ -12,8 +12,6 @@ using System.Runtime.InteropServices;
 using Internal.Cryptography;
 using Internal.Cryptography.Pal.Native;
 
-using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
-
 using System.Security.Cryptography;
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using SafePasswordHandle = Microsoft.Win32.SafeHandles.SafePasswordHandle;
@@ -148,7 +146,7 @@ namespace Internal.Cryptography.Pal
                     {
                         CERT_CHAIN_PARA chainPara = default;
                         chainPara.cbSize = sizeof(CERT_CHAIN_PARA);
-                        if (!Interop.crypt32.CertGetCertificateChain((IntPtr)ChainEngine.HCCE_CURRENT_USER, _certContext, (FILETIME*)null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
+                        if (!Interop.crypt32.CertGetCertificateChain((IntPtr)ChainEngine.HCCE_CURRENT_USER, _certContext, null, SafeCertStoreHandle.InvalidHandle, ref chainPara, CertChainFlags.None, IntPtr.Zero, out certChainContext))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                         if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_PUBKEY_ALG_PARA_PROP_ID, null, ref cbData))
                             throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
@@ -280,8 +278,8 @@ namespace Internal.Cryptography.Pal
             {
                 unsafe
                 {
-                    CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(0, (byte*)null);
-                    CRYPTOAPI_BLOB* pValue = value ? &blob : (CRYPTOAPI_BLOB*)null;
+                    Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
+                    Interop.Crypt32.DATA_BLOB* pValue = value ? &blob : (Interop.Crypt32.DATA_BLOB*)null;
                     if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_ARCHIVED_PROP_ID, CertSetPropertyFlags.None, pValue))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
@@ -318,7 +316,7 @@ namespace Internal.Cryptography.Pal
                     IntPtr pFriendlyName = Marshal.StringToHGlobalUni(friendlyName);
                     try
                     {
-                        CRYPTOAPI_BLOB blob = new CRYPTOAPI_BLOB(checked(2 * (friendlyName.Length + 1)), (byte*)pFriendlyName);
+                        Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(pFriendlyName, checked(2 * ((uint)friendlyName.Length + 1)));
                         if (!Interop.crypt32.CertSetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_FRIENDLY_NAME_PROP_ID, CertSetPropertyFlags.None, &blob))
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
                     }
@@ -374,7 +372,7 @@ namespace Internal.Cryptography.Pal
                     X509Extension[] extensions = new X509Extension[numExtensions];
                     for (int i = 0; i < numExtensions; i++)
                     {
-                        CERT_EXTENSION* pCertExtension = (CERT_EXTENSION*)pCertInfo->rgExtension.ToPointer() + i;
+                        Interop.Crypt32.CERT_EXTENSION* pCertExtension = (Interop.Crypt32.CERT_EXTENSION*)pCertInfo->rgExtension.ToPointer() + i;
                         string oidValue = Marshal.PtrToStringAnsi(pCertExtension->pszObjId)!;
                         Oid oid = new Oid(oidValue, friendlyName: null);
                         bool critical = pCertExtension->fCritical != 0;
