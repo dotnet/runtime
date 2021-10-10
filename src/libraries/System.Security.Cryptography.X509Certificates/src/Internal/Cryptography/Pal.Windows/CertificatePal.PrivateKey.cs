@@ -386,7 +386,7 @@ namespace Internal.Cryptography.Pal
 
                 if (!Interop.crypt32.CertSetCertificateContextProperty(
                     pal._certContext,
-                    CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
+                    Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
                     CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
@@ -574,7 +574,7 @@ namespace Internal.Cryptography.Pal
 
                 if (!Interop.crypt32.CertSetCertificateContextProperty(
                     pal._certContext,
-                    CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
+                    Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
                     CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
@@ -597,7 +597,7 @@ namespace Internal.Cryptography.Pal
 
             if (!Interop.crypt32.CertSetCertificateContextProperty(
                 pal._certContext,
-                CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
                 CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
                 handle))
             {

@@ -9,7 +9,6 @@ using Internal.Cryptography.Pal.Native;
 
 using System.Security.Cryptography;
 
-using FILETIME = Internal.Cryptography.Pal.Native.FILETIME;
 using SafeX509ChainHandle = Microsoft.Win32.SafeHandles.SafeX509ChainHandle;
 using System.Security.Cryptography.X509Certificates;
 
@@ -66,7 +65,7 @@ namespace Internal.Cryptography.Pal
 
                             chainPara.dwUrlRetrievalTimeout = (int)Math.Floor(timeout.TotalMilliseconds);
 
-                            FILETIME ft = FILETIME.FromDateTime(verificationTime);
+                            Interop.Crypt32.FILETIME ft = Interop.Crypt32.FILETIME.FromDateTime(verificationTime);
                             CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
                             SafeX509ChainHandle chain;
                             if (!Interop.crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certificatePal.CertContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))

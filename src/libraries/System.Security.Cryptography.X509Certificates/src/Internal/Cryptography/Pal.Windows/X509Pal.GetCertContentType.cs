@@ -29,7 +29,7 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pRawData = rawData)
                 {
-                    CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pRawData);
+                    Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)rawData.Length);
                     if (!Interop.Crypt32.CryptQueryObject(
                         Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
                         &certBlob,

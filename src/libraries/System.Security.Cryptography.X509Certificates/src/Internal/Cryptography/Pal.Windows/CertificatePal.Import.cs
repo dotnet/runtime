@@ -50,7 +50,7 @@ namespace Internal.Cryptography.Pal
                     {
                         fixed (char* pFileName = fileName)
                         {
-                            CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(loadFromFile ? 0 : rawData.Length, pRawData);
+                            Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)(loadFromFile ? 0 : rawData.Length));
 
                             Interop.Crypt32.CertQueryObjectType objectType = loadFromFile ? Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_FILE : Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
                             void* pvObject = loadFromFile ? (void*)pFileName : (void*)&certBlob;
@@ -132,7 +132,7 @@ namespace Internal.Cryptography.Pal
 
                 CMSG_SIGNER_INFO_Partial* pCmsgSignerInfo = (CMSG_SIGNER_INFO_Partial*)pCmsgSignerBytes;
 
-                CERT_INFO certInfo = default(CERT_INFO);
+                Interop.Crypt32.CERT_INFO certInfo = default(Interop.Crypt32.CERT_INFO);
                 certInfo.Issuer.cbData = pCmsgSignerInfo->Issuer.cbData;
                 certInfo.Issuer.pbData = pCmsgSignerInfo->Issuer.pbData;
                 certInfo.SerialNumber.cbData = pCmsgSignerInfo->SerialNumber.cbData;
@@ -155,7 +155,7 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pbRawData = rawData)
                 {
-                    CRYPTOAPI_BLOB certBlob = new CRYPTOAPI_BLOB(rawData.Length, pbRawData);
+                    Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pbRawData), (uint)rawData.Length);
                     hStore = Interop.crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
                     {
