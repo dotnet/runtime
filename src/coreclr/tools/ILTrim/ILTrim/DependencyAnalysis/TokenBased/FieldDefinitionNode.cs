@@ -39,7 +39,6 @@ namespace ILTrim.DependencyAnalysis
 
             // TODO: the signature blob might contain references to tokens we need to rewrite
             var signatureBlob = reader.GetBlobBytes(fieldDef.Signature);
-            FieldDefinitionNode fieldNode = writeContext.Factory.FieldDefinition(_module, Handle);
 
             return builder.AddFieldDefinition(
                 fieldDef.Attributes,
