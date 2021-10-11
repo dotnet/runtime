@@ -90,6 +90,7 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60183")]
         public void ReusingOnceFiredChangeTokenShouldNotThrow()
         {
             var cancellationTokenSource = new CancellationTokenSource();
@@ -139,6 +140,43 @@ namespace Microsoft.Extensions.Primitives
             }
 
             Assert.Equal(3, count);
+        }
+
+        [Fact]
+        public void OnChangeProperlyHandlesInitiallyFiredTokensAndMultiplePostFires()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+
+            // Set the initial state as already changed.
+            cancellationTokenSource.Cancel();
+
+            var x = 0;
+
+            Func<IChangeToken> producer = () =>
+            {
+                ++ x;
+                if (x == 1)
+                {
+                    return cancellationChangeToken;
+                }
+
+                cancellationTokenSource = new CancellationTokenSource();
+                cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+
+                return cancellationChangeToken;
+            };
+
+            var fired = 0;
+            Action consumer = () => ++ fired;
+
+            using (ChangeToken.OnChange(producer, consumer))
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+            }
+
+            Assert.Equal(3, fired);
         }
 
         [Fact]
