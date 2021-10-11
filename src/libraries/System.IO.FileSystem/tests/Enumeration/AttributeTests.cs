@@ -72,7 +72,7 @@ namespace System.IO.Tests.Enumeration
             using (var enumerator = new GetPropertiesEnumerator(testDirectory.FullName, new EnumerationOptions() { AttributesToSkip = 0 }))
             {
                 // Move to the first item.
-                Assert.True(enumerator.MoveNext());
+                Assert.True(enumerator.MoveNext(), "Move first");
                 FileSystemEntryProperties entry = enumerator.Current;
 
                 Assert.True(entry.FileName == item1 || entry.FileName == item2, "Unexpected item");
@@ -83,41 +83,40 @@ namespace System.IO.Tests.Enumeration
 
                 // Move to the second item.
                 FileSystemInfo expected = entry.FileName == item1 ? item2Info : item1Info;
-                Assert.True(enumerator.MoveNext());
+                Assert.True(enumerator.MoveNext(), "Move second");
                 entry = enumerator.Current;
-                Assert.Equal(expected.Name, entry.FileName);
+                AssertExtensions.EqualTo(expected.Name, entry.FileName, "Name");
 
                 // Values determined during enumeration.
-                Assert.Equal(expected is DirectoryInfo, entry.IsDirectory);
-                Assert.Equal(expected.Attributes, entry.Attributes);
-                Assert.Equal(testDirectory.FullName, entry.Directory);
-                Assert.Equal(expected.FullName, entry.FullPath);
-                Assert.Equal(expected.FullName, entry.SpecifiedFullPath);
+                AssertExtensions.EqualTo(expected is DirectoryInfo, entry.IsDirectory, "IsDirectory");
+                AssertExtensions.EqualTo(expected.Attributes, entry.Attributes, "Attributes");
+                AssertExtensions.EqualTo(testDirectory.FullName, entry.Directory, "Directory");
+                AssertExtensions.EqualTo(expected.FullName, entry.FullPath, "FullPath");
+                AssertExtensions.EqualTo(expected.FullName, entry.SpecifiedFullPath, "SpecifiedFullPath");
 
                 if (PlatformDetection.IsWindows)
                 {
-                    Assert.Equal((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden);
-                    Assert.Equal(expected.CreationTimeUtc, entry.CreationTimeUtc);
-                    Assert.Equal(expected.LastAccessTimeUtc, entry.LastAccessTimeUtc);
-                    Assert.Equal(expected.LastWriteTimeUtc, entry.LastWriteTimeUtc);
-                    Assert.Equal((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden);
+                    AssertExtensions.EqualTo((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden, "IsHidden");
+                    AssertExtensions.EqualTo(expected.CreationTimeUtc, entry.CreationTimeUtc, "CreationTimeUtc");
+                    AssertExtensions.EqualTo(expected.LastAccessTimeUtc, entry.LastAccessTimeUtc, "LastAccessTimeUtc");
+                    AssertExtensions.EqualTo(expected.LastWriteTimeUtc, entry.LastWriteTimeUtc, "LastWriteTimeUtc");
                     if (expected is FileInfo fileInfo)
                     {
-                        Assert.Equal(fileInfo.Length, entry.Length);
+                        AssertExtensions.EqualTo(fileInfo.Length, entry.Length, "Length");
                     }
                 }
                 else
                 {
                     // Because the item is deleted, we can no longer retrieve these values and defaults are returned instead.
-                    Assert.Equal(entry.FileName.StartsWith('.'), entry.IsHidden);
-                    DateTimeOffset defaultOffset = new DateTimeOffset(DateTime.FromFileTimeUtc(0));
-                    Assert.Equal(defaultOffset, entry.CreationTimeUtc);
-                    Assert.Equal(defaultOffset, entry.LastAccessTimeUtc);
-                    Assert.Equal(defaultOffset, entry.LastWriteTimeUtc);
-                    Assert.Equal(0, entry.Length);
+                    AssertExtensions.EqualTo(entry.FileName.StartsWith('.'), entry.IsHidden, "IsHidden");
+                    DateTimeOffset defaultTime = new DateTimeOffset(DateTime.FromFileTimeUtc(0));
+                    AssertExtensions.EqualTo(defaultTime, entry.CreationTimeUtc, "CreationTimeUtc");
+                    AssertExtensions.EqualTo(defaultTime, entry.LastAccessTimeUtc, "LastAccessTimeUtc");
+                    AssertExtensions.EqualTo(defaultTime, entry.LastWriteTimeUtc, "LastWriteTimeUtc");
+                    AssertExtensions.EqualTo(0, entry.Length, "Length");
                 }
 
-                Assert.False(enumerator.MoveNext());
+                Assert.False(enumerator.MoveNext(), "Move final");
             }
 
             static FileSystemInfo CreateItem(DirectoryInfo testDirectory, string item)
@@ -133,7 +132,7 @@ namespace System.IO.Tests.Enumeration
                 else
                 {
                     // use the last char to have different lengths for different files.
-                    Assert.True(item == "file1" || item == "file2");
+                    Assert.True(item == "file1" || item == "file2", "File names");
                     int length = (int)item[item.Length - 1];
                     File.WriteAllBytes(fullPath, new byte[length]);
                     var info = new FileInfo(fullPath);
