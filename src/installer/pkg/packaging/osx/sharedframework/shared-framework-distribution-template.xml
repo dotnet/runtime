@@ -14,17 +14,44 @@
         <line choice="{SharedFxComponentId}.pkg" />
         <line choice="{SharedHostComponentId}.pkg" />
         <line choice="{HostFxrComponentId}.pkg" />
+        <line choice="{SharedFxComponentId}.pkg.alternate" />
+        <line choice="{SharedHostComponentId}.pkg.alternate" />
+        <line choice="{HostFxrComponentId}.pkg.alternate" />
     </choices-outline>
-    <choice id="{SharedFxComponentId}.pkg" visible="true" title="{SharedFxBrandName} (x64)" description="The .NET Shared Framework">
+    <choice id="{SharedFxComponentId}.pkg" visible="true" title="{SharedFxBrandName} (x64)" description="The .NET Shared Framework" selected="IsX64Machine()">
         <pkg-ref id="{SharedFxComponentId}.pkg" />
     </choice>
-    <choice id="{HostFxrComponentId}.pkg" visible="true" title="{HostFxrBrandName} (x64)" description="The .NET HostFxr">
+    <choice id="{HostFxrComponentId}.pkg" visible="true" title="{HostFxrBrandName} (x64)" description="The .NET HostFxr" selected="IsX64Machine()">
         <pkg-ref id="{HostFxrComponentId}.pkg" />
     </choice>
-    <choice id="{SharedHostComponentId}.pkg" visible="true" title="{SharedHostBrandName} (x64)" description="The .NET Shared Host." >
+    <choice id="{SharedHostComponentId}.pkg" visible="true" title="{SharedHostBrandName} (x64)" description="The .NET Shared Host." selected="IsX64Machine()">
+        <pkg-ref id="{SharedHostComponentId}.pkg" />
+    </choice>
+    <choice id="{SharedFxComponentId}.pkg.alternate" visible="true" title="{SharedFxBrandName} (x64)" description="The .NET Shared Framework" selected="!IsX64Machine()" customLocation="/usr/local/share/dotnet/x64">
+        <pkg-ref id="{SharedFxComponentId}.pkg" />
+    </choice>
+    <choice id="{HostFxrComponentId}.pkg.alternate" visible="true" title="{HostFxrBrandName} (x64)" description="The .NET HostFxr" selected="!IsX64Machine()" customLocation="/usr/local/share/dotnet/x64">
+        <pkg-ref id="{HostFxrComponentId}.pkg" />
+    </choice>
+    <choice id="{SharedHostComponentId}.pkg.alternate" visible="true" title="{SharedHostBrandName} (x64)" description="The .NET Shared Host." selected="!IsX64Machine()" customLocation="/usr/local/share/dotnet/x64">
         <pkg-ref id="{SharedHostComponentId}.pkg" />
     </choice>
     <pkg-ref id="{SharedFxComponentId}.pkg">{SharedFxComponentId}.pkg</pkg-ref>
     <pkg-ref id="{HostFxrComponentId}.pkg">{HostFxrComponentId}.pkg</pkg-ref>
     <pkg-ref id="{SharedHostComponentId}.pkg">{SharedHostComponentId}.pkg</pkg-ref>
+    <script><![CDATA[function IsX64Machine() {
+    var machine = system.sysctl("hw.machine");
+    var cputype = system.sysctl("hw.cputype");
+    var cpu64 = system.sysctl("hw.cpu64bit_capable");
+    system.log("Machine type: " + machine);
+    system.log("Cpu type: " + cputype);
+    system.log("64-bit: " + cpu64);
+
+    // From machine.h
+    // CPU_TYPE_X86_64 = CPU_TYPE_X86 | CPU_ARCH_ABI64 = 0x010000007 = 16777223
+    // CPU_TYPE_X86 = 7
+    var result = machine == "amd64" || machine == "x86_64" || cputype == "16777223" || (cputype == "7" && cpu64 == "1");
+    system.log("IsX64Machine: " + result);
+    return result;
+}]]></script>
 </installer-gui-script>
