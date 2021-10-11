@@ -85,8 +85,10 @@ inline void FATAL_GC_ERROR()
 #define FEATURE_PREMORTEM_FINALIZATION
 #define GC_HISTORY
 
+#define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
+
 // We need the lower 3 bits in the MT to do our bookkeeping so doubly linked free list is only for 64-bit
-#ifdef HOST_64BIT
+#if defined(BACKGROUND_GC) && defined(HOST_64BIT)
 #define DOUBLY_LINKED_FL
 #endif //HOST_64BIT
 
@@ -98,8 +100,6 @@ inline void FATAL_GC_ERROR()
 #ifdef HEAP_ANALYZE
 #define initial_internal_roots        (1024*16)
 #endif // HEAP_ANALYZE
-
-#define BACKGROUND_GC   //concurrent background GC (requires WRITE_WATCH)
 
 #ifdef SERVER_GC
 #define MH_SC_MARK //scalable marking
@@ -2038,11 +2038,11 @@ protected:
 #endif //!USE_REGIONS
     PER_HEAP_ISOLATED
     void distribute_free_regions();
+#ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED
     void reset_write_watch_for_gc_heap(void* base_address, size_t region_size);
     PER_HEAP_ISOLATED
     void get_write_watch_for_gc_heap(bool reset, void *base_address, size_t region_size, void** dirty_pages, uintptr_t* dirty_page_count_ref, bool is_runtime_suspended);
-
     PER_HEAP
     void switch_one_quantum();
     PER_HEAP
@@ -2051,6 +2051,7 @@ protected:
     void switch_on_reset (BOOL concurrent_p, size_t* current_total_reset_size, size_t last_reset_size);
     PER_HEAP
     void reset_write_watch (BOOL concurrent_p);
+#endif //BACKGROUND_GC
     PER_HEAP
     void adjust_ephemeral_limits();
     PER_HEAP
@@ -5918,14 +5919,7 @@ inline gc_oh_num heap_segment_oh (heap_segment * inst)
     }
 }
 
-#ifdef BACKGROUND_GC
 #ifdef USE_REGIONS
-inline
-bool heap_segment_overflow_p (heap_segment* inst)
-{
-    return ((inst->flags & heap_segment_flags_overflow) != 0);
-}
-
 inline
 region_free_list*& heap_segment_containing_free_list (heap_segment* inst)
 {
@@ -5936,6 +5930,15 @@ inline
 PTR_heap_segment& heap_segment_prev_free_region (heap_segment* inst)
 {
     return inst->prev_free_region;
+}
+#endif //USE_REGIONS
+
+#ifdef BACKGROUND_GC
+#ifdef USE_REGIONS
+inline
+bool heap_segment_overflow_p (heap_segment* inst)
+{
+    return ((inst->flags & heap_segment_flags_overflow) != 0);
 }
 #endif //USE_REGIONS
 

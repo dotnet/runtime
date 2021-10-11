@@ -30,10 +30,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <TestBuildSteps Include="RestorePackages" />
     <TestBuildSteps Include="ManagedBuild" />
     <TestBuildSteps Include="CheckTestBuildStep" />
     <TestBuildSteps Include="GenerateLayout" />
-    <TestBuildSteps Include="RestorePackages" />
     <TestBuildSteps Include="BuildTestWrappers" />
     <TestBuildSteps Include="CrossgenFramework" />
     <TestBuildSteps Include="CreateAndroidApps" />
@@ -468,7 +468,7 @@
 
   <Target Name="GenerateLayout"
       DependsOnTargets="CreateTestOverlay"
-      AfterTargets="ManagedBuild"
+      AfterTargets="ManagedBuild;RestorePackages"
       Condition="'$(__BuildTestWrappersOnly)' != '1' and '$(__CopyNativeTestBinaries)' != '1' and '$(__SkipGenerateLayout)' != '1' and !$(MonoAot) and !$(MonoFullAot)" />
 
   <Target Name="BuildTestWrappers"

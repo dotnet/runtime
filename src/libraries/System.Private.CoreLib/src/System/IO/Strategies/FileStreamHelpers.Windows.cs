@@ -14,9 +14,8 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
-        // Async completion/return codes shared by:
-        // - AsyncWindowsFileStreamStrategy.ValueTaskSource
-        // - Net5CompatFileStreamStrategy.CompletionSource
+        // Async completion/return codes used by
+        // SafeFileHandle.OverlappedValueTaskSource
         internal static class TaskSourceCodes
         {
             internal const long NoResult = 0;
@@ -338,7 +337,7 @@ namespace System.IO.Strategies
             }
         }
 
-        /// <summary>Used by AsyncWindowsFileStreamStrategy and Net5CompatFileStreamStrategy CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
+        /// <summary>Used by AsyncWindowsFileStreamStrategy.CopyToAsync to enable awaiting the result of an overlapped I/O operation with minimal overhead.</summary>
         private sealed unsafe class AsyncCopyToAwaitable : ICriticalNotifyCompletion
         {
             /// <summary>Sentinel object used to indicate that the I/O operation has completed before being awaited.</summary>
