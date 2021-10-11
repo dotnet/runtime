@@ -318,7 +318,7 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        PEFile *pManifestFile = pAssembly->GetManifestFile();
+        PEAssembly *pManifestFile = pAssembly->GetManifestFile();
         PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
