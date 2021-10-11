@@ -194,6 +194,8 @@ namespace System.Reflection
 
         private RuntimeType[] ArgumentTypes => Signature.Arguments;
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2059:RunClassConstructor",
+            Justification = "This ConstructorInfo instance represents the static constructor itself, so if this object was created, the static constructor exists.")]
         private object? InvokeClassConstructor()
         {
             Debug.Assert((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0);
