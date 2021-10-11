@@ -162,41 +162,37 @@ namespace System.IO.Tests
             await fs.FlushAsync();
         }
 
-        private static List<string> _devicePathsAvailable;
-        private static List<string> GetDevicePaths() 
+        private static Lazy<string[]> _availableDevicePaths = new Lazy<string[]>(() =>
         { 
-            if (_devicePathsAvailable is null)
-            {
-                var options = new FileStreamOptions { Access = FileAccess.Write, Share = FileShare.Write };
-                _devicePathsAvailable = new List<string>();
+            List<string> paths = new();
+            FileStreamOptions options = new { Access = FileAccess.Write, Share = FileShare.Write };
 
-                foreach (string devicePath in new[] { "/dev/tty", "/dev/console", "/dev/null", "/dev/zero" })
+            foreach (string devicePath in new[] { "/dev/tty", "/dev/console", "/dev/null", "/dev/zero" })
+            {
+                if (!File.Exists(devicePath))
                 {
-                    if (!File.Exists(devicePath))
+                    continue;
+                }
+
+                try
+                {
+                    File.Open(devicePath, options).Dispose();
+                }
+                catch (Exception ex)
+                {
+                    if (ex is IOException || ex is UnauthorizedAccessException)
                     {
                         continue;
                     }
 
-                    try
-                    {
-                        File.Open(devicePath, options).Dispose();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (ex is IOException || ex is UnauthorizedAccessException)
-                        {
-                            continue;
-                        }
-
-                        throw;
-                    }
-
-                    _devicePathsAvailable.Add(devicePath);
+                    throw;
                 }
+
+                paths.Add(devicePath);
             }
 
-            return _devicePathsAvailable;
-        }
+            return paths.ToArray();
+        });
 
         public static IEnumerable<object[]> DevicePath_FileOptions_TestData()
         {
