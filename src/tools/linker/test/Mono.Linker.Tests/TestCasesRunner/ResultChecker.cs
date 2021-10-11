@@ -1171,7 +1171,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 				if (parameterTypes != null) {
 					fullName += "(";
-					fullName += string.Join (",", parameterTypes.Select (pt => pt.Value switch {
+					fullName += string.Join (", ", parameterTypes.Select (pt => pt.Value switch {
 						TypeReference typeRef => typeRef.GetDisplayNameWithoutNamespace ().ToString (),
 						string str => str,
 						_ => throw new NotImplementedException ()
@@ -1231,7 +1231,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			// If the input is a generic parameter, the returned string will be the name of the generic
 			// parameter, and the full member name of the member which declares the generic parameter will be
 			// returned via the out parameter.
-
 
 			genericMember = null;
 			if (member == null)

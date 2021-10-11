@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -119,6 +120,13 @@ namespace ILLink.RoslynAnalyzer.Tests
 			testAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "ILLink.RoslynAnalyzer.Tests", configDirectoryName, tfm));
 		}
 
+		// Accepts typeof expressions, with a format specifier
+		public static string GetStringFromExpression (TypeOfExpressionSyntax expr, SemanticModel semanticModel, SymbolDisplayFormat displayFormat)
+		{
+			var typeSymbol = semanticModel.GetSymbolInfo (expr.Type).Symbol;
+			return typeSymbol?.ToDisplayString (displayFormat) ?? throw new InvalidOperationException ();
+		}
+
 		// Accepts string literal expressions or binary expressions concatenating strings
 		public static string GetStringFromExpression (ExpressionSyntax expr, SemanticModel? semanticModel = null)
 		{
@@ -142,11 +150,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var token = strLiteral.Token;
 				Assert.Equal (SyntaxKind.StringLiteralToken, token.Kind ());
 				return token.ValueText;
-
-			case SyntaxKind.TypeOfExpression:
-				var typeofExpression = (TypeOfExpressionSyntax) expr;
-				var typeSymbol = semanticModel.GetSymbolInfo (typeofExpression.Type).Symbol;
-				return typeSymbol?.GetDisplayName () ?? string.Empty;
 
 			default:
 				Assert.True (false, "Unsupported expr kind " + expr.Kind ());
