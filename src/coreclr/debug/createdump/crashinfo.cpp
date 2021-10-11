@@ -282,11 +282,14 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED\n");
 
-        // Since on both Linux and MacOS all the RW regions have been already added
-        // by createdump itself for heap dumps, then the sometimes slow (4 minutes for
-        // VS4Mac) heap enum memory region is changed to the faster normal one. It adds
-        // necessary DAC globals, etc. without the costly assembly, module, class, type
-        // runtime data structure enumeration.
+        // Since on both Linux and MacOS all the RW regions will be added for heap
+        // dumps by createdump, the only thing differentiating a MiniDumpNormal and
+        // a MiniDumpWithPrivateReadWriteMemory is that the later uses the EnumMemory
+        // APIs. This is kind of expensive on larger applications (4 minutes, or even
+        // more), and this should already be in RW pages. Change the dump type to the
+        // faster normal one. This one already ensures necessary DAC globals, etc.
+        // without the costly assembly, module, class, type runtime data structures
+        // enumeration.
         if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
         {
             minidumpType = MiniDumpNormal;
