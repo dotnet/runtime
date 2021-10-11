@@ -948,9 +948,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     return -5;
                 }
 
-                if (!p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>().Any())
+                if (!p.EventsInProcess.ByEventType<MethodJittingStartedTraceData>().Any() &&
+                    !p.EventsInProcess.ByEventType<R2RGetEntryPointTraceData>().Any() &&
+                    !p.EventsInProcess.ByEventType< SampledProfileTraceData>().Any())
                 {
-                    PrintError($"No managed jit starting data\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x4000080018:5\"?");
+                    PrintError($"No data in trace for process\nWas the trace collected with provider at least \"Microsoft-Windows-DotNETRuntime:0x4000080018:5\"?");
                     return -5;
                 }
 
@@ -1014,7 +1016,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                 filePathError = true;
                             }
                             else
-                                tsc.GetModuleFromPath(fileReference.FullName);
+                            {
+                                tsc.GetModuleFromPath(fileReference.FullName, throwIfNotLoadable: false);
+                            }
                         }
                         catch (Internal.TypeSystem.TypeSystemException.BadImageFormatException)
                         {
@@ -1034,7 +1038,63 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 TraceRuntimeDescToTypeSystemDesc idParser = new TraceRuntimeDescToTypeSystemDesc(p, tsc, clrInstanceId.Value);
 
-                SortedDictionary<int, ProcessedMethodData> methodsToAttemptToPrepare = new SortedDictionary<int, ProcessedMethodData>();
+                int mismatchErrors = 0;
+                foreach (var e in p.EventsInProcess.ByEventType<ModuleLoadUnloadTraceData>())
+                {
+                    ModuleDesc loadedModule = idParser.ResolveModuleID(e.ModuleID, false);
+                    if (loadedModule == null)
+                    {
+                        PrintWarning($"Unable to find loaded module {e.ModuleILFileName} to verify match");
+                        continue;
+                    }
+
+                    EcmaModule ecmaModule = loadedModule as EcmaModule;
+                    if (ecmaModule == null)
+                    {
+                        continue;
+                    }
+
+                    bool matched = false;
+                    bool mismatch = false;
+                    foreach (var debugEntry in ecmaModule.PEReader.ReadDebugDirectory())
+                    {
+                        if (debugEntry.Type == DebugDirectoryEntryType.CodeView)
+                        {
+                            var codeViewData = ecmaModule.PEReader.ReadCodeViewDebugDirectoryData(debugEntry);
+                            if (codeViewData.Path.EndsWith("ni.pdb"))
+                                continue;
+                            if (codeViewData.Guid != e.ManagedPdbSignature)
+                            {
+                                PrintError($"Dll mismatch between assembly located at \"{e.ModuleILPath}\" during trace collection and module \"{tsc.PEReaderToFilePath(ecmaModule.PEReader)}\"");
+                                mismatchErrors++;
+                                mismatch = true;
+                                continue;
+                            }
+                            else
+                            {
+                                matched = true;
+                            }
+                        }
+                    }
+
+                    if (!matched && !mismatch)
+                    {
+                        PrintMessage($"Unable to validate match between assembly located at \"{e.ModuleILPath}\" during trace collection and module \"{tsc.PEReaderToFilePath(ecmaModule.PEReader)}\"");
+                    }
+
+                    // TODO find some way to match on MVID as only some dlls have managed pdbs, and this won't find issues with embedded pdbs
+                }
+
+                if (mismatchErrors != 0)
+                {
+                    PrintError($"{mismatchErrors} mismatch error(s) found");
+                    return -1;
+                }
+
+                // Now that the modules are validated run Init to prepare for the rest of execution
+                idParser.Init();
+
+                SortedDictionary<long, ProcessedMethodData> methodsToAttemptToPrepare = new SortedDictionary<long, ProcessedMethodData>();
 
                 if (commandLineOptions.ProcessR2REvents)
                 {
@@ -1133,7 +1193,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             p,
                             tsc,
                             idParser,
-                            clrInstanceId.Value);
+                            clrInstanceId.Value,
+                            s_logger);
                     }
 
                     return methodMemMap;
@@ -1155,6 +1216,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     MethodMemoryMap mmap = GetMethodMemMap();
                     foreach (var e in p.EventsInProcess.ByEventType<SampledProfileTraceData>())
                     {
+                        if ((e.TimeStampRelativeMSec < commandLineOptions.ExcludeEventsBefore) && (e.TimeStampRelativeMSec > commandLineOptions.ExcludeEventsAfter))
+                            continue;
+
                         var callstack = e.CallStack();
                         if (callstack == null)
                             continue;
@@ -1191,7 +1255,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             if (!methodsListedToPrepare.Contains(nextMethod))
                             {
                                 methodsListedToPrepare.Add(nextMethod);
-                                methodsToAttemptToPrepare.Add((int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, nextMethod, "SampleMethodCaller"));
+                                methodsToAttemptToPrepare.Add(0x100000000 + (int)e.EventIndex, new ProcessedMethodData(e.TimeStampRelativeMSec, nextMethod, "SampleMethodCaller"));
                             }
 
                             if (!callGraph.TryGetValue(nextMethod, out var innerDictionary))

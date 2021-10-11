@@ -1555,8 +1555,8 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
     assert(op1->OperGet() == GT_FIELD);
     assert(op2->OperGet() == GT_FIELD);
 
-    GenTree* op1ObjRef = op1->AsField()->gtFldObj;
-    GenTree* op2ObjRef = op2->AsField()->gtFldObj;
+    GenTree* op1ObjRef = op1->AsField()->GetFldObj();
+    GenTree* op2ObjRef = op2->AsField()->GetFldObj();
     while (op1ObjRef != nullptr && op2ObjRef != nullptr)
     {
 
@@ -1578,8 +1578,8 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
         else if (op1ObjRef->OperGet() == GT_FIELD && op2ObjRef->OperGet() == GT_FIELD &&
                  op1ObjRef->AsField()->gtFldHnd == op2ObjRef->AsField()->gtFldHnd)
         {
-            op1ObjRef = op1ObjRef->AsField()->gtFldObj;
-            op2ObjRef = op2ObjRef->AsField()->gtFldObj;
+            op1ObjRef = op1ObjRef->AsField()->GetFldObj();
+            op2ObjRef = op2ObjRef->AsField()->GetFldObj();
             continue;
         }
         else
@@ -1740,7 +1740,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 
     if (tree->OperGet() == GT_FIELD)
     {
-        GenTree* objRef = tree->AsField()->gtFldObj;
+        GenTree* objRef = tree->AsField()->GetFldObj();
         if (objRef != nullptr && objRef->gtOper == GT_ADDR)
         {
             GenTree* obj = objRef->AsOp()->gtOp1;
@@ -1762,7 +1762,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
             }
         }
 
-        byrefNode = gtCloneExpr(tree->AsField()->gtFldObj);
+        byrefNode = gtCloneExpr(tree->AsField()->GetFldObj());
         assert(byrefNode != nullptr);
         offset = tree->AsField()->gtFldOffset;
     }
@@ -1854,7 +1854,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 
                     if (curDst->OperGet() == GT_FIELD)
                     {
-                        GenTree* objRef = curDst->AsField()->gtFldObj;
+                        GenTree* objRef = curDst->AsField()->GetFldObj();
                         if (objRef != nullptr && objRef->gtOper == GT_ADDR)
                         {
                             GenTree* obj = objRef->AsOp()->gtOp1;

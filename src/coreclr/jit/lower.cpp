@@ -144,11 +144,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
 
         case GT_MUL:
         case GT_MULHI:
-#if defined(TARGET_X86)
+#if defined(TARGET_X86) || defined(TARGET_ARM64)
         case GT_MUL_LONG:
 #endif
-            ContainCheckMul(node->AsOp());
-            break;
+            return LowerMul(node->AsOp());
 
         case GT_UDIV:
         case GT_UMOD:
@@ -2690,7 +2689,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
                 BlockRange().InsertAfter(cmp, cc);
-                cmpUse.ReplaceWith(comp, cc);
+                cmpUse.ReplaceWith(cc);
             }
 
             cc->gtFlags |= GTF_USE_FLAGS;
@@ -2954,7 +2953,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
             {
                 cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
                 BlockRange().InsertAfter(node, cc);
-                use.ReplaceWith(comp, cc);
+                use.ReplaceWith(cc);
             }
         }
     }
@@ -3722,15 +3721,19 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            bool isR2RRelativeIndir = false;
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
+            bool hasIndirectionCell = false;
+#if defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
-            isR2RRelativeIndir = call->IsR2RRelativeIndir();
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+            hasIndirectionCell = call->IsR2RRelativeIndir();
+#elif defined(TARGET_XARCH)
+            // For xarch we usually get the indirection cell from the return address,
+            // except for fast tailcalls where we do the same as ARM.
+            hasIndirectionCell    = call->IsR2RRelativeIndir() && call->IsFastTailCall();
+#endif
 
-            if (!isR2RRelativeIndir)
+            if (!hasIndirectionCell)
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
@@ -4797,15 +4800,12 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
-
             bool shouldOptimizeVirtualStubCall = false;
 #if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
             // Skip inserting the indirection node to load the address that is already
             // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
             // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
-            // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
-            // and so do not optimize virtual stub calls for such cases.
-            shouldOptimizeVirtualStubCall = !call->IsTailCall();
+            shouldOptimizeVirtualStubCall = true;
 #endif // FEATURE_READYTORUN && TARGET_ARMARCH
 
             if (!shouldOptimizeVirtualStubCall)
@@ -5065,7 +5065,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             DISPNODE(op1);
             if (BlockRange().TryGetUse(node, &use))
             {
-                use.ReplaceWith(comp, op1);
+                use.ReplaceWith(op1);
             }
             else
             {
@@ -5286,6 +5286,14 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         GenTree* firstNode        = nullptr;
         GenTree* adjustedDividend = dividend;
 
+#ifdef TARGET_ARM64
+        // On ARM64 we will use a 32x32->64 bit multiply instead of a 64x64->64 one.
+        bool widenToNativeIntForMul = (type != TYP_I_IMPL) && !simpleMul;
+#else
+        CLANG_FORMAT_COMMENT_ANCHOR;
+        bool widenToNativeIntForMul = (type != TYP_I_IMPL);
+#endif
+
         // If "increment" flag is returned by GetUnsignedMagic we need to do Saturating Increment first
         if (increment)
         {
@@ -5302,13 +5310,9 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             BlockRange().InsertBefore(divMod, preShiftBy, adjustedDividend);
             firstNode = preShiftBy;
         }
-        else if (type != TYP_I_IMPL
-#ifdef TARGET_ARM64
-                 && !simpleMul // On ARM64 we will use a 32x32->64 bit multiply as that's faster.
-#endif
-                 )
+        else if (widenToNativeIntForMul)
         {
-            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_U_IMPL);
+            adjustedDividend = comp->gtNewCastNode(TYP_I_IMPL, adjustedDividend, true, TYP_I_IMPL);
             BlockRange().InsertBefore(divMod, adjustedDividend);
             firstNode = adjustedDividend;
         }
@@ -5317,44 +5321,50 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
         // force input transformation to RAX because the following MULHI will kill RDX:RAX anyway and LSRA often causes
         // reduntant copies otherwise
         if (firstNode && !simpleMul)
-            adjustedDividend->SetRegNum(REG_RAX);
-#endif
-
-        divisor->gtType = TYP_I_IMPL;
-
-#ifdef TARGET_ARM64
-        if (simpleMul)
         {
-            divisor->gtType = TYP_INT;
+            adjustedDividend->SetRegNum(REG_RAX);
         }
 #endif
 
+        if (widenToNativeIntForMul)
+        {
+            divisor->gtType = TYP_I_IMPL;
+        }
         divisor->AsIntCon()->SetIconValue(magic);
 
-        if (isDiv && !postShift && type == TYP_I_IMPL)
+        if (isDiv && !postShift && (type == TYP_I_IMPL))
         {
             divMod->SetOper(GT_MULHI);
             divMod->gtOp1 = adjustedDividend;
-            divMod->gtFlags |= GTF_UNSIGNED;
+            divMod->SetUnsigned();
         }
         else
         {
-            // Insert a new GT_MULHI node before the existing GT_UDIV/GT_UMOD node.
+#ifdef TARGET_ARM64
+            // 64-bit MUL is more expensive than UMULL on ARM64.
+            genTreeOps mulOper = simpleMul ? GT_MUL_LONG : GT_MULHI;
+#else
+            // 64-bit IMUL is less expensive than MUL eax:edx on x64.
+            genTreeOps mulOper = simpleMul ? GT_MUL : GT_MULHI;
+#endif
+            // Insert a new multiplication node before the existing GT_UDIV/GT_UMOD node.
             // The existing node will later be transformed into a GT_RSZ/GT_SUB that
             // computes the final result. This way don't need to find and change the use
             // of the existing node.
-            GenTree* mulhi = comp->gtNewOperNode(simpleMul ? GT_MUL : GT_MULHI, TYP_I_IMPL, adjustedDividend, divisor);
-            mulhi->gtFlags |= GTF_UNSIGNED;
+            GenTree* mulhi = comp->gtNewOperNode(mulOper, TYP_I_IMPL, adjustedDividend, divisor);
+            mulhi->SetUnsigned();
             BlockRange().InsertBefore(divMod, mulhi);
-            if (!firstNode)
+            if (firstNode == nullptr)
+            {
                 firstNode = mulhi;
+            }
 
             if (postShift)
             {
                 GenTree* shiftBy = comp->gtNewIconNode(postShift, TYP_INT);
                 BlockRange().InsertBefore(divMod, shiftBy);
 
-                if (isDiv && type == TYP_I_IMPL)
+                if (isDiv && (type == TYP_I_IMPL))
                 {
                     divMod->SetOper(GT_RSZ);
                     divMod->gtOp1 = mulhi;
@@ -5384,8 +5394,8 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             {
 #ifdef TARGET_ARMARCH
                 divMod->SetOper(GT_CAST);
-                divMod->gtFlags |= GTF_UNSIGNED;
-                divMod->AsCast()->gtCastType = TYP_UINT;
+                divMod->SetUnsigned();
+                divMod->AsCast()->gtCastType = TYP_INT;
 #else
                 divMod->SetOper(GT_BITCAST);
 #endif
@@ -5394,8 +5404,11 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
             }
         }
 
-        if (firstNode)
+        if (firstNode != nullptr)
+        {
             ContainCheckRange(firstNode, divMod);
+        }
+
         return true;
     }
 #endif
@@ -5657,7 +5670,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     BlockRange().Remove(divMod);
 
     // replace the original divmod node with the new divmod tree
-    use.ReplaceWith(comp, newDivMod);
+    use.ReplaceWith(newDivMod);
 
     return newDivMod->gtNext;
 }
@@ -5918,7 +5931,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     LIR::Use arrElemUse;
     if (BlockRange().TryGetUse(arrElem, &arrElemUse))
     {
-        arrElemUse.ReplaceWith(comp, leaNode);
+        arrElemUse.ReplaceWith(leaNode);
     }
     else
     {
@@ -5936,7 +5949,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
 PhaseStatus Lowering::DoPhase()
 {
-    // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
+    // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
     // data structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
     if (comp->compMethodRequiresPInvokeFrame())

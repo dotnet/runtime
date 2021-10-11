@@ -20,11 +20,14 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingVersion)" PrivateAssets="all" />
   </ItemGroup>
 
-  <!-- Code included from System.Text.RegularExpressions -->
   <ItemGroup>
-    <Compile Include="..\..\Common\src\System\HexConverter.cs" Link="Production\HexConverter.cs" />
-    <Compile Include="..\..\Common\src\System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
-    <Compile Include="..\..\System.Private.CoreLib\src\System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <!-- Common generator support -->
+    <Compile Include="$(CommonPath)Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+
+    <!-- Code included from System.Text.RegularExpressions -->
+    <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Production\HexConverter.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Production\ValueStringBuilder.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="..\src\System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexBoyerMoore.cs" Link="Production\RegexBoyerMoore.cs" />
     <Compile Include="..\src\System\Text\RegularExpressions\RegexCharClass.cs" Link="Production\RegexCharClass.cs" />

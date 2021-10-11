@@ -112,6 +112,8 @@ namespace
                 {
                     dialogMsg = pal::string_t(_X("To run this application, you must install .NET Desktop Runtime ")) + _STRINGIFY(COMMON_HOST_PKG_VER) + _X(" (") + get_arch() + _X(").\n\n");
                     url = get_download_url();
+                    url.append(_X("&apphost_version="));
+                    url.append(_STRINGIFY(COMMON_HOST_PKG_VER));
                 }
             }
 

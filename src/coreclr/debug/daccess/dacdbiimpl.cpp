@@ -6383,7 +6383,7 @@ HRESULT DacHeapWalker::MoveToNextObject()
         mCurrObj += mCurrSize;
 
         // Check to see if we are in the correct bounds.
-        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6475,7 +6475,7 @@ HRESULT DacHeapWalker::NextSegment()
 
         mCurrObj = mHeaps[mCurrHeap].Segments[mCurrSeg].Start;
 
-        bool isGen0 = IsRegion() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
+        bool isGen0 = IsRegionGCEnabled() ? (mHeaps[mCurrHeap].Segments[mCurrSeg].Generation == 0) : 
                                    (mHeaps[mCurrHeap].Gen0Start <= mCurrObj && mHeaps[mCurrHeap].Gen0End > mCurrObj);
 
         if (isGen0)
@@ -6660,7 +6660,7 @@ HRESULT DacHeapWalker::ListNearObjects(CORDB_ADDRESS obj, CORDB_ADDRESS *pPrev, 
 
 HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
 {
-    bool regions = IsRegion();
+    bool regions = IsRegionGCEnabled();
 
     // Scrape basic heap details
     pCount = 1;
@@ -6785,6 +6785,8 @@ HRESULT DacHeapWalker::InitHeapDataWks(HeapData *&pHeaps, size_t &pCount)
         seg = seg->next;
     }
 
+    _ASSERTE(count == i);
+
     return S_OK;
 }
 
@@ -6870,7 +6872,7 @@ HRESULT DacDbiInterfaceImpl::GetHeapSegments(OUT DacDbiArrayList<COR_SEGMENT> *p
     size_t heapCount = 0;
     HeapData *heaps = 0;
 
-    bool region = IsRegion();
+    bool region = IsRegionGCEnabled();
 
 #ifdef FEATURE_SVR_GC
     HRESULT hr = GCHeapUtilities::IsServerHeap() ? DacHeapWalker::InitHeapDataSvr(heaps, heapCount) : DacHeapWalker::InitHeapDataWks(heaps, heapCount);

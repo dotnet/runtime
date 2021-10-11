@@ -170,8 +170,8 @@ void Compiler::fgLocalVarLivenessInit()
 {
     JITDUMP("In fgLocalVarLivenessInit\n");
 
-    // Sort locals first, if we're optimizing
-    if (opts.OptimizationEnabled())
+    // Sort locals first, if precise reference counts are required, e.g. we're optimizing
+    if (PreciseRefCountsRequired())
     {
         lvaSortByRefCount();
     }

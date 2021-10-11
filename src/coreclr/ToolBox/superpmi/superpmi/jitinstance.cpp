@@ -8,6 +8,7 @@
 #include "jithost.h"
 #include "errorhandling.h"
 #include "spmiutil.h"
+#include "metricssummary.h"
 
 JitInstance* JitInstance::InitJit(char*                         nameOfJit,
                                   bool                          breakOnAssert,
@@ -276,7 +277,7 @@ bool JitInstance::reLoad(MethodContext* firstContext)
     return true;
 }
 
-JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput)
+JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, int mcIndex, bool collectThroughput, MetricsSummary* metrics)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
@@ -286,12 +287,14 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         unsigned            flags;
         int                 mcIndex;
         bool                collectThroughput;
+        MetricsSummary*     metrics;
     } param;
     param.pThis             = this;
     param.result            = RESULT_SUCCESS; // assume success
     param.flags             = 0;
     param.mcIndex           = mcIndex;
     param.collectThroughput = collectThroughput;
+    param.metrics           = metrics;
 
     // store to instance field our raw values, so we can figure things out a bit later...
     mc = MethodToCompile;
@@ -365,11 +368,16 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
             pParam->pThis->mc->cr->recMessageLog("Successful Compile");
+
+            pParam->metrics->SuccessfulCompiles++;
+            pParam->metrics->NumCodeBytes += NCodeSizeBlock;
         }
         else
         {
             LogDebug("compileMethod failed with result %d", jitResult);
             pParam->result = RESULT_ERROR;
+
+            pParam->metrics->FailingCompiles++;
         }
     }
     PAL_EXCEPT_FILTER(FilterSuperPMIExceptions_CaptureExceptionAndStop)

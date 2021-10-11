@@ -189,7 +189,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\StackTrace.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\EventPipe.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Tracing\NativeRuntimeEventSource.PortableThreadPool.NativeSinks.Mono.cs" Condition="'$(FeaturePortableThreadPool)' == 'true'" />
-      <Compile Include="$(BclSourcesRoot)\System\IO\Stream.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.Mono.cs" />

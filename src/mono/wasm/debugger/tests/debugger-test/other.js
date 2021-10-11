@@ -95,3 +95,9 @@ function get_properties_test () {
 
 	console.log(`break here`);
 }
+
+function malloc_to_reallocate_test () {
+	//need to allocate this buffer size to force wasm linear memory to grow 
+	var _debugger_buffer = Module._malloc(4500000);
+	Module._free(_debugger_buffer);
+}
