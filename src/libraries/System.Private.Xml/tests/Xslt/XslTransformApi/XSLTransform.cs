@@ -221,7 +221,7 @@ namespace System.Xml.Tests
         // Returns the full, lower-cased path of a file, based on LTM parameters
         public string FullFilePath(string szFile, bool normalizeToLower)
         {
-            if (szFile == null || szFile == string.Empty)
+            if (szFile == null || szFile == string.Empty || Path.IsPathFullyQualified(szFile))
                 return szFile;
             // why is this check here?
             if (szFile.Length > 5)
