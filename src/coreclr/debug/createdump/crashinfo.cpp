@@ -292,7 +292,11 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType)
         // enumeration.
         if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
         {
-            minidumpType = MiniDumpNormal;
+            char* fastHeapDumps = getenv("COMPlus_DbgEnableFastHeapDumps");
+            if (fastHeapDumps != nullptr && strcmp(fastHeapDumps, "1") == 0)
+            {
+                minidumpType = MiniDumpNormal;
+            }
         }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
         HRESULT hr = m_pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
@@ -345,7 +349,7 @@ CrashInfo::EnumerateManagedModules()
             DacpGetModuleData moduleData;
             if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
             {
-        	TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, (uint64_t)moduleData.LoadedPEAddress, moduleData.IsDynamic,
+                TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, (uint64_t)moduleData.LoadedPEAddress, moduleData.IsDynamic,
                     moduleData.IsInMemory, moduleData.IsFileLayout, (uint64_t)moduleData.PEAssembly, (uint64_t)moduleData.InMemoryPdbAddress);
 
                 if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
@@ -854,5 +858,5 @@ FormatGuid(const GUID* guid)
 {
     uint8_t* bytes = (uint8_t*)guid;
     return FormatString("%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
-		bytes[3], bytes[2], bytes[1], bytes[0], bytes[5], bytes[4], bytes[7], bytes[6], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
+        bytes[3], bytes[2], bytes[1], bytes[0], bytes[5], bytes[4], bytes[7], bytes[6], bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]);
 }
