@@ -1745,7 +1745,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 using (ImportedCollection imported = Cert.Import(data))
                 {
-                    Assert.Equal(expected.ToArray(), imported.Collection.ToArray(), new X509Certificate2EqualityComparer());
+                    X509Certificate2[] expectedCollection = expected.OrderBy(c => c.Thumbprint).ToArray();
+                    X509Certificate2[] actualCollection = imported.Collection.OrderBy(c => c.Thumbprint).ToArray();
+                    Assert.Equal(expectedCollection, actualCollection, new X509Certificate2EqualityComparer());
                 }
             }
 
