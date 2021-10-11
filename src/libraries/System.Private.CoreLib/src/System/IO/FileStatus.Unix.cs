@@ -326,6 +326,9 @@ namespace System.IO
 
         internal long GetLength(ReadOnlySpan<char> path, bool continueOnError = false)
         {
+            // For symbolic links, on Windows, Length returns zero and not the target file size.
+            // On Unix, it returns the length of the path stored in the link.
+
             EnsureCachesInitialized(path, continueOnError);
             return IsFileCacheInitialized ? _fileCache.Size : 0;
         }
