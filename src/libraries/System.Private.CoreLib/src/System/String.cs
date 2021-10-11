@@ -320,38 +320,10 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             }
 
-            string result = FastAllocateString(count);
-
-            if (c != '\0') // Fast path null char string
-            {
-                unsafe
-                {
-                    fixed (char* dest = &result._firstChar)
-                    {
-                        uint cc = (uint)((c << 16) | c);
-                        uint* dmem = (uint*)dest;
-                        if (count >= 4)
-                        {
-                            count -= 4;
-                            do
-                            {
-                                dmem[0] = cc;
-                                dmem[1] = cc;
-                                dmem += 2;
-                                count -= 4;
-                            } while (count >= 0);
-                        }
-                        if ((count & 2) != 0)
-                        {
-                            *dmem = cc;
-                            dmem++;
-                        }
-                        if ((count & 1) != 0)
-                            ((char*)dmem)[0] = c;
-                    }
-                }
-            }
-            return result;
+            char[] arr = new char[count];
+            Span<char> s = new(arr);
+            s.Fill(c);
+            return new(s);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
