@@ -162,10 +162,10 @@ namespace System.IO.Tests
             await fs.FlushAsync();
         }
 
-        private static Lazy<string[]> _availableDevicePaths = new Lazy<string[]>(() =>
+        private static Lazy<IEnumerable<string>> AvailableDevicePaths = new Lazy<IEnumerable<string>>(() =>
         { 
             List<string> paths = new();
-            FileStreamOptions options = new { Access = FileAccess.Write, Share = FileShare.Write };
+            FileStreamOptions options = new() { Access = FileAccess.Write, Share = FileShare.Write };
 
             foreach (string devicePath in new[] { "/dev/tty", "/dev/console", "/dev/null", "/dev/zero" })
             {
@@ -191,12 +191,12 @@ namespace System.IO.Tests
                 paths.Add(devicePath);
             }
 
-            return paths.ToArray();
+            return paths;
         });
 
         public static IEnumerable<object[]> DevicePath_FileOptions_TestData()
         {
-            foreach (string devicePath in GetDevicePaths())
+            foreach (string devicePath in AvailableDevicePaths.Value)
             {
                 foreach (FileOptions options in new[] { FileOptions.None, FileOptions.Asynchronous })
                 {
@@ -207,7 +207,7 @@ namespace System.IO.Tests
 
         public static IEnumerable<object[]> DevicePath_TestData()
         {
-            foreach (string devicePath in GetDevicePaths())
+            foreach (string devicePath in AvailableDevicePaths.Value)
             {
                 yield return new object[] { devicePath };
             }
