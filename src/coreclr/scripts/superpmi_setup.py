@@ -590,10 +590,10 @@ def main(main_args):
                 dotnet_script_path = path.join(source_directory, dotnet_script_name)
                 run_command([dotnet_script_path, "--info"], jitutils_directory)
 
-                # Set dotnet path to run bootstrap
+                # Set dotnet path to run build
                 os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-                bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
-                run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
+                build_file = "build.cmd" if is_windows else "build.sh"
+                run_command([path.join(jitutils_directory, build_file), "-p"], jitutils_directory)
 
                 copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
         except PermissionError as pe_error:
