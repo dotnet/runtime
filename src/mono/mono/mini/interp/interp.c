@@ -1032,16 +1032,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		}									\
 	} while (0)
 
-/* Don't throw exception if thread is in GC Safe mode. Should only happen in managed-to-native wrapper. */
-#define EXCEPTION_CHECKPOINT_GC_UNSAFE	\
-	do {										\
-		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method) && mono_thread_is_gc_unsafe_mode ()) { \
-			MonoException *exc = mono_thread_interruption_checkpoint ();	\
-			if (exc)							\
-				THROW_EX_GENERAL (exc, ip, TRUE);					\
-		}									\
-	} while (0)
-
 // Reduce duplicate code in interp_exec_method
 static void
 do_safepoint (InterpFrame *frame, ThreadContext *context)
@@ -3536,7 +3526,7 @@ main_loop:
 			frame->state.ip = ip + 7;
 
 			do_icall_wrapper (frame, csignature, opcode, ret, args, target_ip, save_last_error, &gc_transitions);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 7;
 			MINT_IN_BREAK;
@@ -3565,7 +3555,7 @@ main_loop:
 			frame->state.ip = ip + 8;
 			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache, &gc_transitions);
 
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 
 			ip += 8;
@@ -6256,7 +6246,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 			frame->state.ip = ip + 3;
 			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE, &gc_transitions);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6269,7 +6259,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->state.ip = ip + 4;
 			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE, &gc_transitions);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 4;
 			MINT_IN_BREAK;
