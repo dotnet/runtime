@@ -85,7 +85,12 @@ namespace System.IO.Tests.Enumeration
                 FileSystemInfo expected = entry.FileName == item1 ? item2Info : item1Info;
                 Assert.True(enumerator.MoveNext(), "Move second");
                 entry = enumerator.Current;
+
+                // Names and paths.
                 AssertExtensions.EqualTo(expected.Name, entry.FileName, "Name");
+                AssertExtensions.EqualTo(testDirectory.FullName, entry.Directory, "Directory");
+                AssertExtensions.EqualTo(expected.FullName, entry.FullPath, "FullPath");
+                AssertExtensions.EqualTo(expected.FullName, entry.SpecifiedFullPath, "SpecifiedFullPath");
 
                 // Values determined during enumeration.
                 if (PlatformDetection.IsBrowser)
@@ -100,10 +105,6 @@ namespace System.IO.Tests.Enumeration
                     AssertExtensions.EqualTo(expected.Attributes, entry.Attributes, "Attributes");
                 }
 
-                AssertExtensions.EqualTo(testDirectory.FullName, entry.Directory, "Directory");
-                AssertExtensions.EqualTo(expected.FullName, entry.FullPath, "FullPath");
-                AssertExtensions.EqualTo(expected.FullName, entry.SpecifiedFullPath, "SpecifiedFullPath");
-
                 if (PlatformDetection.IsWindows)
                 {
                     AssertExtensions.EqualTo((expected.Attributes & FileAttributes.Hidden) != 0, entry.IsHidden, "IsHidden");
@@ -117,7 +118,8 @@ namespace System.IO.Tests.Enumeration
                 }
                 else
                 {
-                    // Because the item is deleted, we can no longer retrieve these values and defaults are returned instead.
+                    // On Unix, these values were not determined during enumeration.
+                    // Because the file was deleted, the values can no longer be retrieved and sensible defaults are returned.
                     AssertExtensions.EqualTo(entry.FileName.StartsWith('.'), entry.IsHidden, "IsHidden");
                     DateTimeOffset defaultTime = new DateTimeOffset(DateTime.FromFileTimeUtc(0));
                     AssertExtensions.EqualTo(defaultTime, entry.CreationTimeUtc, "CreationTimeUtc");
