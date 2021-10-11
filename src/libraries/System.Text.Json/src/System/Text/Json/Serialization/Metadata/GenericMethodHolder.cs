@@ -13,8 +13,6 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal abstract class GenericMethodHolder
     {
-        private static ConcurrentDictionary<Type, GenericMethodHolder>? s_holders;
-
         /// <summary>
         /// Returns the default value for the specified type.
         /// </summary>
@@ -26,33 +24,12 @@ namespace System.Text.Json.Serialization.Metadata
         public abstract bool IsDefaultValue(object value);
 
         /// <summary>
-        /// Returns a holder instance representing a type.
+        /// Creates a holder instance representing a type.
         /// </summary>
-        public static GenericMethodHolder GetHolder(Type type)
+        public static GenericMethodHolder CreateHolder(Type type)
         {
-            if (s_holders == null)
-            {
-                s_holders = new ConcurrentDictionary<Type, GenericMethodHolder>();
-                return CreateAndCacheHolder();
-            }
-            else
-            {
-                if (!s_holders.TryGetValue(type, out GenericMethodHolder? holder))
-                {
-                    holder = CreateAndCacheHolder();
-                }
-
-                return holder;
-            }
-
-            GenericMethodHolder CreateAndCacheHolder()
-            {
-                Type holderType = typeof(GenericMethodHolder<>).MakeGenericType(type);
-                GenericMethodHolder holderInstance = (GenericMethodHolder)Activator.CreateInstance(holderType)!;
-                Debug.Assert(s_holders != null);
-                s_holders[type] = holderInstance;
-                return holderInstance;
-            }
+            Type holderType = typeof(GenericMethodHolder<>).MakeGenericType(type);
+            return (GenericMethodHolder)Activator.CreateInstance(holderType)!;
         }
     }
 

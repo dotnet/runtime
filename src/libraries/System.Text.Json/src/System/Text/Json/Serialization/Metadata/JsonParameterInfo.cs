@@ -99,7 +99,18 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // The <T> value in the created JsonPropertyInfo<T> instance (sbyte)
                 // doesn't match the parameter type, use reflection to get the default value.
-                GenericMethodHolder holder = GenericMethodHolder.GetHolder(parameterInfo.ParameterType);
+                Type parameterType = parameterInfo.ParameterType;
+
+                GenericMethodHolder holder;
+                if (matchingProperty.Options.TryGetClass(parameterType, out JsonTypeInfo? typeInfo))
+                {
+                    holder = typeInfo.GenericMethods;
+                }
+                else
+                {
+                    holder = GenericMethodHolder.CreateHolder(parameterInfo.ParameterType);
+                }
+
                 jsonParameterInfo.DefaultValue = holder.DefaultValue;
             }
 
