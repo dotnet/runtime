@@ -507,7 +507,7 @@ namespace System.Buffers
         /// </summary>
         /// <param name="count">Read count.</param>
         /// <param name="sequence">The read data, if successfully read requested <paramref name="count"/> data.</param>
-        /// <returns>True if remaining items in current SequenceReader is enough for <paramref name="count"/>.</returns>
+        /// <returns><c>true</c> if remaining items in current <see cref="SequenceReader{T}" /> is enough for <paramref name="count"/>.</returns>
         public bool TryReadExact(int count, out ReadOnlySequence<T> sequence)
         {
             if (count < 0)
