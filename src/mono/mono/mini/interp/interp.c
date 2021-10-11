@@ -6542,9 +6542,16 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 
 			MonoMethod *cmethod = LOCAL_VAR (ip [2], MonoMethod*);
 
-			InterpMethod *m = mono_interp_get_imethod (cmethod, error);
-			mono_error_assert_ok (error);
-			LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m, FALSE);
+			if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (cmethod))) {
+				cmethod = mono_marshal_get_managed_wrapper  (cmethod, NULL, (MonoGCHandle)0, error);
+				mono_error_assert_ok (error);
+				gpointer addr = mini_get_interp_callbacks ()->create_method_pointer (cmethod, TRUE, error);
+				LOCAL_VAR (ip [1], gpointer) = addr;
+			} else {
+				InterpMethod *m = mono_interp_get_imethod (cmethod, error);
+				mono_error_assert_ok (error);
+				LOCAL_VAR (ip [1], gpointer) = imethod_to_ftnptr (m, FALSE);
+			}
 			ip += 3;
 			MINT_IN_BREAK;
 		}
