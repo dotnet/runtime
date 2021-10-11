@@ -88,8 +88,18 @@ namespace System.IO.Tests.Enumeration
                 AssertExtensions.EqualTo(expected.Name, entry.FileName, "Name");
 
                 // Values determined during enumeration.
-                AssertExtensions.EqualTo(expected is DirectoryInfo, entry.IsDirectory, "IsDirectory");
-                AssertExtensions.EqualTo(expected.Attributes, entry.Attributes, "Attributes");
+                if (PlatformDetection.IsBrowser)
+                {
+                    // For Browser, all items are typed as DT_UNKNOWN.
+                    AssertExtensions.EqualTo(false, entry.IsDirectory, "IsDirectory");
+                    AssertExtensions.EqualTo(entry.FileName.StartsWith('.') ? FileAttributes.Hidden : FileAttributes.Normal, entry.Attributes, "Attributes");
+                }
+                else
+                {
+                    AssertExtensions.EqualTo(expected is DirectoryInfo, entry.IsDirectory, "IsDirectory");
+                    AssertExtensions.EqualTo(expected.Attributes, entry.Attributes, "Attributes");
+                }
+
                 AssertExtensions.EqualTo(testDirectory.FullName, entry.Directory, "Directory");
                 AssertExtensions.EqualTo(expected.FullName, entry.FullPath, "FullPath");
                 AssertExtensions.EqualTo(expected.FullName, entry.SpecifiedFullPath, "SpecifiedFullPath");
