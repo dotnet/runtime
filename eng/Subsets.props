@@ -572,7 +572,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+iltrim+'))">
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim\ILTrim.csproj" Category="clr" />
+    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\ILTrim\ILTrim.Exe\ILTrim.csproj" Category="clr" />
   </ItemGroup>
 
 
