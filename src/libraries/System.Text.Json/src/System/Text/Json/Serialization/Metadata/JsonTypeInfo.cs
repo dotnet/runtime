@@ -130,7 +130,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                _genericMethods ??= GenericMethodHolder.GetHolder(Type);
+                _genericMethods ??= GenericMethodHolder.CreateHolder(Type);
                 return _genericMethods;
             }
         }

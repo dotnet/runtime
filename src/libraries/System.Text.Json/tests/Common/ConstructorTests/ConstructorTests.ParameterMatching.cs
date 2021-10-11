@@ -1307,5 +1307,20 @@ namespace System.Text.Json.Serialization.Tests
 
             public TypeWith_RefStringProp_ParamCtor(ref string nameRef) => _name = nameRef;
         }
+
+        [Fact]
+        public async Task BindToIgnoredPropOfSameType()
+        {
+            string json = @"{""Prop"":{}}";
+            Assert.NotNull(await JsonSerializerWrapperForString.DeserializeWrapper<ClassWithIgnoredSameType>(json));
+        }
+
+        public class ClassWithIgnoredSameType
+        {
+            [JsonIgnore]
+            public ClassWithIgnoredSameType Prop { get; }
+
+            public ClassWithIgnoredSameType(ClassWithIgnoredSameType prop) { }
+        }
     }
 }
