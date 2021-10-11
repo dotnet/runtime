@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Configuration
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public void Load() { }
         public void Set(string key, string? value) { }
-        public bool TryGet(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out string value) { throw null; }
+        public bool TryGet(string key, out string value) { throw null; }
     }
     public partial class ChainedConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
     {

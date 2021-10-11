@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Configuration
@@ -41,7 +40,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="key">The key.</param>
         /// <param name="value">The value.</param>
         /// <returns><c>True</c> if a value for the specified key was found, otherwise <c>false</c>.</returns>
-        public bool TryGet(string key, [MaybeNullWhen(false)] out string value)
+        public bool TryGet(string key, out string value)
         {
             value = _config[key];
             return !string.IsNullOrEmpty(value);
