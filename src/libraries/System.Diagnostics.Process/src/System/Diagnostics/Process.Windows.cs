@@ -897,13 +897,17 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
 
-                if (_processInfo?.ProcessName != null)
-                {
-                    return _processInfo!.ProcessName;
-                }
-
                 if (_processName == null)
                 {
+                    // If we already have the name via a populated ProcessInfo
+                    // then use that one.
+                    if (_processInfo?.ProcessName != null)
+                    {
+                        return _processInfo!.ProcessName;
+                    }
+
+                    // If we don't have a populated ProcessInfo, then use create and
+                    // cache the process name.
                     EnsureState(State.HaveId);
 
                     _processName = ProcessManager.GetProcessName(_processId, _machineName);
