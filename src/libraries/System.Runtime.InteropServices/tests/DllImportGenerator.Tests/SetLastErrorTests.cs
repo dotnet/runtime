@@ -71,6 +71,7 @@ namespace DllImportGenerator.IntegrationTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60271", TestRuntimes.Mono)]
         public void ClearPreviousError()
         {
             int error = 100;
