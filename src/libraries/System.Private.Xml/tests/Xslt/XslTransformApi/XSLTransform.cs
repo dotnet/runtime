@@ -82,13 +82,14 @@ namespace System.Xml.Tests
             // In AppContainer access is denied to full path and the code below and related tests cannot run
             if (!PlatformDetection.IsInAppContainer)
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
+                string testDirPath = Path.Combine(FilePathUtil.GetWriteableTestRootPath(), "TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
 
-                FilePathUtil.EnsureTestPathIsValid(FilePathUtil.GetWriteableTestRootPath(), "TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi");
+                Directory.CreateDirectory(Path.GetDirectoryName(s_temporaryResolverDocumentFullName));
+                Directory.CreateDirectory(testDirPath);
 
                 // Replace absolute URI in xmlResolver_document_function.xml based on the environment, and store it under a different name
                 string xslFile = Path.Combine("TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri.xsl");
-                absoluteUriXslFile = Path.Combine(FilePathUtil.GetWriteableTestRootPath(), "TestFiles", FilePathUtil.GetTestDataPath(), "XsltApi", "xmlResolver_document_function_absolute_uri_replaced.xsl");
+                absoluteUriXslFile = Path.Combine(testDirPath, "xmlResolver_document_function_absolute_uri_replaced.xsl");
                 File.Copy(xslFile, absoluteUriXslFile, true);
                 XmlDocument doc = new XmlDocument();
                 doc.Load(absoluteUriXslFile);

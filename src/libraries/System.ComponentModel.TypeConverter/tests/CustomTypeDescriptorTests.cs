@@ -25,7 +25,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new AttributeCollection(new EditorBrowsableAttribute()) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetAttributes_TestData))]
         public void GetAttributes_InvokeWithParent_ReturnsExpected(AttributeCollection result)
         {
@@ -53,7 +53,7 @@ namespace System.ComponentModel.Tests
             Assert.Null(descriptor.GetClassName());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [InlineData(null)]
         [InlineData("name")]
         public void GetClassName_InvokeWithParent_ReturnsExpected(string result)
@@ -82,7 +82,7 @@ namespace System.ComponentModel.Tests
             Assert.Null(descriptor.GetComponentName());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [InlineData(null)]
         [InlineData("name")]
         public void GetComponentName_InvokeWithParent_ReturnsExpected(string result)
@@ -119,7 +119,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new Int32Converter() };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetConverter_TestData))]
         public void GetConverter_InvokeWithParent_ReturnsExpected(TypeConverter result)
         {
@@ -153,7 +153,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new Mock<EventDescriptor>(MockBehavior.Strict, "Event", new Attribute[0]).Object };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetDefaultEvent_TestData))]
         public void GetDefaultEvent_InvokeWithParent_ReturnsExpected(EventDescriptor result)
         {
@@ -187,7 +187,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new Mock<PropertyDescriptor>(MockBehavior.Strict, "Property", new Attribute[0]).Object };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetDefaultProperty_TestData))]
         public void GetDefaultProperty_InvokeWithParent_ReturnsExpected(PropertyDescriptor result)
         {
@@ -226,7 +226,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetEditor_TestData))]
         public void GetEditor_InvokeWithParent_ReturnsExpected(Type editorBaseType, Type result)
         {
@@ -260,7 +260,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new EventDescriptorCollection(new EventDescriptor[] { null }) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetEvents_WithParent_TestData))]
         public void GetEvents_InvokeWithParent_ReturnsExpected(EventDescriptorCollection result)
         {
@@ -304,7 +304,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetEvents_AttributesWithParent_TestData))]
         public void GetEvents_InvokeAttributesWithParent_ReturnsExpected(Attribute[] attributes, EventDescriptorCollection result)
         {
@@ -338,7 +338,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new PropertyDescriptorCollection(new PropertyDescriptor[] { null }) };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetProperties_WithParent_TestData))]
         public void GetProperties_InvokeWithParent_ReturnsExpected(PropertyDescriptorCollection result)
         {
@@ -382,7 +382,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetProperties_AttributesWithParent_TestData))]
         public void GetProperties_InvokeAttributesWithParent_ReturnsExpected(Attribute[] attributes, PropertyDescriptorCollection result)
         {
@@ -406,7 +406,7 @@ namespace System.ComponentModel.Tests
             yield return new object[] { new Mock<PropertyDescriptor>(MockBehavior.Strict, "Name", new Attribute[0]).Object };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetPropertyOwner_WithoutParent_TestData))]
         public void GetPropertyOwner_InvokeWithoutParent_ReturnsNull(PropertyDescriptor pd)
         {
@@ -426,7 +426,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))] // Mock will try to JIT 
         [MemberData(nameof(GetPropertyOwner_WithParent_TestData))]
         public void GetPropertyOwner_InvokeWithParent_ReturnsExpected(PropertyDescriptor pd, object result)
         {
