@@ -84,6 +84,11 @@ endif (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)
 
 set(CLR_CMAKE_ENABLE_ASAN OFF)
 
+# For clrjit we need to build an exact targetted gcinfo instead of the universal one
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
+  create_gcinfo_lib(TARGET gcinfo_${TARGET_OS_NAME}_${ARCH_TARGET_NAME}_nosanitizer OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
+endif()
+
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_gcinfo_lib(TARGET gcinfo_unix_arm64_nosanitizer OS unix ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_unix_x64_nosanitizer OS unix ARCH x64)
