@@ -903,18 +903,21 @@ namespace System.Diagnostics
                     // then use that one.
                     if (_processInfo?.ProcessName != null)
                     {
-                        return _processInfo!.ProcessName;
+                        _processName = _processInfo!.ProcessName;
                     }
-
-                    // If we don't have a populated ProcessInfo, then use create and
-                    // cache the process name.
-                    EnsureState(State.HaveId);
-
-                    _processName = ProcessManager.GetProcessName(_processId, _machineName);
-
-                    if (_processName == null)
+                    else
                     {
-                        throw new InvalidOperationException(SR.NoProcessInfo);
+
+                        // If we don't have a populated ProcessInfo, then create and
+                        // cache the process name.
+                        EnsureState(State.HaveId);
+
+                        _processName = ProcessManager.GetProcessName(_processId, _machineName);
+
+                        if (_processName == null)
+                        {
+                            throw new InvalidOperationException(SR.NoProcessInfo);
+                        }
                     }
                 }
 
