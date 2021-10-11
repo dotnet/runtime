@@ -113,10 +113,7 @@ namespace System.IO.Tests.Enumeration
                     Assert.Equal(new DateTimeOffset(DateTime.FromFileTimeUtc(0)), entry.CreationTimeUtc);
                     Assert.Equal(new DateTimeOffset(DateTime.FromFileTimeUtc(0)), entry.LastAccessTimeUtc);
                     Assert.Equal(new DateTimeOffset(DateTime.FromFileTimeUtc(0)), entry.LastWriteTimeUtc);
-                    if (expected is FileInfo fileInfo)
-                    {
-                        Assert.Equal(0, entry.Length);
-                    }
+                    Assert.Equal(0, entry.Length);
                 }
 
                 Assert.False(enumerator.MoveNext());
