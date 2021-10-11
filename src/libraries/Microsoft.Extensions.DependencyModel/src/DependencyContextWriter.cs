@@ -149,8 +149,8 @@ namespace Microsoft.Extensions.DependencyModel
 
         private void WritePortableTarget(string key, IReadOnlyList<RuntimeLibrary> runtimeLibraries, IReadOnlyList<CompilationLibrary> compilationLibraries, Utf8JsonWriter jsonWriter)
         {
-            Dictionary<string, RuntimeLibrary> runtimeLookup = runtimeLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
-            Dictionary<string, CompilationLibrary> compileLookup = compilationLibraries.ToDictionary(l => l.Name, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, RuntimeLibrary> runtimeLookup = runtimeLibraries.LibraryCollectionToDictionary();
+            Dictionary<string, CompilationLibrary> compileLookup = compilationLibraries.LibraryCollectionToDictionary();
 
             jsonWriter.WriteStartObject(key);
 

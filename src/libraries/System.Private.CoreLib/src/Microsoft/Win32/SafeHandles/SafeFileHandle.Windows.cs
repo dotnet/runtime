@@ -34,7 +34,7 @@ namespace Microsoft.Win32.SafeHandles
                 // of converting DOS to NT file paths (RtlDosPathNameToRelativeNtPathName_U_WithStatus is not documented)
                 SafeFileHandle fileHandle = CreateFile(fullPath, mode, access, share, options);
 
-                if (FileStreamHelpers.ShouldPreallocate(preallocationSize, access, mode))
+                if (preallocationSize > 0)
                 {
                     Preallocate(fullPath, preallocationSize, fileHandle);
                 }
@@ -121,19 +121,19 @@ namespace Microsoft.Win32.SafeHandles
             {
                 int errorCode = Marshal.GetLastPInvokeError();
 
-                // we try to mimic the atomic NtCreateFile here:
-                // if preallocation fails, close the handle and delete the file
-                fileHandle.Dispose();
-                Interop.Kernel32.DeleteFile(fullPath);
-
-                switch (errorCode)
+                // Only throw for errors that indicate there is not enough space.
+                if (errorCode == Interop.Errors.ERROR_DISK_FULL ||
+                    errorCode == Interop.Errors.ERROR_FILE_TOO_LARGE)
                 {
-                    case Interop.Errors.ERROR_DISK_FULL:
-                        throw new IOException(SR.Format(SR.IO_DiskFull_Path_AllocationSize, fullPath, preallocationSize));
-                    case Interop.Errors.ERROR_FILE_TOO_LARGE:
-                        throw new IOException(SR.Format(SR.IO_FileTooLarge_Path_AllocationSize, fullPath, preallocationSize));
-                    default:
-                        throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+                    fileHandle.Dispose();
+
+                    // Delete the file we've created.
+                    Interop.Kernel32.DeleteFile(fullPath);
+
+                    throw new IOException(SR.Format(errorCode == Interop.Errors.ERROR_DISK_FULL
+                                                        ? SR.IO_DiskFull_Path_AllocationSize
+                                                        : SR.IO_FileTooLarge_Path_AllocationSize,
+                                            fullPath, preallocationSize));
                 }
             }
         }

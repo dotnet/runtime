@@ -8,7 +8,7 @@
     <InstallerName Condition="'$(TargetOS)' != 'OSX'">dotnet-runtime</InstallerName>
     <InstallerName Condition="'$(TargetOS)' == 'OSX'">dotnet-runtime-internal</InstallerName>
     <OverridePackageId Condition="'$(PgoInstrument)' != ''">$(SharedFrameworkName).PGO</OverridePackageId>
-    <GenerateSymbolsArchive>true</GenerateSymbolsArchive>
+    <CreateSymbolsArchive Condition="'$(PgoInstrument)' == ''">true</CreateSymbolsArchive>
     <SymbolsArchiveName>dotnet-runtime-symbols</SymbolsArchiveName>
     <VSInsertionShortComponentName>NetCore.SharedFramework</VSInsertionShortComponentName>
     <UseTemplatedPlatformManifest>true</UseTemplatedPlatformManifest>

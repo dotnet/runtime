@@ -526,10 +526,10 @@ void BlockCountInstrumentor::InstrumentMethodEntry(Schema& schema, BYTE* profile
 
     // Compare Basic-Block count value against zero
     //
-    GenTree*   relop = m_comp->gtNewOperNode(GT_NE, typ, valueNode, m_comp->gtNewIconNode(0, typ));
-    GenTree*   colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
-    GenTree*   cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
-    Statement* stmt  = m_comp->gtNewStmt(cond);
+    GenTree*      relop = m_comp->gtNewOperNode(GT_NE, typ, valueNode, m_comp->gtNewIconNode(0, typ));
+    GenTreeColon* colon = new (m_comp, GT_COLON) GenTreeColon(TYP_VOID, m_comp->gtNewNothingNode(), call);
+    GenTreeQmark* cond  = m_comp->gtNewQmarkNode(TYP_VOID, relop, colon);
+    Statement*    stmt  = m_comp->gtNewStmt(cond);
 
     // Add this check into the scratch block entry so we only do the check once per call.
     // If we put it in block we may be putting it inside a loop.

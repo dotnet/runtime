@@ -21,6 +21,7 @@ public:
             , reproName(nullptr)
             , breakOnError(false)
             , breakOnAssert(false)
+            , breakOnException(false)
             , applyDiff(false)
             , parallel(false)
 #if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
@@ -35,6 +36,8 @@ public:
             , indexes(nullptr)
             , hash(nullptr)
             , methodStatsTypes(nullptr)
+            , baseMetricsSummaryFile(nullptr)
+            , diffMetricsSummaryFile(nullptr)
             , mclFilename(nullptr)
             , diffMCLFilename(nullptr)
             , targetArchitecture(nullptr)
@@ -55,6 +58,7 @@ public:
         char* reproName;
         bool  breakOnError;
         bool  breakOnAssert;
+        bool  breakOnException;
         bool  applyDiff;
         bool  parallel;        // User specified to use /parallel mode.
         bool  useCoreDisTools; // Use CoreDisTools library instead of Msvcdis
@@ -65,6 +69,8 @@ public:
         int*  indexes;
         char* hash;
         char* methodStatsTypes;
+        char* baseMetricsSummaryFile;
+        char* diffMetricsSummaryFile;
         char* mclFilename;
         char* diffMCLFilename;
         char* targetArchitecture;

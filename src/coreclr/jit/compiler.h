@@ -388,7 +388,8 @@ enum class DoNotEnregisterReason
     StoreBlkSrc,    // the local is used as STORE_BLK source.
     OneAsgRetyping, // fgMorphOneAsgBlockOp prevents this local from being enregister.
     SwizzleArg,     // the local is passed using LCL_FLD as another type.
-    BlockOpRet      // the struct is returned and it promoted or there is a cast.
+    BlockOpRet,     // the struct is returned and it promoted or there is a cast.
+    ReturnSpCheck   // the local is used to do SP check
 };
 
 enum class AddressExposedReason
@@ -1134,6 +1135,115 @@ public:
 
 }; // class LclVarDsc
 
+enum class SymbolicIntegerValue : int32_t
+{
+    LongMin,
+    IntMin,
+    ShortMin,
+    ByteMin,
+    Zero,
+    One,
+    ByteMax,
+    UByteMax,
+    ShortMax,
+    UShortMax,
+    IntMax,
+    UIntMax,
+    LongMax,
+};
+
+inline constexpr bool operator>(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) > static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator>=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) >= static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator<(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) < static_cast<int32_t>(right);
+}
+
+inline constexpr bool operator<=(SymbolicIntegerValue left, SymbolicIntegerValue right)
+{
+    return static_cast<int32_t>(left) <= static_cast<int32_t>(right);
+}
+
+// Represents an integral range useful for reasoning about integral casts.
+// It uses a symbolic representation for lower and upper bounds so
+// that it can efficiently handle integers of all sizes on all hosts.
+//
+// Note that the ranges represented by this class are **always** in the
+// "signed" domain. This is so that if we know the range a node produces, it
+// can be trivially used to determine if a cast above the node does or does not
+// overflow, which requires that the interpretation of integers be the same both
+// for the "input" and "output". We choose signed interpretation here because it
+// produces nice continuous ranges and because IR uses sign-extension for constants.
+//
+// Some examples of how ranges are computed for casts:
+// 1. CAST_OVF(ubyte <- uint): does not overflow for [0..UBYTE_MAX], produces the
+//    same range - all casts that do not change the representation, i. e. have the same
+//    "actual" input and output type, have the same "input" and "output" range.
+// 2. CAST_OVF(ulong <- uint): never oveflows => the "input" range is [INT_MIN..INT_MAX]
+//    (aka all possible 32 bit integers). Produces [0..UINT_MAX] (aka all possible 32
+//    bit integers zero-extended to 64 bits).
+// 3. CAST_OVF(int <- uint): overflows for inputs larger than INT_MAX <=> less than 0
+//    when interpreting as signed => the "input" range is [0..INT_MAX], the same range
+//    being the produced one as the node does not change the width of the integer.
+//
+class IntegralRange
+{
+private:
+    SymbolicIntegerValue m_lowerBound;
+    SymbolicIntegerValue m_upperBound;
+
+public:
+    IntegralRange() = default;
+
+    IntegralRange(SymbolicIntegerValue lowerBound, SymbolicIntegerValue upperBound)
+        : m_lowerBound(lowerBound), m_upperBound(upperBound)
+    {
+        assert(lowerBound <= upperBound);
+    }
+
+    bool Contains(int64_t value) const;
+
+    bool Contains(IntegralRange other) const
+    {
+        return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
+    }
+
+    bool IsPositive()
+    {
+        return m_lowerBound >= SymbolicIntegerValue::Zero;
+    }
+
+    bool Equals(IntegralRange other) const
+    {
+        return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
+    }
+
+    static int64_t SymbolicToRealValue(SymbolicIntegerValue value);
+    static SymbolicIntegerValue LowerBoundForType(var_types type);
+    static SymbolicIntegerValue UpperBoundForType(var_types type);
+
+    static IntegralRange ForType(var_types type)
+    {
+        return {LowerBoundForType(type), UpperBoundForType(type)};
+    }
+
+    static IntegralRange ForNode(GenTree* node, Compiler* compiler);
+    static IntegralRange ForCastInput(GenTreeCast* cast);
+    static IntegralRange ForCastOutput(GenTreeCast* cast);
+
+#ifdef DEBUG
+    static void Print(IntegralRange range);
+#endif // DEBUG
+};
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1499,12 +1609,10 @@ struct FuncInfoDsc
 
 #elif defined(TARGET_X86)
 
-#if defined(TARGET_UNIX)
     emitLocation* startLoc;
     emitLocation* endLoc;
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
-#endif // TARGET_UNIX
 
 #elif defined(TARGET_ARMARCH)
 
@@ -1516,18 +1624,16 @@ struct FuncInfoDsc
                          //   Note 2: we currently don't support hot/cold splitting in functions
                          //   with EH, so uwiCold will be NULL for all funclets.
 
-#if defined(TARGET_UNIX)
     emitLocation* startLoc;
     emitLocation* endLoc;
     emitLocation* coldStartLoc; // locations for the cold section, if there is one.
     emitLocation* coldEndLoc;
-#endif // TARGET_UNIX
 
 #endif // TARGET_ARMARCH
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     jitstd::vector<CFI_CODE>* cfiCodes;
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
@@ -1625,7 +1731,7 @@ public:
     bool isStruct : 1;                         // True if this is a struct arg
     bool _isVararg : 1;                        // True if the argument is in a vararg context.
     bool passedByRef : 1;                      // True iff the argument is passed by reference.
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
     bool _isSplit : 1; // True when this argument is split between the registers and OutArg area
 #endif                 // FEATURE_ARG_SPLIT
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -1720,32 +1826,29 @@ public:
 
     bool IsSplit() const
     {
-#ifdef FEATURE_ARG_SPLIT
-        return _isSplit;
+#if FEATURE_ARG_SPLIT
+        return compFeatureArgSplit() && _isSplit;
 #else // FEATURE_ARG_SPLIT
         return false;
 #endif
     }
     void SetSplit(bool value)
     {
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
         _isSplit = value;
 #endif
     }
 
     bool IsVararg() const
     {
-#ifdef FEATURE_VARARG
-        return _isVararg;
-#else
-        return false;
-#endif
+        return compFeatureVarArg() && _isVararg;
     }
     void SetIsVararg(bool value)
     {
-#ifdef FEATURE_VARARG
-        _isVararg = value;
-#endif // FEATURE_VARARG
+        if (compFeatureVarArg())
+        {
+            _isVararg = value;
+        }
     }
 
     bool IsHfaArg() const
@@ -2011,20 +2114,23 @@ public:
     void SetByteSize(unsigned byteSize, bool isStruct, bool isFloatHfa)
     {
 
-#ifdef OSX_ARM64_ABI
         unsigned roundedByteSize;
-        // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
-        if (isStruct && !isFloatHfa)
+        if (compMacOsArm64Abi())
         {
-            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            // Only struct types need extension or rounding to pointer size, but HFA<float> does not.
+            if (isStruct && !isFloatHfa)
+            {
+                roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
+            }
+            else
+            {
+                roundedByteSize = byteSize;
+            }
         }
         else
         {
-            roundedByteSize = byteSize;
+            roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
         }
-#else  // OSX_ARM64_ABI
-        unsigned roundedByteSize = roundUp(byteSize, TARGET_POINTER_SIZE);
-#endif // OSX_ARM64_ABI
 
 #if !defined(TARGET_ARM)
         // Arm32 could have a struct with 8 byte alignment
@@ -2034,7 +2140,7 @@ public:
 #endif // TARGET_ARM
 
 #if defined(DEBUG_ARG_SLOTS)
-        if (!isStruct)
+        if (!compMacOsArm64Abi() && !isStruct)
         {
             assert(roundedByteSize == getSlotCount() * TARGET_POINTER_SIZE);
         }
@@ -2531,8 +2637,6 @@ public:
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 #endif // FEATURE_MULTIREG_RET
 
-    GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
-
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
 #endif // TARGET_X86
@@ -2911,7 +3015,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
-    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
+    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
@@ -3025,22 +3129,29 @@ public:
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  NamedIntrinsic hwIntrinsicID,
                                                  CorInfoType    simdBaseJitType,
-                                                 unsigned       simdSize);
-    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(
-        var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize);
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
+    GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
+                                                 GenTree*       op1,
+                                                 NamedIntrinsic hwIntrinsicID,
+                                                 CorInfoType    simdBaseJitType,
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  GenTree*       op1,
                                                  GenTree*       op2,
                                                  NamedIntrinsic hwIntrinsicID,
                                                  CorInfoType    simdBaseJitType,
-                                                 unsigned       simdSize);
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  GenTree*       op1,
                                                  GenTree*       op2,
                                                  GenTree*       op3,
                                                  NamedIntrinsic hwIntrinsicID,
                                                  CorInfoType    simdBaseJitType,
-                                                 unsigned       simdSize);
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
     GenTreeHWIntrinsic* gtNewSimdHWIntrinsicNode(var_types      type,
                                                  GenTree*       op1,
                                                  GenTree*       op2,
@@ -3048,42 +3159,23 @@ public:
                                                  GenTree*       op4,
                                                  NamedIntrinsic hwIntrinsicID,
                                                  CorInfoType    simdBaseJitType,
-                                                 unsigned       simdSize);
-
-    GenTreeHWIntrinsic* gtNewSimdCreateBroadcastNode(
-        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
-
-    GenTreeHWIntrinsic* gtNewSimdGetElementNode(var_types   type,
-                                                GenTree*    op1,
-                                                GenTree*    op2,
-                                                CorInfoType simdBaseJitType,
-                                                unsigned    simdSize,
-                                                bool        isSimdAsHWIntrinsic);
-
-    GenTreeHWIntrinsic* gtNewSimdWithElementNode(var_types   type,
-                                                 GenTree*    op1,
-                                                 GenTree*    op2,
-                                                 GenTree*    op3,
-                                                 CorInfoType simdBaseJitType,
-                                                 unsigned    simdSize,
-                                                 bool        isSimdAsHWIntrinsic);
+                                                 unsigned       simdSize,
+                                                 bool           isSimdAsHWIntrinsic = false);
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
                                                    NamedIntrinsic hwIntrinsicID,
                                                    CorInfoType    simdBaseJitType,
                                                    unsigned       simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, simdBaseJitType, simdSize);
-        node->gtFlags |= GTF_SIMDASHW_OP;
-        return node;
+        bool isSimdAsHWIntrinsic = true;
+        return gtNewSimdHWIntrinsicNode(type, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(
         var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID, CorInfoType simdBaseJitType, unsigned simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize);
-        node->gtFlags |= GTF_SIMDASHW_OP;
-        return node;
+        bool isSimdAsHWIntrinsic = true;
+        return gtNewSimdHWIntrinsicNode(type, op1, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
@@ -3093,9 +3185,8 @@ public:
                                                    CorInfoType    simdBaseJitType,
                                                    unsigned       simdSize)
     {
-        GenTreeHWIntrinsic* node = gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, simdBaseJitType, simdSize);
-        node->gtFlags |= GTF_SIMDASHW_OP;
-        return node;
+        bool isSimdAsHWIntrinsic = true;
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, hwIntrinsicID, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
     }
 
     GenTreeHWIntrinsic* gtNewSimdAsHWIntrinsicNode(var_types      type,
@@ -3106,11 +3197,113 @@ public:
                                                    CorInfoType    simdBaseJitType,
                                                    unsigned       simdSize)
     {
-        GenTreeHWIntrinsic* node =
-            gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize);
-        node->gtFlags |= GTF_SIMDASHW_OP;
-        return node;
+        bool isSimdAsHWIntrinsic = true;
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, op3, hwIntrinsicID, simdBaseJitType, simdSize,
+                                        isSimdAsHWIntrinsic);
     }
+
+    GenTree* gtNewSimdAbsNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdBinOpNode(genTreeOps  op,
+                                var_types   type,
+                                GenTree*    op1,
+                                GenTree*    op2,
+                                CorInfoType simdBaseJitType,
+                                unsigned    simdSize,
+                                bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdCeilNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdCmpOpNode(genTreeOps  op,
+                                var_types   type,
+                                GenTree*    op1,
+                                GenTree*    op2,
+                                CorInfoType simdBaseJitType,
+                                unsigned    simdSize,
+                                bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdCmpOpAllNode(genTreeOps  op,
+                                   var_types   type,
+                                   GenTree*    op1,
+                                   GenTree*    op2,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize,
+                                   bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdCmpOpAnyNode(genTreeOps  op,
+                                   var_types   type,
+                                   GenTree*    op1,
+                                   GenTree*    op2,
+                                   CorInfoType simdBaseJitType,
+                                   unsigned    simdSize,
+                                   bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdCndSelNode(var_types   type,
+                                 GenTree*    op1,
+                                 GenTree*    op2,
+                                 GenTree*    op3,
+                                 CorInfoType simdBaseJitType,
+                                 unsigned    simdSize,
+                                 bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdCreateBroadcastNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdDotProdNode(var_types   type,
+                                  GenTree*    op1,
+                                  GenTree*    op2,
+                                  CorInfoType simdBaseJitType,
+                                  unsigned    simdSize,
+                                  bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdFloorNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdGetElementNode(var_types   type,
+                                     GenTree*    op1,
+                                     GenTree*    op2,
+                                     CorInfoType simdBaseJitType,
+                                     unsigned    simdSize,
+                                     bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdMaxNode(var_types   type,
+                              GenTree*    op1,
+                              GenTree*    op2,
+                              CorInfoType simdBaseJitType,
+                              unsigned    simdSize,
+                              bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdMinNode(var_types   type,
+                              GenTree*    op1,
+                              GenTree*    op2,
+                              CorInfoType simdBaseJitType,
+                              unsigned    simdSize,
+                              bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdSqrtNode(
+        var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdUnOpNode(genTreeOps  op,
+                               var_types   type,
+                               GenTree*    op1,
+                               CorInfoType simdBaseJitType,
+                               unsigned    simdSize,
+                               bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdWithElementNode(var_types   type,
+                                      GenTree*    op1,
+                                      GenTree*    op2,
+                                      GenTree*    op3,
+                                      CorInfoType simdBaseJitType,
+                                      unsigned    simdSize,
+                                      bool        isSimdAsHWIntrinsic);
+
+    GenTree* gtNewSimdZeroNode(var_types   type,
+                               CorInfoType simdBaseJitType,
+                               unsigned    simdSize,
+                               bool        isSimdAsHWIntrinsic);
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types      type,
@@ -3908,10 +4101,6 @@ public:
         void CheckRetypedAsScalar(CORINFO_FIELD_HANDLE fieldHnd, var_types requestedType);
 #endif // DEBUG
 
-#ifdef TARGET_ARM
-        bool GetRequiresScratchVar();
-#endif // TARGET_ARM
-
     private:
         bool CanPromoteStructVar(unsigned lclNum);
         bool ShouldPromoteStructVar(unsigned lclNum);
@@ -3924,10 +4113,6 @@ public:
     private:
         Compiler*              compiler;
         lvaStructPromotionInfo structPromotionInfo;
-
-#ifdef TARGET_ARM
-        bool requiresScratchVar;
-#endif // TARGET_ARM
 
 #ifdef DEBUG
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<CORINFO_FIELD_STRUCT_>, var_types>
@@ -3952,8 +4137,8 @@ public:
         assert(varDsc->lvType == TYP_SIMD12);
         assert(varDsc->lvExactSize == 12);
 
-#if defined(TARGET_64BIT) && !defined(OSX_ARM64_ABI)
-        assert(varDsc->lvSize() == 16);
+#if defined(TARGET_64BIT)
+        assert(compMacOsArm64Abi() || varDsc->lvSize() == 16);
 #endif // defined(TARGET_64BIT)
 
         // We make local variable SIMD12 types 16 bytes instead of just 12.
@@ -4227,14 +4412,6 @@ protected:
                                          unsigned             simdSize,
                                          GenTree*             newobjThis);
 
-    GenTree* impSimdAsHWIntrinsicCndSel(CORINFO_CLASS_HANDLE clsHnd,
-                                        var_types            retType,
-                                        CorInfoType          simdBaseJitType,
-                                        unsigned             simdSize,
-                                        GenTree*             op1,
-                                        GenTree*             op2,
-                                        GenTree*             op3);
-
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
                                  CORINFO_METHOD_HANDLE method,
@@ -4264,14 +4441,6 @@ protected:
     GenTree* impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impAvxOrAvx2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
     GenTree* impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig);
-
-    GenTree* impSimdAsHWIntrinsicRelOp(NamedIntrinsic       intrinsic,
-                                       CORINFO_CLASS_HANDLE clsHnd,
-                                       var_types            retType,
-                                       CorInfoType          simdBaseJitType,
-                                       unsigned             simdSize,
-                                       GenTree*             op1,
-                                       GenTree*             op2);
 #endif // TARGET_XARCH
 #endif // FEATURE_HW_INTRINSICS
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
@@ -4646,10 +4815,8 @@ private:
     bool impIsValueType(typeInfo* pTypeInfo);
     var_types mangleVarArgsType(var_types type);
 
-#if FEATURE_VARARG
     regNumber getCallArgIntRegister(regNumber floatReg);
     regNumber getCallArgFloatRegister(regNumber intReg);
-#endif // FEATURE_VARARG
 
 #if defined(DEBUG)
     static unsigned jitTotalMethodCompiled;
@@ -4740,6 +4907,7 @@ public:
     BasicBlock* fgLastBB;         // End of the basic block list
     BasicBlock* fgFirstColdBlock; // First block to be placed in the cold section
     BasicBlock* fgEntryBB;        // For OSR, the original method's entry point
+    BasicBlock* fgOSREntryBB;     // For OSR, the logical entry point (~ patchpoint)
 #if defined(FEATURE_EH_FUNCLETS)
     BasicBlock* fgFirstFuncletBB; // First block of outlined funclets (to allow block insertion before the funclets)
 #endif
@@ -4892,6 +5060,12 @@ public:
 
     BlockSet fgEnterBlks; // Set of blocks which have a special transfer of control; the "entry" blocks plus EH handler
                           // begin blocks.
+#if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
+    BlockSet fgAlwaysBlks; // Set of blocks which are BBJ_ALWAYS part  of BBJ_CALLFINALLY/BBJ_ALWAYS pair that should
+                           // never be removed due to a requirement to use the BBJ_ALWAYS for generating code and
+                           // not have "retless" blocks.
+
+#endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
 
 #ifdef DEBUG
     bool fgReachabilitySetsValid; // Are the bbReach sets valid?
@@ -5026,7 +5200,7 @@ public:
 
     bool fgFoldConditional(BasicBlock* block);
 
-    void fgMorphStmts(BasicBlock* block, bool* lnot, bool* loadw);
+    void fgMorphStmts(BasicBlock* block);
     void fgMorphBlocks();
 
     void fgMergeBlockReturn(BasicBlock* block);
@@ -5043,6 +5217,7 @@ public:
 #endif
 
     IL_OFFSET fgFindBlockILOffset(BasicBlock* block);
+    void fgFixEntryFlowForOSR();
 
     BasicBlock* fgSplitBlockAtBeginning(BasicBlock* curr);
     BasicBlock* fgSplitBlockAtEnd(BasicBlock* curr);
@@ -5193,6 +5368,8 @@ public:
     // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
     // rather than the "use" SSA number recorded in the tree "lcl".
     inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
+
+    inline bool PreciseRefCountsRequired();
 
     // Performs SSA conversion.
     void fgSsaBuild();
@@ -5647,7 +5824,7 @@ public:
 
     unsigned fgGetNestingLevel(BasicBlock* block, unsigned* pFinallyNesting = nullptr);
 
-    void fgRemoveEmptyBlocks();
+    void fgPostImportationCleanup();
 
     void fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isUnlink = false));
     void fgUnlinkStmt(BasicBlock* block, Statement* stmt);
@@ -6119,7 +6296,7 @@ private:
 
 #endif // FEATURE_SIMD
     GenTree* fgMorphArrayIndex(GenTree* tree);
-    GenTree* fgMorphCast(GenTree* tree);
+    GenTree* fgMorphExpandCast(GenTreeCast* tree);
     GenTreeFieldList* fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl);
     void fgInitArgInfo(GenTreeCall* call);
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
@@ -6162,14 +6339,15 @@ private:
 
     GenTree* fgMorphPotentialTailCall(GenTreeCall* call);
     GenTree* fgGetStubAddrArg(GenTreeCall* call);
+    unsigned fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
     Statement* fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
                                                      fgArgTabEntry* argTabEntry,
+                                                     unsigned       lclParamNum,
                                                      BasicBlock*    block,
                                                      IL_OFFSETX     callILOffset,
                                                      Statement*     tmpAssignmentInsertionPoint,
                                                      Statement*     paramAssignmentInsertionPoint);
-    static int fgEstimateCallStackSize(GenTreeCall* call);
     GenTree* fgMorphCall(GenTreeCall* call);
     GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
@@ -6191,7 +6369,10 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
+    GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
@@ -7266,9 +7447,7 @@ public:
 
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, GenTree*> LocalNumberToNullCheckTreeMap;
 
-    bool gtIsVtableRef(GenTree* tree);
     GenTree* getArrayLengthFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
-    GenTree* getObjectHandleNodeFromAllocation(GenTree* tree DEBUGARG(BasicBlock* block));
     GenTree* optPropGetValueRec(unsigned lclNum, unsigned ssaNum, optPropKind valueKind, int walkDepth);
     GenTree* optPropGetValue(unsigned lclNum, unsigned ssaNum, optPropKind valueKind);
     GenTree* optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheckTreeMap* nullCheckMap);
@@ -7346,6 +7525,7 @@ public:
         O2K_SUBRANGE,
         O2K_COUNT
     };
+
     struct AssertionDsc
     {
         optAssertionKind assertionKind;
@@ -7374,21 +7554,18 @@ public:
             ValueNum   vn;
             struct IntVal
             {
-                ssize_t      iconVal;   // integer
-                unsigned     padding;   // unused; ensures iconFlags does not overlap lconVal
+                ssize_t iconVal; // integer
+#if !defined(HOST_64BIT)
+                unsigned padding; // unused; ensures iconFlags does not overlap lconVal
+#endif
                 GenTreeFlags iconFlags; // gtFlags
             };
-            struct Range // integer subrange
-            {
-                ssize_t loBound;
-                ssize_t hiBound;
-            };
             union {
-                SsaVar  lcl;
-                IntVal  u1;
-                __int64 lconVal;
-                double  dconVal;
-                Range   u2;
+                SsaVar        lcl;
+                IntVal        u1;
+                __int64       lconVal;
+                double        dconVal;
+                IntegralRange u2;
             };
         } op2;
 
@@ -7439,48 +7616,6 @@ public:
             return false;
         }
 
-        static ssize_t GetLowerBoundForIntegralType(var_types type)
-        {
-            switch (type)
-            {
-                case TYP_BYTE:
-                    return SCHAR_MIN;
-                case TYP_SHORT:
-                    return SHRT_MIN;
-                case TYP_INT:
-                    return INT_MIN;
-                case TYP_BOOL:
-                case TYP_UBYTE:
-                case TYP_USHORT:
-                case TYP_UINT:
-                    return 0;
-                default:
-                    unreached();
-            }
-        }
-        static ssize_t GetUpperBoundForIntegralType(var_types type)
-        {
-            switch (type)
-            {
-                case TYP_BOOL:
-                    return 1;
-                case TYP_BYTE:
-                    return SCHAR_MAX;
-                case TYP_SHORT:
-                    return SHRT_MAX;
-                case TYP_INT:
-                    return INT_MAX;
-                case TYP_UBYTE:
-                    return UCHAR_MAX;
-                case TYP_USHORT:
-                    return USHRT_MAX;
-                case TYP_UINT:
-                    return UINT_MAX;
-                default:
-                    unreached();
-            }
-        }
-
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
         {
             if (op1.kind != that->op1.kind)
@@ -7524,7 +7659,7 @@ public:
                            (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum);
 
                 case O2K_SUBRANGE:
-                    return ((op2.u2.loBound == that->op2.u2.loBound) && (op2.u2.hiBound == that->op2.u2.hiBound));
+                    return op2.u2.Equals(that->op2.u2);
 
                 case O2K_INVALID:
                     // we will return false
@@ -7614,6 +7749,7 @@ public:
 
     // Assertion Gen functions.
     void optAssertionGen(GenTree* tree);
+    AssertionIndex optAssertionGenCast(GenTreeCast* cast);
     AssertionIndex optAssertionGenPhiDefn(GenTree* tree);
     AssertionInfo optCreateJTrueBoundsAssertion(GenTree* tree);
     AssertionInfo optAssertionGenJtrue(GenTree* tree);
@@ -7629,6 +7765,11 @@ public:
                                       GenTree*         op2,
                                       optAssertionKind assertionKind,
                                       bool             helperCallArgs = false);
+
+    AssertionIndex optFinalizeCreatingAssertion(AssertionDsc* assertion);
+
+    bool optTryExtractSubrangeAssertion(GenTree* source, IntegralRange* pRange);
+
     void optCreateComplementaryAssertion(AssertionIndex assertionIndex,
                                          GenTree*       op1,
                                          GenTree*       op2,
@@ -7643,10 +7784,7 @@ public:
     ASSERT_TP optGetVnMappedAssertions(ValueNum vn);
 
     // Used for respective assertion propagations.
-    AssertionIndex optAssertionIsSubrange(GenTree*         tree,
-                                          var_types        fromType,
-                                          var_types        toType,
-                                          ASSERT_VALARG_TP assertions);
+    AssertionIndex optAssertionIsSubrange(GenTree* tree, IntegralRange range, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsSubtype(GenTree* tree, GenTree* methodTableArg, ASSERT_VALARG_TP assertions);
     AssertionIndex optAssertionIsNonNullInternal(GenTree* op, ASSERT_VALARG_TP assertions DEBUGARG(bool* pVnBased));
     bool optAssertionIsNonNull(GenTree*         op,
@@ -7671,7 +7809,7 @@ public:
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
-    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
+    GenTree* optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTreeCast* cast, Statement* stmt);
     GenTree* optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, Statement* stmt);
     GenTree* optAssertionProp_RelOp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
     GenTree* optAssertionProp_Comma(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -7735,8 +7873,8 @@ public:
     bool optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext* context);
     BasicBlock* optInsertLoopChoiceConditions(LoopCloneContext* context,
                                               unsigned          loopNum,
-                                              BasicBlock*       head,
-                                              BasicBlock*       slow);
+                                              BasicBlock*       slowHead,
+                                              BasicBlock*       insertAfter);
 
 protected:
     ssize_t optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEBUGARG(bool bRngChk));
@@ -8001,8 +8139,8 @@ public:
 
     bool generateCFIUnwindCodes()
     {
-#if defined(TARGET_UNIX)
-        return IsTargetAbi(CORINFO_CORERT_ABI);
+#if defined(FEATURE_CFI_SUPPORT)
+        return TargetOS::IsUnix && IsTargetAbi(CORINFO_CORERT_ABI);
 #else
         return false;
 #endif
@@ -8119,7 +8257,6 @@ public:
 
     static fgWalkPreFn CountSharedStaticHelper;
     static bool IsSharedStaticHelper(GenTree* tree);
-    static bool IsTreeAlwaysHoistable(GenTree* tree);
     static bool IsGcSafePoint(GenTree* tree);
 
     static CORINFO_FIELD_HANDLE eeFindJitDataOffs(unsigned jitDataOffs);
@@ -8445,7 +8582,7 @@ private:
 
 #endif // TARGET_ARM
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
     short mapRegNumToDwarfReg(regNumber reg);
     void createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR opcode, short dwarfReg, INT offset = 0);
     void unwindPushPopCFI(regNumber reg);
@@ -8462,7 +8599,7 @@ private:
                      const CFI_CODE* const pCfiCode);
 #endif
 
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 #if !defined(__GNUC__)
 #pragma endregion // Note: region is NOT under !defined(__GNUC__)
@@ -8497,6 +8634,25 @@ private:
         return false;
 #endif
     }
+
+#if defined(DEBUG)
+    bool IsBaselineSimdIsaSupportedDebugOnly()
+    {
+#ifdef FEATURE_SIMD
+#if defined(TARGET_XARCH)
+        CORINFO_InstructionSet minimumIsa = InstructionSet_SSE2;
+#elif defined(TARGET_ARM64)
+        CORINFO_InstructionSet minimumIsa = InstructionSet_AdvSimd;
+#else
+#error Unsupported platform
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        return compIsaSupportedDebugOnly(minimumIsa) && JitConfig.EnableHWIntrinsic();
+#else
+        return false;
+#endif // FEATURE_SIMD
+    }
+#endif // DEBUG
 
     // Get highest available level for SIMD codegen
     SIMDLevel getSIMDSupportLevel()
@@ -9698,6 +9854,7 @@ public:
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
         STRESS_MODE(BYREF_PROMOTION) /* Change undoPromotion decisions for byrefs */            \
         STRESS_MODE(PROMOTE_FEWER_STRUCTS)/* Don't promote some structs that can be promoted */ \
+        STRESS_MODE(VN_BUDGET)/* Randomize the VN budget */                                     \
                                                                                                 \
         /* After COUNT_VARN, stress level 2 does all of these all the time */                   \
                                                                                                 \
@@ -9943,13 +10100,16 @@ public:
         // 3. Windows ARM64 native instance calling convention requires the address of RetBuff
         //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-        auto callConv = info.compCallConv;
-        if (callConvIsInstanceMethodCallConv(callConv))
+#if defined(TARGET_ARM64)
+        if (TargetOS::IsWindows)
         {
-            return (info.compRetBuffArg != BAD_VAR_NUM);
+            auto callConv = info.compCallConv;
+            if (callConvIsInstanceMethodCallConv(callConv))
+            {
+                return (info.compRetBuffArg != BAD_VAR_NUM);
+            }
         }
-#endif // TARGET_WINDOWS && TARGET_ARM64
+#endif // TARGET_ARM64
         // 4. x86 unmanaged calling conventions require the address of RetBuff to be returned in eax.
         CLANG_FORMAT_COMMENT_ANCHOR;
 #if defined(TARGET_X86)
@@ -10248,6 +10408,7 @@ public:
         unsigned m_oneAsgRetyping;
         unsigned m_swizzleArg;
         unsigned m_blockOpRet;
+        unsigned m_returnSpCheck;
         unsigned m_liveInOutHndlr;
         unsigned m_depField;
         unsigned m_noRegVars;
@@ -11133,6 +11294,7 @@ public:
             case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
+            case GT_FIELD:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
@@ -11215,21 +11377,6 @@ public:
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
-                }
-                break;
-            }
-
-            case GT_FIELD:
-            {
-                GenTreeField* const field = node->AsField();
-
-                if (field->gtFldObj != nullptr)
-                {
-                    result = WalkTree(&field->gtFldObj, field);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
                 }
                 break;
             }
@@ -11824,12 +11971,12 @@ const instruction INS_SQRT = INS_vsqrt;
 
 #ifdef TARGET_ARM64
 
-const instruction INS_MULADD = INS_madd;
-#if defined(TARGET_UNIX)
-const instruction INS_BREAKPOINT = INS_brk;
-#else
-const instruction INS_BREAKPOINT = INS_bkpt;
-#endif
+const instruction        INS_MULADD = INS_madd;
+inline const instruction INS_BREAKPOINT_osHelper()
+{
+    return TargetOS::IsUnix ? INS_brk : INS_bkpt;
+}
+#define INS_BREAKPOINT INS_BREAKPOINT_osHelper()
 
 const instruction INS_ABS  = INS_fabs;
 const instruction INS_SQRT = INS_fsqrt;

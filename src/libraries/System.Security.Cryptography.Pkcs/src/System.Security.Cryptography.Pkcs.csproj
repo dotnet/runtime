@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
@@ -159,7 +159,6 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHeapAllocHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeProvOrNCryptKeyHandleUwp.cs" />
-    <Compile Include="Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext.cs" />
   </ItemGroup>
   <!-- Interop types (platform: Windows) -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(IsPartialFacadeAssembly)' != 'true'">
@@ -193,6 +192,8 @@ System.Security.Cryptography.Pkcs.EnvelopedCms</PackageDescription>
              Link="Common\Interop\Windows\Crypt32\Interop.CertContextPropId.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertCreateCertificateContext.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext_IntPtr.cs"
+             Link="Common\Interop\Windows\Crypt32\Interop.CertDuplicateCertificateContext_IntPtr.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs"
              Link="Common\Interop\Windows\Crypt32\Interop.CertFreeCertificateContext.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertGetCertificateContextProperty.cs"

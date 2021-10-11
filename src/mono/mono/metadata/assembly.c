@@ -39,6 +39,7 @@
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-path.h>
+#include <mono/utils/mono-proclib.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/coree.h>
 #include <mono/metadata/cil-coff.h>
@@ -594,7 +595,7 @@ mono_set_rootdir (void)
 	}
 
 	/* Solaris 10 style */
-	str = g_strdup_printf ("/proc/%d/path/a.out", getpid ());
+	str = g_strdup_printf ("/proc/%d/path/a.out", mono_process_current_pid ());
 
 #if defined(HAVE_READLINK)
 	s = readlink (str, buf, sizeof (buf)-1);

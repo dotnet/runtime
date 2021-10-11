@@ -187,7 +187,7 @@ namespace System.Net.WebSockets.Client.Tests
                 if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
                 {
                     Assert.True(ex.WebSocketErrorCode == WebSocketError.Faulted ||
-                        ex.WebSocketErrorCode == WebSocketError.NotAWebSocket);
+                        ex.WebSocketErrorCode == WebSocketError.NotAWebSocket, $"Actual WebSocketErrorCode {ex.WebSocketErrorCode} {ex.InnerException?.Message} \n {ex}");
                 }
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
