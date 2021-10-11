@@ -110,9 +110,10 @@ namespace System.IO.Tests.Enumeration
                 {
                     // Because the item is deleted, we can no longer retrieve these values and defaults are returned instead.
                     Assert.Equal(entry.FileName.StartsWith('.'), entry.IsHidden);
-                    Assert.Equal(new DateTimeOffset(DateTime.FromFileTimeUtc(0)), entry.CreationTimeUtc);
-                    Assert.Equal(new DateTimeOffset(DateTime.FromFileTimeUtc(0)), entry.LastAccessTimeUtc);
-                    Assert.Equal(new DateTimeOffset(DateTime.FromFileTimeUtc(0)), entry.LastWriteTimeUtc);
+                    DateTimeOffset defaultOffset = new DateTimeOffset(DateTime.FromFileTimeUtc(0));
+                    Assert.Equal(defaultOffset, entry.CreationTimeUtc);
+                    Assert.Equal(defaultOffset, entry.LastAccessTimeUtc);
+                    Assert.Equal(defaultOffset, entry.LastWriteTimeUtc);
                     Assert.Equal(0, entry.Length);
                 }
 
