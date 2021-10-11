@@ -4217,9 +4217,9 @@ ExecutionManager::FindCodeRange(PCODE currentPC, ScanFlag scanFlag)
         return NULL;
 
     //if (scanFlag == ScanReaderLock)
-    return FindCodeRangeWithLock(currentPC);
+    //return FindCodeRangeWithLock(currentPC);
 
-    //return GetRangeSection(currentPC);
+    return GetRangeSection(currentPC);
 }
 
 //**************************************************************************
@@ -4447,22 +4447,29 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
     int LastUsedRSIndex = (int)m_LastUsedRSIndex;
     if (LastUsedRSIndex != -1)
     {
-        TADDR LowAddress = m_RangeSectionHandleArray[LastUsedRSIndex].LowAddress;
-        TADDR HighAddress = m_RangeSectionHandleArray[LastUsedRSIndex].pRS->HighAddress;
+        RangeSection* pRS = m_RangeSectionHandleArray[LastUsedRSIndex].pRS;
+        TADDR LowAddress = pRS->LowAddress;
+        TADDR HighAddress = pRS->HighAddress;
 
         //positive case
         if ((addr >= LowAddress) && (addr < HighAddress))
-            return m_RangeSectionHandleArray[LastUsedRSIndex].pRS;
+            return pRS;
 
         //negative case
-        if ((m_LastUsedRSIndex != 0)
-            && (addr < LowAddress)
-            && (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].pRS->HighAddress))
-                return NULL;
-
         if ((addr < LowAddress) && (LastUsedRSIndex == 0))
             return NULL;
     }
+#endif
+
+    ReaderLockHolder rlh;
+
+#ifndef DACCESS_COMPILE
+    //negative case
+    LastUsedRSIndex = (int)m_LastUsedRSIndex;
+    if ((LastUsedRSIndex > 0)
+        && (addr < m_RangeSectionHandleArray[LastUsedRSIndex].LowAddress)
+        && (addr >= m_RangeSectionHandleArray[LastUsedRSIndex - 1].pRS->HighAddress))
+            return NULL;
 #endif
 
     int foundIndex = FindRangeSectionHandleHelper(addr);
