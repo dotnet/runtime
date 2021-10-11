@@ -7932,10 +7932,12 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     }
 #endif
 
+#ifdef DEBUG
     if (dwCode == STATUS_ACCESS_VIOLATION && isAsanShadowAddress((void*)pExceptionInfo->ExceptionRecord->ExceptionInformation[1]))
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
+#endif
 
     if (NtCurrentTeb()->ThreadLocalStoragePointer == NULL)
     {
