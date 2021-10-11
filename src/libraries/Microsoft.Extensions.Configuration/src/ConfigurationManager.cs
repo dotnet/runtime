@@ -339,7 +339,7 @@ namespace Microsoft.Extensions.Configuration
                 return wasRemoved;
             }
 
-            public bool TryGetValue(string key, [MaybeNullWhen(false)] out object value)
+            public bool TryGetValue(string key, [NotNullWhen(true)] out object? value)
             {
                 return _properties.TryGetValue(key, out value);
             }
