@@ -90,9 +90,10 @@ namespace Microsoft.Extensions.Primitives
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60183")]
         public void ReusingOnceFiredChangeTokenShouldNotThrow()
         {
+            // See: https://github.com/dotnet/runtime/issues/60183
+
             var cancellationTokenSource = new CancellationTokenSource();
             var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
 
