@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -27,6 +27,22 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 
 			RunTest<RequiresUnreferencedCodeAnalyzer> (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+		}
+
+		[Theory]
+		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (DataFlow))]
+		public void DataFlow (string testName, MemberDeclarationSyntax m, List<AttributeSyntax> attrs)
+		{
+			switch (testName) {
+			case "MemberTypesRelationships":
+			case "MethodParametersDataFlow":
+			case "MethodReturnParameterDataFlow":
+				break;
+			default:
+				return;
+			}
+
+			RunTest<DynamicallyAccessedMembersAnalyzer> (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
 		}
 	}
 }

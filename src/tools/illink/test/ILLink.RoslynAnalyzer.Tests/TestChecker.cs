@@ -219,14 +219,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 				return false;
 
 			string sourceMemberName = memberSymbol!.GetDisplayName ();
-			string expectedReflectionMemberMethodType = TestCaseUtils.GetStringFromExpression (args["#0"], SemanticModel);
+			string expectedReflectionMemberMethodType = TestCaseUtils.GetStringFromExpression ((TypeOfExpressionSyntax) args["#0"], SemanticModel, ISymbolExtensions.ILLinkTypeDisplayFormat);
 			string expectedReflectionMemberMethodName = TestCaseUtils.GetStringFromExpression (args["#1"], SemanticModel);
 
 			var reflectionMethodParameters = new List<string> ();
 			if (args.TryGetValue ("#2", out var reflectionMethodParametersExpr) || args.TryGetValue ("reflectionMethodParameters", out reflectionMethodParametersExpr)) {
 				if (reflectionMethodParametersExpr is ArrayCreationExpressionSyntax arrayReflectionMethodParametersExpr) {
-					foreach (var rmp in arrayReflectionMethodParametersExpr.Initializer!.Expressions)
-						reflectionMethodParameters.Add (TestCaseUtils.GetStringFromExpression (rmp, SemanticModel));
+					foreach (var rmp in arrayReflectionMethodParametersExpr.Initializer!.Expressions) {
+						var parameterStr = rmp.Kind () == SyntaxKind.TypeOfExpression
+							? TestCaseUtils.GetStringFromExpression ((TypeOfExpressionSyntax) rmp, SemanticModel, ISymbolExtensions.ILLinkMemberDisplayFormat)
+							: TestCaseUtils.GetStringFromExpression (rmp, SemanticModel);
+						reflectionMethodParameters.Add (parameterStr);
+					}
 				}
 			}
 

@@ -28,7 +28,7 @@ namespace Mono.Linker
 			sb.Append ("(");
 			if (method.HasParameters) {
 				for (int i = 0; i < method.Parameters.Count - 1; i++)
-					sb.Append (method.Parameters[i].ParameterType.GetDisplayNameWithoutNamespace ()).Append (',');
+					sb.Append (method.Parameters[i].ParameterType.GetDisplayNameWithoutNamespace ()).Append (", ");
 
 				sb.Append (method.Parameters[method.Parameters.Count - 1].ParameterType.GetDisplayNameWithoutNamespace ());
 			}

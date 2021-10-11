@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -70,20 +70,47 @@ namespace ILLink.RoslynAnalyzer
 			return overridenMember != null;
 		}
 
+		public static SymbolDisplayFormat ILLinkTypeDisplayFormat { get; } =
+			new SymbolDisplayFormat (
+				typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+				genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters
+			);
+
+		public static SymbolDisplayFormat ILLinkMemberDisplayFormat { get; } =
+			new SymbolDisplayFormat (
+				typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly,
+				genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+				memberOptions:
+					SymbolDisplayMemberOptions.IncludeParameters |
+					SymbolDisplayMemberOptions.IncludeExplicitInterface,
+				parameterOptions: SymbolDisplayParameterOptions.IncludeType
+			);
+
 		public static string GetDisplayName (this ISymbol symbol)
 		{
 			var sb = new StringBuilder ();
 			switch (symbol) {
 			case IFieldSymbol fieldSymbol:
-				sb.Append (fieldSymbol.Type);
-				sb.Append (" ");
-				sb.Append (fieldSymbol.ContainingSymbol.ToDisplayString ());
-				sb.Append ("::");
+				sb.Append (fieldSymbol.ContainingSymbol.ToDisplayString (ILLinkTypeDisplayFormat));
+				sb.Append (".");
 				sb.Append (fieldSymbol.MetadataName);
 				break;
 
 			case IParameterSymbol parameterSymbol:
 				sb.Append (parameterSymbol.Name);
+				break;
+
+			case IMethodSymbol methodSymbol:
+				// Format the declaring type with namespace and containing types.
+				if (methodSymbol.ContainingSymbol.Kind == SymbolKind.NamedType) {
+					// If the containing symbol is a method (for example for local functions),
+					// don't include the containing type's name. This matches the behavior of
+					// CSharpErrorMessageFormat.
+					sb.Append (methodSymbol.ContainingType.ToDisplayString (ILLinkTypeDisplayFormat));
+					sb.Append (".");
+				}
+				// Format parameter types with only type names.
+				sb.Append (methodSymbol.ToDisplayString (ILLinkMemberDisplayFormat));
 				break;
 
 			default:
