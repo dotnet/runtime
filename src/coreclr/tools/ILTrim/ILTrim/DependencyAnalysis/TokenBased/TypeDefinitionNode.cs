@@ -28,6 +28,11 @@ namespace ILTrim.DependencyAnalysis
                 yield return new(factory.GetNodeForToken(_module, typeDef.BaseType), "Base type of a type");
             }
 
+            foreach (CustomAttributeHandle customAttribute in typeDef.GetCustomAttributes())
+            {
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+            }
+
             if (typeDef.IsNested)
             {
                 yield return new DependencyListEntry(factory.TypeDefinition(_module, typeDef.GetDeclaringType()), "Declaring type of a type");

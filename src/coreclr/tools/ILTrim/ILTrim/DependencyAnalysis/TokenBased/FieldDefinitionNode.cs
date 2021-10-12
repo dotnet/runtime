@@ -27,6 +27,11 @@ namespace ILTrim.DependencyAnalysis
             // TODO: Check if FieldDefinition has other references that needed to be added
             yield return new DependencyListEntry(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
+            foreach (CustomAttributeHandle customAttribute in fieldDef.GetCustomAttributes())
+            {
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+            }
+
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

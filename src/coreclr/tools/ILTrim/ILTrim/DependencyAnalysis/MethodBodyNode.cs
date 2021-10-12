@@ -44,6 +44,8 @@ namespace ILTrim.DependencyAnalysis
             if (rva == 0)
                 return -1;
 
+            writeContext.ILStream.Align(4);
+
             MethodBodyBlock bodyBlock = _module.PEReader.GetMethodBody(rva);
 
             // TODO: need to rewrite token references in the method body and exception regions

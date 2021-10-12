@@ -35,11 +35,11 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.InterfaceImplementation:
                     throw new NotImplementedException();
                 case HandleKind.MemberReference:
-                    throw new NotImplementedException();
+                    return MemberReference(module, (MemberReferenceHandle)handle);
                 case HandleKind.Constant:
                     throw new NotImplementedException();
                 case HandleKind.CustomAttribute:
-                    throw new NotImplementedException();
+                    return CustomAttribute(module, (CustomAttributeHandle)handle);
                 case HandleKind.DeclarativeSecurityAttribute:
                     throw new NotImplementedException();
                 case HandleKind.StandaloneSignature:
@@ -111,6 +111,22 @@ namespace ILTrim.DependencyAnalysis
         public MethodBodyNode MethodBody(EcmaModule module, MethodDefinitionHandle handle)
         {
             return _methodBodies.GetOrAdd(new HandleKey<MethodDefinitionHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<MemberReferenceHandle>, MemberReferenceNode> _memberReferences
+            = new NodeCache<HandleKey<MemberReferenceHandle>, MemberReferenceNode>(key
+                => new MemberReferenceNode(key.Module, key.Handle));
+        public MemberReferenceNode MemberReference(EcmaModule module, MemberReferenceHandle handle)
+        {
+            return _memberReferences.GetOrAdd(new HandleKey<MemberReferenceHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<CustomAttributeHandle>, CustomAttributeNode> _customAttributes
+            = new NodeCache<HandleKey<CustomAttributeHandle>, CustomAttributeNode>(key
+                => new CustomAttributeNode(key.Module, key.Handle));
+        public CustomAttributeNode CustomAttribute(EcmaModule module, CustomAttributeHandle handle)
+        {
+            return _customAttributes.GetOrAdd(new HandleKey<CustomAttributeHandle>(module, handle));
         }
 
         NodeCache<HandleKey<StandaloneSignatureHandle>, StandaloneSignatureNode> _standaloneSignatures

@@ -29,6 +29,11 @@ namespace ILTrim.DependencyAnalysis
                 yield return new DependencyListEntry(factory.AssemblyDefinition(_module), "Assembly definition of the module");
 
             yield return new DependencyListEntry(factory.TypeDefinition(_module, GlobalModuleTypeHandle), "Global module type");
+
+            foreach (CustomAttributeHandle customAttribute in _module.MetadataReader.GetModuleDefinition().GetCustomAttributes())
+            {
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

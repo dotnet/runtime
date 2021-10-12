@@ -19,7 +19,11 @@ namespace ILTrim.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            yield break;
+            AssemblyDefinition asmDef = _module.MetadataReader.GetAssemblyDefinition();
+            foreach (CustomAttributeHandle customAttribute in asmDef.GetCustomAttributes())
+            {
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

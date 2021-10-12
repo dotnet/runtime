@@ -29,6 +29,11 @@ namespace ILTrim.DependencyAnalysis
             yield return new DependencyListEntry(factory.TypeDefinition(_module, declaringType), "Method owning type");
 
             yield return new DependencyListEntry(factory.MethodBody(_module, Handle), "Method body");
+
+            foreach (CustomAttributeHandle customAttribute in methodDef.GetCustomAttributes())
+            {
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
