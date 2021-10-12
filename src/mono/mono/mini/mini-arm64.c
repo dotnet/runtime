@@ -1240,7 +1240,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 		return;
 	}
 
-	if (align_size > 16) {
+	if (align_size > 16 || ainfo == &cinfo->ret) {
 		ainfo->storage = ArgVtypeByRef;
 		ainfo->size = size;
 		return;
