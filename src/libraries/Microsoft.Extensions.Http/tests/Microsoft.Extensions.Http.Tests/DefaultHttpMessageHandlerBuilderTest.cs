@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal("The 'PrimaryHandler' must not be null.", exception.Message);
         }
 
-        [Fact]]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerIsNull_ThrowsException()
         {
