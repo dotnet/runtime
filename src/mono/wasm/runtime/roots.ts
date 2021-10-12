@@ -3,6 +3,7 @@
 
 import cwraps from "./cwraps";
 import { Module } from "./modules";
+import { VoidPtr, ManagedPointer, NativePointer } from "./types";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
