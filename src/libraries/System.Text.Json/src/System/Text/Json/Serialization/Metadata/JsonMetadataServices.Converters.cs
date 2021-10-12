@@ -128,6 +128,13 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<JsonValue>? s_jsonValueConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonDocument"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<JsonDocument> JsonDocumentConverter => s_jsonDocumentConverter ??= new JsonDocumentConverter();
+        private static JsonConverter<JsonDocument>? s_jsonDocumentConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
@@ -200,13 +207,6 @@ namespace System.Text.Json.Serialization.Metadata
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
         public static JsonConverter<Version> VersionConverter => s_versionConverter ??= new VersionConverter();
         private static JsonConverter<Version>? s_versionConverter;
-
-        /// <summary>
-        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="JsonDocument"/> values.
-        /// </summary>
-        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
-        public static JsonConverter<JsonDocument> DocumentConverter => s_documentConverter ??= new JsonDocumentConverter();
-        private static JsonConverter<JsonDocument>? s_documentConverter;
 
         /// <summary>
         /// Creates a <see cref="JsonConverter{T}"/> instance that throws <see cref="NotSupportedException"/>.
