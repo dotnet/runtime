@@ -608,6 +608,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
 
+    CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC,
+    CORINFO_HELP_ALLOCATE_STACKMEM_NOGC,
+    CORINFO_HELP_CLEANUP_STACKMEM,
+
     CORINFO_HELP_COUNT,
 };
 
@@ -1512,6 +1516,9 @@ enum CorInfoTokenKind
 
     // token comes from devirtualizing a method
     CORINFO_TOKENKIND_DevirtualizedMethod = 0x800 | CORINFO_TOKENKIND_Method,
+
+    // token comes from an instruction that allows a ByRef but not void
+    CORINFO_TOKENKIND_ClassNotVoid = 0x1000 | CORINFO_TOKENKIND_Class,
 };
 
 struct CORINFO_RESOLVED_TOKEN

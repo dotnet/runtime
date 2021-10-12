@@ -15919,6 +15919,11 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
         }
         else
 #endif // !TARGET_X86
+        if (lvaStackallocList != BAD_VAR_NUM)
+        {
+            fgConvertSyncReturnToLeave(block);
+        }
+        else
         {
             block->bbJumpKind = BBJ_ALWAYS;
             block->bbJumpDest = genReturnBB;

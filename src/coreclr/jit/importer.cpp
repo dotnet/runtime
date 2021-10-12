@@ -3664,6 +3664,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
                                 CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                                 CorInfoIntrinsics*      pIntrinsicID,
+                                BasicBlock*             block,
                                 bool*                   isSpecialIntrinsic)
 {
     assert((methodFlags & (CORINFO_FLG_INTRINSIC | CORINFO_FLG_JIT_INTRINSIC)) != 0);
@@ -3729,6 +3730,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
             }
 #endif // FEATURE_HW_INTRINSICS
+            // Stackalloc can only be implemented as a jit intrinsic
+            if (ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_StackAlloc)
+            {
+                mustExpand = true;
+            }
         }
     }
 
@@ -4024,6 +4030,211 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 op1->gtFlags |= GTF_EXCEPT;
 
                 retNode = op1;
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_StackAlloc:
+            {
+                // If we were looking at an inlinee....
+                if (compIsForInlining())
+                {
+                    // Note that we failed to compile the inlinee, and that
+                    // there's no point trying to inline it again anywhere else.
+                    // If we can actually allocate on the stack, this isn't a concern, but ...
+                    compInlineResult->NoteFatal(InlineObservation::CALLEE_STACKALLOC);
+                    return nullptr;
+                }
+
+#ifdef FEATURE_READYTORUN
+                if (opts.IsReadyToRun())
+                {
+                    NYI("ReadyToRun StackAlloc<T>");
+                    return nullptr;
+                }
+#endif
+                const int registrationLinkedListNodeSize = 4 * sizeof(target_size_t);
+                const int MAX_STACKALLOC_DYNAMIC_SIZE = 512;
+
+                GenTree* elemCount          = impPopStack().val;
+                assert(sig->sigInst.methInstCount == 1);
+                assert(sig->sigInst.classInstCount == 0);
+                assert(sig->numArgs == 1);
+
+                CORINFO_CLASS_HANDLE stackAllocElemHnd = sig->sigInst.methInst[0];
+                const unsigned       elemSize    = info.compCompHnd->getClassSize(stackAllocElemHnd);
+                const uint32_t       typeFlags         = info.compCompHnd->getClassAttribs(stackAllocElemHnd);
+                bool                 hasGcPointers     = !!(typeFlags & CORINFO_FLG_CONTAINS_GC_PTR);
+                bool                 hasStackPointers  = !!(typeFlags & CORINFO_FLG_CONTAINS_STACK_PTR);
+                bool                 canLocAlloc = !block->hasHndIndex() && verCurrentState.esStackDepth == 0;
+                bool                 needsReporting = hasGcPointers || hasStackPointers;
+
+                JITDUMP("\nimpIntrinsic: Expanding StackAlloc<T>, T=%s, sizeof(T)=%u hasGcPointers=%s hasStackPointers=%s canLocAlloc=%s\n",
+                    info.compCompHnd->getClassName(stackAllocElemHnd), elemSize, hasGcPointers ? "true" : "false", hasStackPointers ? "true" : "false", canLocAlloc ? "true" : "false");
+
+                bool ableToUseLocalloc = false;
+                if (verCurrentState.esStackDepth == 0)
+                {
+                    // HACKATHON ... if stack depth is greater than 0, the impImportLocalloc will fail. Try not to do that.
+                    // When putting this together for real, we should be able to fix that limitation
+                    ableToUseLocalloc = true;
+                }
+
+                GenTree* spanElemCount = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc Span<T> size field assignment"));
+                GenTree* spanPointerField = nullptr;
+
+                if (!impBlockIsInALoop(block) && ableToUseLocalloc)
+                {
+                    if (elemCount->IsIntegralConst())
+                    {
+                        ssize_t allocSize = elemCount->AsIntCon()->IconValue() * elemSize;
+
+                        if (needsReporting)
+                        {
+                            allocSize += registrationLinkedListNodeSize;
+                        }
+
+                        GenTree *locAllocedMemory = NULL;
+                        locAllocedMemory = impImportLocalloc(block, gtNewIconNode(allocSize));
+                        if (locAllocedMemory == nullptr)
+                        {
+                            return nullptr;
+                        }
+
+                        if (needsReporting)
+                        {
+                            // Need to register with the universe...
+
+                            // First, if the registration local is not allocated, create it
+                            if (lvaStackallocList == BAD_VAR_NUM)
+                            {
+                                var_types typeStackllocList = TYP_REF;
+                                this->lvaStackallocList      = lvaGrabTemp(true DEBUGARG("Stackalloc registration list"));
+
+                                lvaTable[lvaStackallocList].lvType = typeStackllocList;
+                            }
+
+                            // Then lets call the thing..
+                            GenTree*  varNode         = gtNewLclvNode(lvaStackallocList, TYP_REF);
+                            GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+
+                            spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(locAllocedMemory, gtNewIconNode(allocSize, TYP_I_IMPL), elemCount, 
+                            // HACKATHON ... The stackAllocElemHnd handle should be handled specially to allow for ready to run.
+                                gtNewIconNode((ssize_t)stackAllocElemHnd, TYP_I_IMPL),
+                                varAddrNode
+                                ));
+                        }
+                        else
+                        {
+                            // We just need to return the localloced memory
+                            spanPointerField = locAllocedMemory;
+                        }
+                    }
+                    else
+                    {
+                        // Variable sized stackalloc
+
+                        // First, if the registration local is not allocated, create it
+                        if (lvaStackallocList == BAD_VAR_NUM)
+                        {
+                            var_types typeStackllocList = TYP_REF;
+                            this->lvaStackallocList      = lvaGrabTemp(true DEBUGARG("Stackalloc registration list"));
+
+                            lvaTable[lvaStackallocList].lvType = typeStackllocList;
+                        }
+                        GenTree*  varNode         = gtNewLclvNode(lvaStackallocList, TYP_REF);
+                        GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+
+                        // Compute allocation size dynamically
+                        GenTree* allocSizeElemCount = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc allocation size"));
+                        GenTree* allocSize = gtNewOperNode(GT_MUL, TYP_INT, allocSizeElemCount, gtNewIconNode(elemSize, TYP_INT));
+
+                        GenTree* cmpAgainstMaxLocallocSize = gtNewOperNode(GT_LT, TYP_INT, allocSize, gtNewIconNode(MAX_STACKALLOC_DYNAMIC_SIZE + 1));
+
+                        GenTree* locAllocAllocSize = gtCloneExpr(allocSize);
+                        GenTree* callAllocSize = gtCloneExpr(locAllocAllocSize);
+                        if (needsReporting)
+                        {
+                            locAllocAllocSize = gtNewOperNode(GT_ADD, TYP_INT, locAllocAllocSize, gtNewIconNode(registrationLinkedListNodeSize));
+                        }
+
+                        // Call alloc size is always increased by the size of the registration node
+                        callAllocSize = gtNewOperNode(GT_ADD, TYP_INT, locAllocAllocSize, gtNewIconNode(registrationLinkedListNodeSize));
+
+                        GenTree* locAllocedMem = impImportLocalloc(block, locAllocAllocSize);
+                        if (locAllocedMem == nullptr)
+                        {
+                            return nullptr;
+                        }
+
+                        if (!needsReporting)
+                        {
+                            GenTree* dynamicAllocatedMem = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_STACKMEM_NOGC, TYP_I_IMPL, gtNewCallArgs(callAllocSize, varAddrNode));
+                            GenTreeColon* colonNoGcStackMem = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, locAllocedMem, dynamicAllocatedMem);
+                            spanPointerField = gtNewQmarkNode(TYP_I_IMPL, cmpAgainstMaxLocallocSize, colonNoGcStackMem);
+                        }
+                        else
+                        {
+                            GenTreeColon* colonGcStackMem = new (this, GT_COLON) GenTreeColon(TYP_I_IMPL, locAllocedMem, gtNewIconNode(0, TYP_I_IMPL));
+                            GenTree* localAllocatedMemoryForRegistration = gtNewQmarkNode(TYP_I_IMPL, cmpAgainstMaxLocallocSize, colonGcStackMem);
+
+                            GenTree* stackAllocElemCountParam = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc elemCount parameter"));
+                            spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(localAllocatedMemoryForRegistration, callAllocSize, stackAllocElemCountParam, 
+                                // HACKATHON ... The stackAllocElemHnd handle should be handled specially to allow for ready to run.
+                                    gtNewIconNode((ssize_t)stackAllocElemHnd, TYP_I_IMPL),
+                                    varAddrNode
+                                    ));
+                        }
+                    }
+                }
+                else
+                {
+                    // This is the in a loop case or where we can't use localloc infra, where we always allocate
+
+                    // First, if the registration local is not allocated, create it
+                    if (lvaStackallocList == BAD_VAR_NUM)
+                    {
+                        var_types typeStackllocList = TYP_REF;
+                        this->lvaStackallocList      = lvaGrabTemp(true DEBUGARG("Stackalloc registration list"));
+
+                        lvaTable[lvaStackallocList].lvType = typeStackllocList;
+                    }
+                    GenTree*  varNode         = gtNewLclvNode(lvaStackallocList, TYP_REF);
+                    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+
+                    GenTree* allocSizeElemCount = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc allocation size"));
+                    GenTree* allocSize = gtNewOperNode(GT_MUL, TYP_INT, allocSizeElemCount, gtNewIconNode(elemSize, TYP_INT));
+                    GenTree* callAllocSize = gtNewOperNode(GT_ADD, TYP_INT, allocSize, gtNewIconNode(registrationLinkedListNodeSize));
+
+                    if (needsReporting)
+                    {
+                        GenTree* stackAllocElemCountParam = impCloneExpr(elemCount, &elemCount, NO_CLASS_HANDLE, CHECK_SPILL_ALL, nullptr DEBUGARG("Clone elemCount for StackAlloc elemCount parameter"));
+                        spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, TYP_I_IMPL, gtNewCallArgs(gtNewIconNode(0, TYP_I_IMPL), callAllocSize, stackAllocElemCountParam,
+                            // HACKATHON ... The stackAllocElemHnd handle should be handled specially to allow for ready to run.
+                                gtNewIconNode((ssize_t)stackAllocElemHnd, TYP_I_IMPL),
+                                varAddrNode
+                                ));
+                    }
+                    else
+                    {
+                        spanPointerField = gtNewHelperCallNode(CORINFO_HELP_ALLOCATE_STACKMEM_NOGC, TYP_I_IMPL, gtNewCallArgs(callAllocSize, varAddrNode));
+                    }
+                }
+
+//                retNode = spanPointerField;
+
+                unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("Span<T> for StackAlloc<T>"));
+                lvaSetStruct(spanTTemp, sig->retTypeClass, false);
+                GenTree* addrOfSpanTTempPointer = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
+                GenTree* dereffedSpanTTempPointer = gtNewOperNode(GT_IND, TYP_BYREF, addrOfSpanTTempPointer);
+                GenTree* gtAssignedSpanTTempPointer = gtNewAssignNode(dereffedSpanTTempPointer, spanPointerField);
+
+                GenTree* addrOfSpanTTempPointer2 = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
+                GenTree* addrOfSpanTTempSize = gtNewOperNode(GT_ADD, TYP_BYREF, addrOfSpanTTempPointer2, gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL)); // HACKATHON OFFSET not set usefully here
+                GenTree* dereffedSpanTTempSize = gtNewOperNode(GT_IND, TYP_INT, addrOfSpanTTempSize);
+                GenTree* gtAssignedSpanTTempSize = gtNewAssignNode(dereffedSpanTTempSize, spanElemCount);
+
+                GenTree* gtCommaAssignPointerAndGetResult = gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempPointer, impCreateLocalNode(spanTTemp DEBUGARG(0)));
+                retNode = gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempSize, gtCommaAssignPointerAndGetResult);
                 break;
             }
 
@@ -5025,6 +5236,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
     }
 #endif // FEATURE_HW_INTRINSICS
+    else if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) && (strcmp(className, "RuntimeHelpers") == 0))
+    {
+        if (strcmp(methodName, "StackAlloc") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_StackAlloc;
+        }
+    }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
         // We go down this path even when FEATURE_HW_INTRINSICS isn't enabled
@@ -6503,6 +6721,113 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     // Call helper function.  This gets the target address of the final destination callsite.
 
     return gtNewHelperCallNode(CORINFO_HELP_VIRTUAL_FUNC_PTR, TYP_I_IMPL, helpArgs);
+}
+
+GenTree* Compiler::impImportLocalloc(BasicBlock* block, GenTree* op2)
+{
+    // We don't allow locallocs inside handlers
+    if (block->hasHndIndex())
+    {
+        BADCODE("Localloc can't be inside handler");
+    }
+
+    GenTree* op1 = nullptr;
+    assert(genActualTypeIsIntOrI(op2->gtType));
+
+    if (verCurrentState.esStackDepth != 0)
+    {
+        BADCODE("Localloc can only be used when the stack is empty");
+    }
+
+    // If the localloc is not in a loop and its size is a small constant,
+    // create a new local var of TYP_BLK and return its address.
+    {
+        bool convertedToLocal = false;
+
+        // Need to aggressively fold here, as even fixed-size locallocs
+        // will have casts in the way.
+        op2 = gtFoldExpr(op2);
+
+        if (op2->IsIntegralConst())
+        {
+            const ssize_t allocSize = op2->AsIntCon()->IconValue();
+
+            bool bbInALoop = impBlockIsInALoop(block);
+
+            if (allocSize == 0)
+            {
+                // Result is nullptr
+                JITDUMP("Converting stackalloc of 0 bytes to push null unmanaged pointer\n");
+                op1              = gtNewIconNode(0, TYP_I_IMPL);
+                convertedToLocal = true;
+            }
+            else if ((allocSize > 0) && !bbInALoop)
+            {
+                // Get the size threshold for local conversion
+                ssize_t maxSize = DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
+
+#ifdef DEBUG
+                // Optionally allow this to be modified
+                maxSize = JitConfig.JitStackAllocToLocalSize();
+#endif // DEBUG
+
+                if (allocSize <= maxSize)
+                {
+                    const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
+                    JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
+                            stackallocAsLocal);
+                    lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
+                    lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
+                    lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
+                    op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
+                    op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
+                    convertedToLocal = true;
+
+                    if (!this->opts.compDbgEnC)
+                    {
+                        // Ensure we have stack security for this method.
+                        // Reorder layout since the converted localloc is treated as an unsafe buffer.
+                        setNeedsGSSecurityCookie();
+                        compGSReorderStackLayout = true;
+                    }
+                }
+            }
+        }
+
+        if (!convertedToLocal)
+        {
+            // Bail out if inlining and the localloc was not converted.
+            //
+            // Note we might consider allowing the inline, if the call
+            // site is not in a loop.
+            if (compIsForInlining())
+            {
+                InlineObservation obs = op2->IsIntegralConst()
+                                            ? InlineObservation::CALLEE_LOCALLOC_TOO_LARGE
+                                            : InlineObservation::CALLSITE_LOCALLOC_SIZE_UNKNOWN;
+                compInlineResult->NoteFatal(obs);
+                return nullptr;
+            }
+
+            op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
+            // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
+            op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
+
+            // Ensure we have stack security for this method.
+            setNeedsGSSecurityCookie();
+
+            /* The FP register may not be back to the original value at the end
+                of the method, even if the frame size is 0, as localloc may
+                have modified it. So we will HAVE to reset it */
+            compLocallocUsed = true;
+        }
+        else
+        {
+            compLocallocOptimized = true;
+        }
+    }
+
+    return op1;
 }
 
 //------------------------------------------------------------------------
@@ -8260,7 +8585,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                                   GenTree*                newobjThis,
                                   int                     prefixFlags,
                                   CORINFO_CALL_INFO*      callInfo,
-                                  IL_OFFSET               rawILOffset)
+                                  IL_OFFSET               rawILOffset,
+                                  BasicBlock*             block)
 {
     assert(opcode == CEE_CALL || opcode == CEE_CALLVIRT || opcode == CEE_NEWOBJ || opcode == CEE_CALLI);
 
@@ -8338,7 +8664,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(block)))
             {
                 eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
-                return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
+                return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset, block);
             }
         }
 
@@ -8457,7 +8783,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
             call = impIntrinsic(newobjThis, clsHnd, methHnd, sig, mflags, pResolvedToken->token, isReadonlyCall,
-                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID,
+                                isTailCall, pConstrainedResolvedToken, callInfo->thisTransform, &intrinsicID, block,
                                 &isSpecialIntrinsic);
 
             if (compDonotInline())
@@ -14788,7 +15114,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
                 callTyp = impImportCall(opcode, &resolvedToken, constraintCall ? &constrainedResolvedToken : nullptr,
-                                        newObjThisPtr, prefixFlags, &callInfo, opcodeOffs);
+                                        newObjThisPtr, prefixFlags, &callInfo, opcodeOffs, block);
                 if (compDonotInline())
                 {
                     // We do not check fails after lvaGrabTemp. It is covered with CoreCLR_13272 issue.
@@ -15640,109 +15966,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     Verify(false, "bad opcode");
                 }
 
-                // We don't allow locallocs inside handlers
-                if (block->hasHndIndex())
-                {
-                    BADCODE("Localloc can't be inside handler");
-                }
-
                 // Get the size to allocate
 
                 op2 = impPopStack().val;
-                assertImp(genActualTypeIsIntOrI(op2->gtType));
 
-                if (verCurrentState.esStackDepth != 0)
-                {
-                    BADCODE("Localloc can only be used when the stack is empty");
-                }
-
-                // If the localloc is not in a loop and its size is a small constant,
-                // create a new local var of TYP_BLK and return its address.
-                {
-                    bool convertedToLocal = false;
-
-                    // Need to aggressively fold here, as even fixed-size locallocs
-                    // will have casts in the way.
-                    op2 = gtFoldExpr(op2);
-
-                    if (op2->IsIntegralConst())
-                    {
-                        const ssize_t allocSize = op2->AsIntCon()->IconValue();
-
-                        bool bbInALoop = impBlockIsInALoop(block);
-
-                        if (allocSize == 0)
-                        {
-                            // Result is nullptr
-                            JITDUMP("Converting stackalloc of 0 bytes to push null unmanaged pointer\n");
-                            op1              = gtNewIconNode(0, TYP_I_IMPL);
-                            convertedToLocal = true;
-                        }
-                        else if ((allocSize > 0) && !bbInALoop)
-                        {
-                            // Get the size threshold for local conversion
-                            ssize_t maxSize = DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE;
-
-#ifdef DEBUG
-                            // Optionally allow this to be modified
-                            maxSize = JitConfig.JitStackAllocToLocalSize();
-#endif // DEBUG
-
-                            if (allocSize <= maxSize)
-                            {
-                                const unsigned stackallocAsLocal = lvaGrabTemp(false DEBUGARG("stackallocLocal"));
-                                JITDUMP("Converting stackalloc of %zd bytes to new local V%02u\n", allocSize,
-                                        stackallocAsLocal);
-                                lvaTable[stackallocAsLocal].lvType           = TYP_BLK;
-                                lvaTable[stackallocAsLocal].lvExactSize      = (unsigned)allocSize;
-                                lvaTable[stackallocAsLocal].lvIsUnsafeBuffer = true;
-                                op1              = gtNewLclvNode(stackallocAsLocal, TYP_BLK);
-                                op1              = gtNewOperNode(GT_ADDR, TYP_I_IMPL, op1);
-                                convertedToLocal = true;
-
-                                if (!this->opts.compDbgEnC)
-                                {
-                                    // Ensure we have stack security for this method.
-                                    // Reorder layout since the converted localloc is treated as an unsafe buffer.
-                                    setNeedsGSSecurityCookie();
-                                    compGSReorderStackLayout = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if (!convertedToLocal)
-                    {
-                        // Bail out if inlining and the localloc was not converted.
-                        //
-                        // Note we might consider allowing the inline, if the call
-                        // site is not in a loop.
-                        if (compIsForInlining())
-                        {
-                            InlineObservation obs = op2->IsIntegralConst()
-                                                        ? InlineObservation::CALLEE_LOCALLOC_TOO_LARGE
-                                                        : InlineObservation::CALLSITE_LOCALLOC_SIZE_UNKNOWN;
-                            compInlineResult->NoteFatal(obs);
-                            return;
-                        }
-
-                        op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // May throw a stack overflow exception. Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= (GTF_EXCEPT | GTF_DONT_CSE);
-
-                        // Ensure we have stack security for this method.
-                        setNeedsGSSecurityCookie();
-
-                        /* The FP register may not be back to the original value at the end
-                           of the method, even if the frame size is 0, as localloc may
-                           have modified it. So we will HAVE to reset it */
-                        compLocallocUsed = true;
-                    }
-                    else
-                    {
-                        compLocallocOptimized = true;
-                    }
-                }
+                op1 = impImportLocalloc(block, op2);
+                if (op1 == nullptr)
+                    return;
 
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -15832,7 +16062,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // get the class handle and make a ICON node out of it
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16321,7 +16551,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* Get the Class index */
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16489,7 +16719,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16587,7 +16817,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16615,12 +16845,32 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     assertImp(genActualType(op1->gtType) == TYP_I_IMPL || op1->gtType == TYP_BYREF);
 
-                    op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
+                    switch (info.compCompHnd->asCorInfoType(clsHnd))
+                    {
+                        case CORINFO_TYPE_CLASS:
+                            lclTyp = TYP_REF;
+                            opcode = CEE_STIND_REF;
+                            break;
+
+                        case CORINFO_TYPE_BYREF:
+                            lclTyp = TYP_BYREF;
+                            opcode = CEE_STIND_REF;
+                            break;
+
+                        case CORINFO_TYPE_PTR:
+                            lclTyp = TYP_I_IMPL;
+                            opcode = CEE_STIND_I;
+                            break;
+
+                        default:
+                            noway_assert(!"Unexpected corinfo type in cpobj");
+                            break;
+                    }
+
+                    op1 = gtNewOperNode(GT_IND, lclTyp, op1);
                     op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
 
                     impPushOnStack(op1, typeInfo());
-                    opcode = CEE_STIND_REF;
-                    lclTyp = TYP_REF;
                     goto STIND_POST_VERIFY;
                 }
 
@@ -16633,7 +16883,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             {
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16641,9 +16891,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     lclTyp = TYP_STRUCT;
                 }
-                else
+                else if (eeIsClass(resolvedToken.hClass))
                 {
                     lclTyp = TYP_REF;
+                }
+                else
+                {
+                    lclTyp = TYP_I_IMPL;
                 }
 
                 if (tiVerificationNeeded)
@@ -16685,6 +16939,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     goto STIND_POST_VERIFY;
                 }
 
+                if (lclTyp == TYP_I_IMPL)
+                {
+                    opcode = CEE_STIND_I;
+                    goto STIND_POST_VERIFY;
+                }
+
                 CorInfoType jitTyp = info.compCompHnd->asCorInfoType(resolvedToken.hClass);
                 if (impIsPrimitive(jitTyp))
                 {
@@ -16719,7 +16979,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 oper = GT_MKREFANY;
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16734,7 +16994,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     typeInfo tiPtr   = impStackTop().seTypeInfo;
                     typeInfo tiInstr = verMakeTypeInfo(resolvedToken.hClass);
 
-                    Verify(!verIsByRefLike(tiInstr), "mkrefany of byref-like class");
                     Verify(!tiPtr.IsReadonlyByRef(), "readonly byref used with mkrefany");
                     Verify(typeInfo::AreEquivalent(tiPtr.DereferenceByRef(), tiInstr), "type mismatch");
                 }
@@ -16760,7 +17019,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 oper = GT_OBJ;
                 assertImp(sz == sizeof(unsigned));
 
-                _impResolveToken(CORINFO_TOKENKIND_Class);
+                _impResolveToken(CORINFO_TOKENKIND_ClassNotVoid);
 
                 JITDUMP(" %08X", resolvedToken.token);
 
@@ -16796,9 +17055,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 {
                     lclTyp = TYP_STRUCT;
                 }
-                else
+                else if (eeIsClass(resolvedToken.hClass))
                 {
                     lclTyp = TYP_REF;
+                    opcode = CEE_LDIND_REF;
+                    goto LDIND_POST_VERIFY;
+                }
+                else if (info.compCompHnd->asCorInfoType(clsHnd) == CORINFO_TYPE_BYREF)
+                {
+                    lclTyp = TYP_BYREF;
+                    opcode = CEE_LDIND_REF;
+                    goto LDIND_POST_VERIFY;
+                }
+                else
+                {
+                    lclTyp = TYP_I_IMPL;
                     opcode = CEE_LDIND_REF;
                     goto LDIND_POST_VERIFY;
                 }

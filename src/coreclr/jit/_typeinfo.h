@@ -298,7 +298,7 @@ private:
             unsigned generic_type_var : 1; // used
         } m_bits;
 
-        DWORD m_flags;
+        uint64_t m_flags;
     };
 
     union {
@@ -513,15 +513,32 @@ public:
             m_flags = TI_ERROR;
             INDEBUG(m_cls = NO_CLASS_HANDLE);
         }
+        uint64_t byRefDepth = m_flags >> 32;
+
         m_flags &= ~(TI_FLAG_THIS_PTR | TI_ALL_BYREF_FLAGS);
+
+        if (byRefDepth > 0)
+        {
+            byRefDepth--;
+            m_flags = (m_flags & 0xFFFFFFFF) | (byRefDepth << 32);
+            m_flags |= TI_FLAG_BYREF;
+        }
         return *this;
     }
 
     typeInfo& MakeByRef()
     {
-        assert(!IsByRef());
         m_flags &= ~(TI_FLAG_THIS_PTR);
-        m_flags |= TI_FLAG_BYREF;
+        if (IsByRef())
+        {
+            uint64_t byRefDepth = m_flags >> 32;
+            byRefDepth++;
+            m_flags = (m_flags & 0xFFFFFFFF) | (byRefDepth << 32);
+        }
+        else
+        {
+            m_flags |= TI_FLAG_BYREF;
+        }
         return *this;
     }
 
@@ -757,7 +774,7 @@ public:
 
 private:
     // used to make functions that return typeinfo efficient.
-    typeInfo(DWORD flags, CORINFO_CLASS_HANDLE cls)
+    typeInfo(uint64_t flags, CORINFO_CLASS_HANDLE cls)
     {
         m_cls   = cls;
         m_flags = flags;

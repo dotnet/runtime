@@ -2350,7 +2350,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         CorElementType fieldType = pField->GetFieldType();
 
         SystemVClassificationType fieldClassificationType;
-        if (isThisByReferenceOfT)
+        if (isThisByReferenceOfT || fieldType == ELEMENT_TYPE_BYREF)
         {
             // ByReference<T> is a special type whose single IntPtr field holds a by-ref potentially interior pointer to GC
             // memory, so classify its field as such

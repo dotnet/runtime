@@ -159,6 +159,20 @@ void ECall::PopulateManagedCastHelpers()
     // Get the code directly to avoid PreStub indirection.
     pDest = pMD->GetNativeCode();
     SetJitHelperFunction(CORINFO_HELP_LDELEMA_REF, pDest);
+
+    // StackMem helpers
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)METHOD__RUNTIME_HELPERS__ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC);
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)METHOD__RUNTIME_HELPERS__ALLOCATE_STACKMEM_NOGC);
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_ALLOCATE_STACKMEM_NOGC, pDest);
+
+    pMD = CoreLibBinder::GetMethod((BinderMethodID)METHOD__RUNTIME_HELPERS__CLEANUP_STACKMEM);
+    pDest = pMD->GetMultiCallableAddrOfCode();
+    SetJitHelperFunction(CORINFO_HELP_CLEANUP_STACKMEM, pDest);
 }
 
 static CrstStatic gFCallLock;

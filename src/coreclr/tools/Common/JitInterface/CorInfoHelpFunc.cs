@@ -297,6 +297,14 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_STACK_PROBE,               // Probes each page of the allocated stack frame
 
+        CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
+        CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
+        CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
+
+        CORINFO_HELP_ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC,
+        CORINFO_HELP_ALLOCATE_STACKMEM_NOGC,
+        CORINFO_HELP_CLEANUP_STACKMEM,
+
         CORINFO_HELP_COUNT,
     }
 }

@@ -793,7 +793,7 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
         // General checks related to generics: arity (if any) must match and generic method
         // instantiation (if any) must be well-formed.
         if (pDefMD->GetNumGenericMethodArgs() != methodInst.GetNumArgs() ||
-            !Generics::CheckInstantiation(methodInst))
+            !Generics::CheckInstantiation(pDefMD->GetModule(), pDefMD->GetMemberDef(), methodInst))
         {
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }

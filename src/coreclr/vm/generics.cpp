@@ -22,6 +22,7 @@
 #include "typekey.h"
 #include "dumpcommon.h"
 #include "array.h"
+#include "caparser.h"
 
 /* static */
 TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
@@ -589,7 +590,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
 namespace Generics
 {
 
-BOOL CheckInstantiation(Instantiation inst)
+BOOL CheckInstantiation(Module* pModule, mdToken tkGeneric, Instantiation inst)
 {
     CONTRACTL
     {
@@ -597,6 +598,7 @@ BOOL CheckInstantiation(Instantiation inst)
         GC_NOTRIGGER;
     }
     CONTRACTL_END
+    bool *pSupportsAnyType = NULL;
 
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
@@ -614,22 +616,62 @@ BOOL CheckInstantiation(Instantiation inst)
 
         g_IBCLogger.LogTypeMethodTableAccess(&th);
 
-        if (   type == ELEMENT_TYPE_BYREF
-            || type == ELEMENT_TYPE_TYPEDBYREF
-            || type == ELEMENT_TYPE_VOID
-            || type == ELEMENT_TYPE_PTR
-            || type == ELEMENT_TYPE_FNPTR)
+        if (type == ELEMENT_TYPE_VOID)
         {
             return FALSE;
         }
 
-        MethodTable* pMT = th.GetMethodTable();
-        if (pMT != NULL)
+        MethodTable* pMT;
+
+        if (   type == ELEMENT_TYPE_BYREF
+            || type == ELEMENT_TYPE_TYPEDBYREF
+            || type == ELEMENT_TYPE_PTR
+            || type == ELEMENT_TYPE_FNPTR
+            || (pMT = th.GetMethodTable(), (pMT != NULL) && pMT->IsByRefLike()))
         {
-            if (pMT->IsByRefLike())
+            if (pSupportsAnyType == NULL)
             {
-                return FALSE;
+                pSupportsAnyType = (bool*)_alloca(inst.GetNumArgs() * sizeof(bool));
+                memset(pSupportsAnyType, 0, inst.GetNumArgs() * sizeof(bool));
+
+                LPCSTR customAttributeName = pModule->HasCustomAttributes(tkGeneric, WellKnownAttribute::GenericParameterSupportsAnyTypeAttribute);
+                if (customAttributeName != NULL)
+                {
+                    HENUMInternalHolder genericParameterSupportsAnyTypeEnumerator(pModule->GetMDImport());
+                    HRESULT hr = genericParameterSupportsAnyTypeEnumerator.EnumCustomAttributeByNameNoThrow(tkGeneric, customAttributeName);
+                    if (FAILED(hr))
+                    {
+                        return FALSE;
+                    }
+                    
+                    mdCustomAttribute cv;
+                    while (pModule->GetMDImport()->EnumNext(&genericParameterSupportsAnyTypeEnumerator, &cv))
+                    {
+                        const void* pVal;
+                        ULONG cbVal;
+                        hr = pModule->GetMDImport()->GetCustomAttributeAsBlob(cv, &pVal, &cbVal);
+                        if (FAILED(hr))
+                            continue;
+
+                        CustomAttributeParser cap(pVal, cbVal);
+                        if (FAILED(cap.SkipProlog()))
+                            continue;
+
+                        INT32 index;
+                        if (FAILED(cap.GetI4(&index)))
+                            continue;
+
+                        if ((index < 0) || (((DWORD)index) >= inst.GetNumArgs()))
+                            continue;
+
+                        pSupportsAnyType[index] = true;
+                    }
+                }
             }
+
+            // Check supports any type array
+            if (!pSupportsAnyType[i])
+                return FALSE;
         }
     }
     return TRUE;

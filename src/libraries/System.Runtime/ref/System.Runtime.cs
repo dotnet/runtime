@@ -12912,6 +12912,17 @@ namespace System.Runtime.CompilerServices
     {
         public static System.FormattableString Create(string format, params object?[] arguments) { throw null; }
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Delegate | System.AttributeTargets.Enum, AllowMultiple = true, Inherited=false)]
+    public sealed partial class GenericParameterSupportsAnyTypeAttribute : System.Attribute
+    {
+        public GenericParameterSupportsAnyTypeAttribute(int index) { }
+        public int Index { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method | System.AttributeTargets.Constructor, Inherited=false)]
+    public sealed partial class GenericParameterSupportsOnlyNonByRefLikeAttribute : System.Attribute
+    {
+        public GenericParameterSupportsOnlyNonByRefLikeAttribute() { }
+    }
     public partial interface IAsyncStateMachine
     {
         void MoveNext();
@@ -13136,6 +13147,8 @@ namespace System.Runtime.CompilerServices
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
         public delegate void TryCode(object? userData);
+        [CLSCompliant(false)]
+        public static unsafe Span<T> StackAlloc<T>(int length) { throw null; }
     }
     public sealed partial class RuntimeWrappedException : System.Exception
     {

@@ -71,6 +71,7 @@ void Compiler::lvaInit()
     lvaStubArgumentVar  = BAD_VAR_NUM;
     lvaArg0Var          = BAD_VAR_NUM;
     lvaMonAcquired      = BAD_VAR_NUM;
+    lvaStackallocList   = BAD_VAR_NUM;
     lvaRetAddrVar       = BAD_VAR_NUM;
 
     lvaInlineeReturnSpillTemp = BAD_VAR_NUM;
@@ -1365,13 +1366,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
             {
                 BADCODE("parameter type mismatch");
             }
-        }
-
-        // Disallow byrefs to byref like objects (ArgTypeHandle)
-        // techncally we could get away with just not setting them
-        if (varDsc->lvVerTypeInfo.IsByRef() && verIsByRefLike(DereferenceByRef(varDsc->lvVerTypeInfo)))
-        {
-            varDsc->lvVerTypeInfo = typeInfo();
         }
 
         // we don't want the EE to assert in lvaSetStruct on bad sigs, so change
@@ -6268,6 +6262,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaMonAcquired, lvaLclSize(lvaMonAcquired), stkOffs);
     }
 
+    if (lvaStackallocList != BAD_VAR_NUM)
+    {
+        // This var must go immediately after the MonAcquired bool, in what is called the 'frame header'
+        // for EnC so that it is preserved when remapping occurs.  See vm\eetwain.cpp for detailed comment
+        // specifying frame layout requirements for EnC to work.
+
+        // HACKATHON - actually put the handling for this into the frame header code in eetwain
+        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaStackallocList, lvaLclSize(lvaStackallocList), stkOffs);
+    }
+
 #ifdef JIT32_GCENCODER
     if (lvaLocAllocSPvar != BAD_VAR_NUM)
     {
@@ -6549,7 +6553,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if (lclNum == lvaMonAcquired)
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaStackallocList))
             {
                 continue;
             }

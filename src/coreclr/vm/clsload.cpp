@@ -982,7 +982,7 @@ TypeHandle ClassLoader::LoadConstructedTypeThrowing(TypeKey *pKey,
 #ifndef DACCESS_COMPILE
     if (typeHnd.IsNull() && pKey->HasInstantiation())
     {
-        if (!Generics::CheckInstantiation(pKey->GetInstantiation()))
+        if (!Generics::CheckInstantiation(pKey->GetModule(), pKey->GetTypeToken(), pKey->GetInstantiation()))
             pKey->GetModule()->GetAssembly()->ThrowTypeLoadException(pKey->GetModule()->GetMDImport(), pKey->GetTypeToken(), IDS_CLASSLOAD_INVALIDINSTANTIATION);
     }
 #endif
@@ -3056,15 +3056,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
         }
         else
         {
-            // no parameterized type allowed on a reference
-            if (paramType.GetInternalCorElementType() == ELEMENT_TYPE_BYREF)
-            {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
-            }
-
-            // We do allow parametrized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
-            // but there is not a good reason for restricting them in the runtime.
-
             // let <Type>* type have a method table
             // System.UIntPtr's method table is used for types like int*, void *, string * etc.
             if (kind == ELEMENT_TYPE_PTR)

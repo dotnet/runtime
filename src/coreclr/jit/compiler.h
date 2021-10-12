@@ -2957,11 +2957,7 @@ public:
 
     void fgRemoveEHTableEntry(unsigned XTnum);
 
-#if defined(FEATURE_EH_FUNCLETS)
-
     EHblkDsc* fgAddEHTableEntry(unsigned XTnum);
-
-#endif // FEATURE_EH_FUNCLETS
 
 #if !FEATURE_EH
     void fgRemoveEH();
@@ -3084,6 +3080,7 @@ public:
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2, GenTree* node3);
     GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2, GenTree* node3, GenTree* node4);
+    GenTreeCall::Use* gtNewCallArgs(GenTree* node1, GenTree* node2, GenTree* node3, GenTree* node4, GenTree* node5);
     GenTreeCall::Use* gtPrependNewCallArg(GenTree* node, GenTreeCall::Use* args);
     GenTreeCall::Use* gtInsertNewCallArgAfter(GenTree* node, GenTreeCall::Use* after);
 
@@ -3772,6 +3769,8 @@ public:
     unsigned lvaMonAcquired; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
+    unsigned lvaStackallocList; // object reference reported to VM for stack alloc list
+
     unsigned lvaArg0Var; // The lclNum of arg0. Normally this will be info.compThisArg.
                          // However, if there is a "ldarga 0" or "starg 0" in the IL,
                          // we will redirect all "ldarg(a) 0" and "starg 0" to this temp.
@@ -4306,6 +4305,8 @@ protected:
 
     GenTree* impImportLdvirtftn(GenTree* thisPtr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_CALL_INFO* pCallInfo);
 
+    GenTree* impImportLocalloc(BasicBlock* block, GenTree* op2);
+
     int impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                            const BYTE*             codeAddr,
                            const BYTE*             codeEndp,
@@ -4332,7 +4333,8 @@ protected:
                             GenTree*           newobjThis,
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
-                            IL_OFFSET          rawILOffset);
+                            IL_OFFSET          rawILOffset,
+                            BasicBlock*        block);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(CORINFO_METHOD_HANDLE specialIntrinsicHandle);
 
@@ -4377,6 +4379,7 @@ protected:
                           CORINFO_RESOLVED_TOKEN* pContstrainedResolvedToken,
                           CORINFO_THIS_TRANSFORM  constraintCallThisTransform,
                           CorInfoIntrinsics*      pIntrinsicID,
+                          BasicBlock*             block,
                           bool*                   isSpecialIntrinsic = nullptr);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig,
@@ -5185,9 +5188,13 @@ public:
 
     GenTree* fgCreateMonitorTree(unsigned lvaMonitorBool, unsigned lvaThisVar, BasicBlock* block, bool enter);
 
-    void fgConvertSyncReturnToLeave(BasicBlock* block);
-
 #endif // FEATURE_EH_FUNCLETS
+
+    void fgAddStackMemMethodEnterExit();
+
+    GenTree* fgCreateClearStackMemTree(BasicBlock* block);
+
+    void fgConvertSyncReturnToLeave(BasicBlock* block);
 
     void fgAddReversePInvokeEnterExit();
 
@@ -7988,6 +7995,7 @@ public:
     // Get the flags
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
+    bool eeIsClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)

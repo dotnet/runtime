@@ -575,6 +575,12 @@ bool Compiler::fgMayExplicitTailCall()
         return false;
     }
 
+    if (lvaStackallocList != BAD_VAR_NUM)
+    {
+        // Caller has StackMem usage
+        return false;
+    }
+
     if (opts.IsReversePInvoke())
     {
         // Reverse P/Invoke
@@ -1934,6 +1940,7 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 
     return tree;
 }
+#endif // FEATURE_EH_FUNCLETS
 
 // Convert a BBJ_RETURN block in a synchronized method to a BBJ_ALWAYS.
 // We've previously added a 'try' block around the original program code using fgAddSyncMethodEnterExit().
@@ -1943,8 +1950,10 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 // Here, we mimic some of the logic of importing a LEAVE to get the same effect for synchronized methods.
 void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 {
+#if defined(FEATURE_EH_FUNCLETS)
     assert(!fgFuncletsCreated);
-    assert(info.compFlags & CORINFO_FLG_SYNCH);
+#endif // FEATURE_EH_FUNCLETS
+    assert((info.compFlags & CORINFO_FLG_SYNCH) || (lvaStackallocList != BAD_VAR_NUM));
     assert(genReturnBB != nullptr);
     assert(genReturnBB != block);
     assert(fgReturnCount <= 1); // We have a single return for synchronized methods
@@ -1977,7 +1986,247 @@ void Compiler::fgConvertSyncReturnToLeave(BasicBlock* block)
 #endif
 }
 
-#endif // FEATURE_EH_FUNCLETS
+void Compiler::fgAddStackMemMethodEnterExit()
+{
+    assert(lvaStackallocList != BAD_VAR_NUM);
+
+#if defined(FEATURE_EH_FUNCLETS)
+    // HACKATHON ...  does this actually work on X86 without funclets?
+
+    // We need to do this transformation before funclets are created.
+    assert(!fgFuncletsCreated);
+#endif
+
+    // Assume we don't need to update the bbPreds lists.
+    assert(!fgComputePredsDone);
+
+#if !FEATURE_EH
+    // If we don't support EH, we can't add the EH needed by synchronized methods.
+    // Of course, we could simply ignore adding the EH constructs, since we don't
+    // support exceptions being thrown in this mode, but we would still need to add
+    // the monitor enter/exit, and that doesn't seem worth it for this minor case.
+    // By the time EH is working, we can just enable the whole thing.
+    NYI("No support for stackmem alloc");
+#endif // !FEATURE_EH
+
+    // Create a scratch first BB where we can put the new variable initialization.
+    // Don't put the scratch BB in the protected region.
+
+    fgEnsureFirstBBisScratch();
+
+    // Create a block for the start of the try region, where the monitor enter call
+    // will go.
+
+    assert(fgFirstBB->bbFallsThrough());
+
+    BasicBlock* tryBegBB  = fgNewBBafter(BBJ_NONE, fgFirstBB, false);
+    BasicBlock* tryNextBB = tryBegBB->bbNext;
+    BasicBlock* tryLastBB = fgLastBB;
+
+    // If we have profile data the new block will inherit the next block's weight
+    if (tryNextBB->hasProfileWeight())
+    {
+        tryBegBB->inheritWeight(tryNextBB);
+    }
+
+    // Create a block for the fault.
+
+    assert(!tryLastBB->bbFallsThrough());
+    BasicBlock* faultBB = fgNewBBafter(BBJ_EHFINALLYRET, tryLastBB, false);
+
+    assert(tryLastBB->bbNext == faultBB);
+    assert(faultBB->bbNext == nullptr);
+    assert(faultBB == fgLastBB);
+
+    { // Scope the EH region creation
+
+        // Add the new EH region at the end, since it is the least nested,
+        // and thus should be last.
+
+        EHblkDsc* newEntry;
+        unsigned  XTnew = compHndBBtabCount;
+
+        newEntry = fgAddEHTableEntry(XTnew);
+
+        // Initialize the new entry
+
+        newEntry->ebdHandlerType = EH_HANDLER_FAULT;
+
+        newEntry->ebdTryBeg  = tryBegBB;
+        newEntry->ebdTryLast = tryLastBB;
+
+        newEntry->ebdHndBeg  = faultBB;
+        newEntry->ebdHndLast = faultBB;
+
+        newEntry->ebdTyp = 0; // unused for fault
+
+        newEntry->ebdEnclosingTryIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+        newEntry->ebdEnclosingHndIndex = EHblkDsc::NO_ENCLOSING_INDEX;
+
+        newEntry->ebdTryBegOffset    = tryBegBB->bbCodeOffs;
+        newEntry->ebdTryEndOffset    = tryLastBB->bbCodeOffsEnd;
+        newEntry->ebdFilterBegOffset = 0;
+        newEntry->ebdHndBegOffset    = 0; // handler doesn't correspond to any IL
+        newEntry->ebdHndEndOffset    = 0; // handler doesn't correspond to any IL
+
+        // Set some flags on the new region. This is the same as when we set up
+        // EH regions in fgFindBasicBlocks(). Note that the try has no enclosing
+        // handler, and the fault has no enclosing try.
+
+        tryBegBB->bbFlags |= BBF_DONT_REMOVE | BBF_TRY_BEG | BBF_IMPORTED;
+
+        faultBB->bbFlags |= BBF_DONT_REMOVE | BBF_IMPORTED;
+        faultBB->bbCatchTyp = BBCT_FAULT;
+
+        tryBegBB->setTryIndex(XTnew);
+        tryBegBB->clearHndIndex();
+
+        faultBB->clearTryIndex();
+        faultBB->setHndIndex(XTnew);
+
+        // Walk the user code blocks and set all blocks that don't already have a try handler
+        // to point to the new try handler.
+
+        BasicBlock* tmpBB;
+        for (tmpBB = tryBegBB->bbNext; tmpBB != faultBB; tmpBB = tmpBB->bbNext)
+        {
+            if (!tmpBB->hasTryIndex())
+            {
+                tmpBB->setTryIndex(XTnew);
+            }
+        }
+
+        // Walk the EH table. Make every EH entry that doesn't already have an enclosing
+        // try index mark this new entry as their enclosing try index.
+
+        unsigned  XTnum;
+        EHblkDsc* HBtab;
+
+        for (XTnum = 0, HBtab = compHndBBtab; XTnum < XTnew; XTnum++, HBtab++)
+        {
+            if (HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                HBtab->ebdEnclosingTryIndex =
+                    (unsigned short)XTnew; // This EH region wasn't previously nested, but now it is.
+            }
+        }
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            JITDUMP("StackMem method - created additional EH descriptor EH#%u for try/fault wrapping clear\n",
+                    XTnew);
+            fgDispBasicBlocks();
+            fgDispHandlerTab();
+        }
+
+        fgVerifyHandlerTab();
+#endif // DEBUG
+    }
+
+    { // Scope the variables of the variable initialization
+
+        // Initialize the 'acquired' boolean.
+
+        GenTree* zero     = gtNewZeroConNode(genActualType(TYP_REF));
+        GenTree* varNode  = gtNewLclvNode(lvaStackallocList, TYP_REF);
+        GenTree* initNode = gtNewAssignNode(varNode, zero);
+
+        fgNewStmtAtEnd(fgFirstBB, initNode);
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nStackMem method - Add null initialization in first block %s\n",
+                   fgFirstBB->dspToString());
+            gtDispTree(initNode);
+            printf("\n");
+        }
+#endif
+    }
+
+    // exceptional case
+    fgCreateClearStackMemTree(faultBB);
+
+    // non-exceptional cases
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->bbJumpKind == BBJ_RETURN)
+        {
+            fgCreateClearStackMemTree(block);
+        }
+    }
+}
+
+// fgCreateMonitorTree: Create tree to execute a monitor enter or exit operation for stackmem using methods
+//    block: block to insert the tree in.  It is inserted at the end or in the case of a return, immediately before the
+//    GT_RETURN
+
+GenTree* Compiler::fgCreateClearStackMemTree(BasicBlock* block)
+{
+    // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
+
+    var_types typeStackMemLimit = TYP_REF;
+    GenTree*  varNode         = gtNewLclvNode(lvaStackallocList, typeStackMemLimit);
+    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree*  tree;
+
+    tree = gtNewHelperCallNode(CORINFO_HELP_CLEANUP_STACKMEM, TYP_VOID,
+                                gtNewCallArgs(varAddrNode));
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nStackMem method - Add Clear call to block %s\n", block->dspToString());
+        gtDispTree(tree);
+        printf("\n");
+    }
+#endif
+
+    if (block->bbJumpKind == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
+    {
+        GenTree* retNode = block->lastStmt()->GetRootNode();
+        GenTree* retExpr = retNode->AsOp()->gtOp1;
+
+        if (retExpr != nullptr)
+        {
+            // have to insert this immediately before the GT_RETURN so we transform:
+            // ret(...) ->
+            // ret(comma(comma(tmp=...,call mon_exit), tmp)
+            //
+            //
+            // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
+            // TYP_STRUCT (of 8-bytes) and op1 is call node. See the big comment block in impReturnInstruction()
+            // for details for the case where info.compRetType is not the same as info.compRetNativeType.  For
+            // this reason pass compMethodInfo->args.retTypeClass which is guaranteed to be a valid class handle
+            // if the return type is a value class.  Note that fgInsertCommFormTemp() in turn uses this class handle
+            // if the type of op1 is TYP_STRUCT to perform lvaSetStruct() on the new temp that is created, which
+            // in turn passes it to VM to know the size of value type.
+            GenTree* temp = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1, info.compMethodInfo->args.retTypeClass);
+
+            GenTree* lclVar = retNode->AsOp()->gtOp1->AsOp()->gtOp2;
+
+            // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
+            // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
+            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
+            // 0",
+            // which downstream phases can't handle.
+            lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
+            retNode->AsOp()->gtOp1->AsOp()->gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
+        }
+        else
+        {
+            // Insert this immediately before the GT_RETURN
+            fgNewStmtNearEnd(block, tree);
+        }
+    }
+    else
+    {
+        fgNewStmtAtEnd(block, tree);
+    }
+
+    return tree;
+}
 
 //------------------------------------------------------------------------
 // fgAddReversePInvokeEnterExit: Add enter/exit calls for reverse PInvoke methods
@@ -2687,6 +2936,16 @@ void Compiler::fgAddInternal()
     }
 #endif // FEATURE_EH_FUNCLETS
 
+    // Add the stack mem clear calls and try/fault protection. Note
+    // that this must happen before the one BBJ_RETURN block is created below, so the
+    // BBJ_RETURN block gets placed at the top-level, not within an EH region. (Otherwise,
+    // we'd have to be really careful when creating the synchronized method try/finally
+    // not to include the BBJ_RETURN block.)
+    if (lvaStackallocList != BAD_VAR_NUM)
+    {
+        fgAddStackMemMethodEnterExit();
+    }
+
     //
     //  We will generate just one epilog (return block)
     //   when we are asked to generate enter/leave callbacks
@@ -2696,6 +2955,7 @@ void Compiler::fgAddInternal()
     //
     BasicBlock* lastBlockBeforeGenReturns = fgLastBB;
     if (compIsProfilerHookNeeded() || compMethodRequiresPInvokeFrame() || opts.IsReversePInvoke() ||
+        (lvaStackallocList != BAD_VAR_NUM) ||
         ((info.compFlags & CORINFO_FLG_SYNCH) != 0))
     {
         // We will generate only one return block

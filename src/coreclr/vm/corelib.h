@@ -732,6 +732,9 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ENUM_COMPARE_TO,        EnumCompareTo, NoSig
 DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgBuffer,  SM_Int_IntPtr_RetIntPtr)
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      ALLOCATE_OR_REGISTER_STACKMEM_WITH_GC,     AllocateAndOrRegisterAllocatedMemoryWithGC,          NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      ALLOCATE_STACKMEM_NOGC,     AllocatedNonProtectedRegion,          NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      CLEANUP_STACKMEM,     CleanupStackAllocatedRegions,          NoSig)
 
 DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)

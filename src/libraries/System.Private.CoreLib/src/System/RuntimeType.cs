@@ -784,7 +784,7 @@ namespace System
 
         private static void ThrowIfTypeNeverValidGenericArgument(RuntimeType type)
         {
-            if (type.IsPointer || type.IsByRef || type == typeof(void))
+            if (/*type.IsPointer || type.IsByRef || */type == typeof(void))
                 throw new ArgumentException(
                     SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }
