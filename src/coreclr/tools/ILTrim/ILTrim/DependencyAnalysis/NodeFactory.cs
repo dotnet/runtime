@@ -53,7 +53,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.ModuleReference:
                     throw new NotImplementedException();
                 case HandleKind.TypeSpecification:
-                    throw new NotImplementedException();
+                    return TypeSpecification(module, (TypeSpecificationHandle)handle);
                 case HandleKind.AssemblyReference:
                     return AssemblyReference(module, (AssemblyReferenceHandle)handle);
                 case HandleKind.AssemblyFile:
@@ -65,7 +65,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.GenericParameter:
                     throw new NotImplementedException();
                 case HandleKind.MethodSpecification:
-                    throw new NotImplementedException();
+                    return MethodSpecification(module, (MethodSpecificationHandle)handle);
                 case HandleKind.GenericParameterConstraint:
                     throw new NotImplementedException();
                 default:
@@ -143,6 +143,22 @@ namespace ILTrim.DependencyAnalysis
         public ModuleDefinitionNode ModuleDefinition(EcmaModule module)
         {
             return _moduleDefinitions.GetOrAdd(module);
+        }
+
+        NodeCache<HandleKey<MethodSpecificationHandle>, MethodSpecificationNode> _methodSpecifications
+            = new NodeCache<HandleKey<MethodSpecificationHandle>, MethodSpecificationNode>(key
+                => new MethodSpecificationNode(key.Module, key.Handle));
+        public MethodSpecificationNode MethodSpecification(EcmaModule module, MethodSpecificationHandle handle)
+        {
+            return _methodSpecifications.GetOrAdd(new HandleKey<MethodSpecificationHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<TypeSpecificationHandle>, TypeSpecificationNode> _typeSpecifications
+            = new NodeCache<HandleKey<TypeSpecificationHandle>, TypeSpecificationNode>(key
+                => new TypeSpecificationNode(key.Module, key.Handle));
+        public TypeSpecificationNode TypeSpecification(EcmaModule module, TypeSpecificationHandle handle)
+        {
+            return _typeSpecifications.GetOrAdd(new HandleKey<TypeSpecificationHandle>(module, handle));
         }
 
         NodeCache<EcmaModule, AssemblyDefinitionNode> _assemblyDefinitions
