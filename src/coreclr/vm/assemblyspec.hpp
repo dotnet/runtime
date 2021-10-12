@@ -102,7 +102,7 @@ class AssemblySpec  : public BaseAssemblySpec
     };
 
 
-    void InitializeSpec(PEAssembly *pFile);
+    void InitializeSpec(PEAssembly* pPEAssembly);
     HRESULT InitializeSpec(StackingAllocator* alloc,
                         ASSEMBLYNAMEREF* pName,
                         BOOL fParse = TRUE);
@@ -332,8 +332,8 @@ class AssemblySpecBindingCache
         {
             WRAPPER_NO_CONTRACT;
 
-            if (m_pFile != NULL)
-                m_pFile->Release();
+            if (m_pPEAssembly != NULL)
+                m_pPEAssembly->Release();
 
             if (m_exceptionType==EXTYPE_EE)
                 delete m_pException;
@@ -341,7 +341,7 @@ class AssemblySpecBindingCache
 
         inline DomainAssembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly;};
         inline void SetAssembly(DomainAssembly* pAssembly){ LIMITED_METHOD_CONTRACT;  m_pAssembly=pAssembly;};
-        inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pFile;};
+        inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
         // bound to the file, but failed later
@@ -365,7 +365,7 @@ class AssemblySpecBindingCache
                 default: _ASSERTE(!"Unexpected exception type");
             }
         };
-        inline void Init(AssemblySpec* pSpec, PEAssembly* pFile, DomainAssembly* pAssembly, Exception* pEx, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
+        inline void Init(AssemblySpec* pSpec, PEAssembly* pPEAssembly, DomainAssembly* pAssembly, Exception* pEx, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
         {
             CONTRACTL
             {
@@ -375,7 +375,7 @@ class AssemblySpecBindingCache
             }
             CONTRACTL_END;
 
-            InitInternal(pSpec,pFile,pAssembly);
+            InitInternal(pSpec,pPEAssembly,pAssembly);
             if (pHeap != NULL)
             {
                 m_spec.CloneFieldsToLoaderHeap(AssemblySpec::ALL_OWNED,pHeap, pamTracker);
@@ -444,19 +444,19 @@ class AssemblySpecBindingCache
         };
     protected:
 
-        inline void InitInternal(AssemblySpec* pSpec, PEAssembly* pFile, DomainAssembly* pAssembly )
+        inline void InitInternal(AssemblySpec* pSpec, PEAssembly* pPEAssembly, DomainAssembly* pAssembly )
         {
             WRAPPER_NO_CONTRACT;
             m_spec.CopyFrom(pSpec);
-            m_pFile = pFile;
-            if (m_pFile)
-                m_pFile->AddRef();
+            m_pPEAssembly = pPEAssembly;
+            if (m_pPEAssembly)
+                m_pPEAssembly->AddRef();
             m_pAssembly = pAssembly;
             m_exceptionType=EXTYPE_NONE;
         }
 
         AssemblySpec    m_spec;
-        PEAssembly      *m_pFile;
+        PEAssembly      *m_pPEAssembly;
         DomainAssembly  *m_pAssembly;
         enum{
             EXTYPE_NONE               = 0x00000000,
@@ -490,7 +490,7 @@ class AssemblySpecBindingCache
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
 
     BOOL StoreAssembly(AssemblySpec *pSpec, DomainAssembly *pAssembly);
-    BOOL StoreFile(AssemblySpec *pSpec, PEAssembly *pFile);
+    BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);
 
     BOOL StoreException(AssemblySpec *pSpec, Exception* pEx);
 
