@@ -20,6 +20,10 @@
   </Target>
 
   <Target Name="_BeforeAppleBuildApp">
+    <PropertyGroup>
+      <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
+      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), '$(AssemblyName).runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
+    </PropertyGroup>
     <!--<AppleAppDir Condition="'$(AppleAppDir)' == ''">$(OutputPath)</AppleAppDir>
     
     <AppleAppBundleDir Condition="'$(AppleAppBundleDir)' == ''">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</AppleAppBundleDir>
@@ -118,7 +122,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_AppleGenerateAppBundle">
+  <Target Name="_AppleGenerateAppBundle" DependsOnTargets="_AppleGenerateRuntimeConfig">
     <!-- Run App bundler, it uses AOT libs (if needed), link all native bits, compile simple UI (written in ObjC)
          and produce an app bundle (with xcode project) -->
     <AppleAppBuilderTask
@@ -149,5 +153,21 @@
 
   <Target Name="_AfterAppleBuildApp">
     
+  </Target>
+
+  <Target Name="_AppleGenerateRuntimeConfig"
+          Inputs="$(_AppleRuntimeConfigFilePath)"
+          Outputs="$(_ParsedRuntimeConfigFilePath)"
+          Condition="Exists('$(_AppleRuntimeConfigFilePath)')">
+    <ItemGroup>
+      <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
+      <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>
+    </ItemGroup>
+
+    <RuntimeConfigParserTask
+        RuntimeConfigFile="$(_AppleRuntimeConfigFilePath)"
+        OutputFile="$(_ParsedRuntimeConfigFilePath)"
+        RuntimeConfigReservedProperties="@(_RuntimeConfigReservedProperties)">
+    </RuntimeConfigParserTask>
   </Target>
 </Project>

@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(client1, client2);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Factory_DisposeClient_DoesNotDisposeHandler()
         {
             // Arrange
@@ -107,7 +107,7 @@ namespace Microsoft.Extensions.Http
             // Assert (does not throw)
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Factory_DisposeHandler_DoesNotDisposeInnerHandler()
         {
             // Arrange
@@ -170,7 +170,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(1, count);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Factory_CreateClient_FiltersCanDecorateBuilder()
         {
             // Arrange

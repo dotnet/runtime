@@ -51,7 +51,7 @@
              TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateAOTProps"
              AssemblyFile="$(WasmBuildTasksAssemblyPath)" />
 
-  <Target Name="_BundleAOTTestAppleAppForHelix" DependsOnTargets="PrepareForAppleBuildApp;GenerateRuntimeConfig">
+  <Target Name="_BundleAOTTestAppleAppForHelix" DependsOnTargets="PrepareForAppleBuildApp">
     <PropertyGroup>
       <AppBundlePath>$(BundleDir)publish</AppBundlePath>
     </PropertyGroup>
