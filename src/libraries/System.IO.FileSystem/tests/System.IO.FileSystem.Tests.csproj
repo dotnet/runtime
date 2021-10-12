@@ -118,6 +118,7 @@
     <Compile Include="FileInfo\GetSetAttributes.cs" />
     <Compile Include="FileInfo\Length.cs" />
     <Compile Include="FileInfo\Open.cs" />
+    <Compile Include="FileStream\DevicesPipesAndSockets.cs" />
     <Compile Include="FileStream\FlushAsync.cs" />
     <Compile Include="FileStream\FileStreamConformanceTests.cs" />
     <Compile Include="FileStream\SafeFileHandle.cs" />
