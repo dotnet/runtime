@@ -39,16 +39,14 @@
       </Component>
 
       <Component Id="cmdPath" Directory="DOTNETHOME" Guid="*">
-        <?if $(var.Platform)~=x64 ?>
-        <!-- For x64 installer, only add to PATH when actually on native architecture -->
+        <!-- Only add to PATH when actually on native architecture -->
         <Condition>NOT NON_NATIVE_ARCHITECTURE</Condition>
-        <?endif?>
 
         <!-- A stable keypath with the right SxS characteristics for our PATH entry-->
         <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
           <RegistryValue KeyPath="yes" Action="write" Name="Path" Type="string" Value="[DOTNETHOME]"/>
         </RegistryKey>
-        <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
+        <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="first" Action="set" System="yes" />
       </Component>
 
       <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
@@ -68,7 +66,8 @@
     <DirectoryRef Id="$(var.Program_Files)">
       <Directory Id="PROGRAMFILES_DOTNET" Name="dotnet" />
     </DirectoryRef>
-    
+
+    <CustomActionRef Id="Set_NON_NATIVE_ARCHITECTURE" />    
     <?if $(var.Platform)~=x64 ?>
     <CustomActionRef Id="Set_PROGRAMFILES_DOTNET_NON_NATIVE_ARCHITECTURE" />
     <?endif?>
