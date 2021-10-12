@@ -52,6 +52,10 @@
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
+
+    <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
+    <!-- Don't build for NETFramework during source-build. -->
+    <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'"></NetFrameworkToolCurrent>
   </PropertyGroup>
 
   <PropertyGroup>
