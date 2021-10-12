@@ -54,12 +54,12 @@ jobs:
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
 
-    - ${{ if in(variables['Build.Reason'], 'PullRequest') }}:
-      - name: RunReason
-        value: 'PR'
-    - ${{ if notin(variables['Build.Reason'], 'PullRequest') }}:
+    - ${{ if in(variables['Build.Reason'], 'Schedule') }}:
       - name: RunReason
         value: 'Scheduled'
+    - ${{ if notin(variables['Build.Reason'], 'Schedule') }}:
+      - name: RunReason
+        value: 'PR'
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'

@@ -208,7 +208,7 @@ def main(main_args):
 
         # Copy issues for upload
         print("Copying issues to " + output_directory)
-        copy_issues(temp_location, output_directory, tag_name, antigen_log)
+        copy_issues(temp_location, output_directory, tag_name)
 
 if __name__ == "__main__":
     args = parser.parse_args()
