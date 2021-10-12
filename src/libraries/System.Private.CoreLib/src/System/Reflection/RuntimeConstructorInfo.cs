@@ -110,7 +110,8 @@ namespace System.Reflection
             {
                 // Run the class constructor through the class constructor mechanism instead of the Invoke path.
                 // This avoids allowing mutation of readonly static fields, and initializes the type correctly.
-                return InvokeClassConstructor();
+                InvokeClassConstructor();
+                return null;
             }
 
             // Correct number of arguments supplied
