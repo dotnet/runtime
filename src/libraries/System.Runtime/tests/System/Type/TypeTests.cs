@@ -923,7 +923,7 @@ namespace System.Tests
             Assert.True(!typeof(ContextBoundClass).IsContextful);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDynamicCodeSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void MakeGenericType_NonRuntimeType()
         {
             foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
