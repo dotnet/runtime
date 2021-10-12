@@ -397,6 +397,9 @@ namespace System.Security.Cryptography.Pkcs
                     }
                     else
                     {
+                        // The only hash algorithm we don't support is MD5.
+                        // We shouldn't get here with anything other than MD5.
+                        Debug.Assert(hashAlgorithmName == HashAlgorithmName.MD5, $"Unsupported digest algorithm '{hashAlgorithmName.Name}'");
                         signatureAlgorithm = null;
                         signatureParameters = null;
                         return false;
