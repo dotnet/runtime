@@ -454,17 +454,25 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("calls GenerateElement")]
-        internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[]? types, string? defaultNamespace)
+        internal static Assembly GenerateRefEmitAssembly(XmlMapping[] xmlMappings, Type?[] types, string? defaultNamespace)
         {
-            var mainType = (types != null && types.Length > 0) ? types[0] : null;
+            var mainType = (types.Length > 0) ? types[0] : null;
+            Assembly? mainAssembly = mainType?.Assembly;
             var scopeTable = new Dictionary<TypeScope, XmlMapping>();
             foreach (XmlMapping mapping in xmlMappings)
                 scopeTable[mapping.Scope!] = mapping;
             TypeScope[] scopes = new TypeScope[scopeTable.Keys.Count];
             scopeTable.Keys.CopyTo(scopes, 0);
 
-            using (AssemblyLoadContext.EnterContextualReflection(mainType?.Assembly))
+            using (AssemblyLoadContext.EnterContextualReflection(mainAssembly))
             {
+                // Before generating any IL, check each mapping and supported type to make sure
+                // they are compatible with the current ALC
+                for (int i = 0; i < types.Length; i++)
+                    VerifyLoadContext(types[i], mainAssembly);
+                foreach (var mapping in xmlMappings)
+                    VerifyLoadContext(mapping.Accessor.Mapping?.TypeDesc?.Type, mainAssembly);
+
                 string assemblyName = "Microsoft.GeneratedCode";
                 AssemblyBuilder assemblyBuilder = CodeGenerator.CreateAssemblyBuilder(assemblyName);
                 // Add AssemblyVersion attribute to match parent assembly version
@@ -595,6 +603,23 @@ namespace System.Xml.Serialization
                 }
             }
             return encodingStyle;
+        }
+
+        internal static void VerifyLoadContext(Type? t, Assembly? assembly)
+        {
+            // The quick case, t is null or in the same assembly
+            if (t == null || assembly == null || t.Assembly == assembly)
+                return;
+
+            // No worries if the type is not collectible
+            var typeALC = AssemblyLoadContext.GetLoadContext(t.Assembly);
+            if (typeALC == null || !typeALC.IsCollectible)
+                return;
+
+            // Collectible types should be in the same collectible context
+            var baseALC = AssemblyLoadContext.GetLoadContext(assembly) ?? AssemblyLoadContext.CurrentContextualReflectionContext;
+            if (typeALC != baseALC)
+                throw new InvalidOperationException(SR.Format(SR.XmlTypeInBadLoadContext, t.FullName));
         }
 
         [RequiresUnreferencedCode("calls Contract")]
