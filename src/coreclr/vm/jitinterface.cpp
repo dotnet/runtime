@@ -13632,6 +13632,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 }
                 else
                 {
+                    // Run through the type layout logic again to report the mismatch in lab logs and make debugging easy
+                    TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
+
                     // Verification failures are failfast events
                     DefineFullyQualifiedNameForClassW();
                     SString fatalErrorString;
@@ -13640,10 +13643,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #ifdef _DEBUG
                     {
-                        TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
                         StackScratchBuffer buf;
                         _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
-                        // Run through the type layout logic again, after the assert, makes debugging easy
                     }
 #endif
 
