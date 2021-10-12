@@ -13,6 +13,9 @@ interface IProgram
     static int FirstMethod() => 300;
     static int Main()
     {
+#pragma warning disable 0219
+        IAnotherType mylocal = default;
+#pragma warning restore 0219
         return 42;
     }
     static void LastMethod(int someParameter) { }

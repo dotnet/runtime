@@ -3,6 +3,10 @@
 
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
+using System.Linq;
+
+using Internal.TypeSystem;
 
 namespace ILTrim.DependencyAnalysis
 {
@@ -20,20 +24,44 @@ namespace ILTrim.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            // TODO: the signature might depend on other tokens
+            // @TODO: These need to go EcmaSignatureParser
+            // Cannot think of a design that can move this logic to that struct
+
+            MetadataReader reader = _module.MetadataReader;
+
+            StandaloneSignature standaloneSig = reader.GetStandaloneSignature(Handle);
+
+            BlobReader signatureReader = reader.GetBlobReader(standaloneSig.Signature);
+
+            if (signatureReader.ReadSignatureHeader().Kind != SignatureKind.LocalVariables)
+                ThrowHelper.ThrowInvalidProgramException();
+
+            int count = signatureReader.ReadCompressedInteger();
+
+            for (int i = 0; i < count; i++)
+            {
+                SignatureTypeCode typeCode = signatureReader.ReadSignatureTypeCode();
+                switch (typeCode)
+                {
+                    case SignatureTypeCode.TypeHandle:
+                        TypeDefinitionHandle typeDefHandle = (TypeDefinitionHandle)signatureReader.ReadTypeHandle();
+                        yield return new DependencyListEntry(factory.TypeDefinition(_module, typeDefHandle), "Local variable type");
+                        break;
+                }
+            }
+
             yield break;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
         {
-            MetadataReader reader = _module.MetadataReader;
-            StandaloneSignature standaloneSig = reader.GetStandaloneSignature(Handle);
+            EcmaSignatureParser signatureParser = new EcmaSignatureParser(_module.MetadataReader, writeContext.TokenMap);
+            byte[] blobBytes = signatureParser.GetLocalVariableBlob(Handle);
 
-            // TODO: the signature might have tokens we need to rewrite
             var builder = writeContext.MetadataBuilder;
             return builder.AddStandaloneSignature(
-                builder.GetOrAddBlob(reader.GetBlobBytes(standaloneSig.Signature))
-                );
+                builder.GetOrAddBlob(blobBytes));
+
         }
 
         public override string ToString()
