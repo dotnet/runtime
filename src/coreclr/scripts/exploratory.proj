@@ -37,14 +37,14 @@
   </PropertyGroup>
 
   <!-- For Scheduled= 3 hours. For PRs= 1 hour -->
-  <ItemGroup Condition=" '$(RunReason)' == 'Scheduled' ">
+  <PropertyGroup Condition=" '$(RunReason)' == 'Scheduled' ">
       <WorkItemTimeout>3:15</WorkItemTimeout>
       <RunDuration>180</RunDuration>
-  </ItemGroup>
-  <ItemGroup Condition=" '$(RunReason)' == 'PR' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunReason)' != 'Scheduled' ">
       <WorkItemTimeout>1:15</WorkItemTimeout>
       <RunDuration>60</RunDuration>
-  </ItemGroup>
+  </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
