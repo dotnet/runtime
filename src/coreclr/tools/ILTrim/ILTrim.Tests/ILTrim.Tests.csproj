@@ -9,11 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="TypeSystem/IL/ILReader.cs" />
+    <Compile Include="../../Common/TypeSystem/IL/ILReader.cs" Link="TypeSystem/IL/ILReader.cs" />
+    <PackageReference Include="FluentAssertions" Version="6.0.0-alpha0002" />
 
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
+
+    <PackageReference Include="Mono.Cecil" Version="0.11.4" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
     <ProjectReference Include="../ILTrim/ILTrim.Core.csproj" />
+    <ProjectReference Include="../ILTrim.Tests.Cases.Expectations/ILTrim.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
 
 </Project>
