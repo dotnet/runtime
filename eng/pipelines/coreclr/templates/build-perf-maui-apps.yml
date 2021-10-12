@@ -90,7 +90,6 @@ steps:
   - script: |
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
-      cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.props ./Directory.Build.props
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.targets ./Directory.Build.targets
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
