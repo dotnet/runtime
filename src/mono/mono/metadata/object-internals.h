@@ -178,7 +178,7 @@ struct _MonoArray {
 /* match the layout of the managed definition of Span<T> */
 typedef struct {
 	MonoObject** _pointer;
-	int _length;
+	int32_t _length;
 } MonoSpanOfObjects;
 
 #define MONO_SIZEOF_MONO_ARRAY (MONO_STRUCT_OFFSET_CONSTANT (MonoArray, vector))
@@ -282,26 +282,26 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
 }
 
-#define mono_span_length_internal(span) (span._length)
+#define mono_span_length(span) (span._length)
 
-#define mono_span_get_internal(span,type,idx) (type)(!span._pointer ? NULL : span._pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span._pointer ? NULL : span._pointer[idx])
 
-#define mono_span_addr_internal(span,type,idx) (type*)(span._pointer + idx)
+#define mono_span_addr(span,type,idx) (type*)(span._pointer + idx)
 
-#define mono_span_setref_internal(span,index,value)	\
+#define mono_span_setref(span,index,value)	\
 	do {	\
-		void **__p = (void **) mono_span_addr_internal ((span), void*, (index));	\
-		mono_gc_wbarrier_set_spanref_internal ((&span), __p, (MonoObject*)(value));	\
+		void **__p = (void **) mono_span_addr ((span), void*, (index));	\
+		mono_gc_wbarrier_generic_store_internal (__p, (MonoObject*)(value));	\
 		/* *__p = (value);*/	\
 	} while (0)
 
-static inline MonoSpanOfObjects mono_span_create_from_object_array_internal (MonoArray *arr) {
+static inline MonoSpanOfObjects
+mono_span_create_from_object_array (MonoArray *arr) {
 	MonoSpanOfObjects span;
 	if (arr != NULL) {
 		span._length = (int)mono_array_length_internal (arr);
 		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
-	}
-	else {
+	} else {
 		span._length = 0;
 		span._pointer = NULL;
 	}
@@ -2089,9 +2089,6 @@ mono_gc_reference_queue_add_internal (MonoReferenceQueue *queue, MonoObject *obj
 /* GC write barriers support */
 void
 mono_gc_wbarrier_set_field_internal (MonoObject *obj, void* field_ptr, MonoObject* value);
-
-void
-mono_gc_wbarrier_set_spanref_internal (MonoSpanOfObjects *span, void* slot_ptr, MonoObject* value);
 
 void
 mono_gc_wbarrier_set_arrayref_internal (MonoArray *arr, void* slot_ptr, MonoObject* value);

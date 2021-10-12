@@ -283,12 +283,6 @@ mono_gc_wbarrier_set_field_internal (MonoObject *obj, gpointer field_ptr, MonoOb
 }
 
 void
-mono_gc_wbarrier_set_spanref_internal (MonoSpanOfObjects *span, void* slot_ptr, MonoObject* value)
-{
-	*(void**)slot_ptr = value;
-}
-
-void
 mono_gc_wbarrier_set_arrayref_internal (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	*(void**)slot_ptr = value;

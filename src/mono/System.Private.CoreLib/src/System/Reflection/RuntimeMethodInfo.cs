@@ -855,9 +855,10 @@ namespace System.Reflection
             }
         }
 
-        private object? InvokeClassConstructor()
+        private void InvokeClassConstructor()
         {
-            return null;
+            // [TODO] Mechanism for invoking class constructor
+            // See https://github.com/dotnet/runtime/issues/40351
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -3403,11 +3403,11 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
-		pcount = mono_span_length_internal (params_span);
+		pcount = mono_span_length (params_span);
 		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (i = 0; i < pcount; ++i)
-			lengths [i] = *(int32_t*) ((char*)mono_span_get_internal (params_span, MonoObject*, i) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
 
 		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
@@ -3436,8 +3436,8 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 			for (i = 0; i < pcount / 2; ++i) {
-				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get_internal (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
-				lengths [i] = *(int32_t*) ((char*)mono_span_get_internal (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
+				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
+				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
 			}
 
 			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);

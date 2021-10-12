@@ -44,7 +44,6 @@
 #endif
 
 #ifdef HEAVY_STATISTICS
-static guint64 stat_wbarrier_set_spanref = 0;
 static guint64 stat_wbarrier_set_arrayref = 0;
 static guint64 stat_wbarrier_value_copy = 0;
 static guint64 stat_wbarrier_object_copy = 0;
@@ -164,24 +163,6 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 #endif
 
 	sgen_get_remset ()->wbarrier_object_copy (obj, src);
-}
-
-/**
- * mono_gc_wbarrier_set_spanref_internal:
- */
-void
-mono_gc_wbarrier_set_spanref_internal (MonoSpanOfObjects *span, void* slot_ptr, MonoObject* value)
-{
-	HEAVY_STAT (++stat_wbarrier_set_spanref);
-	if (sgen_ptr_in_nursery (slot_ptr)) {
-		*(void**)slot_ptr = value;
-		return;
-	}
-	SGEN_LOG (8, "Adding remset at %p", slot_ptr);
-	if (value)
-		sgen_binary_protocol_wbarrier (slot_ptr, value, value->vtable);
-
-	sgen_get_remset ()->wbarrier_set_field (NULL, slot_ptr, value);
 }
 
 /**
@@ -3125,7 +3106,6 @@ mono_gc_base_init (void)
 	mono_counters_register ("los array cards scanned ", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_cards);
 	mono_counters_register ("los array remsets", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &los_array_remsets);
 
-	mono_counters_register ("WBarrier set spanref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_spanref);
 	mono_counters_register ("WBarrier set arrayref", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_set_arrayref);
 	mono_counters_register ("WBarrier value copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_value_copy);
 	mono_counters_register ("WBarrier object copy", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_wbarrier_object_copy);

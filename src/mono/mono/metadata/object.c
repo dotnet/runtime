@@ -4554,17 +4554,17 @@ invoke_span_extract_argument (MonoSpanOfObjects params_span, int i, MonoType *t,
 			case MONO_TYPE_VALUETYPE:
 				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type_internal (t_orig))) {
 					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
-					*pa_obj = mono_span_get_internal (params_span, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
 					if (t->byref)
 						*has_byref_nullables = TRUE;
 				} else {
 					/* MS seems to create the objects if a null is passed in */
 					gboolean was_null = FALSE;
-					if (!mono_span_get_internal (params_span, MonoObject*, i)) {
+					if (!mono_span_get (params_span, MonoObject*, i)) {
 						MonoObject *o = mono_object_new_checked (mono_class_from_mono_type_internal (t_orig), error);
 						return_val_if_nok (error, NULL);
-						mono_span_setref_internal (params_span, i, o); 
+						mono_span_setref (params_span, i, o);
 						was_null = TRUE;
 					}
 
@@ -4576,15 +4576,15 @@ invoke_span_extract_argument (MonoSpanOfObjects params_span, int i, MonoType *t,
 						 * object, pass that to the callee, and replace the original
 						 * boxed object in the arg array with the copy.
 						 */
-						MonoObject *orig = mono_span_get_internal (params_span, MonoObject*, i);
+						MonoObject *orig = mono_span_get (params_span, MonoObject*, i);
 						MonoObject *copy = mono_value_box_checked (orig->vtable->klass, mono_object_unbox_internal (orig), error);
 						return_val_if_nok (error, NULL);
-						mono_span_setref_internal (params_span, i, copy);
+						mono_span_setref (params_span, i, copy);
 					}
-					*pa_obj = mono_span_get_internal (params_span, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = mono_object_unbox_internal (*pa_obj);
 					if (!t->byref && was_null)
-						mono_span_setref_internal (params_span, i, NULL);
+						mono_span_setref (params_span, i, NULL);
 				}
 				break;
 			case MONO_TYPE_STRING:
@@ -4593,10 +4593,10 @@ invoke_span_extract_argument (MonoSpanOfObjects params_span, int i, MonoType *t,
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 				if (t->byref) {
-					result = mono_span_addr_internal (params_span, MonoObject*, i);
+					result = mono_span_addr (params_span, MonoObject*, i);
 					// FIXME: I need to check this code path
 				} else {
-					*pa_obj = mono_span_get_internal (params_span, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
 				}
 				break;
@@ -4610,7 +4610,7 @@ invoke_span_extract_argument (MonoSpanOfObjects params_span, int i, MonoType *t,
 				MonoObject *arg;
 
 				/* The argument should be an IntPtr */
-				arg = mono_span_get_internal (params_span, MonoObject*, i);
+				arg = mono_span_get (params_span, MonoObject*, i);
 				if (arg == NULL) {
 					result = NULL;
 				} else {
@@ -4694,7 +4694,7 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects p
 	MonoObject *res = NULL;
 	int i;
 	gboolean has_byref_nullables = FALSE;
-	int params_length = mono_span_length_internal (params_span);
+	int params_length = mono_span_length (params_span);
 
 	if (params_length > 0) {
 		pa = g_newa (gpointer, params_length);
@@ -4905,7 +4905,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	MONO_REQ_GC_UNSAFE_MODE;
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoSpanOfObjects params_span = mono_span_create_from_object_array_internal (params);
+	MonoSpanOfObjects params_span = mono_span_create_from_object_array (params);
 	MonoObject *res = mono_runtime_try_invoke_span (method, obj, params_span, exc, error);
 
 	HANDLE_FUNCTION_RETURN_VAL (res);
