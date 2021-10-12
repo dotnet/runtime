@@ -64,7 +64,7 @@ namespace ILTrim
             var peBuilder = new ManagedPEBuilder(
                 headerBuilder,
                 mdRootBuilder,
-                context.ILStream,
+                context.MethodBodyEncoder.Builder,
                 entryPoint: (MethodDefinitionHandle)tokenMap.MapToken(sourceEntryPoint));
 
             var o = new BlobBuilder();

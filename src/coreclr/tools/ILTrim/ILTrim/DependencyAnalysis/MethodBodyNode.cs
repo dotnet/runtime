@@ -96,8 +96,6 @@ namespace ILTrim.DependencyAnalysis
             if (rva == 0)
                 return -1;
 
-            writeContext.ILStream.Align(4);
-
             MethodBodyBlock bodyBlock = _module.PEReader.GetMethodBody(rva);
 
             // TODO: need to rewrite token references in the exception regions
@@ -174,8 +172,7 @@ namespace ILTrim.DependencyAnalysis
                 }
             }
 
-            MethodBodyStreamEncoder bodyStreamEncoder = new MethodBodyStreamEncoder(writeContext.ILStream);
-            MethodBodyStreamEncoder.MethodBody bodyEncoder = bodyStreamEncoder.AddMethodBody(
+            MethodBodyStreamEncoder.MethodBody bodyEncoder = writeContext.MethodBodyEncoder.AddMethodBody(
                 outputBodyBuilder.Count,
                 bodyBlock.MaxStack,
                 exceptionRegionCount: 0,
