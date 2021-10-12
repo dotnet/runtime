@@ -30,6 +30,7 @@ parser.add_argument("-antigen_directory", help="Path to antigen tool")
 parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
+parser.add_argument("-run_duration", help="Run duration in minutes")
 is_windows = platform.system() == "Windows"
 
 
@@ -71,6 +72,10 @@ def setup_args(args):
                         lambda core_root: os.path.isdir(core_root),
                         "core_root doesn't exist")
 
+    coreclr_args.verify(args,
+                        "run_duration",
+                        lambda unused: True,
+                        "Unable to set run_duration")
     return coreclr_args
 
 
@@ -179,7 +184,7 @@ def main(main_args):
     core_root = coreclr_args.core_root
     tag_name = "{}-{}".format(coreclr_args.run_configuration, coreclr_args.partition)
     output_directory = coreclr_args.output_directory
-    run_duration = 120 # Run for 2 hours
+    run_duration = coreclr_args.run_duration
 
     path_to_corerun = os.path.join(core_root, "corerun")
     path_to_tool = os.path.join(antigen_directory, "Antigen")

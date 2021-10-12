@@ -54,6 +54,12 @@ jobs:
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
 
+    - ${{ if in(variables['Build.Reason'], 'PullRequest') }}:
+      - name: RunReason
+        value: 'PR'
+    - ${{ if notin(variables['Build.Reason'], 'PullRequest') }}:
+      - name: RunReason
+        value: 'Scheduled'
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'
@@ -110,6 +116,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         RunConfiguration: '$(RunConfiguration)'
         ToolName: '$(ToolName)'
+        RunReason: '$(RunReason)'
         continueOnError: true
 
     - template: /eng/pipelines/common/upload-artifact-step.yml

@@ -28,7 +28,6 @@
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
-    <WorkItemTimeout>2:30</WorkItemTimeout>
     <Creator>$(_Creator)</Creator>
     <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
     <HelixBuild>$(_HelixBuild)</HelixBuild>
@@ -36,6 +35,16 @@
     <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
     <HelixType>$(_HelixType)</HelixType>
   </PropertyGroup>
+
+  <!-- For Scheduled= 3 hours. For PRs= 1 hour -->
+  <ItemGroup Condition=" '$(RunReason)' == 'Scheduled' ">
+      <WorkItemTimeout>3:15</WorkItemTimeout>
+      <RunDuration>180</RunDuration>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(RunReason)' == 'PR' ">
+      <WorkItemTimeout>1:15</WorkItemTimeout>
+      <RunDuration>60</RunDuration>
+  </ItemGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
     <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
@@ -48,7 +57,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
-    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration) </WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
