@@ -33,7 +33,7 @@ struct _MonoType {
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;  
-	unsigned int byref    : 1;
+	unsigned int byref__    : 1; /* don't access directly, use mono_type_is_byref_internal */
 	unsigned int pinned   : 1;  /* valid when included in a local var signature */
 };
 
@@ -1191,7 +1191,7 @@ mono_type_get_signature_internal (MonoType *type)
 static inline mono_bool
 mono_type_is_byref_internal (MonoType *type)
 {
-	return type->byref;
+	return type->byref__;
 }
 
 /**

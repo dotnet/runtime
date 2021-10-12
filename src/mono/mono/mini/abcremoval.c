@@ -1245,7 +1245,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 static MonoIntegerValueKind
 type_to_value_kind (MonoType *type)
 {
-	if (type->byref)
+	if (mono_type_is_byref_internal (type))
 		return MONO_UNKNOWN_INTEGER_VALUE;
 	switch (type->type) {
 	case MONO_TYPE_I1:

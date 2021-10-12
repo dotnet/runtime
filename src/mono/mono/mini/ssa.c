@@ -437,7 +437,7 @@ mono_ssa_compute (MonoCompile *cfg)
 				break;
 			}
 
- 			if (var->inst_vtype->byref)
+ 			if (mono_type_is_byref_internal (var->inst_vtype))
  				ins->klass = mono_defaults.int_class;
  			else
  				ins->klass = var->klass;

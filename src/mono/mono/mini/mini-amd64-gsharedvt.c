@@ -450,7 +450,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		/* Compute return value marshalling */
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
-			if (!gsharedvt_in || sig->ret->byref) {
+			if (!gsharedvt_in || mono_type_is_byref_internal (sig->ret)) {
 				info->ret_marshal = GSHAREDVT_RET_IREGS_1;
 			} else {
 				MonoType *ret = sig->ret;

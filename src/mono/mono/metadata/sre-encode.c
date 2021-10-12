@@ -162,10 +162,10 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		return;
 	}
 		
-	if (type->byref)
+	if (mono_type_is_byref_internal (type))
 		sigbuffer_add_value (buf, MONO_TYPE_BYREF);
 
-	switch (type->type){
+	switch (mono_type_is_byref_internal (type)) {
 	case MONO_TYPE_VOID:
 	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_CHAR:
