@@ -20,6 +20,7 @@ parameters:
 
 steps:
   - task: DownloadPipelineArtifact@2
+    displayName: Download runtime packages
     inputs:
       artifact: 'IntermediateArtifacts'
       path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
@@ -44,48 +45,48 @@ steps:
         do     
           mv -v "$file" "${file%.nupkg}.zip" 
         done
-    displayName: Update File Extensions
+    displayName: Change nupkgs to zips
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
     
 
   #Unzip the nuget packages to make the actual runtimes accessible
   - task: ExtractFiles@1
+    displayName: Extract android-arm runtime
     inputs:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm.*.zip
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm
         overwriteExistingFiles: true
         cleanDestinationFolder: false
   - task: ExtractFiles@1
+    displayName: Extract android-arm64 runtime
     inputs:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64.*.zip
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm64
         overwriteExistingFiles: true
         cleanDestinationFolder: false
   - task: ExtractFiles@1
+    displayName: Extract android-x86 runtime
     inputs:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86.*.zip
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86
         overwriteExistingFiles: true
         cleanDestinationFolder: false
   - task: ExtractFiles@1
+    displayName: Extract android-x64 runtime
     inputs:
         archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64.*.zip
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
         overwriteExistingFiles: true
         cleanDestinationFolder: false
 
-  # Download and CI install dotnet
-  # Download latest MAUI
-  # Update the manifests based on the gated source
-  # Install the MAUI workload install maui (with proper feeds in the nuget.config)
-  # Create MAUI Sample app (Do we want this here or lower?)
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
       ./dotnet.sh workload update --from-rollback-file ./rollback.json
       ./dotnet.sh workload install maui --skip-manifest-update
-    displayName: Install MAUI
+    displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
     condition: succeededOrFailed()
+
   - script: |
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
@@ -95,7 +96,6 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
     condition: succeededOrFailed()
 
-
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
@@ -103,74 +103,28 @@ steps:
     condition: succeededOrFailed()
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-  - task: PublishBuildArtifacts@1 #
-    condition: succeededOrFailed() #
-    displayName: 'Publish Android binlog' #
+
+  - task: PublishBuildArtifacts@1
+    condition: succeededOrFailed()
+    displayName: 'Publish MauiAndroid binlog'
     inputs:
-      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog #
-      artifactName:  ${{ parameters.artifactName }} #
+      pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk #
-        includeRootFolder: true #
-        displayName: Maui Android App #
-        artifactName: MauiAndroidApp #
-        archiveExtension: '.tar.gz' #
-        archiveType: tar #
-        tarCompression: gz #
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiAndroidDefault.apk
+        includeRootFolder: true
+        displayName: Maui Android App
+        artifactName: MauiAndroidApp
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
   - script: rm -r -f ./bin
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-    displayName: Clean bindir
+    displayName: Clean bin directory
     condition: succeededOrFailed()
-  
-  # - script: |
-  #     ../dotnet.sh build -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -o MacCatalystBuildOutput
-  #   displayName: Build MAUI MacCatalyst
-  #   workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-  # - task: PublishBuildArtifacts@1 #
-  #   condition: succeededOrFailed() #
-  #   displayName: 'Publish MacCatalyst binlog' #
-  #   inputs:
-  #     pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalyst.binlog #
-  #     artifactName:  ${{ parameters.artifactName }} #
-  # - template: /eng/pipelines/common/upload-artifact-step.yml
-  #   parameters:
-  #       rootFolder: $(Build.SourcesDirectory)/MauiTesting #
-  #       includeRootFolder: true #
-  #       displayName: Maui MacCatalyst App #
-  #       artifactName: MauiMacatalystApp #
-  #       archiveExtension: '.tar.gz' #
-  #       archiveType: tar #
-  #       tarCompression: gz #
-  # - script: rm -r -f ./bin
-  #   workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-  #   displayName: Clean bindir
-  #   condition: succeededOrFailed()
-
-  # - script: |
-  #     ../dotnet.sh build -bl:MauiiOS.binlog -f net6.0-ios -o iOSBuildOutput
-  #   condition: succeededOrFailed()
-  #   displayName: Build MAUI iOS
-  #   workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-  # - task: PublishBuildArtifacts@1 #
-  #   condition: succeededOrFailed() #
-  #   displayName: 'Publish iOS binlog' #
-  #   inputs:
-  #     pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiiOS.binlog #
-  #     artifactName:  ${{ parameters.artifactName }} #
-  # - template: /eng/pipelines/common/upload-artifact-step.yml
-  #   parameters:
-  #       rootFolder: $(Build.SourcesDirectory)/MauiTesting #
-  #       includeRootFolder: true #
-  #       displayName: Maui iOS App #
-  #       artifactName: MauiiOSApp #
-  #       archiveExtension: '.tar.gz' #
-  #       archiveType: tar #
-  #       tarCompression: gz #
-  # - script: rm -r -f ./bin
-  #   workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-  #   displayName: Clean bindir
-  #   condition: succeededOrFailed()
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:

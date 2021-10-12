@@ -3,45 +3,13 @@
     <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
-  <Target Name="PrintRuntimePackPath" BeforeTargets="Publish">
-    <Message Text="** MicrosoftNetCoreAppRuntimePackDir : %(ResolvedRuntimePack.PackageDirectory)" Importance="High" />
-  </Target>
-
   <!-- Use local targeting pack for NetCoreAppCurrent. -->
   <Target Name="UpdateTargetingAndRuntimePack"
           AfterTargets="ResolveFrameworkReferences">
     <PropertyGroup>
-        <MicrosoftNetCoreAppRefPackDir>./ArtifactPacks</MicrosoftNetCoreAppRefPackDir>
         <MicrosoftNetCoreAppRuntimePackDir>./ArtifactPacks</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
     <ItemGroup>
-      <!-- <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                             NuGetPackageVersion="$(ProductVersion)"
-                             PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                            /> -->
-      <!-- <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)"
-                            /> -->
-      <!-- <ResolvedFrameworkReference TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                                  TargetingPackVersion="$(ProductVersion)"
-                                   
-                                   Condition="'%(ResolvedTargetingPack.RuntimeFrameworkName)' == 'Microsoft.NETCore.App' and
-                                        Exists('$(_MicrosoftNetCoreAppRefDir)data\FrameworkList.xml')"
-                                   /> -->
-      <!-- <ResolvedTargetingPack Path="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                             NuGetPackageVersion="$(RuntimePackInWorkloadVersion)"
-                             PackageDirectory="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))" /> -->
-      <!-- <ResolvedRuntimePack
-                            Update="Microsoft.NETCore.App.Runtime.Mono.android-x86"
-                            FrameworkName="Microsoft.NETCore.App"
-                            NuGetPackageId="Microsoft.NETCore.App.Runtime.Mono.android-x86"
-                            PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)\Microsoft.NETCore.App.Runtime.Mono.android-x86"
-                            RuntimeIdentifier="android-x86" />
-
-       <ResolvedFrameworkReference Update="Microsoft.NETCore.App"
-                                   TargetingPackPath="$(MicrosoftNetCoreAppRefPackDir.TrimEnd('/\'))"
-                                   RuntimePackName="Microsoft.NETCore.App.Runtime.Mono.android-x86"
-                                   RuntimePackPath="$(MicrosoftNetCoreAppRuntimePackDir)\Microsoft.NETCore.App.Runtime.Mono.android-x86"
-                                   RuntimeIdentifier="Microsoft.NETCore.App.Runtime.Mono.android-x86" /> -->
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.android-arm64"
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-arm64'" />
       <ResolvedRuntimePack PackageDirectory="$(MicrosoftNetCoreAppRuntimePackDir)/Microsoft.NETCore.App.Runtime.Mono.android-x86"
@@ -52,34 +20,4 @@
                              Condition="'%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App' and '%(ResolvedRuntimePack.RuntimeIdentifier)' == 'android-x64'" />
     </ItemGroup>
   </Target>
-
-  <!-- Update the local targeting pack's version as it's written into the runtimeconfig.json file to select the right framework. -->
-  <!-- <Target Name="UpdateRuntimeFrameworkVersion"
-          AfterTargets="ResolveTargetingPackAssets"
-          Condition="'false' == 'true'">
-    <ItemGroup>
-      <RuntimeFramework Version="$(RuntimePackInWorkloadVersion)"
-                        Condition="'%(RuntimeFramework.FrameworkName)' == 'Microsoft.NETCore.App'" />
-    </ItemGroup>
-  </Target> -->
-
-  <!-- Filter out conflicting implicit assembly references. -->
-  <!-- <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitAssemblyReferences)' != 'true' and 'false' == 'true'"
-          DependsOnTargets="ResolveProjectReferences"
-          AfterTargets="ResolveTargetingPackAssets">
-    <ItemGroup>
-      <_targetingPackReferenceExclusion Include="$(TargetName)" />
-      <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
-      <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <_targetingPackReferenceWithExclusion Include="@(Reference)">
-        <Exclusion>%(_targetingPackReferenceExclusion.Identity)</Exclusion>
-      </_targetingPackReferenceWithExclusion>
-      <Reference Remove="@(_targetingPackReferenceWithExclusion)"
-                 Condition="'%(_targetingPackReferenceWithExclusion.ExternallyResolved)' == 'true' and '%(_targetingPackReferenceWithExclusion.Filename)' == '%(_targetingPackReferenceWithExclusion.Exclusion)'" />
-    </ItemGroup>
-  </Target> -->
 </Project>
