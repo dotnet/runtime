@@ -37,7 +37,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.MemberReference:
                     return MemberReference(module, (MemberReferenceHandle)handle);
                 case HandleKind.Constant:
-                    throw new NotImplementedException();
+                    return Constant(module, (ConstantHandle)handle);
                 case HandleKind.CustomAttribute:
                     return CustomAttribute(module, (CustomAttributeHandle)handle);
                 case HandleKind.DeclarativeSecurityAttribute:
@@ -119,6 +119,14 @@ namespace ILTrim.DependencyAnalysis
         public MemberReferenceNode MemberReference(EcmaModule module, MemberReferenceHandle handle)
         {
             return _memberReferences.GetOrAdd(new HandleKey<MemberReferenceHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<ConstantHandle>, ConstantNode> _constants
+            = new NodeCache<HandleKey<ConstantHandle>, ConstantNode>(key
+                => new ConstantNode(key.Module, key.Handle));
+        public ConstantNode Constant(EcmaModule module, ConstantHandle handle)
+        {
+            return _constants.GetOrAdd(new HandleKey<ConstantHandle>(module, handle));
         }
 
         NodeCache<HandleKey<CustomAttributeHandle>, CustomAttributeNode> _customAttributes

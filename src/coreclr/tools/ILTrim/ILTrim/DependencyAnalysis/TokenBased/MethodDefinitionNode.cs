@@ -32,7 +32,7 @@ namespace ILTrim.DependencyAnalysis
 
             foreach (CustomAttributeHandle customAttribute in methodDef.GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a method");
             }
         }
 

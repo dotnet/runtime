@@ -22,7 +22,7 @@ namespace ILTrim.DependencyAnalysis
             AssemblyDefinition asmDef = _module.MetadataReader.GetAssemblyDefinition();
             foreach (CustomAttributeHandle customAttribute in asmDef.GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of an assembly");
             }
         }
 

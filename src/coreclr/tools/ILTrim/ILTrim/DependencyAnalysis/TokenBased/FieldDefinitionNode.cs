@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -27,9 +28,14 @@ namespace ILTrim.DependencyAnalysis
             // TODO: Check if FieldDefinition has other references that needed to be added
             yield return new DependencyListEntry(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
+            if((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
+            {
+                yield return new DependencyListEntry(factory.GetNodeForToken(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
+            }
+
             foreach (CustomAttributeHandle customAttribute in fieldDef.GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");
+                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a field");
             }
 
         }
