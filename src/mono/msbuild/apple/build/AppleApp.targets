@@ -22,7 +22,7 @@
   <Target Name="_BeforeAppleBuildApp">
     <PropertyGroup>
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
-      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), '$(AssemblyName).runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
+      <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleAppDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
     </PropertyGroup>
     <!--<AppleAppDir Condition="'$(AppleAppDir)' == ''">$(OutputPath)</AppleAppDir>
     
