@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <!-- These types are forwarded on net461 https://github.com/dotnet/sdk/issues/18203-->
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Left>lib/netstandard2.0/System.Diagnostics.PerformanceCounter.dll</Left>
-    <Right>lib/net461/System.Diagnostics.PerformanceCounter.dll</Right>
-  </Suppression>
-</Suppressions>

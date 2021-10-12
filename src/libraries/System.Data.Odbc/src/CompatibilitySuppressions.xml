@@ -1,9 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
-    <Left>lib/netstandard2.0/System.Data.Odbc.dll</Left>
-    <Right>lib/net461/System.Data.Odbc.dll</Right>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -92,14 +99,14 @@
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
-    <Right>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Right>
+    <Left>lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
+    <Right>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
-    <Right>runtimes/win/lib/net6.0/System.Data.Odbc.dll</Right>
+    <Left>lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
+    <Right>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
@@ -136,18 +143,6 @@
     <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
     <Left>lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
     <Right>runtimes/osx/lib/netcoreapp3.1/System.Data.Odbc.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Data.Odbc.OdbcParameter.get_Offset</Target>
-    <Left>lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
-    <Right>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Data.Odbc.OdbcParameter.set_Offset(System.Int32)</Target>
-    <Left>lib/netcoreapp3.1/System.Data.Odbc.dll</Left>
-    <Right>runtimes/win/lib/netcoreapp3.1/System.Data.Odbc.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
