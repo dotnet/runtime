@@ -178,5 +178,5 @@ jobs:
       displayName: Publish Antigen build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Antigen_BuildLogs_$(osGroup)_$(archType)_$(buildConfig)'
+        artifactName: 'Antigen_BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       condition: always()
