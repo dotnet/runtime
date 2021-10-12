@@ -1188,8 +1188,8 @@ mono_type_get_signature_internal (MonoType *type)
  * \returns TRUE if \p type represents a type passed by reference,
  * FALSE otherwise.
  */
-static inline mono_bool
-mono_type_is_byref_internal (MonoType *type)
+static inline gboolean
+mono_type_is_byref_internal (const MonoType *type)
 {
 	return type->byref__;
 }
