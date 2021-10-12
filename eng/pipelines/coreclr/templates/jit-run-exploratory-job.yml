@@ -132,8 +132,6 @@ jobs:
         archiveExtension: $(archiveExtension)
         artifactName: 'Antigen_Issues_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
         displayName: ${{ format('Upload artifacts Antigen issues for {0}-{1}', parameters.osGroup, parameters.archType ) }}
-      continueOnError: true
-      condition: always()
 
     # Always upload the available issues-summary.txt files
     - task: CopyFiles@2
