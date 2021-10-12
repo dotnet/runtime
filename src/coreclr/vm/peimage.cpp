@@ -976,8 +976,7 @@ PTR_PEImage PEImage::LoadFlat(const void *flat, COUNT_T size)
     PTR_PEImageLayout pLayout = PEImageLayout::CreateFlat(flat,size,pImage);
     _ASSERTE(!pLayout->IsMapped());
 
-    //Not taking a lock here since we have just created pImage
-    //SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
 
     pImage->SetLayout(IMAGE_FLAT,pLayout);
     RETURN dac_cast<PTR_PEImage>(pImage.Extract());
@@ -1001,8 +1000,7 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
     if (pImage->HasLoadedLayout())
         RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 
-    //Not taking a lock here since we have just created pImage
-    // SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
+    SimpleWriteLockHolder lock(pImage->m_pLayoutLock);
 
     if(pImage->m_pLayouts[IMAGE_LOADED]==NULL)
         pImage->SetLayout(IMAGE_LOADED,PEImageLayout::CreateFromHMODULE(hMod,pImage,WszGetModuleHandle(NULL)!=hMod));
@@ -1191,7 +1189,7 @@ HRESULT PEImage::TryOpenFile()
         return S_OK;
     {
         ErrorModeHolder mode(SEM_NOOPENFILEERRORBOX | SEM_FAILCRITICALERRORS);
-        m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(), 
+        m_hFile=WszCreateFile((LPCWSTR)GetPathToLoad(),
                               GENERIC_READ,
                               FILE_SHARE_READ|FILE_SHARE_DELETE,
                               NULL,
