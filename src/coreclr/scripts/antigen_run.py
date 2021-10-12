@@ -201,14 +201,17 @@ def main(main_args):
         path_to_corerun += ".exe"
         path_to_tool += ".exe"
 
-    # Run tool such that issues are placed in a temp folder
-    with TempDir() as temp_location:
-        antigen_log = path.join(temp_location, get_antigen_filename(tag_name))
-        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _output_file= antigen_log)
+    try:
+        # Run tool such that issues are placed in a temp folder
+        with TempDir() as temp_location:
+            antigen_log = path.join(temp_location, get_antigen_filename(tag_name))
+            run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _output_file= antigen_log)
 
-        # Copy issues for upload
-        print("Copying issues to " + output_directory)
-        copy_issues(temp_location, output_directory, tag_name)
+            # Copy issues for upload
+            print("Copying issues to " + output_directory)
+            copy_issues(temp_location, output_directory, tag_name)
+    except PermissionError as pe:
+        print("Got error: %s", pe)
 
 if __name__ == "__main__":
     args = parser.parse_args()
