@@ -171,5 +171,9 @@ export type CoverageProfilerOptions = {
 // how we extended emscripten Module
 export type EmscriptenModuleMono = EmscriptenModule & {
     no_global_exports?: boolean,
+
+    // backward compatibility
     config?: MonoConfig | MonoConfigError,
+    // backward compatibility https://github.com/search?q=mono_bind_static_method&type=Code
+    mono_bind_static_method: (fqn: string, signature: string) => Function,
 }

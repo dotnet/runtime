@@ -111,7 +111,7 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
     Object.assign(internal, INTERNAL);
     Object.assign(module, linker_exports);
 
-    // here we merge objects used in tests
+    // here we expose objects used in tests to global namespace
     if (!module.no_global_exports) {
         (<any>globalThis).DOTNET = dotnet;
         (<any>globalThis).MONO = mono;
@@ -161,6 +161,10 @@ const linker_exports = {
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
     mono_wasm_get_icudt_name,
+
+    // backward compatibility, sync with EmscriptenModuleMono
+    // https://github.com/search?q=mono_bind_static_method&type=Code
+    mono_bind_static_method,
 };
 export const DOTNET: any = {
 };

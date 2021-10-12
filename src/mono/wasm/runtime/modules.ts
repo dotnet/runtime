@@ -42,5 +42,6 @@ export const runtimeHelpers: RuntimeHelpers = <any>{
     set config(value: MonoConfig) {
         monoConfig = value;
         MONO.config = value;
+        Module.config = value;
     },
 };
