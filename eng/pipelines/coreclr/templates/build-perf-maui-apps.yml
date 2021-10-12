@@ -85,7 +85,6 @@ steps:
       ./dotnet.sh workload install maui --skip-manifest-update
     displayName: Install MAUI workload
     workingDirectory: $(Build.SourcesDirectory)
-    condition: succeededOrFailed()
 
   - script: |
       ./dotnet.sh new maui -n MauiTesting
@@ -93,18 +92,15 @@ steps:
       cp $(Build.SourcesDirectory)/src/mono/sample/MauiScenario.targets ./Directory.Build.targets
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
-    condition: succeededOrFailed()
 
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiAndroid.binlog -f net6.0-android -c Release
       mv ./bin/Release/net6.0-android/com.companyname.MauiTesting-Signed.apk ./MauiAndroidDefault.apk
-    condition: succeededOrFailed()
     displayName: Build MAUI Android
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - task: PublishBuildArtifacts@1
-    condition: succeededOrFailed()
     displayName: 'Publish MauiAndroid binlog'
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
