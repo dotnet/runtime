@@ -46708,11 +46708,15 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->generation_size = sizeof(generation);
     gcDacVars->total_generation_count = total_generation_count;
     gcDacVars->max_gen = &g_max_generation;
+#ifdef BACKGROUND_GC
+    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
+#else //BACKGROUND_GC
+    gcDacVars->current_c_gc_state = 0;
+#endif //BACKGROUND_GC
 #ifndef MULTIPLE_HEAPS
     gcDacVars->ephemeral_heap_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::ephemeral_heap_segment);
 #ifdef BACKGROUND_GC
     gcDacVars->mark_array = &gc_heap::mark_array;
-    gcDacVars->current_c_gc_state = const_cast<c_gc_state*>(&gc_heap::current_c_gc_state);
     gcDacVars->background_saved_lowest_address = &gc_heap::background_saved_lowest_address;
     gcDacVars->background_saved_highest_address = &gc_heap::background_saved_highest_address;
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
@@ -46725,7 +46729,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #endif //USE_REGIONS
 #else //BACKGROUND_GC
     gcDacVars->mark_array = 0;
-    gcDacVars->current_c_gc_state = 0;
     gcDacVars->background_saved_lowest_address = 0;
     gcDacVars->background_saved_highest_address = 0;
     gcDacVars->next_sweep_obj = 0;
