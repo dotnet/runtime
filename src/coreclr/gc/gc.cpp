@@ -45223,6 +45223,8 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
         {
             break;
         }
+
+        gen0_seg = heap_segment_next (gen0_seg);
     }
 #else //USE_REGIONS
     // For segments ephemeral seg does not change.
