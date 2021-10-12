@@ -10872,6 +10872,70 @@ GenTree* Compiler::fgMorphCommutative(GenTreeOp* tree)
     return op1;
 }
 
+//------------------------------------------------------------------------------
+// fgMorphCastedBitwiseOp : Try to simplify "(T)x op (T)y" to "(T)(x op y)".
+//
+// Arguments:
+//     tree - node to fold
+//
+// Return Value:
+//     A folded GenTree* instance, or nullptr if it couldn't be folded
+GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
+{
+    assert(varTypeIsIntegralOrI(tree));
+    assert(tree->OperIs(GT_OR, GT_AND, GT_XOR));
+
+    GenTree*   op1  = tree->gtGetOp1();
+    GenTree*   op2  = tree->gtGetOp2();
+    genTreeOps oper = tree->OperGet();
+
+    // see whether both ops are casts, with matching to and from types.
+    if (op1->OperIs(GT_CAST) && op2->OperIs(GT_CAST))
+    {
+        // bail if either operand is a checked cast
+        if (op1->gtOverflow() || op2->gtOverflow())
+        {
+            return nullptr;
+        }
+
+        var_types fromType   = op1->AsCast()->CastOp()->TypeGet();
+        var_types toType     = op1->AsCast()->CastToType();
+        bool      isUnsigned = op1->IsUnsigned();
+
+        if ((op2->CastFromType() != fromType) || (op2->CastToType() != toType) || (op2->IsUnsigned() != isUnsigned))
+        {
+            return nullptr;
+        }
+
+        // Reuse gentree nodes:
+        //
+        //     tree             op1
+        //     /   \             |
+        //   op1   op2   ==>   tree
+        //    |     |          /   \
+        //    x     y         x     y
+        //
+        // (op2 becomes garbage)
+
+        tree->gtOp1  = op1->AsCast()->CastOp();
+        tree->gtOp2  = op2->AsCast()->CastOp();
+        tree->gtType = fromType;
+
+        op1->gtType                 = genActualType(toType);
+        op1->AsCast()->gtOp1        = tree;
+        op1->AsCast()->CastToType() = toType;
+        op1->SetAllEffectsFlags(tree);
+        // no need to update isUnsigned
+
+        DEBUG_DESTROY_NODE(op2);
+        INDEBUG(op1->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+
+        return op1;
+    }
+
+    return nullptr;
+}
+
 /*****************************************************************************
  *
  *  Transform the given GTK_SMPOP tree for code generation.
@@ -12514,6 +12578,22 @@ DONE_MORPHING_CHILDREN:
                 typ  = tree->TypeGet();
                 op1  = tree->AsOp()->gtOp1;
                 op2  = tree->AsOp()->gtOp2;
+            }
+
+            if (fgGlobalMorph && varTypeIsIntegralOrI(tree) && tree->OperIs(GT_AND, GT_OR, GT_XOR))
+            {
+                GenTree* result = fgMorphCastedBitwiseOp(tree->AsOp());
+                if (result != nullptr)
+                {
+                    assert(result->OperIs(GT_CAST));
+                    assert(result->AsOp()->gtOp2 == nullptr);
+                    // tree got folded to a unary (cast) op
+                    tree = result;
+                    oper = tree->OperGet();
+                    typ  = tree->TypeGet();
+                    op1  = tree->AsOp()->gtGetOp1();
+                    op2  = nullptr;
+                }
             }
 
             if (varTypeIsIntegralOrI(tree->TypeGet()) && tree->OperIs(GT_ADD, GT_MUL, GT_AND, GT_OR, GT_XOR))
