@@ -277,7 +277,7 @@ namespace System
         public static void EqualTo<T>(T expected, T actual, string userMessage = null)
         {
             if (expected == null && actual == null)
-				return;
+                return;
 
             bool equal = expected != null && expected switch
             {
