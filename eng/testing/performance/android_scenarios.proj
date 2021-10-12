@@ -32,11 +32,9 @@
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Maui Android APK Size"> 
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-        <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .; dir; $(Python) -c "print('PreCommands')"</PreCommands>
-        <Command>$(Python) -c "print('Regular Command')"</Command>
-        <PostCommands>$(Python) -c "print('PostCommands')"</PostCommands>
-        <!-- <Command>$(Python) test.py sod -!!!!!!-scenario-name &quot;%(Identity)&quot;</Command> -->
-        <!-- <PostCommands>$(Python) post.py</PostCommands> -->
+        <PreCommands>cd $(ScenarioDirectory)mauiandroid;copy %HELIX_CORRELATION_PAYLOAD%\MauiAndroidDefault.apk .; $(Python) pre.py; dir;"</PreCommands>
+        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
         <!-- TODO Both -->
     </HelixWorkItem>
   </ItemGroup>
