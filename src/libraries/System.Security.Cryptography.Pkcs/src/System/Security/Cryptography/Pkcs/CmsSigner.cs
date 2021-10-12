@@ -30,6 +30,7 @@ namespace System.Security.Cryptography.Pkcs
         /// <summary>
         /// Gets or sets the RSA signature padding to use.
         /// </summary>
+        /// <value>The RSA signature padding to use.</value>
         public RSASignaturePadding? SignaturePadding
         {
             get => _signaturePadding;

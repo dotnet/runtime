@@ -29,7 +29,6 @@ namespace System.Security.Cryptography.Pkcs
         internal abstract RSASignaturePadding? SignaturePadding { get; }
         protected abstract bool VerifyKeyType(AsymmetricAlgorithm key);
 
-
         internal abstract bool VerifySignature(
 #if NETCOREAPP || NETSTANDARD2_1
             ReadOnlySpan<byte> valueHash,
