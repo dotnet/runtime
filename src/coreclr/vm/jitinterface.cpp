@@ -5343,6 +5343,8 @@ void CEEInfo::getCallInfo(
                     IfFailThrow(sp.SkipExactlyOne());
                 }
 
+                if (pMD->)
+
                 pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(genericMethodArgs, nGenericMethodArgs), FALSE);
             }
             else

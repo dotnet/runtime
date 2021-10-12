@@ -295,7 +295,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                   MethodDesc* pGenericMDescInRepMT,
                                                   MethodDesc* pWrappedMD,
                                                   Instantiation methodInst,
-                                                  BOOL getWrappedCode)
+                                                  BOOL getWrappedCode,
+                                                  BOOL allowConstraintFailure)
 {
     CONTRACT(InstantiatedMethodDesc*)
     {
@@ -345,7 +346,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
         pNewMD = FindLoadedInstantiatedMethodDesc(pExactMT,
                                                   pGenericMDescInRepMT->GetMemberDef(),
                                                   methodInst,
-                                                  getWrappedCode);
+                                                  getWrappedCode,
+                                                  allowConstraintFailure);
 
         // Crst goes out of scope here
         // We don't need to hold the crst while we build the MethodDesc, but we reacquire it later
@@ -441,6 +443,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
         // Check that whichever field holds the inst. got setup correctly
         _ASSERTE((PVOID)pNewMD->GetMethodInstantiation().GetRawArgs() == (PVOID)pInstOrPerInstInfo);
+        BOOL failedConstraintCheck = FALSE;
 
         pNewMD->SetTemporaryEntryPoint(pAllocator, &amt);
 
@@ -455,7 +458,7 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
 
             if (!fExempt)
             {
-                pNewMD->SatisfiesMethodConstraints(TypeHandle(pExactMT), TRUE);
+                failedConstraintCheck = !pNewMD->SatisfiesMethodConstraints(TypeHandle(pExactMT), !allowConstraintFailure);
             }
         }
 
@@ -467,7 +470,8 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             InstantiatedMethodDesc *pOldMD = FindLoadedInstantiatedMethodDesc(pExactMT,
                                                       pGenericMDescInRepMT->GetMemberDef(),
                                                       methodInst,
-                                                      getWrappedCode);
+                                                      getWrappedCode,
+                                                      allowConstraintFailure);
 
             if (pOldMD == NULL)
             {
@@ -506,8 +510,18 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 // Verify that we are not creating redundant MethodDescs
                 _ASSERTE(!pNewMD->IsTightlyBoundToMethodTable());
 
+                InstMethodHashTable* pTable;
+                if (failedConstraintCheck)
+                {
+                    pNewMD->SetFailedConstraintCheck();
+                    pTable = pExactMDLoaderModule->GetConstraintFailInstMethodHashTable();
+                }
+                else
+                {
+                    pTable = pExactMDLoaderModule->GetInstMethodHashTable();
+                }
+
                 // The method desc is fully set up; now add to the table
-                InstMethodHashTable* pTable = pExactMDLoaderModule->GetInstMethodHashTable();
                 pTable->InsertMethodDesc(pNewMD);
             }
             else
@@ -564,7 +578,8 @@ InstantiatedMethodDesc*
 InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRepMT,
                                                          mdMethodDef methodDef,
                                                          Instantiation methodInst,
-                                                         BOOL getWrappedCode)
+                                                         BOOL getWrappedCode,
+                                                         BOOL allowConstraintFailure)
 {
     CONTRACT(InstantiatedMethodDesc *)
     {
@@ -599,6 +614,15 @@ InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(MethodTable *pExactOrRe
                                                   FALSE /* not forceBoxedEntryPoint */,
                                                   methodInst,
                                                   getWrappedCode);
+
+    if (resultMD == NULL && allowConstraintFailure)
+    {
+        resultMD = pLoaderModule->GetConstraintFailInstMethodHashTable()->FindMethodDesc(TypeHandle(pExactOrRepMT),
+                                                  methodDef,
+                                                  FALSE /* not forceBoxedEntryPoint */,
+                                                  methodInst,
+                                                  getWrappedCode);
+    }
 
     if (resultMD != NULL)
        RETURN((InstantiatedMethodDesc*) resultMD);
@@ -723,7 +747,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                              BOOL allowInstParam,
                                              BOOL forceRemotableMethod,
                                              BOOL allowCreate,
-                                             ClassLoadLevel level)
+                                             ClassLoadLevel level,
+                                             BOOL allowConstraintFailure)
 {
     CONTRACT(MethodDesc*)
     {
@@ -934,12 +959,22 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
             LoaderAllocator* pAllocator = pLoaderModule->GetLoaderAllocator();
 
             InstMethodHashTable* pTable = pLoaderModule->GetInstMethodHashTable();
+
             // First check the hash table...
             pResultMD = pTable->FindMethodDesc(TypeHandle(pExactMT),
                                                methodDef,
                                                TRUE, /* forceBoxedEntryPoint */
                                                methodInst,
                                                FALSE /* no inst param */);
+
+            if (allowConstraintFailure && pResultMD == NULL)
+            {
+                pResultMD = pConstraintFailTable->FindMethodDesc(TypeHandle(pExactMT),
+                                               methodDef,
+                                               TRUE, /* forceBoxedEntryPoint */
+                                               methodInst,
+                                               FALSE /* no inst param */);
+            }
 
             if (!pResultMD)
             {
@@ -958,6 +993,15 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    TRUE, /* forceBoxedEntryPoint */
                                                    methodInst,
                                                    FALSE /* no inst param */);
+
+                if (allowConstraintFailure && pResultMD == NULL)
+                {
+                    pResultMD = pConstraintFailTable->FindMethodDesc(TypeHandle(pExactMT),
+                                                methodDef,
+                                                TRUE, /* forceBoxedEntryPoint */
+                                                methodInst,
+                                                FALSE /* no inst param */);
+                }
 
                 if (pResultMD == NULL)
                 {

@@ -952,6 +952,9 @@ public:
     // Hashtable of instantiated methods and per-instantiation static methods
     PTR_InstMethodHashTable m_pInstMethodHashTable;
 
+    // Hashtable of instantiated methods which have failed constraint checks
+    PTR_InstMethodHashTable m_pConstraintFailInstMethodHashTable;
+
     // This is used by the Debugger. We need to store a dword
     // for a count of JMC functions. This is a count, not a pointer.
     // We'll pass the address of this field
@@ -1416,6 +1419,19 @@ protected:
         LIMITED_METHOD_CONTRACT;
 
         return m_pInstMethodHashTable;
+    }
+
+    InstMethodHashTable *GetConstraintFailInstMethodHashTable()
+    {
+        LIMITED_METHOD_CONTRACT;
+        {
+            // IsResource() may lock when accessing metadata, but this is only in debug,
+            // for the assert below
+            CONTRACT_VIOLATION(TakesLockViolation);
+
+            _ASSERTE(!IsResource());
+        }
+        return m_pConstraintFailInstMethodHashTable;
     }
 
     // Creates a new Method table for an array.  Used to make type handles
