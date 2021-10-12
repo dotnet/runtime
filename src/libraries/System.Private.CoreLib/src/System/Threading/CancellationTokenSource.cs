@@ -392,30 +392,23 @@ namespace System.Threading
             // to transition from canceled to non-canceled.
             if (_state == NotCanceledState)
             {
-                bool reset;
+                bool reset = false;
 
-                // If there is no timer, then we're free to reset.  If there is a timer, then we need to first try
-                // to reset it to be infinite so that it won't fire, and then recognize that it could have already
-                // fired by the time we successfully changed it, and so check to see whether that's possibly the case.
-                // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
-                if (_timer is TimerQueueTimer timer)
+                try
                 {
-                    try
-                    {
-                        reset = timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued;
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // Just eat the exception. There is no other way to tell that
-                        // the timer has been disposed, and even if there were, there
-                        // would not be a good way to deal with the observe/dispose
-                        // race condition.
-                        reset = false;
-                    }
+                    // If there is no timer, then we're free to reset.  If there is a timer, then we need to first try
+                    // to reset it to be infinite so that it won't fire, and then recognize that it could have already
+                    // fired by the time we successfully changed it, and so check to see whether that's possibly the case.
+                    // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
+                    reset = _timer is not TimerQueueTimer timer ||
+                            (timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued);
                 }
-                else
+                catch (ObjectDisposedException)
                 {
-                    reset = true;
+                    // Just eat the exception. There is no other way to tell that
+                    // the timer has been disposed, and even if there were, there
+                    // would not be a good way to deal with the observe/dispose
+                    // race condition.
                 }
 
                 if (reset)
