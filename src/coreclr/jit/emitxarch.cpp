@@ -4495,6 +4495,12 @@ bool emitter::IsRedundantMov(
         return false;
     }
 
+    // Skip optimization if current instruction creates a GC live value.
+    if (EA_IS_GCREF_OR_BYREF(size))
+    {
+        return false;
+    }
+
     bool hasSideEffect = HasSideEffect(ins, size);
 
     // Check if we are already in the correct register and don't have a side effect
@@ -7140,6 +7146,12 @@ bool emitter::IsRedundantStackMov(instruction ins, insFormat fmt, emitAttr size,
     if (!emitComp->opts.OptimizationEnabled())
     {
         // The remaining move elisions should only happen if optimizations are enabled
+        return false;
+    }
+
+    // Skip optimization if current instruction creates a GC live value.
+    if (EA_IS_GCREF_OR_BYREF(size))
+    {
         return false;
     }
 
