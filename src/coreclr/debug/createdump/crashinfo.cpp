@@ -320,7 +320,7 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
         if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
         {
             TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, (uint64_t)moduleData.LoadedPEAddress, moduleData.IsDynamic,
-                moduleData.IsInMemory, moduleData.IsFileLayout, (uint64_t)moduleData.PEFile, (uint64_t)moduleData.InMemoryPdbAddress);
+                moduleData.IsInMemory, moduleData.IsFileLayout, (uint64_t)moduleData.PEAssembly, (uint64_t)moduleData.InMemoryPdbAddress);
 
             if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
             {

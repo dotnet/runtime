@@ -1,13 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // --------------------------------------------------------------------------------
-// PEFile.inl
+// PEAssembly.inl
 //
 
 // --------------------------------------------------------------------------------
 
-#ifndef PEFILE_INL_
-#define PEFILE_INL_
+#ifndef PEASSEMBLY_INL_
+#define PEASSEMBLY_INL_
 
 #include "check.h"
 #include "simplerwlock.hpp"
@@ -15,7 +15,7 @@
 #include "peimagelayout.inl"
 
 #if CHECK_INVARIANTS
-inline CHECK PEFile::Invariant()
+inline CHECK PEAssembly::Invariant()
 {
     CONTRACT_CHECK
     {
@@ -29,14 +29,12 @@ inline CHECK PEFile::Invariant()
     if (IsDynamic())
     {
         // dynamic module case
-        CHECK(m_openedILimage == NULL);
+        CHECK(m_PEImage == NULL);
         CHECK(CheckPointer(m_pEmitter));
     }
     else
     {
-        // If m_image is null, then we should have a native image. However, this is not valid initially
-        // during construction.  We should find a way to assert this.
-        CHECK(CheckPointer((PEImage*) m_openedILimage, NULL_OK));
+       CHECK(CheckPointer((PEImage*)m_PEImage));
     }
     CHECK_OK;
 }
@@ -46,7 +44,7 @@ inline CHECK PEFile::Invariant()
 // AddRef/Release
 // ------------------------------------------------------------
 
-inline ULONG PEFile::AddRef()
+inline ULONG PEAssembly::AddRef()
 {
     CONTRACTL
     {
@@ -61,7 +59,7 @@ inline ULONG PEFile::AddRef()
     return FastInterlockIncrement(&m_refCount);
 }
 
-inline ULONG PEFile::Release()
+inline ULONG PEAssembly::Release()
 {
     CONTRACT(COUNT_T)
     {
@@ -88,7 +86,7 @@ inline ULONG PEAssembly::HashIdentity()
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(m_identity));
+        PRECONDITION(CheckPointer(m_PEImage));
         MODE_ANY;
         THROWS;
         GC_TRIGGERS;
@@ -97,7 +95,7 @@ inline ULONG PEAssembly::HashIdentity()
     return m_pHostAssembly->GetAssemblyName()->Hash(BINDER_SPACE::AssemblyName::INCLUDE_VERSION);
 }
 
-inline void PEFile::ValidateForExecution()
+inline void PEAssembly::ValidateForExecution()
 {
     CONTRACTL
     {
@@ -110,7 +108,7 @@ inline void PEFile::ValidateForExecution()
     //
     // Ensure reference assemblies are not loaded for execution
     //
-    ReleaseHolder<IMDInternalImport> mdImport(this->GetMDImportWithRef());
+    IMDInternalImport* mdImport = GetMDImport();
     if (mdImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly),
                                            g_ReferenceAssemblyAttribute,
                                            NULL,
@@ -121,7 +119,7 @@ inline void PEFile::ValidateForExecution()
     //
     // Ensure platform is valid for execution
     //
-    if (!IsDynamic() && !IsResource())
+    if (!IsDynamic())
     {
         if (IsMarkedAsNoPlatform())
         {
@@ -131,14 +129,14 @@ inline void PEFile::ValidateForExecution()
 }
 
 
-inline BOOL PEFile::IsMarkedAsNoPlatform()
+inline BOOL PEAssembly::IsMarkedAsNoPlatform()
 {
     WRAPPER_NO_CONTRACT;
     return (IsAfPA_NoPlatform(GetFlags()));
 }
 
 
-inline void PEFile::GetMVID(GUID *pMvid)
+inline void PEAssembly::GetMVID(GUID *pMvid)
 {
     CONTRACTL
     {
@@ -149,14 +147,14 @@ inline void PEFile::GetMVID(GUID *pMvid)
     }
     CONTRACTL_END;
 
-    IfFailThrow(GetPersistentMDImport()->GetScopeProps(NULL, pMvid));
+    IfFailThrow(GetMDImport()->GetScopeProps(NULL, pMvid));
 }
 
 // ------------------------------------------------------------
 // Descriptive strings
 // ------------------------------------------------------------
 
-inline const SString& PEFile::GetPath()
+inline const SString& PEAssembly::GetPath()
 {
     CONTRACTL
     {
@@ -169,17 +167,18 @@ inline const SString& PEFile::GetPath()
     }
     CONTRACTL_END;
 
-    if (IsDynamic() || m_identity->IsInBundle ())
+    if (IsDynamic() || m_PEImage->IsInBundle ())
     {
         return SString::Empty();
     }
-    return m_identity->GetPath();
+
+    return m_PEImage->GetPath();
 }
 
 //
 // Returns the identity path even for single-file/bundled apps.
 //
-inline const SString& PEFile::GetIdentityPath()
+inline const SString& PEAssembly::GetIdentityPath()
 {
     CONTRACTL
     {
@@ -192,15 +191,16 @@ inline const SString& PEFile::GetIdentityPath()
     }
     CONTRACTL_END;
 
-    if (m_identity == nullptr)
+    if (m_PEImage == nullptr)
     {
         return SString::Empty();
     }
-    return m_identity->GetPath();
+
+    return m_PEImage->GetPath();
 }
 
 #ifdef DACCESS_COMPILE
-inline const SString &PEFile::GetModuleFileNameHint()
+inline const SString &PEAssembly::GetModuleFileNameHint()
 {
     CONTRACTL
     {
@@ -216,12 +216,12 @@ inline const SString &PEFile::GetModuleFileNameHint()
         return SString::Empty();
     }
     else
-        return m_identity->GetModuleFileNameHintForDAC();
+        return m_PEImage->GetModuleFileNameHintForDAC();
 }
 #endif // DACCESS_COMPILE
 
 #ifdef LOGGING
-inline LPCWSTR PEFile::GetDebugName()
+inline LPCWSTR PEAssembly::GetDebugName()
 {
     CONTRACTL
     {
@@ -245,108 +245,29 @@ inline LPCWSTR PEFile::GetDebugName()
 // Classification
 // ------------------------------------------------------------
 
-inline BOOL PEFile::IsAssembly() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return (m_flags & PEFILE_ASSEMBLY) != 0;
-}
-
-inline PTR_PEAssembly PEFile::AsAssembly()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    if (IsAssembly())
-        return dac_cast<PTR_PEAssembly>(this);
-    else
-        return dac_cast<PTR_PEAssembly>(nullptr);
-}
-
-inline BOOL PEFile::IsSystem() const
+inline BOOL PEAssembly::IsSystem() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return (m_flags & PEFILE_SYSTEM) != 0;
+    return m_isSystem;
 }
 
-inline BOOL PEFile::IsDynamic() const
+inline BOOL PEAssembly::IsDynamic() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return m_identity == NULL;
-}
-
-inline BOOL PEFile::IsResource() const
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-
-    return FALSE;
-}
-
-inline BOOL PEFile::IsIStream() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return FALSE;
-}
-
-inline PEAssembly *PEFile::GetAssembly() const
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE(IsAssembly());
-    return dac_cast<PTR_PEAssembly>(this);
+    return m_PEImage == NULL;
 }
 
 // ------------------------------------------------------------
 // Metadata access
 // ------------------------------------------------------------
-
-inline BOOL PEFile::HasMetadata()
-{
-    CONTRACTL
-    {
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACTL_END;
-
-    return !IsResource();
-}
-
-inline IMDInternalImportHolder PEFile::GetMDImport()
+inline IMDInternalImport* PEAssembly::GetMDImport()
 {
     WRAPPER_NO_CONTRACT;
-    if (m_bHasPersistentMDImport)
-        return IMDInternalImportHolder(GetPersistentMDImport(),FALSE);
-    else
-        return IMDInternalImportHolder(GetMDImportWithRef(),TRUE);
-};
 
-inline IMDInternalImport* PEFile::GetPersistentMDImport()
-{
-/*
-    CONTRACT(IMDInternalImport *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!IsResource());
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-*/
-    SUPPORTS_DAC;
-#if !defined(__GNUC__)
-
-    _ASSERTE(!IsResource());
-#endif
 #ifdef DACCESS_COMPILE
     WRAPPER_NO_CONTRACT;
     return DacGetMDImport(this, true);
@@ -355,56 +276,16 @@ inline IMDInternalImport* PEFile::GetPersistentMDImport()
 
     return m_pMDImport;
 #endif
-}
-
-inline IMDInternalImport *PEFile::GetMDImportWithRef()
-{
-/*
-    CONTRACT(IMDInternalImport *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(!IsResource());
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-*/
-#if !defined(__GNUC__)
-    _ASSERTE(!IsResource());
-#endif
-#ifdef DACCESS_COMPILE
-    WRAPPER_NO_CONTRACT;
-    return DacGetMDImport(this, true);
-#else
-    CONTRACTL
-    {
-        NOTHROW;
-        WRAPPER(GC_TRIGGERS);
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-    SimpleReadLockHolder lock(m_pMetadataLock);
-    if(m_pMDImport)
-        m_pMDImport->AddRef();
-    return m_pMDImport;
-#endif
-}
+};
 
 #ifndef DACCESS_COMPILE
 
-inline IMetaDataImport2 *PEFile::GetRWImporter()
+inline IMetaDataImport2 *PEAssembly::GetRWImporter()
 {
     CONTRACT(IMetaDataImport2 *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(!IsResource());
         POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
         GC_NOTRIGGER;
         THROWS;
         MODE_ANY;
@@ -417,16 +298,14 @@ inline IMetaDataImport2 *PEFile::GetRWImporter()
     RETURN m_pImporter;
 }
 
-inline IMetaDataEmit *PEFile::GetEmitter()
+inline IMetaDataEmit *PEAssembly::GetEmitter()
 {
     CONTRACT(IMetaDataEmit *)
     {
         INSTANCE_CHECK;
         MODE_ANY;
         GC_NOTRIGGER;
-        PRECONDITION(!IsResource());
         POSTCONDITION(CheckPointer(RETVAL));
-        PRECONDITION(m_bHasPersistentMDImport);
         THROWS;
     }
     CONTRACT_END;
@@ -440,40 +319,10 @@ inline IMetaDataEmit *PEFile::GetEmitter()
 
 #endif // DACCESS_COMPILE
 
-// The simple name is not actually very simple. The name returned comes from one of
-// various metadata tables, depending on whether this is a manifest module,
-// non-manifest module, or something else
-inline LPCUTF8 PEFile::GetSimpleName()
-{
-    CONTRACT(LPCUTF8)
-    {
-        INSTANCE_CHECK;
-        MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
-        NOTHROW;
-        SUPPORTS_DAC;
-        WRAPPER(GC_TRIGGERS);
-    }
-    CONTRACT_END;
-
-    if (IsAssembly())
-        RETURN dac_cast<PTR_PEAssembly>(this)->GetSimpleName();
-    else
-    {
-        LPCUTF8 szScopeName;
-        if (FAILED(GetScopeName(&szScopeName)))
-        {
-            szScopeName = "";
-        }
-        RETURN szScopeName;
-    }
-}
-
-
 // Same as the managed Module.ScopeName property, this unconditionally looks in the
 // metadata Module table to get the name.  Useful for profilers and others who don't
 // like sugar coating on their names.
-inline HRESULT PEFile::GetScopeName(LPCUTF8 * pszName)
+inline HRESULT PEAssembly::GetScopeName(LPCUTF8 * pszName)
 {
     CONTRACTL
     {
@@ -493,14 +342,7 @@ inline HRESULT PEFile::GetScopeName(LPCUTF8 * pszName)
 // PE file access
 // ------------------------------------------------------------
 
-inline BOOL PEFile::IsIbcOptimized()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return FALSE;
-}
-
-inline BOOL PEFile::IsReadyToRun()
+inline BOOL PEAssembly::IsReadyToRun()
 {
     CONTRACTL
     {
@@ -511,9 +353,9 @@ inline BOOL PEFile::IsReadyToRun()
     }
     CONTRACTL_END;
 
-    if (HasOpenedILimage())
+    if (HasPEImage())
     {
-        return GetLoadedIL()->HasReadyToRunHeader();
+        return GetLoadedLayout()->HasReadyToRunHeader();
     }
     else
     {
@@ -521,63 +363,37 @@ inline BOOL PEFile::IsReadyToRun()
     }
 }
 
-inline WORD PEFile::GetSubsystem()
+inline mdToken PEAssembly::GetEntryPointToken()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (IsResource() || IsDynamic())
-        return 0;
-
-    return GetLoadedIL()->GetSubsystem();
-}
-
-inline mdToken PEFile::GetEntryPointToken(
-#ifdef _DEBUG
-            BOOL bAssumeLoaded
-#endif //_DEBUG
-            )
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
         return mdTokenNil;
 
-    _ASSERTE (!bAssumeLoaded || HasLoadedIL ());
-    return GetOpenedILimage()->GetEntryPointToken();
+    return GetPEImage()->GetEntryPointToken();
 }
 
-inline BOOL PEFile::IsILOnly()
+inline BOOL PEAssembly::IsILOnly()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
     CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
 
-    if (IsResource() || IsDynamic())
+    if (IsDynamic())
         return FALSE;
 
-    return GetOpenedILimage()->IsILOnly();
+    return GetPEImage()->IsILOnly();
 }
 
-inline BOOL PEFile::IsDll()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (IsResource() || IsDynamic())
-        return TRUE;
-
-    return GetOpenedILimage()->IsDll();
-}
-
-inline PTR_VOID PEFile::GetRvaField(RVA field)
+inline PTR_VOID PEAssembly::GetRvaField(RVA field)
 {
     CONTRACT(void *)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckRvaField(field));
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -589,17 +405,16 @@ inline PTR_VOID PEFile::GetRvaField(RVA field)
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    RETURN dac_cast<PTR_VOID>(GetLoadedIL()->GetRvaData(field,NULL_OK));
+    RETURN dac_cast<PTR_VOID>(GetLoadedLayout()->GetRvaData(field,NULL_OK));
 }
 
-inline CHECK PEFile::CheckRvaField(RVA field)
+inline CHECK PEAssembly::CheckRvaField(RVA field)
 {
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -609,18 +424,17 @@ inline CHECK PEFile::CheckRvaField(RVA field)
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    CHECK(GetLoadedIL()->CheckRva(field,NULL_OK));
+    CHECK(GetLoadedLayout()->CheckRva(field,NULL_OK));
     CHECK_OK;
 }
 
-inline CHECK PEFile::CheckRvaField(RVA field, COUNT_T size)
+inline CHECK PEAssembly::CheckRvaField(RVA field, COUNT_T size)
 {
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -630,11 +444,11 @@ inline CHECK PEFile::CheckRvaField(RVA field, COUNT_T size)
     // Note that the native image Rva fields are currently cut off before
     // this point.  We should not get here for an IL only native image.
 
-    CHECK(GetLoadedIL()->CheckRva(field, size,0,NULL_OK));
+    CHECK(GetLoadedLayout()->CheckRva(field, size,0,NULL_OK));
     CHECK_OK;
 }
 
-inline BOOL PEFile::HasTls()
+inline BOOL PEAssembly::HasTls()
 {
     CONTRACTL
     {
@@ -642,24 +456,21 @@ inline BOOL PEFile::HasTls()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(IsLoaded());
     }
     CONTRACTL_END;
 
-    // Resource modules do not contain TLS data.
-    if (IsResource())
-        return FALSE;
     // Dynamic modules do not contain TLS data.
-    else if (IsDynamic())
+    if (IsDynamic())
         return FALSE;
     // ILOnly modules do not contain TLS data.
     else if (IsILOnly())
         return FALSE;
     else
-        return GetLoadedIL()->HasTls();
+        return GetLoadedLayout()->HasTls();
 }
 
-inline BOOL PEFile::IsRvaFieldTls(RVA field)
+inline BOOL PEAssembly::IsRvaFieldTls(RVA field)
 {
     CONTRACTL
     {
@@ -667,30 +478,30 @@ inline BOOL PEFile::IsRvaFieldTls(RVA field)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(IsLoaded());
     }
     CONTRACTL_END;
 
     if (!HasTls())
         return FALSE;
 
-    PTR_VOID address = PTR_VOID(GetLoadedIL()->GetRvaData(field));
+    PTR_VOID address = PTR_VOID(GetLoadedLayout()->GetRvaData(field));
 
     COUNT_T tlsSize;
-    PTR_VOID tlsRange = GetLoadedIL()->GetTlsRange(&tlsSize);
+    PTR_VOID tlsRange = GetLoadedLayout()->GetTlsRange(&tlsSize);
 
     return (address >= tlsRange
             && address < (dac_cast<PTR_BYTE>(tlsRange)+tlsSize));
 }
 
-inline UINT32 PEFile::GetFieldTlsOffset(RVA field)
+inline UINT32 PEAssembly::GetFieldTlsOffset(RVA field)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(CheckRvaField(field));
         PRECONDITION(IsRvaFieldTls(field));
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -698,14 +509,14 @@ inline UINT32 PEFile::GetFieldTlsOffset(RVA field)
     CONTRACTL_END;
 
     return (UINT32)(dac_cast<PTR_BYTE>(GetRvaField(field)) -
-                                dac_cast<PTR_BYTE>(GetLoadedIL()->GetTlsRange()));
+                                dac_cast<PTR_BYTE>(GetLoadedLayout()->GetTlsRange()));
 }
 
-inline UINT32 PEFile::GetTlsIndex()
+inline UINT32 PEAssembly::GetTlsIndex()
 {
     CONTRACTL
     {
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         INSTANCE_CHECK;
         PRECONDITION(HasTls());
         NOTHROW;
@@ -714,18 +525,17 @@ inline UINT32 PEFile::GetTlsIndex()
     }
     CONTRACTL_END;
 
-    return GetLoadedIL()->GetTlsIndex();
+    return GetLoadedLayout()->GetTlsIndex();
 }
 
-inline const void *PEFile::GetInternalPInvokeTarget(RVA target)
+inline const void *PEAssembly::GetInternalPInvokeTarget(RVA target)
 {
     CONTRACT(void *)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
         PRECONDITION(CheckInternalPInvokeTarget(target));
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -733,17 +543,16 @@ inline const void *PEFile::GetInternalPInvokeTarget(RVA target)
     }
     CONTRACT_END;
 
-    RETURN (void*)GetLoadedIL()->GetRvaData(target);
+    RETURN (void*)GetLoadedLayout()->GetRvaData(target);
 }
 
-inline CHECK PEFile::CheckInternalPInvokeTarget(RVA target)
+inline CHECK PEAssembly::CheckInternalPInvokeTarget(RVA target)
 {
     CONTRACT_CHECK
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -751,16 +560,16 @@ inline CHECK PEFile::CheckInternalPInvokeTarget(RVA target)
     CONTRACT_CHECK_END;
 
     CHECK(!IsILOnly());
-    CHECK(GetLoadedIL()->CheckRva(target));
+    CHECK(GetLoadedLayout()->CheckRva(target));
 
     CHECK_OK;
 }
 
-inline IMAGE_COR_VTABLEFIXUP *PEFile::GetVTableFixups(COUNT_T *pCount/*=NULL*/)
+inline IMAGE_COR_VTABLEFIXUP *PEAssembly::GetVTableFixups(COUNT_T *pCount/*=NULL*/)
 {
     CONTRACT(IMAGE_COR_VTABLEFIXUP *)
     {
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
@@ -769,26 +578,25 @@ inline IMAGE_COR_VTABLEFIXUP *PEFile::GetVTableFixups(COUNT_T *pCount/*=NULL*/)
     }
     CONTRACT_END;
 
-    if (IsResource() || IsDynamic() || IsILOnly())
+    if (IsDynamic() || IsILOnly())
     {
         if (pCount != NULL)
             *pCount = 0;
         RETURN NULL;
     }
     else
-        RETURN GetLoadedIL()->GetVTableFixups(pCount);
+        RETURN GetLoadedLayout()->GetVTableFixups(pCount);
 }
 
-inline void *PEFile::GetVTable(RVA rva)
+inline void *PEAssembly::GetVTable(RVA rva)
 {
     CONTRACT(void *)
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         PRECONDITION(!IsILOnly());
-        PRECONDITION(GetLoadedIL()->CheckRva(rva));
+        PRECONDITION(GetLoadedLayout()->CheckRva(rva));
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
@@ -796,18 +604,17 @@ inline void *PEFile::GetVTable(RVA rva)
     }
     CONTRACT_END;
 
-    RETURN (void *)GetLoadedIL()->GetRvaData(rva);
+    RETURN (void *)GetLoadedLayout()->GetRvaData(rva);
 }
 
 // @todo: this is bad to expose. But it is needed to support current IJW thunks
-inline HMODULE PEFile::GetIJWBase()
+inline HMODULE PEAssembly::GetIJWBase()
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
         PRECONDITION(!IsDynamic());
-        PRECONDITION(!IsResource());
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         PRECONDITION(!IsILOnly());
         NOTHROW;
         GC_NOTRIGGER;
@@ -815,10 +622,10 @@ inline HMODULE PEFile::GetIJWBase()
     }
     CONTRACTL_END;
 
-    return (HMODULE) dac_cast<TADDR>(GetLoadedIL()->GetBase());
+    return (HMODULE) dac_cast<TADDR>(GetLoadedLayout()->GetBase());
 }
 
-inline PTR_VOID PEFile::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
+inline PTR_VOID PEAssembly::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
 {
     CONTRACT(PTR_VOID)
     {
@@ -835,12 +642,12 @@ inline PTR_VOID PEFile::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
     // helper thread.  The debugger will have to expect a zero base
     // in some circumstances.
 
-    if (IsLoaded())
+    if (HasLoadedPEImage())
     {
         if (pSize != NULL)
-            *pSize = GetLoaded()->GetSize();
+            *pSize = GetLoadedLayout()->GetSize();
 
-        RETURN GetLoaded()->GetBase();
+        RETURN GetLoadedLayout()->GetBase();
     }
     else
     {
@@ -851,7 +658,7 @@ inline PTR_VOID PEFile::GetDebuggerContents(COUNT_T *pSize/*=NULL*/)
     }
 }
 
-inline PTR_CVOID PEFile::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
+inline PTR_CVOID PEAssembly::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
 {
     CONTRACTL
     {
@@ -863,13 +670,13 @@ inline PTR_CVOID PEFile::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
     }
     CONTRACTL_END;
 
-    if (IsLoaded() && !IsDynamic())
+    if (HasLoadedPEImage())
     {
         if (pSize != NULL)
         {
-            *pSize = GetLoaded()->GetSize();
+            *pSize = GetLoadedLayout()->GetSize();
         }
-        return GetLoaded()->GetBase();
+        return GetLoadedLayout()->GetBase();
     }
     else
     {
@@ -882,32 +689,32 @@ inline PTR_CVOID PEFile::GetLoadedImageContents(COUNT_T *pSize/*=NULL*/)
 }
 
 #ifndef DACCESS_COMPILE
-inline const void *PEFile::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
+inline const void *PEAssembly::GetManagedFileContents(COUNT_T *pSize/*=NULL*/)
 {
     CONTRACT(const void *)
     {
         INSTANCE_CHECK;
-        PRECONDITION(CheckLoaded());
+        PRECONDITION(HasLoadedPEImage());
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
         MODE_ANY;
-        POSTCONDITION((!GetLoaded()->GetSize()) || CheckPointer(RETVAL));
+        POSTCONDITION((!GetLoadedLayout()->GetSize()) || CheckPointer(RETVAL));
     }
     CONTRACT_END;
 
     // Right now, we will trigger a LoadLibrary for the caller's sake,
     // even if we are in a scenario where we could normally avoid it.
-    LoadLibrary(FALSE);
+    EnsureLoaded();
 
     if (pSize != NULL)
-        *pSize = GetLoadedIL()->GetSize();
+        *pSize = GetLoadedLayout()->GetSize();
 
 
-    RETURN GetLoadedIL()->GetBase();
+    RETURN GetLoadedLayout()->GetBase();
 }
 #endif // DACCESS_COMPILE
 
-inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
+inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
 {
     CONTRACTL
     {
@@ -919,49 +726,13 @@ inline BOOL PEFile::IsPtrInILImage(PTR_CVOID data)
     }
     CONTRACTL_END;
 
-    if (HasOpenedILimage())
+    if (HasPEImage())
     {
-        return GetOpenedILimage()->IsPtrInImage(data);
+        return GetPEImage()->IsPtrInImage(data);
     }
     else
         return FALSE;
 }
-// ------------------------------------------------------------
-// Native image access
-// ------------------------------------------------------------
-
-inline PTR_PEImageLayout PEFile::GetLoadedIL()
-{
-    LIMITED_METHOD_CONTRACT;
-    SUPPORTS_DAC;
-
-    _ASSERTE(HasOpenedILimage());
-
-    return GetOpenedILimage()->GetLoadedLayout();
-};
-
-inline BOOL PEFile::IsLoaded(BOOL bAllowNative/*=TRUE*/)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    if(IsDynamic())
-        return TRUE;
-    return HasLoadedIL();
-};
-
-
-inline PTR_PEImageLayout PEFile::GetLoaded()
-{
-    WRAPPER_NO_CONTRACT;
-    SUPPORTS_DAC;
-    return GetLoadedIL();
-};
-
 
 // ------------------------------------------------------------
 // Descriptive strings
@@ -995,14 +766,14 @@ inline LPCSTR PEAssembly::GetSimpleName()
     CONTRACTL
     {
         NOTHROW;
-        if (!m_bHasPersistentMDImport) { GC_TRIGGERS;} else {DISABLED(GC_TRIGGERS);};
+        DISABLED(GC_TRIGGERS);
         MODE_ANY;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
 
     LPCSTR name = "";
-    IMDInternalImportHolder pImport = GetMDImport();
+    IMDInternalImport* pImport = GetMDImport();
     if (pImport != NULL)
     {
         if (FAILED(pImport->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, &name, NULL, NULL)))
@@ -1014,7 +785,7 @@ inline LPCSTR PEAssembly::GetSimpleName()
     return name;
 }
 
-inline BOOL PEFile::IsStrongNamed()
+inline BOOL PEAssembly::IsStrongNamed()
 {
     CONTRACTL
     {
@@ -1035,7 +806,7 @@ inline BOOL PEFile::IsStrongNamed()
 // Check to see if this assembly has had its strong name signature verified yet.
 //
 
-inline const void *PEFile::GetPublicKey(DWORD *pcbPK)
+inline const void *PEAssembly::GetPublicKey(DWORD *pcbPK)
 {
     CONTRACTL
     {
@@ -1051,7 +822,7 @@ inline const void *PEFile::GetPublicKey(DWORD *pcbPK)
     return pPK;
 }
 
-inline ULONG PEFile::GetHashAlgId()
+inline ULONG PEAssembly::GetHashAlgId()
 {
     CONTRACTL
     {
@@ -1066,7 +837,7 @@ inline ULONG PEFile::GetHashAlgId()
     return hashAlgId;
 }
 
-inline LPCSTR PEFile::GetLocale()
+inline LPCSTR PEAssembly::GetLocale()
 {
     CONTRACTL
     {
@@ -1081,11 +852,10 @@ inline LPCSTR PEFile::GetLocale()
     return md.szLocale;
 }
 
-inline DWORD PEFile::GetFlags()
+inline DWORD PEAssembly::GetFlags()
 {
     CONTRACTL
     {
-        PRECONDITION(IsAssembly());
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
@@ -1099,43 +869,4 @@ inline DWORD PEFile::GetFlags()
     return flags;
 }
 
-// In the cases where you know the module is loaded, and cannot tolerate triggering and
-// loading, this alternative to PEFile::GetFlags is useful.  Profiling API uses this.
-inline HRESULT PEFile::GetFlagsNoTrigger(DWORD * pdwFlags)
-{
-    CONTRACTL
-    {
-        PRECONDITION(IsAssembly());
-        INSTANCE_CHECK;
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (pdwFlags != NULL);
-
-    if (!m_bHasPersistentMDImport)
-        return E_FAIL;
-
-    return GetPersistentMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, pdwFlags);
-}
-
-// ------------------------------------------------------------
-// Metadata access
-// ------------------------------------------------------------
-
-inline void PEFile::OpenMDImport()
-{
-    WRAPPER_NO_CONTRACT;
-    //need synchronization
-    _ASSERTE(m_pMetadataLock->LockTaken() && m_pMetadataLock->IsWriterLock());
-    OpenMDImport_Unsafe();
-}
-
-inline PEFile* PEFile::Dummy()
-{
-    return (PEFile*)(-1);
-}
-#endif  // PEFILE_INL_
+#endif  // PEASSEMBLY_INL_

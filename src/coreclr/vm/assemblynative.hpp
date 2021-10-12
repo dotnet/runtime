@@ -108,7 +108,7 @@ public:
     static FCDECL0(uint32_t, GetAssemblyCount);
 
     //
-    // PEFile QCalls
+    // PEAssembly QCalls
     //
 
     static INT_PTR QCALLTYPE InitializeAssemblyLoadContext(INT_PTR ptrManagedAssemblyLoadContext, BOOL fRepresentsTPALoadContext, BOOL fIsCollectible);
