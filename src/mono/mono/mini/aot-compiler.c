@@ -3581,7 +3581,7 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 		*p = MONO_TYPE_PINNED;
 		++p;
 	}
-	if (mono_type_is_byref_internal (t)) {
+	if (m_type_is_byref (t)) {
 		*p = MONO_TYPE_BYREF;
 		++p;
 	}
@@ -8765,14 +8765,14 @@ get_concrete_sig (MonoMethodSignature *sig)
 
 	//printf ("%s\n", mono_signature_full_name (sig));
 
-	if (mono_type_is_byref_internal (sig->ret))
+	if (m_type_is_byref (sig->ret))
 		copy->ret = m_class_get_this_arg (mono_defaults.int_class);
 	else
 		copy->ret = mini_get_underlying_type (sig->ret);
 	if (!is_concrete_type (copy->ret))
 		concrete = FALSE;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (mono_type_is_byref_internal (sig->params [i])) {
+		if (m_type_is_byref (sig->params [i])) {
 			MonoType *t = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->params [i]));
 			t = mini_get_underlying_type (t);
 			copy->params [i] = m_class_get_this_arg (mono_class_from_mono_type_internal (t));
@@ -9342,7 +9342,7 @@ mono_aot_get_method_name (MonoCompile *cfg)
 static gboolean
 append_mangled_type (GString *s, MonoType *t)
 {
-	if (mono_type_is_byref_internal (t))
+	if (m_type_is_byref (t))
 		g_string_append_printf (s, "b");
 	switch (t->type) {
 	case MONO_TYPE_VOID:
@@ -10612,7 +10612,7 @@ mono_aot_type_hash (MonoType *t1)
 {
 	guint hash = t1->type;
 
-	hash |= mono_type_is_byref_internal (t1) << 6; /* do not collide with t1->type values */
+	hash |= m_type_is_byref (t1) << 6; /* do not collide with t1->type values */
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:

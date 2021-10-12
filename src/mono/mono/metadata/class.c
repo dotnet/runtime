@@ -283,7 +283,7 @@ _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 static void
 mono_type_name_check_byref (MonoType *type, GString *str)
 {
-	if (mono_type_is_byref_internal (type))
+	if (m_type_is_byref (type))
 		g_string_append_c (str, '&');
 }
 
@@ -575,9 +575,9 @@ mono_type_get_name (MonoType *type)
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !mono_type_is_byref_internal (type))
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !mono_type_is_byref_internal (type))
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
 	return type;
 }
@@ -1691,7 +1691,7 @@ MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
-	if (!mono_type_is_byref_internal (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
+	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
 		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return mono_get_object_type ();
 	return type;
@@ -3782,8 +3782,8 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
 gboolean
 mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
 {
-	g_assert (mono_type_is_byref_internal (type));
-	g_assert (mono_type_is_byref_internal (ctype));
+	g_assert (m_type_is_byref (type));
+	g_assert (m_type_is_byref (ctype));
 	MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
 	MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
 

@@ -279,7 +279,7 @@ static inline int
 mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
-	if (mono_type_is_byref_internal (type))
+	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {

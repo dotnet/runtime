@@ -33,7 +33,7 @@ struct _MonoType {
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;  
-	unsigned int byref__    : 1; /* don't access directly, use mono_type_is_byref_internal */
+	unsigned int byref__    : 1; /* don't access directly, use m_type_is_byref */
 	unsigned int pinned   : 1;  /* valid when included in a local var signature */
 };
 
@@ -1183,13 +1183,13 @@ mono_type_get_signature_internal (MonoType *type)
 }
 
 /**
- * mono_type_is_byref_internal:
+ * m_type_is_byref:
  * \param type the \c MonoType operated on
  * \returns TRUE if \p type represents a type passed by reference,
  * FALSE otherwise.
  */
 static inline gboolean
-mono_type_is_byref_internal (const MonoType *type)
+m_type_is_byref (const MonoType *type)
 {
 	return type->byref__;
 }

@@ -1805,7 +1805,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 {
 	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
-	if (!mono_type_is_byref_internal (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
+	if (!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
 		MonoGenericParam *gparam = ftype->data.generic_param;
 
 		if (gparam->gshared_constraint)
@@ -1974,7 +1974,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (blittable) {
-			if (mono_type_is_byref_internal (field->type) || MONO_TYPE_IS_REFERENCE (field->type)) {
+			if (m_type_is_byref (field->type) || MONO_TYPE_IS_REFERENCE (field->type)) {
 				blittable = FALSE;
 			} else if (mono_type_is_generic_parameter (field->type) &&
 				   mono_class_is_gparam_with_nonblittable_parent (mono_class_from_mono_type_internal (field->type))) {

@@ -52,7 +52,7 @@ emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	MonoType *int_type = mono_get_int_type ();
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
-		if (mono_type_is_byref_internal (t))
+		if (m_type_is_byref (t))
 			*conv_arg_type = int_type;
 		else
 			*conv_arg_type = mono_marshal_boolean_conv_in_get_local_type (spec, NULL);
@@ -60,7 +60,7 @@ emit_marshal_boolean_noilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN: {
 		MonoClass* conv_arg_class = mono_marshal_boolean_managed_conv_in_get_conv_arg_class (spec, NULL);
-		if (mono_type_is_byref_internal (t))
+		if (m_type_is_byref (t))
 			*conv_arg_type = m_class_get_this_arg (conv_arg_class);
 		else
 			*conv_arg_type = m_class_get_byval_arg (conv_arg_class);
@@ -199,7 +199,7 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 		}
 	}
 
-	if (!mono_type_is_byref_internal (sig->ret)) {
+	if (!m_type_is_byref (sig->ret)) {
 		switch (sig->ret->type) {
 		case MONO_TYPE_STRING:
 			csig->ret = int_type;
