@@ -278,6 +278,7 @@
     <!-- default to allowing all language features -->
     <LangVersion>preview</LangVersion>
     <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
+    <CscToolExe>$(MSBuildThisFileDirectory)\runcsc.bat</CscToolExe>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
