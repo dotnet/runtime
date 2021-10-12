@@ -3,6 +3,7 @@ steps:
     inputs:
       nuGetServiceConnections: 'dotnet-core-internal-tooling'
       forceReinstallCredentialProvider: true
+    condition: ne(variables.BUILD_CACHE_RESTORED, 'true')
 
   - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             -ci
@@ -12,4 +13,4 @@ steps:
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/RestoreInternal.binlog
             /v:normal
     displayName: Restore internal tools
-    condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'))
+    condition: and(succeeded(), ne(variables['_skipRestoreInternalTools'], 'true'), ne(variables.BUILD_CACHE_RESTORED, 'true'))

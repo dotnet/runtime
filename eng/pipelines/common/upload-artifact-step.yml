@@ -8,7 +8,7 @@ parameters:
   displayName: ''
 
 steps:
-  # Zip Artifact
+  # Zip Artifact only if not cached
   - task: ArchiveFiles@2
     displayName: 'Zip ${{ parameters.displayName }}'
     inputs:
@@ -17,6 +17,7 @@ steps:
       archiveType:       ${{ parameters.archiveType }}
       tarCompression:    ${{ parameters.tarCompression }}
       includeRootFolder: ${{ parameters.includeRootFolder }}
+    condition: ne(variables.BUILD_CACHE_RESTORED, 'true')
 
   - task: PublishBuildArtifacts@1
     displayName: 'Publish ${{ parameters.displayName }}'

@@ -8,9 +8,11 @@ steps:
   - ${{ if and(eq(parameters.osGroup, 'windows'), notin(parameters.archType, 'x86')) }}:
     - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac -ninja $(officialBuildIdArg)
       displayName: Build Cross OS Linux DAC for Windows
+      condition: ne(variables.DAC_BUILD_CACHE_RESTORED, 'true')
 
     - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -alpinedac -ninja $(officialBuildIdArg)
       displayName: Build Cross OS Linux-musl DAC for Windows
+      condition: ne(variables.DAC_BUILD_CACHE_RESTORED, 'true')
 
     - task: CopyFiles@2
       displayName: Gather CrossDac Artifacts (Linux)
@@ -20,6 +22,7 @@ steps:
           **/*
           !**/sharedFramework/**/*
         TargetFolder: $(buildLinuxDacStagingPath)
+      condition: ne(variables.DAC_BUILD_CACHE_RESTORED, 'true')
 
     - task: CopyFiles@2
       displayName: Gather CrossDac Artifacts (Linux_musl)
@@ -29,6 +32,7 @@ steps:
           **/*
           !**/sharedFramework/**/*
         TargetFolder: '$(buildMuslDacStagingPath)'
+      condition: ne(variables.DAC_BUILD_CACHE_RESTORED, 'true')
 
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
     - task: CopyFiles@2
@@ -37,6 +41,7 @@ steps:
         SourceFolder: $(coreClrProductRootFolderPath)
         Contents: libcoreclr.so
         TargetFolder: '$(crossDacArtifactPath)/${{ parameters.osGroup }}${{ parameters.osSubgroup }}.$(archType).$(buildConfigUpper)/$(crossDacHostArch)'
+      condition: ne(variables.DAC_BUILD_CACHE_RESTORED, 'true')
 
   # Make the assets available in a single container for the packaging job.
   - task: PublishBuildArtifacts@1

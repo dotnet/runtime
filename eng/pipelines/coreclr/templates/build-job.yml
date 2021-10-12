@@ -152,9 +152,88 @@ jobs:
       - name: clrRuntimePortableBuildArg
         value: '-portablebuild=false'
 
+    - name: CommitsOutputFile
+      value: '$(Build.SourcesDirectory)/coreclr.commit_hash'
+
+    - name: GetCommitScript
+      value: '$(Build.SourcesDirectory)/src/coreclr/scripts/get_commit_hash.py'
+
+    # Currently only support pipeline caching for PRs and manual triggered runs
+    - ${{ if or(in(variables['Build.Reason'], 'PullRequest'), in(variables['Build.Reason'], 'Manual')) }}:
+      - name: UsePipelineCache
+        value: true
+
+    # Otherwise set all the cache-specific variables to 'false' which will ensure to build product.
+    - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), notin(variables['Build.Reason'], 'Manual')) }}:
+      - name: UsePipelineCache
+        value: false
+      - name: BUILD_CACHE_RESTORED
+        value: false
+      - name: DAC_BUILD_CACHE_RESTORED
+        value: false
+      - name: BUILD_LOGS_RESTORED
+        value: false
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+      - name: PipScript
+        value: 'py -3 -m pip'
+
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+      - name: PipScript
+        value: 'pip3'
+
     - ${{ parameters.variables }}
 
     steps:
+
+    # Get the commit hashes of interesting folder for caching
+    - script: |
+        $(PythonScript) $(GetCommitScript) -run_type coreclr -output $(CommitsOutputFile)
+      displayName: Record commit hashes of coreclr
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        REPO_URI: $(Build.Repository.Uri)
+      condition: eq(variables.UsePipelineCache, 'true')
+
+    # Cache tasks
+    - task: Cache@2
+      displayName: Cache coreclr build
+      inputs:
+        key: '" coreclr-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+        path: $(Build.StagingDirectory)
+        cacheHitVar: BUILD_CACHE_RESTORED
+      condition: eq(variables.UsePipelineCache, 'true')
+
+    - ${{ if and(in(parameters.osGroup, 'windows', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), eq(parameters.pgoType, '')) }}:
+      - task: Cache@2
+        displayName: Cache cross DAC build
+        inputs:
+          key: '" crossDAC-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+          path: $(crossDacArtifactPath)
+          cacheHitVar: DAC_BUILD_CACHE_RESTORED
+        condition: eq(variables.UsePipelineCache, 'true')
+
+    - task: Cache@2
+      displayName: Cache coreclr build logs
+      inputs:
+        key: '"coreclr-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+        path: $(Build.SourcesDirectory)/artifacts/log/
+        cacheHitVar: BUILD_LOGS_RESTORED
+        condition: eq(variables.UsePipelineCache, 'true')
+
+    - script: |
+        echo Cache restored
+      displayName: Cache Hit
+      condition: eq(variables.BUILD_CACHE_RESTORED, 'true')
+
+    - script: |
+        echo Cache not restored
+      displayName: Cache miss
+      condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     # Install native dependencies
     # Linux builds use docker images with dependencies preinstalled,
@@ -163,10 +242,12 @@ jobs:
     - ${{ if eq(parameters.osGroup, 'OSX') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh $(osGroup) ${{ parameters.archType }} azDO
         displayName: Install native dependencies
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       # Necessary to install python
       - script: $(Build.SourcesDirectory)\eng\common\init-tools-native.cmd -InstallDirectory $(Build.SourcesDirectory)\native-tools -Force
         displayName: Install native dependencies
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     # Install internal tools on official builds
     # Since our internal tools are behind an authenticated feed,
@@ -195,14 +276,18 @@ jobs:
     # Build/Generate native prerequisites
     - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
       displayName: Build and generate native prerequisites
+      condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrRuntimeComponentsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
+
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
       - script: |
@@ -214,9 +299,12 @@ jobs:
     - ${{ if or(ne(parameters.osGroup, 'Linux'), ne(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
+
     - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     # Run CoreCLR Tools unit tests
     - ${{ if eq(parameters.testGroup, 'clrTools') }}:
@@ -227,6 +315,7 @@ jobs:
     - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
+        condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
     # Build libs.native, host.native and mono with gcc
     - ${{ if eq(parameters.compilerName, 'gcc') }}:

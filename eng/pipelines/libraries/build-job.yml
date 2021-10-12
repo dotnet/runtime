@@ -81,9 +81,77 @@ jobs:
         - ${{ if eq(parameters.useHelix, true) }}:
           - _additionalBuildArguments: /p:ArchiveTests=true
 
+        # Currently only support pipeline caching for PRs and manual triggered runs
+        - ${{ if or(in(variables['Build.Reason'], 'PullRequest'), in(variables['Build.Reason'], 'Manual')) }}:
+          - name: UsePipelineCache
+            value: true
+
+        - name: CommitsOutputFile
+          value: '$(Build.SourcesDirectory)/libraries.commit_hash'
+        - name: GetCommitScript
+          value: '$(Build.SourcesDirectory)/src/coreclr/scripts/get_commit_hash.py'
+
+        # Otherwise set all the cache-specific variables to 'false' which will ensure to build product.
+        - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), notin(variables['Build.Reason'], 'Manual')) }}:
+          - name: UsePipelineCache
+            value: false
+          - name: BUILD_CACHE_RESTORED
+            value: false
+          - name: BUILD_LOGS_RESTORED
+            value: false
+
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - name: PythonScript
+            value: 'py -3'
+          - name: PipScript
+            value: 'py -3 -m pip'
+
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - name: PythonScript
+            value: 'python3'
+          - name: PipScript
+            value: 'pip3'
+
         - ${{ parameters.variables }}
 
       steps:
+
+        # Get the commit hashes of interesting folder for caching
+        - script: |
+            $(PythonScript) $(GetCommitScript) -run_type libraries -output $(CommitsOutputFile)
+          displayName: Record commit hashes of libraries
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            REPO_URI: $(Build.Repository.Uri)
+          condition: eq(variables.UsePipelineCache, 'true')
+
+        #  Cache tasks
+        - task: Cache@2
+          displayName: Cache libraries build
+          inputs:
+            key: '"libraries-build" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+            path: $(Build.StagingDirectory)
+            cacheHitVar: BUILD_CACHE_RESTORED
+          condition: eq(variables.UsePipelineCache, 'true')
+
+        - task: Cache@2
+          displayName: Cache libraries build logs
+          inputs:
+            key: '"libraries-logs" | "${{ parameters.runtimeVariant }}" | "${{ parameters.osGroup }}" | "${{ parameters.osSubgroup }}" | "${{ parameters.archType }}" | "${{ parameters.buildConfig }}" | $(CommitsOutputFile)'
+            path: $(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)
+            cacheHitVar: BUILD_LOGS_RESTORED
+            condition: eq(variables.UsePipelineCache, 'true')
+
+        - script: |
+            echo Cache restored
+          displayName: Cache Hit
+          condition: eq(variables.BUILD_CACHE_RESTORED, 'true')
+
+        - script: |
+            echo Cache not restored
+          displayName: Cache Miss
+          condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
+
         - ${{ if eq(parameters.isOfficialBuild, true) }}:
           - template: /eng/pipelines/common/restore-internal-tools.yml
 
@@ -102,6 +170,7 @@ jobs:
                 $(_buildArguments)
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
+          condition: eq(variables.BUILD_CACHE_RESTORED, 'false')
 
         - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           - script: |
