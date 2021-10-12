@@ -631,7 +631,10 @@ namespace System.Xml.Serialization
             {
                 XmlSerializer[] serializers = new XmlSerializer[mappings.Length];
                 for (int i = 0; i < serializers.Length; i++)
+                {
                     serializers[i] = (XmlSerializer)contract!.TypedSerializers[mappings[i].Key!]!;
+                    TempAssembly.VerifyLoadContext(serializers[i]._rootType, type!.Assembly);
+                }
                 return serializers;
             }
         }
