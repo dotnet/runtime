@@ -34,6 +34,11 @@ namespace ILTrim.DependencyAnalysis
             {
                 yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a method");
             }
+
+            foreach (ParameterHandle parameter in methodDef.GetParameters())
+            {
+                yield return new(factory.Parameter(_module, parameter), "Parameter of method");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

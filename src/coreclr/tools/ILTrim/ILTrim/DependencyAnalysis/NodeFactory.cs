@@ -31,7 +31,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.MethodDefinition:
                     return MethodDefinition(module, (MethodDefinitionHandle)handle);
                 case HandleKind.Parameter:
-                    throw new NotImplementedException();
+                    return Parameter(module, (ParameterHandle)handle);
                 case HandleKind.InterfaceImplementation:
                     throw new NotImplementedException();
                 case HandleKind.MemberReference:
@@ -119,6 +119,14 @@ namespace ILTrim.DependencyAnalysis
         public MemberReferenceNode MemberReference(EcmaModule module, MemberReferenceHandle handle)
         {
             return _memberReferences.GetOrAdd(new HandleKey<MemberReferenceHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<ParameterHandle>, ParameterNode> _parameters
+           = new NodeCache<HandleKey<ParameterHandle>, ParameterNode>(key
+               => new ParameterNode(key.Module, key.Handle));
+        public ParameterNode Parameter(EcmaModule module, ParameterHandle handle)
+        {
+            return _parameters.GetOrAdd(new HandleKey<ParameterHandle>(module, handle));
         }
 
         NodeCache<HandleKey<ConstantHandle>, ConstantNode> _constants
