@@ -37,8 +37,9 @@ namespace System.Xml
         // Static fields with implicit initialization
         //
         private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
-
-        internal static char[] crt = new char[] { '\n', '\r', '\t' };
+        private static readonly char[] s_crt = { '\n', '\r', '\t' };
+        // XML whitespace characters, <spec>http://www.w3.org/TR/REC-xml#NT-S</spec>
+        private static readonly char[] s_whitespaceChars = { ' ', '\t', '\n', '\r' };
 
         /// <devdoc>
         ///    <para>
@@ -89,16 +90,12 @@ namespace System.Xml
             int copyPosition = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
-            IEnumerator? en = null;
+            IEnumerator en;
             if (underscorePos >= 0)
             {
-                if (s_decodeCharPattern == null)
-                {
-                    s_decodeCharPattern = new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
+                s_decodeCharPattern ??= new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
 
-                mc = s_decodeCharPattern.Matches(name, underscorePos);
+                MatchCollection mc = s_decodeCharPattern.Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
             else
@@ -106,7 +103,7 @@ namespace System.Xml
                 return name;
             }
             int matchPos = -1;
-            if (en != null && en.MoveNext())
+            if (en.MoveNext())
             {
                 Match m = (Match)en.Current!;
                 matchPos = m.Index;
@@ -116,16 +113,13 @@ namespace System.Xml
             {
                 if (position == matchPos)
                 {
-                    if (en!.MoveNext())
+                    if (en.MoveNext())
                     {
                         Match m = (Match)en.Current!;
                         matchPos = m.Index;
                     }
 
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     bufBld.Append(name, copyPosition, position - copyPosition);
 
                     if (name[position + 6] != '_')
@@ -176,15 +170,13 @@ namespace System.Xml
             {
                 return name;
             }
-            else
-            {
-                if (copyPosition < length)
-                {
-                    bufBld!.Append(name, copyPosition, length - copyPosition);
-                }
 
-                return bufBld!.ToString();
+            if (copyPosition < length)
+            {
+                bufBld!.Append(name, copyPosition, length - copyPosition);
             }
+
+            return bufBld!.ToString();
         }
 
         [return: NotNullIfNotNull("name")]
@@ -201,16 +193,12 @@ namespace System.Xml
             int position = 0;
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc = null;
             IEnumerator? en = null;
             if (underscorePos >= 0)
             {
-                if (s_encodeCharPattern == null)
-                {
-                    s_encodeCharPattern = new Regex("(?<=_)[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
-                }
+                s_encodeCharPattern ??= new Regex("(?<=_)[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
 
-                mc = s_encodeCharPattern.Matches(name, underscorePos);
+                MatchCollection? mc = s_encodeCharPattern.Matches(name, underscorePos);
                 en = mc.GetEnumerator();
             }
 
@@ -223,13 +211,9 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
-                     matchPos == 0)
+                if (!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':') || matchPos == 0)
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
 
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))
@@ -260,14 +244,11 @@ namespace System.Xml
             }
             for (; position < length; position++)
             {
-                if ((local && !XmlCharType.IsNCNameCharXml4e(name[position])) ||
-                    (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
-                    (matchPos == position))
+                if (local && !XmlCharType.IsNCNameCharXml4e(name[position]) ||
+                    !local && !XmlCharType.IsNameCharXml4e(name[position]) ||
+                    matchPos == position)
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     if (matchPos == position)
                         if (en!.MoveNext())
                         {
@@ -298,15 +279,13 @@ namespace System.Xml
             {
                 return name;
             }
-            else
-            {
-                if (copyPosition < length)
-                {
-                    bufBld!.Append(name, copyPosition, length - copyPosition);
-                }
 
-                return bufBld!.ToString();
+            if (copyPosition < length)
+            {
+                bufBld!.Append(name, copyPosition, length - copyPosition);
             }
+
+            return bufBld!.ToString();
         }
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
@@ -324,20 +303,14 @@ namespace System.Xml
 
         internal static byte[] FromBinHexString(string s, bool allowOddCount)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
 
             return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
         }
 
         internal static string ToBinHexString(byte[] inArray)
         {
-            if (inArray == null)
-            {
-                throw new ArgumentNullException(nameof(inArray));
-            }
+            ArgumentNullException.ThrowIfNull(inArray);
 
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
@@ -350,10 +323,7 @@ namespace System.Xml
         /// </devdoc>
         public static string VerifyName(string name)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -396,9 +366,7 @@ namespace System.Xml
                 throw new ArgumentNullException(nameof(name));
             }
 
-            int colonPosition = -1;
-
-            int endPos = ValidateNames.ParseQName(name, 0, out colonPosition);
+            int endPos = ValidateNames.ParseQName(name, 0, out _);
             if (endPos != name.Length)
             {
                 throw CreateException(SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, endPos), exceptionType, 0, endPos + 1);
@@ -418,10 +386,7 @@ namespace System.Xml
 
         internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -463,7 +428,7 @@ namespace System.Xml
                 return token;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token[0] == ' ' || token[^1] == ' ' || token.IndexOfAny(s_crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -472,12 +437,12 @@ namespace System.Xml
 
         internal static Exception? TryVerifyTOKEN(string token)
         {
-            if (token == null || token.Length == 0)
+            if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token[0] == ' ' || token[^1] == ' ' || token.IndexOfAny(s_crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -496,10 +461,7 @@ namespace System.Xml
 
         internal static string VerifyNMTOKEN(string name, ExceptionType exceptionType)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
             {
@@ -518,7 +480,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNMTOKEN(string name)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 return new XmlException(SR.Xml_EmptyName, string.Empty);
             }
@@ -534,7 +496,7 @@ namespace System.Xml
 
         internal static Exception? TryVerifyNormalizedString(string str)
         {
-            if (str.IndexOfAny(crt) != -1)
+            if (str.IndexOfAny(s_crt) != -1)
             {
                 return new XmlSchemaException(SR.Sch_NotNormalizedString, str);
             }
@@ -546,10 +508,7 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyXmlChars(string content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
@@ -559,10 +518,7 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyPublicId(string publicId)
         {
-            if (publicId == null)
-            {
-                throw new ArgumentNullException(nameof(publicId));
-            }
+            ArgumentNullException.ThrowIfNull(publicId);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
@@ -578,10 +534,7 @@ namespace System.Xml
         // Throws XmlException if invalid character is found, otherwise returns the input string.
         public static string VerifyWhitespace(string content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
@@ -725,22 +678,39 @@ namespace System.Xml
 
         public static string ToString(float value)
         {
-            if (float.IsNegativeInfinity(value)) return "-INF";
-            if (float.IsPositiveInfinity(value)) return "INF";
-            if (IsNegativeZero((double)value))
+            if (float.IsNegativeInfinity(value))
             {
-                return ("-0");
+                return "-INF";
             }
+
+            if (float.IsPositiveInfinity(value))
+            {
+                return "INF";
+            }
+
+            if (IsNegativeZero(value))
+            {
+                return "-0";
+            }
+
             return value.ToString("R", NumberFormatInfo.InvariantInfo);
         }
 
         public static string ToString(double value)
         {
-            if (double.IsNegativeInfinity(value)) return "-INF";
-            if (double.IsPositiveInfinity(value)) return "INF";
+            if (double.IsNegativeInfinity(value))
+            {
+                return "-INF";
+            }
+
+            if (double.IsPositiveInfinity(value))
+            {
+                return "INF";
+            }
+
             if (IsNegativeZero(value))
             {
-                return ("-0");
+                return "-0";
             }
 
             return value.ToString("R", NumberFormatInfo.InvariantInfo);
@@ -785,13 +755,13 @@ namespace System.Xml
                     throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
             }
 
-            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
+            XsdDateTime xsdDateTime = new(value, XsdDateTimeFlags.DateTime);
             return xsdDateTime.ToString();
         }
 
         public static string ToString(DateTimeOffset value)
         {
-            XsdDateTime xsdDateTime = new XsdDateTime(value);
+            XsdDateTime xsdDateTime = new(value);
             return xsdDateTime.ToString();
         }
 
@@ -808,35 +778,35 @@ namespace System.Xml
         public static bool ToBoolean(string s)
         {
             s = TrimString(s);
-            if (s == "1" || s == "true") return true;
-            if (s == "0" || s == "false") return false;
-            throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
+
+            return s switch
+            {
+                "1" or "true" => true,
+                "0" or "false" => false,
+                _ => throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"))
+            };
         }
 
         internal static Exception? TryToBoolean(string s, out bool result)
         {
             s = TrimString(s);
-            if (s == "0" || s == "false")
+            switch (s)
             {
-                result = false;
-                return null;
+                case "0" or "false":
+                    result = false;
+                    return null;
+                case "1" or "true":
+                    result = true;
+                    return null;
+                default:
+                    result = false;
+                    return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
             }
-            else if (s == "1" || s == "true")
-            {
-                result = true;
-                return null;
-            }
-
-            result = false;
-            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
         public static char ToChar(string s)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
 
             if (s.Length != 1)
             {
@@ -863,7 +833,16 @@ namespace System.Xml
 
         internal static Exception? TryToDecimal(string s, out decimal result)
         {
-            if (!decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!decimal.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign
+                | NumberStyles.AllowDecimalPoint
+                | NumberStyles.AllowLeadingWhite
+                | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Decimal"));
             }
@@ -878,7 +857,13 @@ namespace System.Xml
 
         internal static Exception? TryToInteger(string s, out decimal result)
         {
-            if (!decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!decimal.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Integer"));
             }
@@ -894,7 +879,13 @@ namespace System.Xml
 
         internal static Exception? TryToSByte(string s, out sbyte result)
         {
-            if (!sbyte.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!sbyte.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "SByte"));
             }
@@ -909,7 +900,13 @@ namespace System.Xml
 
         internal static Exception? TryToInt16(string s, out short result)
         {
-            if (!short.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!short.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int16"));
             }
@@ -924,7 +921,13 @@ namespace System.Xml
 
         internal static Exception? TryToInt32(string s, out int result)
         {
-            if (!int.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!int.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int32"));
             }
@@ -939,7 +942,13 @@ namespace System.Xml
 
         internal static Exception? TryToInt64(string s, out long result)
         {
-            if (!long.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!long.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Int64"));
             }
@@ -954,7 +963,13 @@ namespace System.Xml
 
         internal static Exception? TryToByte(string s, out byte result)
         {
-            if (!byte.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!byte.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Byte"));
             }
@@ -970,7 +985,13 @@ namespace System.Xml
 
         internal static Exception? TryToUInt16(string s, out ushort result)
         {
-            if (!ushort.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!ushort.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt16"));
             }
@@ -986,7 +1007,13 @@ namespace System.Xml
 
         internal static Exception? TryToUInt32(string s, out uint result)
         {
-            if (!uint.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!uint.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt32"));
             }
@@ -1002,7 +1029,13 @@ namespace System.Xml
 
         internal static Exception? TryToUInt64(string s, out ulong result)
         {
-            if (!ulong.TryParse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out result))
+            if (!ulong.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "UInt64"));
             }
@@ -1013,9 +1046,24 @@ namespace System.Xml
         public static float ToSingle(string s)
         {
             s = TrimString(s);
-            if (s == "-INF") return float.NegativeInfinity;
-            if (s == "INF") return float.PositiveInfinity;
-            float f = float.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
+
+            if (s == "-INF")
+            {
+                return float.NegativeInfinity;
+            }
+
+            if (s == "INF")
+            {
+                return float.PositiveInfinity;
+            }
+
+            float f = float.Parse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+                NumberFormatInfo.InvariantInfo
+            );
+
             if (f == 0 && s[0] == '-')
             {
                 return -0f;
@@ -1032,12 +1080,20 @@ namespace System.Xml
                 result = float.NegativeInfinity;
                 return null;
             }
-            else if (s == "INF")
+
+            if (s == "INF")
             {
                 result = float.PositiveInfinity;
                 return null;
             }
-            else if (!float.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
+
+            if (!float.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
             }
@@ -1053,10 +1109,28 @@ namespace System.Xml
         public static double ToDouble(string s)
         {
             s = TrimString(s);
-            if (s == "-INF") return double.NegativeInfinity;
-            if (s == "INF") return double.PositiveInfinity;
 
-            double dVal = double.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
+            if (s == "-INF")
+            {
+                return double.NegativeInfinity;
+            }
+
+            if (s == "INF")
+            {
+                return double.PositiveInfinity;
+            }
+
+            double dVal = double.Parse
+            (
+                s,
+                NumberStyles.AllowLeadingSign
+                | NumberStyles.AllowDecimalPoint
+                | NumberStyles.AllowExponent
+                | NumberStyles.AllowLeadingWhite
+                | NumberStyles.AllowTrailingWhite,
+                NumberFormatInfo.InvariantInfo
+            );
+
             if (dVal == 0 && s[0] == '-')
             {
                 return -0d;
@@ -1068,17 +1142,28 @@ namespace System.Xml
         internal static Exception? TryToDouble(string s, out double result)
         {
             s = TrimString(s);
+
             if (s == "-INF")
             {
                 result = double.NegativeInfinity;
+
                 return null;
             }
-            else if (s == "INF")
+
+            if (s == "INF")
             {
                 result = double.PositiveInfinity;
+
                 return null;
             }
-            else if (!double.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
+
+            if (!double.TryParse
+            (
+                s,
+                NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent,
+                NumberFormatInfo.InvariantInfo,
+                out result
+            ))
             {
                 return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
             }
@@ -1098,8 +1183,15 @@ namespace System.Xml
                 str = TrimString(str);
                 if (str.Length != 0 && str[0] != '+')
                 {
-                    double d;
-                    if (double.TryParse(str, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out d))
+                    if (double.TryParse
+                    (
+                        str,
+                        NumberStyles.AllowLeadingSign
+                        | NumberStyles.AllowDecimalPoint
+                        | NumberStyles.AllowTrailingWhite,
+                        NumberFormatInfo.InvariantInfo,
+                        out double d
+                    ))
                     {
                         return d;
                     }
@@ -1134,22 +1226,13 @@ namespace System.Xml
 
         internal static string? ToXPathString(object? value)
         {
-            if (value is string s)
+            return value switch
             {
-                return s;
-            }
-            else if (value is double)
-            {
-                return ((double)value).ToString("R", NumberFormatInfo.InvariantInfo);
-            }
-            else if (value is bool)
-            {
-                return (bool)value ? "true" : "false";
-            }
-            else
-            {
-                return Convert.ToString(value, NumberFormatInfo.InvariantInfo);
-            }
+                string s => s,
+                double d => d.ToString("R", NumberFormatInfo.InvariantInfo),
+                bool b => ToString(b),
+                _ => Convert.ToString(value, NumberFormatInfo.InvariantInfo)
+            };
         }
 
         internal static double XPathRound(double value)
@@ -1161,7 +1244,6 @@ namespace System.Xml
         public static TimeSpan ToTimeSpan(string s)
         {
             XsdDuration duration;
-            TimeSpan timeSpan;
 
             try
             {
@@ -1173,26 +1255,21 @@ namespace System.Xml
                 throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "TimeSpan"));
             }
 
-            timeSpan = duration.ToTimeSpan();
+            TimeSpan timeSpan = duration.ToTimeSpan();
 
             return timeSpan;
         }
 
         internal static Exception? TryToTimeSpan(string s, out TimeSpan result)
         {
-            XsdDuration duration;
-            Exception? exception;
-
-            exception = XsdDuration.TryParse(s, out duration);
+            Exception? exception = XsdDuration.TryParse(s, out XsdDuration duration);
             if (exception != null)
             {
                 result = TimeSpan.MinValue;
                 return exception;
             }
-            else
-            {
-                return duration.TryToTimeSpan(out result);
-            }
+
+            return duration.TryToTimeSpan(out result);
         }
 
         // use AllDateTimeFormats property to access the formats
@@ -1203,10 +1280,7 @@ namespace System.Xml
         {
             get
             {
-                if (s_allDateTimeFormats == null)
-                {
-                    CreateAllDateTimeFormats();
-                }
+                CreateAllDateTimeFormats();
 
                 return s_allDateTimeFormats!;
             }
@@ -1214,36 +1288,33 @@ namespace System.Xml
 
         private static void CreateAllDateTimeFormats()
         {
-            if (s_allDateTimeFormats == null)
+            s_allDateTimeFormats ??= new[]
             {
-                // no locking; the array is immutable so it's not a problem that it may get initialized more than once
-                s_allDateTimeFormats = new string[] {
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time
-                    "HH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFFzzzzzz",
-                    "yyyy-MM-dd",                   // date
-                    "yyyy-MM-ddZ",
-                    "yyyy-MM-ddzzzzzz",
-                    "yyyy-MM",                      // yearMonth
-                    "yyyy-MMZ",
-                    "yyyy-MMzzzzzz",
-                    "yyyy",                         // year
-                    "yyyyZ",
-                    "yyyyzzzzzz",
-                    "--MM-dd",                      // monthDay
-                    "--MM-ddZ",
-                    "--MM-ddzzzzzz",
-                    "---dd",                        // day
-                    "---ddZ",
-                    "---ddzzzzzz",
-                    "--MM--",                       // month
-                    "--MM--Z",
-                    "--MM--zzzzzz",
-                };
-            }
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFF", //time
+                "HH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFFzzzzzz",
+                "yyyy-MM-dd", // date
+                "yyyy-MM-ddZ",
+                "yyyy-MM-ddzzzzzz",
+                "yyyy-MM", // yearMonth
+                "yyyy-MMZ",
+                "yyyy-MMzzzzzz",
+                "yyyy", // year
+                "yyyyZ",
+                "yyyyzzzzzz",
+                "--MM-dd", // monthDay
+                "--MM-ddZ",
+                "--MM-ddzzzzzz",
+                "---dd", // day
+                "---ddZ",
+                "---ddzzzzzz",
+                "--MM--", // month
+                "--MM--Z",
+                "--MM--zzzzzz",
+            };
         }
 
         [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
@@ -1264,8 +1335,8 @@ namespace System.Xml
 
         public static DateTime ToDateTime(string s, XmlDateTimeSerializationMode dateTimeOption)
         {
-            XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
-            DateTime dt = (DateTime)xsdDateTime;
+            XsdDateTime xsdDateTime = new(s, XsdDateTimeFlags.AllXsd);
+            DateTime dt = xsdDateTime;
 
             switch (dateTimeOption)
             {
@@ -1292,30 +1363,21 @@ namespace System.Xml
 
         public static DateTimeOffset ToDateTimeOffset(string s)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-            XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
-            DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
+            ArgumentNullException.ThrowIfNull(s);
+            XsdDateTime xsdDateTime = new(s, XsdDateTimeFlags.AllXsd);
+            DateTimeOffset dateTimeOffset = xsdDateTime;
             return dateTimeOffset;
         }
 
         public static DateTimeOffset ToDateTimeOffset(string s, string format)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
         public static DateTimeOffset ToDateTimeOffset(string s, string[] formats)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
@@ -1376,8 +1438,7 @@ namespace System.Xml
                 }
             }
 
-            Uri? uri;
-            if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out uri))
+            if (!Uri.TryCreate(s, UriKind.RelativeOrAbsolute, out Uri? uri))
             {
                 throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Uri"));
             }
@@ -1389,7 +1450,7 @@ namespace System.Xml
         {
             result = null;
 
-            if (s != null && s.Length > 0)
+            if (!string.IsNullOrEmpty(s))
             { //string.Empty is a valid uri but not "   "
                 s = TrimString(s);
                 if (s.Length == 0 || s.IndexOf("##", StringComparison.Ordinal) != -1)
@@ -1406,7 +1467,7 @@ namespace System.Xml
         }
 
         // Compares the given character interval and string and returns true if the characters are identical
-        internal static bool StrEqual(char[]? chars, int strPos1, int strLen1, string str2)
+        internal static bool StrEqual(char[] chars, int strPos1, int strLen1, string str2)
         {
             if (strLen1 != str2.Length)
             {
@@ -1424,39 +1485,36 @@ namespace System.Xml
             return i == strLen1;
         }
 
-        // XML whitespace characters, <spec>http://www.w3.org/TR/REC-xml#NT-S</spec>
-        internal static readonly char[] WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
-
         // Trim a string using XML whitespace characters
         internal static string TrimString(string value)
         {
-            return value.Trim(WhitespaceChars);
+            return value.Trim(s_whitespaceChars);
         }
 
         // Trim beginning of a string using XML whitespace characters
         internal static string TrimStringStart(string value)
         {
-            return value.TrimStart(WhitespaceChars);
+            return value.TrimStart(s_whitespaceChars);
         }
 
         // Trim end of a string using XML whitespace characters
         internal static string TrimStringEnd(string value)
         {
-            return value.TrimEnd(WhitespaceChars);
+            return value.TrimEnd(s_whitespaceChars);
         }
 
         // Split a string into a whitespace-separated list of tokens
         internal static string[] SplitString(string value)
         {
-            return value.Split(WhitespaceChars, StringSplitOptions.RemoveEmptyEntries);
+            return value.Split(s_whitespaceChars, StringSplitOptions.RemoveEmptyEntries);
         }
 
         internal static string[] SplitString(string value, StringSplitOptions splitStringOptions)
         {
-            return value.Split(WhitespaceChars, splitStringOptions);
+            return value.Split(s_whitespaceChars, splitStringOptions);
         }
 
-        internal static bool IsNegativeZero(double value)
+        private static bool IsNegativeZero(double value)
         {
             // Simple equals function will report that -0 is equal to +0, so compare bits instead
             if (value == 0 && BitConverter.DoubleToInt64Bits(value) == BitConverter.DoubleToInt64Bits(-0e0))
@@ -1473,7 +1531,7 @@ namespace System.Xml
 
         internal static void VerifyCharData(string? data, ExceptionType invCharExceptionType, ExceptionType invSurrogateExceptionType)
         {
-            if (data == null || data.Length == 0)
+            if (string.IsNullOrEmpty(data))
             {
                 return;
             }
@@ -1504,16 +1562,14 @@ namespace System.Xml
                         i += 2;
                         continue;
                     }
-                    else
-                    {
-                        throw CreateInvalidSurrogatePairException(data[i + 1], data[i], invSurrogateExceptionType, 0, i + 1);
-                    }
+
+                    throw CreateInvalidSurrogatePairException(data[i + 1], data[i], invSurrogateExceptionType, 0, i + 1);
                 }
                 throw CreateInvalidCharException(data, i, invCharExceptionType);
             }
         }
 
-        internal static void VerifyCharData(char[] data, int offset, int len, ExceptionType exceptionType)
+        internal static void VerifyCharData(char[]? data, int offset, int len, ExceptionType exceptionType)
         {
             if (data == null || len == 0)
             {
@@ -1540,16 +1596,17 @@ namespace System.Xml
                     {
                         throw CreateException(SR.Xml_InvalidSurrogateMissingLowChar, exceptionType, 0, offset - i + 1);
                     }
+
                     ch = data[i + 1];
+
                     if (XmlCharType.IsLowSurrogate(ch))
                     {
                         i += 2;
+
                         continue;
                     }
-                    else
-                    {
-                        throw CreateInvalidSurrogatePairException(data[i + 1], data[i], exceptionType, 0, offset - i + 1);
-                    }
+
+                    throw CreateInvalidSurrogatePairException(data[i + 1], data[i], exceptionType, 0, offset - i + 1);
                 }
                 throw CreateInvalidCharException(data, len, i, exceptionType);
             }
@@ -1563,12 +1620,9 @@ namespace System.Xml
             while (i < value.Length)
             {
                 char ch = value[i];
-                if ((int)ch < 0x20 || ch == '"')
+                if (ch < 0x20 || ch == '"')
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(value.Length + 4);
-                    }
+                    sb ??= new StringBuilder(value.Length + 4);
                     if (i - start > 0)
                     {
                         sb.Append(value, start, i - start);
@@ -1645,14 +1699,12 @@ namespace System.Xml
 
         internal static Exception CreateException(string res, string[] args, ExceptionType exceptionType, int lineNo, int linePos)
         {
-            switch (exceptionType)
+            return exceptionType switch
             {
-                case ExceptionType.ArgumentException:
-                    return new ArgumentException(string.Format(res, args));
-                case ExceptionType.XmlException:
-                default:
-                    return new XmlException(res, args, lineNo, linePos);
-            }
+                ExceptionType.ArgumentException => new ArgumentException(string.Format(res, args)),
+                ExceptionType.XmlException => new XmlException(res, args, lineNo, linePos),
+                _ => new XmlException(res, args, lineNo, linePos)
+            };
         }
 
         internal static Exception CreateInvalidSurrogatePairException(char low, char hi)
@@ -1667,7 +1719,8 @@ namespace System.Xml
 
         internal static Exception CreateInvalidSurrogatePairException(char low, char hi, ExceptionType exceptionType, int lineNo, int linePos)
         {
-            string[] args = new string[] {
+            string[] args =
+            {
                 ((uint)hi).ToString("X", CultureInfo.InvariantCulture),
                 ((uint)low).ToString("X", CultureInfo.InvariantCulture)
             };
@@ -1721,7 +1774,7 @@ namespace System.Xml
 
         internal static ArgumentException CreateInvalidNameArgumentException(string? name, string? argumentName)
         {
-            return (name == null) ? new ArgumentNullException(argumentName) : new ArgumentException(SR.Xml_EmptyName, argumentName);
+            return name == null ? new ArgumentNullException(argumentName) : new ArgumentException(SR.Xml_EmptyName, argumentName);
         }
     }
 }
