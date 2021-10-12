@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Http.Test
 {
     public class HttpMessageHandlerBuilderTest
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerIsNull_ThrowsException()
         {
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Http.Test
             Assert.Equal("The 'additionalHandlers' must not contain a null entry.", exception.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException()
         {

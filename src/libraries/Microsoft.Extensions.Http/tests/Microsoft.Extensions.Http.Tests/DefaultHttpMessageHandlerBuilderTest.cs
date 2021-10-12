@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Http
         }
 
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
         public void Build_NoAdditionalHandlers_ReturnsPrimaryHandler()
         {
             // Arrange
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(builder.PrimaryHandler, handler);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
         public void Build_SomeAdditionalHandlers_PutsTogetherDelegatingHandlers()
         {
             // Arrange
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal("The 'PrimaryHandler' must not be null.", exception.Message);
         }
 
-        [Fact]
+        [Fact]]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerIsNull_ThrowsException()
         {
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal("The 'additionalHandlers' must not contain a null entry.", exception.Message);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException()
         {

@@ -164,6 +164,9 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Emit.Tests.csproj" />
 
+    <!-- Has deps that JIT, need re-done in order to pass -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/UnitTests/Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+
     <!-- Functional tests on devices have problems with return codes from mlaunch -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />
   </ItemGroup>
