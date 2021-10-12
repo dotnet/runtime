@@ -1,0 +1,1 @@
+@call %~dp0\dotnet.cmd %~dp0\..\roslyn\artifacts\bin\csc\Release\netcoreapp3.1\csc.dll %*
