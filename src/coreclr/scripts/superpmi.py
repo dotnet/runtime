@@ -18,6 +18,7 @@
 
 import argparse
 import asyncio
+import csv
 import datetime
 import locale
 import logging
@@ -800,6 +801,22 @@ def is_url(path):
     # If it doesn't look like an URL, treat it like a file, possibly a UNC file.
     return path.lower().startswith("http:") or path.lower().startswith("https:")
 
+def read_csv_metrics(path):
+    """ Read a metrics summary file produced by superpmi, and return the single row containing the information as a dictionary.
+
+    Args:
+        path (str) : path to .csv file
+
+    Returns:
+        A dictionary with each metric
+    """
+
+    with open(path) as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            return row
+
+    return None
 
 ################################################################################
 # Helper classes
@@ -1800,6 +1817,9 @@ class SuperPMIReplayAsmDiffs:
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 diff_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff.mcl")
 
+                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
+                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
+
                 # If the user passed -temp_dir, we skip the SuperPMI replay process,
                 # and rely on what we find from a previous run.
                 if self.coreclr_args.temp_dir is not None:
@@ -1810,7 +1830,9 @@ class SuperPMIReplayAsmDiffs:
                         "-v", "ewmi",  # display errors, warnings, missing, jit info
                         "-f", fail_mcl_file,  # Failing mc List
                         "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
-                        "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
+                        "-r", os.path.join(temp_location, "repro"),  # Repro name, create .mc repro files
+                        "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
+                        "-diffMetricsSummary", diff_metrics_summary_file,
                     ]
                     flags += altjit_asm_diffs_flags
                     flags += base_option_flags
@@ -1839,7 +1861,7 @@ class SuperPMIReplayAsmDiffs:
                         return_code = run_and_log(command)
                         print_superpmi_failure_code(return_code, self.coreclr_args)
                         if return_code == 0:
-                            logging.info("Clean SuperPMI replay")
+                            logging.info("Clean SuperPMI diff")
                         else:
                             result = False
                             # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
@@ -1961,6 +1983,17 @@ class SuperPMIReplayAsmDiffs:
                         logging.debug(item)
                     logging.debug("")
 
+                    base_metrics = read_csv_metrics(base_metrics_summary_file)
+                    diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                    if base_metrics is not None and "Code bytes" in base_metrics and diff_metrics is not None and "Code bytes" in diff_metrics:
+                        base_bytes = int(base_metrics["Code bytes"])
+                        diff_bytes = int(diff_metrics["Code bytes"])
+                        logging.info("Total Code bytes of base: {}".format(base_bytes))
+                        logging.info("Total Code bytes of diff: {}".format(diff_bytes))
+                        delta_bytes = diff_bytes - base_bytes
+                        logging.info("Total Code bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+
                     try:
                         current_text_diff = text_differences.get_nowait()
                     except:
@@ -1985,6 +2018,9 @@ class SuperPMIReplayAsmDiffs:
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
+                                elif base_bytes is not None and diff_bytes is not None:
+                                    command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
+
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
 
@@ -2014,6 +2050,14 @@ class SuperPMIReplayAsmDiffs:
                     if os.path.isfile(fail_mcl_file):
                         os.remove(fail_mcl_file)
                         fail_mcl_file = None
+
+                    if os.path.isfile(base_metrics_summary_file):
+                        os.remove(base_metrics_summary_file)
+                        base_metrics_summary_file = None
+
+                    if os.path.isfile(diff_metrics_summary_file):
+                        os.remove(diff_metrics_summary_file)
+                        diff_metrics_summary_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 

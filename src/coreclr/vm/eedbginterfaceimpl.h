@@ -26,7 +26,7 @@
 #include "debugdebugger.h"
 
 #include "eeconfig.h"
-#include "pefile.h"
+#include "peassembly.h"
 
 class EEDbgInterfaceImpl : public EEDebugInterface
 {

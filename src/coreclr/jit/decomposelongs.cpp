@@ -325,7 +325,7 @@ GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use,
 
     Range().InsertAfter(insertResultAfter, gtLong);
 
-    use.ReplaceWith(m_compiler, gtLong);
+    use.ReplaceWith(gtLong);
 
     return gtLong->gtNext;
 }
@@ -1075,7 +1075,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                 gtLong->SetUnusedValue();
             }
             Range().Remove(shift);
-            use.ReplaceWith(m_compiler, gtLong);
+            use.ReplaceWith(gtLong);
             return next;
         }
 
@@ -1370,7 +1370,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         Range().InsertAfter(shift, LIR::SeqTree(m_compiler, call));
 
         Range().Remove(shift);
-        use.ReplaceWith(m_compiler, call);
+        use.ReplaceWith(call);
         return call;
     }
 }
@@ -1449,7 +1449,7 @@ GenTree* DecomposeLongs::DecomposeRotate(LIR::Use& use)
         GenTree* next = tree->gtNext;
         // Remove tree and don't do anything else.
         Range().Remove(tree);
-        use.ReplaceWith(m_compiler, gtLong);
+        use.ReplaceWith(gtLong);
         return next;
     }
     else
@@ -1863,7 +1863,7 @@ GenTree* DecomposeLongs::OptimizeCastFromDecomposedLong(GenTreeCast* cast, GenTr
         LIR::Use useOfCast;
         if (Range().TryGetUse(cast, &useOfCast))
         {
-            useOfCast.ReplaceWith(m_compiler, loSrc);
+            useOfCast.ReplaceWith(loSrc);
         }
         else
         {

@@ -100,7 +100,7 @@ build_Tests()
     export __CopyNativeTestBinaries
     export __Priority
     export __DoCrossgen2
-    export __CreatePerfMap
+    export __CreatePerfmap
     export __CompositeBuildMode
     export __BuildTestWrappersOnly
     export __GenerateLayoutOnly
@@ -153,6 +153,8 @@ usage_list+=("-tree:xxx - build all tests in a given subtree");
 
 usage_list+=("-crossgen2: Precompiles the framework managed assemblies in coreroot using the Crossgen2 compiler.")
 usage_list+=("-priority1: include priority=1 tests in the build.")
+usage_list+=("-composite: Use Crossgen2 composite mode (all framework gets compiled into a single native R2R library).")
+usage_list+=("-perfmap: emit perfmap symbol files when compiling the framework assemblies using Crossgen2.")
 usage_list+=("-allTargets: Build managed tests for all target platforms (including test projects in which CLRTestTargetUnsupported resolves to true).")
 
 usage_list+=("-rebuild: if tests have already been built - rebuild them.")
@@ -194,6 +196,10 @@ handle_arguments_local() {
             __CompositeBuildMode=1
             __DoCrossgen2=1
             __TestBuildMode=crossgen2
+            ;;
+
+        perfmap|-perfmap)
+            __CreatePerfmap=1
             ;;
 
         generatelayoutonly|-generatelayoutonly)
@@ -264,10 +270,6 @@ handle_arguments_local() {
             __BuildLogRootName="${parts[1]}"
             ;;
 
-        perfmap|-perfmap)
-            __CreatePerfMap=1
-            ;;
-
         *)
             __UnprocessedBuildArgs+=("$1")
             ;;
@@ -292,8 +294,9 @@ __CopyNativeProjectsAfterCombinedTestBuild=true
 __CopyNativeTestBinaries=0
 __CrossBuild=0
 __DistroRid=""
-__DoCrossgen2=0
+__DoCrossgen2=
 __CompositeBuildMode=
+__CreatePerfmap=
 __TestBuildMode=
 __BuildTestProject="%3B"
 __BuildTestDir="%3B"
@@ -315,7 +318,6 @@ __SkipNative=0
 __SkipRestore=""
 __SkipRestorePackages=0
 __SkipCrossgenFramework=0
-__CreatePerfMap=0
 __SourceDir="$__ProjectDir/src"
 __UnprocessedBuildArgs=()
 __UseNinja=0

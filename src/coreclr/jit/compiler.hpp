@@ -1794,7 +1794,7 @@ inline unsigned Compiler::lvaGrabTempWithImplicitUse(bool shortLifetime DEBUGARG
 inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState state, bool propagate)
 {
     // In minopts and debug codegen, we don't maintain normal ref counts.
-    if ((state == RCS_NORMAL) && comp->opts.OptimizationDisabled())
+    if ((state == RCS_NORMAL) && !comp->PreciseRefCountsRequired())
     {
         // Note, at least, that there is at least one reference.
         lvImplicitlyReferenced = 1;
@@ -4233,6 +4233,11 @@ unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl)
     }
 }
 
+inline bool Compiler::PreciseRefCountsRequired()
+{
+    return opts.OptimizationEnabled();
+}
+
 template <typename TVisitor>
 void GenTree::VisitOperands(TVisitor visitor)
 {
@@ -4276,6 +4281,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 
         // Unary operators with an optional operand
         case GT_NOP:
+        case GT_FIELD:
         case GT_RETURN:
         case GT_RETFILT:
             if (this->AsUnOp()->gtOp1 == nullptr)
@@ -4400,13 +4406,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             visitor(boundsChk->gtArrLen);
             return;
         }
-
-        case GT_FIELD:
-            if (this->AsField()->gtFldObj != nullptr)
-            {
-                visitor(this->AsField()->gtFldObj);
-            }
-            return;
 
         case GT_ARR_ELEM:
         {

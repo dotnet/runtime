@@ -2899,7 +2899,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            use.ReplaceWith(comp, cast);
+            use.ReplaceWith(cast);
         }
         LowerNode(cast);
     }
@@ -3981,7 +3981,7 @@ void Lowering::LowerHWIntrinsicToScalar(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            use.ReplaceWith(comp, cast);
+            use.ReplaceWith(cast);
         }
         LowerNode(cast);
     }

@@ -742,8 +742,10 @@ mono_process_get_data (gpointer pid, MonoProcessData data)
 int
 mono_process_current_pid ()
 {
-#if defined(HAVE_UNISTD_H)
+#if defined(HAVE_GETPID)
 	return (int) getpid ();
+#elif defined(HOST_WASI)
+	return 0;
 #else
 #error getpid
 #endif
