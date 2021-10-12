@@ -150,15 +150,15 @@ namespace System.Reflection
 #endregion
         private string? toString;
         private RuntimeType[]? parameterTypes;
-        private INVOCATION_FLAGS invocationFlags;
+        private InvocationFlags invocationFlags;
 
-        internal INVOCATION_FLAGS InvocationFlags
+        internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                INVOCATION_FLAGS flags = invocationFlags;
-                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                InvocationFlags flags = invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
                 {
                     flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
                 }
@@ -784,15 +784,15 @@ namespace System.Reflection
 #endregion
         private string? toString;
         private RuntimeType[]? parameterTypes;
-        private INVOCATION_FLAGS invocationFlags;
+        private InvocationFlags invocationFlags;
 
-        internal INVOCATION_FLAGS InvocationFlags
+        internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                INVOCATION_FLAGS flags = invocationFlags;
-                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                InvocationFlags flags = invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
                 {
                     flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
                 }

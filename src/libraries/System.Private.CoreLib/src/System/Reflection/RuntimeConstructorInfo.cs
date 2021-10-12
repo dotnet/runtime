@@ -11,9 +11,9 @@ namespace System.Reflection
     internal sealed partial class RuntimeConstructorInfo : ConstructorInfo
     {
         [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
-        private static INVOCATION_FLAGS ComputeAndUpdateInvocationFlags(ConstructorInfo constructorInfo, ref INVOCATION_FLAGS flagsToUpdate)
+        private static InvocationFlags ComputeAndUpdateInvocationFlags(ConstructorInfo constructorInfo, ref InvocationFlags flagsToUpdate)
         {
-            INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_IS_CTOR; // this is a given
+            InvocationFlags invocationFlags = InvocationFlags.IsConstructor; // this is a given
 
             Type? declaringType = constructorInfo.DeclaringType;
 
@@ -22,29 +22,29 @@ namespace System.Reflection
                 || (constructorInfo.CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs // Managed varargs
                 )
             {
-                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                invocationFlags |= InvocationFlags.NoInvoke;
             }
             else if (constructorInfo.IsStatic)
             {
-                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR |
-                                    INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
+                invocationFlags |= InvocationFlags.RunClassConstructor |
+                                    InvocationFlags.NoConstructorInvoke;
             }
             else if (declaringType != null && declaringType.IsAbstract)
             {
-                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
+                invocationFlags |= InvocationFlags.NoConstructorInvoke;
             }
             else
             {
                 // Check for byref-like types
                 if (declaringType != null && declaringType.IsByRefLike)
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
+                    invocationFlags |= InvocationFlags.ContainsStackPointers;
 
                 // Check for attempt to create a delegate class.
                 if (typeof(Delegate).IsAssignableFrom(constructorInfo.DeclaringType))
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR;
+                    invocationFlags |= InvocationFlags.IsDelegateConstructor;
             }
 
-            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+            invocationFlags |= InvocationFlags.Initialized;
             flagsToUpdate = invocationFlags; // accesses are guaranteed atomic
             return invocationFlags;
         }
@@ -101,12 +101,12 @@ namespace System.Reflection
         public override object? Invoke(
             object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
+            if ((InvocationFlags & InvocationFlags.NoInvoke) != 0)
                 ThrowNoInvokeException();
 
             ValidateInvokeTarget(obj);
 
-            if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0)
+            if ((InvocationFlags & InvocationFlags.RunClassConstructor) != 0)
             {
                 // Run the class constructor through the class constructor mechanism instead of the Invoke path.
                 // This avoids allowing mutation of readonly static fields, and initializes the type correctly.
@@ -143,7 +143,7 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS | INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE)) != 0)
+            if ((InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
             {
                 ThrowNoInvokeException();
             }

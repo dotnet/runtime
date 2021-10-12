@@ -28,15 +28,15 @@ namespace System.Reflection
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
         private Signature? m_signature;
-        private INVOCATION_FLAGS m_invocationFlags;
+        private InvocationFlags m_invocationFlags;
 
-        internal INVOCATION_FLAGS InvocationFlags
+        internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                INVOCATION_FLAGS flags = m_invocationFlags;
-                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                InvocationFlags flags = m_invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
                 {
                     flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
                 }
@@ -198,7 +198,7 @@ namespace System.Reflection
             Justification = "This ConstructorInfo instance represents the static constructor itself, so if this object was created, the static constructor exists.")]
         private object? InvokeClassConstructor()
         {
-            Debug.Assert((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0);
+            Debug.Assert((InvocationFlags & InvocationFlags.RunClassConstructor) != 0);
             var declaringType = DeclaringType;
 
             if (declaringType != null)

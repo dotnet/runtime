@@ -11,9 +11,9 @@ namespace System.Reflection
     internal sealed partial class RuntimeMethodInfo : MethodInfo
     {
         [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
-        private static INVOCATION_FLAGS ComputeAndUpdateInvocationFlags(MethodInfo methodInfo, ref INVOCATION_FLAGS flagsToUpdate)
+        private static InvocationFlags ComputeAndUpdateInvocationFlags(MethodInfo methodInfo, ref InvocationFlags flagsToUpdate)
         {
-            INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
+            InvocationFlags invocationFlags = InvocationFlags.Unknown;
 
             Type? declaringType = methodInfo.DeclaringType;
 
@@ -22,7 +22,7 @@ namespace System.Reflection
                 || (methodInfo.CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs // Managed varargs
                 )
             {
-                invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                invocationFlags = InvocationFlags.NoInvoke;
             }
             else
             {
@@ -30,21 +30,21 @@ namespace System.Reflection
                 {
                     if (declaringType.ContainsGenericParameters) // Enclosing type has unbound generics
                     {
-                        invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                        invocationFlags = InvocationFlags.NoInvoke;
                     }
                     else if (declaringType.IsByRefLike) // Check for byref-like types
                     {
-                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
+                        invocationFlags |= InvocationFlags.ContainsStackPointers;
                     }
                 }
 
                 if (methodInfo.ReturnType.IsByRefLike) // Check for byref-like types for return
                 {
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
+                    invocationFlags |= InvocationFlags.ContainsStackPointers;
                 }
             }
 
-            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
+            invocationFlags |= InvocationFlags.Initialized;
             flagsToUpdate = invocationFlags; // accesses are guaranteed atomic
             return invocationFlags;
 
@@ -62,7 +62,7 @@ namespace System.Reflection
         private void ThrowNoInvokeException()
         {
             // method is on a class that contains stack pointers
-            if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS) != 0)
+            if ((InvocationFlags & InvocationFlags.ContainsStackPointers) != 0)
             {
                 throw new NotSupportedException();
             }
@@ -97,10 +97,10 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
+            // ContainsStackPointers means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
             // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
-            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            if ((InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
                 ThrowNoInvokeException();
             }

@@ -27,15 +27,15 @@ namespace System.Reflection
         private Signature? m_signature;
         private RuntimeType m_declaringType;
         private object? m_keepalive;
-        private INVOCATION_FLAGS m_invocationFlags;
+        private InvocationFlags m_invocationFlags;
 
-        internal INVOCATION_FLAGS InvocationFlags
+        internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                INVOCATION_FLAGS flags = m_invocationFlags;
-                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
+                InvocationFlags flags = m_invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
                 {
                     flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
                 }
@@ -326,10 +326,10 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
-            // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
+            // ContainsStackPointers means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
             // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
-            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            if ((InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
                 ThrowNoInvokeException();
             }
