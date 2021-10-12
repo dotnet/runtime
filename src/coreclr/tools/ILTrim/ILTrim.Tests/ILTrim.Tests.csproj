@@ -9,6 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="TypeSystem/IL/ILReader.cs" />
+
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="5.0.1" />
     <ProjectReference Include="../ILTrim/ILTrim.Core.csproj" />

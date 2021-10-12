@@ -6,6 +6,11 @@
     <RollForward>Major</RollForward>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\TypeSystem\IL\ILOpcode.cs" Link="TypeSystem/IL/ILOpcode.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\ILOpcodeHelper.cs" Link="TypeSystem/IL/ILOpcodeHelper.cs" />
+    <Compile Include="..\..\Common\TypeSystem\IL\ILReader.cs" Link="TypeSystem/IL/ILReader.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />

@@ -13,11 +13,13 @@ class Program
 {
     static int Field;
 
+    [Kept]
     static int FirstMethod() => 300;
 
+    [Kept]
     static int Main()
     {
-        return 42;
+        return FirstMethod();
     }
 
     static void LastMethod(int someParameter) { }
