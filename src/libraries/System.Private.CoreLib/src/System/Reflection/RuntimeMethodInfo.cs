@@ -24,13 +24,21 @@ namespace System.Reflection
             {
                 invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
             }
-            else if (declaringType != null)
+            else
             {
-                if (declaringType.ContainsGenericParameters) // Enclosing type has unbound generics
+                if (declaringType != null)
                 {
-                    invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                    if (declaringType.ContainsGenericParameters) // Enclosing type has unbound generics
+                    {
+                        invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
+                    }
+                    else if (declaringType.IsByRefLike) // Check for byref-like types
+                    {
+                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
+                    }
                 }
-                else if (declaringType.IsByRefLike) // Check for byref-like types
+
+                if (methodInfo.ReturnType.IsByRefLike) // Check for byref-like types for return
                 {
                     invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
                 }
