@@ -398,7 +398,7 @@ namespace System.Threading
                 // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
                 bool reset =
                     _timer is not TimerQueueTimer timer ||
-                    (timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued);
+                    (timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite, throwIfDisposed: false) && !timer._everQueued);
 
                 if (reset)
                 {
