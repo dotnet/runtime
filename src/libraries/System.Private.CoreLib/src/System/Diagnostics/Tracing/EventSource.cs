@@ -2895,9 +2895,10 @@ namespace System.Diagnostics.Tracing
 
         // Send out the ETW manifest XML out to ETW
         // Today, we only send the manifest to ETW, custom listeners don't get it.
+        // Don't send if we are specific "EventSource"s that are pass-throughs to native events
         private unsafe void SendManifest(byte[]? rawManifest)
         {
-            if (rawManifest == null)
+            if (rawManifest == null || m_guid.Equals(NativeRuntimeEventSourceGuid))
                 return;
 
             Debug.Assert(!SelfDescribingEvents);
@@ -3961,6 +3962,9 @@ namespace System.Diagnostics.Tracing
         // used for generating GUID from eventsource name
         private static byte[]? namespaceBytes;
 #endif
+
+        // GUIDs for special-cased EventSources, e.g., NativeRuntimeEventSource, that shouldn't send a manifest to ETW
+        private static readonly Guid NativeRuntimeEventSourceGuid = new Guid("E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4"); // NativeRuntimeEventSource
 #endregion
     }
 
