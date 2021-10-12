@@ -13640,10 +13640,10 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #ifdef _DEBUG
                     {
+                        TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
                         StackScratchBuffer buf;
                         _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
                         // Run through the type layout logic again, after the assert, makes debugging easy
-                        TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
                     }
 #endif
 
