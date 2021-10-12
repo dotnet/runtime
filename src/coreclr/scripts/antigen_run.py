@@ -169,7 +169,16 @@ def copy_issues(issues_directory, upload_directory, tag_name):
         except PermissionError as pe_error:
             print('Ignoring PermissionError: {0}'.format(pe_error))
 
+        src_antigen_log = os.path.join(issues_directory, get_antigen_filename(tag_name))
+        dst_antigen_log = os.path.join(upload_directory, get_antigen_filename(tag_name))
+        print("Copying {} to {}".format(src_antigen_log, dst_antigen_log))
+        try:
+            shutil.copy2(src_antigen_log, dst_antigen_log)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
 
+def get_antigen_filename(tag_name):
+    return "Antigen-{}.log".format(tag_name)
 
 def main(main_args):
     """Main entrypoint
@@ -194,11 +203,12 @@ def main(main_args):
 
     # Run tool such that issues are placed in a temp folder
     with TempDir() as temp_location:
-        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _long_running= True)
+        antigen_log = path.join(temp_location, get_antigen_filename(tag_name))
+        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _output_file= antigen_log)
 
         # Copy issues for upload
         print("Copying issues to " + output_directory)
-        copy_issues(temp_location, output_directory, tag_name)
+        copy_issues(temp_location, output_directory, tag_name, antigen_log)
 
 if __name__ == "__main__":
     args = parser.parse_args()

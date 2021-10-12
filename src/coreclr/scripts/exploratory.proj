@@ -79,7 +79,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) -partition %(PartitionName)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt</DownloadFilesFromResults>
+      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;Antigen-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 

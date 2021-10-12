@@ -71,6 +71,8 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
       - name: IssuesSummaryLocation
         value: '$(Build.SourcesDirectory)\artifacts\issues_summary\'
+      - name: AntigenLogsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\antigen_logs\'
 
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
@@ -83,6 +85,8 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
       - name: IssuesSummaryLocation
         value: '$(Build.SourcesDirectory)/artifacts/issues_summary/'
+      - name: AntigenLogsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/antigen_logs/'
     workspace:
       clean: all
     pool:
@@ -146,6 +150,24 @@ jobs:
       inputs:
         targetPath: $(IssuesSummaryLocation)
         artifactName: 'Issues_Summary_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      continueOnError: true
+      condition: always()
+
+    # Always upload the available Antigen.log files
+    - task: CopyFiles@2
+      displayName: Copying Antigen.logs of all partitions
+      inputs:
+        sourceFolder: '$(IssuesLocation)'
+        contents: '**/Antigen-*.log'
+        targetFolder: '$(AntigenLogsLocation)'
+      continueOnError: true
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Antigen.log files
+      inputs:
+        targetPath: $(AntigenLogsLocation)
+        artifactName: 'Antigen_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       continueOnError: true
       condition: always()
 
