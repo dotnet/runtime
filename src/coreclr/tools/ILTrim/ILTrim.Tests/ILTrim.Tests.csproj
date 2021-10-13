@@ -9,9 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../Common/TypeSystem/IL/ILOpcode.cs" Link="TypeSystem/IL/ILOpcode.cs" />
-    <Compile Include="../../Common/TypeSystem/IL/ILOpcodeHelper.cs" Link="TypeSystem/IL/ILOpcodeHelper.cs" />
-    <Compile Include="../../Common/TypeSystem/IL/ILReader.cs" Link="TypeSystem/IL/ILReader.cs" />
     <PackageReference Include="FluentAssertions" Version="6.0.0-alpha0002" />
 
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="$(MicrosoftCodeAnalysisCSharpVersion)" />
