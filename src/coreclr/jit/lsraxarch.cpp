@@ -2398,7 +2398,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     assert(resultOpNum == 0);
                     if (op1->isContained() || op1->IsRegOptional())
                     {
-                        // In the case that result is writtent into destination that is different from any of the
+                        // In the case that result is written into destination that is different from any of the
                         // source operands, we set op2 to be tgtPrefUse when op1 is contained.
 
                         tgtPrefUse = BuildUse(op2);

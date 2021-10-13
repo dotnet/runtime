@@ -2108,7 +2108,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     emitAttr       attr        = emitActualTypeSize(Compiler::getSIMDTypeForSize(node->GetSimdSize()));
     instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, baseType); // 213 form
     instruction    _132form    = (instruction)(ins - 1);
-    instruction    _232form    = (instruction)(ins - 1);
+    instruction    _231form    = (instruction)(ins + 1);
     GenTree*       op1         = node->gtGetOp1();
     regNumber      targetReg   = node->GetRegNum();
 
@@ -2165,7 +2165,7 @@ void CodeGen::genFMAIntrinsic(GenTreeHWIntrinsic* node)
     else if (resultOpNum == 3)
     {
         // 231 form: XMM1 = (XMM2 * [XMM3]) + XMM1
-        ins    = _232form;
+        ins    = _231form;
         op1Reg = op3->GetRegNum();
         if (op1->isContained() || op1->IsRegOptional())
         {

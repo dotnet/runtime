@@ -21820,7 +21820,7 @@ uint16_t GenTreeLclVarCommon::GetLclOffs() const
 
 #if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
-// GetOverwrittenOpNumForFMA: check if the result is written into one of the operands.
+// GetResultOpNumForFMA: check if the result is written into one of the operands.
 // In the case that none of the operand is overwritten, check if any of them is lastUse.
 //
 // Return Value:
