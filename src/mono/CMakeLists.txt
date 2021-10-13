@@ -204,6 +204,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
   add_definitions(-D_THREAD_SAFE)
+  # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
+  add_link_options(-Wl,-z,relro)
+  add_link_options(-Wl,-z,now)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
@@ -231,6 +234,15 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   # sys/random.h exists, but its not found
   set(HAVE_SYS_RANDOM_H 1)
   set(INTERNAL_ZLIB 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  set(HOST_WASI 1)
+  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN)
+  add_definitions(-DNO_GLOBALIZATION_SHIM)
+  add_definitions(-D_THREAD_SAFE)
+  set(DISABLE_SHARED_LIBS 1)
+  set(INTERNAL_ZLIB 1)
+  set(DISABLE_EXECUTABLES 1)
+  set(DISABLE_COMPONENTS 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(HOST_WIN32 1)
   set(EXE_SUFFIX ".exe")
@@ -243,15 +255,22 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(/Oi) # enable intrinsics
-    add_compile_options(/GF) # enable string pooling
-    add_compile_options(/Zi) # enable debugging information
-    add_compile_options(/GL) # whole program optimization
-    add_link_options(/LTCG)  # link-time code generation
+    add_compile_options(/Oi)   # enable intrinsics
+    add_compile_options(/GF)   # enable string pooling
+    add_compile_options(/Zi)   # enable debugging information
+    add_compile_options(/GL)   # whole program optimization
+    add_link_options(/LTCG)    # link-time code generation
+    add_link_options(/DEBUG)   # enable debugging information
+    add_link_options(/OPT:REF) # optimize: remove unreferenced functions & data
+    add_link_options(/OPT:ICF) # optimize: enable COMDAT folding
+    # the combination of /Zi compiler flag and /DEBUG /OPT:REF /OPT:ICF
+    # linker flags is needed to create .pdb output on release builds
   endif()
 elseif(CMAKE_SYSTEM_NAME STREQUAL "SunOS")
   set(HOST_SOLARIS 1)
   add_definitions(-DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(HOST_FREEBSD 1)
 else()
   message(FATAL_ERROR "Host '${CMAKE_SYSTEM_NAME}' not supported.")
 endif()
@@ -288,10 +307,14 @@ elseif(TARGET_SYSTEM_NAME STREQUAL "Emscripten")
   if (CMAKE_BUILD_TYPE STREQUAL "Release")
     add_compile_options(-Os)
   endif()
+elseif(TARGET_SYSTEM_NAME STREQUAL "WASI")
+  set(TARGET_WASI 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "Windows")
   set(TARGET_WIN32 1)
 elseif(TARGET_SYSTEM_NAME STREQUAL "SunOS")
   set(TARGET_SOLARIS 1)
+elseif(TARGET_SYSTEM_NAME STREQUAL "FreeBSD")
+  set(TARGET_FREEBSD 1)
 else()
   message(FATAL_ERROR "Target '${TARGET_SYSTEM_NAME}' not supported.")
 endif()
@@ -320,7 +343,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "i686" OR CMAKE_SYSTEM_PROCESSOR STREQUAL
   set(CMAKE_SYSTEM_PROCESSOR "x86")
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
   set(CMAKE_SYSTEM_PROCESSOR "arm64")
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "x64")
   set(CMAKE_SYSTEM_PROCESSOR "x86_64")
 endif()
 
@@ -338,7 +361,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
   set(NO_UNALIGNED_ACCESS 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
   set(HOST_S390X 1)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm")
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm32")
   set(HOST_WASM 1)
 else()
   message(FATAL_ERROR "CMAKE_SYSTEM_PROCESSOR='${CMAKE_SYSTEM_PROCESSOR}' not supported.")
@@ -395,7 +418,7 @@ elseif(TARGET_ARCH STREQUAL "s390x")
   set(MONO_ARCHITECTURE "\"s390x\"")
   set(TARGET_SIZEOF_VOID_P 8)
   set(SIZEOF_REGISTER 8)
-elseif(TARGET_ARCH STREQUAL "wasm")
+elseif(TARGET_ARCH STREQUAL "wasm" OR TARGET_ARCH STREQUAL "wasm32")
   set(TARGET_WASM 1)
   set(MONO_ARCHITECTURE "\"wasm\"")
   set(TARGET_SIZEOF_VOID_P 4)
@@ -456,29 +479,29 @@ endif()
 ######################################
 
 # llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_1100 "-lLLVMOrcJIT" "-lLLVMPasses" "-lLLVMCoroutines" "-lLLVMipo" "-lLLVMInstrumentation" "-lLLVMVectorize" "-lLLVMScalarOpts" "-lLLVMLinker" "-lLLVMIRReader" "-lLLVMAsmParser" "-lLLVMInstCombine" "-lLLVMFrontendOpenMP" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMOrcError" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMTarget" "-lLLVMRuntimeDyld" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_core_libs_1100 "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMOrcError" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_1100 "-lLLVMX86CodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_x86codegen_1100 "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_1100 "-lLLVMARMCodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_armcodegen_1100 "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_1100 "-lLLVMAArch64CodeGen" "-lLLVMCFGuard" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMTextAPI" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBitstreamReader" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_aarch64codegen_1100 "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
 
 # llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_900 "-lLLVMOrcJIT" "-lLLVMJITLink" "-lLLVMMCJIT" "-lLLVMExecutionEngine" "-lLLVMRuntimeDyld" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_core_libs_900 "LLVMOrcJIT" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMRuntimeDyld" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_900 "-lLLVMX86CodeGen" "-lLLVMGlobalISel" "-lLLVMX86Desc" "-lLLVMX86Utils" "-lLLVMX86Info" "-lLLVMMCDisassembler" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMBinaryFormat" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_x86codegen_900 "LLVMX86CodeGen" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Utils" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_900 "-lLLVMARMCodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMARMDesc" "-lLLVMMCDisassembler" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMARMUtils" "-lLLVMARMInfo" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_armcodegen_900 "LLVMARMCodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
 
 # llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_900 "-lLLVMAArch64CodeGen" "-lLLVMGlobalISel" "-lLLVMSelectionDAG" "-lLLVMAsmPrinter" "-lLLVMDebugInfoDWARF" "-lLLVMCodeGen" "-lLLVMTarget" "-lLLVMScalarOpts" "-lLLVMInstCombine" "-lLLVMAggressiveInstCombine" "-lLLVMTransformUtils" "-lLLVMBitWriter" "-lLLVMAnalysis" "-lLLVMProfileData" "-lLLVMObject" "-lLLVMMCParser" "-lLLVMBitReader" "-lLLVMBitstreamReader" "-lLLVMCore" "-lLLVMRemarks" "-lLLVMAArch64Desc" "-lLLVMMC" "-lLLVMDebugInfoCodeView" "-lLLVMDebugInfoMSF" "-lLLVMBinaryFormat" "-lLLVMAArch64Utils" "-lLLVMAArch64Info" "-lLLVMSupport" "-lLLVMDemangle")
+set(MONO_llvm_extra_libs_aarch64codegen_900 "LLVMAArch64CodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
 ######################################
 # LLVM CHECKS
@@ -508,8 +531,9 @@ if(LLVM_PREFIX)
     string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
     # llvm-config --cflags
-    set(llvm_cflags "-I${LLVM_PREFIX}/include")
-    set(llvm_cxxflags "-I${LLVM_PREFIX}/include")
+    set(llvm_cflags "")
+    set(llvm_cxxflags "")
+    set(llvm_includedir "${LLVM_PREFIX}/include")
 
     # llvm-config --system-libs
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
@@ -524,6 +548,8 @@ if(LLVM_PREFIX)
     endif()
 
     set(llvm_libs ${llvm_core_libs} ${llvm_extra})
+    list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
+    list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
   else()
     set(LLVM_CONFIG ${LLVM_PREFIX}/bin/llvm-config${EXE_SUFFIX})
     if (NOT EXISTS ${LLVM_CONFIG})
@@ -536,8 +562,9 @@ if(LLVM_PREFIX)
     endif()
     execute_process(COMMAND ${LLVM_CONFIG} --cflags OUTPUT_VARIABLE llvm_cflags OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --cxxflags OUTPUT_VARIABLE llvm_cxxflags OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --includedir OUTPUT_VARIABLE llvm_includedir OUTPUT_STRIP_TRAILING_WHITESPACE)
     execute_process(COMMAND ${LLVM_CONFIG} --system-libs OUTPUT_VARIABLE llvm_system_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
-    execute_process(COMMAND ${LLVM_CONFIG} --libs analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND ${LLVM_CONFIG} --libfiles analysis core bitwriter mcjit orcjit ${llvm_codegen_libs} OUTPUT_VARIABLE llvm_libs_space_separated OUTPUT_STRIP_TRAILING_WHITESPACE)
     separate_arguments(llvm_system_libs NATIVE_COMMAND ${llvm_system_libs_space_separated})
     separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
@@ -550,6 +577,7 @@ if(LLVM_PREFIX)
   set(ENABLE_LLVM_RUNTIME 1)
   set(LLVM_LIBS ${llvm_libs} ${llvm_system_libs})
   set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
+  set(LLVM_INCLUDEDIR "${llvm_includedir}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
@@ -594,6 +622,12 @@ elseif(HOST_WIN32)
 elseif(HOST_SOLARIS)
   set(ICU_FLAGS "-DPALEXPORT=\"\" -DTARGET_UNIX -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
   set(HAVE_SYS_ICU 1)
+elseif(TARGET_FREEBSD)
+  set(ICU_FLAGS "-DTARGET_UNIX -Wno-deprecated-declarations")
+  set(HAVE_SYS_ICU 1)
+  set(ICU_LIBS icuuc icui18n)
+  set(ICU_INCLUDEDIR "${CROSS_ROOTFS}/usr/local/include")
+  set(ICU_LIBDIR "${CROSS_ROOTFS}/usr/local/lib")
 else()
   message(FATAL_ERROR "Unknown host")
 endif()
@@ -717,11 +751,13 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
-if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-  if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
-  else()
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  endif()
+else()
+  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/version.c")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version.c" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
   endif()
 endif()
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
@@ -743,7 +779,7 @@ if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
   file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
 else()
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "sccsid")
+  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/version.c" product_version_string_line REGEX "sccsid")
   string(REGEX REPLACE ".*Version *(.*)\";" "\"\\1\"" product_version_string ${product_version_string_line})
 endif()
 

@@ -52,8 +52,11 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         Sequential(),
+                        Iterations(),
                         Framework(),
                         UseFramework(),
                         Release(),
@@ -89,8 +92,11 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         Sequential(),
+                        Iterations(),
                         Framework(),
                         UseFramework(),
                         Release(),
@@ -119,10 +125,13 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         Crossgen2Parallelism(),
                         Crossgen2JitPath(),
                         DegreeOfParallelism(),
                         Sequential(),
+                        Iterations(),
                         Release(),
                         LargeBubble(),
                         Composite(),
@@ -148,6 +157,8 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
@@ -165,6 +176,8 @@ namespace R2RTest
                         Composite(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         CompilationTimeoutMinutes(),
                         Crossgen2Path(),
                         MibcPath(),
@@ -227,11 +240,20 @@ namespace R2RTest
             Option Pdb() =>
                 new Option<bool>(new[] { "--pdb" }, "Generate PDB symbol information (Crossgen2 / Windows only)");
 
+            Option Perfmap() =>
+                new Option<bool>(new[] { "--perfmap" }, "Generate perfmap symbol information");
+
+            Option PerfmapFormatVersion() =>
+                new Option<int>(new[] { "--perfmap-format-version" }, "Perfmap format version to generate");
+
             Option DegreeOfParallelism() =>
                 new Option<int>(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)");
 
             Option Sequential() =>
                 new Option<bool>(new[] { "--sequential" }, "Run tests sequentially");
+
+            Option Iterations() =>
+                new Option<int>(new[] { "--iterations" }, "Number of iterations for each test execution");
 
             Option Framework() =>
                 new Option<bool>(new[] { "--framework" }, "Precompile and use native framework");
@@ -265,7 +287,7 @@ namespace R2RTest
                 new Option<int>(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)");
 
             Option R2RDumpPath() =>
-                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();
+                new Option<FileInfo>(new[] { "--r2r-dump-path" }, "Path to R2RDump.exe/dll").ExistingOnly();
 
             Option MeasurePerf() =>
                 new Option<bool>(new[] { "--measure-perf" }, "Print out compilation time");

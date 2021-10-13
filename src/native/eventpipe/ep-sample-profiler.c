@@ -198,10 +198,7 @@ sample_profiler_enable (void)
 
 	ep_requires_lock_held ();
 
-	const bool result = sample_profiler_load_dependecies ();
-	EP_ASSERT (result);
-
-	if (result && !sample_profiler_load_profiling_enabled ()) {
+	if (!sample_profiler_load_profiling_enabled ()) {
 		sample_profiler_store_profiling_enabled (true);
 
 		EP_ASSERT (!ep_rt_wait_event_is_valid (&_thread_shutdown_event));
@@ -272,6 +269,8 @@ ep_sample_profiler_enable (void)
 	// Check to see if the sample profiler event is enabled. If it is not, do not spin up the sampling thread.
 	if (!ep_event_is_enabled (_thread_time_event))
 		return;
+
+	sample_profiler_load_dependecies ();
 
 	if (_can_start_sampling)
 		sample_profiler_enable ();

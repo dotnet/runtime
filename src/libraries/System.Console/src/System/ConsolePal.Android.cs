@@ -7,15 +7,13 @@ using System.Runtime.InteropServices;
 
 namespace System
 {
-    internal sealed unsafe class LogcatStream : ConsoleStream
+    internal sealed unsafe class LogcatStream : CachedConsoleStream
     {
-        public LogcatStream() : base(FileAccess.Write) {}
+        public LogcatStream(Encoding encoding) : base(encoding) {}
 
-        public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
-
-        public override unsafe void Write(ReadOnlySpan<byte> buffer)
+        protected override void Print(ReadOnlySpan<char> line)
         {
-            string log = ConsolePal.OutputEncoding.GetString(buffer);
+            string log = line.ToString();
             Interop.Logcat.AndroidLogPrint(Interop.Logcat.LogLevel.Info, "DOTNET", log);
         }
     }
@@ -26,9 +24,9 @@ namespace System
 
         public static Stream OpenStandardInput() => throw new PlatformNotSupportedException();
 
-        public static Stream OpenStandardOutput() => new LogcatStream();
+        public static Stream OpenStandardOutput() => new LogcatStream(OutputEncoding);
 
-        public static Stream OpenStandardError() => new LogcatStream();
+        public static Stream OpenStandardError() => new LogcatStream(OutputEncoding);
 
         public static Encoding InputEncoding => throw new PlatformNotSupportedException();
 

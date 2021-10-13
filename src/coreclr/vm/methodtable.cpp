@@ -6111,14 +6111,6 @@ WORD MethodTable::GetNumBoxedThreadStatics ()
     return GetClass()->GetNumBoxedThreadStatics();
 }
 
-//==========================================================================================
-ClassCtorInfoEntry* MethodTable::GetClassCtorInfoIfExists()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return NULL;
-}
-
 #ifdef _DEBUG
 //==========================================================================================
 // Returns true if pointer to the parent method table has been initialized/restored already.

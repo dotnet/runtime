@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.InteropServices;
@@ -43,6 +44,9 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAcceptState")]
         internal static extern void SslSetAcceptState(SafeSslHandle ssl);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAlpnProtos")]
+        internal static extern int SslSetAlpnProtos(SafeSslHandle ssl, IntPtr protos, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         internal static extern IntPtr SslGetVersion(SafeSslHandle ssl);
@@ -120,9 +124,6 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool SslSessionReused(SafeSslHandle ssl);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslAddExtraChainCert")]
-        internal static extern bool SslAddExtraChainCert(SafeSslHandle ssl, SafeX509Handle x509);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetClientCAList")]
         private static extern SafeSharedX509NameStackHandle SslGetClientCAList_private(SafeSslHandle ssl);
 
@@ -132,6 +133,55 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static extern IntPtr GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
+        internal static extern unsafe bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
+        internal static extern void SslSetVerifyPeer(SafeSslHandle ssl);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
+        internal static extern IntPtr SslGetData(IntPtr ssl);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
+        internal static extern int SslSetData(SafeSslHandle ssl, IntPtr data);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
+        internal static extern int SslSetData(IntPtr ssl, IntPtr data);
+
+        internal static unsafe int SslSetAlpnProtos(SafeSslHandle ssl, List<SslApplicationProtocol> protocols)
+        {
+            byte[] buffer = ConvertAlpnProtocolListToByteArray(protocols);
+            fixed (byte* b = buffer)
+            {
+                return SslSetAlpnProtos(ssl, (IntPtr)b, buffer.Length);
+            }
+        }
+
+        internal static byte[] ConvertAlpnProtocolListToByteArray(List<SslApplicationProtocol> applicationProtocols)
+        {
+            int protocolSize = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                if (protocol.Protocol.Length == 0 || protocol.Protocol.Length > byte.MaxValue)
+                {
+                    throw new ArgumentException(SR.net_ssl_app_protocols_invalid, nameof(applicationProtocols));
+                }
+
+                protocolSize += protocol.Protocol.Length + 1;
+            }
+
+            byte[] buffer = new byte[protocolSize];
+            var offset = 0;
+            foreach (SslApplicationProtocol protocol in applicationProtocols)
+            {
+                buffer[offset++] = (byte)(protocol.Protocol.Length);
+                protocol.Protocol.Span.CopyTo(buffer.AsSpan(offset));
+                offset += protocol.Protocol.Length;
+            }
+
+            return buffer;
+        }
 
         internal static string? GetOpenSslCipherSuiteName(SafeSslHandle ssl, TlsCipherSuite cipherSuite, out bool isTls12OrLower)
         {
@@ -157,58 +207,6 @@ internal static partial class Interop
             }
 
             return handle;
-        }
-
-        internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Chain chain)
-        {
-            Debug.Assert(chain != null, "X509Chain should not be null");
-            Debug.Assert(chain.ChainElements.Count > 0, "chain.Build should have already been called");
-
-            // If the last certificate is a root certificate, don't send it. PartialChain means the last cert wasn't a root.
-            int stop = chain.ChainElements.Count - 1;
-            foreach (X509ChainStatus s in chain.ChainStatus)
-            {
-                if ((s.Status & X509ChainStatusFlags.PartialChain) != 0)
-                {
-                    stop++;
-                    break;
-                }
-            }
-
-            // Don't include the first item (the cert whose private key we have)
-            for (int i = 1; i < stop; i++)
-            {
-                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain.ChainElements[i].Certificate!.Handle);
-                Crypto.CheckValidOpenSslHandle(dupCertHandle);
-                if (!SslAddExtraChainCert(sslContext, dupCertHandle))
-                {
-                    Crypto.ErrClearError();
-                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
-                    return false;
-                }
-                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
-            }
-
-            return true;
-        }
-
-        internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Certificate2[] chain)
-        {
-            // send pre-computed list of intermediates.
-            for (int i = 0; i < chain.Length; i++)
-            {
-                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
-                Crypto.CheckValidOpenSslHandle(dupCertHandle);
-                if (!SslAddExtraChainCert(sslContext, dupCertHandle))
-                {
-                    Crypto.ErrClearError();
-                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
-                    return false;
-                }
-                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
-            }
-
-            return true;
         }
 
         internal static class SslMethods

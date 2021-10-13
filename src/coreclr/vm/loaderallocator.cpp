@@ -481,11 +481,10 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 
             if (!domainAssemblyToRemove->GetAssembly()->IsDynamic())
             {
-                pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetFile());
+                pAppDomain->RemoveFileFromCache(domainAssemblyToRemove->GetPEAssembly());
                 AssemblySpec spec;
-                spec.InitializeSpec(domainAssemblyToRemove->GetFile());
+                spec.InitializeSpec(domainAssemblyToRemove->GetPEAssembly());
                 VERIFY(pAppDomain->RemoveAssemblyFromCache(domainAssemblyToRemove));
-                pAppDomain->RemoveNativeImageDependency(&spec);
             }
 
             domainAssemblyIt++;

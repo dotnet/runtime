@@ -624,6 +624,9 @@ namespace ComWrappersTests
                 ValidateQueryInterfaceAfterManagedObjectCollected();
                 ValidateAggregationWithComObject();
                 ValidateAggregationWithReferenceTrackerObject();
+
+                // Ensure all objects have been cleaned up.
+                ForceGC();
             }
             catch (Exception e)
             {

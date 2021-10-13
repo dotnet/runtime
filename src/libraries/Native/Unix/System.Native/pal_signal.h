@@ -40,8 +40,8 @@ typedef enum
     PosixSignalSIGQUIT = -3,
     PosixSignalSIGTERM = -4,
     PosixSignalSIGCHLD = -5,
-    PosixSignalSIGWINCH = -6,
-    PosixSignalSIGCONT = -7,
+    PosixSignalSIGCONT = -6,
+    PosixSignalSIGWINCH = -7,
     PosixSignalSIGTTIN = -8,
     PosixSignalSIGTTOU = -9,
     PosixSignalSIGTSTP = -10

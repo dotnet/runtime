@@ -1360,7 +1360,8 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             instGen_MemoryBarrier();
         }
 
-        GetEmitter()->emitInsLoadStoreOp(ins_Store(type), emitActualTypeSize(type), data->GetRegNum(), tree);
+        regNumber dataReg = data->GetRegNum();
+        GetEmitter()->emitInsLoadStoreOp(ins_StoreFromSrc(dataReg, type), emitActualTypeSize(type), dataReg, tree);
 
         // If store was to a variable, update variable liveness after instruction was emitted.
         genUpdateLife(tree);
@@ -1641,27 +1642,6 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     regSet.verifyRegistersUsed(RBM_CALLEE_TRASH);
 }
 
-//------------------------------------------------------------------------
-// genCodeForMulLong: Generates code for int*int->long multiplication
-//
-// Arguments:
-//    node - the GT_MUL_LONG node
-//
-// Return Value:
-//    None.
-//
-void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
-{
-    assert(node->OperGet() == GT_MUL_LONG);
-    genConsumeOperands(node);
-    GenTree*    src1 = node->gtOp1;
-    GenTree*    src2 = node->gtOp2;
-    instruction ins  = node->IsUnsigned() ? INS_umull : INS_smull;
-    GetEmitter()->emitIns_R_R_R_R(ins, EA_4BYTE, node->GetRegNum(), node->gtOtherReg, src1->GetRegNum(),
-                                  src2->GetRegNum());
-    genProduceReg(node);
-}
-
 #ifdef PROFILING_SUPPORTED
 
 //-----------------------------------------------------------------------------------
@@ -1883,6 +1863,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
                              INS_FLAGS_DONT_CARE, REG_STACK_PROBE_HELPER_ARG);
         regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
         genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+        regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_CALL_TARGET);
         compiler->unwindPadding();
         GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG, /* canSkip */ false);
 
@@ -1900,6 +1881,38 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         psiAdjustStackLevel(frameSize);
     }
 #endif // USING_SCOPE_INFO
+}
+
+//-----------------------------------------------------------------------------------
+// instGen_MemoryBarrier: Emit a MemoryBarrier instruction
+//
+// Arguments:
+//     barrierKind - kind of barrier to emit (ignored on arm32)
+//
+// Notes:
+//     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
+//     barrierKind argument is ignored on arm32 and a full memory barrier is emitted
+//
+void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
+{
+#ifdef DEBUG
+    if (JitConfig.JitNoMemoryBarriers() == 1)
+    {
+        return;
+    }
+#endif // DEBUG
+
+    // Avoid emitting redundant memory barriers on arm32 if they belong to the same IG
+    // and there were no memory accesses in-between them
+    if ((GetEmitter()->emitLastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    {
+        assert(GetEmitter()->emitLastMemBarrier->idSmallCns() == INS_BARRIER_SY);
+    }
+    else
+    {
+        // ARM has only full barriers, so all barriers need to be emitted as full.
+        GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, INS_BARRIER_SY);
+    }
 }
 
 #endif // TARGET_ARM

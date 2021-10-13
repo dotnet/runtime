@@ -6,11 +6,10 @@ trigger:
   batch: true
   branches:
     include:
-    - main
+    - release/*.*
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - eng/Version.Details.xml
     - .github/*
@@ -22,6 +21,14 @@ trigger:
     - README.md
     - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
+
+schedules:
+  - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
+    displayName: Runtime-staging default schedule
+    branches:
+      include:
+      - main
+    always: false # run only if there were changes since the last successful scheduled run.
 
 pr:
   branches:
@@ -55,7 +62,7 @@ jobs:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
 #
-# iOS/tvOS/Catalyst interp - requires AOT Compilation and Interp flags
+# iOS/tvOS interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -65,12 +72,10 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - MacCatalyst_x64
     - iOSSimulator_x64
     - tvOSSimulator_x64
     # don't run tests on arm64 PRs until we can get significantly more devices
     - ${{ if eq(variables['isFullMatrix'], true) }}:
-      - MacCatalyst_arm64
       - iOSSimulator_arm64
     variables:
       # map dependencies variables to local variables
@@ -94,6 +99,91 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         interpreter: true
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# MacCatalyst interp - requires AOT Compilation and Interp flags
+# Build the whole product using Mono and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - MacCatalyst_x64
+    # don't run tests on arm64 PRs until we can get significantly more devices
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - MacCatalyst_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=adhoc /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildDarwinFrameworks=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        interpreter: true
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        condition: >-
+          or(
+          eq(variables['librariesContainsChange'], true),
+          eq(variables['monoContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
+
+#
+# iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
+# Build the whole product using Mono and run libraries tests
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+      - iOS_arm64
+      - tvOS_arm64
+    variables:
+      # map dependencies variables to local variables
+      - name: librariesContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:EnableSoftTrimming=true /p:BuildDarwinFrameworks=true
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         condition: >-
           or(
@@ -334,12 +424,13 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
       # don't run tests on PRs until we can get significantly more devices
-      ${{ if eq(variables['isFullMatrix'], true) }}:
-        # extra steps, run tests
-        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-        extraStepsParameters:
-          creator: dotnet-bot
-          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      # Turn off the testing for now, until https://github.com/dotnet/xharness/issues/663 gets resolved
+      # ${{ if eq(variables['isFullMatrix'], true) }}:
+      #   # extra steps, run tests
+      #   extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+      #   extraStepsParameters:
+      #     creator: dotnet-bot
+      #     testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 # Run disabled installer tests on Linux x64
 - template: /eng/pipelines/common/platform-matrix.yml

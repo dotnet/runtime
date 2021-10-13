@@ -185,6 +185,7 @@ namespace System.Reflection.Emit
         private CustomAttributeBuilder[]? cattrs;
         private string? version;
         private string? culture;
+        private byte[]? public_key_token;
         private Module[]? loaded_modules;
         private uint access;
 #endregion
@@ -221,6 +222,7 @@ namespace System.Reflection.Emit
             {
                 version = v.ToString();
             }
+            public_key_token = n.GetPublicKeyToken();
 
             basic_init(this);
 
@@ -396,7 +398,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) =>
             CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
 
-        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributeData.GetCustomAttributes(this);
+        public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
 #endif

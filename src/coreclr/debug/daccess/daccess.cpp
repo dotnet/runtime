@@ -679,11 +679,6 @@ MetaEnum::New(Module* mod,
         *handle = TO_CDENUM(NULL);
     }
 
-    if (!mod->GetFile()->HasMetadata())
-    {
-        return S_FALSE;
-    }
-
     metaEnum = new (nothrow) MetaEnum;
     if (!metaEnum)
     {
@@ -4079,20 +4074,10 @@ ClrDataAccess::GetModuleByAddress(
         {
             TADDR base;
             ULONG32 length;
-            PEFile* file = modDef->GetFile();
+            PEAssembly* pPEAssembly = modDef->GetPEAssembly();
 
-            if ((base = PTR_TO_TADDR(file->GetLoadedImageContents(&length))))
+            if ((base = PTR_TO_TADDR(pPEAssembly->GetLoadedImageContents(&length))))
             {
-                if (TO_CDADDR(base) <= address &&
-                    TO_CDADDR(base + length) > address)
-                {
-                    break;
-                }
-            }
-            if (file->HasNativeImage())
-            {
-                base = PTR_TO_TADDR(file->GetLoadedNative()->GetBase());
-                length = file->GetLoadedNative()->GetVirtualSize();
                 if (TO_CDADDR(base) <= address &&
                     TO_CDADDR(base + length) > address)
                 {
@@ -4143,9 +4128,9 @@ ClrDataAccess::StartEnumMethodDefinitionsByAddress(
         {
             TADDR base;
             ULONG32 length;
-            PEFile* file = modDef->GetFile();
+            PEAssembly* assembly = modDef->GetPEAssembly();
 
-            if ((base = PTR_TO_TADDR(file->GetLoadedImageContents(&length))))
+            if ((base = PTR_TO_TADDR(assembly->GetLoadedImageContents(&length))))
             {
                 if (TO_CDADDR(base) <= address &&
                     TO_CDADDR(base + length) > address)
@@ -6040,13 +6025,20 @@ ClrDataAccess::GetMethodVarInfo(MethodDesc* methodDesc,
     SUPPORTS_DAC;
     COUNT_T countNativeVarInfo;
     NewHolder<ICorDebugInfo::NativeVarInfo> nativeVars(NULL);
-
-    NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-    if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+    TADDR nativeCodeStartAddr;
+    if (address != NULL)
     {
-        return E_INVALIDARG;
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        {
+            return E_INVALIDARG;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
     }
-    TADDR nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    else
+    {
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+    }
 
     DebugInfoRequest request;
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
@@ -6091,13 +6083,20 @@ ClrDataAccess::GetMethodNativeMap(MethodDesc* methodDesc,
 
     // Use the DebugInfoStore to get IL->Native maps.
     // It doesn't matter whether we're jitted, ngenned etc.
-
-    NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
-    if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+    TADDR nativeCodeStartAddr;
+    if (address != NULL)
     {
-        return E_INVALIDARG;
+        NativeCodeVersion requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(address);
+        if (requestedNativeCodeVersion.IsNull() || requestedNativeCodeVersion.GetNativeCode() == NULL)
+        {
+            return E_INVALIDARG;
+        }
+        nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
     }
-    TADDR nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
+    else
+    {
+        nativeCodeStartAddr = PCODEToPINSTR(methodDesc->GetNativeCode());
+    }
 
     DebugInfoRequest request;
     request.InitFromStartingAddr(methodDesc, nativeCodeStartAddr);
@@ -6455,7 +6454,7 @@ ClrDataAccess::GetHostGcNotificationTable()
 }
 
 /* static */ bool
-ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
+ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
                                              DWORD &dwDataSize,
@@ -6471,27 +6470,9 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
     COUNT_T uniPathChars = 0;
 
     isNGEN = false;
-
-    if (pPEFile->HasNativeImage())
-    {
-        mdImage = pPEFile->GetNativeImage();
-        _ASSERTE(mdImage != NULL);
-        layout = mdImage->GetLoadedLayout();
-        pDir = &(layout->GetCorHeader()->MetaData);
-        // For ngen image, the IL metadata is stored for private use. So we need to pass
-        // the RVA hint to find it to debuggers.
-        //
-        if (pDir->Size != 0)
-        {
-            isNGEN = true;
-            dwRvaHint = pDir->VirtualAddress;
-            dwDataSize = pDir->Size;
-        }
-
-    }
     if (pDir == NULL || pDir->Size == 0)
     {
-        mdImage = pPEFile->GetILimage();
+        mdImage = pPEAssembly->GetPEImage();
         if (mdImage != NULL)
         {
             layout = mdImage->GetLoadedLayout();
@@ -6540,7 +6521,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
 }
 
 /* static */
-bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
+bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
                                                  DWORD &dwTimeStamp,
                                                  DWORD &dwSize,
                                                  __out_ecount(cchFilePath) LPWSTR wszFilePath,
@@ -6550,10 +6531,10 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEFile *peFile,
     DWORD dwWritten = 0;
 
     // use the IL File name
-    if (!peFile->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
+    if (!pPEAssembly->GetPath().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten)))
     {
         // Use DAC hint to retrieve the IL name.
-        peFile->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
+        pPEAssembly->GetModuleFileNameHint().DacGetUnicode(cchFilePath, wszFilePath, (COUNT_T *)(&dwWritten));
     }
     dwTimeStamp = 0;
     dwSize = 0;
@@ -6617,7 +6598,7 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
 #endif // FEATURE_CORESYSTEM
 
 void *
-ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
+ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
                                    bool* isAlternate)
 {
     DWORD imageTimestamp, imageSize, dataSize;
@@ -6648,7 +6629,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
     // so the field remains for now.
 
     if (!ClrDataAccess::GetMetaDataFileInfoFromPEFile(
-            peFile,
+            pPEAssembly,
             imageTimestamp,
             imageSize,
             dataSize,
@@ -6661,7 +6642,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
     }
 
     // try direct match for the image that is loaded into the managed process
-    peFile->GetLoadedMetadata((COUNT_T *)(&dataSize));
+    pPEAssembly->GetLoadedMetadata((COUNT_T *)(&dataSize));
 
     DWORD allocSize = 0;
     if (!ClrSafeInt<DWORD>::addition(dataSize, sizeof(DAC_INSTANCE), allocSize))
@@ -6679,7 +6660,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
     buffer = (void*)(inst + 1);
 
     // APIs implemented by hosting debugger.  It can use the path/filename, timestamp, and
-    // file size to find an exact match for the image.  If that fails for an ngen'ed image,
+    // pPEAssembly size to find an exact match for the image.  If that fails for an ngen'ed image,
     // we can request the IL image which it came from.
     if (m_legacyMetaDataLocator)
     {
@@ -6715,7 +6696,7 @@ ClrDataAccess::GetMetaDataFromHost(PEFile* peFile,
         //
         isAlt = true;
         if (!ClrDataAccess::GetILImageInfoFromNgenPEFile(
-                peFile,
+                pPEAssembly,
                 imageTimestamp,
                 imageSize,
                 uniPath,
@@ -6795,13 +6776,13 @@ ErrExit:
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// Given a PEFile or a ReflectionModule try to find the corresponding metadata
+// Given a PEAssembly or a ReflectionModule try to find the corresponding metadata
 // We will first ask debugger to locate it. If fail, we will try
 // to get it from the target process
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 IMDInternalImport*
-ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflectionModule, bool throwEx)
+ClrDataAccess::GetMDImport(const PEAssembly* pPEAssembly, const ReflectionModule* reflectionModule, bool throwEx)
 {
     HRESULT     status;
     PTR_CVOID mdBaseTarget = NULL;
@@ -6810,22 +6791,22 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     PVOID       mdBaseHost = NULL;
     bool        isAlternate = false;
 
-    _ASSERTE((peFile == NULL && reflectionModule != NULL) || (peFile != NULL && reflectionModule == NULL));
-    TADDR       peFileAddr = (peFile != NULL) ? dac_cast<TADDR>(peFile) : dac_cast<TADDR>(reflectionModule);
+    _ASSERTE((pPEAssembly == NULL && reflectionModule != NULL) || (pPEAssembly != NULL && reflectionModule == NULL));
+    TADDR     peAssemblyAddr = (pPEAssembly != NULL) ? dac_cast<TADDR>(pPEAssembly) : dac_cast<TADDR>(reflectionModule);
 
     //
     // Look for one we've already created.
     //
-    mdImport = m_mdImports.Get(peFileAddr);
+    mdImport = m_mdImports.Get(peAssemblyAddr);
     if (mdImport != NULL)
     {
         return mdImport;
     }
 
-    if (peFile != NULL)
+    if (pPEAssembly != NULL)
     {
         // Get the metadata size
-        mdBaseTarget = ((PEFile*)peFile)->GetLoadedMetadata(&mdSize);
+        mdBaseTarget = const_cast<PEAssembly*>(pPEAssembly)->GetLoadedMetadata(&mdSize);
     }
     else if (reflectionModule != NULL)
     {
@@ -6876,12 +6857,12 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     }
 
     // Try to see if debugger can locate it
-    if (peFile != NULL && mdBaseHost == NULL && (m_target3 || m_legacyMetaDataLocator))
+    if (pPEAssembly != NULL && mdBaseHost == NULL && (m_target3 || m_legacyMetaDataLocator))
     {
         // We couldn't read the metadata from memory.  Ask
         // the target for metadata as it may be able to
         // provide it from some alternate means.
-        mdBaseHost = GetMetaDataFromHost(const_cast<PEFile *>(peFile), &isAlternate);
+        mdBaseHost = GetMetaDataFromHost(const_cast<PEAssembly *>(pPEAssembly), &isAlternate);
     }
 
     if (mdBaseHost == NULL)
@@ -6916,7 +6897,7 @@ ClrDataAccess::GetMDImport(const PEFile* peFile, const ReflectionModule* reflect
     // The m_mdImports list does get cleaned up by calls to ClrDataAccess::Flush,
     // i.e. every time the process changes state.
 
-    if (m_mdImports.Add(peFileAddr, mdImport, isAlternate) == NULL)
+    if (m_mdImports.Add(peAssemblyAddr, mdImport, isAlternate) == NULL)
     {
         mdImport->Release();
         DacError(E_OUTOFMEMORY);
@@ -6984,9 +6965,9 @@ HRESULT ClrDataAccess::VerifyDlls()
     }
 
     // Read the debug directory timestamp from the target mscorwks image using DAC
-    // Note that we don't use the PE timestamp because the PE file might be changed in ways
+    // Note that we don't use the PE timestamp because the PE pPEAssembly might be changed in ways
     // that don't effect the PDB (and therefore don't effect DAC).  Specifically, we rebase
-    // our DLLs at the end of a build, that changes the PE file, but not the PDB.
+    // our DLLs at the end of a build, that changes the PE pPEAssembly, but not the PDB.
     // Note that if we wanted to be extra careful, we could read the CV contents (which includes
     // the GUID signature) and verify it matches.  Using the timestamp is useful for helpful error
     // messages, and should be sufficient in any real scenario.

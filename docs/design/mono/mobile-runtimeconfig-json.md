@@ -44,7 +44,7 @@ The task should:
 
  ```
  <UsingTask TaskName="RuntimeConfigParserTask"
-            AssemblyFile="$(RuntimeConfigParserTasksAssemblyPath)" />
+            AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
 <Target Name="BundleTestAndroidApp">
   <RuntimeConfigParserTask

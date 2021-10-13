@@ -1238,39 +1238,4 @@ Dictionary::PopulateEntry(
     return result;
 } // Dictionary::PopulateEntry
 
-//---------------------------------------------------------------------------------------
-//
-void
-Dictionary::PrepopulateDictionary(
-    MethodDesc *  pMD,
-    MethodTable * pMT,
-    BOOL          nonExpansive)
-{
-    STANDARD_VM_CONTRACT;
-
-    DictionaryLayout * pDictLayout = (pMT != NULL) ? pMT->GetClass()->GetDictionaryLayout() : pMD->GetDictionaryLayout();
-    DWORD numGenericArgs = (pMT != NULL) ? pMT->GetNumGenericArgs() : pMD->GetNumGenericMethodArgs();
-
-    if (pDictLayout != NULL)
-    {
-        for (DWORD i = 0; i < pDictLayout->GetNumUsedSlots(); i++)
-        {
-            if (IsSlotEmpty(numGenericArgs,i))
-            {
-                DictionaryEntry * pSlot;
-                DictionaryEntry entry;
-                entry = PopulateEntry(
-                    pMD,
-                    pMT,
-                    pDictLayout->GetEntryLayout(i)->m_signature,
-                    nonExpansive,
-                    &pSlot);
-
-                _ASSERT((entry == NULL) || (entry == GetSlot(numGenericArgs,i)));
-                _ASSERT((pSlot == NULL) || (pSlot == GetSlotAddr(numGenericArgs,i)));
-            }
-        }
-    }
-} // Dictionary::PrepopulateDictionary
-
 #endif //!DACCESS_COMPILE

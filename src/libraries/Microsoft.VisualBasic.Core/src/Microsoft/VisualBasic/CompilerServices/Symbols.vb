@@ -18,7 +18,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
     ' The symbol table.  This consists of helper functions wrapping Reflection
     ' (which is the actual "symbol table").
-    Friend Class Symbols
+    Friend NotInheritable Class Symbols
         ' Prevent creation.
         Private Sub New()
         End Sub
@@ -748,7 +748,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         Friend NotInheritable Class Container
 
-            Private Class InheritanceSorter : Implements IComparer(Of MemberInfo)
+            Private NotInheritable Class InheritanceSorter : Implements IComparer(Of MemberInfo)
 
                 Private Sub New()
                 End Sub

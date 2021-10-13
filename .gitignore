@@ -26,6 +26,7 @@ artifacts/
 bld/
 [Bb]in/
 [Oo]bj/
+MSBuild_Logs/
 msbuild.log
 msbuild.err
 msbuild.wrn
@@ -278,7 +279,6 @@ Session.vim
 
 # Visual Studio Code
 .vscode/
-.devcontainer/
 
 # Private test configuration and binaries.
 config.ps1

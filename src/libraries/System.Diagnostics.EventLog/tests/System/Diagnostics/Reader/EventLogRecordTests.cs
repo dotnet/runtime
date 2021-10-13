@@ -90,7 +90,8 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
         public void ExceptionOnce()
         {
-            if (PlatformDetection.IsWindows7) // Null events in PowerShell log
+            if (PlatformDetection.IsWindows7 ||  // Null events in PowerShell log
+                PlatformDetection.IsWindows10Version22000OrGreater) // ActiveIssue("https://github.com/dotnet/runtime/issues/58829")
                 return;
             var query = new EventLogQuery("Application", PathType.LogName, "*[System]") { ReverseDirection = true };
             var eventLog = new EventLogReader(query, Helpers.GetBookmark("Application", PathType.LogName));

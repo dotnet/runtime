@@ -30,10 +30,9 @@
 #endif // FEATURE_PERFMAP
 
 #ifndef DACCESS_COMPILE
-DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
+DomainFile::DomainFile(AppDomain *pDomain, PEAssembly *pPEAssembly)
   : m_pDomain(pDomain),
-    m_pFile(pFile),
-    m_pOriginalFile(NULL),
+    m_pPEAssembly(pPEAssembly),
     m_pModule(NULL),
     m_level(FILE_LOAD_CREATE),
     m_pError(NULL),
@@ -41,8 +40,7 @@ DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
     m_loading(TRUE),
     m_pDynamicMethodTable(NULL),
     m_pUMThunkHash(NULL),
-    m_bDisableActivationCheck(FALSE),
-    m_dwReasonForRejectingNativeImage(0)
+    m_bDisableActivationCheck(FALSE)
 {
     CONTRACTL
     {
@@ -55,7 +53,7 @@ DomainFile::DomainFile(AppDomain *pDomain, PEFile *pFile)
     CONTRACTL_END;
 
     m_hExposedModuleObject = NULL;
-    pFile->AddRef();
+    pPEAssembly->AddRef();
 }
 
 DomainFile::~DomainFile()
@@ -69,9 +67,7 @@ DomainFile::~DomainFile()
     }
     CONTRACTL_END;
 
-    m_pFile->Release();
-    if(m_pOriginalFile)
-        m_pOriginalFile->Release();
+    m_pPEAssembly->Release();
     if (m_pDynamicMethodTable)
         m_pDynamicMethodTable->Destroy();
     delete m_pError;
@@ -283,10 +279,10 @@ CHECK DomainFile::CheckLoaded()
     // assemblies for bootstrapping purposes.  This is because it has no
     // dependencies, security checks, and doesn't rely on loader notifications.
 
-    if (GetFile()->IsSystem())
+    if (GetPEAssembly()->IsSystem())
         CHECK_OK;
 
-    CHECK_MSG(GetFile()->CheckLoaded(), "PEFile has not been loaded");
+    CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
 
     CHECK_OK;
 }
@@ -311,10 +307,10 @@ CHECK DomainFile::CheckActivated()
     // assemblies for bootstrapping purposes.  This is because it has no
     // dependencies, security checks, and doesn't rely on loader notifications.
 
-    if (GetFile()->IsSystem())
+    if (GetPEAssembly()->IsSystem())
         CHECK_OK;
 
-    CHECK_MSG(GetFile()->CheckLoaded(), "PEFile has not been loaded");
+    CHECK_MSG(GetPEAssembly()->IsLoaded(), "PEAssembly has not been loaded");
     CHECK_MSG(IsLoaded(), "DomainFile has not been fully loaded");
     CHECK_MSG(m_bDisableActivationCheck || CheckLoadLevel(FILE_ACTIVE), "File has not had execution verified");
 
@@ -393,7 +389,7 @@ OBJECTREF DomainFile::GetExposedModuleObject()
 
         GCPROTECT_BEGIN(refClass);
 
-        if (GetFile()->IsDynamic())
+        if (GetPEAssembly()->IsDynamic())
         {
             refClass = (REFLECTMODULEBASEREF) AllocateObject(CoreLibBinder::GetClass(CLASS__MODULE_BUILDER));
         }
@@ -529,7 +525,7 @@ void DomainFile::LoadLibrary()
     }
     CONTRACTL_END;
 
-    GetFile()->LoadLibrary();
+    GetPEAssembly()->EnsureLoaded();
 }
 
 void DomainFile::PostLoadLibrary()
@@ -537,8 +533,8 @@ void DomainFile::PostLoadLibrary()
     CONTRACTL
     {
         INSTANCE_CHECK;
-        // Note that GetFile()->LoadLibrary must be called before this OUTSIDE OF THE LOCKS
-        PRECONDITION(GetFile()->CheckLoaded());
+        // Note that GetPEAssembly()->EnsureLoaded must be called before this OUTSIDE OF THE LOCKS
+        PRECONDITION(GetPEAssembly()->IsLoaded());
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -559,13 +555,10 @@ void DomainFile::PostLoadLibrary()
     // so it doesn't matter if types are pre-loaded. We only need the guarantee that code for the
     // loaded types won't execute yet. For NGEN images we deliver the load notification in
     // FILE_LOAD_DELIVER_EVENTS.
-    if (!GetFile()->HasNativeImage())
+    if (!IsProfilerNotified())
     {
-        if (!IsProfilerNotified())
-        {
-            SetProfilerNotified();
-            GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
-        }
+        SetProfilerNotified();
+        GetCurrentModule()->NotifyProfilerLoadFinished(S_OK);
     }
 
 #endif
@@ -601,8 +594,7 @@ void DomainFile::VtableFixups()
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!GetCurrentModule()->IsResource())
-        GetCurrentModule()->FixupVTables();
+    GetCurrentModule()->FixupVTables();
 }
 
 void DomainFile::FinishLoad()
@@ -620,24 +612,13 @@ void DomainFile::FinishLoad()
     // Now the DAC can find this module by enumerating assemblies in a domain.
     DACNotify::DoModuleLoadNotification(m_pModule);
 
-#if defined(DEBUGGING_SUPPORTED) && !defined(DACCESS_COMPILE)
-    if (IsDebuggerNotified() && (g_pDebugInterface != NULL))
-    {
-        // We already notified dbgapi that this module was loading (via LoadModule()).
-        // Now let the dbgapi know the module has reached FILE_LOADED, so it can do any
-        // processing that needs to wait until this stage (e.g., binding breakpoints in
-        // NGENd generics).
-        g_pDebugInterface->LoadModuleFinished(m_pModule, m_pDomain);
-    }
-#endif // defined(DEBUGGING_SUPPORTED) && !defined(DACCESS_COMPILE)
-
     // Set a bit to indicate that the module has been loaded in some domain, and therefore
     // typeloads can involve types from this module. (Used for candidate instantiations.)
     GetModule()->SetIsReadyForTypeLoad();
 
 #ifdef FEATURE_PERFMAP
     // Notify the perfmap of the IL image load.
-    PerfMap::LogImageLoad(m_pFile);
+    PerfMap::LogImageLoad(m_pPEAssembly);
 #endif
 }
 
@@ -697,8 +678,8 @@ void DomainFile::Activate()
 // DomainAssembly
 //--------------------------------------------------------------------------------
 
-DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocator *pLoaderAllocator)
-  : DomainFile(pDomain, pFile),
+DomainAssembly::DomainAssembly(AppDomain *pDomain, PEAssembly *pPEAssembly, LoaderAllocator *pLoaderAllocator)
+  : DomainFile(pDomain, pPEAssembly),
     m_pAssembly(NULL),
     m_debuggerFlags(DACF_NONE),
     m_fDebuggerUnloadStarted(FALSE),
@@ -715,7 +696,7 @@ DomainAssembly::DomainAssembly(AppDomain *pDomain, PEFile *pFile, LoaderAllocato
     }
     CONTRACTL_END;
 
-    pFile->ValidateForExecution();
+    pPEAssembly->ValidateForExecution();
 
     // !!! backout
 
@@ -762,8 +743,9 @@ void DomainAssembly::SetAssembly(Assembly* pAssembly)
 {
     STANDARD_VM_CONTRACT;
 
-    UpdatePEFile(pAssembly->GetManifestFile());
-    _ASSERTE(pAssembly->GetManifestModule()->GetFile()==m_pFile);
+    _ASSERTE(pAssembly->GetManifestModule()->GetPEAssembly()==m_pPEAssembly);
+    _ASSERTE(m_pAssembly == NULL);
+
     m_pAssembly = pAssembly;
     m_pModule = pAssembly->GetManifestModule();
 
@@ -808,7 +790,7 @@ OBJECTREF DomainAssembly::GetExposedAssemblyObject()
     {
         ASSEMBLYREF   assemblyObj = NULL;
         MethodTable * pMT;
-        if (GetFile()->IsDynamic())
+        if (GetPEAssembly()->IsDynamic())
         {
             // This is unnecessary because the managed InternalAssemblyBuilder object
             // should have already been created at the time of DefineDynamicAssembly
@@ -894,18 +876,11 @@ void DomainAssembly::Allocate()
     {
         //! If you decide to remove "if" do not remove this brace: order is important here - in the case of an exception,
         //! the Assembly holder must destruct before the AllocMemTracker declared above.
-
-        // We can now rely on the fact that our MDImport will not change so we can stop refcounting it.
-        GetFile()->MakeMDImportPersistent();
-
         NewHolder<Assembly> assemblyHolder(NULL);
 
-        assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetFile(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
+        assemblyHolder = pAssembly = Assembly::Create(m_pDomain, GetPEAssembly(), GetDebuggerInfoBits(), this->IsCollectible(), pamTracker, this->IsCollectible() ? this->GetLoaderAllocator() : NULL);
         assemblyHolder->SetIsTenured();
 
-        //@todo! This is too early to be calling SuppressRelease. The right place to call it is below after
-        // the CANNOTTHROWCOMPLUSEXCEPTION. Right now, we have to do this to unblock OOM injection testing quickly
-        // as doing the right thing is nontrivial.
         pamTracker->SuppressRelease();
         assemblyHolder.SuppressRelease();
     }
@@ -988,7 +963,7 @@ BOOL DomainAssembly::GetResource(LPCSTR szName, DWORD *cbResource,
     }
     CONTRACTL_END;
 
-    return GetFile()->GetResource( szName,
+    return GetPEAssembly()->GetResource( szName,
                                    cbResource,
                                    pbInMemoryResource,
                                    pAssemblyRef,
@@ -1063,7 +1038,7 @@ HRESULT DomainAssembly::GetDebuggingCustomAttributes(DWORD *pdwFlags)
         ULONG size;
         BYTE *blob;
         mdModule mdMod;
-        ReleaseHolder<IMDInternalImport> mdImport(GetFile()->GetMDImportWithRef());
+        IMDInternalImport* mdImport = GetPEAssembly()->GetMDImport();
         mdMod = mdImport->GetModuleFromScope();
         mdAssembly asTK = TokenFromRid(mdtAssembly, 1);
 
@@ -1217,9 +1192,9 @@ DomainFile::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     // so we don't need to duplicate effort; thus we do noting with m_pModule.
 
     // For MiniDumpNormal, we only want the file name.
-    if (m_pFile.IsValid())
+    if (m_pPEAssembly.IsValid())
     {
-        m_pFile->EnumMemoryRegions(flags);
+        m_pPEAssembly->EnumMemoryRegions(flags);
     }
 
     if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE

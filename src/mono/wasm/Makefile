@@ -17,7 +17,7 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
-NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
+NATIVE_BIN_DIR?=$(BINDIR)/native/net7.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 _MSBUILD_WASM_BUILD_ARGS=/p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG)
@@ -101,20 +101,8 @@ $(NATIVE_BIN_DIR)/include/wasm:
 $(BUILDS_OBJ_DIR):
 	mkdir -p $$@
 
-$(NATIVE_BIN_DIR)/dotnet.js: $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o runtime/library_mono.js runtime/binding_support.js runtime/dotnet_support.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
-	$(EMCC) @$(EMCC_DEFAULT_RSP) $(1) --js-library runtime/library_mono.js --js-library runtime/binding_support.js --js-library runtime/dotnet_support.js --js-library $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(BUILDS_OBJ_DIR)/driver.o $(BUILDS_OBJ_DIR)/pinvoke.o $(BUILDS_OBJ_DIR)/corebindings.o $(2) -o $(NATIVE_BIN_DIR)/dotnet.js $(3)
-
-$(BUILDS_OBJ_DIR)/pinvoke-table.h: $(PINVOKE_TABLE) | $(BUILDS_OBJ_DIR)
-	if cmp -s $(PINVOKE_TABLE) $$@ ; then : ; else cp $(PINVOKE_TABLE) $$@ ; fi
-
-$(BUILDS_OBJ_DIR)/driver.o: runtime/driver.c $(EMCC_DEFAULT_RSP) | $(BUILDS_OBJ_DIR)
-	$(EMCC) @$(EMCC_DEFAULT_RSP) $(1) -Oz -DCORE_BINDINGS -I$(BUILDS_OBJ_DIR) -I$(MONO_INCLUDE_DIR) runtime/driver.c -c -o $$@
-
-$(BUILDS_OBJ_DIR)/pinvoke.o: runtime/pinvoke.c runtime/pinvoke.h $(BUILDS_OBJ_DIR)/pinvoke-table.h $(EMCC_DEFAULT_RSP) | $(BUILDS_OBJ_DIR)
-	$(EMCC) @$(EMCC_DEFAULT_RSP) $(1) -Oz -DGEN_PINVOKE=1 -I$(BUILDS_OBJ_DIR) runtime/pinvoke.c -c -o $$@
-
-$(BUILDS_OBJ_DIR)/corebindings.o: runtime/corebindings.c $(EMCC_DEFAULT_RSP) | $(BUILDS_OBJ_DIR)
-	$(EMCC) @$(EMCC_DEFAULT_RSP) $(1) -Oz -I$(MONO_INCLUDE_DIR) runtime/corebindings.c -c -o $$@
+$(NATIVE_BIN_DIR)/dotnet.js: runtime/driver.c runtime/pinvoke.c runtime/pinvoke.h runtime/corebindings.c $(NATIVE_BIN_DIR)/src/runtime.iffe.js runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js $(2) $(EMCC_DEFAULT_RSP) | $(NATIVE_BIN_DIR)
+	$(DOTNET) build $(CURDIR)/wasm.proj $(_MSBUILD_WASM_BUILD_ARGS) /t:BuildWasmRuntimes $(MSBUILD_ARGS)
 
 $(EMCC_DEFAULT_RSP): $(CURDIR)/wasm.proj | $(NATIVE_BIN_DIR)/src Makefile
 	$(DOTNET) build $(CURDIR)/wasm.proj /p:Configuration=$(CONFIG) /t:GenerateEmccPropsAndRspFiles
@@ -141,7 +129,7 @@ clean:
 icu-files: $(wildcard $(ICU_LIBDIR)/*.dat) $(ICU_LIBDIR)/libicuuc.a $(ICU_LIBDIR)/libicui18n.a | $(NATIVE_BIN_DIR)
 	cp $^ $(NATIVE_BIN_DIR)
 
-source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/binding_support.js runtime/dotnet_support.js runtime/library_mono.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
+source-files: runtime/driver.c runtime/pinvoke.c runtime/corebindings.c runtime/library-dotnet.js $(SYSTEM_NATIVE_LIBDIR)/pal_random.js | $(NATIVE_BIN_DIR)/src
 	cp $^ $(NATIVE_BIN_DIR)/src
 
 header-files: runtime/pinvoke.h | $(NATIVE_BIN_DIR)/include/wasm

@@ -17,6 +17,7 @@ using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.CSharp;
 using System.Reflection;
+using System.Text;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -365,7 +366,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int DebugId { get; }
         public string Name { get; }
         public List<FieldTypeClass> FieldsList { get; set; }
-        public MonoBinaryReader PropertiesBinaryReader { get; set; }
+        public byte[] PropertiesBuffer { get; set; }
         public List<int> TypeParamsOrArgsForGenericType { get; set; }
 
         public TypeInfoWithDebugInformation(TypeInfo typeInfo, int debugId, string name)
@@ -397,9 +398,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ReadString()
         {
             var valueLen = ReadInt32();
-            char[] value = new char[valueLen];
+            byte[] value = new byte[valueLen];
             Read(value, 0, valueLen);
-            return new string(value);
+
+            return new string(Encoding.UTF8.GetChars(value, 0, valueLen));
         }
         public unsafe long ReadLong()
         {
@@ -1210,18 +1212,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (typeInfo == null)
                 return null;
 
-            if (typeInfo.PropertiesBinaryReader != null)
+            if (typeInfo.PropertiesBuffer != null)
             {
-                typeInfo.PropertiesBinaryReader.BaseStream.Seek(0, SeekOrigin.Begin);
-                return typeInfo.PropertiesBinaryReader;
+                var retDebuggerCmd = new MemoryStream(typeInfo.PropertiesBuffer);
+                var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+                return retDebuggerCmdReader;
             }
 
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write(typeId);
 
-            typeInfo.PropertiesBinaryReader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
-            return typeInfo.PropertiesBinaryReader;
+            var reader = await SendDebuggerAgentCommand<CmdType>(sessionId, CmdType.GetProperties, commandParams, token);
+            typeInfo.PropertiesBuffer = reader.ReadBytes((int)reader.BaseStream.Length);
+            reader.BaseStream.Position = 0;
+            return reader;
         }
 
         public async Task<List<FieldTypeClass>> GetTypeFields(SessionId sessionId, int typeId, CancellationToken token)
@@ -2208,8 +2213,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             return array;
         }
-        public async Task<bool> EnableExceptions(SessionId sessionId, string state, CancellationToken token)
+        public async Task<bool> EnableExceptions(SessionId sessionId, PauseOnExceptionsKind state, CancellationToken token)
         {
+            if (state == PauseOnExceptionsKind.Unset)
+            {
+                logger.LogDebug($"Trying to setPauseOnExceptions using status Unset");
+                return false;
+            }
+
             var commandParams = new MemoryStream();
             var commandParamsWriter = new MonoBinaryWriter(commandParams);
             commandParamsWriter.Write((byte)EventKind.Exception);
@@ -2217,14 +2228,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)1);
             commandParamsWriter.Write((byte)ModifierKind.ExceptionOnly);
             commandParamsWriter.Write(0); //exc_class
-            if (state == "all")
+            if (state == PauseOnExceptionsKind.All)
                 commandParamsWriter.Write((byte)1); //caught
             else
                 commandParamsWriter.Write((byte)0); //caught
-            if (state == "uncaught" || state == "all")
+
+            if (state == PauseOnExceptionsKind.Uncaught || state == PauseOnExceptionsKind.All)
                 commandParamsWriter.Write((byte)1); //uncaught
             else
                 commandParamsWriter.Write((byte)0); //uncaught
+
             commandParamsWriter.Write((byte)1);//subclasses
             commandParamsWriter.Write((byte)0);//not_filtered_feature
             commandParamsWriter.Write((byte)0);//everything_else

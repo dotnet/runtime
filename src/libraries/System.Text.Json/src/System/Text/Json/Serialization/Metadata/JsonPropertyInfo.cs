@@ -42,16 +42,14 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Create a property that is ignored at run-time.
         internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(
-            JsonConverter converter,
             MemberInfo memberInfo,
             Type memberType,
             bool isVirtual,
             JsonSerializerOptions options)
         {
-            JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
+            JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
 
             jsonPropertyInfo.Options = options;
-            jsonPropertyInfo.ConverterBase = converter;
             jsonPropertyInfo.MemberInfo = memberInfo;
             jsonPropertyInfo.IsIgnored = true;
             jsonPropertyInfo.DeclaredPropertyType = memberType;
@@ -504,6 +502,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal bool SrcGen_HasJsonInclude { get; set; }
 
         /// <summary>
+        /// Relevant to source generated metadata: did the property have the <see cref="JsonExtensionDataAttribute"/>?
+        /// </summary>
+        internal bool SrcGen_IsExtensionData { get; set; }
+
+        /// <summary>
         /// Relevant to source generated metadata: is the property public?
         /// </summary>
         internal bool SrcGen_IsPublic { get; set; }
@@ -520,5 +523,10 @@ namespace System.Text.Json.Serialization.Metadata
         internal string? ClrName { get; set; }
 
         internal bool IsVirtual { get; set; }
+
+        /// <summary>
+        /// Default value used for parameterized ctor invocation.
+        /// </summary>
+        internal abstract object? DefaultValue { get; }
     }
 }

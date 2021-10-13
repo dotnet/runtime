@@ -282,13 +282,13 @@ REM Set the remaining variables based upon the determined build configuration
 
 echo %__MsgPrefix%Checking prerequisites
 
-set __CMakeNeeded=1
-if %__BuildNative%==0 if %__BuildCrossArchNative%==0 set __CMakeNeeded=0
-if %__CMakeNeeded%==1 (
-    REM Eval the output from set-cmake-path.ps1
-    for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
-    echo %__MsgPrefix%Using CMake from !CMakePath!
-)
+if %__BuildNative%==0 if %__BuildCrossArchNative%==0 goto SkipLocateCMake
+
+REM Eval the output from set-cmake-path.ps1
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__RepoRootDir%\eng\native\set-cmake-path.ps1"""') do %%a
+echo %__MsgPrefix%Using CMake from !CMakePath!
+
+:SkipLocateCMake
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step

@@ -1,0 +1,84 @@
+name: Bug Report
+description: Create a report to help us improve
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome bug reports! Please see our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for more information on writing a good bug report. This template will help us gather the information we need to start the triage process.
+  - type: textarea
+    id: background
+    attributes:
+      label: Description
+      description: Please share a clear and concise description of the problem.
+      placeholder: Description
+    validations:
+      required: true
+  - type: textarea
+    id: repro-steps
+    attributes:
+      label: Reproduction Steps
+      description: |
+        Please include minimal steps to reproduce the problem if possible. E.g.: the smallest possible code snippet; or a small project, with steps to run it. If possible include text as text rather than screenshots (so it shows up in searches).
+      placeholder: Minimal Reproduction
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected behavior
+      description: |
+        Provide a description of the expected behavior.
+      placeholder: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+      description: |
+        Provide a description of the actual behavior observed. If applicable please include any error messages, exception stacktraces or memory dumps.
+      placeholder: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: regression
+    attributes:
+      label: Regression?
+      description: |
+        Did this work in a previous build or release of .NET Core, or from .NET Framework? If you can try a previous release or build to find out, that can help us narrow down the problem. If you don't know, that's OK.
+      placeholder: Regression?
+    validations:
+      required: false
+  - type: textarea
+    id: known-workarounds
+    attributes:
+      label: Known Workarounds
+      description: |
+        Please provide a description of any known workarounds.
+      placeholder: Known Workarounds
+    validations:
+      required: false
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: |
+        Please provide more information on your .NET configuration:
+          * Which version of .NET is the code running on?
+          * What OS and version, and what distro if applicable?
+          * What is the architecture (x64, x86, ARM, ARM64)?
+          * Do you know whether it is specific to that configuration?
+          * If you're using Blazor, which web browser(s) do you see this issue in?
+      placeholder: Configuration
+    validations:
+      required: false
+  - type: textarea
+    id: other-info
+    attributes:
+      label: Other information
+      description: |
+        If you have an idea where the problem might lie, let us know that here. Please include any pointers to code, relevant changes, or related issues you know of.
+      placeholder: Other information
+    validations:
+      required: false

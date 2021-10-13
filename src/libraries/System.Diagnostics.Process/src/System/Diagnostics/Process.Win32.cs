@@ -136,7 +136,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal unsafe class ShellExecuteHelper
+        internal sealed unsafe class ShellExecuteHelper
         {
             private readonly Interop.Shell32.SHELLEXECUTEINFO* _executeInfo;
             private bool _succeeded;

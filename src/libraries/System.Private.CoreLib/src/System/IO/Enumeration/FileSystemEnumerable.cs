@@ -6,11 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO.Enumeration
-#else
 namespace System.IO.Enumeration
-#endif
 {
     /// <summary>
     /// Enumerable that allows utilizing custom filter predicates and tranform delegates.

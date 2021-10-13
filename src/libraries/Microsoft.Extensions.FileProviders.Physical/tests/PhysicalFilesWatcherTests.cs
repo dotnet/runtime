@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         private const int WaitTimeForTokenToFire = 500;
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void CreateFileChangeToken_DoesNotAllowPathsAboveRoot()
         {
             using (var root = new DisposableFileSystem())
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task HandlesOnRenamedEventsThatMatchRootPath()
         {
             using (var root = new DisposableFileSystem())
@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
             using (var root = new DisposableFileSystem())
@@ -158,7 +158,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_AddsPollingChangeTokenWhenPollingIsEnabled()
         {
             using (var root = new DisposableFileSystem())
@@ -183,7 +183,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddFilePathChangeToken_DoesNotAddsPollingChangeTokenWhenCallbackIsDisabled()
         {
             using (var root = new DisposableFileSystem())
@@ -198,7 +198,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "System.IO.FileSystem.Watcher is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public void GetOrAddWildcardChangeToken_AddsPollingChangeTokenWithCancellationToken_WhenActiveCallbackIsTrue()
         {
             using (var root = new DisposableFileSystem())

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <UnsupportedOSPlatforms>browser;ios;tvos</UnsupportedOSPlatforms>
+    <SupportedOSPlatforms>maccatalyst</SupportedOSPlatforms>
   </PropertyGroup>
 </Project>
