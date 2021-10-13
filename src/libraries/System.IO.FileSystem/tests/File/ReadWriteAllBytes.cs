@@ -208,7 +208,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
         public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
         {
             string fifoPath = GetTestFilePath();
