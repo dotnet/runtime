@@ -211,24 +211,25 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task ReadAllBytes_NonSeekableFileStream_InUnix()
         {
-            var path = "/dev/tty";
-            if (!File.Exists(path))
-            {
-                throw new SkipTestException(path + " is not available in this environment.");
-            }
+            string fifoPath = GetTestFilePath();
+            Assert.Equal(0, mkfifo(fifoPath, 438 /* 666 in octal */ ));
 
             var contentBytes = new byte[] { 1, 2, 3 };
 
-            using (var cts = new CancellationTokenSource())
-            {
-                Task writingTask = File.WriteAllBytesAsync(path, contentBytes, cts.Token);
-                Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(path), cts.Token);
-                cts.CancelAfter(TimeSpan.FromMilliseconds(500));
-
-                await writingTask;
-                byte[] readBytes = await readTask;
-                Assert.Equal<byte>(contentBytes, readBytes);
-            }
+            await Task.WhenAll(
+                Task.Run(() =>
+                {
+                    byte[] readBytes = File.ReadAllBytes(fifoPath);
+                    Assert.Equal<byte>(contentBytes, readBytes);
+                }),
+                Task.Run(() =>
+                {
+                    using var fs = new FileStream(fifoPath, FileMode.Open, FileAccess.Write, FileShare.Read);
+                    foreach (byte content in contentBytes)
+                    {
+                        fs.WriteByte(content);
+                    }
+                }));
         }
     }
 }
