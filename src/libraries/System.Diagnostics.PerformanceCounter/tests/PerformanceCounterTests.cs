@@ -26,14 +26,15 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounter_CreateCounter_Count0()
         {
-            var name = nameof(PerformanceCounter_CreateCounter_Count0) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, false, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_CreateCounter_Count0) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:false, PerformanceCounterCategoryType.SingleInstance))
             {
                 counterSample.RawValue = 0;
 
                 Assert.Equal(0, counterSample.RawValue);
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [Fact]
@@ -50,37 +51,40 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_CreateCounter_MultiInstanceReadOnly()
         {
-            var name = nameof(PerformanceCounter_CreateCounter_MultiInstanceReadOnly) + "_Counter";
-            var instance = name + "_Instance";
+            string categoryName = nameof(PerformanceCounter_CreateCounter_MultiInstanceReadOnly) + "_Category";
+            string counterName = nameof(PerformanceCounter_CreateCounter_MultiInstanceReadOnly) + "_Counter";
+            string instanceName = nameof(PerformanceCounter_CreateCounter_MultiInstanceReadOnly) + "_Instance";
 
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.MultiInstance);
+            Helpers.CreateCategory(categoryName, counterName, PerformanceCounterCategoryType.MultiInstance);
 
-            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(category, name, instance)))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(categoryName, counterName, instanceName)))
             {
-                Assert.Equal(name, counterSample.CounterName);
-                Assert.Equal(category, counterSample.CategoryName);
-                Assert.Equal(instance, counterSample.InstanceName);
+                Assert.Equal(counterName, counterSample.CounterName);
+                Assert.Equal(categoryName, counterSample.CategoryName);
+                Assert.Equal(instanceName, counterSample.InstanceName);
                 Assert.Equal("counter description",  Helpers.RetryOnAllPlatforms(() => counterSample.CounterHelp));
                 Assert.True(counterSample.ReadOnly);
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_CreateCounter_SetReadOnly()
         {
-            var name = nameof(PerformanceCounter_CreateCounter_SetReadOnly) + "_Counter";
+            string categoryName = nameof(PerformanceCounter_CreateCounter_SetReadOnly) + "_Category";
+            string counterName = nameof(PerformanceCounter_CreateCounter_SetReadOnly) + "_Counter";
 
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.SingleInstance);
+            Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(category, name)))
+            using (PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(categoryName, counterName)))
             {
                 counterSample.ReadOnly = false;
 
                 Assert.False(counterSample.ReadOnly);
             }
 
-            Helpers.DeleteCategory(name);
+            Helpers.DeleteCategory(categoryName);
         }
 
         [Fact]
@@ -106,11 +110,11 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void PerformanceCounter_GetRawValue_EmptyCategoryName()
         {
-            var name = nameof(PerformanceCounter_GetRawValue_EmptyCategoryName) + "_Counter";
+            string counterName = nameof(PerformanceCounter_GetRawValue_EmptyCategoryName) + "_Counter";
             using (PerformanceCounter counterSample = new PerformanceCounter())
             {
                 counterSample.ReadOnly = false;
-                counterSample.CounterName = name;
+                counterSample.CounterName = counterName;
 
                 Assert.Throws<InvalidOperationException>(() => counterSample.RawValue);
             }
@@ -119,11 +123,11 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void PerformanceCounter_GetRawValue_EmptyCounterName()
         {
-            var name = nameof(PerformanceCounter_GetRawValue_EmptyCounterName) + "_Counter";
+            string categoryName = nameof(PerformanceCounter_GetRawValue_EmptyCounterName) + "_Category";
             using (PerformanceCounter counterSample = new PerformanceCounter())
             {
                 counterSample.ReadOnly = false;
-                counterSample.CategoryName = name + "_Category";
+                counterSample.CategoryName = categoryName;
 
                 Assert.Throws<InvalidOperationException>(() => counterSample.RawValue);
             }
@@ -132,12 +136,14 @@ namespace System.Diagnostics.Tests
         [Fact]
         public static void PerformanceCounter_GetRawValue_CounterDoesNotExist()
         {
-            var name = nameof(PerformanceCounter_GetRawValue_CounterDoesNotExist) + "_Counter";
+            string categoryName = nameof(PerformanceCounter_GetRawValue_CounterDoesNotExist) + "_Category";
+            string counterName = nameof(PerformanceCounter_GetRawValue_CounterDoesNotExist) + "_Counter";
+
             using (PerformanceCounter counterSample = new PerformanceCounter())
             {
                 counterSample.ReadOnly = false;
-                counterSample.CounterName = name;
-                counterSample.CategoryName = name + "_Category";
+                counterSample.CounterName = counterName;
+                counterSample.CategoryName = categoryName;
 
                 Assert.Throws<InvalidOperationException>(() => counterSample.RawValue);
             }
@@ -182,116 +188,127 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Decrement()
         {
-            var name = nameof(PerformanceCounter_Decrement) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, false, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_Decrement) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:false, PerformanceCounterCategoryType.SingleInstance))
             {
                 counterSample.RawValue = 10;
                 Helpers.RetryOnAllPlatforms(() => counterSample.Decrement());
 
                 Assert.Equal(9, counterSample.RawValue);
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Increment()
         {
-            var name = nameof(PerformanceCounter_Increment) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, false, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_Increment) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:false, PerformanceCounterCategoryType.SingleInstance))
             {
                 counterSample.RawValue = 10;
                 Helpers.RetryOnAllPlatforms(() => counterSample.Increment());
 
                 Assert.Equal(11, Helpers.RetryOnAllPlatforms(() => counterSample.NextSample().RawValue));
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementBy2()
         {
-            var name = nameof(PerformanceCounter_IncrementBy_IncrementBy2) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, false, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_IncrementBy_IncrementBy2) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:false, PerformanceCounterCategoryType.SingleInstance))
             {
                 counterSample.RawValue = 10;
                 Helpers.RetryOnAllPlatforms(() => counterSample.IncrementBy(2));
 
-                Assert.Equal(12, counterSample.RawValue);
-                Helpers.DeleteCategory(name);
+                Assert.Equal(12, Helpers.RetryOnAllPlatforms(() => counterSample.NextSample().RawValue));
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_IncrementBy_IncrementByReadOnly()
         {
-            var name = nameof(PerformanceCounter_IncrementBy_IncrementByReadOnly) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, true, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_IncrementBy_IncrementByReadOnly) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:true, PerformanceCounterCategoryType.SingleInstance))
             {
                 Assert.Throws<InvalidOperationException>(() => counterSample.IncrementBy(2));
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Increment_IncrementReadOnly()
         {
-            var name = nameof(PerformanceCounter_Increment_IncrementReadOnly) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, true, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_Increment_IncrementReadOnly) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:true, PerformanceCounterCategoryType.SingleInstance))
             {
                 Assert.Throws<InvalidOperationException>(() => counterSample.Increment());
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_Decrement_DecrementReadOnly()
         {
-            var name = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, true, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_Decrement_DecrementReadOnly) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:true, PerformanceCounterCategoryType.SingleInstance))
             {
                 Assert.Throws<InvalidOperationException>(() => counterSample.Decrement());
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounter_RemoveInstance()
         {
-            var name = nameof(PerformanceCounter_RemoveInstance) + "_Counter";
-            using (PerformanceCounter counterSample = CreateCounterWithCategory(name, false, PerformanceCounterCategoryType.SingleInstance))
+            string categoryName = nameof(PerformanceCounter_RemoveInstance) + "_Category";
+            using (PerformanceCounter counterSample = CreateCounterWithCategory(categoryName, readOnly:false, PerformanceCounterCategoryType.SingleInstance))
             {
                 counterSample.RawValue = 100;
                 counterSample.RemoveInstance();
                 counterSample.Close();
 
                 Assert.NotNull(counterSample);
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounter_NextSample_MultiInstance()
         {
-            var name = nameof(PerformanceCounter_NextSample_MultiInstance) + "_Counter";
-            var instance = name + "_Instance";
+            string categoryName = nameof(PerformanceCounter_NextSample_MultiInstance) + "_Category";
+            string counterName = nameof(PerformanceCounter_NextSample_MultiInstance) + "_Counter";
+            string instanceName = nameof(PerformanceCounter_NextSample_MultiInstance) + "_Instance";
 
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.MultiInstance);
+            Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.MultiInstance);
 
-            using (PerformanceCounter counterSample = new PerformanceCounter(category, name, instance, false))
+            using (PerformanceCounter counterSample = new PerformanceCounter(categoryName, counterName, instanceName, readOnly:false))
             {
                 counterSample.RawValue = 10;
                 Helpers.RetryOnAllPlatforms(() => counterSample.Decrement());
 
                 Assert.Equal(9, counterSample.RawValue);
-                Helpers.DeleteCategory(name);
             }
+
+            Helpers.DeleteCategory(categoryName);
         }
 
-        public static PerformanceCounter CreateCounterWithCategory(string name, bool readOnly, PerformanceCounterCategoryType categoryType )
+        public static PerformanceCounter CreateCounterWithCategory(string categoryName, bool readOnly, PerformanceCounterCategoryType categoryType)
         {
-            var category = Helpers.CreateCategory(name, categoryType);
+            Helpers.CreateCategory(categoryName, categoryType);
 
-            PerformanceCounter counterSample =  Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(category, name, readOnly));
+            string counterName = categoryName.Replace("_Category", "_Counter");
+
+            PerformanceCounter counterSample = Helpers.RetryOnAllPlatforms(() => new PerformanceCounter(categoryName, counterName, readOnly));
 
             return counterSample;
         }
