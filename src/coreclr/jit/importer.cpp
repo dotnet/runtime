@@ -6869,55 +6869,97 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
         if (op1 == nullptr)
         {
+            // If we fail to create the newobj node, we must be inlining
+            // and have run across a type we can't describe.
+            //
+            assert(compDonotInline());
             return;
         }
 
-        /* Remember that this basic block contains 'new' of an object, and so does this method */
+        // Remember that this basic block contains 'new' of an object,
+        // and so does this method
+        //
         compCurBB->bbFlags |= BBF_HAS_NEWOBJ;
         optMethodFlags |= OMF_HAS_NEWOBJ;
 
-        GenTree* asg = gtNewTempAssign(impBoxTemp, op1);
+        // Allocate the boxed object
+        //
+        GenTree*   asg     = gtNewTempAssign(impBoxTemp, op1);
+        Statement* asgStmt = nullptr;
 
-        Statement* asgStmt = impAppendTree(asg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+        // If the exprToBox is a call that returns its value via a ret buf arg,
+        // place the assignment before the call (which must be a top level tree).
+        //
+        // We do this because impAssignStructPtr (invoked below) will
+        // back-substitute into a call when it sees a GT_RET_EXPR and the call
+        // has a hidden buffer pointer, creating out-of-sequence IR.
+        //
+        if (varTypeIsStruct(exprToBox) && exprToBox->OperIs(GT_RET_EXPR))
+        {
+            GenTreeCall* const call = exprToBox->AsRetExpr()->gtInlineCandidate->AsCall();
 
+            if (call->HasRetBufArg())
+            {
+                JITDUMP("Must insert newobj for box before call [%06u]\n", dspTreeID(call));
+
+                // Walk back through the statements in this block, looking for the one
+                // that has this call at top level.
+                //
+                // Note boxed allocations are side-effect free (no com or finalizer) so
+                // our only worries here are (correctness) not overlapping the box temp
+                // lifetime and (perf) stretching the temp lifetime across the inlinee
+                // body.
+                //
+                // Since this is an inline candidate, we must be optimizing, and so we have
+                // a unique box temp per call. So no worries about overlap.
+                //
+                assert(!opts.OptimizationDisabled());
+
+                // Lifetime stretching could addressed with some extra cleverness--sinking
+                // the allocation back down to just before the copy, once we figure out
+                // where the copy is. We defer for now.
+                //
+                Statement* lastStmt = impLastStmt;
+
+                while (lastStmt != nullptr)
+                {
+                    // This may be too weak. We might need to track where the call
+                    // statement is via the ret expr.
+                    //
+                    if (lastStmt->GetRootNode() == call)
+                    {
+                        asgStmt = gtNewStmt(asg, impCurStmtOffs);
+                        impInsertStmtBefore(asgStmt, lastStmt);
+                        break;
+                    }
+
+                    lastStmt = lastStmt->GetPrevStmt();
+                }
+
+                // We should have found something.
+                //
+                noway_assert(asgStmt != nullptr);
+            }
+        }
+
+        // If we didn't do an "early assignment" of the box temp, assign it now.
+        // This is the typical case.
+        //
+        if (asgStmt == nullptr)
+        {
+            asgStmt = impAppendTree(asg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
+        }
+
+        // Create a pointer to the box payload in op1.
+        //
         op1 = gtNewLclvNode(impBoxTemp, TYP_REF);
         op2 = gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL);
         op1 = gtNewOperNode(GT_ADD, TYP_BYREF, op1, op2);
 
+        // Copy from the exprToBox to the box payload.
+        //
         if (varTypeIsStruct(exprToBox))
         {
-            // Workaround for GitHub issue 53549.
-            //
-            // If the struct being boxed is returned via hidden buffer and comes from an inline/gdv candidate,
-            // the IR we produce after importation is out of order:
-            //
-            //    call (&(box-temp + 8), ....)
-            //    box-temp = newobj
-            //    ret-val from call (void)
-            //        ... box-temp (on stack)
-            //
-            // For inline candidates this bad ordering gets fixed up during inlining, but for GDV candidates
-            // the GDV expansion is such that the newobj follows the call as in the above.
-            //
-            // This is nontrivial to fix in GDV, so in these (rare) cases we simply disable GDV.
-            //
-            if (exprToBox->OperIs(GT_RET_EXPR))
-            {
-                GenTreeCall* const call = exprToBox->AsRetExpr()->gtInlineCandidate->AsCall();
-
-                if (call->IsGuardedDevirtualizationCandidate() && call->HasRetBufArg())
-                {
-                    JITDUMP("Disabling GDV for [%06u] because of in-box struct return\n");
-                    call->ClearGuardedDevirtualizationCandidate();
-                    if (call->IsVirtualStub())
-                    {
-                        JITDUMP("Restoring stub addr %p from guarded devirt candidate info\n",
-                                dspPtr(call->gtGuardedDevirtualizationCandidateInfo->stubAddr));
-                        call->gtStubCallStubAddr = call->gtGuardedDevirtualizationCandidateInfo->stubAddr;
-                    }
-                }
-            }
-
             assert(info.compCompHnd->getClassSize(pResolvedToken->hClass) == info.compCompHnd->getClassSize(operCls));
             op1 = impAssignStructPtr(op1, exprToBox, operCls, (unsigned)CHECK_SPILL_ALL);
         }
