@@ -235,13 +235,7 @@ namespace System.IO
                 return 0;
             }
 
-            // When the actual EOF is less than initial preallocationSize:
-            // * Windows does not use more space than needed,
-            // * Unix zeroes everything between EOF and preallocationSize.
-            // That is why for non-Windows OSes the accurate byte count is calculated
-            // while for Windows, a cheaper MaxByteCount estimation is fine.
-            // PreallocationSize saves more time than it takes to calculate the accurate byte count.
-            return preambleSize + (OperatingSystem.IsWindows() ? encoding.GetMaxByteCount(contents.Length) : encoding.GetByteCount(contents));
+            return preambleSize + encoding.GetByteCount(contents);
         }
     }
 }
