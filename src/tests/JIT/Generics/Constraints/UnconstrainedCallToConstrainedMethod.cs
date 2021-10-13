@@ -35,7 +35,7 @@ namespace UnconstrainedCallToConstrainedMethod
             Console.WriteLine($"FAILED Called TestHelperMethodRequiresConstraintCurious_TEMPORARY<{typeof(T).FullName}>");
         }
 
-        [ConvertUnconstrainedCallsToThrowInvalidProgramException]
+        [ConvertUnconstrainedCallsToThrowVerificationException]
         static void TestHelperMethodRequiresConstraint<T, U>(bool expectSuccess) where T : IConstraint<U>
         {
             if (expectSuccess)
@@ -46,7 +46,7 @@ namespace UnconstrainedCallToConstrainedMethod
                 Console.WriteLine($"FAILED Called TestHelperMethodRequiresConstraint<{typeof(T).FullName}, {typeof(U).FullName}>");
             }
         }
-        [ConvertUnconstrainedCallsToThrowInvalidProgramException]
+        [ConvertUnconstrainedCallsToThrowVerificationException]
         static void TestHelperMethodRequiresConstraintCurious<T>(bool expectSuccess) where T : IConstraintCurious<T>
         {
             if (expectSuccess)

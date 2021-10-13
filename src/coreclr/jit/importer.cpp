@@ -4435,7 +4435,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 else
                 {
                     if ((info.compCompHnd->getClassAttribs(tFrom) & CORINFO_FLG_SHAREDINST) ||
-                        (info.compCompHnd->getClassAttribs(tFrom) & CORINFO_FLG_SHAREDINST))
+                        (info.compCompHnd->getClassAttribs(tTo) & CORINFO_FLG_SHAREDINST))
                     {
                         // Maybe CanCastTo. This isn't the most optimal version of this possible, but it isn't wrong
                         break;
