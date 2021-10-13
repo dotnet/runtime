@@ -8,5 +8,6 @@
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
+    <ServicingVersion>1</ServicingVersion>
   </PropertyGroup>
 </Project>
