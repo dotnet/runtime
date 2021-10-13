@@ -23,8 +23,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
 			[Kept]
 			[ExpectedInstructionSequence (new[]
 			{
-				"ldstr",
-				"newobj",
+				"ldstr 'Linked away'",
+				"newobj System.Void System.NotSupportedException::.ctor(System.String)",
 				"throw"
 			})]
 			public void Method ()

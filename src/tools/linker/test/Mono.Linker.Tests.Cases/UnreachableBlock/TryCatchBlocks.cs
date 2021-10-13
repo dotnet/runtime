@@ -18,7 +18,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call",
+				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInRemovedBranch::get_Prop()",
 				"ldc.i4.6",
 				"beq.s il_8",
 				"ldc.i4.3",
@@ -56,15 +56,15 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call",
+				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInKeptBranchBeforeRemovedBranch::get_Prop()",
 				"pop",
 				".try",
-				"call",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInKeptBranchBeforeRemovedBranch::Reached()",
 				"leave.s il_15",
 				".endtry",
 				".catch",
 				"pop",
-				"call",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryCatchBlocks/TryCatchInKeptBranchBeforeRemovedBranch::Reached_2()",
 				"leave.s il_15",
 				".endcatch",
 				"ret",

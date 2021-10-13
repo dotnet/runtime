@@ -390,7 +390,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
 				m => FormatMethodBody (m.Body),
-				attr => GetStringArrayAttributeValue (attr).Select (v => v.ToLower ()).ToArray ());
+				attr => GetStringArrayAttributeValue (attr).ToArray ());
 		}
 
 		public static string[] FormatMethodBody (MethodBody body)
@@ -398,7 +398,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<(Instruction, string)> result = new List<(Instruction, string)> (body.Instructions.Count);
 			for (int index = 0; index < body.Instructions.Count; index++) {
 				var instruction = body.Instructions[index];
-				result.Add ((instruction, FormatInstruction (instruction).ToLowerInvariant ()));
+				result.Add ((instruction, FormatInstruction (instruction)));
 			}
 
 			HashSet<(Instruction, Instruction)> existingTryBlocks = new HashSet<(Instruction, Instruction)> ();
@@ -438,7 +438,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			case FlowControl.Branch:
 			case FlowControl.Cond_Branch:
 				if (instr.Operand is Instruction target)
-					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("X")}";
+					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("x")}";
 
 				break;
 			}
@@ -471,8 +471,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
-			default:
-				return instr.OpCode.ToString ();
+
+			case Code.Ldstr:
+				if (instr.Operand is string svalue)
+					return $"{instr.OpCode.ToString ()} '{svalue}'";
+
+				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+
+			default: {
+					string operandString = null;
+					switch (instr.OpCode.OperandType) {
+					case OperandType.InlineField:
+					case OperandType.InlineMethod:
+					case OperandType.InlineType:
+					case OperandType.InlineTok:
+						operandString = instr.Operand switch {
+							FieldReference fieldRef => fieldRef.FullName,
+							MethodReference methodRef => methodRef.FullName,
+							TypeReference typeRef => typeRef.FullName,
+							_ => null
+						};
+						break;
+					}
+
+					if (operandString != null)
+						return $"{instr.OpCode.ToString ()} {operandString}";
+					else
+						return instr.OpCode.ToString ();
+				}
 			}
 		}
 
