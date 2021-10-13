@@ -28,6 +28,11 @@ namespace ILTrim.DependencyAnalysis
                 yield return new(factory.GetNodeForToken(_module, typeDef.BaseType), "Base type of a type");
             }
 
+            foreach (var parameter in typeDef.GetGenericParameters())
+            {
+                yield return new(factory.GenericParameter(_module, parameter), "Generic parameter of type");
+            }
+
             foreach (CustomAttributeHandle customAttribute in typeDef.GetCustomAttributes())
             {
                 yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a type");

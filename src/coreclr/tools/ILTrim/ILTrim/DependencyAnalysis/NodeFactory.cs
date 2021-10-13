@@ -63,11 +63,11 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.ManifestResource:
                     throw new NotImplementedException();
                 case HandleKind.GenericParameter:
-                    throw new NotImplementedException();
+                    return GenericParameter(module, (GenericParameterHandle)handle);
                 case HandleKind.MethodSpecification:
                     return MethodSpecification(module, (MethodSpecificationHandle)handle);
                 case HandleKind.GenericParameterConstraint:
-                    throw new NotImplementedException();
+                    return GenericParameterConstraint(module, (GenericParameterConstraintHandle)handle);
                 default:
                     throw new NotImplementedException();
             }
@@ -191,6 +191,22 @@ namespace ILTrim.DependencyAnalysis
         public AssemblyReferenceNode AssemblyReference(EcmaModule module, AssemblyReferenceHandle handle)
         {
             return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<GenericParameterHandle>, GenericParameterNode> _genericParameters
+           = new NodeCache<HandleKey<GenericParameterHandle>, GenericParameterNode>(key
+               => new GenericParameterNode(key.Module, key.Handle));
+        public GenericParameterNode GenericParameter(EcmaModule module, GenericParameterHandle handle)
+        {
+            return _genericParameters.GetOrAdd(new HandleKey<GenericParameterHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<GenericParameterConstraintHandle>, GenericParameterConstraintNode> _genericParameterConstraints
+           = new NodeCache<HandleKey<GenericParameterConstraintHandle>, GenericParameterConstraintNode>(key
+               => new GenericParameterConstraintNode(key.Module, key.Handle));
+        public GenericParameterConstraintNode GenericParameterConstraint(EcmaModule module, GenericParameterConstraintHandle handle)
+        {
+            return _genericParameterConstraints.GetOrAdd(new HandleKey<GenericParameterConstraintHandle>(module, handle));
         }
 
         private struct HandleKey<T> : IEquatable<HandleKey<T>> where T : struct, IEquatable<T>
