@@ -127,18 +127,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop]
-        [MemberData(nameof(RemoteServersMemberData))]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
-        public async Task BrowserHttpHandler_Streaming(Configuration.Http.RemoteServer remoteServer)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task BrowserHttpHandler_Streaming()
         {
             var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
 
             var size = 1500 * 1024 * 1024;
-            var req = new HttpRequestMessage(HttpMethod.Get, remoteServer.BaseUri + "large.ashx?size=" + size);
+            var req = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.RemoteSecureHttp11Server.BaseUri + "large.ashx?size=" + size);
 
             req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
 
-            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpClient client = CreateHttpClientForRemoteServer(Configuration.Http.RemoteSecureHttp11Server))
             // we need to switch off Response buffering of default ResponseContentRead option
             using (HttpResponseMessage response = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
             {

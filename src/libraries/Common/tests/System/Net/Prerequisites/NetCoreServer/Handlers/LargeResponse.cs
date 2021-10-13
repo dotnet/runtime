@@ -28,13 +28,18 @@ namespace NetCoreServer
             {
                 size = Int32.Parse(value);
             }
-
-            var bytes =new byte[size];
-            Random.Shared.NextBytes(bytes);
-
             context.Response.ContentType = "application/octet-stream";
-            context.Response.ContentLength = bytes.Length;
-            await context.Response.Body.WriteAsync(bytes, 0, bytes.Length);
+            context.Response.ContentLength = size;
+            const int bufferSize = 1024 * 100;
+            var bytes = new byte[bufferSize];
+            Random.Shared.NextBytes(bytes);
+            var remaining = size;
+            while (remaining > 0)
+            {
+                var send = Math.Min(remaining, bufferSize);
+                await context.Response.Body.WriteAsync(bytes, 0, send);
+                remaining -= send;
+            }
         }
     }
 }
