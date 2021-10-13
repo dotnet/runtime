@@ -74,7 +74,7 @@ namespace System.IO
 
             try
             {
-                overlapped = GetNativeOverlappedForAsyncHandle(handle.ThreadPoolBinding!, fileOffset, resetEvent);
+                overlapped = GetNativeOverlappedForAsyncHandle(handle, fileOffset, resetEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -172,7 +172,7 @@ namespace System.IO
 
             try
             {
-                overlapped = GetNativeOverlappedForAsyncHandle(handle.ThreadPoolBinding!, fileOffset, resetEvent);
+                overlapped = GetNativeOverlappedForAsyncHandle(handle, fileOffset, resetEvent);
 
                 fixed (byte* pinned = &MemoryMarshal.GetReference(buffer))
                 {
@@ -698,15 +698,17 @@ namespace System.IO
             }
         }
 
-        private static unsafe NativeOverlapped* GetNativeOverlappedForAsyncHandle(ThreadPoolBoundHandle threadPoolBinding, long fileOffset, CallbackResetEvent resetEvent)
+        private static unsafe NativeOverlapped* GetNativeOverlappedForAsyncHandle(SafeFileHandle handle, long fileOffset, CallbackResetEvent resetEvent)
         {
             // After SafeFileHandle is bound to ThreadPool, we need to use ThreadPoolBinding
             // to allocate a native overlapped and provide a valid callback.
-            NativeOverlapped* result = threadPoolBinding.AllocateNativeOverlapped(s_callback, resetEvent, null);
+            NativeOverlapped* result = handle.ThreadPoolBinding!.AllocateNativeOverlapped(s_callback, resetEvent, null);
 
-            // For pipes the offsets are ignored by the OS
-            result->OffsetLow = unchecked((int)fileOffset);
-            result->OffsetHigh = (int)(fileOffset >> 32);
+            if (handle.CanSeek)
+            {
+                result->OffsetLow = unchecked((int)fileOffset);
+                result->OffsetHigh = (int)(fileOffset >> 32);
+            }
 
             // From https://docs.microsoft.com/en-us/windows/win32/api/ioapiset/nf-ioapiset-getoverlappedresult:
             // "If the hEvent member of the OVERLAPPED structure is NULL, the system uses the state of the hFile handle to signal when the operation has been completed.
