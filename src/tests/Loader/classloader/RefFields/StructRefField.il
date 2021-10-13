@@ -72,7 +72,7 @@
 {
     // Methods
     .method public hidebysig static 
-        void Main () cil managed 
+        int32 Main () cil managed 
     {
         // Method begins at RVA 0x205c
         // Code size 19 (0x13)
@@ -92,6 +92,7 @@
         IL_000a: ldloca.s 0
         IL_000c: newobj instance void S::.ctor(string&)
         IL_0011: stloc.2
+                 ldc.i4 100
         IL_0012: ret
     } // end of method R::Main
 

@@ -1806,7 +1806,6 @@ HRESULT validateOneArg(
                 if(FAILED(hr = validateOneArg(tk, pSig, pulNSentinels, pImport, FALSE))) IfFailGo(hr);
                 break;
             case ELEMENT_TYPE_BYREF:  //fallthru
-                if(TypeFromToken(tk)==mdtFieldDef) IfFailGo(VLDTR_E_SIG_BYREFINFIELD);
                 FALLTHROUGH;
             case ELEMENT_TYPE_PINNED:
             case ELEMENT_TYPE_SZARRAY:
