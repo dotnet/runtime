@@ -8,7 +8,26 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static unsafe uint[]? GetGroups()
+        internal static bool IsMemberOfGroup(uint gid)
+        {
+            if (gid == GetEGid())
+            {
+                return true;
+            }
+
+            uint[]? groups = GetGroups();
+            if (groups == null)
+            {
+                return false;
+            }
+
+            return Array.IndexOf(groups, gid) >= 0;
+        }
+
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetEGid")]
+        private static partial uint GetEGid();
+
+        private static unsafe uint[]? GetGroups()
         {
             const int InitialGroupsLength =
 #if DEBUG

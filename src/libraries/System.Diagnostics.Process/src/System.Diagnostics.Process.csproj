@@ -251,8 +251,6 @@
              Link="Common\Interop\Unix\Interop.GetSetPriority.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetSid.cs"
              Link="Common\Interop\Unix\Interop.GetSid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetUid.cs"
-             Link="Common\Interop\Unix\Interop.GetUid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs"
              Link="Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Kill.cs"
@@ -281,10 +279,8 @@
              Link="Common\Interop\Unix\Interop.Permissions.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEUid.cs"
              Link="Common\Interop\Unix\Interop.GetEUid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetEGid.cs"
-             Link="Common\Interop\Unix\Interop.GetEGid.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetGroups.cs"
-             Link="Common\Interop\Linux\Interop.GetGroups.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsMemberOfGroup.cs"
+             Link="Common\Interop\Unix\Interop.IsMemberOfGroup.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' and '$(IsiOSLike)' != 'true'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ConfigureTerminalForChildProcess.cs"
