@@ -3964,7 +3964,7 @@ namespace System.Diagnostics.Tracing
 #endif
 
         // GUIDs for special-cased EventSources, e.g., NativeRuntimeEventSource, that shouldn't send a manifest to ETW
-        private static readonly Guid NativeRuntimeEventSourceGuid = new Guid("E13C0D23-CCBC-4E12-931B-D9CC2EEE27E4"); // NativeRuntimeEventSource
+        private static readonly Guid NativeRuntimeEventSourceGuid = new Guid(unchecked((int)0xe13c0d23), unchecked((short)0xccbc), unchecked((short)0x4e12), 0x93, 0x1b, 0xd9, 0xcc, 0x2e, 0xee, 0x27, 0xe4); // NativeRuntimeEventSource
 #endregion
     }
 
