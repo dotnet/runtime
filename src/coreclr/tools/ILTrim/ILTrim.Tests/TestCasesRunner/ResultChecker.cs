@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -193,11 +194,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         private sealed class Resolver : IResolver
         {
-            private readonly Dictionary<string, string> _assemblyPaths = new Dictionary<string, string>();
-            private readonly PEReader _reader;
-            public Resolver(PEReader reader)
+            private readonly Dictionary<string, string> _assemblyPaths = new();
+            private readonly Dictionary<string, PEReader> _assemblyReaders = new();
+            public Resolver(PEReader mainAssemblyReader, string mainAssemblyName)
             {
-                _reader = reader;
+                _assemblyReaders.Add(mainAssemblyName, mainAssemblyReader);
 
                 var netcoreappDir = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
                 foreach (var assembly in Directory.EnumerateFiles(netcoreappDir))
@@ -216,25 +217,34 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 }
             }
 
-            public PEReader Resolve(string simpleName)
+            public PEReader? Resolve(string simpleName)
             {
+                if (_assemblyReaders.TryGetValue(simpleName, out var reader))
+                {
+                    return reader;
+                }
+
                 if (_assemblyPaths.TryGetValue(simpleName, out var asmPath))
                 {
-                    return new PEReader(File.OpenRead(asmPath));
+                    reader = new PEReader(File.OpenRead(asmPath));
+                    _assemblyReaders.Add(simpleName, reader);
+                    return reader;
                 }
-                return _reader;
+
+                return null;
             }
         }
 
         protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
         {
             using var peReader = new PEReader(File.OpenRead(linkResult.OutputAssemblyPath.ToString()));
-            var verifier = new Verifier(new Resolver(peReader), new VerifierOptions() {
-            });
+            var verifier = new Verifier(
+                new Resolver(peReader, linkResult.OutputAssemblyPath.FileNameWithoutExtension),
+                new VerifierOptions() { });
             verifier.SetSystemModuleName(typeof(object).Assembly.GetName());
             foreach (var result in verifier.Verify(peReader))
             {
-                Assert.True(false, result.Message);
+                Assert.True(false, $"IL Verififaction failed: {result.Message}{Environment.NewLine}Type token: {MetadataTokens.GetToken(result.Type):x}, Method token: {MetadataTokens.GetToken(result.Method):x}");
             }
         }
 
