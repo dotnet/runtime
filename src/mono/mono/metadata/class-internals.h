@@ -247,7 +247,7 @@ typedef enum {
 	MONO_CLASS_GINST, /* generic instantiation */
 	MONO_CLASS_GPARAM, /* generic parameter */
 	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
-	MONO_CLASS_POINTER, /* pointer or function pointer*/
+	MONO_CLASS_POINTER, /* pointer or function pointer or byref */
 	MONO_CLASS_GC_FILLER = 0xAC /* not a real class kind - used for sgen nursery filler arrays */
 } MonoTypeKind;
 
@@ -1299,6 +1299,9 @@ mono_class_from_name_case_checked (MonoImage *image, const char* name_space, con
 
 MONO_PROFILER_API MonoClass *
 mono_class_from_mono_type_internal (MonoType *type);
+
+MonoClass *
+mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref);
 
 MONO_COMPONENT_API MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
