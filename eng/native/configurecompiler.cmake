@@ -392,7 +392,6 @@ if (CLR_CMAKE_HOST_UNIX)
     add_compile_options(-Wno-incompatible-ms-struct)
 
     add_compile_options(-Wno-reserved-identifier)
-    add_compile_options(-Wno-cast-function-type)
   else()
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
