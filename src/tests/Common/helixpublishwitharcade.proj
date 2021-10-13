@@ -119,6 +119,7 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
+    <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
@@ -324,13 +325,14 @@
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
-    <XUnitRunnerDll>%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
-  </PropertyGroup>
-
   <PropertyGroup>
     <IsRunningOnMobileTargets>false</IsRunningOnMobileTargets>
     <IsRunningOnMobileTargets Condition="'$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator' ">true</IsRunningOnMobileTargets>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' == 'true' ">
+    <XUnitRunnerDll Condition=" '$(IsRunningOnMobileTargets)' == 'true' ">$Env:CORE_ROOT\xunit\xunit.console.dll</XUnitRunnerDll>
+    <XUnitRunnerDll Condition=" '$(IsRunningOnMobileTargets)' != 'true' ">%CORE_ROOT%\xunit\xunit.console.dll</XUnitRunnerDll>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(TestWrapperTargetsWindows)' != 'true' ">

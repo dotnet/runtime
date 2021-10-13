@@ -106,7 +106,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     nativeimage.cpp
     object.cpp
     onstackreplacement.cpp
-    pefile.cpp
+    peassembly.cpp
     peimage.cpp
     perfmap.cpp
     perfinfo.cpp
@@ -207,8 +207,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     object.h
     object.inl
     onstackreplacement.h
-    pefile.h
-    pefile.inl
+    peassembly.h
+    peassembly.inl
     peimage.h
     peimage.inl
     peimagelayout.h

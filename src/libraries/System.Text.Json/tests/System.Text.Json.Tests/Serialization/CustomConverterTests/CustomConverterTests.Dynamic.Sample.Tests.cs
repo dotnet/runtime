@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Dynamic;
+using System.Globalization;
+using System.Tests;
 using System.Text.Json.Serialization.Samples;
 using Xunit;
 using static System.Text.Json.Serialization.Samples.JsonSerializerExtensions;
@@ -377,8 +379,11 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Deserialize<dynamic>("\"NaN\"", options);
             Assert.IsType<JsonDynamicString>(obj);
-            Assert.Equal(double.NaN, (double)obj);
-            Assert.Equal(float.NaN, (float)obj);
+            using (new ThreadCultureChange(CultureInfo.InvariantCulture))
+            {
+                Assert.Equal(double.NaN, (double)obj);
+                Assert.Equal(float.NaN, (float)obj);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]

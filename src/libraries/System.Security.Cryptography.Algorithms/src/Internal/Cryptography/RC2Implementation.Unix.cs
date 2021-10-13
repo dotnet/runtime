@@ -21,23 +21,37 @@ namespace Internal.Cryptography
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm;
-            switch (cipherMode)
-            {
-                case CipherMode.CBC:
-                    algorithm = Interop.Crypto.EvpRC2Cbc();
-                    break;
-                case CipherMode.ECB:
-                    algorithm = Interop.Crypto.EvpRC2Ecb();
-                    break;
-                default:
-                    throw new NotSupportedException();
-            }
+            IntPtr algorithm = GetAlgorithm(cipherMode);
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
 
             BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
+
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> key,
+            int effectiveKeyLength,
+            ReadOnlySpan<byte> iv,
+            int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
+            bool encrypting)
+        {
+            // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
+            IntPtr algorithm = GetAlgorithm(cipherMode);
+
+            Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
+            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
+        }
+
+        private static IntPtr GetAlgorithm(CipherMode cipherMode) => cipherMode switch
+            {
+                CipherMode.CBC => Interop.Crypto.EvpRC2Cbc(),
+                CipherMode.ECB => Interop.Crypto.EvpRC2Ecb(),
+                _ => throw new NotSupportedException(),
+            };
     }
 }

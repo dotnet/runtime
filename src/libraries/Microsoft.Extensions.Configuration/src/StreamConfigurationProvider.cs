@@ -42,6 +42,12 @@ namespace Microsoft.Extensions.Configuration
             {
                 throw new InvalidOperationException(SR.StreamConfigurationProvidersAlreadyLoaded);
             }
+
+            if (Source.Stream == null)
+            {
+                throw new InvalidOperationException(SR.StreamConfigurationSourceStreamCannotBeNull);
+            }
+
             Load(Source.Stream);
             _loaded = true;
         }

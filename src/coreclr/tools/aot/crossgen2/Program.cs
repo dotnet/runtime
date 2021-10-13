@@ -54,6 +54,8 @@ namespace ILCompiler
                 os = TargetOS.Linux;
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 os = TargetOS.OSX;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+                os = TargetOS.FreeBSD;
             else
                 throw new NotImplementedException();
 
@@ -156,6 +158,7 @@ namespace ILCompiler
                     "hotwarmcold" => ReadyToRunMethodLayoutAlgorithm.HotWarmCold,
                     "callfrequency" => ReadyToRunMethodLayoutAlgorithm.CallFrequency,
                     "pettishansen" => ReadyToRunMethodLayoutAlgorithm.PettisHansen,
+                    "random" => ReadyToRunMethodLayoutAlgorithm.Random,
                     _ => throw new CommandLineException(SR.InvalidMethodLayout)
                 };
             }
@@ -209,6 +212,8 @@ namespace ILCompiler
                     _targetOS = TargetOS.Linux;
                 else if (_commandLineOptions.TargetOS.Equals("osx", StringComparison.OrdinalIgnoreCase))
                     _targetOS = TargetOS.OSX;
+                else if (_commandLineOptions.TargetOS.Equals("freebsd", StringComparison.OrdinalIgnoreCase))
+                    _targetOS = TargetOS.FreeBSD;
                 else
                     throw new CommandLineException(SR.TargetOSUnsupported);
             }

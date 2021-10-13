@@ -31,6 +31,8 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT); // some headers have code with asserts, so do
 
 #include "pal/palinternal.h"
 
+#include <clrconfignocache.h>
+
 #include <errno.h>
 #include <signal.h>
 
@@ -145,9 +147,15 @@ BOOL SEHInitializeSignals(CorUnix::CPalThread *pthrCurrent, DWORD flags)
     TRACE("Initializing signal handlers %04x\n", flags);
 
 #if !HAVE_MACH_EXCEPTIONS
-    char* enableAlternateStackCheck = getenv("COMPlus_EnableAlternateStackCheck");
+    g_enable_alternate_stack_check = false;
 
-    g_enable_alternate_stack_check = enableAlternateStackCheck && (strtoul(enableAlternateStackCheck, NULL, 10) != 0);
+    CLRConfigNoCache stackCheck = CLRConfigNoCache::Get("EnableAlternateStackCheck", /*noprefix*/ false, &getenv);
+    if (stackCheck.IsSet())
+    {
+        DWORD value;
+        if (stackCheck.TryAsInteger(10, value))
+            g_enable_alternate_stack_check = (value != 0);
+    }
 #endif
 
     if (flags & PAL_INITIALIZE_REGISTER_SIGNALS)
@@ -845,6 +853,15 @@ PAL_ERROR InjectActivationInternal(CorUnix::CPalThread* pThread)
     // We can get EAGAIN when printing stack overflow stack trace and when other threads hit
     // stack overflow too. Those are held in the sigsegv_handler with blocked signals until
     // the process exits.
+
+#ifdef __APPLE__
+    // On Apple, pthread_kill is not allowed to be sent to dispatch queue threads
+    if (status == ENOTSUP)
+    {
+        return ERROR_NOT_SUPPORTED;
+    }
+#endif
+
     if ((status != 0) && (status != EAGAIN))
     {
         // Failure to send the signal is fatal. There are only two cases when sending

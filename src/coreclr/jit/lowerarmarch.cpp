@@ -224,6 +224,60 @@ void Lowering::LowerStoreIndir(GenTreeStoreInd* node)
 }
 
 //------------------------------------------------------------------------
+// LowerMul: Lower a GT_MUL/GT_MULHI/GT_MUL_LONG node.
+//
+// For ARM64 recognized GT_MULs that can be turned into GT_MUL_LONGs, as
+// those are cheaper. Performs contaiment checks.
+//
+// Arguments:
+//    mul - The node to lower
+//
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerMul(GenTreeOp* mul)
+{
+    assert(mul->OperIsMul());
+
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && mul->OperIs(GT_MUL) && mul->IsValidLongMul())
+    {
+        GenTreeCast* op1 = mul->gtGetOp1()->AsCast();
+        GenTree*     op2 = mul->gtGetOp2();
+
+        mul->ClearOverflow();
+        mul->ClearUnsigned();
+        if (op1->IsUnsigned())
+        {
+            mul->SetUnsigned();
+        }
+
+        mul->gtOp1 = op1->CastOp();
+        BlockRange().Remove(op1);
+
+        if (op2->OperIs(GT_CAST))
+        {
+            mul->gtOp2 = op2->AsCast()->CastOp();
+            BlockRange().Remove(op2);
+        }
+        else
+        {
+            assert(op2->IsIntegralConst());
+            assert(FitsIn<int32_t>(op2->AsIntConCommon()->IntegralValue()));
+
+            op2->ChangeType(TYP_INT);
+        }
+
+        mul->ChangeOper(GT_MUL_LONG);
+    }
+#endif // TARGET_ARM64
+
+    ContainCheckMul(mul);
+
+    return mul->gtNext;
+}
+
+//------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //
 // Arguments:
@@ -779,7 +833,7 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
         case TYP_ULONG:
         case TYP_DOUBLE:
         {
-            cmpIntrinsic = NI_AdvSimd_Arm64_CompareEqual;
+            cmpIntrinsic = (simdSize == 8) ? NI_AdvSimd_Arm64_CompareEqualScalar : NI_AdvSimd_Arm64_CompareEqual;
             break;
         }
 
@@ -1215,7 +1269,12 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     //   var tmp1 = AdvSimd.Multiply(op1, op2);
     //   ...
 
-    NamedIntrinsic multiply = (simdBaseType == TYP_DOUBLE) ? NI_AdvSimd_Arm64_Multiply : NI_AdvSimd_Multiply;
+    NamedIntrinsic multiply = NI_AdvSimd_Multiply;
+
+    if (simdBaseType == TYP_DOUBLE)
+    {
+        multiply = (simdSize == 8) ? NI_AdvSimd_MultiplyScalar : NI_AdvSimd_Arm64_Multiply;
+    }
     assert(!varTypeIsLong(simdBaseType));
 
     tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseJitType, simdSize);
@@ -1247,24 +1306,29 @@ void Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
         if (simdSize == 8)
         {
-            assert(simdBaseType == TYP_FLOAT);
+            if (simdBaseType == TYP_FLOAT)
+            {
+                // We will be constructing the following parts:
+                //   ...
+                //          /--*  tmp1 simd8
+                //          +--*  tmp2 simd8
+                //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
+                //   ...
 
-            // We will be constructing the following parts:
-            //   ...
-            //          /--*  tmp1 simd8
-            //          +--*  tmp2 simd8
-            //   tmp1 = *  HWINTRINSIC   simd8  T AddPairwise
-            //   ...
+                // This is roughly the following managed code:
+                //   ...
+                //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
+                //   ...
 
-            // This is roughly the following managed code:
-            //   ...
-            //   var tmp1 = AdvSimd.AddPairwise(tmp1, tmp2);
-            //   ...
-
-            tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType,
-                                                    simdSize);
-            BlockRange().InsertAfter(tmp2, tmp1);
-            LowerNode(tmp1);
+                tmp1 = comp->gtNewSimdAsHWIntrinsicNode(simdType, tmp1, tmp2, NI_AdvSimd_AddPairwise, simdBaseJitType,
+                                                        simdSize);
+                BlockRange().InsertAfter(tmp2, tmp1);
+                LowerNode(tmp1);
+            }
+            else
+            {
+                // No pairs to add for double, as its a single element
+            }
         }
         else
         {

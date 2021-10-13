@@ -16,11 +16,11 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct UInt16 : IComparable, IConvertible, ISpanFormattable, IComparable<ushort>, IEquatable<ushort>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryInteger<ushort>,
           IMinMaxValue<ushort>,
           IUnsignedNumber<ushort>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private readonly ushort m_value; // Do not rename (binary serialization)

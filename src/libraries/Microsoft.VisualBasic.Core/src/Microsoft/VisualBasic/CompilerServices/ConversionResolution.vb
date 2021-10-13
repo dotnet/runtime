@@ -13,7 +13,7 @@ Imports System.Diagnostics.CodeAnalysis
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB conversion semantics.
-    Friend Class ConversionResolution
+    Friend NotInheritable Class ConversionResolution
         ' Prevent creation.
         Private Sub New()
         End Sub
@@ -1011,7 +1011,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         End Function
 
-        Friend Class OperatorCaches
+        Friend NotInheritable Class OperatorCaches
             ' Prevent creation.
             Private Sub New()
             End Sub

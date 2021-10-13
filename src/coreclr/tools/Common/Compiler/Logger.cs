@@ -20,21 +20,30 @@ namespace ILCompiler
     {
         private readonly HashSet<int> _suppressedWarnings;
 
+        private readonly bool _isSingleWarn;
+        private readonly HashSet<string> _singleWarnEnabledAssemblies;
+        private readonly HashSet<string> _singleWarnDisabledAssemblies;
+        private readonly HashSet<string> _trimWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly HashSet<string> _aotWarnedAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         public static Logger Null = new Logger(TextWriter.Null, false);
 
         public TextWriter Writer { get; }
 
         public bool IsVerbose { get; }
 
-        public Logger(TextWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings)
+        public Logger(TextWriter writer, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
         {
             Writer = TextWriter.Synchronized(writer);
             IsVerbose = isVerbose;
             _suppressedWarnings = new HashSet<int>(suppressedWarnings);
+            _isSingleWarn = singleWarn;
+            _singleWarnEnabledAssemblies = new HashSet<string>(singleWarnEnabledModules, StringComparer.OrdinalIgnoreCase);
+            _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
         }
 
         public Logger(TextWriter writer, bool isVerbose)
-            : this(writer, isVerbose, Array.Empty<int>())
+            : this(writer, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
         {
         }
 
@@ -71,8 +80,16 @@ namespace ILCompiler
                 }
             }
 
-            MessageOrigin messageOrigin = new MessageOrigin(origin.OwningMethod, document, lineNumber, null);
+            MethodDesc warnedMethod = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(origin.OwningMethod) ?? origin.OwningMethod;
+
+            MessageOrigin messageOrigin = new MessageOrigin(warnedMethod, document, lineNumber, null);
             LogWarning(text, code, messageOrigin, subcategory);
+        }
+
+        public void LogWarning(string text, int code, string origin, string subcategory = MessageSubCategory.None)
+        {
+            MessageOrigin _origin = new MessageOrigin(origin);
+            LogWarning(text, code, _origin, subcategory);
         }
 
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
@@ -87,6 +104,8 @@ namespace ILCompiler
 
             if (origin.MemberDefinition is MethodDesc method)
             {
+                method = CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method) ?? method;
+
                 var ecmaMethod = method.GetTypicalMethodDefinition() as EcmaMethod;
                 suppressions = ecmaMethod?.GetDecodedCustomAttributes("System.Diagnostics.CodeAnalysis", "UnconditionalSuppressMessageAttribute");
             }
@@ -119,6 +138,54 @@ namespace ILCompiler
         {
             // TODO: warnaserror
             return false;
+        }
+
+        internal bool IsSingleWarn(ModuleDesc owningModule, string messageSubcategory)
+        {
+            string assemblyName = owningModule.Assembly.GetName().Name;
+
+            bool result = false;
+
+            if ((_isSingleWarn || _singleWarnEnabledAssemblies.Contains(assemblyName))
+                && !_singleWarnDisabledAssemblies.Contains(assemblyName))
+            {
+                result = true;
+
+                if (messageSubcategory == MessageSubCategory.TrimAnalysis)
+                {
+                    lock (_trimWarnedAssemblies)
+                    {
+                        if (_trimWarnedAssemblies.Add(assemblyName))
+                        {
+                            LogWarning($"Assembly '{assemblyName}' produced trim warnings. For more information see https://aka.ms/dotnet-illink/libraries", 2104, GetModuleFileName(owningModule));
+                        }
+                    }
+                }
+                else if (messageSubcategory == MessageSubCategory.AotAnalysis)
+                {
+                    lock (_aotWarnedAssemblies)
+                    {
+                        if (_aotWarnedAssemblies.Add(assemblyName))
+                        {
+                            LogWarning($"Assembly '{assemblyName}' produced AOT analysis warnings.", 9702, GetModuleFileName(owningModule));
+                        }
+                    }
+                }
+            }
+            
+            return result;
+        }
+
+        private static string GetModuleFileName(ModuleDesc module)
+        {
+            string assemblyName = module.Assembly.GetName().Name;
+            var context = (CompilerTypeSystemContext)module.Context;
+            if (context.ReferenceFilePaths.TryGetValue(assemblyName, out string result)
+                || context.InputFilePaths.TryGetValue(assemblyName, out result))
+            {
+                return result;
+            }
+            return assemblyName;
         }
     }
 

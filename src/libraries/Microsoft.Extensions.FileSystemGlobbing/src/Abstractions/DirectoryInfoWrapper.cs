@@ -47,8 +47,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
 
                 foreach (FileSystemInfo fileSystemInfo in fileSystemInfos)
                 {
-                    var directoryInfo = fileSystemInfo as DirectoryInfo;
-                    if (directoryInfo != null)
+                    if (fileSystemInfo is DirectoryInfo directoryInfo)
                     {
                         yield return new DirectoryInfoWrapper(directoryInfo);
                     }
@@ -68,7 +67,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// </remarks>
         /// <param name="name">The directory name</param>
         /// <returns>The directory</returns>
-        public override DirectoryInfoBase GetDirectory(string name)
+        public override DirectoryInfoBase? GetDirectory(string name)
         {
             bool isParentPath = string.Equals(name, "..", StringComparison.Ordinal);
 
@@ -120,7 +119,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// <remarks>
         /// Equals the value of <seealso cref="System.IO.DirectoryInfo.Parent" />.
         /// </remarks>
-        public override DirectoryInfoBase ParentDirectory
-            => new DirectoryInfoWrapper(_directoryInfo.Parent);
+        public override DirectoryInfoBase? ParentDirectory
+            => new DirectoryInfoWrapper(_directoryInfo.Parent!);
     }
 }

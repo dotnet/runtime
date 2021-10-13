@@ -3613,18 +3613,6 @@ return_null:
 	return MONO_HANDLE_NEW (MonoObject, NULL);
 }
 
-MonoBoolean
-ves_icall_System_Enum_InternalHasFlag (MonoObjectHandle a, MonoObjectHandle b, MonoError *error)
-{
-	int size = mono_class_value_size (mono_handle_class (a), NULL);
-	guint64 a_val = 0, b_val = 0;
-
-	memcpy (&a_val, mono_handle_unbox_unsafe (a), size);
-	memcpy (&b_val, mono_handle_unbox_unsafe (b), size);
-
-	return (a_val & b_val) == b_val;
-}
-
 MonoReflectionTypeHandle
 ves_icall_System_Enum_get_underlying_type (MonoReflectionTypeHandle type, MonoError *error)
 {
@@ -6305,6 +6293,11 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
+	/* WISH: we should do this in managed */
+	if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (method))) {
+		method = mono_marshal_get_managed_wrapper  (method, NULL, (MonoGCHandle)0, error);
+		return_val_if_nok (error, NULL);
+	}
 	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
 

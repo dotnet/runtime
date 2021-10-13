@@ -84,7 +84,7 @@ void Rationalizer::RewriteIndir(LIR::Use& use)
                     JITDUMP("Rewriting GT_IND(GT_ADD(LCL_VAR_ADDR,0)) to LCL_VAR\n");
                     lclVarNode->SetOper(GT_LCL_VAR);
                     lclVarNode->gtType = indir->TypeGet();
-                    use.ReplaceWith(comp, lclVarNode);
+                    use.ReplaceWith(lclVarNode);
                     BlockRange().Remove(addr);
                     BlockRange().Remove(addr->gtGetOp2());
                     BlockRange().Remove(indir);
@@ -168,7 +168,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         }
 
         addr->gtType = simdType;
-        use.ReplaceWith(comp, addr);
+        use.ReplaceWith(addr);
     }
     else if (addr->OperIs(GT_ADDR) && addr->AsUnOp()->gtGetOp1()->OperIsSimdOrHWintrinsic())
     {
@@ -180,7 +180,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
         BlockRange().Remove(indir);
         BlockRange().Remove(addr);
 
-        use.ReplaceWith(comp, addr->AsUnOp()->gtGetOp1());
+        use.ReplaceWith(addr->AsUnOp()->gtGetOp1());
     }
 #endif // FEATURE_SIMD
 }
@@ -450,7 +450,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             // Remove the GT_IND node and replace the assignment node with the store
             BlockRange().Remove(location);
             BlockRange().InsertBefore(assignment, store);
-            use.ReplaceWith(comp, store);
+            use.ReplaceWith(store);
             BlockRange().Remove(assignment);
         }
         break;
@@ -501,7 +501,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             // (now in its store form).
             BlockRange().Remove(storeBlk);
             BlockRange().InsertBefore(assignment, storeBlk);
-            use.ReplaceWith(comp, storeBlk);
+            use.ReplaceWith(storeBlk);
             BlockRange().Remove(assignment);
             DISPTREERANGE(BlockRange(), use.Def());
             JITDUMP("\n");
@@ -544,7 +544,7 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
         location->gtType = TYP_BYREF;
         copyFlags(location, address, GTF_ALL_EFFECT);
 
-        use.ReplaceWith(comp, location);
+        use.ReplaceWith(location);
         BlockRange().Remove(address);
     }
     else if (locationOp == GT_CLS_VAR)
@@ -553,14 +553,14 @@ void Rationalizer::RewriteAddress(LIR::Use& use)
         location->gtType = TYP_BYREF;
         copyFlags(location, address, GTF_ALL_EFFECT);
 
-        use.ReplaceWith(comp, location);
+        use.ReplaceWith(location);
         BlockRange().Remove(address);
 
         JITDUMP("Rewriting GT_ADDR(GT_CLS_VAR) to GT_CLS_VAR_ADDR:\n");
     }
     else if (location->OperIsIndir())
     {
-        use.ReplaceWith(comp, location->gtGetOp1());
+        use.ReplaceWith(location->gtGetOp1());
         BlockRange().Remove(location);
         BlockRange().Remove(address);
 
@@ -621,7 +621,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_BOX:
             // GT_BOX at this level just passes through so get rid of it
-            use.ReplaceWith(comp, node->gtGetOp1());
+            use.ReplaceWith(node->gtGetOp1());
             BlockRange().Remove(node);
             break;
 
@@ -641,7 +641,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             // NOP.
             if (node->gtGetOp1() != nullptr)
             {
-                use.ReplaceWith(comp, node->gtGetOp1());
+                use.ReplaceWith(node->gtGetOp1());
                 BlockRange().Remove(node);
                 node = node->gtGetOp1();
             }
@@ -673,7 +673,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             GenTree* replacement = node->gtGetOp2();
             if (!use.IsDummyUse())
             {
-                use.ReplaceWith(comp, replacement);
+                use.ReplaceWith(replacement);
                 node = replacement;
             }
             else
@@ -702,8 +702,6 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
 
         case GT_ARGPLACE:
             // Remove argplace and list nodes from the execution order.
-            //
-            // TODO: remove phi args and phi nodes as well?
             BlockRange().Remove(node);
             break;
 
@@ -724,7 +722,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 node->gtType = TYP_BYREF;
 
                 BlockRange().InsertAfter(node, ind);
-                use.ReplaceWith(comp, ind);
+                use.ReplaceWith(ind);
 
                 // TODO: JIT dump
             }
@@ -766,7 +764,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 GenTree* ind = comp->gtNewOperNode(GT_IND, simdType, address);
 
                 BlockRange().InsertBefore(simdNode, address, ind);
-                use.ReplaceWith(comp, ind);
+                use.ReplaceWith(ind);
                 BlockRange().Remove(simdNode);
 
                 DISPTREERANGE(BlockRange(), use.Def());

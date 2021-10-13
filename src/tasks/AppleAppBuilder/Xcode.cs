@@ -111,7 +111,7 @@ public class XcodeBuildApp : Task
     }
 }
 
-internal class Xcode
+internal sealed class Xcode
 {
     private string RuntimeIdentifier { get; set; }
     private string Target { get; set; }

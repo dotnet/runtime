@@ -201,7 +201,13 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
             // time span
             try
             {
-                returnValue = unchecked((int)(TimeSpan.Parse(timeValue).Ticks / TimeSpan.TicksPerMinute));
+                long ticks = TimeSpan.Parse(timeValue).Ticks;
+                returnValue = unchecked((int)(ticks / TimeSpan.TicksPerMinute));
+                if ((ticks != 0) && (returnValue == 0))
+                {
+                    // If the specified duration is less than a minute, run for at least a minute anyway.
+                    returnValue = 1;
+                }
             }
             catch
             {
@@ -226,12 +232,8 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
 
         try
         {
-#if PROJECTK_BUILD
             FileStream fs = new FileStream(testConfig, FileMode.Open, FileAccess.Read, FileShare.Read);
             xmlFileStack.Push(XmlReader.Create(fs));
-#else
-            xmlFileStack.Push(new XmlTextReader(testConfig));
-#endif
         }
         catch (FileNotFoundException e)
         {
@@ -241,11 +243,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
 
         do
         {
-#if PROJECTK_BUILD
             XmlReader currentXML = (XmlReader)xmlFileStack.Pop();
-#else
-            XmlTextReader currentXML = (XmlTextReader)xmlFileStack.Pop();
-#endif
             totalDepth -= currentXML.Depth;
 
             if (currentXML.Depth != 0)
@@ -310,11 +308,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
                                 filename = ConvertPotentiallyRelativeFilenameToFullPath(stripFilenameFromPath(currentXML.BaseURI), filename);
                                 try
                                 {
-#if PROJECTK_BUILD
                                     currentXML = XmlReader.Create(filename);
-#else
-                                    currentXML = new XmlTextReader(filename);
-#endif
                                 }
                                 catch (FileNotFoundException e)
                                 {
@@ -1077,11 +1071,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
     {
         string trimmedPath = path.Trim();	// remove excess whitespace.
 
-#if PROJECTK_BUILD
         if (String.Compare("file://", 0, trimmedPath, 0, 7, StringComparison.OrdinalIgnoreCase) == 0)	// strip file:// from the front if it exists.
-#else
-        if (String.Compare("file://", 0, trimmedPath, 0, 7, true) == 0)	// strip file:// from the front if it exists.
-#endif
         {
             trimmedPath = trimmedPath.Substring(7);
         }
@@ -1115,11 +1105,7 @@ public class ReliabilityConfig : IEnumerable, IEnumerator
             {
                 return (trimmedPath);	// nothing to strip.
             }
-#if PROJECTK_BUILD
             if (String.Compare("file://", 0, trimmedPath, 0, 7, StringComparison.OrdinalIgnoreCase) == 0)
-#else
-            if (String.Compare("file://", 0, trimmedPath, 0, 7, true) == 0)
-#endif 
             {
                 return (trimmedPath.Substring(0, trimmedPath.LastIndexOf("/")));
             }
