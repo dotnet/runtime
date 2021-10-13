@@ -24,10 +24,19 @@ namespace ILTrim.DependencyAnalysis
         {
             MemberReference memberRef = _module.MetadataReader.GetMemberReference(Handle);
 
-            // TODO: MemberReference has other dependencies from signature
+            DependencyList dependencies = new DependencyList();
+
+            BlobReader signatureBlob = _module.MetadataReader.GetBlobReader(memberRef.Signature);
+            EcmaSignatureAnalyzer.AnalyzeMemberReferenceSignature(
+                _module,
+                signatureBlob,
+                factory,
+                dependencies);
 
             if (!memberRef.Parent.IsNil)
-                yield return new DependencyListEntry(factory.GetNodeForToken(_module, memberRef.Parent), "Parent of member reference");
+                dependencies.Add(factory.GetNodeForToken(_module, memberRef.Parent), "Parent of member reference");
+
+            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -37,8 +46,11 @@ namespace ILTrim.DependencyAnalysis
 
             var builder = writeContext.MetadataBuilder;
 
-            // TODO: the signature blob might contain references to tokens we need to rewrite
-            var signatureBlob = reader.GetBlobBytes(memberRef.Signature);
+            var signatureBlob = writeContext.GetSharedBlobBuilder();
+            EcmaSignatureRewriter.RewriteMemberReferenceSignature(
+                reader.GetBlobReader(memberRef.Signature),
+                writeContext.TokenMap,
+                signatureBlob);
 
             return builder.AddMemberReference(writeContext.TokenMap.MapToken(memberRef.Parent),
                 builder.GetOrAddString(reader.GetString(memberRef.Name)),

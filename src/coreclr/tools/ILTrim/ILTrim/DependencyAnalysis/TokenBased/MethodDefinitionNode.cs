@@ -26,21 +26,29 @@ namespace ILTrim.DependencyAnalysis
             MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
 
-            // TODO: MethodDefinition has other references such as parameter metadata, signature, etc.
+            DependencyList dependencies = new DependencyList();
 
-            yield return new DependencyListEntry(factory.TypeDefinition(_module, declaringType), "Method owning type");
+            EcmaSignatureAnalyzer.AnalyzeMethodSignature(
+                _module,
+                _module.MetadataReader.GetBlobReader(methodDef.Signature),
+                factory,
+                dependencies);
 
-            yield return new DependencyListEntry(factory.MethodBody(_module, Handle), "Method body");
+            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
+
+            dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
 
             foreach (CustomAttributeHandle customAttribute in methodDef.GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a method");
+                dependencies.Add(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a method");
             }
 
             foreach (ParameterHandle parameter in methodDef.GetParameters())
             {
-                yield return new(factory.Parameter(_module, parameter), "Parameter of method");
+                dependencies.Add(factory.Parameter(_module, parameter), "Parameter of method");
             }
+
+            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -51,11 +59,14 @@ namespace ILTrim.DependencyAnalysis
 
             var builder = writeContext.MetadataBuilder;
 
-            // TODO: the signature blob might contain references to tokens we need to rewrite
-            var signatureBlob = reader.GetBlobBytes(methodDef.Signature);
-
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
             int rva = bodyNode.Write(writeContext);
+
+            BlobBuilder signatureBlob = writeContext.GetSharedBlobBuilder();
+            EcmaSignatureRewriter.RewriteMethodSignature(
+                reader.GetBlobReader(methodDef.Signature),
+                writeContext.TokenMap,
+                signatureBlob);
 
             return builder.AddMethodDefinition(
                 methodDef.Attributes,

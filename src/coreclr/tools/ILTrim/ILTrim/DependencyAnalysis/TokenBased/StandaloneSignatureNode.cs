@@ -3,10 +3,6 @@
 
 using System.Collections.Generic;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Linq;
-
-using Internal.TypeSystem;
 
 using Internal.TypeSystem.Ecma;
 
@@ -26,44 +22,33 @@ namespace ILTrim.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
-            // @TODO: These need to go EcmaSignatureParser
-            // Cannot think of a design that can move this logic to that struct
-
             MetadataReader reader = _module.MetadataReader;
 
             StandaloneSignature standaloneSig = reader.GetStandaloneSignature(Handle);
 
             BlobReader signatureReader = reader.GetBlobReader(standaloneSig.Signature);
 
-            if (signatureReader.ReadSignatureHeader().Kind != SignatureKind.LocalVariables)
-                ThrowHelper.ThrowInvalidProgramException();
-
-            int count = signatureReader.ReadCompressedInteger();
-
-            for (int i = 0; i < count; i++)
-            {
-                SignatureTypeCode typeCode = signatureReader.ReadSignatureTypeCode();
-                switch (typeCode)
-                {
-                    case SignatureTypeCode.TypeHandle:
-                        TypeDefinitionHandle typeDefHandle = (TypeDefinitionHandle)signatureReader.ReadTypeHandle();
-                        yield return new DependencyListEntry(factory.TypeDefinition(_module, typeDefHandle), "Local variable type");
-                        break;
-                }
-            }
-
-            yield break;
+            return EcmaSignatureAnalyzer.AnalyzeLocalVariableBlob(
+                _module,
+                signatureReader,
+                factory
+                );
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
         {
-            EcmaSignatureParser signatureParser = new EcmaSignatureParser(_module.MetadataReader, writeContext.TokenMap);
-            byte[] blobBytes = signatureParser.GetLocalVariableBlob(Handle);
+            MetadataReader reader = _module.MetadataReader;
+            StandaloneSignature standaloneSig = reader.GetStandaloneSignature(Handle);
+            BlobBuilder blobBuilder = writeContext.GetSharedBlobBuilder();
+
+            EcmaSignatureRewriter.RewriteLocalVariableBlob(
+                reader.GetBlobReader(standaloneSig.Signature),
+                writeContext.TokenMap,
+                blobBuilder);
 
             var builder = writeContext.MetadataBuilder;
             return builder.AddStandaloneSignature(
-                builder.GetOrAddBlob(blobBytes));
-
+                builder.GetOrAddBlob(blobBuilder));
         }
 
         public override string ToString()

@@ -8,14 +8,12 @@ namespace Mono.Linker.Tests.Cases.Basic
         [Kept]
         public static void Main()
         {
-            // We will generate corrupted IL in the method body until we fix the signature parsing
-            //var t = typeof(A<>).ToString();
+            var t = typeof(A<>).ToString();
         }
-        /*
+
         [Kept]
         class A<T>
         {
         }
-        */
     }
 }
