@@ -888,7 +888,7 @@ sig_to_rgctx_sig (MonoMethodSignature *sig)
 	res->param_count = sig->param_count + 1;
 	for (i = 0; i < sig->param_count; ++i)
 		res->params [i] = sig->params [i];
-	res->params [sig->param_count] = m_class_get_this_arg (mono_defaults.int_class);
+	res->params [sig->param_count] = mono_class_get_byref_type (mono_defaults.int_class);
 	return res;
 }
 
