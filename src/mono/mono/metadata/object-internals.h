@@ -282,11 +282,11 @@ mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBoun
 	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
 }
 
-#define mono_span_length(span) (span._length)
+#define mono_span_length(span) (span->_length)
 
-#define mono_span_get(span,type,idx) (type)(!span._pointer ? NULL : span._pointer[idx])
+#define mono_span_get(span,type,idx) (type)(!span->_pointer ? NULL : span->_pointer[idx])
 
-#define mono_span_addr(span,type,idx) (type*)(span._pointer + idx)
+#define mono_span_addr(span,type,idx) (type*)(span->_pointer + idx)
 
 #define mono_span_setref(span,index,value)	\
 	do {	\
@@ -1870,7 +1870,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			       MonoObject **exc, MonoError *error);
 
 MonoObject*
-mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects params,
+mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
 				   MonoError *error);
 
 void* 

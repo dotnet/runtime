@@ -3354,10 +3354,11 @@ ves_icall_RuntimeMethodInfo_GetGenericArguments (MonoReflectionMethodHandle ref_
 
 MonoObjectHandle
 ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle,
-			  MonoSpanOfObjects params_span, MonoExceptionHandleOut exception_out, MonoError *error)
+			  MonoSpanOfObjects *params_span, MonoExceptionHandleOut exception_out, MonoError *error)
 {
 	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
 	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
+	g_assert (params_span != NULL);
 
 	/* 
 	 * Invoke from reflection is supposed to always be a virtual call (the API

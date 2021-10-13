@@ -4529,7 +4529,7 @@ mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **ex
  * On failure sets @error and returns NULL.
  */
 static gpointer
-invoke_span_extract_argument (MonoSpanOfObjects params_span, int i, MonoType *t, MonoObject **pa_obj, gboolean* has_byref_nullables, MonoError *error)
+invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t, MonoObject **pa_obj, gboolean* has_byref_nullables, MonoError *error)
 {
 	MonoType *t_orig = t;
 	gpointer result = NULL;
@@ -4684,7 +4684,7 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 }
 
 static MonoObject*
-mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects params_span,
+mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *params_span,
 			       MonoObject **exc, MonoError *error)
 {
 	error_init (error);
@@ -4853,7 +4853,7 @@ exit:
  * reference.
  */
 MonoObject*
-mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects params,
+mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
 				   MonoError *error)
 {
 	error_init (error);
@@ -4906,7 +4906,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoSpanOfObjects params_span = mono_span_create_from_object_array (params);
-	MonoObject *res = mono_runtime_try_invoke_span (method, obj, params_span, exc, error);
+	MonoObject *res = mono_runtime_try_invoke_span (method, obj, &params_span, exc, error);
 
 	HANDLE_FUNCTION_RETURN_VAL (res);
 }
