@@ -357,6 +357,56 @@ namespace {@namespace}
 
                 TypeGenerationSpec? underlyingTypeMetadata = typeMetadata.NullableUnderlyingTypeMetadata;
                 Debug.Assert(underlyingTypeMetadata != null);
+
+                ObjectConstructionStrategy constructionStrategy = underlyingTypeMetadata.ConstructionStrategy;
+
+                string? propMetadataInitFuncSource = null;
+                string? ctorParamMetadataInitFuncSource = null;
+
+                string propInitMethodName = "null";
+                string ctorParamMetadataInitMethodName = "null";
+                
+
+                if (typeMetadata.GenerateSerializationLogic)
+                {
+                    string? serializeFuncSource = GenerateFastPathFuncForNullableStruct(typeMetadata);
+                    string serializeMethodName = $"{typeFriendlyName}{SerializeHandlerPropName}";
+
+                    const string ObjectInfoVarName = "objectInfo";
+
+                    string genericArg = typeMetadata.TypeRef;
+
+                    string creatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterlessConstructor
+                        ? $"static () => new {underlyingTypeMetadata.TypeRef}()"
+                        : "null";
+
+                    string parameterizedCreatorInvocation = constructionStrategy == ObjectConstructionStrategy.ParameterizedConstructor
+                        ? GetParameterizedCtorInvocationFunc(typeMetadata.NullableUnderlyingTypeMetadata)
+                        : "null";
+
+                    if (typeMetadata.GenerateMetadata)
+                    {
+                        propInitMethodName = $"{underlyingTypeMetadata.TypeInfoPropertyName}{PropInitMethodNameSuffix}";
+                        
+                    }
+
+                    string objectInfoInitSource = $@"{JsonObjectInfoValuesTypeRef}<{genericArg}> {ObjectInfoVarName} = new {JsonObjectInfoValuesTypeRef}<{genericArg}>()
+                    {{
+                        {ObjectCreatorPropName} = {creatorInvocation},
+                        ObjectWithParameterizedConstructorCreator = {parameterizedCreatorInvocation},
+                        PropertyMetadataInitializer = {propInitMethodName},
+                        ConstructorParameterMetadataInitializer = {ctorParamMetadataInitMethodName},
+                        {NumberHandlingPropName} = {GetNumberHandlingAsStr(typeMetadata.NumberHandling)},
+                        {SerializeHandlerPropName} = {serializeMethodName}
+                    }};
+
+                    _{typeFriendlyName} = {JsonMetadataServicesTypeRef}.CreateObjectInfo<{typeCompilableName}>({OptionsInstanceVariableName}, {ObjectInfoVarName});";
+
+                    string additionalSource = @$"{propMetadataInitFuncSource}{serializeFuncSource}{ctorParamMetadataInitFuncSource}";
+
+                    return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
+                }
+
                 string underlyingTypeCompilableName = underlyingTypeMetadata.TypeRef;
                 string underlyingTypeFriendlyName = underlyingTypeMetadata.TypeInfoPropertyName;
                 string underlyingTypeInfoNamedArg = underlyingTypeMetadata.ClassType == ClassType.TypeUnsupportedBySourceGen
@@ -672,7 +722,7 @@ namespace {@namespace}
 
                 return GenerateForType(typeMetadata, objectInfoInitSource, additionalSource);
             }
-
+             
             private string GeneratePropMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 const string PropVarName = "properties";
@@ -822,6 +872,13 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 }}");
 
                 return sb.ToString();
+            }
+
+            private string GenerateFastPathFuncForNullableStruct(TypeGenerationSpec typeGenSpec)
+            {
+                string serializeMethod = $"{typeGenSpec.NullableUnderlyingTypeMetadata.TypeInfoPropertyName}{SerializeHandlerPropName}(writer, value.Value);";
+
+                return GenerateFastPathFuncForType(typeGenSpec, serializeMethod, emitNullCheck: typeGenSpec.CanBeNull);
             }
 
             private string GenerateFastPathFuncForObject(TypeGenerationSpec typeGenSpec)

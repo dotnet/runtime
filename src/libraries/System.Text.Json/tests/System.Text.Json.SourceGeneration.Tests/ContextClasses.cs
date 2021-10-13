@@ -46,6 +46,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<StructWithCustomConverterPropertyFactory> StructWithCustomConverterPropertyFactory { get; }
         public JsonTypeInfo<ClassWithBadCustomConverter> ClassWithBadCustomConverter { get; }
         public JsonTypeInfo<StructWithBadCustomConverter> StructWithBadCustomConverter { get; }
+        public JsonTypeInfo<MyStructWithProperties?> NullableMyStructWithProperties { get; }
+        public JsonTypeInfo<MyStructWithCtrProperties?> NullableMyStructWithCtrProperties { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

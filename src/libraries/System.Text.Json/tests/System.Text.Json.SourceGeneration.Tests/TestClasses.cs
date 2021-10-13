@@ -151,4 +151,22 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     internal struct MyStruct { }
+
+    public struct MyStructWithProperties
+    {
+        public int B { get; set; }
+        public int A { get; set; }
+    }
+
+    public struct MyStructWithCtrProperties
+    {
+        public int B { get; private set; }
+        public int A { get; private set; }
+
+        public MyStructWithCtrProperties(int a, int b)
+        {
+            A = a;
+            B = b;
+        }
+    }
 }

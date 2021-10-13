@@ -232,6 +232,15 @@ namespace System.Text.Json.SourceGeneration
 
         private bool FastPathIsSupported()
         {
+
+            if (ClassType == ClassType.Nullable
+                && (NullableUnderlyingTypeMetadata != null)
+                && (NullableUnderlyingTypeMetadata.ClassType == ClassType.Object)
+                && (NullableUnderlyingTypeMetadata.GenerateSerializationLogic))
+            {
+                return true;
+            }
+
             if (ClassType == ClassType.Object)
             {
                 if (ExtensionDataPropertyTypeSpec != null)

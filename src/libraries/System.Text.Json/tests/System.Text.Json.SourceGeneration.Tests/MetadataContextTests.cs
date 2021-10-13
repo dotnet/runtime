@@ -39,6 +39,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(MyStructWithProperties?), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(MyStructWithCtrProperties?), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -81,6 +83,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyStructWithProperties?.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.MyStructWithCtrProperties?.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
@@ -119,7 +123,10 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClassWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
-    [JsonSerializable(typeof(StructWithBadCustomConverter))]
+    [JsonSerializable(typeof(StructWithBadCustomConverter))] 
+    [JsonSerializable(typeof(MyStructWithProperties?))]
+    [JsonSerializable(typeof(MyStructWithCtrProperties?))]
+
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -185,6 +192,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.StructWithCustomConverterProperty.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Null(MetadataContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyStructWithProperties?.SerializeHandler);
+            Assert.Null(MetadataContext.Default.MyStructWithCtrProperties?.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
@@ -224,6 +233,24 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             obj = JsonSerializer.Deserialize(Json, ContextWithImplicitStringEnum.Default.PocoWithEnum);
             Assert.Equal(EnumWrittenAsString.A, obj.MyEnum);
+        }
+
+        [Fact]
+        public void Serialize_NullableStruct()
+        {
+            MyStructWithProperties? obj = new MyStructWithProperties { A = 1, B = 2 };
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
+        }
+
+        [Fact]
+        public void Serialize_NullableStructWithCtr()
+        {
+            MyStructWithCtrProperties? obj = new MyStructWithCtrProperties(1, 2);
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithCtrProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
         }
     }
 }

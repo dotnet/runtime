@@ -40,6 +40,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
+    [JsonSerializable(typeof(MyStructWithProperties?))] 
+    [JsonSerializable(typeof(MyStructWithCtrProperties?))] 
     internal partial class MetadataAndSerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Default;
@@ -83,8 +85,28 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterProperty);
             Assert.NotNull(MetadataAndSerializationContext.Default.ClassWithCustomConverterPropertyFactory);
             Assert.NotNull(MetadataAndSerializationContext.Default.StructWithCustomConverterPropertyFactory);
+            Assert.NotNull(MetadataAndSerializationContext.Default.MyStructWithProperties?.SerializeHandler);
+            Assert.NotNull(MetadataAndSerializationContext.Default.MyStructWithCtrProperties?.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.ClassWithBadCustomConverter);
             Assert.Throws<InvalidOperationException>(() => MetadataAndSerializationContext.Default.StructWithBadCustomConverter);
+        }
+
+        [Fact]
+        public void Serialize_NullableStruct()
+        {
+            MyStructWithProperties? obj = new MyStructWithProperties { A = 1, B = 2 };
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
+        }
+
+        [Fact]
+        public void Serialize_NullableStructWithCtr()
+        {
+            MyStructWithCtrProperties? obj = new MyStructWithCtrProperties(1, 2);
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithCtrProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
         }
     }
 }

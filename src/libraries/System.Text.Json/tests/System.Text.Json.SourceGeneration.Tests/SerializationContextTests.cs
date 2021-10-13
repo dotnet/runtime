@@ -40,6 +40,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory))]
     [JsonSerializable(typeof(ClassWithBadCustomConverter))]
     [JsonSerializable(typeof(StructWithBadCustomConverter))]
+    [JsonSerializable(typeof(MyStructWithProperties?))]
+    [JsonSerializable(typeof(MyStructWithCtrProperties?))]
     internal partial class SerializationContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -78,6 +80,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyStructWithProperties?), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyStructWithCtrProperties?), GenerationMode = JsonSourceGenerationMode.Serialization)]
+
     internal partial class SerializationWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -117,6 +122,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyStructWithProperties?), GenerationMode = JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyStructWithCtrProperties?), GenerationMode = JsonSourceGenerationMode.Serialization)]
     internal partial class SerializationContextWithCamelCase : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Serialization;
@@ -162,6 +169,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(SerializationContext.Default.StructWithCustomConverterFactory.SerializeHandler);
             Assert.Null(SerializationContext.Default.ClassWithCustomConverterProperty.SerializeHandler);
             Assert.Null(SerializationContext.Default.StructWithCustomConverterProperty.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.MyStructWithProperties?.SerializeHandler);
+            Assert.NotNull(SerializationContext.Default.MyStructWithCtrProperties?.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => SerializationContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => SerializationContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
@@ -377,6 +386,24 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public void Serialize_NullableStruct()
+        {
+            MyStructWithProperties? obj = new MyStructWithProperties { A = 1, B = 2 };
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
+        }
+
+        [Fact]
+        public void Serialize_NullableStructWithCtr()
+        {
+            MyStructWithCtrProperties? obj = new MyStructWithCtrProperties(1, 2);
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithCtrProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected,json);
+        }
+
+        [Fact]
         public override void ClassWithNullableProperties_Roundtrip()
         {
             RunTest(new ClassWithNullableProperties
@@ -468,6 +495,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Null(SerializationWithPerTypeAttributeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyStructWithProperties?.SerializeHandler);
+            Assert.NotNull(SerializationWithPerTypeAttributeContext.Default.MyStructWithCtrProperties?.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => SerializationWithPerTypeAttributeContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }

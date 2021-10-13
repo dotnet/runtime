@@ -40,6 +40,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(StructWithCustomConverterPropertyFactory), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithBadCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyStructWithProperties?), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
+    [JsonSerializable(typeof(MyStructWithCtrProperties?), GenerationMode = JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization)]
     internal partial class MixedModeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata | JsonSourceGenerationMode.Serialization;
@@ -83,6 +85,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MixedModeContext.Default.StructWithCustomConverterProperty.SerializeHandler);
             Assert.Null(MixedModeContext.Default.ClassWithCustomConverterPropertyFactory.SerializeHandler);
             Assert.Null(MixedModeContext.Default.StructWithCustomConverterPropertyFactory.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyStructWithProperties?.SerializeHandler);
+            Assert.NotNull(MixedModeContext.Default.MyStructWithCtrProperties?.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.ClassWithBadCustomConverter.SerializeHandler);
             Assert.Throws<InvalidOperationException>(() => MixedModeContext.Default.StructWithBadCustomConverter.SerializeHandler);
         }
@@ -218,6 +222,24 @@ namespace System.Text.Json.SourceGeneration.Tests
             json = JsonSerializer.Serialize(obj, context.MyTypeWithCallbacks);
             Assert.Equal("{\"myProperty\":\"Before\"}", json);
             Assert.Equal("After", obj.MyProperty);
+        }
+
+        [Fact]
+        public void Serialize_NullableStruct()
+        {
+            MyStructWithProperties? obj = new MyStructWithProperties { A = 1, B = 2 };
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
+        }
+
+        [Fact]
+        public void Serialize_NullableStructWithCtr()
+        {
+            MyStructWithCtrProperties? obj = new MyStructWithCtrProperties(1, 2);
+            string json = JsonSerializer.Serialize(obj, DefaultContext.NullableMyStructWithCtrProperties);
+            string expected = "{\"B\":2,\"A\":1}";
+            Assert.Equal(expected, json);
         }
     }
 }
