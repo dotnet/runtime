@@ -3433,18 +3433,20 @@ private:
 #ifdef FEATURE_COMINTEROP
         HasComPlusCallInfo                  = 0x10, // this IMD contains an optional ComPlusCallInfo
 #endif // FEATURE_COMINTEROP
-        FailedConstraintCheck               = 0x20,
+        FailedConstraintCheckFlag           = 0x20,
     };
 
     void SetFailedConstraintCheck()
     {
-        m_wFlags2 |= FailedConstraintCheck;
+        m_wFlags2 |= FailedConstraintCheckFlag;
     }
 
+public:
     bool FailedConstraintCheck()
     {
-        return m_wFlags2 & FailedConstraintCheck;
+        return m_wFlags2 & FailedConstraintCheckFlag;
     }
+private:
 
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
     union {

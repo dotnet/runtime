@@ -8,5 +8,6 @@
     <Compile Include="TypeIntrinsics.cs" />
     <Compile Include="TypeIntrinsics.IsAssignableFrom.cs" />
     <Compile Include="TypeIntrinsics.IsAssignableTo.cs" />
+    <Compile Include="TypeIntrinsics.IsAssignableToGeneric.cs" />
   </ItemGroup>
 </Project>

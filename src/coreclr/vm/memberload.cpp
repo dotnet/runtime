@@ -790,7 +790,8 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
                                                        PCCOR_SIGNATURE * ppTypeSig,
                                                        ULONG * pcbTypeSig,
                                                        PCCOR_SIGNATURE * ppMethodSig,
-                                                       ULONG * pcbMethodSig)
+                                                       ULONG * pcbMethodSig,
+                                                       BOOL allowConstraintFail)
 
 {
     CONTRACTL
@@ -875,12 +876,23 @@ MethodDesc * MemberLoader::GetMethodDescFromMethodSpec(Module * pModule,
             pModule);
     }
 
+    allowConstraintFail = (allowConstraintFail && pMD->IsStatic());
+    if (allowConstraintFail)
+    {
+        // Constraint fail is only allowed on a subset of methods
+        allowConstraintFail = (S_OK == pMD->GetModule()->GetCustomAttribute(pMD->GetMemberDef(), WellKnownAttribute::ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute, NULL, NULL));
+    }
+
     return MethodDesc::FindOrCreateAssociatedMethodDesc(
         pMD,
         ppTH->GetMethodTable(),
         FALSE /* don't get unboxing entry point */,
         Instantiation(genericMethodArgs, nGenericMethodArgs),
-        allowInstParam);
+        allowInstParam,
+        FALSE /* forceRemotableMethod */,
+        TRUE /* allowCreate */,
+        CLASS_LOADED /*level*/,
+        allowConstraintFail);
 }
 
 //---------------------------------------------------------------------------------------

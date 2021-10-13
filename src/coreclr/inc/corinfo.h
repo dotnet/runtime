@@ -789,7 +789,7 @@ enum CorInfoFlag
     CORINFO_FLG_SHAREDINST            = 0x00020000, // the code for this method is shared between different generic instantiations (also set on classes/types)
     CORINFO_FLG_DELEGATE_INVOKE       = 0x00040000, // "Delegate
     CORINFO_FLG_PINVOKE               = 0x00080000, // Is a P/Invoke call
-//  CORINFO_FLG_UNUSED                = 0x00100000,
+    CORINFO_FLG_CONSTRAINTFAIL        = 0x00100000, // Indicates the method doesn't satisfy its constraints
     CORINFO_FLG_NOGCCHECK             = 0x00200000, // This method is FCALL that has no GC check.  Don't put alone in loops
     CORINFO_FLG_INTRINSIC             = 0x00400000, // This method MAY have an intrinsic ID
     CORINFO_FLG_CONSTRUCTOR           = 0x00800000, // This method is an instance or type initializer
@@ -1519,6 +1519,9 @@ enum CorInfoTokenKind
 
     // token comes from an instruction that allows a ByRef but not void
     CORINFO_TOKENKIND_ClassNotVoid = 0x1000 | CORINFO_TOKENKIND_Class,
+
+    // token comes from a CALL instruction
+    CORINFO_TOKENKIND_Method_CallInstr = 0x2000 | CORINFO_TOKENKIND_Method,
 };
 
 struct CORINFO_RESOLVED_TOKEN

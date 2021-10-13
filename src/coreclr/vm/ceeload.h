@@ -1424,13 +1424,7 @@ protected:
     InstMethodHashTable *GetConstraintFailInstMethodHashTable()
     {
         LIMITED_METHOD_CONTRACT;
-        {
-            // IsResource() may lock when accessing metadata, but this is only in debug,
-            // for the assert below
-            CONTRACT_VIOLATION(TakesLockViolation);
 
-            _ASSERTE(!IsResource());
-        }
         return m_pConstraintFailInstMethodHashTable;
     }
 

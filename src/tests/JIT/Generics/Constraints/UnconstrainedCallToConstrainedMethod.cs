@@ -5,10 +5,6 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.CompilerServices
-{
-    class ConvertUnconstrainedCallsToThrowInvalidProgramExceptionAttribute : Attribute { }
-}
 namespace UnconstrainedCallToConstrainedMethod
 {
     interface IConstraint<T> { }

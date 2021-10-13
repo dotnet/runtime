@@ -4421,6 +4421,34 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Type_IsAssignableTo_Generic:
+            {
+                assert(sig->sigInst.methInstCount == 2);
+                CORINFO_CLASS_HANDLE tFrom = sig->sigInst.methInst[0];
+                CORINFO_CLASS_HANDLE tTo = sig->sigInst.methInst[1];
+                bool canCast = info.compCompHnd->canCast(tFrom, tTo);
+                if (canCast)
+                {
+                    // Always return true
+                    retNode = gtNewIconNode(1);
+                }
+                else
+                {
+                    if ((info.compCompHnd->getClassAttribs(tFrom) & CORINFO_FLG_SHAREDINST) ||
+                        (info.compCompHnd->getClassAttribs(tFrom) & CORINFO_FLG_SHAREDINST))
+                    {
+                        // Maybe CanCastTo. This isn't the most optimal version of this possible, but it isn't wrong
+                        break;
+                    }
+                    else
+                    {
+                        // Everything is concrete here. Return false
+                        retNode = gtNewIconNode(0);
+                    }
+                }
+                break;
+            }
+
             case NI_System_Type_get_IsValueType:
             {
                 // Optimize
@@ -5109,7 +5137,14 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             }
             else if (strcmp(methodName, "IsAssignableTo") == 0)
             {
-                result = NI_System_Type_IsAssignableTo;
+                if (info.compCompHnd->getMethodAttribs(method) & CORINFO_FLG_STATIC)
+                {
+                    result = NI_System_Type_IsAssignableTo_Generic;
+                }
+                else
+                {
+                    result = NI_System_Type_IsAssignableTo;
+                }
             }
             else if (strcmp(methodName, "op_Equality") == 0)
             {
@@ -14957,7 +14992,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 // many other places.  We unfortunately embed that knowledge here.
                 if (opcode != CEE_CALLI)
                 {
-                    _impResolveToken(CORINFO_TOKENKIND_Method);
+                    _impResolveToken(opcode == CEE_CALL ? CORINFO_TOKENKIND_Method_CallInstr : CORINFO_TOKENKIND_Method);
+
+                    if (info.compCompHnd->getMethodAttribs(resolvedToken.hMethod) & CORINFO_FLG_CONSTRAINTFAIL)
+                    {
+                        verHandleVerificationFailure(block, FALSE);
+                        return;
+                    }
 
                     eeGetCallInfo(&resolvedToken,
                                   (prefixFlags & PREFIX_CONSTRAINED) ? &constrainedResolvedToken : nullptr,

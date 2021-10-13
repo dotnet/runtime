@@ -113,6 +113,8 @@ namespace System
 
         [Intrinsic]
         public bool IsAssignableTo([NotNullWhen(true)] Type? targetType) => targetType?.IsAssignableFrom(this) ?? false;
+        [Intrinsic]
+        public static bool IsAssignableTo<TFrom, TTo>() => typeof(TTo).IsAssignableFrom(typeof(TFrom));
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
         public virtual bool IsSignatureType => false;

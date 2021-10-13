@@ -136,7 +136,8 @@ public:
                                                     PCCOR_SIGNATURE * ppTypeSig = NULL, // Optionally, return generic signatures fetched from metadata during loading.
                                                     ULONG * pcbTypeSig = NULL,
                                                     PCCOR_SIGNATURE * ppMethodSig = NULL,
-                                                    ULONG * pcbMethodSig = NULL);
+                                                    ULONG * pcbMethodSig = NULL,
+                                                    BOOL allowConstraintFail = FALSE);
 
     //-------------------------------------------------------------------
     // METHOD AND FIELD LOOKUP BY NAME AND SIGNATURE

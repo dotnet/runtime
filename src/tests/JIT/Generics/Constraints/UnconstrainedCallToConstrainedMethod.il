@@ -280,7 +280,7 @@
   .method private hidebysig static void  TestHelperMethodRequiresConstraint<(class UnconstrainedCallToConstrainedMethod.IConstraint`1<!!U>) T,U>(bool expectSuccess) cil managed
   {
     .custom instance void System.Runtime.CompilerServices.NullableContextAttribute::.ctor(uint8) = ( 01 00 00 00 00 ) 
-    .custom instance void System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowInvalidProgramExceptionAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute::.ctor() = ( 01 00 00 00 ) 
     .param type U 
     .custom instance void System.Runtime.CompilerServices.NullableAttribute::.ctor(uint8) = ( 01 00 02 00 00 ) 
     // Code size       177 (0xb1)
@@ -364,7 +364,7 @@
   .method private hidebysig static void  TestHelperMethodRequiresConstraintCurious<(class UnconstrainedCallToConstrainedMethod.IConstraintCurious`1<!!T>) T>(bool expectSuccess) cil managed
   {
     .custom instance void System.Runtime.CompilerServices.NullableContextAttribute::.ctor(uint8) = ( 01 00 00 00 00 ) 
-    .custom instance void System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowInvalidProgramExceptionAttribute::.ctor() = ( 01 00 00 00 ) 
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute::.ctor() = ( 01 00 00 00 ) 
     // Code size       95 (0x5f)
     .maxstack  3
     .locals init (bool V_0)
@@ -423,7 +423,7 @@
       IL_000a:  leave      IL_00c5
 
     }  // end .try
-    catch [System.Runtime]System.InvalidProgramException 
+    catch [System.Runtime]System.Security.VerificationException
     {
       IL_000f:  pop
       IL_0010:  nop
@@ -523,7 +523,7 @@
       IL_000a:  leave.s    IL_0070
 
     }  // end .try
-    catch [System.Runtime]System.InvalidProgramException 
+    catch [System.Runtime]System.Security.VerificationException
     {
       IL_000c:  pop
       IL_000d:  nop
@@ -644,22 +644,6 @@
   } // end of method TestClass::.ctor
 
 } // end of class UnconstrainedCallToConstrainedMethod.TestClass
-
-.class private auto ansi beforefieldinit System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowInvalidProgramExceptionAttribute
-       extends [System.Runtime]System.Attribute
-{
-  .method public hidebysig specialname rtspecialname 
-          instance void  .ctor() cil managed
-  {
-    // Code size       8 (0x8)
-    .maxstack  8
-    IL_0000:  ldarg.0
-    IL_0001:  call       instance void [System.Runtime]System.Attribute::.ctor()
-    IL_0006:  nop
-    IL_0007:  ret
-  } // end of method ConvertUnconstrainedCallsToThrowInvalidProgramExceptionAttribute::.ctor
-
-} // end of class System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowInvalidProgramExceptionAttribute
 
 // *********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file UnconstrainedCallToConstrainedMethod.res

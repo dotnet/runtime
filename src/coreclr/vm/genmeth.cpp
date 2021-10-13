@@ -967,15 +967,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                methodInst,
                                                FALSE /* no inst param */);
 
-            if (allowConstraintFailure && pResultMD == NULL)
-            {
-                pResultMD = pConstraintFailTable->FindMethodDesc(TypeHandle(pExactMT),
-                                               methodDef,
-                                               TRUE, /* forceBoxedEntryPoint */
-                                               methodInst,
-                                               FALSE /* no inst param */);
-            }
-
             if (!pResultMD)
             {
                 // !allowCreate ==> GC_NOTRIGGER ==> no entering Crst
@@ -993,15 +984,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                    TRUE, /* forceBoxedEntryPoint */
                                                    methodInst,
                                                    FALSE /* no inst param */);
-
-                if (allowConstraintFailure && pResultMD == NULL)
-                {
-                    pResultMD = pConstraintFailTable->FindMethodDesc(TypeHandle(pExactMT),
-                                                methodDef,
-                                                TRUE, /* forceBoxedEntryPoint */
-                                                methodInst,
-                                                FALSE /* no inst param */);
-                }
 
                 if (pResultMD == NULL)
                 {
@@ -1182,7 +1164,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(pExactMT,
                                                                          methodDef,
                                                                          methodInst,
-                                                                         FALSE);
+                                                                         FALSE,
+                                                                         allowConstraintFailure);
 
             // No - so create one.  Go fetch the shared one first
             if (pInstMD == NULL)
@@ -1201,7 +1184,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                           /* allowInstParam */ TRUE,
                                                                           /* forceRemotableMethod */ FALSE,
                                                                           /* allowCreate */ TRUE,
-                                                                          /* level */ level);
+                                                                          /* level */ level,
+                                                                          allowConstraintFailure);
 
                 _ASSERTE(pWrappedMD->IsSharedByGenericInstantiations());
                 _ASSERTE(!methodInst.IsEmpty() || !pWrappedMD->IsSharedByGenericMethodInstantiations());
@@ -1210,7 +1194,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                             pMDescInCanonMT,
                                                                             pWrappedMD,
                                                                             methodInst,
-                                                                            FALSE);
+                                                                            FALSE,
+                                                                            allowConstraintFailure);
             }
         }
         else
@@ -1221,7 +1206,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                 InstantiatedMethodDesc::FindLoadedInstantiatedMethodDesc(pExactMT,
                                                                          methodDef,
                                                                          methodInst,
-                                                                         FALSE);
+                                                                         FALSE,
+                                                                         allowConstraintFailure);
 
             // No - so create one.
             if (pInstMD == NULL)
@@ -1235,7 +1221,8 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                                             pMDescInCanonMT,
                                                                             NULL,
                                                                             methodInst,
-                                                                            FALSE);
+                                                                            FALSE,
+                                                                            allowConstraintFailure);
             }
         }
         _ASSERTE(pInstMD);

@@ -1043,6 +1043,13 @@ Dictionary::PopulateEntry(
                 inst = pMethod->GetMethodInstantiation();
             }
 
+            // Detect call from non-constrained to constrained methods, and allow for failure in MethodEntrySlot usages of the method
+            BOOL allowConstraintFailure = FALSE;
+            if (kind == MethodEntrySlot && fMethodNeedsInstantiation)
+            {
+                allowConstraintFailure = (S_OK == pMethod->GetModule()->GetCustomAttribute(pMethod->GetMemberDef(), WellKnownAttribute::ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute, NULL, NULL));
+            }
+
             // This must be called even if nargs == 0, in order to create an instantiating
             // stub for static methods in generic classees if needed, also for BoxedEntryPointStubs
             // in non-generic structs.
@@ -1051,7 +1058,11 @@ Dictionary::PopulateEntry(
                 pOwnerMT,
                 isUnboxingStub,
                 inst,
-                (!isInstantiatingStub && !isUnboxingStub));
+                (!isInstantiatingStub && !isUnboxingStub),
+                FALSE /* forceRemotableMethod*/,
+                TRUE /*allowCreate*/,
+                CLASS_LOADED /* level */,
+                allowConstraintFailure);
 
             if (kind == ConstrainedMethodEntrySlot)
             {
@@ -1114,7 +1125,14 @@ Dictionary::PopulateEntry(
             else
             if (kind == MethodEntrySlot)
             {
-                result = (CORINFO_GENERIC_HANDLE)pMethod->GetMultiCallableAddrOfCode();
+                if (allowConstraintFailure && pMethod->AsInstantiatedMethodDesc()->FailedConstraintCheck())
+                {
+                    result = (CORINFO_GENERIC_HANDLE)CoreLibBinder::GetMethod(METHOD__STUBHELPERS__THROW_INVALID_PROGRAM_EXCEPTION)->GetMultiCallableAddrOfCode();
+                }
+                else
+                {
+                    result = (CORINFO_GENERIC_HANDLE)pMethod->GetMultiCallableAddrOfCode();
+                }
             }
             else
             if (kind == DispatchStubAddrSlot)
