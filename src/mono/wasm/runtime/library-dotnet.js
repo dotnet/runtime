@@ -20,14 +20,17 @@ const DotNetSupportLib = {
 // the methods would be visible to EMCC linker
 // --- keep in sync with exports.ts ---
 const linked_functions = [
-    //MonoSupportLib
+    // mini-wasm.c
     "mono_set_timeout",
+
+    // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
     "mono_wasm_fire_debugger_agent_message",
-    "schedule_background_exec",
-    "mono_wasm_setenv",
 
-    //DotNetSupportLib
+    // mono-threads-wasm.c
+    "schedule_background_exec",
+
+    // driver.c
     "mono_wasm_invoke_js_blazor",
     "mono_wasm_invoke_js_marshalled",
     "mono_wasm_invoke_js_unmarshalled",

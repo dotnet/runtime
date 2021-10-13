@@ -50,6 +50,7 @@ import { mono_wasm_add_event_listener, mono_wasm_remove_event_listener } from ".
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
+import { ArgsMarshalString } from "./method-binding";
 
 export const MONO: MONO = <any>{
     // current "public" MONO API
@@ -124,14 +125,17 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
 // the methods would be visible to EMCC linker
 // --- keep in sync with library-dotnet.js ---
 const linker_exports = {
-    //MonoSupportLib
+    // mini-wasm.c
     mono_set_timeout,
+
+    // mini-wasm-debugger.c
     mono_wasm_asm_loaded,
     mono_wasm_fire_debugger_agent_message,
-    schedule_background_exec,
-    mono_wasm_setenv,
 
-    //DotNetSupportLib 
+    // mono-threads-wasm.c
+    schedule_background_exec,
+
+    // also keep in sync with driver.c
     mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_marshalled,
     mono_wasm_invoke_js_unmarshalled,
@@ -164,7 +168,10 @@ const linker_exports = {
 
     // backward compatibility, sync with EmscriptenModuleMono
     // https://github.com/search?q=mono_bind_static_method&type=Code
-    mono_bind_static_method,
+    mono_bind_static_method: (fqn: string, signature: ArgsMarshalString): Function => {
+        console.warn("Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+        return mono_bind_static_method(fqn, signature);
+    },
 };
 export const DOTNET: any = {
 };
