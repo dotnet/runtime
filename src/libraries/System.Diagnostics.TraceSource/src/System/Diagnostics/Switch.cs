@@ -1,14 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Threading;
-using System.Runtime.InteropServices;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -18,10 +15,10 @@ namespace System.Diagnostics
     /// </devdoc>
     public abstract class Switch
     {
-        private readonly string? _description;
+        private readonly string _description;
         private readonly string _displayName;
         private int _switchSetting;
-        private volatile bool _initialized;
+        private bool _initialized;
         private bool _initializing;
         private volatile string _switchValueString = string.Empty;
         private readonly string _defaultValue;
@@ -57,78 +54,53 @@ namespace System.Diagnostics
         {
             // displayName is used as a hashtable key, so it can never
             // be null.
-            if (displayName == null) displayName = string.Empty;
-
-            _displayName = displayName;
-            _description = description;
+            _displayName = displayName ?? string.Empty;
+            _description = description ?? string.Empty;
 
             // Add a weakreference to this switch and cleanup invalid references
-            lock (s_switches)
+            var switches = s_switches;
+            lock (switches)
             {
-                _pruneCachedSwitches();
-                s_switches.Add(new WeakReference<Switch>(this));
+                PruneCachedSwitches(switches);
+                switches.Add(new WeakReference<Switch>(this));
             }
 
             _defaultValue = defaultSwitchValue;
         }
 
-        private static void _pruneCachedSwitches()
+        private static void PruneCachedSwitches(List<WeakReference<Switch>> switches)
         {
-            lock (s_switches)
+            if (s_LastCollectionCount != GC.CollectionCount(2))
             {
-                if (s_LastCollectionCount != GC.CollectionCount(2))
+                List<WeakReference<Switch>> buffer = new List<WeakReference<Switch>>(switches.Count);
+                for (int i = 0; i < switches.Count; i++)
                 {
-                    List<WeakReference<Switch>> buffer = new List<WeakReference<Switch>>(s_switches.Count);
-                    for (int i = 0; i < s_switches.Count; i++)
+                    if (switches[i].TryGetTarget(out _))
                     {
-                        if (s_switches[i].TryGetTarget(out _))
-                        {
-                            buffer.Add(s_switches[i]);
-                        }
+                        buffer.Add(switches[i]);
                     }
-                    if (buffer.Count < s_switches.Count)
-                    {
-                        s_switches.Clear();
-                        s_switches.AddRange(buffer);
-                        s_switches.TrimExcess();
-                    }
-                    s_LastCollectionCount = GC.CollectionCount(2);
                 }
+                if (buffer.Count < switches.Count)
+                {
+                    switches.Clear();
+                    switches.AddRange(buffer);
+                    switches.TrimExcess();
+                }
+                s_LastCollectionCount = GC.CollectionCount(2);
             }
         }
 
         /// <devdoc>
         ///    <para>Gets a name used to identify the switch.</para>
         /// </devdoc>
-        public string DisplayName
-        {
-            get
-            {
-                return _displayName;
-            }
-        }
+        public string DisplayName => _displayName;
 
         /// <devdoc>
         ///    <para>Gets a description of the switch.</para>
         /// </devdoc>
-        public string Description
-        {
-            get
-            {
-                return (_description == null) ? string.Empty : _description;
-            }
-        }
+        public string Description => _description;
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                Initialize();
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
-            }
-        }
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
         /// <devdoc>
         ///    <para>
@@ -141,10 +113,16 @@ namespace System.Diagnostics
             {
                 if (!_initialized)
                 {
-                    if (InitializeWithStatus())
-                        OnSwitchSettingChanged();
+                    Init();
                 }
                 return _switchSetting;
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                void Init()
+                {
+                    if (Initialize())
+                        OnSwitchSettingChanged();
+                }
             }
             set
             {
@@ -172,44 +150,37 @@ namespace System.Diagnostics
         {
             get
             {
-                Initialize();
+                if (!_initialized)
+                    Initialize();
                 return _switchValueString;
             }
             set
             {
-                Initialize();
+                if (!_initialized)
+                    Initialize();
                 _switchValueString = value;
                 OnValueChanged();
             }
         }
 
-        private void Initialize()
+        private bool Initialize()
         {
-            InitializeWithStatus();
-        }
-
-        private bool InitializeWithStatus()
-        {
-            if (!_initialized)
+            lock (InitializedLock)
             {
-                lock (InitializedLock)
+                if (_initialized || _initializing)
                 {
-                    if (_initialized || _initializing)
-                    {
-                        return false;
-                    }
-
-                    // This method is re-entrent during initialization, since calls to OnValueChanged() in subclasses could end up having InitializeWithStatus()
-                    // called again, we don't want to get caught in an infinite loop.
-                    _initializing = true;
-
-                    _switchValueString = _defaultValue;
-                    OnValueChanged();
-                    _initialized = true;
-                    _initializing = false;
+                    return false;
                 }
-            }
 
+                // This method is re-entrent during initialization, since calls to OnValueChanged() in subclasses could end up having InitializeWithStatus()
+                // called again, we don't want to get caught in an infinite loop.
+                _initializing = true;
+
+                _switchValueString = _defaultValue;
+                OnValueChanged();
+                _initialized = true;
+                _initializing = false;
+            }
             return true;
         }
 
@@ -230,12 +201,13 @@ namespace System.Diagnostics
 
         internal static void RefreshAll()
         {
-            lock (s_switches)
+            var switches = s_switches;
+            lock (switches)
             {
-                _pruneCachedSwitches();
-                for (int i = 0; i < s_switches.Count; i++)
+                PruneCachedSwitches(switches);
+                for (int i = 0; i < switches.Count; i++)
                 {
-                    if (s_switches[i].TryGetTarget(out Switch? swtch))
+                    if (switches[i].TryGetTarget(out Switch? swtch))
                     {
                         swtch.Refresh();
                     }

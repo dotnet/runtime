@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Threading;
-using System.Text;
 using System.Collections;
 using System.Globalization;
 
@@ -12,34 +9,22 @@ namespace System.Diagnostics
     public partial class TraceEventCache
     {
         private long _timeStamp = -1;
-        private DateTime _dateTime = DateTime.MinValue;
+        private DateTime _dateTime;
         private string? _stackTrace;
 
         public DateTime DateTime
         {
             get
             {
-                if (_dateTime == DateTime.MinValue)
+                if (_dateTime.Ticks == 0)
                     _dateTime = DateTime.UtcNow;
                 return _dateTime;
             }
         }
 
-        public int ProcessId
-        {
-            get
-            {
-                return Environment.ProcessId;
-            }
-        }
+        public int ProcessId => Environment.ProcessId;
 
-        public string ThreadId
-        {
-            get
-            {
-                return Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture);
-            }
-        }
+        public string ThreadId => Environment.CurrentManagedThreadId.ToString(CultureInfo.InvariantCulture);
 
         public long Timestamp
         {
@@ -51,25 +36,8 @@ namespace System.Diagnostics
             }
         }
 
-        public string Callstack
-        {
-            get
-            {
-                if (_stackTrace == null)
-                {
-                    _stackTrace = Environment.StackTrace;
-                }
+        public string Callstack => _stackTrace ??= Environment.StackTrace;
 
-                return _stackTrace;
-            }
-        }
-
-        public Stack LogicalOperationStack
-        {
-            get
-            {
-                return Trace.CorrelationManager.LogicalOperationStack;
-            }
-        }
+        public Stack LogicalOperationStack => Trace.CorrelationManager.LogicalOperationStack;
     }
 }

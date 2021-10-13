@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace System.Diagnostics
 {
@@ -42,15 +39,7 @@ namespace System.Diagnostics
             _listenerName = name;
         }
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-                return _attributes;
-            }
-        }
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
         /// <devdoc>
         /// <para> Gets or sets a name for this <see cref='System.Diagnostics.TraceListener'/>.</para>
@@ -58,15 +47,11 @@ namespace System.Diagnostics
         [AllowNull]
         public virtual string Name
         {
-            get { return _listenerName ?? ""; }
-
-            set { _listenerName = value; }
+            get => _listenerName ?? "";
+            set => _listenerName = value;
         }
 
-        public virtual bool IsThreadSafe
-        {
-            get { return false; }
-        }
+        public virtual bool IsThreadSafe => false;
 
         /// <devdoc>
         /// </devdoc>
@@ -96,15 +81,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public int IndentLevel
         {
-            get
-            {
-                return _indentLevel;
-            }
-
-            set
-            {
-                _indentLevel = (value < 0) ? 0 : value;
-            }
+            get => _indentLevel;
+            set => _indentLevel = (value < 0) ? 0 : value;
         }
 
         /// <devdoc>
@@ -112,11 +90,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public int IndentSize
         {
-            get
-            {
-                return _indentSize;
-            }
-
+            get => _indentSize;
             set
             {
                 if (value < 0)
@@ -127,14 +101,8 @@ namespace System.Diagnostics
 
         public TraceFilter? Filter
         {
-            get
-            {
-                return _filter;
-            }
-            set
-            {
-                _filter = value;
-            }
+            get => _filter;
+            set => _filter = value;
         }
 
 
@@ -143,20 +111,13 @@ namespace System.Diagnostics
         /// </devdoc>
         protected bool NeedIndent
         {
-            get
-            {
-                return _needIndent;
-            }
-
-            set
-            {
-                _needIndent = value;
-            }
+            get => _needIndent;
+            set => _needIndent = value;
         }
 
         public TraceOptions TraceOutputOptions
         {
-            get { return _traceOptions; }
+            get => _traceOptions;
             set
             {
                 if (((int)value >> 6) != 0)
@@ -177,10 +138,7 @@ namespace System.Diagnostics
             return;
         }
 
-        protected internal virtual string[]? GetSupportedAttributes()
-        {
-            return null;
-        }
+        protected internal virtual string[]? GetSupportedAttributes() => null;
 
         public virtual void TraceTransfer(TraceEventCache? eventCache, string source, int id, string? message, Guid relatedActivityId)
         {
@@ -237,7 +195,7 @@ namespace System.Diagnostics
             if (category == null)
                 Write(message);
             else
-                Write(category + ": " + ((message == null) ? string.Empty : message));
+                Write(category + ": " + message);
         }
 
         /// <devdoc>
@@ -310,7 +268,7 @@ namespace System.Diagnostics
             if (category == null)
                 WriteLine(message);
             else
-                WriteLine(category + ": " + ((message == null) ? string.Empty : message));
+                WriteLine(category + ": " + message);
         }
 
         /// <devdoc>
@@ -400,8 +358,10 @@ namespace System.Diagnostics
 
             _indentLevel++;
 
+            Span<char> stackBuffer = stackalloc char[128];
+
             if (IsEnabled(TraceOptions.ProcessId))
-                WriteLine("ProcessId=" + eventCache.ProcessId);
+                WriteLine(string.Create(null, stackBuffer, $"ProcessId={eventCache.ProcessId}"));
 
             if (IsEnabled(TraceOptions.LogicalOperationStack))
             {
@@ -424,8 +384,6 @@ namespace System.Diagnostics
 
                 WriteLine(string.Empty);
             }
-
-            Span<char> stackBuffer = stackalloc char[128];
 
             if (IsEnabled(TraceOptions.ThreadId))
                 WriteLine("ThreadId=" + eventCache.ThreadId);

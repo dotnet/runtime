@@ -3,12 +3,7 @@
 
 #define DEBUG
 #define TRACE
-using System;
 using System.IO;
-using System.Text;
-using System.Collections;
-using System.Runtime.InteropServices;
-using System.Globalization;
 
 namespace System.Diagnostics
 {
@@ -18,10 +13,6 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private bool _assertUIEnabled;
-        private bool _settingsInitialized;
-        private string? _logFileName;
-
         /// <devdoc>
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with
         ///    Default as its <see cref='System.Diagnostics.TraceListener.Name'/>.</para>
@@ -31,33 +22,9 @@ namespace System.Diagnostics
         {
         }
 
-        public bool AssertUiEnabled
-        {
-            get
-            {
-                if (!_settingsInitialized) InitializeSettings();
-                return _assertUIEnabled;
-            }
-            set
-            {
-                if (!_settingsInitialized) InitializeSettings();
-                _assertUIEnabled = value;
-            }
-        }
+        public bool AssertUiEnabled { get; set; } = true;
 
-        public string? LogFileName
-        {
-            get
-            {
-                if (!_settingsInitialized) InitializeSettings();
-                return _logFileName;
-            }
-            set
-            {
-                if (!_settingsInitialized) InitializeSettings();
-                _logFileName = value;
-            }
-        }
+        public string? LogFileName { get; set; } = string.Empty;
 
         /// <devdoc>
         ///    <para>
@@ -95,14 +62,6 @@ namespace System.Diagnostics
             }
         }
 
-        private void InitializeSettings()
-        {
-            // don't use the property setters here to avoid infinite recursion.
-            _assertUIEnabled = DiagnosticsConfiguration.AssertUIEnabled;
-            _logFileName = DiagnosticsConfiguration.LogFileName;
-            _settingsInitialized = true;
-        }
-
         private void WriteAssert(string stackTrace, string? message, string? detailMessage)
         {
             WriteLine(SR.DebugAssertBanner + Environment.NewLine
@@ -120,7 +79,20 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void Write(string? message)
         {
-            Write(message, useLogFile: true);
+            if (message == null || message.Length == 0)
+            {
+                DebugProvider.WriteCore(string.Empty);
+            }
+            else
+            {
+                if (NeedIndent)
+                    WriteIndent();
+
+                DebugProvider.WriteCore(message);
+
+                if (LogFileName is { Length: > 0 } logFileName)
+                    WriteToLogFile(message, logFileName);
+            }
         }
 
         /// <devdoc>
@@ -130,48 +102,28 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void WriteLine(string? message)
         {
-            WriteLine(message, useLogFile: true);
-        }
-
-        private void WriteLine(string? message, bool useLogFile)
-        {
             if (NeedIndent)
                 WriteIndent();
 
             // The concat is done here to enable a single call to Write
-            Write(message + Environment.NewLine, useLogFile);
-            NeedIndent = true;
-        }
-
-        private void Write(string? message, bool useLogFile)
-        {
-            if (message == null)
-            {
-                message = string.Empty;
-            }
-
-            if (NeedIndent && message.Length != 0)
-            {
-                WriteIndent();
-            }
-
+            message += Environment.NewLine;
             DebugProvider.WriteCore(message);
+            NeedIndent = true;
 
-            if (useLogFile && !string.IsNullOrEmpty(LogFileName))
-            {
-                WriteToLogFile(message);
-            }
+            if (LogFileName is { Length: > 0 } logFileName)
+                WriteToLogFile(message, logFileName);
         }
 
-        private void WriteToLogFile(string message)
+        private void WriteToLogFile(string message, string logFileName)
         {
             try
             {
-                File.AppendAllText(LogFileName!, message);
+                File.AppendAllText(logFileName, message);
             }
             catch (Exception e)
             {
-                WriteLine(SR.Format(SR.ExceptionOccurred, LogFileName, e), useLogFile: false);
+                DebugProvider.WriteCore(SR.Format(SR.ExceptionOccurred, logFileName, e) + Environment.NewLine);
+                NeedIndent = true;
             }
         }
     }

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #define TRACE
-using System;
-using System.Collections;
 
 namespace System.Diagnostics
 {
@@ -19,29 +17,12 @@ namespace System.Diagnostics
         }
 
         private static CorrelationManager? s_correlationManager;
-        public static CorrelationManager CorrelationManager
-        {
-            get
-            {
-                if (s_correlationManager == null)
-                {
-                    s_correlationManager = new CorrelationManager();
-                }
-
-                return s_correlationManager;
-            }
-        }
+        public static CorrelationManager CorrelationManager => s_correlationManager ??= new CorrelationManager();
 
         /// <devdoc>
         ///    <para>Gets the collection of listeners that is monitoring the trace output.</para>
         /// </devdoc>
-        public static TraceListenerCollection Listeners
-        {
-            get
-            {
-                return TraceInternal.Listeners;
-            }
-        }
+        public static TraceListenerCollection Listeners => TraceInternal.Listeners;
 
         /// <devdoc>
         ///    <para>
@@ -50,26 +31,14 @@ namespace System.Diagnostics
         /// </devdoc>
         public static bool AutoFlush
         {
-            get
-            {
-                return TraceInternal.AutoFlush;
-            }
-            set
-            {
-                TraceInternal.AutoFlush = value;
-            }
+            get => TraceInternal.AutoFlush;
+            set => TraceInternal.AutoFlush = value;
         }
 
         public static bool UseGlobalLock
         {
-            get
-            {
-                return TraceInternal.UseGlobalLock;
-            }
-            set
-            {
-                TraceInternal.UseGlobalLock = value;
-            }
+            get => TraceInternal.UseGlobalLock;
+            set => TraceInternal.UseGlobalLock = value;
         }
 
         /// <devdoc>
@@ -77,9 +46,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public static int IndentLevel
         {
-            get { return TraceInternal.IndentLevel; }
-
-            set { TraceInternal.IndentLevel = value; }
+            get => Debug.IndentLevel;
+            set => Debug.IndentLevel = value;
         }
 
 
@@ -90,9 +58,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public static int IndentSize
         {
-            get { return TraceInternal.IndentSize; }
-
-            set { TraceInternal.IndentSize = value; }
+            get => Debug.IndentSize;
+            set => Debug.IndentSize = value;
         }
 
         /// <devdoc>
@@ -100,20 +67,14 @@ namespace System.Diagnostics
         ///       be written to the <see cref='System.Diagnostics.Trace.Listeners'/>.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Flush()
-        {
-            TraceInternal.Flush();
-        }
+        public static void Flush() => TraceInternal.Flush();
 
         /// <devdoc>
         /// <para>Clears the output buffer, and then closes the <see cref='System.Diagnostics.Trace.Listeners'/> so that they no
         ///    longer receive debugging output.</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Close()
-        {
-            TraceInternal.Close();
-        }
+        public static void Close() => TraceInternal.Close();
 
         /// <devdoc>
         ///    <para>Checks for a condition, and outputs the callstack if the
@@ -298,7 +259,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteIf(bool condition, string? message)
         {
-            TraceInternal.WriteIf(condition, message);
+            if (condition) TraceInternal.Write(message);
         }
 
         /// <devdoc>
@@ -309,7 +270,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteIf(bool condition, object? value)
         {
-            TraceInternal.WriteIf(condition, value);
+            if (condition) TraceInternal.Write(value);
         }
 
         /// <devdoc>
@@ -319,7 +280,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteIf(bool condition, string? message, string? category)
         {
-            TraceInternal.WriteIf(condition, message, category);
+            if (condition) TraceInternal.Write(message, category);
         }
 
         /// <devdoc>
@@ -330,7 +291,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteIf(bool condition, object? value, string? category)
         {
-            TraceInternal.WriteIf(condition, value, category);
+            if (condition) TraceInternal.Write(value, category);
         }
 
         /// <devdoc>
@@ -342,7 +303,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteLineIf(bool condition, string? message)
         {
-            TraceInternal.WriteLineIf(condition, message);
+            if (condition) TraceInternal.WriteLine(message);
         }
 
         /// <devdoc>
@@ -355,7 +316,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteLineIf(bool condition, object? value)
         {
-            TraceInternal.WriteLineIf(condition, value);
+            if (condition) TraceInternal.WriteLine(value);
         }
 
         /// <devdoc>
@@ -366,7 +327,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteLineIf(bool condition, string? message, string? category)
         {
-            TraceInternal.WriteLineIf(condition, message, category);
+            if (condition) TraceInternal.WriteLine(message, category);
         }
 
         /// <devdoc>
@@ -378,25 +339,19 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("TRACE")]
         public static void WriteLineIf(bool condition, object? value, string? category)
         {
-            TraceInternal.WriteLineIf(condition, value, category);
+            if (condition) TraceInternal.WriteLine(value, category);
         }
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Indent()
-        {
-            TraceInternal.Indent();
-        }
+        public static void Indent() => Debug.IndentLevel++;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
         [System.Diagnostics.Conditional("TRACE")]
-        public static void Unindent()
-        {
-            TraceInternal.Unindent();
-        }
+        public static void Unindent() => Debug.IndentLevel--;
     }
 }

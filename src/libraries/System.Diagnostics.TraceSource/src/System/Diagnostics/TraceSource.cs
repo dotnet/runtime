@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -15,10 +13,9 @@ namespace System.Diagnostics
         private static int s_LastCollectionCount;
 
         private volatile SourceSwitch? _internalSwitch;
-        private volatile TraceListenerCollection? _listeners;
+        private TraceListenerCollection? _listeners;
         private readonly SourceLevels _switchLevel;
         private readonly string _sourceName;
-        internal volatile bool _initCalled;   // Whether we've called Initialize already.
         private StringDictionary? _attributes;
 
         public TraceSource(string name)
@@ -37,72 +34,69 @@ namespace System.Diagnostics
             _switchLevel = defaultLevel;
 
             // Add a weakreference to this source and cleanup invalid references
-            lock (s_tracesources)
+            var tracesources = s_tracesources;
+            lock (tracesources)
             {
-                _pruneCachedTraceSources();
-                s_tracesources.Add(new WeakReference<TraceSource>(this));
+                PruneCachedTraceSources(tracesources);
+                tracesources.Add(new WeakReference<TraceSource>(this));
             }
         }
 
-        private static void _pruneCachedTraceSources()
+        private static void PruneCachedTraceSources(List<WeakReference<TraceSource>> tracesources)
         {
-            lock (s_tracesources)
+            if (s_LastCollectionCount != GC.CollectionCount(2))
             {
-                if (s_LastCollectionCount != GC.CollectionCount(2))
+                List<WeakReference<TraceSource>> buffer = new List<WeakReference<TraceSource>>(tracesources.Count);
+                for (int i = 0; i < tracesources.Count; i++)
                 {
-                    List<WeakReference<TraceSource>> buffer = new List<WeakReference<TraceSource>>(s_tracesources.Count);
-                    for (int i = 0; i < s_tracesources.Count; i++)
+                    if (tracesources[i].TryGetTarget(out _))
                     {
-                        if (s_tracesources[i].TryGetTarget(out _))
-                        {
-                            buffer.Add(s_tracesources[i]);
-                        }
+                        buffer.Add(tracesources[i]);
                     }
-                    if (buffer.Count < s_tracesources.Count)
-                    {
-                        s_tracesources.Clear();
-                        s_tracesources.AddRange(buffer);
-                        s_tracesources.TrimExcess();
-                    }
-                    s_LastCollectionCount = GC.CollectionCount(2);
                 }
+                if (buffer.Count < tracesources.Count)
+                {
+                    tracesources.Clear();
+                    tracesources.AddRange(buffer);
+                    tracesources.TrimExcess();
+                }
+                s_LastCollectionCount = GC.CollectionCount(2);
             }
         }
 
-        private void Initialize()
+        private SourceSwitch Initialize()
         {
-            if (!_initCalled)
+            return _internalSwitch ?? Init();
+
+            SourceSwitch Init()
             {
                 lock (this)
                 {
-                    if (_initCalled)
-                        return;
-
-                    NoConfigInit();
-
-                    _initCalled = true;
+                    SourceSwitch? internalSwitch = _internalSwitch;
+                    if (internalSwitch is null)
+                    {
+                        internalSwitch = new SourceSwitch(_sourceName, _switchLevel.ToString());
+                        _listeners = new TraceListenerCollection { new DefaultTraceListener() };
+                        _internalSwitch = internalSwitch;
+                    }
+                    return internalSwitch;
                 }
             }
-        }
-
-        private void NoConfigInit()
-        {
-            _internalSwitch = new SourceSwitch(_sourceName, _switchLevel.ToString());
-            _listeners = new TraceListenerCollection();
-            _listeners.Add(new DefaultTraceListener());
         }
 
         public void Close()
         {
             // No need to call Initialize()
-            if (_listeners != null)
+            var listeners = _listeners;
+            if (listeners != null)
             {
                 // Use global lock
                 lock (TraceInternal.critSec)
                 {
-                    foreach (TraceListener? listener in _listeners)
+                    var list = listeners.List;
+                    for (int i = 0; i < list.Count; i++)
                     {
-                        listener!.Close();
+                        list[i].Close();
                     }
                 }
             }
@@ -111,23 +105,27 @@ namespace System.Diagnostics
         public void Flush()
         {
             // No need to call Initialize()
-            if (_listeners != null)
+            var listeners = _listeners;
+            if (listeners != null)
             {
                 if (TraceInternal.UseGlobalLock)
                 {
                     lock (TraceInternal.critSec)
                     {
-                        foreach (TraceListener? listener in _listeners)
+                        var list = listeners.List;
+                        for (int i = 0; i < list.Count; i++)
                         {
-                            listener!.Flush();
+                            list[i].Flush();
                         }
                     }
                 }
                 else
                 {
-                    foreach (TraceListener? listener in _listeners)
+                    var list = listeners.List;
+                    for (int i = 0; i < list.Count; i++)
                     {
-                        if (!listener!.IsThreadSafe)
+                        var listener = list[i];
+                        if (!listener.IsThreadSafe)
                         {
                             lock (listener)
                             {
@@ -147,34 +145,24 @@ namespace System.Diagnostics
 
         internal static void RefreshAll()
         {
-            lock (s_tracesources)
+            var tracesources = s_tracesources;
+            lock (tracesources)
             {
-                _pruneCachedTraceSources();
-                for (int i = 0; i < s_tracesources.Count; i++)
+                PruneCachedTraceSources(tracesources);
+                for (int i = 0; i < tracesources.Count; i++)
                 {
-                    if (s_tracesources[i].TryGetTarget(out TraceSource? tracesource))
+                    if (tracesources[i].TryGetTarget(out TraceSource? tracesource))
                     {
-                        tracesource.Refresh();
+                        tracesource.Initialize();
                     }
                 }
-            }
-        }
-
-        internal void Refresh()
-        {
-            if (!_initCalled)
-            {
-                Initialize();
-                return;
             }
         }
 
         [Conditional("TRACE")]
         public void TraceEvent(TraceEventType eventType, int id)
         {
-            Initialize();
-
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (Switch.ShouldTrace(eventType))
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -183,9 +171,10 @@ namespace System.Diagnostics
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i = 0; i < _listeners.Count; i++)
+                        var listeners = _listeners!.List;
+                        for (int i = 0; i < listeners.Count; i++)
                         {
-                            TraceListener listener = _listeners[i];
+                            TraceListener listener = listeners[i];
                             listener.TraceEvent(manager, Name, eventType, id);
                             if (Trace.AutoFlush) listener.Flush();
                         }
@@ -193,9 +182,10 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    for (int i = 0; i < _listeners.Count; i++)
+                    var listeners = _listeners!.List;
+                    for (int i = 0; i < listeners.Count; i++)
                     {
-                        TraceListener listener = _listeners[i];
+                        TraceListener listener = listeners[i];
                         if (!listener.IsThreadSafe)
                         {
                             lock (listener)
@@ -217,9 +207,7 @@ namespace System.Diagnostics
         [Conditional("TRACE")]
         public void TraceEvent(TraceEventType eventType, int id, string? message)
         {
-            Initialize();
-
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (Switch.ShouldTrace(eventType))
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -228,9 +216,10 @@ namespace System.Diagnostics
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i = 0; i < _listeners.Count; i++)
+                        var listeners = _listeners!.List;
+                        for (int i = 0; i < listeners.Count; i++)
                         {
-                            TraceListener listener = _listeners[i];
+                            TraceListener listener = listeners[i];
                             listener.TraceEvent(manager, Name, eventType, id, message);
                             if (Trace.AutoFlush) listener.Flush();
                         }
@@ -238,9 +227,10 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    for (int i = 0; i < _listeners.Count; i++)
+                    var listeners = _listeners!.List;
+                    for (int i = 0; i < listeners.Count; i++)
                     {
-                        TraceListener listener = _listeners[i];
+                        TraceListener listener = listeners[i];
                         if (!listener.IsThreadSafe)
                         {
                             lock (listener)
@@ -262,9 +252,7 @@ namespace System.Diagnostics
         [Conditional("TRACE")]
         public void TraceEvent(TraceEventType eventType, int id, string? format, params object?[]? args)
         {
-            Initialize();
-
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (Switch.ShouldTrace(eventType))
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -273,9 +261,10 @@ namespace System.Diagnostics
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i = 0; i < _listeners.Count; i++)
+                        var listeners = _listeners!.List;
+                        for (int i = 0; i < listeners.Count; i++)
                         {
-                            TraceListener listener = _listeners[i];
+                            TraceListener listener = listeners[i];
                             listener.TraceEvent(manager, Name, eventType, id, format, args);
                             if (Trace.AutoFlush) listener.Flush();
                         }
@@ -283,9 +272,10 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    for (int i = 0; i < _listeners.Count; i++)
+                    var listeners = _listeners!.List;
+                    for (int i = 0; i < listeners.Count; i++)
                     {
-                        TraceListener listener = _listeners[i];
+                        TraceListener listener = listeners[i];
                         if (!listener.IsThreadSafe)
                         {
                             lock (listener)
@@ -307,9 +297,7 @@ namespace System.Diagnostics
         [Conditional("TRACE")]
         public void TraceData(TraceEventType eventType, int id, object? data)
         {
-            Initialize();
-
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (Switch.ShouldTrace(eventType))
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -318,9 +306,10 @@ namespace System.Diagnostics
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i = 0; i < _listeners.Count; i++)
+                        var listeners = _listeners!.List;
+                        for (int i = 0; i < listeners.Count; i++)
                         {
-                            TraceListener listener = _listeners[i];
+                            TraceListener listener = listeners[i];
                             listener.TraceData(manager, Name, eventType, id, data);
                             if (Trace.AutoFlush) listener.Flush();
                         }
@@ -328,9 +317,10 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    for (int i = 0; i < _listeners.Count; i++)
+                    var listeners = _listeners!.List;
+                    for (int i = 0; i < listeners.Count; i++)
                     {
-                        TraceListener listener = _listeners[i];
+                        TraceListener listener = listeners[i];
                         if (!listener.IsThreadSafe)
                         {
                             lock (listener)
@@ -352,9 +342,7 @@ namespace System.Diagnostics
         [Conditional("TRACE")]
         public void TraceData(TraceEventType eventType, int id, params object?[]? data)
         {
-            Initialize();
-
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (Switch.ShouldTrace(eventType))
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -363,9 +351,10 @@ namespace System.Diagnostics
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i = 0; i < _listeners.Count; i++)
+                        var listeners = _listeners!.List;
+                        for (int i = 0; i < listeners.Count; i++)
                         {
-                            TraceListener listener = _listeners[i];
+                            TraceListener listener = listeners[i];
                             listener.TraceData(manager, Name, eventType, id, data);
                             if (Trace.AutoFlush) listener.Flush();
                         }
@@ -373,9 +362,10 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    for (int i = 0; i < _listeners.Count; i++)
+                    var listeners = _listeners!.List;
+                    for (int i = 0; i < listeners.Count; i++)
                     {
-                        TraceListener listener = _listeners[i];
+                        TraceListener listener = listeners[i];
                         if (!listener.IsThreadSafe)
                         {
                             lock (listener)
@@ -395,37 +385,27 @@ namespace System.Diagnostics
         }
 
         [Conditional("TRACE")]
-        public void TraceInformation(string? message)
-        { // eventType= TraceEventType.Info, id=0
-            // No need to call Initialize()
-            TraceEvent(TraceEventType.Information, 0, message, null);
-        }
+        public void TraceInformation(string? message) => TraceEvent(TraceEventType.Information, 0, message, null);
 
         [Conditional("TRACE")]
-        public void TraceInformation(string? format, params object?[]? args)
-        {
-            // No need to call Initialize()
-            TraceEvent(TraceEventType.Information, 0, format, args);
-        }
+        public void TraceInformation(string? format, params object?[]? args) => TraceEvent(TraceEventType.Information, 0, format, args);
 
         [Conditional("TRACE")]
         public void TraceTransfer(int id, string? message, Guid relatedActivityId)
         {
-            // Ensure that config is loaded
-            Initialize();
-
-            TraceEventCache manager = new TraceEventCache();
-
-            if (_internalSwitch!.ShouldTrace(TraceEventType.Transfer) && _listeners != null)
+            if (Switch.ShouldTrace(TraceEventType.Transfer))
             {
+                TraceEventCache manager = new TraceEventCache();
+
                 if (TraceInternal.UseGlobalLock)
                 {
                     // we lock on the same object that Trace does because we're writing to the same Listeners.
                     lock (TraceInternal.critSec)
                     {
-                        for (int i = 0; i < _listeners.Count; i++)
+                        var listeners = _listeners!.List;
+                        for (int i = 0; i < listeners.Count; i++)
                         {
-                            TraceListener listener = _listeners[i];
+                            TraceListener listener = listeners[i];
                             listener.TraceTransfer(manager, Name, id, message, relatedActivityId);
 
                             if (Trace.AutoFlush)
@@ -437,9 +417,10 @@ namespace System.Diagnostics
                 }
                 else
                 {
-                    for (int i = 0; i < _listeners.Count; i++)
+                    var listeners = _listeners!.List;
+                    for (int i = 0; i < listeners.Count; i++)
                     {
-                        TraceListener listener = _listeners[i];
+                        TraceListener listener = listeners[i];
 
                         if (!listener.IsThreadSafe)
                         {
@@ -465,27 +446,9 @@ namespace System.Diagnostics
             }
         }
 
-        public StringDictionary Attributes
-        {
-            get
-            {
-                // Ensure that config is loaded
-                Initialize();
+        public StringDictionary Attributes => _attributes ??= new StringDictionary();
 
-                if (_attributes == null)
-                    _attributes = new StringDictionary();
-
-                return _attributes;
-            }
-        }
-
-        public string Name
-        {
-            get
-            {
-                return _sourceName;
-            }
-        }
+        public string Name => _sourceName;
 
         public TraceListenerCollection Listeners
         {
@@ -499,13 +462,7 @@ namespace System.Diagnostics
 
         public SourceSwitch Switch
         {
-            // No need for security demand here. SourceSwitch.set_Level is protected already.
-            get
-            {
-                Initialize();
-
-                return _internalSwitch!;
-            }
+            get => Initialize();
             set
             {
                 if (value == null)

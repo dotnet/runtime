@@ -8,7 +8,6 @@
     <Compile Include="System\Diagnostics\BooleanSwitch.cs" />
     <Compile Include="System\Diagnostics\CorrelationManager.cs" />
     <Compile Include="System\Diagnostics\DefaultTraceListener.cs" />
-    <Compile Include="System\Diagnostics\DiagnosticsConfiguration.cs" />
     <Compile Include="System\Diagnostics\SeverityFilter.cs" />
     <Compile Include="System\Diagnostics\SourceFilter.cs" />
     <Compile Include="System\Diagnostics\SourceLevels.cs" />
@@ -21,7 +20,7 @@
     <Compile Include="System\Diagnostics\TraceInternal.cs" />
     <Compile Include="System\Diagnostics\TraceLevel.cs" />
     <Compile Include="System\Diagnostics\TraceListener.cs" />
-    <Compile Include="System\Diagnostics\TraceListeners.cs" />
+    <Compile Include="System\Diagnostics\TraceListenerCollection.cs" />
     <Compile Include="System\Diagnostics\TraceOptions.cs" />
     <Compile Include="System\Diagnostics\TraceSource.cs" />
     <Compile Include="System\Diagnostics\TraceSwitch.cs" />

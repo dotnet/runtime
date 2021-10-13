@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Diagnostics
 {
@@ -13,11 +11,11 @@ namespace System.Diagnostics
     /// </devdoc>
     public class TraceListenerCollection : IList
     {
-        private readonly List<TraceListener?> _list;
+        private readonly List<TraceListener> _list;
 
         internal TraceListenerCollection()
         {
-            _list = new List<TraceListener?>(1);
+            _list = new List<TraceListener>(1);
         }
 
         /// <devdoc>
@@ -26,11 +24,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public TraceListener this[int i]
         {
-            get
-            {
-                return _list[i]!;
-            }
-
+            get => _list[i];
             set
             {
                 InitializeListener(value);
@@ -45,9 +39,9 @@ namespace System.Diagnostics
         {
             get
             {
-                foreach (TraceListener? listener in this)
+                foreach (TraceListener listener in _list)
                 {
-                    if (listener!.Name == name)
+                    if (listener.Name == name)
                         return listener;
                 }
                 return null;
@@ -59,13 +53,7 @@ namespace System.Diagnostics
         ///       Gets the number of listeners in the list.
         ///    </para>
         /// </devdoc>
-        public int Count
-        {
-            get
-            {
-                return _list.Count;
-            }
-        }
+        public int Count => _list.Count;
 
         /// <devdoc>
         /// <para>Adds a <see cref='System.Diagnostics.TraceListener'/> to the list.</para>
@@ -76,7 +64,8 @@ namespace System.Diagnostics
 
             lock (TraceInternal.critSec)
             {
-                return ((IList)_list).Add(listener);
+                _list.Add(listener);
+                return _list.Count - 1;
             }
         }
 
@@ -89,9 +78,9 @@ namespace System.Diagnostics
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            for (int i = 0; ((i) < (value.Length)); i = ((i) + (1)))
+            foreach (TraceListener listener in value)
             {
-                this.Add(value[i]);
+                Add(listener);
             }
         }
 
@@ -105,7 +94,7 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(value));
             }
             int currentCount = value.Count;
-            for (int i = 0; i < currentCount; i = ((i) + (1)))
+            for (int i = 0; i < currentCount; i++)
             {
                 this.Add(value[i]);
             }
@@ -117,19 +106,13 @@ namespace System.Diagnostics
         ///       list.
         ///    </para>
         /// </devdoc>
-        public void Clear()
-        {
-            _list.Clear();
-        }
+        public void Clear() => _list.Clear();
 
         /// <devdoc>
         ///    <para>Checks whether the list contains the specified
         ///       listener.</para>
         /// </devdoc>
-        public bool Contains(TraceListener? listener)
-        {
-            return ((IList)this).Contains(listener);
-        }
+        public bool Contains(TraceListener? listener) => _list.Contains(listener!);
 
         /// <devdoc>
         /// <para>Copies a section of the current <see cref='System.Diagnostics.TraceListenerCollection'/> list to the specified array at the specified
@@ -137,7 +120,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CopyTo(TraceListener[] listeners, int index)
         {
-            ((ICollection)this).CopyTo((Array)listeners, index);
+            _list.CopyTo(listeners, index);
         }
 
         /// <devdoc>
@@ -145,27 +128,23 @@ namespace System.Diagnostics
         ///       Gets an enumerator for this list.
         ///    </para>
         /// </devdoc>
-        public IEnumerator GetEnumerator()
-        {
-            return _list.GetEnumerator();
-        }
+        public IEnumerator GetEnumerator() => _list.GetEnumerator();
+
+        internal List<TraceListener> List => _list;
 
         internal void InitializeListener(TraceListener listener)
         {
             if (listener == null)
                 throw new ArgumentNullException(nameof(listener));
 
-            listener.IndentSize = TraceInternal.IndentSize;
-            listener.IndentLevel = TraceInternal.IndentLevel;
+            listener.IndentSize = Debug.IndentSize;
+            listener.IndentLevel = Debug.IndentLevel;
         }
 
         /// <devdoc>
         ///    <para>Gets the index of the specified listener.</para>
         /// </devdoc>
-        public int IndexOf(TraceListener? listener)
-        {
-            return ((IList)this).IndexOf(listener);
-        }
+        public int IndexOf(TraceListener? listener) => _list.IndexOf(listener!);
 
         /// <devdoc>
         ///    <para>Inserts the listener at the specified index.</para>
@@ -186,7 +165,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public void Remove(TraceListener? listener)
         {
-            ((IList)this).Remove(listener);
+            lock (TraceInternal.critSec)
+            {
+                _list.Remove(listener!);
+            }
         }
 
         /// <devdoc>
@@ -195,9 +177,14 @@ namespace System.Diagnostics
         /// </devdoc>
         public void Remove(string name)
         {
-            TraceListener? listener = this[name];
-            if (listener != null)
-                ((IList)this).Remove(listener);
+            for (int i = 0; i < _list.Count; i++)
+            {
+                if (_list[i].Name == name)
+                {
+                    RemoveAt(i);
+                    break;
+                }
+            }
         }
 
         /// <devdoc>
@@ -211,112 +198,45 @@ namespace System.Diagnostics
             }
         }
 
-        /// <internalonly/>
         object? IList.this[int index]
         {
-            get
-            {
-                return _list[index];
-            }
-
+            get => _list[index];
             set
             {
-                TraceListener? listener = value as TraceListener;
-                if (listener == null)
+                if (value is not TraceListener listener)
                     throw new ArgumentException(SR.MustAddListener, nameof(value));
-                InitializeListener(listener);
-                _list[index] = listener;
+                this[index] = listener;
             }
         }
 
-        /// <internalonly/>
-        bool IList.IsReadOnly
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool IList.IsReadOnly => false;
 
-        /// <internalonly/>
-        bool IList.IsFixedSize
-        {
-            get
-            {
-                return false;
-            }
-        }
+        bool IList.IsFixedSize => false;
 
-        /// <internalonly/>
         int IList.Add(object? value)
         {
-            TraceListener? listener = value as TraceListener;
-            if (listener == null)
+            if (value is not TraceListener listener)
                 throw new ArgumentException(SR.MustAddListener, nameof(value));
-
-            InitializeListener(listener);
-
-            lock (TraceInternal.critSec)
-            {
-                return ((IList)_list).Add(value);
-            }
+            return Add(listener);
         }
 
-        /// <internalonly/>
-        bool IList.Contains(object? value)
-        {
-            return _list.Contains((TraceListener?)value);
-        }
+        bool IList.Contains(object? value) => Contains((TraceListener?)value);
 
-        /// <internalonly/>
-        int IList.IndexOf(object? value)
-        {
-            return _list.IndexOf((TraceListener?)value);
-        }
+        int IList.IndexOf(object? value) => IndexOf((TraceListener?)value);
 
-        /// <internalonly/>
         void IList.Insert(int index, object? value)
         {
-            TraceListener? listener = value as TraceListener;
-            if (listener == null)
+            if (value is not TraceListener listener)
                 throw new ArgumentException(SR.MustAddListener, nameof(value));
-
-            InitializeListener(listener);
-
-            lock (TraceInternal.critSec)
-            {
-                _list.Insert(index, (TraceListener?)value);
-            }
+            Insert(index, listener);
         }
 
-        /// <internalonly/>
-        void IList.Remove(object? value)
-        {
-            lock (TraceInternal.critSec)
-            {
-                _list.Remove((TraceListener)value!);
-            }
-        }
+        void IList.Remove(object? value) => Remove((TraceListener)value!);
 
-        /// <internalonly/>
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                return this;
-            }
-        }
+        object ICollection.SyncRoot => this;
 
-        /// <internalonly/>
-        bool ICollection.IsSynchronized
-        {
-            get
-            {
-                return true;
-            }
-        }
+        bool ICollection.IsSynchronized => true;
 
-        /// <internalonly/>
         void ICollection.CopyTo(Array array, int index)
         {
             ((ICollection)_list).CopyTo(array, index);
