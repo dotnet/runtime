@@ -1101,7 +1101,7 @@ INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(interp_get_exception, exception_type) (Int
 	MonoException *ex; \
 	frame->state.ip = ip + 1; \
 	interp_push_lmf (&ext, frame); \
-	ex = mono_get_exception_ ## exception_type ## (); \
+	ex = INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(mono_get_exception,exception_type) (); \
 	interp_pop_lmf (&ext); \
 	return ex; \
 }
@@ -1114,7 +1114,7 @@ INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(interp_get_exception, exception_type) (con
 	MonoException *ex; \
 	frame->state.ip = ip + 1; \
 	interp_push_lmf (&ext, frame); \
-	ex = mono_get_exception_ ## exception_type ## (arg); \
+	ex = INTERP_BUILD_EXCEPTION_TYPE_FUNC_NAME(mono_get_exception,exception_type) (arg); \
 	interp_pop_lmf (&ext); \
 	return ex; \
 }
