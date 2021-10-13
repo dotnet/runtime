@@ -28,13 +28,22 @@
   <PropertyGroup>
     <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
     <EnableXUnitReporter>false</EnableXUnitReporter>
-    <WorkItemTimeout>2:30</WorkItemTimeout>
     <Creator>$(_Creator)</Creator>
     <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
     <HelixBuild>$(_HelixBuild)</HelixBuild>
     <HelixSource>$(_HelixSource)</HelixSource>
     <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
     <HelixType>$(_HelixType)</HelixType>
+  </PropertyGroup>
+
+  <!-- For Scheduled= 3 hours. For PRs= 1 hour -->
+  <PropertyGroup Condition=" '$(RunReason)' == 'Scheduled' ">
+      <WorkItemTimeout>3:15</WorkItemTimeout>
+      <RunDuration>180</RunDuration>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunReason)' != 'Scheduled' ">
+      <WorkItemTimeout>1:15</WorkItemTimeout>
+      <RunDuration>60</RunDuration>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
@@ -48,7 +57,7 @@
   <PropertyGroup>
     <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
     <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
-    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot)</WorkItemCommand>
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration) </WorkItemCommand>
   </PropertyGroup>
 
   <ItemGroup>
@@ -70,7 +79,7 @@
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <Command>$(WorkItemCommand) -partition %(PartitionName)</Command>
       <Timeout>$(WorkItemTimeout)</Timeout>
-      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt</DownloadFilesFromResults>
+      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;Antigen-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
     </HelixWorkItem>
   </ItemGroup>
 

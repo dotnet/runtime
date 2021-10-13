@@ -58,18 +58,18 @@ namespace System.Text.Json.Serialization.Metadata
             JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
+            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
+            if (ignoreCondition == JsonIgnoreCondition.Always)
+            {
+                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(memberInfo, memberType, isVirtual, options);
+            }
+
             JsonConverter converter = GetConverter(
                 memberType,
                 parentClassType,
                 memberInfo,
                 out Type runtimeType,
                 options);
-
-            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
-            if (ignoreCondition == JsonIgnoreCondition.Always)
-            {
-                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(converter, memberInfo, memberType, isVirtual, options);
-            }
 
             return CreateProperty(
                 declaredPropertyType: memberType,
@@ -646,7 +646,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            InitializeConstructorParameters(array);
+            InitializeConstructorParameters(array, sourceGenMode: true);
             Debug.Assert(ParameterCache != null);
         }
     }
