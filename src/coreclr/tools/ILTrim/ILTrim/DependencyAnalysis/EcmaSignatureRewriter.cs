@@ -248,5 +248,17 @@ namespace ILTrim.DependencyAnalysis
                 // TODO: fields
             }
         }
+
+        public static void RewriteTypeSpecSignature(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
+        {
+            new EcmaSignatureRewriter(signatureReader, tokenMap).RewriteTypeSpecSignature(blobBuilder);
+        }
+
+        private void RewriteTypeSpecSignature(BlobBuilder blobBuilder)
+        {
+            var encoder = new SignatureTypeEncoder(blobBuilder);
+            RewriteType(encoder);
+        }
+
     }
 }

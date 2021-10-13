@@ -180,5 +180,17 @@ namespace ILTrim.DependencyAnalysis
                 return _dependenciesOrNull;
             }
         }
+
+        public static DependencyList AnalyzeTypeSpecSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencyList dependencies)
+        {
+            return new EcmaSignatureAnalyzer(module, blobReader, factory, dependencies).AnalyzeTypeSpecSignature();
+        }
+
+        private DependencyList AnalyzeTypeSpecSignature()
+        {
+            AnalyzeType();
+            return _dependenciesOrNull;
+        }
+
     }
 }

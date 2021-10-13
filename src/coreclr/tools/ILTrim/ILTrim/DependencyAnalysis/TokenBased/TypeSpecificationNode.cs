@@ -24,8 +24,15 @@ namespace ILTrim.DependencyAnalysis
         {
             TypeSpecification typeSpec = _module.MetadataReader.GetTypeSpecification(Handle);
 
-            // TODO: report dependencies from the signature
-            yield break;
+            DependencyList dependencies = new DependencyList();
+
+            EcmaSignatureAnalyzer.AnalyzeTypeSpecSignature(
+                _module,
+                _module.MetadataReader.GetBlobReader(typeSpec.Signature),
+                factory,
+                dependencies);
+
+            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -34,10 +41,14 @@ namespace ILTrim.DependencyAnalysis
 
             TypeSpecification typeSpec = reader.GetTypeSpecification(Handle);
 
-            var builder = writeContext.MetadataBuilder;
+            var signatureBlob = writeContext.GetSharedBlobBuilder();
 
-            // TODO: the signature blob might contain references to tokens we need to rewrite
-            var signatureBlob = reader.GetBlobBytes(typeSpec.Signature);
+            EcmaSignatureRewriter.RewriteTypeSpecSignature(
+                reader.GetBlobReader(typeSpec.Signature),
+                writeContext.TokenMap,
+                signatureBlob);
+
+            var builder = writeContext.MetadataBuilder;
 
             return builder.AddTypeSpecification(
                 builder.GetOrAddBlob(signatureBlob));
