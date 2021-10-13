@@ -126,6 +126,38 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+
+
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
+        [MemberData(nameof(RemoteServersMemberData))]
+        [Trait("Category", "Pavel")]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
+        public async Task Issue60287(Configuration.Http.RemoteServer remoteServer)
+        {
+            var WebAssemblyEnableStreamingResponseKey = new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse");
+
+            var size = 500 * 1024 * 1024;
+            var req = new HttpRequestMessage(HttpMethod.Get, remoteServer.BaseUri + "large.ashx?size=" + size);
+            req.Options.Set(WebAssemblyEnableStreamingResponseKey, true);
+
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpResponseMessage response = await client.SendAsync(req))
+            {
+                Assert.Equal(typeof(StreamContent), response.Content.GetType());
+
+                Assert.Equal("application/octet-stream", response.Content.Headers.ContentType.MediaType);
+                Assert.True(size == response.Content.Headers.ContentLength, "ContentLength");
+
+                //var bytes = await response.Content.ReadAsByteArrayAsync();
+                //Assert.True(size == bytes.Length, "bytes.Length");
+
+
+                //var stream = await response.Content.ReadAsStreamAsync();
+                //Assert.Equal("WasmHttpReadStream", stream.GetType().Name);
+
+            }
+        }
+
         [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
