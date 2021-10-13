@@ -46,7 +46,7 @@ gint32 mono_simd_register_size;
 static gint32 classes_size;
 static gint32 inflated_classes_size;
 gint32 mono_inflated_methods_size;
-static gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
+static gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count, class_byref_count;
 
 /* Low level lock which protects data structures in this module */
 static mono_mutex_t classes_mutex;
@@ -1492,6 +1492,121 @@ mono_class_create_ptr (MonoType *type)
 			image->ptr_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		}
 		g_hash_table_insert (image->ptr_cache, el_class, result);
+		mono_image_unlock (image);
+	}
+
+	MONO_PROFILER_RAISE (class_loaded, (result));
+
+	return result;
+}
+
+/**
+ * mono_class_create_byref:
+ */
+MonoClass *
+mono_class_create_byref (MonoType *type)
+{
+	MonoClass *result;
+	MonoClass *el_class;
+	MonoImage *image;
+	char *name;
+	MonoMemoryManager *mm;
+
+	el_class = mono_class_from_mono_type_internal (type);
+	image = el_class->image;
+	// FIXME: Optimize this
+	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_mem_manager_for_class (el_class) : NULL;
+
+	if (mm) {
+		mono_mem_manager_lock (mm);
+		if (!mm->byref_cache)
+			mm->byref_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		result = (MonoClass *)g_hash_table_lookup (mm->byref_cache, el_class);
+		mono_mem_manager_unlock (mm);
+		if (result)
+			return result;
+	} else {
+		mono_image_lock (image);
+		if (image->byref_cache) {
+			if ((result = (MonoClass *)g_hash_table_lookup (image->byref_cache, el_class))) {
+				mono_image_unlock (image);
+				return result;
+			}
+		}
+		mono_image_unlock (image);
+	}
+	
+	result = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
+
+	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
+	++class_byref_count;
+
+	result->parent = NULL; /* no parent for BYREF types */
+	result->name_space = el_class->name_space;
+	name = g_strdup_printf ("%s&", el_class->name);
+	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
+	result->class_kind = MONO_CLASS_POINTER;
+	g_free (name);
+
+	MONO_PROFILER_RAISE (class_loading, (result));
+
+	result->image = el_class->image;
+	result->inited = TRUE;
+	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
+	result->min_align = sizeof (gpointer);
+	result->element_class = el_class;
+	result->blittable = FALSE;
+
+	if (el_class->enumtype)
+		result->cast_class = el_class->element_class;
+	else
+		result->cast_class = el_class;
+	class_composite_fixup_cast_class (result, TRUE);
+
+	gboolean higher = m_type_is_byref (type);
+	if (higher) {
+		/* The MonoType for ElementType&.  See Note "byref" near the definition of _MonoType for why the "byref__" bit is set. */
+		result->_byval_arg.type = MONO_TYPE_BYREF;
+		result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
+		result->_byval_arg.byref__ = TRUE;
+	
+	} else {
+		/* slice off a copy of the byval element class and set the byref bit to true to make a byref version of that type */
+		result->_byval_arg = *m_class_get_byval_arg (el_class);
+		result->_byval_arg.byref__ = TRUE;
+	}
+
+	/* The MonoType for ElementType&&. */
+	result->_this_arg.type = MONO_TYPE_BYREF;
+	result->_this_arg.data.type = &result->_byval_arg;
+	result->_this_arg.byref__ = TRUE;
+	
+	mono_class_setup_supertypes (result);
+
+	if (mm) {
+		mono_mem_manager_lock (mm);
+		MonoClass *result2;
+		result2 = (MonoClass *)g_hash_table_lookup (mm->byref_cache, el_class);
+		if (!result2)
+			g_hash_table_insert (mm->byref_cache, el_class, result);
+		mono_mem_manager_unlock (mm);
+		if (result2) {
+			MONO_PROFILER_RAISE (class_failed, (result));
+			return result2;
+		}
+	} else {
+		mono_image_lock (image);
+		if (image->byref_cache) {
+			MonoClass *result2;
+			if ((result2 = (MonoClass *)g_hash_table_lookup (image->byref_cache, el_class))) {
+				mono_image_unlock (image);
+				MONO_PROFILER_RAISE (class_failed, (result));
+				return result2;
+			}
+		} else {
+			image->byref_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		}
+		g_hash_table_insert (image->byref_cache, el_class, result);
 		mono_image_unlock (image);
 	}
 
@@ -4011,6 +4126,8 @@ mono_classes_init (void)
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_array_count);
 	mono_counters_register ("MonoClassPointer count",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_pointer_count);
+	mono_counters_register ("MonoClassPointer (byref) count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_byref_count);
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mono_inflated_methods_size);
 	mono_counters_register ("Inflated classes size",

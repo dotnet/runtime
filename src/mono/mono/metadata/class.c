@@ -2167,7 +2167,24 @@ mono_class_from_mono_type (MonoType *type)
 MonoClass *
 mono_class_from_mono_type_internal (MonoType *type)
 {
+	/* TODO: Change callers of mono_class_from_mono_type_internal to handle byref themselves. */
+	return mono_class_from_mono_type2 (type, TRUE);
+}
+
+MonoClass *
+mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref)
+{
 	g_assert (type);
+	if (!strip_byref) {
+		if (m_type_is_byref (type)) {
+			if (type->type != MONO_TYPE_BYREF)
+				return mono_class_create_byref (type);
+			else
+				return mono_class_create_byref (type->data.type);
+		}
+		g_assert (!m_type_is_byref (type) && type->type != MONO_TYPE_BYREF);
+	}
+
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
 		return type->data.klass? type->data.klass: mono_defaults.object_class;
@@ -2211,6 +2228,13 @@ mono_class_from_mono_type_internal (MonoType *type)
 		return mono_class_create_ptr (type->data.type);
 	case MONO_TYPE_FNPTR:
 		return mono_class_create_fnptr (type->data.method);
+	case MONO_TYPE_BYREF:
+		/* case where strip_byref is false is handled above.  if strip_byref is true, we
+		 * want to peel off one layer of "byref".
+		 */
+		g_assert (strip_byref);
+		g_assert (type->byref__);
+		return mono_class_from_mono_type2 (type->data.type, FALSE);
 	case MONO_TYPE_SZARRAY:
 		return mono_class_create_array (type->data.klass, 1);
 	case MONO_TYPE_CLASS:

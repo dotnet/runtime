@@ -37,6 +37,9 @@ mono_class_create_ptr (MonoType *type);
 MonoClass *
 mono_class_create_fnptr (MonoMethodSignature *sig);
 
+MonoClass *
+mono_class_create_byref (MonoType *type);
+
 void
 mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int onum, GList *in_setup);
 
