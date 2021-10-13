@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31808.319
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim", "ILTrim.Exe\ILTrim.csproj", "{ADB33654-B6E1-495E-8D24-F036043749DC}"
 EndProject
@@ -13,9 +13,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.Core", "ILTrim\ILTri
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "repro", "repro\repro.csproj", "{43136E18-23D1-4133-B6E4-FCBB2F46D719}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILTrim.Tests.Cases.Expectations", "ILTrim.Tests.Cases.Expectations\ILTrim.Tests.Cases.Expectations.csproj", "{146693AD-FD6A-4F46-BAD8-8FDE69F84267}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.Tests.Cases.Expectations", "ILTrim.Tests.Cases.Expectations\ILTrim.Tests.Cases.Expectations.csproj", "{146693AD-FD6A-4F46-BAD8-8FDE69F84267}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILTrim.Tests.Cases", "ILTrim.Tests.Cases\ILTrim.Tests.Cases.csproj", "{FEABED53-9B40-40C4-A218-9BAD98F63FCB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.Tests.Cases", "ILTrim.Tests.Cases\ILTrim.Tests.Cases.csproj", "{FEABED53-9B40-40C4-A218-9BAD98F63FCB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ILTrim.TypeSystem", "ILTrim.TypeSystem\ILTrim.TypeSystem.csproj", "{7BC4B552-EB30-48F7-B431-0E11827C11F4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -150,6 +152,24 @@ Global
 		{FEABED53-9B40-40C4-A218-9BAD98F63FCB}.Release|x64.Build.0 = Release|Any CPU
 		{FEABED53-9B40-40C4-A218-9BAD98F63FCB}.Release|x86.ActiveCfg = Release|Any CPU
 		{FEABED53-9B40-40C4-A218-9BAD98F63FCB}.Release|x86.Build.0 = Release|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Checked|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Checked|Any CPU.Build.0 = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Checked|x64.ActiveCfg = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Checked|x64.Build.0 = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Checked|x86.ActiveCfg = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Checked|x86.Build.0 = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Debug|x64.Build.0 = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Debug|x86.Build.0 = Debug|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Release|x64.ActiveCfg = Release|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Release|x64.Build.0 = Release|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Release|x86.ActiveCfg = Release|Any CPU
+		{7BC4B552-EB30-48F7-B431-0E11827C11F4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -18,5 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../aot/ILCompiler.DependencyAnalysisFramework/ILCompiler.DependencyAnalysisFramework.csproj" />
+    <ProjectReference Include="..\ILTrim.TypeSystem\ILTrim.TypeSystem.csproj" />
   </ItemGroup>
 </Project>

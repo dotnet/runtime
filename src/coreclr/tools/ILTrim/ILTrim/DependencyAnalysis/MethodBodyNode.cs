@@ -8,6 +8,8 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem.Ecma;
+
 using ILCompiler.DependencyAnalysisFramework;
 using Internal.IL;
 

@@ -6,6 +6,8 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
+using Internal.TypeSystem.Ecma;
+
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILTrim.DependencyAnalysis

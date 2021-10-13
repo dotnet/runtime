@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem.Ecma;
+
 namespace ILTrim.DependencyAnalysis
 {
     /// <summary>

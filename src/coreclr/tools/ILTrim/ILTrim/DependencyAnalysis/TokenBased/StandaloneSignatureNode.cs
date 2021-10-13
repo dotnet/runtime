@@ -8,6 +8,8 @@ using System.Linq;
 
 using Internal.TypeSystem;
 
+using Internal.TypeSystem.Ecma;
+
 namespace ILTrim.DependencyAnalysis
 {
     /// <summary>

@@ -7,6 +7,8 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem.Ecma;
+
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILTrim.DependencyAnalysis

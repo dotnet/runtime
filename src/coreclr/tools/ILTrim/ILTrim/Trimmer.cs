@@ -6,7 +6,10 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 
+using Internal.TypeSystem.Ecma;
+
 using ILCompiler.DependencyAnalysisFramework;
+
 using ILTrim.DependencyAnalysis;
 
 namespace ILTrim
@@ -17,7 +20,16 @@ namespace ILTrim
         {
             var mdReader = pe.GetMetadataReader();
 
-            var module = new EcmaModule(pe, mdReader);
+            var context = new ILTrimTypeSystemContext();
+
+            // TODO: we should set context.ReferenceFilePaths to a map of assembly simple name to file path
+            //       and call ResolveAssembly instead to get an interned EcmaModule.
+            //       Direct call to EcmaModule.Create creates an assembly out of thin air without registering
+            //       it anywhere and once we deal with multiple assemblies that refer to each other, that's a problem.
+
+            EcmaModule module = EcmaModule.Create(context, pe, containingAssembly: null);
+
+            // TODO: need to context.SetSystemModule to get a usable type system context
 
             var factory = new NodeFactory();
 
