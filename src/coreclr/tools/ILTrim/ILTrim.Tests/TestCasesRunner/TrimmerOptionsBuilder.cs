@@ -19,6 +19,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddReference (NPath path)
 		{
+			Options.ReferencePaths.Add (path.ToString());
 		}
 
 		public virtual void AddOutputDirectory (NPath directory)

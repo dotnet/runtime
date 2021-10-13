@@ -11,10 +11,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
     {
         public void Trim (TrimmerOptions options)
         {
-            using var fs = File.OpenRead(options.InputPath!);
-            using var pe = new PEReader(fs);
             using var output = File.Create(Path.Combine(options.OutputDirectory!, Path.GetFileName(options.InputPath!)));
-            Trimmer.TrimAssembly(pe, output);
+            Trimmer.TrimAssembly(options.InputPath, output, options.ReferencePaths);
         }
     }
 }
