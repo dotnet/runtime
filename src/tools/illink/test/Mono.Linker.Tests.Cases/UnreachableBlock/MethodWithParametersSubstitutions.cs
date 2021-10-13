@@ -78,7 +78,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"ldnull",
 			"ldnull",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::StaticMethod(System.Object,System.Int32[])",
 			"pop",
 			"ldc.i4.1",
 			"ret"
@@ -100,14 +100,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.1",
-			"newobj",
-			"box",
+			"newobj System.Void System.Nullable`1<System.Int32>::.ctor(!0)",
+			"box System.Nullable`1<System.Int32>",
 			"ldc.i4.0",
-			"newarr",
-			"call",
+			"newarr System.Int32",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::StaticMethod(System.Object,System.Int32[])",
 			"pop",
 			"ldc.i4.1",
-			"ret"
+			"ret",
 		})]
 		static int TestMethodWithComplexParams_2 ()
 		{
@@ -235,9 +235,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.0",
 			"stloc.0",
 			"ldloca.s",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::IsEnabledWithRefParam(System.Int32&)",
 			"pop",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::MethodWithRefParam_Reached1()",
 			"ret",
 		})]
 		static void TestMethodWithRefParam ()
@@ -267,14 +267,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.0",
 			"stloc.0",
 			"ldloca.s",
-			"initobj",
+			"initobj Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestStruct",
 			"ldc.i4.0",
 			"ldloca.s",
 			"ldloca.s",
-			"ldstr",
-			"call",
+			"ldstr ''",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::IsEnabledWithMultipleRefParams(System.Int32,System.Int32&,Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions/TestStruct&,System.String)",
 			"pop",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::MethodWithMultipleRefParams_Reached1()",
 			"ret",
 		})]
 		static void TestMethodWithMultipleRefParams ()
@@ -299,9 +299,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.0",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::IsEnabledWithValueParamAndConstReturn_NoSubstitutions(System.Int32)",
 			"pop",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.MethodWithParametersSubstitutions::MethodWithValueParamAndConstReturn_NoSubstitutions_Reached1()",
 			"ret",
 		})]
 		static void TestMethodWithValueParamAndConstReturn_NoSubstitutions ()

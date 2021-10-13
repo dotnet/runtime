@@ -11,9 +11,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		})]
 	[IgnoreSubstitutions (false)]
 	[ExpectedInstructionSequenceOnMemberInAssembly ("library.dll", typeof (ReferencedMethod), "ConvertToThrowMethod()", new[] {
-		"ldstr",
-		"newobj",
-		"throw"
+		"ldstr 'Linked away'",
+		"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+		"throw",
 	})]
 	public class EmbeddedMethodSubstitutionsInReferencedAssembly
 	{

@@ -16,9 +16,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"ldstr",
-			"newobj",
-			"throw"
+			"ldstr 'Linked away'",
+			"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+			"throw",
 		})]
 		public static void ConvertToThrowMethod ()
 		{
@@ -26,9 +26,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"ldstr",
-			"newobj",
-			"throw"
+			"ldstr 'Linked away'",
+			"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+			"throw",
 		})]
 		public static void ConvertToThrowMethod2 ()
 		{

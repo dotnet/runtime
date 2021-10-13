@@ -19,9 +19,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"ldstr",
-				"newobj",
-				"throw"
+				"ldstr 'Linked away'",
+				"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+				"throw",
 			})]
 			public NestedType (int arg)
 			{
@@ -31,10 +31,10 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 				"ldarg.0",
-				"call",
-				"ldstr",
-				"newobj",
-				"throw"
+				"call System.Void System.Object::.ctor()",
+				"ldstr 'Linked away'",
+				"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+				"throw",
 			})]
 		public RemoveBody ()
 		{
@@ -42,9 +42,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldstr",
-				"newobj",
-				"throw"
+				"ldstr 'Linked away'",
+				"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+				"throw",
 			})]
 		static void TestMethod_1 ()
 		{
@@ -52,9 +52,9 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldstr",
-				"newobj",
-				"throw"
+				"ldstr 'Linked away'",
+				"newobj System.Void System.NotSupportedException::.ctor(System.String)",
+				"throw",
 			})]
 		[ExpectLocalsModified]
 		static T TestMethod_2<T> ()
