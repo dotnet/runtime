@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Ini
                         continue;
                     }
                     // Ignore comments
-                    if (line[0] == ';' || line[0] == '#' || line[0] == '/')
+                    if (line[0] is ';' or '#' or '/')
                     {
                         continue;
                     }
