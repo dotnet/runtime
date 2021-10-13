@@ -181,7 +181,7 @@ struct _MonoMemoryManager {
 	MonoConcurrentHashTable *gclass_cache;
 
 	/* mirror caches of ones already on MonoImage. These ones contain generics */
-	GHashTable *szarray_cache, *array_cache, *ptr_cache;
+	GHashTable *szarray_cache, *array_cache, *ptr_cache, *byref_cache;
 
 	MonoWrapperCaches wrapper_caches;
 
