@@ -54,6 +54,12 @@ jobs:
     - HelixApiAccessToken: ''
     - HelixPreCommand: ''
 
+    - ${{ if in(variables['Build.Reason'], 'Schedule') }}:
+      - name: RunReason
+        value: 'Scheduled'
+    - ${{ if notin(variables['Build.Reason'], 'Schedule') }}:
+      - name: RunReason
+        value: 'PR'
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
         value: 'py -3'
@@ -65,6 +71,8 @@ jobs:
         value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
       - name: IssuesSummaryLocation
         value: '$(Build.SourcesDirectory)\artifacts\issues_summary\'
+      - name: AntigenLogsLocation
+        value: '$(Build.SourcesDirectory)\artifacts\antigen_logs\'
 
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: PythonScript
@@ -77,6 +85,8 @@ jobs:
         value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
       - name: IssuesSummaryLocation
         value: '$(Build.SourcesDirectory)/artifacts/issues_summary/'
+      - name: AntigenLogsLocation
+        value: '$(Build.SourcesDirectory)/artifacts/antigen_logs/'
     workspace:
       clean: all
     pool:
@@ -110,6 +120,7 @@ jobs:
         osGroup: ${{ parameters.osGroup }}
         RunConfiguration: '$(RunConfiguration)'
         ToolName: '$(ToolName)'
+        RunReason: '$(RunReason)'
         continueOnError: true
 
     - template: /eng/pipelines/common/upload-artifact-step.yml
@@ -129,20 +140,43 @@ jobs:
         sourceFolder: '$(IssuesLocation)'
         contents: '**/issues-summary-*.txt'
         targetFolder: '$(IssuesSummaryLocation)'
+      continueOnError: true
+      condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: Publish issues-summary.txt files
       inputs:
         targetPath: $(IssuesSummaryLocation)
         artifactName: 'Issues_Summary_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      continueOnError: true
+      condition: always()
+
+    # Always upload the available Antigen.log files
+    - task: CopyFiles@2
+      displayName: Copying Antigen.logs of all partitions
+      inputs:
+        sourceFolder: '$(IssuesLocation)'
+        contents: '**/Antigen-*.log'
+        targetFolder: '$(AntigenLogsLocation)'
+      continueOnError: true
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Antigen.log files
+      inputs:
+        targetPath: $(AntigenLogsLocation)
+        artifactName: 'Antigen_Logs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+      continueOnError: true
+      condition: always()
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/antigen_unique_issues.py -issues_directory $(IssuesSummaryLocation)
       displayName: ${{ format('Print unique issues ({0})', parameters.osGroup) }}
       continueOnError: true
+      condition: always()
 
     - task: PublishPipelineArtifact@1
       displayName: Publish Antigen build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'Antigen_BuildLogs__$(archType)_$(buildConfig)'
+        artifactName: 'Antigen_BuildLogs_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
       condition: always()

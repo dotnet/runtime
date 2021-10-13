@@ -20,6 +20,10 @@ if(HOST_SOLARIS)
   set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS -D__EXTENSIONS__ -D_XPG4_2")
 endif()
 
+if(HOST_WASI)
+  set(CMAKE_REQUIRED_DEFINITIONS "${CMAKE_REQUIRED_DEFINITIONS} -D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN")
+endif()
+
 function(ac_check_headers)
   foreach(arg ${ARGN})
 	check_include_file ("${arg}" FOUND_${arg})
@@ -61,8 +65,8 @@ endfunction()
 ac_check_headers (
   sys/types.h sys/stat.h sys/filio.h sys/sockio.h sys/utime.h sys/un.h sys/syscall.h sys/uio.h sys/param.h sys/sysctl.h
   sys/prctl.h sys/socket.h sys/utsname.h sys/select.h sys/user.h sys/poll.h sys/wait.h sts/auxv.h sys/resource.h
-  sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h sys/mman.h
-  strings.h stdint.h unistd.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
+  sys/ioctl.h sys/errno.h sys/sendfile.h sys/statvfs.h sys/statfs.h sys/mman.h sys/mount.h sys/time.h sys/random.h
+  strings.h stdint.h unistd.h signal.h setjmp.h syslog.h netdb.h utime.h semaphore.h libproc.h alloca.h ucontext.h pwd.h elf.h
   gnu/lib-names.h netinet/tcp.h netinet/in.h link.h arpa/inet.h unwind.h poll.h wchar.h linux/magic.h
   android/legacy_signal_inlines.h android/ndk-version.h execinfo.h pthread.h pthread_np.h net/if.h dirent.h
   CommonCrypto/CommonDigest.h dlfcn.h getopt.h pwd.h iconv.h alloca.h
@@ -77,7 +81,7 @@ ac_check_funcs (
   fork execv execve waitpid localtime_r mkdtemp getrandom execvp strlcpy stpcpy strtok_r rewinddir
   vasprintf strndup getpwuid_r getprotobyname getprotobyname_r getaddrinfo mach_absolute_time
   gethrtime read_real_time gethostbyname gethostbyname2 getnameinfo getifaddrs
-  access inet_ntop Qp2getifaddrs)
+  access inet_ntop Qp2getifaddrs getpid mktemp)
 
 if(NOT HOST_DARWIN)
   # getentropy was introduced in macOS 10.12 / iOS 10.0
@@ -180,4 +184,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
   # FreeBSD fails earlier ac_check_headers for these because <sys/types.h> is needed.
   set(HAVE_SYS_SYSCTL_H 1)
   set(HAVE_SYS_USER_H 1)
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+  # Redirected to errno.h
+  set(SYS_ERRNO_H 0)
+  # Some headers exist, but don't compile (wasi sdk 12.0)
+  set(HAVE_SYS_SOCKET_H 0)
+  set(HAVE_SYS_UN_H 0)
+  set(HAVE_NETINET_IN_H 0)
+  set(HAVE_NETINET_TCP_H 0)
+  set(HAVE_ARPA_INET_H 0)
 endif()

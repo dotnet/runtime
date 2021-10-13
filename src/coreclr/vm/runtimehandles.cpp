@@ -2728,7 +2728,7 @@ void QCALLTYPE ModuleHandle::GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPE
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    pModule->GetFile()->GetPEKindAndMachine(pdwPEKind, pdwMachine);
+    pModule->GetPEAssembly()->GetPEKindAndMachine(pdwPEKind, pdwMachine);
     END_QCALL;
 }
 
@@ -2742,10 +2742,6 @@ FCIMPL1(INT32, ModuleHandle::GetMDStreamVersion, ReflectModuleBaseObject * pModu
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module *pModule = refModule->GetModule();
-
-    if (pModule->IsResource())
-        return 0;
-
     return pModule->GetMDImport()->GetMetadataStreamVersion();
 }
 FCIMPLEND
@@ -2787,10 +2783,6 @@ FCIMPL1(INT32, ModuleHandle::GetToken, ReflectModuleBaseObject * pModuleUNSAFE) 
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module *pModule = refModule->GetModule();
-
-    if (pModule->IsResource())
-        return mdModuleNil;
-
     return pModule->GetMDImport()->GetModuleFromScope();
 }
 FCIMPLEND
@@ -2805,10 +2797,6 @@ FCIMPL1(IMDInternalImport*, ModuleHandle::GetMetadataImport, ReflectModuleBaseOb
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module *pModule = refModule->GetModule();
-
-    if (pModule->IsResource())
-        return NULL;
-
     return pModule->GetMDImport();
 }
 FCIMPLEND

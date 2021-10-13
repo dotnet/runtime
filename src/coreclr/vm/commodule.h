@@ -90,8 +90,6 @@ public:
     static
     void QCALLTYPE SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName);
 
-    static FCDECL1(FC_BOOL_RET, IsResource, ReflectModuleBaseObject* pModuleUNSAFE);
-
     static FCDECL1(Object*,     GetMethods,             ReflectModuleBaseObject* refThisUNSAFE);
 
     static

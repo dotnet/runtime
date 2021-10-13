@@ -88,6 +88,7 @@ GTNODE(DYN_BLK          , GenTreeDynBlk      ,0,GTK_SPECIAL)               // Dy
 GTNODE(STORE_DYN_BLK    , GenTreeDynBlk      ,0,(GTK_SPECIAL|GTK_NOVALUE)) // Dynamically sized block object
 
 GTNODE(BOX              , GenTreeBox         ,0,(GTK_UNOP|GTK_EXOP|GTK_NOTLIR))
+GTNODE(FIELD            , GenTreeField       ,0,(GTK_UNOP|GTK_EXOP)) // Member-field
 
 #ifdef FEATURE_SIMD
 GTNODE(SIMD_CHK         , GenTreeBoundsChk   ,0,(GTK_SPECIAL|GTK_NOVALUE))// Compare whether an index is less than the given SIMD vector length, and call CORINFO_HELP_RNGCHKFAIL if not.
@@ -247,7 +248,6 @@ GTNODE(LIST             , GenTreeArgList     ,0,(GTK_BINOP|GTK_NOVALUE))
 //  Other nodes that have special structure:
 //-----------------------------------------------------------------------------
 
-GTNODE(FIELD            , GenTreeField       ,0,GTK_SPECIAL)            // Member-field
 GTNODE(ARR_ELEM         , GenTreeArrElem     ,0,GTK_SPECIAL)            // Multi-dimensional array-element address
 GTNODE(ARR_INDEX        , GenTreeArrIndex    ,0,(GTK_BINOP|GTK_EXOP))     // Effective, bounds-checked index for one dimension of a multi-dimensional array element
 GTNODE(ARR_OFFSET       , GenTreeArrOffs     ,0,GTK_SPECIAL)            // Flattened offset of multi-dimensional array element

@@ -134,6 +134,15 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H 1
 
+/* Define to 1 if you have the <signal.h> header file. */
+#cmakedefine HAVE_SIGNAL_H 1
+
+/* Define to 1 if you have the <setjmp.h> header file. */
+#cmakedefine HAVE_SETJMP_H 1
+
+/* Define to 1 if you have the <syslog.h> header file. */
+#cmakedefine HAVE_SYSLOG_H 1
+
 /* Define to 1 if `major', `minor', and `makedev' are declared in <mkdev.h>.
    */
 #cmakedefine MAJOR_IN_MKDEV 1
@@ -623,6 +632,12 @@
 /* Have access */
 #cmakedefine HAVE_ACCESS 1
 
+/* Have getpid */
+#cmakedefine HAVE_GETPID 1
+
+/* Have mktemp */
+#cmakedefine HAVE_MKTEMP 1
+
 /* Define to 1 if you have the <sys/errno.h> header file. */
 #cmakedefine HAVE_SYS_ERRNO_H 1
 
@@ -838,6 +853,12 @@
 
 /* ... */
 #cmakedefine HOST_WASM 1
+
+/* ... */
+#cmakedefine HOST_BROWSER 1
+
+/* ... */
+#cmakedefine HOST_WASI 1
 
 /* ... */
 #cmakedefine HOST_X86 1

@@ -108,14 +108,3 @@ function _makeByteReader(bytes: Uint8Array, index?: number, count?: number): {
 
     return result;
 }
-
-// FIXME: improve
-export function _base64_to_uint8(base64String: string):Uint8Array {
-    const byteCharacters = atob(base64String);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-    }
-
-    return new Uint8Array(byteNumbers);
-}

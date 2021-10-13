@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Configuration.Memory
     /// <summary>
     /// In-memory implementation of <see cref="IConfigurationProvider"/>
     /// </summary>
-    public class MemoryConfigurationProvider : ConfigurationProvider, IEnumerable<KeyValuePair<string, string>>
+    public class MemoryConfigurationProvider : ConfigurationProvider, IEnumerable<KeyValuePair<string, string?>>
     {
         private readonly MemoryConfigurationSource _source;
 
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration.Memory
 
             if (_source.InitialData != null)
             {
-                foreach (KeyValuePair<string, string> pair in _source.InitialData)
+                foreach (KeyValuePair<string, string?> pair in _source.InitialData)
                 {
                     Data.Add(pair.Key, pair.Value);
                 }
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Configuration.Memory
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <param name="value">The configuration value.</param>
-        public void Add(string key, string value)
+        public void Add(string key, string? value)
         {
             Data.Add(key, value);
         }
@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration.Memory
         /// Returns an enumerator that iterates through the collection.
         /// </summary>
         /// <returns>An enumerator that can be used to iterate through the collection.</returns>
-        public IEnumerator<KeyValuePair<string, string>> GetEnumerator()
+        public IEnumerator<KeyValuePair<string, string?>> GetEnumerator()
         {
             return Data.GetEnumerator();
         }

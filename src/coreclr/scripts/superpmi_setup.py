@@ -312,7 +312,7 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _long_running=False):
+def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None):
     """ Runs the command.
 
     Args:
@@ -320,7 +320,7 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _long_running=Fa
         _cwd (string): Current working directory.
         _exit_on_fail (bool): If it should exit on failure.
     Returns:
-        (string, string, int): Returns a tuple of stdout, stderr, and command return code if _long_running= False
+        (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
         Otherwise stdout, stderr are empty.
     """
     print("Running: " + " ".join(command_to_run))
@@ -328,17 +328,18 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _long_running=Fa
     command_stderr = ""
     return_code = 1
 
-    output_type = subprocess.STDOUT if _long_running else subprocess.PIPE
+    output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
     with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
 
-        # For long running command, continuosly print the output
-        if _long_running:
+        # For long running command, continuously print the output
+        if _output_file:
             while True:
-                output = proc.stdout.readline()
-                if proc.poll() is not None:
-                    break
-                if output:
-                    print(output.strip().decode("utf-8"))
+                with open(_output_file, 'a') as of:
+                    output = proc.stdout.readline()
+                    if proc.poll() is not None:
+                        break
+                    if output:
+                        of.write(output.strip().decode("utf-8") + "\n")
         else:
             command_stdout, command_stderr = proc.communicate()
             if len(command_stdout) > 0:
@@ -590,10 +591,10 @@ def main(main_args):
                 dotnet_script_path = path.join(source_directory, dotnet_script_name)
                 run_command([dotnet_script_path, "--info"], jitutils_directory)
 
-                # Set dotnet path to run bootstrap
+                # Set dotnet path to run build
                 os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
-                bootstrap_file = "bootstrap.cmd" if is_windows else "bootstrap.sh"
-                run_command([path.join(jitutils_directory, bootstrap_file)], jitutils_directory)
+                build_file = "build.cmd" if is_windows else "build.sh"
+                run_command([path.join(jitutils_directory, build_file), "-p"], jitutils_directory)
 
                 copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
         except PermissionError as pe_error:

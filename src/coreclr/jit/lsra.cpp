@@ -4733,15 +4733,26 @@ void LinearScan::allocateRegisters()
                             if (assignedInterval->isActive)
                             {
                                 // If this is not the register most recently allocated, it must be from a copyReg,
-                                // or it was placed there by the inVarToRegMap. In either case it must be a lclVar.
+                                // it was placed there by the inVarToRegMap or it might be one of the upper vector
+                                // save/restore refPosition.
+                                // In either case it must be a lclVar.
 
                                 if (!isAssignedToInterval(assignedInterval, physRegRecord))
                                 {
-                                    assert(assignedInterval->isLocalVar);
                                     // We'd like to assert that this was either set by the inVarToRegMap, or by
                                     // a copyReg, but we can't traverse backward to check for a copyReg, because
                                     // we only have recentRefPosition, and there may be a previous RefPosition
                                     // at the same Location with a copyReg.
+
+                                    bool sanityCheck = assignedInterval->isLocalVar;
+                                    // For upper vector interval, make sure it was one of the save/restore only.
+                                    if (assignedInterval->IsUpperVector())
+                                    {
+                                        sanityCheck |= (recentRefPosition->refType == RefTypeUpperVectorSave) ||
+                                                       (recentRefPosition->refType == RefTypeUpperVectorRestore);
+                                    }
+
+                                    assert(sanityCheck);
                                 }
                                 if (isAssignedReg)
                                 {
@@ -6231,7 +6242,7 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned m
         // Insert the copy/reload after the spilled node and replace the use of the original node with a use
         // of the copy/reload.
         blockRange.InsertAfter(tree, newNode);
-        treeUse.ReplaceWith(compiler, newNode);
+        treeUse.ReplaceWith(newNode);
     }
 }
 
@@ -10162,7 +10173,7 @@ void LinearScan::dumpNewBlock(BasicBlock* currentBlock, LsraLocation location)
     if (activeRefPosition->refType == RefTypeDummyDef)
     {
         dumpEmptyRefPosition();
-        printf("DDefs   ");
+        printf("DDefs    ");
         printf(regNameFormat, "");
         return;
     }

@@ -6293,6 +6293,11 @@ ves_icall_System_Environment_get_TickCount64 (void)
 gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
+	/* WISH: we should do this in managed */
+	if (G_UNLIKELY (mono_method_has_unmanaged_callers_only_attribute (method))) {
+		method = mono_marshal_get_managed_wrapper  (method, NULL, (MonoGCHandle)0, error);
+		return_val_if_nok (error, NULL);
+	}
 	return mono_get_runtime_callbacks ()->get_ftnptr (method, error);
 }
 

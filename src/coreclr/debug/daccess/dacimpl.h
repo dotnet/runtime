@@ -132,7 +132,7 @@ class ReflectionModule;
 struct DAC_MD_IMPORT
 {
     DAC_MD_IMPORT* next;       // list link field
-    TADDR peFile;              // a TADDR for a PEFile* or a ReflectionModule*
+    TADDR peFile;              // a TADDR for a PEAssembly* or a ReflectionModule*
     IMDInternalImport* impl;   // Associated metadata interface
     bool isAlternate;          // for NGEN images set to true if the metadata corresponds to the IL image
 
@@ -151,7 +151,7 @@ struct DAC_MD_IMPORT
 
 
 // This class maintains a cache of IMDInternalImport* and their corresponding
-// source (a PEFile* or a ReflectionModule*), as a singly-linked list of
+// source (a PEAssembly* or a ReflectionModule*), as a singly-linked list of
 // DAC_MD_IMPORT nodes.  The cache is flushed whenever the process state changes
 // by calling its Flush() member function.
 class MDImportsCache
@@ -1352,18 +1352,18 @@ public:
     JITNotification* GetHostJitNotificationTable();
     GcNotification*  GetHostGcNotificationTable();
 
-    void* GetMetaDataFromHost(PEFile* peFile,
+    void* GetMetaDataFromHost(PEAssembly* pPEAssembly,
                               bool* isAlternate);
 
     virtual
-    interface IMDInternalImport* GetMDImport(const PEFile* peFile,
+    interface IMDInternalImport* GetMDImport(const PEAssembly* pPEAssembly,
                                              const ReflectionModule* reflectionModule,
                                              bool throwEx);
 
-    interface IMDInternalImport* GetMDImport(const PEFile* peFile,
+    interface IMDInternalImport* GetMDImport(const PEAssembly* pPEAssembly,
                                              bool throwEx)
     {
-        return GetMDImport(peFile, NULL, throwEx);
+        return GetMDImport(pPEAssembly, NULL, throwEx);
     }
 
     interface IMDInternalImport* GetMDImport(const ReflectionModule* reflectionModule,
@@ -1501,7 +1501,7 @@ private:
 public:
     // APIs for picking up the info needed for a debugger to look up an ngen image or IL image
     // from it's search path.
-    static bool GetMetaDataFileInfoFromPEFile(PEFile *pPEFile,
+    static bool GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
                                               DWORD &dwImageTimestamp,
                                               DWORD &dwImageSize,
                                               DWORD &dwDataSize,
@@ -1510,7 +1510,7 @@ public:
                                               __out_ecount(cchFilePath) LPWSTR wszFilePath,
                                               DWORD cchFilePath);
 
-    static bool GetILImageInfoFromNgenPEFile(PEFile *peFile,
+    static bool GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
                                              DWORD &dwTimeStamp,
                                              DWORD &dwSize,
                                              __out_ecount(cchPath) LPWSTR wszPath,
