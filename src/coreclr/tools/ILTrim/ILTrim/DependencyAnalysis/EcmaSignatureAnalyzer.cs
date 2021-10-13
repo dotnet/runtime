@@ -66,8 +66,10 @@ namespace ILTrim.DependencyAnalysis
                 case SignatureTypeCode.UIntPtr:
                 case SignatureTypeCode.Object:
                 case SignatureTypeCode.TypedReference:
+                    break;
                 case SignatureTypeCode.GenericTypeParameter:
                 case SignatureTypeCode.GenericMethodParameter:
+                    _blobReader.ReadCompressedInteger();
                     break;
                 case SignatureTypeCode.TypeHandle:
                     Dependencies.Add(_factory.GetNodeForToken(_module, _blobReader.ReadTypeHandle()), "Signature reference");
