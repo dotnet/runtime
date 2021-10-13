@@ -163,9 +163,15 @@
     <!-- Ref.Emit in XSLCompiledTransform -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslCompiledTransformApi\System.Xml.Xsl.XslCompiledTransformApi.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Emit.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.ILGeneration/tests/System.Reflection.Emit.ILGeneration.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.Emit.Lightweight/tests/System.Reflection.Emit.Lightweight.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
 
     <!-- Has deps that JIT, need re-done in order to pass -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/UnitTests/Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
+
+    <!-- Multiple resource files, AOT compiler only sees one of them -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Resources.ResourceManager/tests/System.Resources.ResourceManager.Tests.csproj" />
 
     <!-- Functional tests on devices have problems with return codes from mlaunch -->
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\$(TargetOS)\Device\**\*.Test.csproj" />

@@ -77,7 +77,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentNullException>("outerStreamEncoding", () => Encoding.CreateTranscodingStream(Stream.Null, Encoding.UTF8, null));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(true)]
         [InlineData(false)]
         public void CanRead_DelegatesToInnerStream(bool expectedCanRead)
@@ -432,7 +432,7 @@ namespace System.Text.Tests
             suppressExpectedCancellationTokenAsserts: true); // APM pattern doesn't allow flowing CancellationToken
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public Task ReadAsync_ByteArray(int bufferLength)
         {
@@ -451,7 +451,7 @@ namespace System.Text.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(ReadWriteTestBufferLengths))]
         public async Task ReadAsync_Memory(int bufferLength)
         {
