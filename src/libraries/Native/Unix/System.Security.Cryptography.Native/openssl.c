@@ -1289,6 +1289,7 @@ static void HandleShutdown()
     // ensures that there are no callers already inside the string table
     // when the unload (possibly) executes.
     int result = pthread_mutex_lock(&g_err_mutex);
+    (void)result; // used only in assert
     assert(!result && "Acquiring the error string table mutex failed.");
 
     g_err_unloaded = 1;

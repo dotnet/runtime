@@ -75,6 +75,7 @@ static void DetectCiphersuiteConfiguration()
     SSL_free(ssl);
 
     int rv = SSL_CTX_set_cipher_list(ctx, "ALL");
+    (void)rv; // used only in assert
     assert(rv);
 
     ssl = SSL_new(ctx);
