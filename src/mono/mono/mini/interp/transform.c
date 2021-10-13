@@ -7127,12 +7127,28 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				save_last_error = TRUE;
 				++td->ip;
 				break;
-			case CEE_MONO_GET_SP:
-				interp_add_ins (td, MINT_MONO_GET_SP);
-				push_simple_type (td, STACK_TYPE_I);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			case CEE_MONO_GET_SP: {
 				++td->ip;
+				g_assert (*td->ip == MONO_CUSTOM_PREFIX);
+				++td->ip;
+				g_assert (*td->ip == CEE_MONO_ICALL);
+				// in coop gc transitions we use mono.get.sp + calli to implement enter/exit
+				// on interpreter we do these transitions explicitly when entering/exiting the
+				// interpreter so we can ignore them here in the wrappers.
+				MonoJitICallId const jit_icall_id = (MonoJitICallId)read32 (td->ip + 1);
+				MonoJitICallInfo const * const info = mono_find_jit_icall_info (jit_icall_id);
+
+				if (info->sig->ret->type != MONO_TYPE_VOID) {
+					// Push a dummy coop gc var
+					push_simple_type (td, STACK_TYPE_I);
+					interp_add_ins (td, MINT_MONO_ENABLE_GCTRANS);
+				} else {
+					// Pop the unused gc var
+					td->sp--;
+				}
+				td->ip += 5;
 				break;
+			}
 			default:
 				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td->ip, td->ip-header->code);
 			}
