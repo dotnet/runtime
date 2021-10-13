@@ -3409,7 +3409,7 @@ emit_virtual_stelemref_ilgen (MonoMethodBuilder *mb, const char **param_names, M
 	mono_mb_set_param_names (mb, param_names);
 	MonoType *int_type = mono_get_int_type ();
 	MonoType *int32_type = m_class_get_byval_arg (mono_defaults.int32_class);
-	MonoType *object_type_byref = m_class_get_this_arg (mono_defaults.object_class);
+	MonoType *object_type_byref = mono_class_get_byref_type (mono_defaults.object_class);
 
 	/*For now simply call plain old stelemref*/
 	switch (kind) {
@@ -3817,7 +3817,7 @@ emit_stelemref_ilgen (MonoMethodBuilder *mb)
 	int array_slot_addr;
 	
 	MonoType *int_type = mono_get_int_type ();
-	MonoType *object_type_byref = m_class_get_this_arg (mono_defaults.object_class);
+	MonoType *object_type_byref = mono_class_get_byref_type (mono_defaults.object_class);
 
 	aklass = mono_mb_add_local (mb, int_type);
 	vklass = mono_mb_add_local (mb, int_type);
@@ -6093,7 +6093,7 @@ emit_marshal_variant_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 #ifndef DISABLE_COM
 	MonoMethodBuilder *mb = m->mb;
 	MonoType *variant_type = m_class_get_byval_arg (mono_class_get_variant_class ());
-	MonoType *variant_type_byref = m_class_get_this_arg (mono_class_get_variant_class ());
+	MonoType *variant_type_byref = mono_class_get_byref_type (mono_class_get_variant_class ());
 	MonoType *object_type = mono_get_object_type ();
 
 	switch (action) {
