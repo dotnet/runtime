@@ -1126,6 +1126,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnitySerializationHolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ValueTuple.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\ValueArray.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Version.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\WeakReference.cs" />

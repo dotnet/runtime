@@ -7897,6 +7897,11 @@ namespace System
         Path = 2,
         Query = 3,
     }
+    public partial struct ValueArray<T>
+    {
+        public T Element0;
+        public T this[int index] { get { throw null; } set { } }
+    }
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
     {
         object? System.Runtime.CompilerServices.ITuple.this[int index] { get { throw null; } }
