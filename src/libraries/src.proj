@@ -14,6 +14,11 @@
                      Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
              Condition="'$(BuildAllConfigurations)' != 'true'" />
 
+    <!-- These projects do not need to be built during source-build. -->
+    <_allSrc Remove="Microsoft.Extensions.DependencyInjection.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj;
+                     Microsoft.Windows.Compatibility\src\Microsoft.Windows.Compatibility.csproj"
+             Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
     <NonNetCoreAppProject Include="@(_allSrc)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\src\%(Identity).csproj');
                                    $(MSBuildThisFileDirectory)Microsoft.VisualBasic.Core\src\Microsoft.VisualBasic.Core.vbproj;

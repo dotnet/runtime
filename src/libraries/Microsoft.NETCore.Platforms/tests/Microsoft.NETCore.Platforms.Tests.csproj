@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.NETCore.Platforms.csproj" />
+    <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
   </ItemGroup>
 
   <!-- Workaround NuGet promoting this to a ProjectReference -->
