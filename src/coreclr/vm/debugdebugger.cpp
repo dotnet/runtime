@@ -713,11 +713,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
-                    PEFile *pPEFile = pModule->GetFile();
+                    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
                     // Get the address and size of the loaded PE image
                     COUNT_T peSize;
-                    PTR_CVOID peAddress = pPEFile->GetLoadedImageContents(&peSize);
+                    PTR_CVOID peAddress = pPEAssembly->GetLoadedImageContents(&peSize);
 
                     // Save the PE address and size
                     PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
@@ -727,11 +727,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     pLoadedPeSize[iNumValidFrames] = (I4)peSize;
 
                     // Set flag indicating PE file in memory has the on disk layout
-                    if (!pPEFile->IsDynamic())
+                    if (!pPEAssembly->IsDynamic())
                     {
                         // This flag is only available for non-dynamic assemblies.
                         U1 *pIsFileLayout = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
-                        pIsFileLayout[iNumValidFrames] = (U1) pPEFile->GetLoaded()->IsFlat();
+                        pIsFileLayout[iNumValidFrames] = (U1) pPEAssembly->GetLoadedLayout()->IsFlat();
                     }
 
                     // If there is a in memory symbol stream
@@ -750,7 +750,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        SString assemblyPath = pPEFile->GetIdentityPath();
+                        SString assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);

@@ -52,12 +52,7 @@ jobs:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       # To run the tests we just send to helix and wait, use ubuntu hosted pools for faster providing and to not back up our build pools
-      ${{ if startsWith(parameters.pool.queue, 'BuildPool.Ubuntu') }}:
-        pool:
-          vmImage: 'ubuntu-latest'
-
-      ${{ if not(startsWith(parameters.pool.queue, 'BuildPool.Ubuntu')) }}:
-        pool: ${{ parameters.pool }}
+      pool: ${{ parameters.pool }}
 
       dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       dependsOn:

@@ -410,11 +410,11 @@ namespace System.Numerics
             bool isNegative = HexConverter.FromChar(number.digits[0]) >= 8;
             uint partialValue = (isNegative && partialDigitCount > 0) ? 0xFFFFFFFFu : 0;
 
-            int[]? arrayFromPool = null;
+            uint[]? arrayFromPool = null;
 
-            Span<uint> bitsBuffer = (blockCount <= BigInteger.StackallocUInt32Limit)
-                ? stackalloc uint[blockCount]
-                : MemoryMarshal.Cast<int, uint>((arrayFromPool = ArrayPool<int>.Shared.Rent(blockCount)).AsSpan(0, blockCount));
+            Span<uint> bitsBuffer = ((uint)blockCount <= BigIntegerCalculator.StackAllocThreshold
+                ? stackalloc uint[BigIntegerCalculator.StackAllocThreshold]
+                : arrayFromPool = ArrayPool<uint>.Shared.Rent(blockCount)).Slice(0, blockCount);
 
             int bitsBufferPos = blockCount - 1;
 
@@ -489,14 +489,14 @@ namespace System.Numerics
             {
                 if (arrayFromPool != null)
                 {
-                    ArrayPool<int>.Shared.Return(arrayFromPool);
+                    ArrayPool<uint>.Shared.Return(arrayFromPool);
                 }
             }
         }
 
         private static bool NumberToBigInteger(ref BigNumberBuffer number, out BigInteger result)
         {
-            Span<uint> stackBuffer = stackalloc uint[BigInteger.StackallocUInt32Limit];
+            Span<uint> stackBuffer = stackalloc uint[BigIntegerCalculator.StackAllocThreshold];
             Span<uint> currentBuffer = stackBuffer;
             int currentBufferSize = 0;
             int[]? arrayFromPool = null;
