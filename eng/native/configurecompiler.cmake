@@ -390,6 +390,10 @@ if (CLR_CMAKE_HOST_UNIX)
     # to a struct or a class that has virtual members or a base class. In that case, clang
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
+
+    add_compile_options(-Wno-reserved-identifier)
+    add_compile_options(-Wno-cast-function-type)
+    add_compile_options(-Wno-unused-but-set-variable)
   else()
     add_compile_options(-Wno-unused-but-set-variable)
     add_compile_options(-Wno-uninitialized)
