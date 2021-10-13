@@ -371,10 +371,10 @@ namespace System.Reflection
          * Exceptions thrown by the called method propagate normally.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object? InternalInvoke(object? obj, Span<object?> parameters, out Exception? exc);
+        internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> parameters)
         {
             Exception? exc;
             object? o = null;
@@ -862,7 +862,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
+        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return InternalInvoke(obj, arguments, wrapExceptions);
@@ -880,7 +880,7 @@ namespace System.Reflection
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object? obj, Span<object?> parameters, out Exception exc);
+        internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
 
         private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {
