@@ -90,18 +90,16 @@ namespace System.Xml
             int copyPosition = 0;
 
             int underscorePos = name.IndexOf('_');
-            IEnumerator en;
-            if (underscorePos >= 0)
-            {
-                s_decodeCharPattern ??= new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
 
-                MatchCollection mc = s_decodeCharPattern.Matches(name, underscorePos);
-                en = mc.GetEnumerator();
-            }
-            else
+            if (underscorePos < 0)
             {
                 return name;
             }
+
+            s_decodeCharPattern ??= new Regex("_[Xx]([0-9a-fA-F]{4}|[0-9a-fA-F]{8})_");
+            MatchCollection mc = s_decodeCharPattern.Matches(name, underscorePos);
+            IEnumerator en = mc.GetEnumerator();
+
             int matchPos = -1;
             if (en.MoveNext())
             {
