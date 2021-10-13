@@ -583,6 +583,7 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
+#if NET6_0_OR_GREATER
         [EditorBrowsable(EditorBrowsableState.Never)]
         [SupportedOSPlatform("windows")]
         public void GetContextInfo(out PointF offset)
@@ -596,6 +597,7 @@ namespace System.Drawing
         {
             throw new PlatformNotSupportedException();
         }
+#endif
 
         private void CheckErrorStatus(int status)
         {
