@@ -22,7 +22,7 @@ namespace Internal.Cryptography
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
             IntPtr algorithm = GetAlgorithm(cipherMode, feedbackSize);
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
@@ -38,7 +38,7 @@ namespace Internal.Cryptography
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
             IntPtr algorithm = GetAlgorithm(cipherMode, feedbackSize);
-            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength: 0, iv, encrypting);
+            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
         }
 
         private static IntPtr GetAlgorithm(CipherMode cipherMode, int feedbackSize)
