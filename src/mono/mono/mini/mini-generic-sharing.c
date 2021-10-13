@@ -153,7 +153,6 @@ mono_class_check_context_used (MonoClass *klass)
 {
 	int context_used = 0;
 
-	context_used |= type_check_context_used (m_class_get_this_arg (klass), FALSE);
 	context_used |= type_check_context_used (m_class_get_byval_arg (klass), FALSE);
 
 	if (mono_class_is_ginst (klass))
