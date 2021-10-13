@@ -23,17 +23,17 @@ namespace Microsoft.Extensions.Configuration.Ini
         /// </summary>
         /// <param name="stream">The stream of INI data.</param>
         /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
-        public static IDictionary<string, string> Read(Stream stream)
+        public static IDictionary<string, string?> Read(Stream stream)
         {
-            var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var data = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
             using (var reader = new StreamReader(stream))
             {
                 string sectionPrefix = string.Empty;
 
                 while (reader.Peek() != -1)
                 {
-                    string rawLine = reader.ReadLine();
-                    string line = rawLine.Trim();
+                    string? rawLine = reader.ReadLine();
+                    string? line = rawLine?.Trim();
 
                     // Ignore blank lines
                     if (string.IsNullOrWhiteSpace(line))
