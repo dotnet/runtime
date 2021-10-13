@@ -1,20 +1,69 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Drawing.Graphics.GetContextInfo(System.Drawing.PointF@)</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Drawing.Graphics.GetContextInfo(System.Drawing.PointF@,System.Drawing.Region@)</Target>
     <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
     <Right>lib/net461/System.Drawing.Common.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Drawing.ColorTranslator</Target>
+    <Target>T:System.Drawing.FontConverter</Target>
     <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
-    <Right>lib/netcoreapp3.1/System.Drawing.Common.dll</Right>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Drawing.SystemColors</Target>
+    <Target>T:System.Drawing.IconConverter</Target>
     <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
-    <Right>lib/netcoreapp3.1/System.Drawing.Common.dll</Right>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Drawing.ImageConverter</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Drawing.ImageFormatConverter</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Drawing.Printing.MarginsConverter</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Drawing.Imaging.Encoder.ColorSpace</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Drawing.Imaging.Encoder.ImageItems</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Drawing.Imaging.Encoder.SaveAsCmyk</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Drawing.Imaging.EncoderParameterValueType.ValueTypePointer</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net461/System.Drawing.Common.dll</Right>
   </Suppression>
 </Suppressions>
