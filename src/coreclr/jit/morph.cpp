@@ -10913,7 +10913,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         //     tree             op1
         //     /   \             |
         //   op1   op2   ==>   tree
-        //    |     |          /   \
+        //    |     |          /   \.
         //    x     y         x     y
         //
         // (op2 becomes garbage)
