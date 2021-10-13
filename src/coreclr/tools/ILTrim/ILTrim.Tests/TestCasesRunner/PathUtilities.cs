@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 #if NETCOREAPP
         public static string GetArtifactsBinDirectory ()
         {
-            return Path.Combine(Directory.GetCurrentDirectory(), "..", "..");
+            return Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..");
         }
 #endif
 
@@ -49,7 +49,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		public static string GetTestAssemblyPath (string assemblyName)
 		{
 #if NETCOREAPP
-			return Path.GetFullPath (Path.Combine (GetArtifactsBinDirectory (), assemblyName, ConfigDirectoryName, $"{assemblyName}.dll"));
+			return Path.GetFullPath (Path.Combine (GetArtifactsBinDirectory (), assemblyName, "x64", ConfigDirectoryName, $"{assemblyName}.dll"));
 #else
 			return Path.GetFullPath (Path.Combine (GetTestsSourceRootDirectory (), assemblyName, "bin", ConfigDirectoryName, TFMDirectoryName, $"{assemblyName}.dll"));
 #endif
