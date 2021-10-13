@@ -1192,7 +1192,7 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ThrowInteropParamException(int resID, int paramIdx);
 
-        internal static void ThrowInvalidProgramException()
+        internal static void ThrowVerificationException()
         {
             throw new System.Security.VerificationException("Attempt to call constrained method without correct instantiation");
         }

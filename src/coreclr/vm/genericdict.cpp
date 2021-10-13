@@ -1127,7 +1127,7 @@ Dictionary::PopulateEntry(
             {
                 if (allowConstraintFailure && pMethod->AsInstantiatedMethodDesc()->FailedConstraintCheck())
                 {
-                    result = (CORINFO_GENERIC_HANDLE)CoreLibBinder::GetMethod(METHOD__STUBHELPERS__THROW_INVALID_PROGRAM_EXCEPTION)->GetMultiCallableAddrOfCode();
+                    result = (CORINFO_GENERIC_HANDLE)CoreLibBinder::GetMethod(METHOD__STUBHELPERS__THROW_VERIFICATION_EXCEPTION)->GetMultiCallableAddrOfCode();
                 }
                 else
                 {

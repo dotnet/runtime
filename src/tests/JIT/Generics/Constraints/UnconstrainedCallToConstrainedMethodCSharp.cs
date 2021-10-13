@@ -3,6 +3,7 @@
 //
 
 using System;
+using System.Security;
 using System.Runtime.CompilerServices;
 
 namespace UnconstrainedCallToConstrainedMethod
@@ -65,7 +66,7 @@ namespace UnconstrainedCallToConstrainedMethod
             {
                 TestHelperMethodRequiresConstraint<T, U>(expectSuccess);
             }
-            catch (InvalidProgramException)
+            catch (VerificationException)
             {
                 if (expectSuccess)
                 {
@@ -86,7 +87,7 @@ namespace UnconstrainedCallToConstrainedMethod
             {
                 TestHelperMethodRequiresConstraintCurious<T>(expectSuccess);
             }
-            catch (InvalidProgramException)
+            catch (VerificationException)
             {
                 if (expectSuccess)
                 {
