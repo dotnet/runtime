@@ -37,6 +37,7 @@ const char* CryptoNative_ErrReasonErrorString(uint64_t error)
 
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     int result = pthread_mutex_lock(&g_err_mutex);
+    (void)result; // used only in assert
     assert(!result && "Acquiring the error string table mutex failed.");
 
     if (!g_err_unloaded)
@@ -57,6 +58,7 @@ void CryptoNative_ErrErrorStringN(uint64_t e, char* buf, int32_t len)
 {
 #if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
     int result = pthread_mutex_lock(&g_err_mutex);
+    (void)result; // used only in assert
     assert(!result && "Acquiring the error string table mutex failed.");
 
     if (!g_err_unloaded)

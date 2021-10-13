@@ -815,6 +815,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r; // used only in assert
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;
@@ -824,6 +825,7 @@ static int32_t GetSearchIteratorUsingCollator(
     if (!U_SUCCESS(err))
     {
         int32_t r;
+        (void)r; // used only in assert
         r = RestoreSearchHandle(pSortHandle, *pSearchIterator, options);
         assert(r && "restoring search handle shouldn't fail.");
         return -1;

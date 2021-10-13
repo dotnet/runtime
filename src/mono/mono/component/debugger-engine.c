@@ -1733,7 +1733,7 @@ mono_de_set_interp_var (MonoType *t, gpointer addr, guint8 *val_buf)
 {
 	int size;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		addr = *(gpointer*)addr;
 		if (!addr)
 			return ERR_INVALID_OBJECT;
