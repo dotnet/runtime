@@ -212,14 +212,14 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
+        private object InvokeCtorWorker(BindingFlags invokeAttr, in Span<object?> arguments)
         {
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return RuntimeMethodHandle.InvokeMethod(null, arguments, Signature, true, wrapExceptions)!;
