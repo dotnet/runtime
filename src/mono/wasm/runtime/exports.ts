@@ -61,15 +61,16 @@ export const MONO: MONO = <any>{
     mono_wasm_load_data_archive,
     mono_wasm_load_config,
     mono_load_runtime_and_bcl_args,
+    mono_wasm_new_root_buffer,
+    mono_wasm_new_root,
+    mono_wasm_release_roots,
+
     config: runtimeHelpers.config,
     loaded_files: runtimeHelpers.loaded_files,
 
     // generated bindings closure `library_mono`
-    mono_wasm_new_root_buffer,
     mono_wasm_new_root_buffer_from_pointer,
-    mono_wasm_new_root,
     mono_wasm_new_roots,
-    mono_wasm_release_roots,
 };
 
 export const BINDING: BINDING = <any>{
@@ -227,6 +228,10 @@ export interface MONO {
     mono_wasm_load_icu_data: typeof mono_wasm_load_icu_data;
     mono_wasm_load_config: typeof mono_wasm_load_config;
     mono_load_runtime_and_bcl_args: typeof mono_load_runtime_and_bcl_args;
+    mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
+    mono_wasm_new_root: typeof mono_wasm_new_root;
+    mono_wasm_release_roots: typeof mono_wasm_release_roots;
+
     loaded_files: string[];
     config: MonoConfig | MonoConfigError,
 }
