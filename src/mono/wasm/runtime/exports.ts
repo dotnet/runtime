@@ -70,8 +70,6 @@ export const MONO: MONO = <any>{
     mono_wasm_new_root,
     mono_wasm_new_roots,
     mono_wasm_release_roots,
-
-    // EM_JS,EM_ASM,EM_ASM_INT macros
 };
 
 export const BINDING: BINDING = <any>{
