@@ -1724,7 +1724,7 @@ mono_reflection_type_handle_mono_type (MonoReflectionTypeHandle ref, MonoError *
 		MonoType *base = mono_reflection_type_handle_mono_type (ref_element, error);
 		goto_if_nok (error, leave);
 		g_assert (base);
-		result = &mono_class_from_mono_type_internal (base)->this_arg;
+		result = m_class_get_this_arg (mono_class_from_mono_type_internal (base));
 		MONO_HANDLE_SETVAL (ref, type, MonoType*, result);
 	} else if (is_sre_pointer (klass)) {
 		MonoReflectionDerivedTypeHandle sre_pointer = MONO_HANDLE_CAST (MonoReflectionDerivedType, ref);

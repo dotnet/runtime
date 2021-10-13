@@ -493,9 +493,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
 			/*WARNING: this must satisfy mono_metadata_type_hash*/
-			klass->this_arg.byref__ = 1;
-			klass->this_arg.data.klass = klass;
-			klass->this_arg.type = MONO_TYPE_CLASS;
+			klass->_this_arg.byref__ = 1;
+			klass->_this_arg.data.klass = klass;
+			klass->_this_arg.type = MONO_TYPE_CLASS;
 			klass->_byval_arg.data.klass = klass;
 			klass->_byval_arg.type = MONO_TYPE_CLASS;
 		}
@@ -844,9 +844,9 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	((MonoClassGenericInst*)klass)->generic_class = gclass;
 
 	klass->_byval_arg.type = MONO_TYPE_GENERICINST;
-	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
-	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
-	klass->this_arg.byref__ = TRUE;
+	klass->_this_arg.type = m_class_get_byval_arg (klass)->type;
+	klass->_this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
+	klass->_this_arg.byref__ = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -1147,8 +1147,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->_byval_arg.type = MONO_TYPE_SZARRAY;
 		klass->_byval_arg.data.klass = eclass;
 	}
-	klass->this_arg = klass->_byval_arg;
-	klass->this_arg.byref__ = 1;
+	klass->_this_arg = klass->_byval_arg;
+	klass->_this_arg.byref__ = 1;
 
 	if (rank > 32) {
 		ERROR_DECL (prepared_error);
@@ -1318,10 +1318,10 @@ make_generic_param_class (MonoGenericParam *param)
 
 	MonoTypeEnum t = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->_byval_arg.type = t;
-	klass->this_arg.type = t;
-	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data.generic_param ,  param );
+	klass->_this_arg.type = t;
+	CHECKED_METADATA_WRITE_PTR ( klass->_this_arg.data.generic_param ,  param );
 	CHECKED_METADATA_WRITE_PTR ( klass->_byval_arg.data.generic_param , param );
-	klass->this_arg.byref__ = TRUE;
+	klass->_this_arg.byref__ = TRUE;
 
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = !is_anonymous ? pinfo->token : 0;
@@ -1462,9 +1462,9 @@ mono_class_create_ptr (MonoType *type)
 		result->cast_class = el_class;
 	class_composite_fixup_cast_class (result, TRUE);
 
-	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
-	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
-	result->this_arg.byref__ = TRUE;
+	result->_this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
+	result->_this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
+	result->_this_arg.byref__ = TRUE;
 
 	mono_class_setup_supertypes (result);
 
@@ -1527,9 +1527,9 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 	result->min_align = sizeof (gpointer);
 	result->cast_class = result->element_class = result;
-	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
-	result->this_arg.data.method = result->_byval_arg.data.method = sig;
-	result->this_arg.byref__ = TRUE;
+	result->_this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
+	result->_this_arg.data.method = result->_byval_arg.data.method = sig;
+	result->_this_arg.byref__ = TRUE;
 	result->blittable = TRUE;
 	result->inited = TRUE;
 
@@ -3102,9 +3102,9 @@ mono_class_setup_mono_type (MonoClass *klass)
 	const char *nspace = klass->name_space;
 	gboolean is_corlib = mono_is_corlib_image (klass->image);
 
-	klass->this_arg.byref__ = 1;
-	klass->this_arg.data.klass = klass;
-	klass->this_arg.type = MONO_TYPE_CLASS;
+	klass->_this_arg.byref__ = 1;
+	klass->_this_arg.data.klass = klass;
+	klass->_this_arg.type = MONO_TYPE_CLASS;
 	klass->_byval_arg.data.klass = klass;
 	klass->_byval_arg.type = MONO_TYPE_CLASS;
 
@@ -3124,13 +3124,13 @@ mono_class_setup_mono_type (MonoClass *klass)
 			klass->enumtype = 0;
 		} else if (!strcmp (name, "Object")) {
 			klass->_byval_arg.type = MONO_TYPE_OBJECT;
-			klass->this_arg.type = MONO_TYPE_OBJECT;
+			klass->_this_arg.type = MONO_TYPE_OBJECT;
 		} else if (!strcmp (name, "String")) {
 			klass->_byval_arg.type = MONO_TYPE_STRING;
-			klass->this_arg.type = MONO_TYPE_STRING;
+			klass->_this_arg.type = MONO_TYPE_STRING;
 		} else if (!strcmp (name, "TypedReference")) {
 			klass->_byval_arg.type = MONO_TYPE_TYPEDBYREF;
-			klass->this_arg.type = MONO_TYPE_TYPEDBYREF;
+			klass->_this_arg.type = MONO_TYPE_TYPEDBYREF;
 		}
 	}
 
@@ -3213,7 +3213,7 @@ mono_class_setup_mono_type (MonoClass *klass)
 			}
 		}
 		klass->_byval_arg.type = (MonoTypeEnum)t;
-		klass->this_arg.type = (MonoTypeEnum)t;
+		klass->_this_arg.type = (MonoTypeEnum)t;
 	}
 
 	mono_class_setup_interface_id_nolock (klass);
@@ -3340,7 +3340,7 @@ mono_class_setup_methods (MonoClass *klass)
 		methods [method_num++] = amethod;
 		/* element& Address (idx11, [idx2, ...]) */
 		sig = mono_metadata_signature_alloc (klass->image, klass->rank);
-		sig->ret = &klass->element_class->this_arg;
+		sig->ret = &klass->element_class->_this_arg;
 		sig->pinvoke = TRUE;
 		sig->hasthis = TRUE;
 		for (i = 0; i < klass->rank; ++i)
