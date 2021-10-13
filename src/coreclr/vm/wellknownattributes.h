@@ -39,6 +39,7 @@ enum class WellKnownAttribute : DWORD
     ObjectiveCTrackedTypeAttribute,
     GenericParameterSupportsAnyTypeAttribute,
     GenericParameterSupportsOnlyNonByRefLikeAttribute,
+    ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -113,6 +114,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.CompilerServices.GenericParameterSupportsAnyTypeAttribute";
         case WellKnownAttribute::GenericParameterSupportsOnlyNonByRefLikeAttribute:
             return "System.Runtime.CompilerServices.GenericParameterSupportsOnlyNonByRefLikeAttribute";
+        case WellKnownAttribute::ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute:
+            return "System.Runtime.CompilerServices.ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

@@ -52,6 +52,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_get_IsValueType,
     NI_System_Type_IsAssignableFrom,
     NI_System_Type_IsAssignableTo,
+    NI_System_Type_IsAssignableTo_Generic,
     NI_System_Type_op_Equality,
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,

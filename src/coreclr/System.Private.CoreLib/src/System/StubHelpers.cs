@@ -1192,6 +1192,11 @@ namespace System.StubHelpers
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ThrowInteropParamException(int resID, int paramIdx);
 
+        internal static void ThrowVerificationException()
+        {
+            throw new System.Security.VerificationException("Attempt to call constrained method without correct instantiation");
+        }
+
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
             SafeHandleCleanupWorkListElement element = new SafeHandleCleanupWorkListElement(handle);

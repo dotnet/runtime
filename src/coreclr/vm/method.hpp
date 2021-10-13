@@ -1561,7 +1561,8 @@ public:
                                                         BOOL allowInstParam,
                                                         BOOL forceRemotableMethod = FALSE,
                                                         BOOL allowCreate = TRUE,
-                                                        ClassLoadLevel level = CLASS_LOADED);
+                                                        ClassLoadLevel level = CLASS_LOADED,
+                                                        BOOL allowConstraintFailure = FALSE);
 
     // Normalize methoddesc for reflection
     static MethodDesc* FindOrCreateAssociatedMethodDescForReflection(MethodDesc *pMethod,
@@ -3432,7 +3433,20 @@ private:
 #ifdef FEATURE_COMINTEROP
         HasComPlusCallInfo                  = 0x10, // this IMD contains an optional ComPlusCallInfo
 #endif // FEATURE_COMINTEROP
+        FailedConstraintCheckFlag           = 0x20,
     };
+
+    void SetFailedConstraintCheck()
+    {
+        m_wFlags2 |= FailedConstraintCheckFlag;
+    }
+
+public:
+    bool FailedConstraintCheck()
+    {
+        return m_wFlags2 & FailedConstraintCheckFlag;
+    }
+private:
 
     friend class MethodDesc; // this fields are currently accessed by MethodDesc::Save/Restore etc.
     union {
@@ -3464,7 +3478,8 @@ public:
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,
-                                                                    BOOL getSharedNotStub);
+                                                                    BOOL getSharedNotStub,
+                                                                    BOOL allowConstraintFailure = FALSE);
 
 private:
 
@@ -3472,7 +3487,8 @@ private:
                                                              MethodDesc* pGenericMDescInRepMT,
                                                              MethodDesc* pSharedMDescForStub,
                                                              Instantiation methodInst,
-                                                             BOOL getSharedNotStub);
+                                                             BOOL getSharedNotStub,
+                                                             BOOL allowConstraintFailure = FALSE);
 
 };
 

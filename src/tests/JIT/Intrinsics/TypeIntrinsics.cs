@@ -98,6 +98,8 @@ public partial class Program
         ThrowsNRE(() => { IsValueTypeRef(ref _varStringNull); });
 
         TestIsAssignableFrom();
+        TestIsAssignableTo();
+        TestIsAssignableToGeneric();
 
         return 100 + _errors;
     }

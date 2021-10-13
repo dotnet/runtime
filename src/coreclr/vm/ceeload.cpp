@@ -521,6 +521,11 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         m_pInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
     }
 
+    if (m_pConstraintFailInstMethodHashTable == NULL)
+    {
+        m_pConstraintFailInstMethodHashTable = InstMethodHashTable::Create(GetLoaderAllocator(), this, PARAMMETHODS_HASH_BUCKETS, pamTracker);
+    }
+    
     if (m_pMemberRefToDescHashTable == NULL)
     {
         if (IsReflection())
@@ -7538,6 +7543,10 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         if (m_pInstMethodHashTable.IsValid())
         {
             m_pInstMethodHashTable->EnumMemoryRegions(flags);
+        }
+        if (m_pConstraintFailInstMethodHashTable.IsValid())
+        {
+            m_pConstraintFailInstMethodHashTable->EnumMemoryRegions(flags);
         }
         if (m_pAvailableClassesCaseIns.IsValid())
         {

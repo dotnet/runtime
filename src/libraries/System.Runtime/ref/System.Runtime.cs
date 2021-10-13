@@ -6878,6 +6878,7 @@ namespace System
         protected abstract bool IsArrayImpl();
         public virtual bool IsAssignableFrom([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Type? c) { throw null; }
         public bool IsAssignableTo([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? targetType) { throw null; }
+        public static bool IsAssignableTo<TFrom, TTo>() { throw null; }
         protected abstract bool IsByRefImpl();
         protected abstract bool IsCOMObjectImpl();
         protected virtual bool IsContextfulImpl() { throw null; }
@@ -12841,6 +12842,10 @@ namespace System.Runtime.CompilerServices
             public void OnCompleted(System.Action continuation) { }
             public void UnsafeOnCompleted(System.Action continuation) { }
         }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute : Attribute
+    {
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
     public abstract partial class CustomConstantAttribute : System.Attribute

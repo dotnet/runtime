@@ -1071,7 +1071,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
 
                 // We need the method desc to carry exact instantiation, thus allowInstParam == FALSE.
                 pMD = MemberLoader::GetMethodDescFromMethodSpec(pModule, metaTOK, &typeContext, (tokenType != CORINFO_TOKENKIND_Ldtoken), FALSE /* allowInstParam */,
-                    &th, TRUE, &pResolvedToken->pTypeSpec, (ULONG*)&pResolvedToken->cbTypeSpec, &pResolvedToken->pMethodSpec, (ULONG*)&pResolvedToken->cbMethodSpec);
+                    &th, TRUE, &pResolvedToken->pTypeSpec, (ULONG*)&pResolvedToken->cbTypeSpec, &pResolvedToken->pMethodSpec, (ULONG*)&pResolvedToken->cbMethodSpec, tokenType == CORINFO_TOKENKIND_Method_CallInstr);
             }
             break;
 
@@ -5101,6 +5101,10 @@ void CEEInfo::getCallInfo(
 
         bool allowInstParam = (flags & CORINFO_CALLINFO_ALLOWINSTPARAM);
 
+        BOOL callMayConvertToThrowHelper = (S_OK == pMD->GetModule()->GetCustomAttribute(pMD->GetMemberDef(), WellKnownAttribute::ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute, NULL, NULL));
+        if (callMayConvertToThrowHelper)
+            allowInstParam = FALSE;
+
         // If the target method is resolved via constrained static virtual dispatch
         // And it requires an instParam, we do not have the generic dictionary infrastructure
         // to load the correct generic context arg via EmbedGenericHandle.
@@ -5343,7 +5347,9 @@ void CEEInfo::getCallInfo(
                     IfFailThrow(sp.SkipExactlyOne());
                 }
 
-                pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(genericMethodArgs, nGenericMethodArgs), FALSE);
+                // If the ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute is present, we can allow the target method to be loaded even if it violates constraints
+                BOOL allowConstraintFailure = (S_OK == pMD->GetModule()->GetCustomAttribute(pMD->GetMemberDef(), WellKnownAttribute::ConvertUnconstrainedCallsToThrowVerificationExceptionAttribute, NULL, NULL));
+                pCalleeForSecurity = MethodDesc::FindOrCreateAssociatedMethodDesc(pMD, calleeTypeForSecurity.GetMethodTable(), FALSE, Instantiation(genericMethodArgs, nGenericMethodArgs), FALSE, FALSE, TRUE, CLASS_LOADED, allowConstraintFailure);
             }
             else
             if (pResolvedToken->pTypeSpec != NULL)
@@ -6511,6 +6517,11 @@ DWORD CEEInfo::getMethodAttribsInternal (CORINFO_METHOD_HANDLE ftn)
     if (!g_pConfig->TieredCompilation_QuickJitForLoops())
     {
         result |= CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS;
+    }
+
+    if (pMD->HasMethodInstantiation() && pMD->AsInstantiatedMethodDesc()->FailedConstraintCheck())
+    {
+        result |= CORINFO_FLG_CONSTRAINTFAIL;
     }
 
     return result;
