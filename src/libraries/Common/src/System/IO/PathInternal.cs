@@ -15,13 +15,8 @@ namespace System.IO
         /// </summary>
         internal static bool StartsWithDirectorySeparator(ReadOnlySpan<char> path) => path.Length > 0 && IsDirectorySeparator(path[0]);
 
-#if MS_IO_REDIST
-        internal static string EnsureTrailingSeparator(string path)
-            => EndsInDirectorySeparator(path) ? path : path + DirectorySeparatorCharAsString;
-#else
         internal static string EnsureTrailingSeparator(string path)
             => EndsInDirectorySeparator(path.AsSpan()) ? path : path + DirectorySeparatorCharAsString;
-#endif
 
         internal static bool IsRoot(ReadOnlySpan<char> path)
             => path.Length == GetRootLength(path);
@@ -248,10 +243,6 @@ namespace System.IO
 
         internal static string GetLinkTargetFullPath(string path, string pathToTarget)
             => IsPartiallyQualified(pathToTarget.AsSpan()) ?
-#if MS_IO_REDIST
-                Path.Combine(Path.GetDirectoryName(path), pathToTarget) : pathToTarget;
-#else
                 Path.Join(Path.GetDirectoryName(path.AsSpan()), pathToTarget.AsSpan()) : pathToTarget;
-#endif
     }
 }
