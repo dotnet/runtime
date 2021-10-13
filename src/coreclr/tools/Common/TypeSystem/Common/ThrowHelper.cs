@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem
 {
-    public static partial class ThrowHelper
+    internal static partial class ThrowHelper
     {
         [System.Diagnostics.DebuggerHidden]
         private static void ThrowTypeLoadException(ExceptionStringID id, string typeName, string assemblyName, string messageArg)

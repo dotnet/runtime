@@ -5,7 +5,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
-    public static class ILOpcodeHelper
+    internal static class ILOpcodeHelper
     {
         private const byte VariableSize = 0xFF;
         private const byte Invalid = 0xFE;

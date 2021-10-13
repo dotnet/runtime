@@ -553,10 +553,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			/*
 			 - The test case will always need to have at least 1 reference.
 			 - Forcing all tests to define their expected references seems tedious
-			 
+
 			 Given the above, let's assume that when no [KeptReference] attributes are present,
 			 the test case does not want to make any assertions regarding references.
-			 
+
 			 Once 1 kept reference attribute is used, the test will need to define all of of it's expected references
 			*/
 			if (expected.Length == 0)
