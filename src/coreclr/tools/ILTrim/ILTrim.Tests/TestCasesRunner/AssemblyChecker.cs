@@ -426,7 +426,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				nameof (ExpectBodyModifiedAttribute),
 				"instructions",
 				m => FormatMethodBody (m.Body),
-				attr => GetStringArrayAttributeValue (attr)!.Select (v => v?.ToLower () ?? "<null>").ToArray ());
+				attr => GetStringArrayAttributeValue (attr)!.ToArray ());
 		}
 
 		public static string[] FormatMethodBody (MethodBody body)
@@ -434,7 +434,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			List<(Instruction?, string)> result = new List<(Instruction?, string)> (body.Instructions.Count);
 			for (int index = 0; index < body.Instructions.Count; index++) {
 				var instruction = body.Instructions[index];
-				result.Add ((instruction, FormatInstruction (instruction).ToLowerInvariant ()));
+				result.Add ((instruction, FormatInstruction (instruction)));
 			}
 
 			HashSet<(Instruction, Instruction)> existingTryBlocks = new HashSet<(Instruction, Instruction)> ();
@@ -468,51 +468,81 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				result.Add ((null, text));
 		}
 
-		static string FormatInstruction (Instruction instr)
-		{
-			switch (instr.OpCode.FlowControl) {
-			case FlowControl.Branch:
-			case FlowControl.Cond_Branch:
-				if (instr.Operand is Instruction target)
-					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("X")}";
+        static string FormatInstruction(Instruction instr)
+        {
+            switch (instr.OpCode.FlowControl)
+            {
+                case FlowControl.Branch:
+                case FlowControl.Cond_Branch:
+                    if (instr.Operand is Instruction target)
+                        return $"{instr.OpCode.ToString()} il_{target.Offset.ToString("x")}";
 
-				break;
-			}
+                    break;
+            }
 
-			switch (instr.OpCode.Code) {
-			case Code.Ldc_I4:
-				if (instr.Operand is int ivalue)
-					return $"{instr.OpCode.ToString ()} 0x{ivalue.ToString ("x")}";
+            switch (instr.OpCode.Code)
+            {
+                case Code.Ldc_I4:
+                    if (instr.Operand is int ivalue)
+                        return $"{instr.OpCode.ToString()} 0x{ivalue.ToString("x")}";
 
-				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
-			case Code.Ldc_I4_S:
-				if (instr.Operand is sbyte bvalue)
-					return $"{instr.OpCode.ToString ()} 0x{bvalue.ToString ("x")}";
+                    throw new NotImplementedException(instr.Operand.GetType().ToString());
+                case Code.Ldc_I4_S:
+                    if (instr.Operand is sbyte bvalue)
+                        return $"{instr.OpCode.ToString()} 0x{bvalue.ToString("x")}";
 
-				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
-			case Code.Ldc_I8:
-				if (instr.Operand is long lvalue)
-					return $"{instr.OpCode.ToString ()} 0x{lvalue.ToString ("x")}";
+                    throw new NotImplementedException(instr.Operand.GetType().ToString());
+                case Code.Ldc_I8:
+                    if (instr.Operand is long lvalue)
+                        return $"{instr.OpCode.ToString()} 0x{lvalue.ToString("x")}";
 
-				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+                    throw new NotImplementedException(instr.Operand.GetType().ToString());
 
-			case Code.Ldc_R4:
-				if (instr.Operand is float fvalue)
-					return $"{instr.OpCode.ToString ()} {fvalue.ToString ()}";
+                case Code.Ldc_R4:
+                    if (instr.Operand is float fvalue)
+                        return $"{instr.OpCode.ToString()} {fvalue.ToString()}";
 
-				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
+                    throw new NotImplementedException(instr.Operand.GetType().ToString());
 
-			case Code.Ldc_R8:
-				if (instr.Operand is double dvalue)
-					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
+                case Code.Ldc_R8:
+                    if (instr.Operand is double dvalue)
+                        return $"{instr.OpCode.ToString()} {dvalue.ToString()}";
 
-				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
-			default:
-				return instr.OpCode.ToString ();
-			}
-		}
+                    throw new NotImplementedException(instr.Operand.GetType().ToString());
 
-		static void VerifyLocals (MethodDefinition src, MethodDefinition linked)
+                case Code.Ldstr:
+                    if (instr.Operand is string svalue)
+                        return $"{instr.OpCode.ToString()} '{svalue}'";
+
+                    throw new NotImplementedException(instr.Operand.GetType().ToString());
+
+                default:
+                    {
+                        string? operandString = null;
+                        switch (instr.OpCode.OperandType)
+                        {
+                            case OperandType.InlineField:
+                            case OperandType.InlineMethod:
+                            case OperandType.InlineType:
+                            case OperandType.InlineTok:
+                                operandString = instr.Operand switch
+                                {
+                                    FieldReference fieldRef => fieldRef.FullName,
+                                    MethodReference methodRef => methodRef.FullName,
+                                    TypeReference typeRef => typeRef.FullName,
+                                    _ => null
+                                };
+                                break;
+                        }
+
+                        if (operandString != null)
+                            return $"{instr.OpCode.ToString()} {operandString}";
+                        else
+                            return instr.OpCode.ToString();
+                    }
+            }
+        }
+        static void VerifyLocals (MethodDefinition src, MethodDefinition linked)
 		{
 			VerifyBodyProperties (
 				src,
