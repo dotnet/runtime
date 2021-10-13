@@ -6338,7 +6338,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         bool     supportsOp1RegOptional = false;
                         bool     supportsOp2RegOptional = false;
                         bool     supportsOp3RegOptional = false;
-                        unsigned resultOpNum    = 0;
+                        unsigned resultOpNum            = 0;
                         LIR::Use use;
 
                         if (BlockRange().TryGetUse(node, &use))
