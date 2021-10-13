@@ -627,15 +627,21 @@ BOOL CheckInstantiation(Module* pModule, mdToken tkGeneric, Instantiation inst)
             || type == ELEMENT_TYPE_TYPEDBYREF
             || type == ELEMENT_TYPE_PTR
             || type == ELEMENT_TYPE_FNPTR
-            || (pMT = th.GetMethodTable(), (pMT != NULL) && pMT->IsByRefLike()))
+            || (pMT = th.GetMethodTable(), (pMT != NULL) && (pMT->IsByRefLike() || (g_fEEStarted && pMT->IsDelegate()))))
         {
             if (pSupportsAnyType == NULL)
             {
                 pSupportsAnyType = (bool*)_alloca(inst.GetNumArgs() * sizeof(bool));
                 memset(pSupportsAnyType, 0, inst.GetNumArgs() * sizeof(bool));
 
+                bool containingGenericAllowsAnyType = false;
                 LPCSTR customAttributeName = pModule->HasCustomAttributes(tkGeneric, WellKnownAttribute::GenericParameterSupportsAnyTypeAttribute);
                 if (customAttributeName != NULL)
+                {
+                    containingGenericAllowsAnyType = true;
+                }
+
+                if (containingGenericAllowsAnyType)
                 {
                     HENUMInternalHolder genericParameterSupportsAnyTypeEnumerator(pModule->GetMDImport());
                     HRESULT hr = genericParameterSupportsAnyTypeEnumerator.EnumCustomAttributeByNameNoThrow(tkGeneric, customAttributeName);
@@ -665,6 +671,41 @@ BOOL CheckInstantiation(Module* pModule, mdToken tkGeneric, Instantiation inst)
                             continue;
 
                         pSupportsAnyType[index] = true;
+                    }
+                }
+                else if (TypeFromToken(tkGeneric) == mdtTypeDef)
+                {
+                    // Check for delegates . They unconditionally allow any type parameter
+                    mdToken tkExtends;
+                    if (SUCCEEDED(pModule->GetMDImport()->GetTypeDefProps(tkGeneric, NULL, &tkExtends)))
+                    {
+                        if (RidFromToken(tkExtends) != 0)
+                        {
+                            LPCSTR typeNamespace = NULL;
+                            LPCSTR typeName = NULL;
+                            HRESULT hr = S_FALSE;
+                            if (TypeFromToken(tkExtends) == mdtTypeRef)
+                            {
+                                // TODO! Add a check to make sure this typeref resolves back to System.Private.Corelib
+                                hr = pModule->GetMDImport()->GetNameOfTypeRef(tkExtends, &typeNamespace, &typeName);
+                            }
+                            else if ((TypeFromToken(tkExtends) == mdtTypeDef) && pModule->IsSystem())
+                            {
+                                hr = pModule->GetMDImport()->GetNameOfTypeDef(tkExtends, &typeName, &typeNamespace);
+                            }
+
+                            if (hr == S_OK && typeName != NULL && typeNamespace != NULL)
+                            {
+                                if (strcmp(typeNamespace, "System") == 0 &&
+                                    strcmp(typeName, "MulticastDelegate") == 0)
+                                {
+                                    for (DWORD i = 0; i < inst.GetNumArgs(); i++)
+                                    {
+                                        pSupportsAnyType[i] = true;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
