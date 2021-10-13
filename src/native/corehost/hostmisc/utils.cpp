@@ -305,6 +305,7 @@ void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vecto
     {
         for (pal::string_t dir : global_dirs)
         {
+            remove_trailing_dir_seperator(&dir);
             // avoid duplicate paths
             if (!pal::are_paths_equal_with_normalized_casing(dir, dotnet_dir_temp))
             {
