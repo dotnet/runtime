@@ -11184,24 +11184,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 return fgMorphSmpOp(tree, mac);
             }
 
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
-            {
-                // DIV(NEG(a), C) => DIV(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    ssize_t op2Value = op2->AsIntCon()->IconValue();
-                    if (op2Value != 1 && op2Value != -1) // Div must throw exception for int(long).MinValue / -1.
-                    {
-                        tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                        DEBUG_DESTROY_NODE(op1);
-                        tree->AsOp()->gtOp2 = gtNewIconNode(-op2Value, op2->TypeGet());
-                        DEBUG_DESTROY_NODE(op2);
-                        return fgMorphSmpOp(tree, mac);
-                    }
-                }
-            }
-
 #ifndef TARGET_64BIT
             if (typ == TYP_LONG)
             {
