@@ -207,7 +207,7 @@ jobs:
 
 # Linux s390x
 
-- ${{ if or(containsValue(parameters.platforms, 'Linux_s390x'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
+- ${{ if containsValue(parameters.platforms, 'Linux_s390x') }}:
   - template: xplat-setup.yml
     parameters:
       jobTemplate: ${{ parameters.jobTemplate }}
