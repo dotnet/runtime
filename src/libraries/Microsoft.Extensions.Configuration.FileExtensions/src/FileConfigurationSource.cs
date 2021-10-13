@@ -56,8 +56,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>
         public void EnsureDefaults(IConfigurationBuilder builder)
         {
-            FileProvider = FileProvider ?? builder.GetFileProvider();
-            OnLoadException = OnLoadException ?? builder.GetFileLoadExceptionHandler();
+            FileProvider ??= builder.GetFileProvider();
+            OnLoadException ??= builder.GetFileLoadExceptionHandler();
         }
 
         /// <summary>
@@ -84,6 +84,5 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
         }
-
     }
 }
