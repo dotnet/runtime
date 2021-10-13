@@ -8766,7 +8766,7 @@ get_concrete_sig (MonoMethodSignature *sig)
 	//printf ("%s\n", mono_signature_full_name (sig));
 
 	if (m_type_is_byref (sig->ret))
-		copy->ret = m_class_get_this_arg (mono_defaults.int_class);
+		copy->ret = mono_class_get_byref_type (mono_defaults.int_class);
 	else
 		copy->ret = mini_get_underlying_type (sig->ret);
 	if (!is_concrete_type (copy->ret))
