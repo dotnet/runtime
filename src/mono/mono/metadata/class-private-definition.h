@@ -112,7 +112,7 @@ struct _MonoClass {
 	MonoMethod **methods;
 
 	/* used as the type of the this argument and when passing the arg by value */
-	MonoType this_arg;
+	MonoType _this_arg;
 	MonoType _byval_arg;
 
 	MonoGCDescriptor gc_descr;
