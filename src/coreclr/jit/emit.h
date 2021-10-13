@@ -1884,6 +1884,10 @@ private:
 
     instrDesc* emitLastIns;
 
+#ifdef TARGET_ARMARCH
+    instrDesc* emitLastMemBarrier;
+#endif
+
 #ifdef DEBUG
     void emitCheckIGoffsets();
 #endif

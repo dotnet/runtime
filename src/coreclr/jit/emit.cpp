@@ -703,6 +703,11 @@ insGroup* emitter::emitSavIG(bool emitAdd)
     ig = emitCurIG;
     assert(ig);
 
+#ifdef TARGET_ARMARCH
+    // Reset emitLastMemBarrier for new IG
+    emitLastMemBarrier = nullptr;
+#endif
+
     // Compute how much code we've generated
 
     sz = emitCurIGfreeNext - emitCurIGfreeBase;
@@ -1140,6 +1145,10 @@ void emitter::emitBegFN(bool hasFramePtr
 
     emitLastIns = nullptr;
 
+#ifdef TARGET_ARMARCH
+    emitLastMemBarrier = nullptr;
+#endif
+
     ig->igNext = nullptr;
 
 #ifdef DEBUG
@@ -1303,6 +1312,17 @@ void emitter::dispIns(instrDesc* id)
 
 void emitter::appendToCurIG(instrDesc* id)
 {
+#ifdef TARGET_ARMARCH
+    if (id->idIns() == INS_dmb)
+    {
+        emitLastMemBarrier = id;
+    }
+    else if (emitInsIsLoadOrStore(id->idIns()))
+    {
+        // A memory access - reset saved memory barrier
+        emitLastMemBarrier = nullptr;
+    }
+#endif
     emitCurIGsize += id->idCodeSize();
 }
 
