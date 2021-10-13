@@ -10907,6 +10907,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
             return nullptr;
         }
 
+        /*
         // Reuse gentree nodes:
         //
         //     tree             op1
@@ -10916,6 +10917,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
         //    x     y         x     y
         //
         // (op2 becomes garbage)
+        */
 
         tree->gtOp1  = op1->AsCast()->CastOp();
         tree->gtOp2  = op2->AsCast()->CastOp();
