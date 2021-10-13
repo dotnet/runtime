@@ -26,8 +26,7 @@ namespace System.Reflection
             }
             else if (constructorInfo.IsStatic)
             {
-                invocationFlags |= InvocationFlags.RunClassConstructor |
-                                    InvocationFlags.NoConstructorInvoke;
+                invocationFlags |= InvocationFlags.RunClassConstructor | InvocationFlags.NoConstructorInvoke;
             }
             else if (declaringType != null && declaringType.IsAbstract)
             {
