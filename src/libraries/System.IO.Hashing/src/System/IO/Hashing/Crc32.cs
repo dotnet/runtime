@@ -159,7 +159,7 @@ namespace System.IO.Hashing
             {
                 byte idx = (byte)crc;
                 idx ^= source[i];
-                crc = s_crcLookup[idx] ^ (crc >> 8);
+                crc = CrcLookup[idx] ^ (crc >> 8);
             }
 
             return crc;

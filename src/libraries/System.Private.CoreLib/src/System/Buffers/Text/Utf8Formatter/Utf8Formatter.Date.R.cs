@@ -24,7 +24,7 @@ namespace System.Buffers.Text
             value.GetDate(out int year, out int month, out int day);
             value.GetTime(out int hour, out int minute, out int second);
 
-            uint dayAbbrev = s_dayAbbreviations[(int)value.DayOfWeek];
+            uint dayAbbrev = DayAbbreviations[(int)value.DayOfWeek];
 
             destination[0] = (byte)dayAbbrev;
             dayAbbrev >>= 8;
@@ -37,7 +37,7 @@ namespace System.Buffers.Text
             FormattingHelpers.WriteTwoDecimalDigits((uint)day, destination, 5);
             destination[7] = Utf8Constants.Space;
 
-            uint monthAbbrev = s_monthAbbreviations[month - 1];
+            uint monthAbbrev = MonthAbbreviations[month - 1];
             destination[8] = (byte)monthAbbrev;
             monthAbbrev >>= 8;
             destination[9] = (byte)monthAbbrev;

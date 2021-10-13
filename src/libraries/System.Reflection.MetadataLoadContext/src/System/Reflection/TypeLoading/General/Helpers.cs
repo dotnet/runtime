@@ -76,7 +76,7 @@ namespace System.Reflection.TypeLoading
         public static string EscapeTypeNameIdentifier(this string identifier)
         {
             // Some characters in a type name need to be escaped
-            if (identifier.IndexOfAny(s_charsToEscape) != -1)
+            if (identifier.AsSpan().IndexOfAny(CharsToEscape) >= 0)
             {
                 StringBuilder sbEscapedName = new StringBuilder(identifier.Length);
                 foreach (char c in identifier)
@@ -93,12 +93,12 @@ namespace System.Reflection.TypeLoading
 
         public static bool TypeNameContainsTypeParserMetacharacters(this string identifier)
         {
-            return identifier.IndexOfAny(s_charsToEscape) != -1;
+            return identifier.AsSpan().IndexOfAny(CharsToEscape) >= 0;
         }
 
         public static bool NeedsEscapingInTypeName(this char c)
         {
-            return Array.IndexOf(s_charsToEscape, c) >= 0;
+            return CharsToEscape.Contains(c);
         }
 
         public static string UnescapeTypeNameIdentifier(this string identifier)
@@ -121,7 +121,7 @@ namespace System.Reflection.TypeLoading
             return identifier;
         }
 
-        private static readonly char[] s_charsToEscape = new char[] { '\\', '[', ']', '+', '*', '&', ',' };
+        private static ReadOnlySpan<char> CharsToEscape => new char[] { '\\', '[', ']', '+', '*', '&', ',' };
 
         /// <summary>
         /// For AssemblyReferences, convert "unspecified" components from the ECMA format (0xffff) to the in-memory System.Version format (0xffffffff).

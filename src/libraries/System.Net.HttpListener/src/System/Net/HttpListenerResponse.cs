@@ -78,19 +78,13 @@ namespace System.Net
             set => EntitySendFormat = value ? EntitySendFormat.Chunked : EntitySendFormat.ContentLength;
         }
 
-        // We MUST NOT send message-body when we send responses with these Status codes
-        private static readonly int[] s_noResponseBody = { 100, 101, 204, 205, 304 };
+
 
         private static bool CanSendResponseBody(int responseCode)
         {
-            for (int i = 0; i < s_noResponseBody.Length; i++)
-            {
-                if (responseCode == s_noResponseBody[i])
-                {
-                    return false;
-                }
-            }
-            return true;
+            // We MUST NOT send message-body when we send responses with these Status codes
+            ReadOnlySpan<int> noResponseBody = new int[] { 100, 101, 204, 205, 304 };
+            return !noResponseBody.Contains(responseCode);
         }
 
         public long ContentLength64

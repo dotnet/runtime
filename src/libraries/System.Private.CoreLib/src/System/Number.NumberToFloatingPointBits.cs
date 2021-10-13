@@ -71,7 +71,7 @@ namespace System
             }
         }
 
-        private static readonly float[] s_Pow10SingleTable = new float[]
+        private static ReadOnlySpan<float> Pow10SingleTable => new float[]
         {
             1e0f,   // 10^0
             1e1f,   // 10^1
@@ -86,7 +86,7 @@ namespace System
             1e10f,  // 10^10
         };
 
-        private static readonly double[] s_Pow10DoubleTable = new double[]
+        private static ReadOnlySpan<double> Pow10DoubleTable => new double[]
         {
             1e0,    // 10^0
             1e1,    // 10^1
@@ -377,7 +377,7 @@ namespace System
             if ((totalDigits <= 15) && (fastExponent <= 22))
             {
                 double result = DigitsToUInt64(src, (int)(totalDigits));
-                double scale = s_Pow10DoubleTable[fastExponent];
+                double scale = Pow10DoubleTable[(int)fastExponent];
 
                 if (fractionalDigitsPresent != 0)
                 {
@@ -439,7 +439,7 @@ namespace System
                 // wrong value when upcasting to double.
 
                 float result = DigitsToUInt32(src, (int)(totalDigits));
-                float scale = s_Pow10SingleTable[fastExponent];
+                float scale = Pow10SingleTable[(int)fastExponent];
 
                 if (fractionalDigitsPresent != 0)
                 {
@@ -456,7 +456,7 @@ namespace System
             if ((totalDigits <= 15) && (fastExponent <= 22))
             {
                 double result = DigitsToUInt64(src, (int)(totalDigits));
-                double scale = s_Pow10DoubleTable[fastExponent];
+                double scale = Pow10DoubleTable[(int)fastExponent];
 
                 if (fractionalDigitsPresent != 0)
                 {
@@ -518,7 +518,7 @@ namespace System
                 // wrong value when upcasting to double.
 
                 float result = DigitsToUInt32(src, (int)(totalDigits));
-                float scale = s_Pow10SingleTable[fastExponent];
+                float scale = Pow10SingleTable[(int)fastExponent];
 
                 if (fractionalDigitsPresent != 0)
                 {
@@ -535,7 +535,7 @@ namespace System
             if ((totalDigits <= 15) && (fastExponent <= 22))
             {
                 double result = DigitsToUInt64(src, (int)(totalDigits));
-                double scale = s_Pow10DoubleTable[fastExponent];
+                double scale = Pow10DoubleTable[(int)fastExponent];
 
                 if (fractionalDigitsPresent != 0)
                 {

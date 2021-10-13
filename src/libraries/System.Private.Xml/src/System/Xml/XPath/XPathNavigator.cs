@@ -1799,7 +1799,7 @@ namespace System.Xml.XPath
             }
         }
 
-        internal static readonly char[] NodeTypeLetter = new char[] {
+        internal static ReadOnlySpan<char> NodeTypeLetter => new char[] {
             'R',    // Root
             'E',    // Element
             'A',    // Attribute
@@ -1812,7 +1812,7 @@ namespace System.Xml.XPath
             'X',    // All
         };
 
-        internal static readonly char[] UniqueIdTbl = new char[] {
+        internal static ReadOnlySpan<char> UniqueIdTbl => new char[] {
             'A',  'B',  'C',  'D',  'E',  'F',  'G',  'H',  'I',  'J',
             'K',  'L',  'M',  'N',  'O',  'P',  'Q',  'R',  'S',  'T',
             'U',  'V',  'W',  'X',  'Y',  'Z',  '1',  '2',  '3',  '4',
@@ -1845,14 +1845,14 @@ namespace System.Xml.XPath
                     }
                     if (idx <= 0x1f)
                     {
-                        sb.Append(UniqueIdTbl[idx]);
+                        sb.Append(UniqueIdTbl[(int)idx]);
                     }
                     else
                     {
                         sb.Append('0');
                         do
                         {
-                            sb.Append(UniqueIdTbl[idx & 0x1f]);
+                            sb.Append(UniqueIdTbl[(int)(idx & 0x1f)]);
                             idx >>= 5;
                         } while (idx != 0);
                         sb.Append('0');
@@ -1969,7 +1969,7 @@ namespace System.Xml.XPath
         internal const int AllMask = 0x7FFFFFFF;
         internal const int NoAttrNmspMask = AllMask & ~(1 << (int)XPathNodeType.Attribute) & ~(1 << (int)XPathNodeType.Namespace);
         internal const int TextMask = (1 << (int)XPathNodeType.Text) | (1 << (int)XPathNodeType.SignificantWhitespace) | (1 << (int)XPathNodeType.Whitespace);
-        internal static readonly int[] ContentKindMasks = {
+        internal static ReadOnlySpan<int> ContentKindMasks => new int[] {
             (1 << (int) XPathNodeType.Root),                        // Root
             (1 << (int) XPathNodeType.Element),                     // Element
             0,                                                      // Attribute (not content)

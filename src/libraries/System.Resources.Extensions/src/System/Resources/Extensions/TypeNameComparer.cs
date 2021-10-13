@@ -20,10 +20,7 @@ namespace System.Resources.Extensions
         public static TypeNameComparer Instance { get; } = new TypeNameComparer();
 
         // these match the set of whitespace characters allowed by the runtime's type parser
-        private static readonly char[] s_whiteSpaceChars =
-        {
-            ' ', '\n', '\r', '\t'
-        };
+        private static ReadOnlySpan<char> WhiteSpaceChars => new char[] { ' ', '\n', '\r', '\t' };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ReadOnlySpan<char> ReadTypeName(ReadOnlySpan<char> assemblyQualifiedTypeName)
@@ -39,7 +36,7 @@ namespace System.Resources.Extensions
         {
             int comma = assemblyName.IndexOf(',');
 
-            return comma == -1 ? assemblyName : assemblyName.Slice(0, comma).TrimEnd(s_whiteSpaceChars);
+            return comma == -1 ? assemblyName : assemblyName.Slice(0, comma).TrimEnd(WhiteSpaceChars);
         }
 
         private static bool IsMscorlib(ReadOnlySpan<char> assemblyName)
@@ -63,8 +60,8 @@ namespace System.Resources.Extensions
             if (ReferenceEquals(assemblyQualifiedTypeName1, assemblyQualifiedTypeName2))
                 return true;
 
-            ReadOnlySpan<char> typeSpan1 = assemblyQualifiedTypeName1.AsSpan().TrimStart(s_whiteSpaceChars);
-            ReadOnlySpan<char> typeSpan2 = assemblyQualifiedTypeName2.AsSpan().TrimStart(s_whiteSpaceChars);
+            ReadOnlySpan<char> typeSpan1 = assemblyQualifiedTypeName1.AsSpan().TrimStart(WhiteSpaceChars);
+            ReadOnlySpan<char> typeSpan2 = assemblyQualifiedTypeName2.AsSpan().TrimStart(WhiteSpaceChars);
 
             // First, compare type names
             ReadOnlySpan<char> type1 = ReadTypeName(typeSpan1);
@@ -73,8 +70,8 @@ namespace System.Resources.Extensions
                 return false;
 
             // skip separator and whitespace
-            typeSpan1 = typeSpan1.Length > type1.Length ? typeSpan1.Slice(type1.Length + 1).TrimStart(s_whiteSpaceChars) : ReadOnlySpan<char>.Empty;
-            typeSpan2 = typeSpan2.Length > type2.Length ? typeSpan2.Slice(type2.Length + 1).TrimStart(s_whiteSpaceChars) : ReadOnlySpan<char>.Empty;
+            typeSpan1 = typeSpan1.Length > type1.Length ? typeSpan1.Slice(type1.Length + 1).TrimStart(WhiteSpaceChars) : ReadOnlySpan<char>.Empty;
+            typeSpan2 = typeSpan2.Length > type2.Length ? typeSpan2.Slice(type2.Length + 1).TrimStart(WhiteSpaceChars) : ReadOnlySpan<char>.Empty;
 
             // Now, compare assembly simple names ignoring case
             ReadOnlySpan<char> simpleName1 = ReadAssemblySimpleName(typeSpan1);
@@ -116,7 +113,7 @@ namespace System.Resources.Extensions
         public int GetHashCode(string assemblyQualifiedTypeName)
         {
             // non-allocating GetHashCode that hashes the type name portion of the string
-            ReadOnlySpan<char> typeSpan = assemblyQualifiedTypeName.AsSpan().TrimStart(s_whiteSpaceChars);
+            ReadOnlySpan<char> typeSpan = assemblyQualifiedTypeName.AsSpan().TrimStart(WhiteSpaceChars);
             ReadOnlySpan<char> typeName = ReadTypeName(typeSpan);
 
             int hashCode = 0;

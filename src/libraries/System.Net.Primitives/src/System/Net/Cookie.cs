@@ -41,8 +41,8 @@ namespace System.Net
 
         internal static readonly char[] PortSplitDelimiters = new char[] { ' ', ',', '\"' };
         // Space (' ') should be reserved as well per RFCs, but major web browsers support it and some web sites use it - so we support it too
-        internal static readonly char[] ReservedToName = new char[] { '\t', '\r', '\n', '=', ';', ',' };
-        internal static readonly char[] ReservedToValue = new char[] { ';', ',' };
+        internal static ReadOnlySpan<char> ReservedToName => new char[] { '\t', '\r', '\n', '=', ';', ',' };
+        internal static ReadOnlySpan<char> ReservedToValue => new char[] { ';', ',' };
 
         private string m_comment = string.Empty; // Do not rename (binary serialization)
         private Uri? m_commentUri; // Do not rename (binary serialization)
@@ -235,7 +235,7 @@ namespace System.Net
         }
         internal bool InternalSetName(string? value)
         {
-            if (string.IsNullOrEmpty(value) || value[0] == '$' || value.IndexOfAny(ReservedToName) != -1 || value[0] == ' ' || value[value.Length - 1] == ' ')
+            if (string.IsNullOrEmpty(value) || value[0] == '$' || value.AsSpan().IndexOfAny(ReservedToName) != -1 || value[0] == ' ' || value[value.Length - 1] == ' ')
             {
                 m_name = string.Empty;
                 return false;
@@ -339,7 +339,7 @@ namespace System.Net
             }
 
             // Check the name
-            if (string.IsNullOrEmpty(m_name) || m_name[0] == '$' || m_name.IndexOfAny(ReservedToName) != -1 || m_name[0] == ' ' || m_name[m_name.Length - 1] == ' ')
+            if (string.IsNullOrEmpty(m_name) || m_name[0] == '$' || m_name.AsSpan().IndexOfAny(ReservedToName) != -1 || m_name[0] == ' ' || m_name[m_name.Length - 1] == ' ')
             {
                 if (shouldThrow)
                 {
@@ -350,7 +350,7 @@ namespace System.Net
 
             // Check the value
             if (m_value == null ||
-                (!(m_value.Length > 2 && m_value[0] == '\"' && m_value[m_value.Length - 1] == '\"') && m_value.IndexOfAny(ReservedToValue) != -1))
+                (!(m_value.Length > 2 && m_value[0] == '\"' && m_value[m_value.Length - 1] == '\"') && m_value.AsSpan().IndexOfAny(ReservedToValue) != -1))
             {
                 if (shouldThrow)
                 {
@@ -361,7 +361,7 @@ namespace System.Net
 
             // Check Comment syntax
             if (Comment != null && !(Comment.Length > 2 && Comment[0] == '\"' && Comment[Comment.Length - 1] == '\"')
-                && (Comment.IndexOfAny(ReservedToValue) != -1))
+                && (Comment.AsSpan().IndexOfAny(ReservedToValue) != -1))
             {
                 if (shouldThrow)
                 {
@@ -372,7 +372,7 @@ namespace System.Net
 
             // Check Path syntax
             if (Path != null && !(Path.Length > 2 && Path[0] == '\"' && Path[Path.Length - 1] == '\"')
-                && (Path.IndexOfAny(ReservedToValue) != -1))
+                && (Path.AsSpan().IndexOfAny(ReservedToValue) != -1))
             {
                 if (shouldThrow)
                 {
@@ -591,7 +591,7 @@ namespace System.Net
                 else
                 {
                     // Parse port list
-                    if (value[0] != '\"' || value[value.Length - 1] != '\"')
+                    if (value[0] != '\"' || value[^1] != '\"')
                     {
                         throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.PortAttributeName, value));
                     }

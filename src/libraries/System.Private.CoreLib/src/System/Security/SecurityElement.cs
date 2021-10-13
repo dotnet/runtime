@@ -18,10 +18,10 @@ namespace System.Security
         private const int AttributesTypical = 4 * 2;  // 4 attributes, times 2 strings per attribute
         private const int ChildrenTypical = 1;
 
-        private static readonly char[] s_tagIllegalCharacters = new char[] { ' ', '<', '>' };
-        private static readonly char[] s_textIllegalCharacters = new char[] { '<', '>' };
-        private static readonly char[] s_valueIllegalCharacters = new char[] { '<', '>', '\"' };
-        private static readonly char[] s_escapeChars = new char[] { '<', '>', '\"', '\'', '&' };
+        private static ReadOnlySpan<char> TagIllegalCharacters => new char[] { ' ', '<', '>' };
+        private static ReadOnlySpan<char> TextIllegalCharacters => new char[] { '<', '>' };
+        private static ReadOnlySpan<char> ValueIllegalCharacters => new char[] { '<', '>', '\"' };
+        private static ReadOnlySpan<char> EscapeChars => new char[] { '<', '>', '\"', '\'', '&' };
         private static readonly string[] s_escapeStringPairs = new string[]
         {
             // these must be all once character escape sequences or a new escaping algorithm is needed
@@ -303,7 +303,7 @@ namespace System.Security
             if (tag == null)
                 return false;
 
-            return tag.IndexOfAny(s_tagIllegalCharacters) == -1;
+            return tag.AsSpan().IndexOfAny(TagIllegalCharacters) == -1;
         }
 
         public static bool IsValidText([NotNullWhen(true)] string? text)
@@ -311,7 +311,7 @@ namespace System.Security
             if (text == null)
                 return false;
 
-            return text.IndexOfAny(s_textIllegalCharacters) == -1;
+            return text.AsSpan().IndexOfAny(TextIllegalCharacters) == -1;
         }
 
         public static bool IsValidAttributeName([NotNullWhen(true)] string? name)
@@ -324,7 +324,7 @@ namespace System.Security
             if (value == null)
                 return false;
 
-            return value.IndexOfAny(s_valueIllegalCharacters) == -1;
+            return value.AsSpan().IndexOfAny(ValueIllegalCharacters) == -1;
         }
 
         private static string GetEscapeSequence(char c)
@@ -349,37 +349,32 @@ namespace System.Security
         public static string? Escape(string? str)
         {
             if (str == null)
+            {
                 return null;
+            }
 
             StringBuilder? sb = null;
-
-            int strLen = str.Length;
-            int index; // Pointer into the string that indicates the location of the current '&' character
-            int newIndex = 0; // Pointer into the string that indicates the start index of the "remaining" string (that still needs to be processed).
+            ReadOnlySpan<char> span = str;
 
             while (true)
             {
-                index = str.IndexOfAny(s_escapeChars, newIndex);
-
-                if (index == -1)
+                int i = span.IndexOfAny(EscapeChars);
+                if (i < 0)
                 {
                     if (sb == null)
-                        return str;
-                    else
                     {
-                        sb.Append(str, newIndex, strLen - newIndex);
-                        return sb.ToString();
+                        return str;
                     }
-                }
-                else
-                {
-                    sb ??= new StringBuilder();
 
-                    sb.Append(str, newIndex, index - newIndex);
-                    sb.Append(GetEscapeSequence(str[index]));
-
-                    newIndex = (index + 1);
+                    sb.Append(span);
+                    return sb.ToString();
                 }
+
+                sb ??= new StringBuilder();
+                sb.Append(span.Slice(0, i));
+                sb.Append(GetEscapeSequence(span[i]));
+
+                span = span.Slice(i + 1);
             }
 
             // no normal exit is possible

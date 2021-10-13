@@ -32,11 +32,22 @@ namespace System.Diagnostics
                         uint langid = GetVarEntry(memIntPtr);
                         if (!GetVersionInfoForCodePage(memIntPtr, ConvertTo8DigitHex(langid)))
                         {
+                            // Some dlls might not contain correct codepage information,
+                            // in which case the lookup will fail. Explorer will take
+                            // a few shots in dark. We'll simulate similar behavior by
+                            // falling back to the following lang-codepages:
+                            ReadOnlySpan<uint> fallbackLanguageCodePages = new uint[]
+                            {
+                                0x040904B0, // US English + CP_UNICODE
+                                0x040904E4, // US English + CP_USASCII
+                                0x04090000  // US English + unknown codepage
+                            };
+
                             // Some DLLs might not contain correct codepage information. In these cases we will fail during lookup.
                             // Explorer will take a few shots in dark by trying several specific lang-codepages
                             // (Explorer also randomly guesses 041D04B0=Swedish+CP_UNICODE and 040704B0=German+CP_UNICODE sometimes).
                             // We will try to simulate similar behavior here.
-                            foreach (uint id in s_fallbackLanguageCodePages)
+                            foreach (uint id in fallbackLanguageCodePages)
                             {
                                 if (id != langid)
                                 {
@@ -51,17 +62,6 @@ namespace System.Diagnostics
                 }
             }
         }
-
-        // Some dlls might not contain correct codepage information,
-        // in which case the lookup will fail. Explorer will take
-        // a few shots in dark. We'll simulate similar behavior by
-        // falling back to the following lang-codepages:
-        private static readonly uint[] s_fallbackLanguageCodePages = new uint[]
-        {
-            0x040904B0, // US English + CP_UNICODE
-            0x040904E4, // US English + CP_USASCII
-            0x04090000  // US English + unknown codepage
-        };
 
         private static string ConvertTo8DigitHex(uint value)
         {
