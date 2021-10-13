@@ -44,8 +44,8 @@
     </HelixWorkItem>
     <HelixWorkItem Include="Startup - Android HelloWorld">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroid.apk .;$(Python) pre.py --unzip</PreCommands>
-      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+      <PreCommands>cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroidWithDiag.apk .;$(Python) pre.py</PreCommands>
+      <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
   </ItemGroup>
