@@ -5082,6 +5082,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 {
                     assert(!markedLastLoop);
                     assert(alignInstr->idaIG->isLoopAlign());
+
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
                     markedLastLoop = true;
                     JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
@@ -5092,6 +5093,24 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 if (markedLastLoop && markedCurrLoop)
                 {
                     break;
+                }
+
+#if defined(TARGET_XARCH)
+                if (!emitComp->opts.compJitAlignLoopAdaptive)
+#endif
+                {
+                    // If there are multiple align instructions, skip the align instructions after
+                    // the first align instruction and fast forward to the next IG
+                    insGroup* alignIG = alignInstr->idaIG;
+                    while (alignInstr != nullptr)
+                    {
+                        if ((alignInstr->idaNext != nullptr) && (alignInstr->idaNext->idaIG == alignIG))
+                        {
+                            alignInstr = alignInstr->idaNext;
+                            continue;
+                        }
+                        break;
+                    }
                 }
 
                 alignInstr = alignInstr->idaNext;
