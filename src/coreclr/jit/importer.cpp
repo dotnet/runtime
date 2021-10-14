@@ -14996,7 +14996,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     if (info.compCompHnd->getMethodAttribs(resolvedToken.hMethod) & CORINFO_FLG_CONSTRAINTFAIL)
                     {
-                        verHandleVerificationFailure(block, FALSE);
+                        verHandleVerificationFailure(block DEBUGARG(FALSE));
                         return;
                     }
 
@@ -16904,6 +16904,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             break;
 
                         default:
+                            lclTyp = TYP_UNKNOWN;
                             noway_assert(!"Unexpected corinfo type in cpobj");
                             break;
                     }
