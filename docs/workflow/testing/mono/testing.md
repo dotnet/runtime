@@ -20,6 +20,10 @@ cd src/tests
 ./build.sh excludemonofailures <release|debug>
 ```
 
+To build an individual test, test directory, or a whole subdirectory tree, use the `-test:`, `-dir:` or `-tree:` options (without the src/tests prefix)
+For example: `./build.sh excludemonofailures release -test:JIT/opt/InstructionCombining/DivToMul.csproj`
+
+
 Run individual test:
 ```
 cd src/mono
