@@ -172,33 +172,31 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public MonoCommands(string expression) => this.expression = expression;
 
-        public static MonoCommands GetExceptionObject() => new MonoCommands("MONO.mono_wasm_get_exception_object()");
+        public static MonoCommands GetDebuggerAgentBufferReceived() => new MonoCommands("INTERNAL.mono_wasm_get_dbg_command_info()");
 
-        public static MonoCommands GetDebuggerAgentBufferReceived() => new MonoCommands("MONO.mono_wasm_get_dbg_command_info()");
+        public static MonoCommands IsRuntimeReady() => new MonoCommands("INTERNAL.mono_wasm_runtime_is_ready");
 
-        public static MonoCommands IsRuntimeReady() => new MonoCommands("MONO.mono_wasm_runtime_is_ready");
-
-        public static MonoCommands GetLoadedFiles() => new MonoCommands("MONO.mono_wasm_get_loaded_files()");
+        public static MonoCommands GetLoadedFiles() => new MonoCommands("INTERNAL.mono_wasm_get_loaded_files()");
 
         public static MonoCommands SendDebuggerAgentCommand(int id, int command_set, int command, string command_parameters)
         {
-            return new MonoCommands($"MONO.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
+            return new MonoCommands($"INTERNAL.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
         }
 
         public static MonoCommands SendDebuggerAgentCommandWithParms(int id, int command_set, int command, string command_parameters, int len, int type, string parm)
         {
-            return new MonoCommands($"MONO.mono_wasm_send_dbg_command_with_parms ({id}, {command_set}, {command},'{command_parameters}', {len}, {type}, '{parm}')");
+            return new MonoCommands($"INTERNAL.mono_wasm_send_dbg_command_with_parms ({id}, {command_set}, {command},'{command_parameters}', {len}, {type}, '{parm}')");
         }
 
-        public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"MONO.mono_wasm_call_function_on ({args.ToString()})");
+        public static MonoCommands CallFunctionOn(JToken args) => new MonoCommands($"INTERNAL.mono_wasm_call_function_on ({args})");
 
-        public static MonoCommands GetDetails(int objectId, JToken args = null) => new MonoCommands($"MONO.mono_wasm_get_details ({objectId}, {(args ?? "{ }")})");
+        public static MonoCommands GetDetails(int objectId, JToken args = null) => new MonoCommands($"INTERNAL.mono_wasm_get_details ({objectId}, {(args ?? "{ }")})");
 
-        public static MonoCommands Resume() => new MonoCommands($"MONO.mono_wasm_debugger_resume ()");
+        public static MonoCommands Resume() => new MonoCommands($"INTERNAL.mono_wasm_debugger_resume ()");
 
-        public static MonoCommands DetachDebugger() => new MonoCommands($"MONO.mono_wasm_detach_debugger()");
+        public static MonoCommands DetachDebugger() => new MonoCommands($"INTERNAL.mono_wasm_detach_debugger()");
 
-        public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"MONO.mono_wasm_release_object('{objectId}')");
+        public static MonoCommands ReleaseObject(DotnetObjectId objectId) => new MonoCommands($"INTERNAL.mono_wasm_release_object('{objectId}')");
     }
 
     internal enum MonoErrorCodes

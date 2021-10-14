@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 declare interface ManagedPointer {
-    __brandbase: "ManagedPointer"
+    __brandManagedPointer: "ManagedPointer"
 }
 
 declare interface NativePointer {
-    __brandbase: "NativePointer"
+    __brandNativePointer: "NativePointer"
 }
 
 declare interface VoidPtr extends NativePointer {
@@ -34,9 +34,9 @@ declare function mergeInto(a: object, b: object): void;
 // TODO, what's wrong with EXPORTED_RUNTIME_METHODS ?
 declare function locateFile(path: string, prefix?: string): string;
 
-declare let Module: t_Module;
+declare let Module: EmscriptenModule;
 
-declare interface t_Module {
+declare interface EmscriptenModule {
     HEAP8: Int8Array,
     HEAP16: Int16Array;
     HEAP32: Int32Array;
