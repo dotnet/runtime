@@ -48,6 +48,11 @@ namespace ILTrim.DependencyAnalysis
                 dependencies.Add(factory.Parameter(_module, parameter), "Parameter of method");
             }
 
+            foreach (GenericParameterHandle parameter in methodDef.GetGenericParameters())
+            {
+                dependencies.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
+            }
+
             return dependencies;
         }
 

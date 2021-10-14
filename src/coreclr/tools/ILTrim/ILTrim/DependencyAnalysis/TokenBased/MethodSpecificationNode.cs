@@ -24,9 +24,17 @@ namespace ILTrim.DependencyAnalysis
         {
             MethodSpecification methodSpec = _module.MetadataReader.GetMethodSpecification(Handle);
 
-            // TODO: report dependencies from the signature
+            DependencyList dependencies = new DependencyList();
 
-            yield return new(factory.GetNodeForToken(_module, methodSpec.Method), "Instantiated method");
+            EcmaSignatureAnalyzer.AnalyzeMethodSpecSignature(
+                _module,
+                _module.MetadataReader.GetBlobReader(methodSpec.Signature),
+                factory,
+                dependencies);
+
+            dependencies.Add(factory.GetNodeForToken(_module, methodSpec.Method), "Instantiated method");
+
+            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -37,8 +45,12 @@ namespace ILTrim.DependencyAnalysis
 
             var builder = writeContext.MetadataBuilder;
 
-            // TODO: the signature blob might contain references to tokens we need to rewrite
-            var signatureBlob = reader.GetBlobBytes(methodSpec.Signature);
+            var signatureBlob = writeContext.GetSharedBlobBuilder();
+
+            EcmaSignatureRewriter.RewriteMethodSpecSignature(
+                reader.GetBlobReader(methodSpec.Signature),
+                writeContext.TokenMap,
+                signatureBlob);
 
             return builder.AddMethodSpecification(
                 writeContext.TokenMap.MapToken(methodSpec.Method),

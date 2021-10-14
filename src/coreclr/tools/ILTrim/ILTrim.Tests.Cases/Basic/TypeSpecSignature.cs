@@ -10,11 +10,11 @@ namespace Mono.Linker.Tests.Cases.Basic
         {
             var reflectedType = typeof(SomeType<SomeOtherType>);
         }
+
+        [Kept]
+        class SomeType<T> { }
+
+        [Kept]
+        class SomeOtherType { }
     }
-
-    [Kept]
-    class SomeType<T> { }
-
-    [Kept]
-    class SomeOtherType { }
 }

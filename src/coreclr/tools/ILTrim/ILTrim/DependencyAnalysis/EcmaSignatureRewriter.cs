@@ -5,6 +5,8 @@ using System;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem;
+
 namespace ILTrim.DependencyAnalysis
 {
     public struct EcmaSignatureRewriter
@@ -292,6 +294,27 @@ namespace ILTrim.DependencyAnalysis
         {
             var encoder = new SignatureTypeEncoder(blobBuilder);
             RewriteType(encoder);
+        }
+
+        public static void RewriteMethodSpecSignature(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
+        {
+            new EcmaSignatureRewriter(signatureReader, tokenMap).RewriteMethodSpecSignature(blobBuilder);
+        }
+
+        private void RewriteMethodSpecSignature(BlobBuilder blobBuilder)
+        {
+            var encoder = new BlobEncoder(blobBuilder);
+
+            if (_blobReader.ReadSignatureHeader().Kind != SignatureKind.MethodSpecification)
+                ThrowHelper.ThrowBadImageFormatException();
+
+            int count = _blobReader.ReadCompressedInteger();
+
+            var methodSpecEncoder = encoder.MethodSpecificationSignature(count);
+            for (int i = 0; i < count; i++)
+            {
+                RewriteType(methodSpecEncoder.AddArgument());
+            }
         }
 
     }
