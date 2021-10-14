@@ -4,6 +4,7 @@
 import { Module, runtimeHelpers } from "./modules";
 import { toBase64StringImpl } from "./base64";
 import cwraps from "./cwraps";
+import { VoidPtr } from "./types";
 
 let commands_received: CommandResponse;
 let _call_function_res_cache: any = {};

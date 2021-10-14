@@ -1,14 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { BINDING, Module, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtrNull, MonoConfig, MonoString, MonoStringNull, wasm_type_symbol } from "./types";
+import { INTERNAL, Module, runtimeHelpers } from "./modules";
+import { AssetEntry, CharPtr, CharPtrNull, Int32Ptr, MonoConfig, MonoString, MonoStringNull, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
-import { t_ModuleExtension } from "./exports";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { conv_string } from "./strings";
@@ -319,7 +318,7 @@ function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
 
 export function mono_bindings_init(binding_asm?: string): void {
     if (binding_asm) {
-        BINDING.BINDING_ASM = binding_asm;
+        INTERNAL.BINDING_ASM = binding_asm;
     }
 
 }
@@ -356,9 +355,9 @@ export function bindings_lazy_init(): void {
     runtimeHelpers._class_boolean = cwraps.mono_wasm_find_corlib_class("System", "Boolean");
     runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
-    const BINDING_ASM = BINDING.BINDING_ASM;
-    const binding_fqn_asm = BINDING_ASM.substring(BINDING_ASM.indexOf("[") + 1, BINDING_ASM.indexOf("]")).trim();
-    const binding_fqn_class = BINDING_ASM.substring(BINDING_ASM.indexOf("]") + 1).trim();
+    const bindingAssembly = INTERNAL.BINDING_ASM;
+    const binding_fqn_asm = bindingAssembly.substring(bindingAssembly.indexOf("[") + 1, bindingAssembly.indexOf("]")).trim();
+    const binding_fqn_class = bindingAssembly.substring(bindingAssembly.indexOf("]") + 1).trim();
 
     const binding_module = cwraps.mono_wasm_assembly_load(binding_fqn_asm);
     if (!binding_module)
@@ -582,7 +581,7 @@ export function mono_wasm_load_data_archive(data: TypedArray, prefix: string): b
  * @throws Will throw an error if the config file loading fails
  */
 export async function mono_wasm_load_config(configFilePath: string): Promise<void> {
-    const module = Module as t_ModuleExtension;
+    const module = Module;
     module.addRunDependency(configFilePath);
     try {
         let config = null;
@@ -626,6 +625,19 @@ export function mono_wasm_asm_loaded(assembly_name: CharPtr, assembly_ptr: numbe
         assembly_b64,
         pdb_b64
     });
+}
+
+export function mono_wasm_set_main_args(name: string, allRuntimeArguments: string[]): void {
+    const main_argc = allRuntimeArguments.length + 1;
+    const main_argv = <any>Module._malloc(main_argc * 4);
+    let aindex = 0;
+    Module.setValue(main_argv + (aindex * 4), INTERNAL.mono_wasm_strdup(name), "i32");
+    aindex += 1;
+    for (let i = 0; i < allRuntimeArguments.length; ++i) {
+        Module.setValue(main_argv + (aindex * 4), INTERNAL.mono_wasm_strdup(allRuntimeArguments[i]), "i32");
+        aindex += 1;
+    }
+    cwraps.mono_wasm_set_main_args(main_argc, main_argv);
 }
 
 type MonoInitContext = {

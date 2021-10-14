@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="key">The configuration key.</param>
         /// <returns>The configuration value.</returns>
-        public string this[string key]
+        public string? this[string key]
         {
             get => GetConfiguration(_providers, key);
             set => SetConfiguration(_providers, key, value);
@@ -111,13 +111,13 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        internal static string GetConfiguration(IList<IConfigurationProvider> providers, string key)
+        internal static string? GetConfiguration(IList<IConfigurationProvider> providers, string key)
         {
             for (int i = providers.Count - 1; i >= 0; i--)
             {
                 IConfigurationProvider provider = providers[i];
 
-                if (provider.TryGet(key, out string value))
+                if (provider.TryGet(key, out string? value))
                 {
                     return value;
                 }
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Configuration
             return null;
         }
 
-        internal static void SetConfiguration(IList<IConfigurationProvider> providers, string key, string value)
+        internal static void SetConfiguration(IList<IConfigurationProvider> providers, string key, string? value)
         {
             if (providers.Count == 0)
             {

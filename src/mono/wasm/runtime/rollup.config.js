@@ -4,26 +4,39 @@ import { terser } from "rollup-plugin-terser";
 import { readFile, writeFile, mkdir } from "fs/promises";
 import * as fs from "fs";
 import { createHash } from "crypto";
+import dts from "rollup-plugin-dts";
 
 const outputFileName = "runtime.iffe.js";
 const isDebug = process.env.Configuration !== "Release";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(), writeOnChangePlugin()];
 
-export default defineConfig({
-    treeshake: !isDebug,
-    input: "exports.ts",
-    output: [{
-        banner: "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n",
-        name: "__dotnet_runtime",
-        file: nativeBinDir + "/src/" + outputFileName,
+export default defineConfig([
+    {
+        treeshake: !isDebug,
+        input: "exports.ts",
+        output: [{
+            banner: "//! Licensed to the .NET Foundation under one or more agreements.\n//! The .NET Foundation licenses this file to you under the MIT license.\n",
+            name: "__dotnet_runtime",
+            file: nativeBinDir + "/src/" + outputFileName,
 
-        // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
-        format: "iife",
-        plugins: plugins
-    }],
-    plugins: [typescript()]
-});
+            // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
+            format: "iife",
+            plugins: plugins
+        }],
+        plugins: [typescript()]
+    },
+    {
+        input: "./exports.ts",
+        output: [
+            {
+                format: "es",
+                file: nativeBinDir + "/src/" + "dotnet.d.ts",
+            }
+        ],
+        plugins: [dts()],
+    },
+]);
 
 // this would create .md5 file next to the output file, so that we do not touch datetime of the file if it's same -> faster incremental build.
 function writeOnChangePlugin() {
@@ -41,7 +54,7 @@ async function writeWhenChanged(options, bundle) {
         const oldHashExists = await checkFileExists(hashFileName);
         const oldFileExists = await checkFileExists(options.file);
 
-        var newHash = createHash("sha256").update(code).digest("hex");
+        const newHash = createHash("sha256").update(code).digest("hex");
 
         let isOutputChanged = true;
         if (oldHashExists && oldFileExists) {

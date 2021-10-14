@@ -80,60 +80,59 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounterCategory_CategoryType_MultiInstance()
         {
-            var name = nameof(PerformanceCounterCategory_CategoryType_MultiInstance) + "_Counter";
+            string categoryName = nameof(PerformanceCounterCategory_CategoryType_MultiInstance) + "_Category";
 
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.MultiInstance);
+            Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.MultiInstance);
 
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(category));
+            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(categoryName));
 
             Assert.Equal(PerformanceCounterCategoryType.MultiInstance, Helpers.RetryOnAllPlatforms(() => pcc.CategoryType));
-            PerformanceCounterCategory.Delete(category);
+            PerformanceCounterCategory.Delete(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounterCategory_CategoryType_SingleInstance()
         {
-            var name = nameof(PerformanceCounterCategory_CategoryType_SingleInstance) + "_Counter";
+            string categoryName = nameof(PerformanceCounterCategory_CategoryType_SingleInstance) + "_Category";
 
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.SingleInstance);
+            Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(category));
+            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(categoryName));
 
             Assert.Equal(PerformanceCounterCategoryType.SingleInstance, Helpers.RetryOnAllPlatforms(() => pcc.CategoryType));
-            PerformanceCounterCategory.Delete(category);
+            PerformanceCounterCategory.Delete(categoryName);
         }
 
 #pragma warning disable 0618 // obsolete warning
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounterCategory_Create_Obsolete()
         {
-            var name = nameof(PerformanceCounterCategory_Create_Obsolete) + "_Counter";
-            var category = name + "_Category";
+            string categoryName = nameof(PerformanceCounterCategory_Create_Obsolete) + "_Category";
+            string counterName = nameof(PerformanceCounterCategory_Create_Obsolete) + "_Counter";
 
-            Helpers.DeleteCategory(category);
+            Helpers.DeleteCategory(categoryName);
 
-            PerformanceCounterCategory.Create(category, "category help", name, "counter help");
+            PerformanceCounterCategory.Create(categoryName, "category help", counterName, "counter help");
 
-            Assert.True(PerformanceCounterCategory.Exists(category));
-            PerformanceCounterCategory.Delete(category);
+            Assert.True(PerformanceCounterCategory.Exists(categoryName));
+            PerformanceCounterCategory.Delete(categoryName);
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounterCategory_Create_Obsolete_CCD()
         {
-            var name = nameof(PerformanceCounterCategory_Create_Obsolete_CCD) + "_Counter";
-            var category = name + "_Category";
+            string categoryName = nameof(PerformanceCounterCategory_Create_Obsolete) + "_Category";
 
-            CounterCreationData ccd = new CounterCreationData(name, "counter help", PerformanceCounterType.NumberOfItems32);
+            CounterCreationData ccd = new CounterCreationData(categoryName, "counter help", PerformanceCounterType.NumberOfItems32);
             CounterCreationDataCollection ccdc = new CounterCreationDataCollection();
             ccdc.Add(ccd);
 
-            Helpers.DeleteCategory(category);
+            Helpers.DeleteCategory(categoryName);
 
-            PerformanceCounterCategory.Create(category, "category help", ccdc);
+            PerformanceCounterCategory.Create(categoryName, "category help", ccdc);
 
-            Assert.True(PerformanceCounterCategory.Exists(category));
-            PerformanceCounterCategory.Delete(category);
+            Assert.True(PerformanceCounterCategory.Exists(categoryName));
+            PerformanceCounterCategory.Delete(categoryName);
         }
 #pragma warning restore 0618
 
@@ -207,12 +206,12 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounterCategory_DeleteCategory()
         {
-            var name = nameof(PerformanceCounterCategory_DeleteCategory) + "_Counter";
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.SingleInstance);
+            string categoryName = nameof(PerformanceCounterCategory_DeleteCategory) + "_Category";
+            Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory.Delete(category);
+            PerformanceCounterCategory.Delete(categoryName);
 
-            Assert.False(PerformanceCounterCategory.Exists(category));
+            Assert.False(PerformanceCounterCategory.Exists(categoryName));
         }
 
         [Fact]
@@ -226,14 +225,14 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteAndReadNetPerfCounters))]
         public static void PerformanceCounterCategory_GetCounters()
         {
-            var name = nameof(PerformanceCounterCategory_GetCounters) + "_Counter";
-            var category = Helpers.CreateCategory(name, PerformanceCounterCategoryType.SingleInstance);
+            string categoryName = nameof(PerformanceCounterCategory_GetCounters) + "_Category";
+            Helpers.CreateCategory(categoryName, PerformanceCounterCategoryType.SingleInstance);
 
-            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(category));
+            PerformanceCounterCategory pcc = Helpers.RetryOnAllPlatforms(() => new PerformanceCounterCategory(categoryName));
             PerformanceCounter[] counters = pcc.GetCounters();
 
             Assert.True(counters.Length > 0);
-            PerformanceCounterCategory.Delete(category);
+            PerformanceCounterCategory.Delete(categoryName);
         }
 
         [Fact]
