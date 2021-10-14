@@ -171,7 +171,7 @@ namespace System.IO.Tests
         public void OutputIsTheSameAsForStreamWriter(string content, Encoding encoding)
         {
             string filePath = GetTestFilePath();
-            Write(filePath, content, encoding); // it uses System.File.IO APIs
+            Write(filePath, content, encoding); // it uses System.IO.File APIs
 
             string swPath = GetTestFilePath();
             using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
@@ -192,7 +192,7 @@ namespace System.IO.Tests
 
             for (int i = 0; i < 2; i++)
             {
-                Write(filePath, content, encoding); // it uses System.File.IO APIs
+                Write(filePath, content, encoding); // it uses System.IO.File APIs
 
                 using (StreamWriter sw = new StreamWriter(swPath, IsAppend, encoding))
                 {
