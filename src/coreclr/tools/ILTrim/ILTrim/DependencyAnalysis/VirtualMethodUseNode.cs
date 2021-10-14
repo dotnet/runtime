@@ -36,7 +36,13 @@ namespace ILTrim.DependencyAnalysis
             return $"VirtualMethodUse: {_decl}";
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        {
+            TypeDesc owningType = _decl.OwningType;
+            if (owningType.IsInterface)
+                yield return new (factory.InterfaceUse((EcmaType)owningType), "Interface used in a call");
+        }
+
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;

@@ -96,6 +96,13 @@ namespace ILTrim.DependencyAnalysis
             return _virtualMethodUses.GetOrAdd(method);
         }
 
+        NodeCache<EcmaType, InterfaceUseNode> _interfaceUses = new NodeCache<EcmaType, InterfaceUseNode>(key
+            => new InterfaceUseNode(key));
+        public InterfaceUseNode InterfaceUse(EcmaType type)
+        {
+            return _interfaceUses.GetOrAdd(type);
+        }
+
         NodeCache<HandleKey<TypeReferenceHandle>, TypeReferenceNode> _typeReferences
             = new NodeCache<HandleKey<TypeReferenceHandle>, TypeReferenceNode>(key
                 => new TypeReferenceNode(key.Module, key.Handle));

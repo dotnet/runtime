@@ -68,15 +68,39 @@ namespace ILTrim.DependencyAnalysis
             }
         }
 
+        public override bool HasConditionalStaticDependencies
+        {
+            get
+            {
+                return _module.MetadataReader.GetTypeDefinition(Handle).GetInterfaceImplementations().Count > 0;
+            }
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            MetadataReader reader = _module.MetadataReader;
+            TypeDefinition typeDef = reader.GetTypeDefinition(Handle);
+
+            foreach (InterfaceImplementationHandle intfImplHandle in typeDef.GetInterfaceImplementations())
+            {
+                InterfaceImplementation intfImpl = reader.GetInterfaceImplementation(intfImplHandle);
+                EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
+                if (interfaceType != null)
+                {
+                    yield return new(
+                        factory.GetNodeForToken(_module, intfImpl.Interface),
+                        factory.InterfaceUse(interfaceType),
+                        "Implemented interface");
+                }
+            }
+        }
+
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
         {
             MetadataReader reader = _module.MetadataReader;
             TypeDefinition typeDef = reader.GetTypeDefinition(Handle);
 
             var builder = writeContext.MetadataBuilder;
-
-            if (typeDef.IsNested)
-                builder.AddNestedType((TypeDefinitionHandle)writeContext.TokenMap.MapToken(Handle), (TypeDefinitionHandle)writeContext.TokenMap.MapToken(typeDef.GetDeclaringType()));
 
             // Adding PropertyMap entries when writing types ensures that the PropertyMap table has the same
             // order as the TypeDefinition table. This allows us to use the same logic in MapTypePropertyList
@@ -90,18 +114,32 @@ namespace ILTrim.DependencyAnalysis
             if (!propertyHandle.IsNil)
                 builder.AddPropertyMap(Handle, propertyHandle);
 
-            var typeDefHandle = builder.AddTypeDefinition(typeDef.Attributes,
+            TypeDefinitionHandle outputHandle = builder.AddTypeDefinition(typeDef.Attributes,
                 builder.GetOrAddString(reader.GetString(typeDef.Namespace)),
                 builder.GetOrAddString(reader.GetString(typeDef.Name)),
                 writeContext.TokenMap.MapToken(typeDef.BaseType),
                 writeContext.TokenMap.MapTypeFieldList(Handle),
                 writeContext.TokenMap.MapTypeMethodList(Handle));
 
+            if (typeDef.IsNested)
+                builder.AddNestedType(outputHandle, (TypeDefinitionHandle)writeContext.TokenMap.MapToken(typeDef.GetDeclaringType()));
+
             var typeLayout = typeDef.GetLayout();
             if (!typeLayout.IsDefault)
-                builder.AddTypeLayout(typeDefHandle, (ushort)typeLayout.PackingSize, (uint)typeLayout.Size);
+                builder.AddTypeLayout(outputHandle, (ushort)typeLayout.PackingSize, (uint)typeLayout.Size);
 
-            return typeDefHandle;
+            foreach (InterfaceImplementationHandle intfImplHandle in typeDef.GetInterfaceImplementations())
+            {
+                InterfaceImplementation intfImpl = reader.GetInterfaceImplementation(intfImplHandle);
+                EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
+                if (interfaceType != null && writeContext.Factory.InterfaceUse(interfaceType).Marked)
+                {
+                    builder.AddInterfaceImplementation(outputHandle,
+                        writeContext.TokenMap.MapToken(intfImpl.Interface));
+                }
+            }
+
+            return outputHandle;
         }
 
         public override string ToString()

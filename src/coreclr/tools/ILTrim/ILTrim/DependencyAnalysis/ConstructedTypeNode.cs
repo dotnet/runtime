@@ -32,7 +32,18 @@ namespace ILTrim.DependencyAnalysis
                     return true;
                 }
 
-                return false;
+                // Even if a type has no virtual methods, if it introduces a new interface,
+                // we might end up with with conditional dependencies.
+                //
+                // Consider:
+                //
+                // interface IFooer { void Foo(); }
+                // class Base { public virtual void Foo() { } }
+                // class Derived : Base, IFooer { }
+                //
+                // Notice Derived has no virtual methods, but needs to keep track of the
+                // fact that Base.Foo now implements IFooer.Foo.
+                return _type.RuntimeInterfaces.Length > 0;
             }
         }
 
@@ -56,6 +67,50 @@ namespace ILTrim.DependencyAnalysis
                         factory.VirtualMethodUse((EcmaMethod)decl),
                         "Virtual method");
                 }
+            }
+
+            // For each interface, figure out what implements the individual interface methods on it.
+            foreach (DefType intface in _type.RuntimeInterfaces)
+            {
+                foreach (MethodDesc interfaceMethod in intface.GetAllVirtualMethods())
+                {
+                    // TODO: static virtual methods (not in the type system yet)
+                    if (interfaceMethod.Signature.IsStatic)
+                        continue;
+
+                    MethodDesc implMethod = _type.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
+                    if (implMethod != null)
+                    {
+                        // Interface method implementation provided within the class hierarchy.
+                        yield return new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
+                            factory.VirtualMethodUse((EcmaMethod)interfaceMethod.GetTypicalMethodDefinition()),
+                            "Interface method");
+                    }
+                    else
+                    {
+                        // Is the implementation provided by a default interface method?
+                        var resolution = _type.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out implMethod);
+                        if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation || resolution == DefaultInterfaceMethodResolution.Reabstraction)
+                        {
+                            yield return new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
+                                factory.VirtualMethodUse((EcmaMethod)interfaceMethod.GetTypicalMethodDefinition()),
+                                "Default interface method");
+                        }
+                        else
+                        {
+                            // TODO: if there's a diamond, we should consider both implementations used
+                        }
+                    }
+                }
+            }
+
+            // For each interface, make the interface considered constructed if the interface is used
+            foreach (DefType intface in _type.RuntimeInterfaces)
+            {
+                EcmaType interfaceDefinition = (EcmaType)intface.GetTypeDefinition();
+                yield return new(factory.ConstructedType(interfaceDefinition),
+                    factory.InterfaceUse(interfaceDefinition),
+                    "Used interface on a constructed type");
             }
         }
 

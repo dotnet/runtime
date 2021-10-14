@@ -14,5 +14,10 @@ namespace ILTrim
         {
             return module.GetObject(handle, NotFoundBehavior.ReturnNull) as MethodDesc;
         }
+
+        public static TypeDesc TryGetType(this EcmaModule module, EntityHandle handle)
+        {
+            return module.GetObject(handle, NotFoundBehavior.ReturnNull) as TypeDesc;
+        }
     }
 }
