@@ -15,35 +15,37 @@ namespace System
         public T Element0;
 
         /// <summary>
-        /// NOTE: I am not sure we need the indexer in the final impl.
-        ///       We may not want to JIT it for every length.
-        ///       It may be better to just let C# compiler code-gen the accesses.
+        /// Indexer.
+        /// Caller must statically know the upperBound and pass it in.
         /// </summary>
-        public T this[int index]
+        public T this[int index, int upperBound = 42]
         {
-            get => this.Address(index);
-            set => this.Address(index) = value;
+            get => Address(index, upperBound);
+            set => Address(index, upperBound) = value;
         }
-    }
 
-    public static class ValueArrayHelpers
-    {
         /// <summary>
         /// Returns an address to an element of the ValueArray.
-        /// Caller must statically know the Length and ensure the "index" is within bounds.
+        /// Caller must statically know the upperBound and pass it in.
         /// </summary>
-        public static ref T Address<T>(this ref ValueArray<T> array, int index)
+        public ref T Address(int index, int upperBound = 42)
         {
-            return ref Unsafe.Add(ref array.Element0, (nint)(uint)index /* force zero-extension */);
+            if ((uint)index >= (uint)upperBound)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            return ref Unsafe.Add(ref new ByReference<T>(ref Element0).Value, (nint)(uint)index /* force zero-extension */);
         }
 
         /// <summary>
         /// Returns a slice of the ValueArray.
-        /// Caller must statically know the Length and ensure the "length" is within bounds.
+        /// Caller must statically know the upperBound and pass it in.
         /// </summary>
-        public static Span<T> Slice<T>(this ref ValueArray<T> array, int length)
+        public Span<T> Slice(int length, int upperBound = 42)
         {
-            return new Span<T>(ref array.Element0, length);
+            if ((uint)length >= (uint)upperBound)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            return new Span<T>(ref Element0, length);
         }
     }
 }
