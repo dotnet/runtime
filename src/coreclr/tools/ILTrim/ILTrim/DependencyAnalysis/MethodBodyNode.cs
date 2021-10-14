@@ -216,6 +216,17 @@ namespace ILTrim.DependencyAnalysis
                                         MetadataTokens.UserStringHandle(ilReader.ReadILToken())))));
                         break;
 
+                    case ILOpcode.switch_:
+                        // switch is the opcode, then the number of targets N as int32, then N jump offsets as int32
+                        // The offsets should not be affected by trimming, so we can write out exactly the same bytes
+                        outputBodyBuilder.WriteByte((byte)opcode);
+                        uint numTargets = ilReader.ReadILUInt32();
+                        outputBodyBuilder.WriteUInt32(numTargets);
+                        var byteCount = (int)(numTargets * sizeof(uint));
+                        outputBodyBuilder.WriteBytes(bodyBytes, ilReader.Offset, byteCount);
+                        ilReader.Seek(ilReader.Offset + byteCount);
+                        break;
+
                     default:
                         outputBodyBuilder.WriteBytes(bodyBytes, offset, ILOpcodeHelper.GetSize(opcode));
                         ilReader.Skip(opcode);
