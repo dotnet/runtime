@@ -4,6 +4,7 @@
 using System;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Threading;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -149,16 +150,27 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/29753")]
         [Fact]
         public static void PerformanceCounter_NextValue_ProcessorCounter()
         {
-            using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "0", "."))
+            using (PerformanceCounter counterSample = new PerformanceCounter("Processor", "Interrupts/sec", "_Total", "."))
             {
-                Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
-                System.Threading.Thread.Sleep(30);
+                float val;
+                int counter = 0;
+                do
+                {
+                    // Ensure we don't always return zero for a counter we know is not always zero
+                    val = Helpers.RetryOnAllPlatforms(() => counterSample.NextValue());
+                    if (val > 0f)
+                    {
+                        break;
+                    }
+                    counter++;
+                    Thread.Sleep(100);
+                }
+                while (counter < 20);
 
-                Assert.True(Helpers.RetryOnAllPlatforms(() => counterSample.NextValue()) > 0);
+                Assert.True(val > 0f);
             }
         }
 
