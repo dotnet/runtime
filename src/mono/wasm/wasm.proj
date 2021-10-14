@@ -71,7 +71,6 @@
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
 
       <_EmccCommonFlags Include="-s STRICT_JS=1" />      
-
       <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(WasmEnableES6)' != 'false'" />
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
     </ItemGroup>
@@ -206,6 +205,7 @@
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)src\dotnet.d.ts;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"

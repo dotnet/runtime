@@ -4,7 +4,7 @@
 "use strict";
 
 function big_array_js_test (len) {
-	var big = new Array(len);
+	const big = new Array(len);
 	for (let i=0; i < len; i ++) {
 		big[i]=i + 1000;
 	}
@@ -12,7 +12,7 @@ function big_array_js_test (len) {
 };
 
 function object_js_test () {
-	var obj = {
+	const obj = {
 		a_obj: { aa: 5, ab: 'foo' },
 		b_arr: [ 10, 12 ]
 	};
@@ -21,7 +21,7 @@ function object_js_test () {
 };
 
 function getters_js_test () {
-	var ptd = {
+	const ptd = {
 		get Int () { return 5; },
 		get String () { return "foobar"; },
 		get DT () { return "dt"; },
@@ -53,7 +53,7 @@ function exceptions_test () {
 }
 
 function negative_cfo_test (str_value = null) {
-	var ptd = {
+	const ptd = {
 		get Int () { return 5; },
 		get String () { return "foobar"; },
 		get DT () { return "dt"; },
@@ -98,6 +98,6 @@ function get_properties_test () {
 
 function malloc_to_reallocate_test () {
 	//need to allocate this buffer size to force wasm linear memory to grow 
-	var _debugger_buffer = Module._malloc(4500000);
+	const _debugger_buffer = Module._malloc(4500000);
 	Module._free(_debugger_buffer);
 }

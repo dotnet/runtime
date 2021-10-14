@@ -1,29 +1,31 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-var */
 /* eslint-disable @typescript-eslint/triple-slash-reference */
 /// <reference path="./types/emscripten.d.ts" />
 /// <reference path="./types/v8.d.ts" />
 
-import { t_ModuleExtension } from "./exports";
-import { MonoConfig, t_RuntimeHelpers } from "./types";
+import { EmscriptenModuleMono, MonoConfig, RuntimeHelpers } from "./types";
 
-export var Module: t_Module & t_ModuleExtension;
-export var MONO: any;
-export var BINDING: any;
+export let Module: EmscriptenModule & EmscriptenModuleMono;
+export let MONO: any;
+export let BINDING: any;
+export let DOTNET: any;
+export let INTERNAL: any;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function setLegacyModules(mono: any, binding: any, module: t_Module & t_ModuleExtension) {
-    Module = module;
+export function setLegacyModules(dotnet: any, mono: any, binding: any, internal: any, module: EmscriptenModule & EmscriptenModuleMono) {
+    DOTNET = dotnet;
     MONO = mono;
     BINDING = binding;
+    INTERNAL = internal;
+    Module = module;
 }
 
 let monoConfig: MonoConfig;
 let runtime_is_ready = false;
 
-export const runtimeHelpers: t_RuntimeHelpers = <any>{
+export const runtimeHelpers: RuntimeHelpers = <any>{
     namespace: "System.Runtime.InteropServices.JavaScript",
     classname: "Runtime",
     loaded_files: [],
@@ -32,7 +34,7 @@ export const runtimeHelpers: t_RuntimeHelpers = <any>{
     },
     set mono_wasm_runtime_is_ready(value: boolean) {
         runtime_is_ready = value;
-        MONO.mono_wasm_runtime_is_ready = value;
+        INTERNAL.mono_wasm_runtime_is_ready = value;
     },
     get config() {
         return monoConfig;

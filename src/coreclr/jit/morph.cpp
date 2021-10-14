@@ -10907,15 +10907,17 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
             return nullptr;
         }
 
+        /*
         // Reuse gentree nodes:
         //
         //     tree             op1
         //     /   \             |
         //   op1   op2   ==>   tree
-        //    |     |          /   \
+        //    |     |          /   \.
         //    x     y         x     y
         //
         // (op2 becomes garbage)
+        */
 
         tree->gtOp1  = op1->AsCast()->CastOp();
         tree->gtOp2  = op2->AsCast()->CastOp();
@@ -11180,24 +11182,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 assert(tree->OperIs(GT_DIV));
                 tree->ChangeOper(GT_UDIV);
                 return fgMorphSmpOp(tree, mac);
-            }
-
-            if (opts.OptimizationEnabled() && !optValnumCSE_phase)
-            {
-                // DIV(NEG(a), C) => DIV(a, NEG(C))
-                if (op1->OperIs(GT_NEG) && !op1->gtGetOp1()->IsCnsIntOrI() && op2->IsCnsIntOrI() &&
-                    !op2->IsIconHandle())
-                {
-                    ssize_t op2Value = op2->AsIntCon()->IconValue();
-                    if (op2Value != 1 && op2Value != -1) // Div must throw exception for int(long).MinValue / -1.
-                    {
-                        tree->AsOp()->gtOp1 = op1->gtGetOp1();
-                        DEBUG_DESTROY_NODE(op1);
-                        tree->AsOp()->gtOp2 = gtNewIconNode(-op2Value, op2->TypeGet());
-                        DEBUG_DESTROY_NODE(op2);
-                        return fgMorphSmpOp(tree, mac);
-                    }
-                }
             }
 
 #ifndef TARGET_64BIT

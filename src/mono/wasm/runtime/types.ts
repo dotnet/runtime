@@ -3,6 +3,32 @@
 
 import { bind_runtime_method } from "./method-binding";
 
+export type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
+
+export interface ManagedPointer {
+    __brandManagedPointer: "ManagedPointer"
+}
+
+export interface NativePointer {
+    __brandNativePointer: "NativePointer"
+}
+
+export interface VoidPtr extends NativePointer {
+    __brand: "VoidPtr"
+}
+
+export interface CharPtr extends NativePointer {
+    __brand: "CharPtr"
+}
+
+export interface Int32Ptr extends NativePointer {
+    __brand: "Int32Ptr"
+}
+
+export interface CharPtrPtr extends NativePointer {
+    __brand: "CharPtrPtr"
+}
+
 export type GCHandle = {
     __brand: "GCHandle"
 }
@@ -104,7 +130,7 @@ export const enum AssetBehaviours {
     VFS = "vfs", // load asset into the virtual filesystem (for fopen, File.Open, etc)
 }
 
-export type t_RuntimeHelpers = {
+export type RuntimeHelpers = {
     get_call_sig: MonoMethod;
     runtime_namespace: string;
     runtime_classname: string;
@@ -134,10 +160,20 @@ export const enum GlobalizationMode {
 
 export type AOTProfilerOptions = {
     write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into Module.aot_profile_data.)
+    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpAotProfileData' (DumpAotProfileData stores the data into INTERNAL.aot_profile_data.)
 }
 
 export type CoverageProfilerOptions = {
     write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
-    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into Module.coverage_profile_data.)
+    send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
+}
+
+// how we extended emscripten Module
+export type EmscriptenModuleMono = EmscriptenModule & {
+    no_global_exports?: boolean,
+
+    // backward compatibility
+    config?: MonoConfig | MonoConfigError,
+    // backward compatibility https://github.com/search?q=mono_bind_static_method&type=Code
+    mono_bind_static_method: (fqn: string, signature: string) => Function,
 }
