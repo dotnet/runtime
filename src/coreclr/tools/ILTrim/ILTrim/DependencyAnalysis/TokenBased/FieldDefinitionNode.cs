@@ -27,19 +27,27 @@ namespace ILTrim.DependencyAnalysis
             FieldDefinition fieldDef = _module.MetadataReader.GetFieldDefinition(Handle);
             TypeDefinitionHandle declaringType = fieldDef.GetDeclaringType();
 
-            // TODO: Check if FieldDefinition has other references that needed to be added
-            yield return new DependencyListEntry(factory.TypeDefinition(_module, declaringType), "Field owning type");
+            DependencyList dependencies = new DependencyList();
+
+            EcmaSignatureAnalyzer.AnalyzeFieldSignature(
+                _module,
+                _module.MetadataReader.GetBlobReader(fieldDef.Signature),
+                factory,
+                dependencies);
+
+            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
             if((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
             {
-                yield return new DependencyListEntry(factory.GetNodeForToken(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
+                dependencies.Add(factory.GetNodeForToken(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
             }
 
             foreach (CustomAttributeHandle customAttribute in fieldDef.GetCustomAttributes())
             {
-                yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a field");
+                dependencies.Add(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a field");
             }
 
+            return dependencies;
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
@@ -49,9 +57,12 @@ namespace ILTrim.DependencyAnalysis
             FieldDefinition fieldDef = reader.GetFieldDefinition(Handle);
 
             var builder = writeContext.MetadataBuilder;
+            BlobBuilder signatureBlob = writeContext.GetSharedBlobBuilder();
 
-            // TODO: the signature blob might contain references to tokens we need to rewrite
-            var signatureBlob = reader.GetBlobBytes(fieldDef.Signature);
+            EcmaSignatureRewriter.RewriteFieldSignature(
+                reader.GetBlobReader(fieldDef.Signature),
+                writeContext.TokenMap,
+                signatureBlob);
 
             return builder.AddFieldDefinition(
                 fieldDef.Attributes,

@@ -230,6 +230,25 @@ namespace ILTrim.DependencyAnalysis
             }
         }
 
+        public static void RewriteFieldSignature(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
+        {
+            new EcmaSignatureRewriter(signatureReader, tokenMap).RewriteFieldSignature(blobBuilder);
+        }
+
+        private void RewriteFieldSignature(BlobBuilder blobBuilder)
+        {
+            SignatureHeader header = _blobReader.ReadSignatureHeader();
+            RewriteFieldSignature(blobBuilder, header);
+        }
+
+        private void RewriteFieldSignature(BlobBuilder blobBuilder, SignatureHeader header)
+        {
+            var encoder = new BlobEncoder(blobBuilder);
+            var sigEncoder = encoder.FieldSignature();
+
+            RewriteType(sigEncoder);
+        }
+
         public static void RewriteMemberReferenceSignature(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
         {
             new EcmaSignatureRewriter(signatureReader, tokenMap).RewriteMemberReferenceSignature(blobBuilder);
@@ -245,7 +264,7 @@ namespace ILTrim.DependencyAnalysis
             else
             {
                 System.Diagnostics.Debug.Assert(header.Kind == SignatureKind.Field);
-                // TODO: fields
+                RewriteFieldSignature(blobBuilder, header);
             }
         }
 

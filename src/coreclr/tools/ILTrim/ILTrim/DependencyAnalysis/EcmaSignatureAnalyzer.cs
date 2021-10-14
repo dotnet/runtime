@@ -161,6 +161,25 @@ namespace ILTrim.DependencyAnalysis
             return _dependenciesOrNull;
         }
 
+        public static DependencyList AnalyzeFieldSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencyList dependencies = null)
+        {
+            return new EcmaSignatureAnalyzer(module, blobReader, factory, dependencies).AnalyzeFieldSignature();
+        }
+
+        private DependencyList AnalyzeFieldSignature()
+        {
+            SignatureHeader header = _blobReader.ReadSignatureHeader();
+            return AnalyzeFieldSignature(header);
+        }
+
+        private DependencyList AnalyzeFieldSignature(SignatureHeader header)
+        {
+            // Return type
+            AnalyzeType();
+
+            return _dependenciesOrNull;
+        }
+
         public static DependencyList AnalyzeMemberReferenceSignature(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencyList dependencies = null)
         {
             return new EcmaSignatureAnalyzer(module, blobReader, factory, dependencies).AnalyzeMemberReferenceSignature();
@@ -176,8 +195,7 @@ namespace ILTrim.DependencyAnalysis
             else
             {
                 System.Diagnostics.Debug.Assert(header.Kind == SignatureKind.Field);
-                // TODO: field signature
-                return _dependenciesOrNull;
+                return AnalyzeFieldSignature(header);
             }
         }
 
