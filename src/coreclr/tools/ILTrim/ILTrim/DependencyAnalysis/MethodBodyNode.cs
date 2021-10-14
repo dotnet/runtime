@@ -57,7 +57,7 @@ namespace ILTrim.DependencyAnalysis
                     if (exceptionRegion.Kind != ExceptionRegionKind.Catch)
                         continue;
 
-                    yield return new DependencyListEntry(factory.GetNodeForToken(_module, exceptionRegion.CatchType), "Catch type of exception region");
+                    _dependencies.Add(factory.GetNodeForToken(_module, exceptionRegion.CatchType), "Catch type of exception region");
                 }
             }
 
