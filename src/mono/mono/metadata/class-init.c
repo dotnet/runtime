@@ -2359,6 +2359,10 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			continue;
+		if (field->type->byref && !allow_isbyreflike_fields) {
+			mono_class_set_type_load_failure (klass, "Instance ByRefLike field '%s' not in a ref struct", field->name);
+			return;
+		}
 		MonoClass *field_class = NULL;
 		/* have to be careful not to recursively invoke mono_class_init on a static field.
 		 * for example - if the field is an array of a subclass of klass, we can loop.
