@@ -17,11 +17,11 @@ namespace ILTrim.DependencyAnalysis
     /// </summary>
     public sealed class NodeFactory
     {
-        public IReadOnlySet<string> TrimAssemblies { get; }
+        IReadOnlySet<string> _trimAssemblies { get; }
 
         public NodeFactory(IEnumerable<string> trimAssemblies)
         {
-            TrimAssemblies = new HashSet<string>(trimAssemblies);
+            _trimAssemblies = new HashSet<string>(trimAssemblies);
         }
 
         /// <summary>
@@ -230,6 +230,11 @@ namespace ILTrim.DependencyAnalysis
         public GenericParameterConstraintNode GenericParameterConstraint(EcmaModule module, GenericParameterConstraintHandle handle)
         {
             return _genericParameterConstraints.GetOrAdd(new HandleKey<GenericParameterConstraintHandle>(module, handle));
+        }
+
+        public bool IsModuleTrimmed(EcmaModule module)
+        {
+            return _trimAssemblies.Contains(module.Assembly.GetName().Name);
         }
 
         private struct HandleKey<T> : IEquatable<HandleKey<T>> where T : struct, IEquatable<T>

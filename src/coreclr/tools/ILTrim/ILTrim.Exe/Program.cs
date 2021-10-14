@@ -12,14 +12,23 @@ namespace ILTrim
         static void Main(string[] args)
         {
             var inputPath = args[0];
-            using var output = File.Create("out.exe");
             int i = 1;
             List<string> referencePaths = new();
-            while (args.Length > i && args[i] == "-r") {
-                referencePaths.Add (args[i+1]);
-                i += 2;
+            List<string> trimPaths = new();
+            while (args.Length > i) {
+                if (args[i] == "-r")
+                {
+                    referencePaths.Add(args[i + 1]);
+                    i += 2;
+                }
+                else if (args[i] == "-t")
+                {
+                    trimPaths.Add(args[i + 1]);
+                    i += 2;
+                }
             }
-            Trimmer.TrimAssembly(inputPath, output, referencePaths);
+
+            Trimmer.TrimAssembly(inputPath, trimPaths, Directory.GetCurrentDirectory(), referencePaths);
         }
     }
 }

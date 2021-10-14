@@ -27,13 +27,21 @@ namespace ILTrim.DependencyAnalysis
 
             DependencyList dependencies = new DependencyList();
 
-            if (methodOrFieldDef is EcmaMethod method)
+            switch (methodOrFieldDef)
             {
-                if (factory.TrimAssemblies.Contains(method.Module.Assembly.GetName().Name))
-                {
-                    dependencies.Add(factory.GetNodeForToken(method.Module, method.Handle), "Target method def of member reference");
-                }
+                case EcmaMethod method:
+                    if (factory.IsModuleTrimmed(method.Module))
+                    {
+                        dependencies.Add(factory.GetNodeForToken(method.Module, method.Handle), "Target method def of member reference");
+                    }
+                    break;
 
+                case EcmaField field:
+                    if (factory.IsModuleTrimmed(field.Module))
+                    {
+                        dependencies.Add(factory.GetNodeForToken(field.Module, field.Handle), "Target field def of member reference");
+                    }
+                    break;
             }
 
             if (!memberRef.Parent.IsNil)
