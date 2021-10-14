@@ -2836,6 +2836,7 @@ retry:
 	case MONO_TYPE_GENERICINST:
 		return gclass_in_image (type->data.generic_class, image);
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		type = type->data.type;
 		goto retry;
 	case MONO_TYPE_SZARRAY:
@@ -3010,6 +3011,7 @@ retry:
 		collect_gclass_images (type->data.generic_class, data);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		type = type->data.type;
 		goto retry;
 	case MONO_TYPE_SZARRAY:
@@ -4015,6 +4017,7 @@ mono_metadata_free_type (MonoType *type)
 			return;
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		mono_metadata_free_type (type->data.type);
 		break;
 	case MONO_TYPE_FNPTR:
@@ -5175,6 +5178,7 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 		*align = MONO_ABI_ALIGNOF (gpointer);
@@ -5260,6 +5264,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 		*align = stack_slot_align;
@@ -5450,6 +5455,7 @@ mono_metadata_type_hash (MonoType *t1)
 		return ((hash << 5) - hash) ^ mono_metadata_str_hash (m_class_get_name (klass));
 	}
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_class_get_byval_arg (t1->data.array->eklass));
@@ -5661,6 +5667,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
 		break;
 	case MONO_TYPE_ARRAY:
@@ -5976,7 +5983,7 @@ mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const Mo
 static void
 deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o)
 {
-	if (o->type == MONO_TYPE_PTR) {
+	if (o->type == MONO_TYPE_PTR || o->type == MONO_TYPE_BYREF) {
 		r->data.type = mono_metadata_type_dup (image, o->data.type);
 	} else if (o->type == MONO_TYPE_ARRAY) {
 		r->data.array = mono_dup_array_type (image, o->data.array);
@@ -7753,8 +7760,9 @@ mono_guid_signature_append_type (GString *res, MonoType *type)
 		mono_guid_signature_append_method (res, type->data.method);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		mono_guid_signature_append_type (res, type->data.type);
-		g_string_append_c (res, '*');
+		g_string_append_c (res, type->type == MONO_TYPE_PTR ? '*' : '&');
 		break;
 	default:
 		break;
