@@ -1902,8 +1902,6 @@ namespace System
 
         public override Type MakeByRefType()
         {
-            if (IsByRef)
-                throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
             return make_byref_type();
         }
 
