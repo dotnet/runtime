@@ -3,7 +3,7 @@
 namespace Mono.Linker.Tests.Cases.Basic
 {
     [Kept]
-    class Program
+    class TypeSpecSignature
     {
         [Kept]
         static void Main()
