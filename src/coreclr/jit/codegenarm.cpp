@@ -1883,4 +1883,36 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 #endif // USING_SCOPE_INFO
 }
 
+//-----------------------------------------------------------------------------------
+// instGen_MemoryBarrier: Emit a MemoryBarrier instruction
+//
+// Arguments:
+//     barrierKind - kind of barrier to emit (ignored on arm32)
+//
+// Notes:
+//     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
+//     barrierKind argument is ignored on arm32 and a full memory barrier is emitted
+//
+void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
+{
+#ifdef DEBUG
+    if (JitConfig.JitNoMemoryBarriers() == 1)
+    {
+        return;
+    }
+#endif // DEBUG
+
+    // Avoid emitting redundant memory barriers on arm32 if they belong to the same IG
+    // and there were no memory accesses in-between them
+    if ((GetEmitter()->emitLastMemBarrier != nullptr) && compiler->opts.OptimizationEnabled())
+    {
+        assert(GetEmitter()->emitLastMemBarrier->idSmallCns() == INS_BARRIER_SY);
+    }
+    else
+    {
+        // ARM has only full barriers, so all barriers need to be emitted as full.
+        GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, INS_BARRIER_SY);
+    }
+}
+
 #endif // TARGET_ARM

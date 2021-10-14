@@ -1,39 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-var Module = { 
+var Module = {
 
     config: null,
 
-    preInit: async function() {
-        await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
+    preInit: async function () {
+        await MONO.mono_wasm_load_config("./mono-config.json"); // sets MONO.config implicitly
     },
 
     onRuntimeInitialized: function () {
-        if (!Module.config || Module.config.error) {
+        if (!MONO.config || MONO.config.error) {
             console.log("No config found");
             test_exit(1);
-            throw(Module.config.error);
+            throw (MONO.config.error);
         }
-        
-        Module.config.loaded_cb = function () {
+
+        MONO.config.loaded_cb = function () {
             try {
-                App.init ();
+                App.init();
             } catch (error) {
                 test_exit(1);
                 throw (error);
             }
         };
-        Module.config.fetch_file_cb = function (asset) {
-            return fetch (asset, { credentials: 'same-origin' });
+        MONO.config.fetch_file_cb = function (asset) {
+            return fetch(asset, { credentials: 'same-origin' });
         }
 
-        try
-        {
-            MONO.mono_load_runtime_and_bcl_args (Module.config);
+        try {
+            MONO.mono_load_runtime_and_bcl_args(MONO.config);
         } catch (error) {
             test_exit(1);
-            throw(error);
+            throw (error);
         }
     },
 };

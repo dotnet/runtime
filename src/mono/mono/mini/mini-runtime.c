@@ -3039,7 +3039,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+			if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 				supported = FALSE;
 		}
 
@@ -3186,7 +3186,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (sig->hasthis)
 		args [pindex ++] = &obj;
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (info->ret_box_class && !sig->ret->byref &&
+		if (info->ret_box_class && !m_type_is_byref (sig->ret) &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
 			// if the return type is a struct, allocate enough stack space to hold it
@@ -3219,7 +3219,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 			params [i] = nullable_buf;
 		}
 
-		if (!t->byref && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
+		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
 		}
@@ -3234,7 +3234,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
-	if (sig->ret->byref) {
+	if (m_type_is_byref (sig->ret)) {
 		if (*(gpointer*)retval == NULL) {
 			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
 			MonoObject *ex = mono_object_new_checked (klass, error);
@@ -3246,14 +3246,14 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (info->ret_box_class) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return ret;
 			}
 		} else {
-			if (sig->ret->byref)
+			if (m_type_is_byref (sig->ret))
 				return **(MonoObject***)retval;
 			else
 				return *(MonoObject**)retval;
@@ -3417,7 +3417,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		guint8 *retval = NULL;
 
 		/* if the return type is a struct and it's too big, allocate more space for it */
-		if (info->ret_box_class && !sig->ret->byref &&
+		if (info->ret_box_class && !m_type_is_byref (sig->ret) &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
 			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
@@ -3438,7 +3438,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				args [pindex ++] = &params [i];
 			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
 				args [pindex ++] = &params [i];
@@ -3464,7 +3464,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			return NULL;
 		}
 
-		if (sig->ret->byref) {
+		if (m_type_is_byref (sig->ret)) {
 			if (*(gpointer*)retval == NULL) {
 				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
 				MonoObject *ex = mono_object_new_checked (klass, error);
@@ -3475,14 +3475,14 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (info->ret_box_class) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *boxed_ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return boxed_ret;
 			}
 		} else {
-			if (sig->ret->byref)
+			if (m_type_is_byref (sig->ret))
 				return **(MonoObject***)retval;
 			else
 				return *(MonoObject**)retval;

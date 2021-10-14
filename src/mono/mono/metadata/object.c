@@ -848,7 +848,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					continue;
 			}
 			/* FIXME: should not happen, flag as type load error */
-			if (field->type->byref)
+			if (m_type_is_byref (field->type))
 				break;
 
 			if (static_fields && field->offset == -1)
@@ -2654,7 +2654,7 @@ mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	int t;
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		/* object fields cannot be byref, so we don't need a
 		   wbarrier here */
 		gpointer *p = (gpointer*)dest;
@@ -2997,7 +2997,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
-		is_ref = type->byref;
+		is_ref = m_type_is_byref (type);
 		break;
 	case MONO_TYPE_GENERICINST:
 		is_ref = !mono_type_generic_inst_is_valuetype (type);
@@ -4556,7 +4556,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
 					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
-					if (t->byref)
+					if (m_type_is_byref (t))
 						*has_byref_nullables = TRUE;
 				} else {
 					/* MS seems to create the objects if a null is passed in */
@@ -4568,7 +4568,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 						was_null = TRUE;
 					}
 
-					if (t->byref) {
+					if (m_type_is_byref (t)) {
 						/*
 						 * We can't pass the unboxed vtype byref to the callee, since
 						 * that would mean the callee would be able to modify boxed
@@ -4583,7 +4583,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 					}
 					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = mono_object_unbox_internal (*pa_obj);
-					if (!t->byref && was_null)
+					if (!m_type_is_byref (t) && was_null)
 						mono_span_setref (params_span, i, NULL);
 				}
 				break;
@@ -4592,7 +4592,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				if (t->byref) {
+				if (m_type_is_byref (t)) {
 					result = mono_span_addr (params_span, MonoObject*, i);
 					// FIXME: I need to check this code path
 				} else {
@@ -4601,7 +4601,7 @@ invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t
 				}
 				break;
 			case MONO_TYPE_GENERICINST:
-				if (t->byref)
+				if (m_type_is_byref (t))
 					t = m_class_get_this_arg (t->data.generic_class->container_class);
 				else
 					t = m_class_get_byval_arg (t->data.generic_class->container_class);
@@ -4793,10 +4793,10 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *
 			} else {
 				box_args [0] = NULL;
 			}
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				// byref is already unboxed by the invoke code
 				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
-				tmpret->byref = FALSE;
+				tmpret->byref__ = FALSE;
 				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 				mono_metadata_free_type (tmpret);

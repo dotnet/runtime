@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.14.5)
 
 project(mono-wasm-runtime C)
 
+set(CMAKE_EXECUTABLE_SUFFIX ".js")
 add_executable(dotnet corebindings.c driver.c pinvoke.c)
 
 target_include_directories(dotnet PUBLIC ${MONO_INCLUDES} ${MONO_OBJ_INCLUDES})
@@ -23,7 +24,6 @@ target_link_libraries(dotnet
     ${NATIVE_BIN_DIR}/libSystem.IO.Compression.Native.a)
 
 set_target_properties(dotnet PROPERTIES
-    CMAKE_EXECUTABLE_SUFFIX ".js"
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/runtime.iffe.js;${SOURCE_DIR}/library-dotnet.js;${SYSTEM_NATIVE_DIR}/pal_random.js"
     LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp ${CONFIGURATION_EMCC_FLAGS} -DENABLE_NETCORE=1 --pre-js ${NATIVE_BIN_DIR}/src/runtime.iffe.js --js-library ${SOURCE_DIR}/library-dotnet.js --js-library ${SYSTEM_NATIVE_DIR}/pal_random.js"
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
