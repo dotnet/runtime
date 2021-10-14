@@ -2177,9 +2177,11 @@ mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref)
 	g_assert (type);
 	if (!strip_byref) {
 		if (m_type_is_byref (type)) {
-			if (type->type != MONO_TYPE_BYREF)
-				return mono_class_create_byref (type);
-			else
+			if (type->type != MONO_TYPE_BYREF) {
+				/* strip off the byref bit and get a class */
+				MonoClass *el_class = mono_class_from_mono_type2 (type, TRUE);
+				return mono_class_create_byref (m_class_get_byval_arg (el_class));
+			} else
 				return mono_class_create_byref (type->data.type);
 		}
 		g_assert (!m_type_is_byref (type) && type->type != MONO_TYPE_BYREF);

@@ -1512,7 +1512,7 @@ mono_class_create_byref (MonoType *type)
 	char *name;
 	MonoMemoryManager *mm;
 
-	el_class = mono_class_from_mono_type_internal (type);
+	el_class = mono_class_from_mono_type2 (type, FALSE);
 	image = el_class->image;
 	// FIXME: Optimize this
 	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_mem_manager_for_class (el_class) : NULL;
