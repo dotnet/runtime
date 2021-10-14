@@ -3370,7 +3370,7 @@ namespace System.Runtime.Intrinsics.X86
     }
 
     [System.CLSCompliantAttribute(false)]
-    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
+    [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
     {
         internal AvxVnni() { }
