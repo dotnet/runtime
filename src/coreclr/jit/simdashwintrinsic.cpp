@@ -809,7 +809,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
 
                 case NI_VectorT128_WidenUpper:
                 {
-                    return gtNewSimdWidenLowerNode(retType, op1, simdBaseJitType, simdSize,
+                    return gtNewSimdWidenUpperNode(retType, op1, simdBaseJitType, simdSize,
                                                    /* isSimdAsHWIntrinsic */ true);
                 }
 #else
