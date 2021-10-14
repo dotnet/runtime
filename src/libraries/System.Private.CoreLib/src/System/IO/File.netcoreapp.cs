@@ -151,10 +151,6 @@ namespace System.IO
                     fileOffset += toStore.Length;
                     preambleSize = 0;
                 }
-
-                long fileLength = 0;
-                Debug.Assert(!fileHandle.CanSeek || fileOffset == (fileLength = RandomAccess.GetFileLength(fileHandle)),
-                    $"File length different than expected. Offset: {fileOffset}, Length: {fileLength}");
             }
             finally
             {
@@ -210,10 +206,6 @@ namespace System.IO
                     fileOffset += toStore.Length;
                     preambleSize = 0;
                 }
-
-                long fileLength = 0;
-                Debug.Assert(!fileHandle.CanSeek || fileOffset == (fileLength = RandomAccess.GetFileLength(fileHandle)),
-                    $"File length different than expected. Offset: {fileOffset}, Length: {fileLength}");
             }
             finally
             {
