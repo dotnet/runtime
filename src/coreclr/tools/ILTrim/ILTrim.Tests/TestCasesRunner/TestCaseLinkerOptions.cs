@@ -8,7 +8,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 	{
 		public string TrimMode;
 		public string DefaultAssembliesAction;
-		public List<KeyValuePair<string, string>> AssembliesAction = new List<KeyValuePair<string, string>> ();
+		public List<(string Action, string Assembly)> AssembliesAction = new();
 
 		public string Il8n;
 		public bool IgnoreDescriptors;

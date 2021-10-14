@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute))) {
 				var ca = assemblyAction.ConstructorArguments;
-				tclo.AssembliesAction.Add (new KeyValuePair<string, string> ((string) ca[0].Value, (string) ca[1].Value));
+				tclo.AssembliesAction.Add (((string) ca[0].Value, (string) ca[1].Value));
 			}
 
 			foreach (var descFile in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerDescriptorFile))) {

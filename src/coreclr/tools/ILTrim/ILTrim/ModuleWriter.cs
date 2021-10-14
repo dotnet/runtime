@@ -25,6 +25,8 @@ namespace ILTrim
         private readonly EcmaModule _module;
         private readonly List<TokenBasedNode> _tokensToWrite;
 
+        public string AssemblyName => _module.Assembly.GetName().Name;
+
         private ModuleWriter(NodeFactory factory, EcmaModule module, List<TokenBasedNode> tokensToWrite)
             => (_factory, _module, _tokensToWrite) = (factory, module, tokensToWrite);
 

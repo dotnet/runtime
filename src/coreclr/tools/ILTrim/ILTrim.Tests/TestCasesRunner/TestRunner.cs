@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Mono.Cecil;
@@ -130,7 +131,16 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			foreach (var inputReference in sandbox.InputDirectory.Files ()) {
 				var ext = inputReference.ExtensionWithDot;
 				if (ext == ".dll" || ext == ".exe")
-					builder.AddReference (inputReference);
+				{
+					if (caseDefinedOptions.AssembliesAction.Contains(("link", inputReference.FileNameWithoutExtension)))
+					{
+						builder.AddLinkAssembly(inputReference);
+					}
+					else
+					{
+                        builder.AddReference(inputReference);
+					}
+				}
 			}
 			var coreAction = caseDefinedOptions.TrimMode ?? "skip";
 			foreach (var extraReference in metadataProvider.GetExtraLinkerReferences ()) {

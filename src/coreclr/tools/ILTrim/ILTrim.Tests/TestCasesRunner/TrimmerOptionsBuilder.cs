@@ -43,6 +43,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 		}
 
+		public virtual void AddLinkAssembly(string fileName)
+		{
+			Options.AdditionalLinkAssemblies.Add(fileName);
+		}
+
 		public virtual void LinkFromAssembly (string fileName)
 		{
             Options.InputPath = fileName;
@@ -129,8 +134,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				AddDefaultAction (options.DefaultAssembliesAction);
 
 			if (options.AssembliesAction != null) {
-				foreach (var entry in options.AssembliesAction)
-					AddAssemblyAction (entry.Key, entry.Value);
+				foreach (var (action, assembly) in options.AssembliesAction)
+					AddAssemblyAction (action, assembly);
 			}
 
 			// Honoring descriptors causes a ton of stuff to be preserved.  That's good for normal use cases, but for

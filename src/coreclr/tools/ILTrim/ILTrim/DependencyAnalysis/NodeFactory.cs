@@ -17,6 +17,13 @@ namespace ILTrim.DependencyAnalysis
     /// </summary>
     public sealed class NodeFactory
     {
+        public IReadOnlySet<string> TrimAssemblies { get; }
+
+        public NodeFactory(IEnumerable<string> trimAssemblies)
+        {
+            TrimAssemblies = new HashSet<string>(trimAssemblies);
+        }
+
         /// <summary>
         /// Given a module-qualified token, get the dependency graph node that represent the token.
         /// </summary>

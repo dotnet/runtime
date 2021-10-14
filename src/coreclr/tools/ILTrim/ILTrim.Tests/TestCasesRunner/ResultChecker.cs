@@ -196,18 +196,24 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             private readonly Dictionary<string, string> _assemblyPaths = new();
             private readonly Dictionary<string, PEReader> _assemblyReaders = new();
-            public Resolver(PEReader mainAssemblyReader, string mainAssemblyName)
+            public Resolver(PEReader mainAssemblyReader, string mainAssemblyName, string extraDllsPath)
             {
                 _assemblyReaders.Add(mainAssemblyName, mainAssemblyReader);
 
-                var netcoreappDir = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
-                foreach (var assembly in Directory.EnumerateFiles(netcoreappDir))
+                foreach (var assembly in Directory.EnumerateFiles(extraDllsPath, "*.dll"))
                 {
-                    if (Path.GetExtension(assembly) != ".dll")
-                        continue;
                     var assemblyName = Path.GetFileNameWithoutExtension(assembly);
-                    if (assemblyName.Contains("Native"))
+                    _assemblyPaths.Add(assemblyName, assembly);
+                }
+
+                var netcoreappDir = Path.GetDirectoryName(typeof(object).Assembly.Location)!;
+                foreach (var assembly in Directory.EnumerateFiles(netcoreappDir, "*.dll"))
+                {
+                    var assemblyName = Path.GetFileNameWithoutExtension(assembly);
+                    if (assemblyName.Contains("Native") || assemblyName == mainAssemblyName)
+                    {
                         continue;
+                    }
                     if (assemblyName.StartsWith("Microsoft") ||
                         assemblyName.StartsWith("System") ||
                         assemblyName == "mscorlib" || assemblyName == "netstandard")
@@ -239,7 +245,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
         {
             using var peReader = new PEReader(File.OpenRead(linkResult.OutputAssemblyPath.ToString()));
             var verifier = new Verifier(
-                new Resolver(peReader, linkResult.OutputAssemblyPath.FileNameWithoutExtension),
+                new Resolver(peReader, linkResult.OutputAssemblyPath.FileNameWithoutExtension, linkResult.OutputAssemblyPath.Parent.ToString()),
                 new VerifierOptions() { });
             verifier.SetSystemModuleName(typeof(object).Assembly.GetName());
             foreach (var result in verifier.Verify(peReader))

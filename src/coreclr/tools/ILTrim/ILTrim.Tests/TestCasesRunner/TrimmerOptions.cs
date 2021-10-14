@@ -7,6 +7,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
     public class TrimmerOptions
     {
+        public List<string> AdditionalLinkAssemblies { get; set; } = new();
         public string? InputPath { get; set; }
         public string? OutputDirectory { get; set; }
         public List<string> ReferencePaths { get; set; } = new List<string> ();
