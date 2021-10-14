@@ -88,7 +88,18 @@ namespace ILTrim.DependencyAnalysis
                 case SignatureTypeCode.Array:
                     throw new NotImplementedException();
                 case SignatureTypeCode.Pointer:
-                    RewriteType(encoder.Pointer());
+                    {
+                        // Special case void*
+                        SignatureTypeCode pointerInnterTypeCode = _blobReader.ReadSignatureTypeCode();
+                        if (pointerInnterTypeCode == SignatureTypeCode.Void)
+                        {
+                            encoder.VoidPointer();
+                        }
+                        else
+                        {
+                            RewriteType(pointerInnterTypeCode, encoder.Pointer());
+                        }
+                    }
                     break;
                 case SignatureTypeCode.GenericTypeParameter:
                     encoder.GenericTypeParameter(_blobReader.ReadCompressedInteger());
