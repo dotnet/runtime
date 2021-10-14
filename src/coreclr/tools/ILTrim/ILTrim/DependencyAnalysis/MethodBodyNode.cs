@@ -23,6 +23,7 @@ namespace ILTrim.DependencyAnalysis
     {
         private readonly EcmaModule _module;
         private readonly MethodDefinitionHandle _methodHandle;
+        DependencyList _dependencies = null;
 
         public MethodBodyNode(EcmaModule module, MethodDefinitionHandle methodHandle)
         {
@@ -30,17 +31,23 @@ namespace ILTrim.DependencyAnalysis
             _methodHandle = methodHandle;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override bool StaticDependenciesAreComputed => _dependencies != null;
+
+        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => _dependencies;
+
+        internal void ComputeDependencies(NodeFactory factory)
         {
+            _dependencies = new DependencyList();
+
             // RVA = 0 is an extern method, such as a DllImport
             int rva = _module.MetadataReader.GetMethodDefinition(_methodHandle).RelativeVirtualAddress;
             if (rva == 0)
-                yield break;
+                return;
 
             MethodBodyBlock bodyBlock = _module.PEReader.GetMethodBody(rva);
 
             if (!bodyBlock.LocalSignature.IsNil)
-                yield return new DependencyListEntry(factory.StandaloneSignature(_module, bodyBlock.LocalSignature), "Signatures of local variables");
+                _dependencies.Add(factory.StandaloneSignature(_module, bodyBlock.LocalSignature), "Signatures of local variables");
 
             var exceptionRegions = bodyBlock.ExceptionRegions;
             if (!bodyBlock.ExceptionRegions.IsEmpty)
@@ -99,7 +106,7 @@ namespace ILTrim.DependencyAnalysis
                             TypeDesc owningTypeDefinition = constructor.OwningType.GetTypeDefinition();
                             if (owningTypeDefinition is EcmaType ecmaOwningType)
                             {
-                                yield return new(factory.ConstructedType(ecmaOwningType), "Newobj");
+                                _dependencies.Add(factory.ConstructedType(ecmaOwningType), "Newobj");
                             }
                             else
                             {
@@ -112,10 +119,10 @@ namespace ILTrim.DependencyAnalysis
                         {
                             MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(
                                 method.GetTypicalMethodDefinition());
-                            yield return new(factory.VirtualMethodUse((EcmaMethod)slotMethod), "Callvirt/ldvirtftn");
+                            _dependencies.Add(factory.VirtualMethodUse((EcmaMethod)slotMethod), "Callvirt/ldvirtftn");
                         }
 
-                        yield return new DependencyListEntry(factory.GetNodeForToken(
+                        _dependencies.Add(factory.GetNodeForToken(
                             _module,
                             token),
                             $"Instruction {opcode.ToString()} operand");
@@ -291,7 +298,6 @@ namespace ILTrim.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
-        public override bool StaticDependenciesAreComputed => true;
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
     }
