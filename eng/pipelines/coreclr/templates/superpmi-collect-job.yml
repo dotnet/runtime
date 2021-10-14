@@ -32,7 +32,7 @@ jobs:
      - ${{ format('coreclr__product_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
      # Depend on coreclr x64 so we can download it and use mcs.exe from it while publishing non-x64 arch SPMI collection
      - ${{ if ne(parameters.archType, 'x64') }}:
-       - ${{ format('coreclr__product_build_{0}{1}_x64_{3}', parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
+       - ${{ format('coreclr__product_build_{0}{1}_x64_{2}', parameters.osGroup, parameters.osSubgroup, parameters.buildConfig) }}
      - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
        - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
      - ${{ if eq(parameters.collectionName, 'coreclr_tests') }}:
