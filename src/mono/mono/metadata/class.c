@@ -394,6 +394,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
 	}
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_PTR: {
 		MonoTypeNameFormat nested_format;
 
@@ -402,7 +403,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 
 		mono_type_get_name_recurse (
 			type->data.type, str, FALSE, nested_format);
-		g_string_append_c (str, '*');
+		if (type->type == MONO_TYPE_PTR)
+			g_string_append_c (str, '*');
 
 		mono_type_name_check_byref (type, str);
 

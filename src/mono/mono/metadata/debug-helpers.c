@@ -170,6 +170,10 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 		g_string_append (res, "string"); break;
 	case MONO_TYPE_OBJECT:
 		g_string_append (res, "object"); break;
+	case MONO_TYPE_BYREF:
+		/* trailing '&' appended by the if (m_type_is_byref()) check, below the switch */
+		mono_type_get_desc (res, type->data.type, include_namespace);
+		break;
 	case MONO_TYPE_PTR:
 		mono_type_get_desc (res, type->data.type, include_namespace);
 		g_string_append_c (res, '*');
@@ -1067,6 +1071,7 @@ print_field_value (const char *field_ptr, MonoClassField *field, int type_offset
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_FNPTR:
 		g_print ("%p\n", *(const void**)field_ptr);
 		break;
