@@ -1158,7 +1158,7 @@ mono_string_new_len_wrapper_impl (const char *text, guint length, MonoError *err
 guint
 mono_type_to_ldind (MonoType *type)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return CEE_LDIND_I;
 
 handle_enum:
@@ -1215,7 +1215,7 @@ handle_enum:
 guint
 mono_type_to_stind (MonoType *type)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MONO_TYPE_IS_REFERENCE (type) ? CEE_STIND_REF : CEE_STIND_I;
 
 handle_enum:
@@ -2297,7 +2297,7 @@ mono_marshal_get_string_ctor_signature (MonoMethod *method)
 static MonoType*
 get_runtime_invoke_type (MonoType *t, gboolean ret)
 {
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 			return t;
 
@@ -3693,7 +3693,7 @@ mono_marshal_emit_managed_wrapper (MonoMethodBuilder *mb, MonoMethodSignature *i
 static gboolean
 type_is_blittable (MonoType *type)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return FALSE;
 	type = mono_type_get_underlying_type (type);
 	switch (type->type) {
@@ -5441,7 +5441,7 @@ mono_type_native_stack_size (MonoType *t, guint32 *align)
 	if (!align)
 		align = &tmp;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*align = TARGET_SIZEOF_VOID_P;
 		return TARGET_SIZEOF_VOID_P;
 	}
@@ -5934,7 +5934,7 @@ mono_marshal_get_thunk_invoke_wrapper (MonoMethod *method)
 
 	/* setup exception param as byref+[out] */
 	csig->params [param_count - 1] = mono_metadata_type_dup (image, m_class_get_byval_arg (mono_defaults.exception_class));
-	csig->params [param_count - 1]->byref = 1;
+	csig->params [param_count - 1]->byref__ = 1;
 	csig->params [param_count - 1]->attrs = PARAM_ATTRIBUTE_OUT;
 
 	/* convert struct return to object */

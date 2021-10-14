@@ -235,7 +235,7 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 	if (type->has_cmods) {
 		mono_custom_modifiers_get_desc (res, type, include_namespace);
 	}
-	if (type->byref)
+	if (m_type_is_byref (type))
 		g_string_append_c (res, '&');
 }
 
