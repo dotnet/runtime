@@ -1902,8 +1902,10 @@ namespace System
 
         public override Type MakeByRefType()
         {
+#if !MONO_FEATURE_ANY_BYREF
             if (IsByRef)
                 throw new TypeLoadException("Can not call MakeByRefType on a ByRef type");
+#endif
             return make_byref_type();
         }
 
