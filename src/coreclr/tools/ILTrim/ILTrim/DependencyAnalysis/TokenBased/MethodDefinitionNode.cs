@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -21,6 +22,16 @@ namespace ILTrim.DependencyAnalysis
 
         private MethodDefinitionHandle Handle => (MethodDefinitionHandle)_handle;
 
+        public bool IsInstanceMethodOnReferenceType {
+            get {
+                MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
+                TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
+                EcmaType ecmaType = (EcmaType)_module.GetObject(declaringType);
+                return !ecmaType.IsValueType && !methodDef.Attributes.HasFlag(MethodAttributes.Static);
+
+            }
+        }
+
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
             MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
@@ -36,7 +47,11 @@ namespace ILTrim.DependencyAnalysis
 
             dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
 
-            dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
+            if (!IsInstanceMethodOnReferenceType)
+            {
+                // Static methods and methods on value types are not subject to the unused method body optimization.
+                dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
+            }
 
             foreach (CustomAttributeHandle customAttribute in methodDef.GetCustomAttributes())
             {
@@ -56,6 +71,22 @@ namespace ILTrim.DependencyAnalysis
             return dependencies;
         }
 
+        // Instance methods on reference types conditionally depend on their bodies.
+        public override bool HasConditionalStaticDependencies => IsInstanceMethodOnReferenceType;
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            MethodDefinition methodDef = _module.MetadataReader.GetMethodDefinition(Handle);
+            TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
+            var ecmaType = (EcmaType)_module.GetObject(declaringType);
+
+            // Conditionally depend on the method body if the declaring type was constructed.
+            yield return new(
+                factory.MethodBody(_module, Handle),
+                factory.ConstructedType(ecmaType),
+                "Method body on constructed type");
+        }
+
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
         {
             MetadataReader reader = _module.MetadataReader;
@@ -64,8 +95,11 @@ namespace ILTrim.DependencyAnalysis
 
             var builder = writeContext.MetadataBuilder;
 
+            EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
-            int rva = bodyNode.Write(writeContext);
+            int rva = bodyNode.Marked
+                ? bodyNode.Write(writeContext)
+                : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
             BlobBuilder signatureBlob = writeContext.GetSharedBlobBuilder();
             EcmaSignatureRewriter.RewriteMethodSignature(

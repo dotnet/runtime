@@ -70,9 +70,9 @@ namespace ILTrim.DependencyAnalysis
 
         public sealed override bool InterestingForDynamicDependencyAnalysis => false;
         public sealed override bool HasDynamicDependencies => false;
-        public sealed override bool HasConditionalStaticDependencies => false;
+        public override bool HasConditionalStaticDependencies => false;
         public sealed override bool StaticDependenciesAreComputed => true;
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
         public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
     }
 }
