@@ -122,8 +122,11 @@ ClrDataAccess::ServerGCHeapDetails(CLRDATA_ADDRESS heapAddr, DacpGcHeapDetails *
 
     detailsData->lowest_address = PTR_CDADDR(g_lowest_address);
     detailsData->highest_address = PTR_CDADDR(g_highest_address);
-    detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
-
+    detailsData->current_c_gc_state = c_gc_state_free;
+    if (g_gcDacGlobals->current_c_gc_state != NULL)
+    {
+        detailsData->current_c_gc_state = (CLRDATA_ADDRESS)*g_gcDacGlobals->current_c_gc_state;
+    }
     // now get information specific to this heap (server mode gives us several heaps; we're getting
     // information about only one of them.
     detailsData->alloc_allocated = (CLRDATA_ADDRESS)pHeap->alloc_allocated;
