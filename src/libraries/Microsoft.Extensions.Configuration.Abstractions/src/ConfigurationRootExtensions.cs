@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Extensions.Configuration.Abstractions;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -36,7 +37,7 @@ namespace Microsoft.Extensions.Configuration
         ///   returns: Value is used to assign as the Value of the configuration section
         /// </param>
         /// <returns> The debug view. </returns>
-        public static string GetDebugView(this IConfigurationRoot root, Func<string, string, string, IConfigurationProvider, string> processValue)
+        public static string GetDebugView(this IConfigurationRoot root, Func<ConfigurationDebugViewContext, string> processValue)
         {
             void RecurseChildren(
                 StringBuilder stringBuilder,
@@ -50,7 +51,7 @@ namespace Microsoft.Extensions.Configuration
                     if (valueAndProvider.Provider != null)
                     {
                         var value = processValue != null
-                            ? processValue(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider)
+                            ? processValue(new ConfigurationDebugViewContext(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider))
                             : valueAndProvider.Value;
 
                         stringBuilder
