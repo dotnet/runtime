@@ -148,8 +148,7 @@ namespace System.Threading.Tasks.Tests
             {
                 while (true)
                 {
-                    await Task.Delay(50);
-                    cancellationToken.ThrowIfCancellationRequested();
+                    await Task.Delay(50, cancellationToken);
                     yield return "y";
                 }
             }
