@@ -156,11 +156,22 @@
         <_InternalForceInterpret>true</_InternalForceInterpret>
         <_IsNative>true</_IsNative>
       </AppleAssembliesToBundle>
-      <_PublishAssemblies Include="$(PublishDir)\**\*.dll" />
+      
+      <_PublishAssemblies Include="$(PublishDir)\**\*.dll" Exclude="$(PublishDir)\**\*.resources.dll" />
+      <_SatelliteAssemblies Include="$(PublishDir)\**\*.resources.dll" />
+
       <AppleAssembliesToBundle Include="@(_PublishAssemblies)">
         <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
         <_IsNative>false</_IsNative>
       </AppleAssembliesToBundle>
+      <!--
+      <AppleAssembliesToBundle Include="@(_SatelliteAssemblies)">
+        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true'">true</_InternalForceInterpret>
+        <_IsNative>false</_IsNative>
+        <_CultureName>$([System.IO.Directory]::GetParent('%(FullPath)').Name)</_CultureName>
+        <_TargetPath>$([System.IO.Directory]::GetParent('%(FullPath)').Name)\%(FileName)%(Extension)</_TargetPath>
+      </AppleAssembliesToBundle>
+      -->
 
       <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
     </ItemGroup>
