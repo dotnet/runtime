@@ -32,6 +32,7 @@ namespace ILTrim.DependencyAnalysis
 
         private void RewriteType(SignatureTypeCode typeCode, SignatureTypeEncoder encoder)
         {
+        again:
             switch (typeCode)
             {
                 case SignatureTypeCode.Boolean:
@@ -96,7 +97,8 @@ namespace ILTrim.DependencyAnalysis
                 case SignatureTypeCode.RequiredModifier:
                 case SignatureTypeCode.OptionalModifier:
                     RewriteCustomModifier(typeCode, encoder.CustomModifiers());
-                    break;
+                    typeCode = _blobReader.ReadSignatureTypeCode();
+                    goto again;
                 case SignatureTypeCode.GenericTypeInstance:
                     {
                         int classOrValueType = _blobReader.ReadCompressedInteger();
@@ -119,7 +121,15 @@ namespace ILTrim.DependencyAnalysis
                 case SignatureTypeCode.TypedReference:
                     encoder.PrimitiveType(PrimitiveTypeCode.TypedReference); break;
                 case SignatureTypeCode.FunctionPointer:
-                    throw new NotImplementedException();
+                    {
+                        SignatureHeader header = _blobReader.ReadSignatureHeader();
+                        int arity = header.IsGeneric ? _blobReader.ReadCompressedInteger() : 0;
+                        MethodSignatureEncoder sigEncoder = encoder.FunctionPointer(header.CallingConvention, 0, arity);
+                        int count = _blobReader.ReadCompressedInteger();
+                        sigEncoder.Parameters(count, out ReturnTypeEncoder retTypeEncoder, out ParametersEncoder paramEncoder);
+                        RewriteMethodSignature(count, retTypeEncoder, paramEncoder);
+                    }
+                    break;
                 default:
                     throw new BadImageFormatException();
             }
@@ -185,6 +195,11 @@ namespace ILTrim.DependencyAnalysis
 
             sigEncoder.Parameters(count, out ReturnTypeEncoder returnTypeEncoder, out ParametersEncoder paramsEncoder);
 
+            RewriteMethodSignature(count, returnTypeEncoder, paramsEncoder);
+        }
+
+        private void RewriteMethodSignature(int count, ReturnTypeEncoder returnTypeEncoder, ParametersEncoder paramsEncoder)
+        {
             bool isByRef = false;
         againReturnType:
             SignatureTypeCode typeCode = _blobReader.ReadSignatureTypeCode();

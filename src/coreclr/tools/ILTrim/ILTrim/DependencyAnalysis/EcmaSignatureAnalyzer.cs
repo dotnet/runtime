@@ -46,6 +46,7 @@ namespace ILTrim.DependencyAnalysis
 
         private void AnalyzeType(SignatureTypeCode typeCode)
         {
+        again:
             switch (typeCode)
             {
                 case SignatureTypeCode.Void:
@@ -85,7 +86,8 @@ namespace ILTrim.DependencyAnalysis
                 case SignatureTypeCode.RequiredModifier:
                 case SignatureTypeCode.OptionalModifier:
                     AnalyzeCustomModifier(typeCode);
-                    break;
+                    typeCode = _blobReader.ReadSignatureTypeCode();
+                    goto again;
                 case SignatureTypeCode.GenericTypeInstance:
                     _blobReader.ReadCompressedInteger();
                     Dependencies.Add(_factory.GetNodeForToken(_module, _blobReader.ReadTypeHandle()), "Signature reference");
@@ -96,7 +98,8 @@ namespace ILTrim.DependencyAnalysis
                     }
                     break;
                 case SignatureTypeCode.FunctionPointer:
-                    throw new NotImplementedException();
+                    AnalyzeMethodSignature();
+                    break;
                 default:
                     throw new BadImageFormatException();
             }
