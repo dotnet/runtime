@@ -299,7 +299,7 @@ static inline MonoSpanOfObjects
 mono_span_create_from_object_array (MonoArray *arr) {
 	MonoSpanOfObjects span;
 	if (arr != NULL) {
-		span._length = (int)mono_array_length_internal (arr);
+		span._length = (int32_t)mono_array_length_internal (arr);
 		span._pointer = mono_array_addr_fast (arr, MonoObject*, 0);
 	} else {
 		span._length = 0;
