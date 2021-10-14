@@ -1303,6 +1303,9 @@ mono_class_from_mono_type_internal (MonoType *type);
 MonoClass *
 mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref);
 
+gboolean
+mono_class_is_byref (MonoClass *klass);
+
 MONO_COMPONENT_API MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
 

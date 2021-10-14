@@ -6731,3 +6731,17 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only)
 	}
 	return FALSE;
 }
+
+gboolean
+mono_class_is_byref (MonoClass *klass)
+{
+#ifndef ENABLE_EXPERIMENT_ANY_BYREF
+	g_assert_not_reached ();
+#endif
+	if (G_LIKELY (m_class_get_class_kind (klass) != MONO_CLASS_POINTER))
+		return FALSE;
+	MonoType *t = m_class_get_byval_arg (klass);
+	if (t->type == MONO_TYPE_BYREF || m_type_is_byref (t))
+		return TRUE;
+	return FALSE;
+}
