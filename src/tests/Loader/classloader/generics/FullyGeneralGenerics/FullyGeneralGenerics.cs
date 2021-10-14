@@ -55,6 +55,7 @@ namespace FullyGeneralGenericsTest
             fullyGenericType.GetMethod("UseValue").Invoke(null, null);
             fullyGenericType.GetMethod("FailOnNonStandardTypeWithException").Invoke(null, null);
 
+#if false
             Console.WriteLine("Test Can Create Generic of ByRef");
             fullyGenericType = typeof(GenericType<>).MakeGenericType(typeof(int).MakeByRefType());
             Console.WriteLine(fullyGenericType.FullName);
@@ -65,28 +66,32 @@ namespace FullyGeneralGenericsTest
                 Console.WriteLine("FAILED to throw exception calling method with [GenericParameterSupportsOnlyNonByRefLikeAttribute]");
                 return 1;
             } catch {}
-
+#endif
             Console.WriteLine("Test Can Create Generic of ByRef to ByRef");
             fullyGenericType = typeof(GenericType<>).MakeGenericType(typeof(int).MakeByRefType().MakeByRefType());
             Console.WriteLine(fullyGenericType.FullName);
             fullyGenericType.GetMethod("UseValue").Invoke(null, null);
+#if false
             try
             {
                 fullyGenericType.GetMethod("FailOnNonStandardTypeWithException").Invoke(null, null);
                 Console.WriteLine("FAILED to throw exception calling method with [GenericParameterSupportsOnlyNonByRefLikeAttribute]");
                 return 1;
             } catch {}
+#endif
 
             Console.WriteLine("Test Can Create Generic of TypedReference");
             fullyGenericType = typeof(GenericType<>).MakeGenericType(typeof(TypedReference));
             Console.WriteLine(fullyGenericType.FullName);
             fullyGenericType.GetMethod("UseValue").Invoke(null, null);
+#if false
             try
             {
                 fullyGenericType.GetMethod("FailOnNonStandardTypeWithException").Invoke(null, null);
                 Console.WriteLine("FAILED to throw exception calling method with [GenericParameterSupportsOnlyNonByRefLikeAttribute]");
                 return 1;
             } catch {}
+#endif
 
             return 100;
         }
