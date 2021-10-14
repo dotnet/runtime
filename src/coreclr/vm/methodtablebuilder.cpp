@@ -1704,19 +1704,12 @@ MethodTableBuilder::BuildMethodTableThrowing(
         &pByValueClassCache, bmtMFDescs, bmtFP,
         &totalDeclaredFieldSize);
 
-    // TODO: VS this is a complete hack which works only in Debug
-    //       ValueArray<> should be bound at load time and
-    //       here we should compare it with constructed-from type.
-    //
-    SString cname = SString(SString::Utf8, this->GetHalfBakedClass()->m_szDebugClassName);
-    if (cname.BeginsWith(SString(SString::Utf8Literal, "System.ValueArray`1[")))
+    if (!bmtGenericsInfo->fContainsGenericVariables &&
+        g_pValueArrayClass != NULL &&
+        g_pValueArrayClass->GetCl() == GetCl() &&
+        g_pValueArrayClass->GetModule() == bmtInternal->pType->GetModule())
     {
-        if (!bmtGenericsInfo->fContainsGenericVariables)
-        {
-            bmtFP->NumValueArrayElements = 42;
-        }
-
-        printf("Loading: %s \n", this->GetHalfBakedClass()->m_szDebugClassName);
+        bmtFP->NumValueArrayElements = 42;
     }
 
     // Place regular static fields

@@ -71,6 +71,7 @@ GPTR_IMPL(MethodTable,      g_pExecutionEngineExceptionClass);
 GPTR_IMPL(MethodTable,      g_pDelegateClass);
 GPTR_IMPL(MethodTable,      g_pMulticastDelegateClass);
 GPTR_IMPL(MethodTable,      g_pValueTypeClass);
+GPTR_IMPL(MethodTable,      g_pValueArrayClass);
 GPTR_IMPL(MethodTable,      g_pEnumClass);
 GPTR_IMPL(MethodTable,      g_pThreadClass);
 GPTR_IMPL(MethodTable,      g_pFreeObjectMethodTable);

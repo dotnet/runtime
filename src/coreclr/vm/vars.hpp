@@ -378,6 +378,7 @@ GPTR_DECL(MethodTable,      g_pDelegateClass);
 GPTR_DECL(MethodTable,      g_pMulticastDelegateClass);
 GPTR_DECL(MethodTable,      g_pFreeObjectMethodTable);
 GPTR_DECL(MethodTable,      g_pValueTypeClass);
+GPTR_DECL(MethodTable,      g_pValueArrayClass);
 GPTR_DECL(MethodTable,      g_pEnumClass);
 GPTR_DECL(MethodTable,      g_pThreadClass);
 GPTR_DECL(MethodTable,      g_pOverlappedDataClass);

@@ -1441,6 +1441,8 @@ void SystemDomain::LoadBaseSystemClasses()
     g_pICastableInterface = CoreLibBinder::GetClass(CLASS__ICASTABLE);
 #endif // FEATURE_ICASTABLE
 
+    g_pValueArrayClass = CoreLibBinder::GetClass(CLASS__VALUE_ARRAY);
+
     // Make sure that FCall mapping for Monitor.Enter is initialized. We need it in case Monitor.Enter is used only as JIT helper.
     // For more details, see comment in code:JITutil_MonEnterWorker around "__me = GetEEFuncEntryPointMacro(JIT_MonEnter)".
     ECall::GetFCallImpl(CoreLibBinder::GetMethod(METHOD__MONITOR__ENTER));

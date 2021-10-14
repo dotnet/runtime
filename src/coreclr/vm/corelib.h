@@ -977,6 +977,8 @@ DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
 DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
 DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
 
+DEFINE_CLASS(VALUE_ARRAY,           System,                 ValueArray`1)
+
 DEFINE_CLASS(GC,                    System,                 GC)
 DEFINE_METHOD(GC,                   KEEP_ALIVE,             KeepAlive,                  SM_Obj_RetVoid)
 DEFINE_METHOD(GC,                   COLLECT,                Collect,                    SM_RetVoid)
