@@ -106,14 +106,31 @@ namespace ILTrim.DependencyAnalysis
             }
         }
 
-        public static DependencyList AnalyzeLocalVariableBlob(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencyList dependencies = null)
+        public static DependencyList AnalyzeStandaloneSignatureBlob(EcmaModule module, BlobReader blobReader, NodeFactory factory, DependencyList dependencies = null)
         {
-            return new EcmaSignatureAnalyzer(module, blobReader, factory, dependencies).AnalyzeLocalVariableBlob();
+            return new EcmaSignatureAnalyzer(module, blobReader, factory, dependencies).AnalyzeStandaloneSignatureBlob();
         }
 
-        private DependencyList AnalyzeLocalVariableBlob()
+        private DependencyList AnalyzeStandaloneSignatureBlob()
         {
             SignatureHeader header = _blobReader.ReadSignatureHeader();
+            switch (header.Kind)
+            {
+                case SignatureKind.Method:
+                    AnalyzeMethodSignature(header);
+                    break;
+                case SignatureKind.LocalVariables:
+                    AnalyzeLocalVariablesBlob(header);
+                    break;
+                default:
+                    throw new BadImageFormatException();
+            }
+
+            return _dependenciesOrNull;
+        }
+
+        private DependencyList AnalyzeLocalVariablesBlob(SignatureHeader header)
+        { 
             int varCount = _blobReader.ReadCompressedInteger();
             for (int i = 0; i < varCount; i++)
             {

@@ -28,7 +28,7 @@ namespace ILTrim.DependencyAnalysis
 
             BlobReader signatureReader = reader.GetBlobReader(standaloneSig.Signature);
 
-            return EcmaSignatureAnalyzer.AnalyzeLocalVariableBlob(
+            return EcmaSignatureAnalyzer.AnalyzeStandaloneSignatureBlob(
                 _module,
                 signatureReader,
                 factory
@@ -41,7 +41,7 @@ namespace ILTrim.DependencyAnalysis
             StandaloneSignature standaloneSig = reader.GetStandaloneSignature(Handle);
             BlobBuilder blobBuilder = writeContext.GetSharedBlobBuilder();
 
-            EcmaSignatureRewriter.RewriteLocalVariableBlob(
+            EcmaSignatureRewriter.RewriteStandaloneSignatureBlob(
                 reader.GetBlobReader(standaloneSig.Signature),
                 writeContext.TokenMap,
                 blobBuilder);

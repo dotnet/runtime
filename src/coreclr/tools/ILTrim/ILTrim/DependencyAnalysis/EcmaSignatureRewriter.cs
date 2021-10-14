@@ -166,14 +166,29 @@ namespace ILTrim.DependencyAnalysis
             }
         }
 
-        public static void RewriteLocalVariableBlob(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
+        public static void RewriteStandaloneSignatureBlob(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
         {
-            new EcmaSignatureRewriter(signatureReader, tokenMap).RewriteLocalVariableBlob(blobBuilder);
+            new EcmaSignatureRewriter(signatureReader, tokenMap).RewriteStandaloneSignatureBlob(blobBuilder);
         }
 
-        private void RewriteLocalVariableBlob(BlobBuilder blobBuilder)
+        private void RewriteStandaloneSignatureBlob(BlobBuilder blobBuilder)
         {
             SignatureHeader header = _blobReader.ReadSignatureHeader();
+            switch (header.Kind)
+            {
+                case SignatureKind.Method:
+                    RewriteMethodSignature(blobBuilder, header);
+                    break;
+                case SignatureKind.LocalVariables:
+                    RewriteLocalVariablesBlob(blobBuilder, header);
+                    break;
+                default:
+                    throw new BadImageFormatException();
+            }
+        }
+
+        private void RewriteLocalVariablesBlob(BlobBuilder blobBuilder, SignatureHeader header)
+        {
             int varCount = _blobReader.ReadCompressedInteger();
             var encoder = new BlobEncoder(blobBuilder);
             var localEncoder = encoder.LocalVariableSignature(varCount);

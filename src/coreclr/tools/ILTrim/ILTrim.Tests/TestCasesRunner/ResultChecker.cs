@@ -243,14 +243,17 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
         protected virtual void AdditionalChecking (TrimmedTestCaseResult linkResult, AssemblyDefinition original)
         {
-            using var peReader = new PEReader(File.OpenRead(linkResult.OutputAssemblyPath.ToString()));
-            var verifier = new Verifier(
-                new Resolver(peReader, linkResult.OutputAssemblyPath.FileNameWithoutExtension, linkResult.OutputAssemblyPath.Parent.ToString()),
-                new VerifierOptions() { });
-            verifier.SetSystemModuleName(typeof(object).Assembly.GetName());
-            foreach (var result in verifier.Verify(peReader))
+            if (!HasAttribute(original.MainModule.GetType(linkResult.TestCase.ReconstructedFullTypeName), nameof(SkipILVerifyAttribute)))
             {
-                Assert.True(false, $"IL Verififaction failed: {result.Message}{Environment.NewLine}Type token: {MetadataTokens.GetToken(result.Type):x}, Method token: {MetadataTokens.GetToken(result.Method):x}");
+                using var peReader = new PEReader(File.OpenRead(linkResult.OutputAssemblyPath.ToString()));
+                var verifier = new Verifier(
+                    new Resolver(peReader, linkResult.OutputAssemblyPath.FileNameWithoutExtension, linkResult.OutputAssemblyPath.Parent.ToString()),
+                    new VerifierOptions() { });
+                verifier.SetSystemModuleName(typeof(object).Assembly.GetName());
+                foreach (var result in verifier.Verify(peReader))
+                {
+                    Assert.True(false, $"IL Verififaction failed: {result.Message}{Environment.NewLine}Type token: {MetadataTokens.GetToken(result.Type):x}, Method token: {MetadataTokens.GetToken(result.Method):x}");
+                }
             }
         }
 
