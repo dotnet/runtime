@@ -7900,7 +7900,9 @@ namespace System
     public partial struct ValueArray<T>
     {
         public T Element0;
-        public T this[int index] { get { throw null; } set { } }
+        public T this[int index, int upperBound = 42] { get { throw null; } set { } }
+        public ref T Address(int index, int upperBound = 42) { throw null; }
+        public Span<T> Slice(int length, int upperBound = 42) { throw null; }
     }
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
     {
