@@ -284,9 +284,7 @@ namespace System.IO
         }
 
         public static void WriteAllLines(string path, string[] contents)
-        {
-            WriteAllLines(path, (IEnumerable<string>)contents);
-        }
+            => WriteAllLines(path, (IEnumerable<string>)contents);
 
         public static void WriteAllLines(string path, IEnumerable<string> contents)
             => WriteAllLines(path, contents, UTF8NoBOM);
@@ -733,49 +731,5 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
         }
-
-#if MS_IO_REDIST
-        private static void WriteToFile(string path, FileMode mode, string? contents, Encoding encoding)
-        {
-            using StreamWriter sw = new StreamWriter(path, mode == FileMode.Append, encoding);
-            sw.Write(contents);
-        }
-
-        private static async Task WriteToFileAsync(string path, FileMode mode, string? contents, Encoding encoding, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrEmpty(contents))
-            {
-                new FileStream(path, mode, FileAccess.Write, FileShare.Read).Dispose();
-                return;
-            }
-
-            StreamWriter sw = AsyncStreamWriter(path, encoding, mode == FileMode.Append);
-            char[]? buffer = null;
-            try
-            {
-                buffer = ArrayPool<char>.Shared.Rent(DefaultBufferSize);
-                int count = contents!.Length;
-                int index = 0;
-                while (index < count)
-                {
-                    int batchSize = Math.Min(DefaultBufferSize, count - index);
-                    contents!.CopyTo(index, buffer, 0, batchSize);
-                    await sw.WriteAsync(buffer, 0, batchSize).ConfigureAwait(false);
-                    index += batchSize;
-                }
-
-                cancellationToken.ThrowIfCancellationRequested();
-                await sw.FlushAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                sw.Dispose();
-                if (buffer != null)
-                {
-                    ArrayPool<char>.Shared.Return(buffer);
-                }
-            }
-        }
-#endif
     }
 }
