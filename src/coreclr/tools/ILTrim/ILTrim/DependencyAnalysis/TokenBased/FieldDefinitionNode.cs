@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
 using Internal.TypeSystem.Ecma;
 
 namespace ILTrim.DependencyAnalysis
@@ -37,7 +36,7 @@ namespace ILTrim.DependencyAnalysis
 
             dependencies.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
-            if((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
+            if ((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
             {
                 dependencies.Add(factory.GetNodeForToken(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
             }
@@ -64,10 +63,39 @@ namespace ILTrim.DependencyAnalysis
                 writeContext.TokenMap,
                 signatureBlob);
 
+            if ((fieldDef.Attributes & FieldAttributes.HasFieldRVA) == FieldAttributes.HasFieldRVA)
+            {
+                WriteRvaData(writeContext, fieldDef.GetRelativeVirtualAddress());
+            }
+
             return builder.AddFieldDefinition(
                 fieldDef.Attributes,
                 builder.GetOrAddString(reader.GetString(fieldDef.Name)),
                 builder.GetOrAddBlob(signatureBlob));
+        }
+
+        unsafe private void WriteRvaData(ModuleWritingContext writeContext, int rva)
+        {
+            var fieldDesc = _module.GetField(Handle);
+
+            if (fieldDesc.FieldType is EcmaType typeDesc && rva != 0)
+            {
+                var rvaBlobReader = _module.PEReader.GetSectionData(rva).Pointer;
+                int fieldSize = typeDesc.Category switch
+                {
+                    Internal.TypeSystem.TypeFlags.Byte => 1,
+                    Internal.TypeSystem.TypeFlags.Int16 => 2,
+                    Internal.TypeSystem.TypeFlags.Int32 => 4,
+                    Internal.TypeSystem.TypeFlags.Int64 => 8,
+                    _ => typeDesc.EcmaModule.MetadataReader.GetTypeDefinition(typeDesc.Handle).GetLayout().Size
+                };
+                BlobBuilder outputBodyBuilder = writeContext.FieldDataBuilder;
+                int currentRVA = outputBodyBuilder.Count;
+                outputBodyBuilder.WriteBytes(rvaBlobReader, fieldSize);
+                writeContext.MetadataBuilder.AddFieldRelativeVirtualAddress(
+                    (FieldDefinitionHandle)writeContext.TokenMap.MapToken(Handle),
+                    currentRVA);
+            }
         }
 
         public override string ToString()
