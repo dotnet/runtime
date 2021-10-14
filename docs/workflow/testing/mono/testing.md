@@ -20,6 +20,10 @@ cd src/tests
 ./build.sh excludemonofailures <release|debug>
 ```
 
+To build an individual test, test directory, or a whole subdirectory tree, use the `-test:`, `-dir:` or `-tree:` options (without the src/tests prefix)
+For example: `./build.sh excludemonofailures release -test:JIT/opt/InstructionCombining/DivToMul.csproj`
+
+
 Run individual test:
 ```
 cd src/mono
@@ -31,6 +35,24 @@ Run all tests:
 cd src/mono
 make run-tests-coreclr-all
 ```
+
+To debug a single test with `lldb`:
+
+1. Run the test at least once normally (or manually run the `mono.proj` `PatchCoreClrCoreRoot` target)
+2. Edit the `.sh` file for the test and change the line
+```
+    LAUNCHER="$_DebuggerFullPath "$CORE_ROOT/corerun" -p "System.Reflection.Metadata.MetadataUpdater.IsSupported=false"  ${__DotEnvArg}"
+```
+to add `--` after the debugger full path
+```
+    LAUNCHER="$_DebuggerFullPath -- "$CORE_ROOT/corerun" -p "System.Reflection.Metadata.MetadataUpdater.IsSupported=false"  ${__DotEnvArg}"
+```
+3. Run the shell script for the test case manually:
+```
+bash ./artifacts/tests/coreclr/OSX.x64.Release/JIT/opt/InstructionCombining/DivToMul/DivToMul.sh -coreroot=`pwd`/artifacts/tests/coreclr/OSX.x64.Release/Tests/Core_Root -debug=/usr/bin/lldb
+```
+4. In LLDB add the debug symbols for mono: `add-dsym <CORE_ROOT>/libcoreclr.dylib.dwarf`
+5. Run/debug the test
 
 ### WebAssembly:
 Build the runtime tests for WebAssembly
