@@ -6,6 +6,11 @@ interface IFirstType
     static void Method() { }
 }
 
+interface IPropertyType
+{
+    static int FirstProperty { get; }
+}
+
 interface IProgram
 {
     static int Field;

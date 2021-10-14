@@ -56,7 +56,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.EventDefinition:
                     throw new NotImplementedException();
                 case HandleKind.PropertyDefinition:
-                    throw new NotImplementedException();
+                    return PropertyDefinition(module, (PropertyDefinitionHandle)handle);
                 case HandleKind.MethodImplementation:
                     throw new NotImplementedException();
                 case HandleKind.ModuleReference:
@@ -174,6 +174,14 @@ namespace ILTrim.DependencyAnalysis
         public StandaloneSignatureNode StandaloneSignature(EcmaModule module, StandaloneSignatureHandle handle)
         {
             return _standaloneSignatures.GetOrAdd(new HandleKey<StandaloneSignatureHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<PropertyDefinitionHandle>, PropertyDefinitionNode> _propertyDefinitions
+            = new NodeCache<HandleKey<PropertyDefinitionHandle>, PropertyDefinitionNode>(key
+                => new PropertyDefinitionNode(key.Module, key.Handle));
+        public PropertyDefinitionNode PropertyDefinition(EcmaModule module, PropertyDefinitionHandle handle)
+        {
+            return _propertyDefinitions.GetOrAdd(new HandleKey<PropertyDefinitionHandle>(module, handle));
         }
 
         NodeCache<EcmaModule, ModuleDefinitionNode> _moduleDefinitions

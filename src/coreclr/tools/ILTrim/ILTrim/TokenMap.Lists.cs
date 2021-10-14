@@ -52,7 +52,7 @@ namespace ILTrim
     {
         public MethodDefinitionHandle MapTypeMethodList(TypeDefinitionHandle typeDefHandle)
         {
-            // Grabbing the mapped token to use as a MethodList is awakward because
+            // Grabbing the mapped token to use as a MethodList is awkward because
             // S.R.Metadata abstracts away the raw value of the MethodList field of the record.
             //
             // All we can do is enumerate the methods on the type, but that might not be useful
@@ -104,7 +104,7 @@ namespace ILTrim
 
         public FieldDefinitionHandle MapTypeFieldList(TypeDefinitionHandle typeDefHandle)
         {
-            // Grabbing the mapped token to use as a FieldList is awakward because
+            // Grabbing the mapped token to use as a FieldList is awkward because
             // S.R.Metadata abstracts away the raw value of the FieldList field of the record.
             //
             // All we can do is enumerate the fields on the type, but that might not be useful
@@ -203,6 +203,45 @@ namespace ILTrim
                 result = MetadataTokens.ParameterHandle(_preAssignedRowIdsPerTable[(int)TableIndex.Param] + 1);
             }
 
+            return result;
+        }
+
+        public PropertyDefinitionHandle MapTypePropertyList(TypeDefinitionHandle typeDefHandle)
+        {
+            // Grabbing the mapped token to use as a PropertyList is awkward because
+            // S.R.Metadata abstracts away the raw value of the PropertyList field of the record.
+            //
+            // All we can do is enumerate the properties on the type. Unlike fields and methods,
+            // the property/type association is stored in a separate table that should not contain
+            // entries for types without properties.
+            PropertyDefinitionHandle sourceToken = default;
+            PropertyDefinitionHandleCollection propertyList = _reader.GetTypeDefinition(typeDefHandle).GetProperties();
+            if (propertyList.Count > 0)
+            {
+                var enumerator = propertyList.GetEnumerator();
+                enumerator.MoveNext();
+                sourceToken = enumerator.Current;
+            }
+
+            PropertyDefinitionHandle result = default;
+            if (!sourceToken.IsNil)
+            {
+                // We got a token in the source assembly, but the token might not be present in the output.
+                // We need to find the first token starting with this one that is part of the output.
+                for (int currentPropertyRow = MetadataTokens.GetRowNumber(sourceToken);
+                    currentPropertyRow < _tokenMap[(int)TableIndex.Property].Length;
+                    currentPropertyRow++)
+                {
+                    EntityHandle currentProperty = _tokenMap[(int)TableIndex.Property][currentPropertyRow];
+                    if (!currentProperty.IsNil)
+                    {
+                        result = (PropertyDefinitionHandle)currentProperty;
+                        break;
+                    }
+                }
+            }
+
+            // The result token may be nil if this type has no marked properties.
             return result;
         }
     }

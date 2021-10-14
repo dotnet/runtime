@@ -221,7 +221,11 @@ namespace ILTrim.DependencyAnalysis
             int arity = header.IsGeneric ? _blobReader.ReadCompressedInteger() : 0;
             var encoder = new BlobEncoder(blobBuilder);
             var sigEncoder = encoder.MethodSignature(header.CallingConvention, arity, header.IsInstance);
+            RewriteMethodSignature(sigEncoder);
+        }
 
+        private void RewriteMethodSignature(MethodSignatureEncoder sigEncoder)
+        {
             int count = _blobReader.ReadCompressedInteger();
 
             sigEncoder.Parameters(count, out ReturnTypeEncoder returnTypeEncoder, out ParametersEncoder paramsEncoder);
@@ -346,5 +350,22 @@ namespace ILTrim.DependencyAnalysis
             }
         }
 
+        public static void RewritePropertySignature(BlobReader signatureReader, TokenMap tokenMap, BlobBuilder blobBuilder)
+        {
+            new EcmaSignatureRewriter(signatureReader, tokenMap).RewritePropertySignature(blobBuilder);
+        }
+
+        private void RewritePropertySignature(BlobBuilder blobBuilder)
+        {
+            SignatureHeader header = _blobReader.ReadSignatureHeader();
+            RewritePropertySignature(blobBuilder, header);
+        }
+
+        private void RewritePropertySignature(BlobBuilder blobBuilder, SignatureHeader header)
+        {
+            var encoder = new BlobEncoder(blobBuilder);
+            var sigEncoder = encoder.PropertySignature(header.IsInstance);
+            RewriteMethodSignature(sigEncoder);
+        }
     }
 }
