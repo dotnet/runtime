@@ -278,7 +278,7 @@
     <!-- default to allowing all language features -->
     <LangVersion>preview</LangVersion>
     <LangVersion Condition="'$(MSBuildProjectExtension)' == '.vbproj'">latest</LangVersion>
-    <CscToolExe Condition="'$(_hostOS)' == 'Windows'">$(MSBuildThisFileDirectory)\runcsc.bat</CscToolExe>
+    <CscToolExe Condition="'$(_hostOS)' == 'Windows'">$(MSBuildThisFileDirectory)\..\roslyn\artifacts\bin\csc\Release\net472\csc.exe</CscToolExe>
     <CscToolExe Condition="'$(_hostOS)' != 'Windows'">$(MSBuildThisFileDirectory)\runcsc.sh</CscToolExe>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict;nullablePublicOnly</Features>
