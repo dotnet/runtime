@@ -2001,7 +2001,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 {
 	MonoType *type, *cached;
 	MonoType stype;
-	gboolean byref = FALSE;
+	int byref = 0;
 	gboolean pinned = FALSE;
 	const char *tmp_ptr;
 	int count = 0; // Number of mod arguments
@@ -2061,6 +2061,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	}
 
 	/* Iterate again, but now parse pinned, byref and custom modifiers */
+	/* FIXME: modifiers before and after a byref are different.  For example: int32 modopt(Const) & modopt(Const) is a C++/CLI const managed pointer to a const int32 */
 	found = TRUE;
 	/* cmods are encoded in reverse order from how we normally see them.
 	 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
@@ -2072,7 +2073,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			++ptr;
 			break;
 		case MONO_TYPE_BYREF:
-			byref = TRUE;
+			byref++;
 			++ptr;
 			break;
 		case MONO_TYPE_CMOD_REQD:
@@ -2087,8 +2088,18 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	// either there were no cmods, or else we iterated through all of cmods backwards to populate it.
 	g_assert (count == 0);
 
+        if (byref > 1) {
+                /* FIXME: there could be parameter attributes or a pinned flag.  They should go on the outer MonoType not the inner ones. */
+                g_assert (!opt_attrs);
+                g_assert (!pinned);
+        }
+
 	type->attrs = opt_attrs;
-	type->byref__ = byref;
+	if (byref > 0) {
+		/* innermost byref just flips a bit on the element type. */
+		type->byref__ = 1;
+		byref--;
+	}
 	type->pinned = pinned ? 1 : 0;
 
 	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, error))
@@ -2122,21 +2133,33 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			            of a MonoClass which currently holds the loader lock.  'type' is local.
 			*/
 			if (ret->data.klass == type->data.klass) {
-				return ret;
+				type = ret;
 			}
 		}
 		/* No need to use locking since nobody is modifying the hash table */
 		if ((cached = (MonoType *)g_hash_table_lookup (type_cache, type))) {
-			return cached;
+			type = cached;
 		}
 	}
-	
-	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
-	
+
 	if (type == &stype) { // Type was allocated on the stack, so we need to copy it to safety
 		type = transient ? (MonoType *)g_malloc (MONO_SIZEOF_TYPE) : (MonoType *)mono_image_alloc (m, MONO_SIZEOF_TYPE);
 		memcpy (type, &stype, MONO_SIZEOF_TYPE);
 	}
+
+	/* Add the remaining byref types */
+	while (byref > 0) {
+		MonoType *byref_type = transient ? (MonoType*)g_malloc0 (MONO_SIZEOF_TYPE) : (MonoType*)mono_image_alloc0 (m, MONO_SIZEOF_TYPE);
+		byref_type->type = MONO_TYPE_BYREF;
+		byref_type->byref__ = TRUE;
+		byref_type->data.type = type;
+
+		type = byref_type;
+		byref--;
+	}
+
+	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
+
 	return type;
 }
 
