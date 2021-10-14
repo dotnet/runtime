@@ -6,7 +6,7 @@
 #include "opensslshim.h"
 
 PALEXPORT EVP_CIPHER_CTX*
-CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc);
+CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, unsigned char* iv, int32_t enc);
 
 PALEXPORT EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreatePartial(const EVP_CIPHER* type);
