@@ -11,7 +11,7 @@ namespace System.Threading.Tasks.Tests
     public class AsyncEnumerableToBlockingEnumerableTests
     {
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void EmptyAsyncEnumerable()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -34,7 +34,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void SimpleAsyncEnumerable()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -69,7 +69,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AsyncEnumerableWithDelays()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AsyncEnumerableWithException()
         {
             var source = new InstrumentedAsyncEnumerable<int>(CreateSourceEnumerable());
@@ -131,7 +131,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AsyncEnumerableWithCancellation()
         {
             var source = new InstrumentedAsyncEnumerable<string>(CreateSourceEnumerable());
