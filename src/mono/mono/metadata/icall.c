@@ -6062,14 +6062,19 @@ ves_icall_RuntimeType_make_byref_type (MonoReflectionTypeHandle ref_type, MonoEr
 {
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 
+#ifndef ENABLE_EXPERIMENT_ANY_BYREF
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
+#else
+	MonoClass *klass = mono_class_from_mono_type2 (type, FALSE);
+#endif
 	mono_class_init_checked (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
 	check_for_invalid_byref_or_pointer_type (klass, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE));
 
-	return mono_type_get_object_handle (m_class_get_this_arg (klass), error);
+	MonoType *byref_type = mono_class_get_byref_type (klass);
+	return mono_type_get_object_handle (byref_type, error);
 }
 
 MonoReflectionTypeHandle
