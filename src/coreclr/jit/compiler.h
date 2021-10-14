@@ -6382,6 +6382,7 @@ private:
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
+    GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);

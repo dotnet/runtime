@@ -7,7 +7,7 @@ namespace System.Reflection.Emit.Tests
 {
     public class MethodBuilderGetILGenerator
     {
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [InlineData(20)]
         [InlineData(-10)]
         public void GetILGenerator_Int(int size)

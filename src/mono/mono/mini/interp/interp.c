@@ -1037,16 +1037,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 		}									\
 	} while (0)
 
-/* Don't throw exception if thread is in GC Safe mode. Should only happen in managed-to-native wrapper. */
-#define EXCEPTION_CHECKPOINT_GC_UNSAFE	\
-	do {										\
-		if (mono_thread_interruption_request_flag && !mono_threads_is_critical_method (frame->imethod->method) && mono_thread_is_gc_unsafe_mode ()) { \
-			MonoException *exc = mono_thread_interruption_checkpoint ();	\
-			if (exc)							\
-				THROW_EX_GENERAL (exc, ip, TRUE);					\
-		}									\
-	} while (0)
-
 // Reduce duplicate code in interp_exec_method
 static void
 do_safepoint (InterpFrame *frame, ThreadContext *context)
@@ -1530,7 +1520,8 @@ ves_pinvoke_method (
 	stackval *ret_sp,
 	stackval *sp,
 	gboolean save_last_error,
-	gpointer *cache)
+	gpointer *cache,
+	gboolean *gc_transitions)
 {
 	InterpFrame frame = {0};
 	frame.parent = parent_frame;
@@ -1541,14 +1532,7 @@ ves_pinvoke_method (
 	MonoLMFExt ext;
 	gpointer args;
 
-	/*
-	 * When there's a calli in a pinvoke wrapper, we're in GC Safe mode.
-	 * When we're called for some other calli, we may be in GC Unsafe mode.
-	 *
-	 * On any code path where we call anything other than the entry_func,
-	 * we need to switch back to GC Unsafe before calling the runtime.
-	 */
-	MONO_REQ_GC_NEUTRAL_MODE;
+	MONO_REQ_GC_UNSAFE_MODE;
 
 #ifdef HOST_WASM
 	/*
@@ -1584,9 +1568,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
-	MONO_ENTER_GC_UNSAFE;
 	mono_arch_set_native_call_context_args (&ccontext, &frame, sig);
-	MONO_EXIT_GC_UNSAFE;
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, &frame);
@@ -1594,16 +1576,23 @@ ves_pinvoke_method (
 #endif
 
 	INTERP_PUSH_LMF_WITH_CTX (&frame, ext, exit_pinvoke);
-	entry_func ((gpointer) addr, args);
+
+	if (*gc_transitions) {
+		MONO_ENTER_GC_SAFE;
+		entry_func ((gpointer) addr, args);
+		MONO_EXIT_GC_SAFE;
+		*gc_transitions = FALSE;
+	} else {
+		entry_func ((gpointer) addr, args);
+	}
+
 	if (save_last_error)
 		mono_marshal_set_last_error ();
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!context->has_resume_state) {
-		MONO_ENTER_GC_UNSAFE;
 		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig);
-		MONO_EXIT_GC_UNSAFE;
 	}
 
 	g_free (ccontext.stack);
@@ -1965,7 +1954,9 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 	// method is transformed.
 	context->stack_pointer = (guchar*)(sp + 4);
 
+	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -2047,7 +2038,9 @@ interp_entry (InterpEntryData *data)
 
 	context->stack_pointer = (guchar*)sp_args;
 
+	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 
@@ -2179,12 +2172,19 @@ do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpoi
 #endif
 // Do not inline in case order of frame addresses matters, and maybe other reasons.
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
-do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
+do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
-	do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+	if (*gc_transitions) {
+		MONO_ENTER_GC_SAFE;
+		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+		MONO_EXIT_GC_SAFE;
+		*gc_transitions = FALSE;
+	} else {
+		do_icall (sig, op, ret_sp, sp, ptr, save_last_error);
+	}
 
 	interp_pop_lmf (&ext);
 
@@ -2745,7 +2745,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	}
 	context->stack_pointer = (guchar*)newsp;
 
+	MONO_ENTER_GC_UNSAFE;
 	interp_exec_method (&frame, context, NULL);
+	MONO_EXIT_GC_UNSAFE;
 
 	context->stack_pointer = (guchar*)sp;
 	g_assert (!context->has_resume_state);
@@ -3129,14 +3131,14 @@ static MONO_NEVER_INLINE MonoException*
 mono_interp_leave (InterpFrame* parent_frame)
 {
 	InterpFrame frame = {parent_frame};
-
+	gboolean gc_transitions = FALSE;
 	stackval tmp_sp;
 	/*
 	 * We need for mono_thread_get_undeniable_exception to be able to unwind
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
+	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 
 	return (MonoException*)tmp_sp.data.p;
 }
@@ -3244,6 +3246,7 @@ interp_exec_method (InterpFrame *frame, ThreadContext *context, FrameClauseArgs 
 	unsigned char *locals = NULL;
 	int call_args_offset;
 	int return_offset;
+	gboolean gc_transitions = FALSE;
 
 #if DEBUG_INTERP
 	int tracing = global_tracing;
@@ -3536,8 +3539,8 @@ main_loop:
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 7;
 
-			do_icall_wrapper (frame, csignature, opcode, ret, args, target_ip, save_last_error);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, csignature, opcode, ret, args, target_ip, save_last_error, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 7;
 			MINT_IN_BREAK;
@@ -3564,9 +3567,9 @@ main_loop:
 			gpointer *cache = (gpointer*)&frame->imethod->data_items [ip [7]];
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 8;
-			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache);
+			ves_pinvoke_method (imethod, csignature, (MonoFuncV)code, context, frame, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [3]), save_last_error, cache, &gc_transitions);
 
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 
 			ip += 8;
@@ -6256,8 +6259,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_PPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 			frame->state.ip = ip + 3;
-			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6269,8 +6272,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ICALL_PPPPP_P)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->state.ip = ip + 4;
-			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE);
-			EXCEPTION_CHECKPOINT_GC_UNSAFE;
+			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE, &gc_transitions);
+			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 4;
 			MINT_IN_BREAK;
@@ -6320,9 +6323,9 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gpointer) = mono_domain_get ();
 			ip += 2;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_MONO_GET_SP)
-			LOCAL_VAR (ip [1], gpointer) = frame;
-			ip += 2;
+		MINT_IN_CASE(MINT_MONO_ENABLE_GCTRANS)
+			gc_transitions = TRUE;
+			ip++;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_SDB_INTR_LOC)
 			if (G_UNLIKELY (ss_enabled)) {
