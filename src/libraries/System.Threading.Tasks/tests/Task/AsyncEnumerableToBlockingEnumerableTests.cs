@@ -139,7 +139,7 @@ namespace System.Threading.Tasks.Tests
             using var cts = new CancellationTokenSource(millisecondsDelay: 1000);
             IEnumerable<string> blockingEnumerable = source.ToBlockingEnumerable(cts.Token);
 
-            Assert.Throws<OperationCanceledException>(() => blockingEnumerable.Count());
+            Assert.Throws<TaskCanceledException>(() => blockingEnumerable.Count());
 
             Assert.Equal(1, source.TotalGetAsyncEnumeratorCalls);
             Assert.Equal(1, source.TotalDisposeAsyncCalls);
