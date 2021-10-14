@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 namespace System.Runtime.Intrinsics.X86
 {
     [CLSCompliant(false)]
-    [RequiresPreviewFeatures]
+    [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
     public abstract class AvxVnni : Avx2
     {
         internal AvxVnni() { }
