@@ -43,15 +43,22 @@ CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyL
         }
     }
 
-    if (type == CryptoNative_EvpRC2Cbc() || type == CryptoNative_EvpRC2Ecb())
+    int nid = EVP_CIPHER_get_nid(type);
+
+    switch (nid)
     {
-        // Necessary for RC2
-        ret = EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_RC2_KEY_BITS, keyLength, NULL);
-        if (ret <= 0)
-        {
-            EVP_CIPHER_CTX_free(ctx);
-            return NULL;
-        }
+        case NID_rc2_ecb:
+        case NID_rc2_cbc:
+            // Necessary for RC2
+            ret = EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_RC2_KEY_BITS, keyLength, NULL);
+            if (ret <= 0)
+            {
+                EVP_CIPHER_CTX_free(ctx);
+                return NULL;
+            }
+            break;
+        default:
+            break;
     }
 
     // Perform final initialization specifying the remaining arguments
