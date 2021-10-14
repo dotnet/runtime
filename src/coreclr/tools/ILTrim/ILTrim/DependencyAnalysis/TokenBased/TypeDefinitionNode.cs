@@ -44,6 +44,14 @@ namespace ILTrim.DependencyAnalysis
             {
                 yield return new DependencyListEntry(factory.TypeDefinition(_module, typeDef.GetDeclaringType()), "Declaring type of a type");
             }
+
+            var ecmaType = (EcmaType)_module.GetObject(_handle);
+            if (ecmaType.IsValueType)
+            {
+                // It's difficult to track where a valuetype gets boxed so consider always constructed
+                // for now (it's on par with IL Linker).
+                yield return new(factory.ConstructedType(ecmaType), "Implicitly constructed valuetype");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

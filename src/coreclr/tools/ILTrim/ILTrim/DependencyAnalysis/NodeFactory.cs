@@ -75,6 +75,20 @@ namespace ILTrim.DependencyAnalysis
             }
         }
 
+        NodeCache<EcmaType, ConstructedTypeNode> _constructedTypes = new NodeCache<EcmaType, ConstructedTypeNode>(key
+            => new ConstructedTypeNode(key));
+        public ConstructedTypeNode ConstructedType(EcmaType type)
+        {
+            return _constructedTypes.GetOrAdd(type);
+        }
+
+        NodeCache<EcmaMethod, VirtualMethodUseNode> _virtualMethodUses = new NodeCache<EcmaMethod, VirtualMethodUseNode>(key
+            => new VirtualMethodUseNode(key));
+        public VirtualMethodUseNode VirtualMethodUse(EcmaMethod method)
+        {
+            return _virtualMethodUses.GetOrAdd(method);
+        }
+
         NodeCache<HandleKey<TypeReferenceHandle>, TypeReferenceNode> _typeReferences
             = new NodeCache<HandleKey<TypeReferenceHandle>, TypeReferenceNode>(key
                 => new TypeReferenceNode(key.Module, key.Handle));

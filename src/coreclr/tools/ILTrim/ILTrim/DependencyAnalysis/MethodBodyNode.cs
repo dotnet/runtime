@@ -8,10 +8,11 @@ using System.IO;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysisFramework;
-using Internal.IL;
 
 namespace ILTrim.DependencyAnalysis
 {
@@ -79,9 +80,32 @@ namespace ILTrim.DependencyAnalysis
                     case ILOpcode.refanyval:
                     case ILOpcode.mkrefany:
                     case ILOpcode.constrained:
+                        EntityHandle token = MetadataTokens.EntityHandle(ilReader.ReadILToken());
+
+                        if (opcode == ILOpcode.newobj && _module.TryGetMethod(token) is MethodDesc constructor)
+                        {
+                            TypeDesc owningTypeDefinition = constructor.OwningType.GetTypeDefinition();
+                            if (owningTypeDefinition is EcmaType ecmaOwningType)
+                            {
+                                yield return new(factory.ConstructedType(ecmaOwningType), "Newobj");
+                            }
+                            else
+                            {
+                                Debug.Assert(owningTypeDefinition is ArrayType);
+                            }
+                        }
+
+                        if ((opcode == ILOpcode.callvirt || opcode == ILOpcode.ldvirtftn) &&
+                            _module.TryGetMethod(token) is MethodDesc method && method.IsVirtual)
+                        {
+                            MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(
+                                method.GetTypicalMethodDefinition());
+                            yield return new(factory.VirtualMethodUse((EcmaMethod)slotMethod), "Callvirt/ldvirtftn");
+                        }
+
                         yield return new DependencyListEntry(factory.GetNodeForToken(
                             _module,
-                            MetadataTokens.EntityHandle(ilReader.ReadILToken())),
+                            token),
                             $"Instruction {opcode.ToString()} operand");
                         break;
 
