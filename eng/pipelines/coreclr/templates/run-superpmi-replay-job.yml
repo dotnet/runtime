@@ -9,18 +9,12 @@ parameters:
   archType: ''                    # required -- targeting CPU architecture
   osGroup: ''                     # required -- operating system for the job
   osSubgroup: ''                  # optional -- operating system subgroup
-  extraSetupParameters: ''        # optional -- extra arguments to pass to the setup script
-  frameworks: ['netcoreapp3.0']   # optional -- list of frameworks to run against
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   dependsOn: ''                   # optional -- dependencies of the job
   timeoutInMinutes: 320           # optional -- timeout for the job
   enableTelemetry: false          # optional -- enable for telemetry
   liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
-  runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
-  codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
-  runKind: ''                     # required -- test category
-  collectionType: ''
-  collectionName: ''
+  helixQueues: ''                 # required -- Helix queues
   dependOnEvaluatePaths: false
 
 jobs:
@@ -35,8 +29,6 @@ jobs:
     enableTelemetry: ${{ parameters.enableTelemetry }}
     enablePublishBuildArtifacts: true
     continueOnError: ${{ parameters.continueOnError }}
-    collectionType: $ {{ parameters.collectionType }}
-    collectionName: ${{ parameters.collectionName }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
@@ -46,6 +38,7 @@ jobs:
       displayName: '${{ parameters.jobName }}'
 
     variables:
+
     - ${{ each variable in parameters.variables }}:
       - ${{ if ne(variable.name, '') }}:
         - name: ${{ variable.name }}
@@ -69,11 +62,6 @@ jobs:
     pool:
       ${{ parameters.pool }}
     container: ${{ parameters.container }}
-    strategy:
-      matrix:
-        ${{ each framework in parameters.frameworks }}:
-          ${{ framework }}:
-            _Framework: ${{ framework }}
     steps:
     - ${{ parameters.steps }}
 
@@ -85,17 +73,18 @@ jobs:
       displayName: ${{ format('SuperPMI replay setup ({0} {1})', parameters.osGroup, parameters.archType) }}
 
       # Run superpmi replay in helix
-    - template: /eng/pipelines/coreclr/templates/superpmi-send-to-helix.yml
+    - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
-        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
-        HelixAccessToken: $(HelixApiAccessToken)
-        HelixTargetQueues: $(Queue)
-        HelixPreCommands: $(HelixPreCommand)
-        Creator: $(Creator)
+        displayName: 'Send job to Helix'
+        helixBuild: $(Build.BuildNumber)
+        helixSource: $(_HelixSource)
+        helixType: 'build/tests/'
+        helixQueues: ${{ join(',', parameters.helixQueues) }}
+        creator: dotnet-bot
         WorkItemTimeout: 4:00 # 4 hours
         WorkItemDirectory: '$(WorkItemDirectory)'
         CorrelationPayloadDirectory: '$(CorrelationPayloadDirectory)'
-        ProjectFile: 'superpmi-replay.proj'
+        helixProjectArguments: '$(Build.SourcesDirectory)/src/coreclr/scripts/superpmi-replay.proj'
         BuildConfig: ${{ parameters.buildConfig }}
         osGroup: ${{ parameters.osGroup }}
         archType: ${{ parameters.archType }}
@@ -111,7 +100,7 @@ jobs:
       condition: always()
 
     - task: PublishPipelineArtifact@1
-      displayName: Publish Superpmi logs
+      displayName: Publish SuperPMI logs
       inputs:
         targetPath: $(SpmiLogsLocation)
         artifactName: 'SuperPMI_Logs_$(archType)_$(buildConfig)'
@@ -121,5 +110,5 @@ jobs:
       displayName: Publish SuperPMI build logs
       inputs:
         targetPath: $(Build.SourcesDirectory)/artifacts/log
-        artifactName: 'SuperPMI_BuildLogs__$(archType)_$(buildConfig)'
+        artifactName: 'SuperPMI_BuildLogs_$(archType)_$(buildConfig)'
       condition: always()
