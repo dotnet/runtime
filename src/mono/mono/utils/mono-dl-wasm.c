@@ -30,13 +30,6 @@ mono_dl_get_so_suffixes (void)
 	return suffixes;
 }
 
-int
-mono_dl_get_executable_path (char *buf, int buflen)
-{
-	strncpy (buf, "/managed", buflen); //This is a packaging convertion that our tooling should enforce
-	return 0;
-}
-
 const char*
 mono_dl_get_system_dir (void)
 {

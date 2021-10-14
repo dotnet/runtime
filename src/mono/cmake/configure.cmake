@@ -103,6 +103,7 @@ check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 check_symbol_exists(CLOCK_MONOTONIC_COARSE "time.h" HAVE_CLOCK_MONOTONIC_COARSE)
 check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 check_symbol_exists(pthread_jit_write_protect_np "pthread.h" HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)
+check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
 
 ac_check_type("struct sockaddr_in6" sockaddr_in6 "netinet/in.h")
 ac_check_type("struct timeval" timeval "sys/time.h;sys/types.h;utime.h")

@@ -46,6 +46,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
+#include <getexepath.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -524,37 +525,18 @@ set_dirs (char *exe)
 void
 mono_set_rootdir (void)
 {
-#if defined(HOST_WIN32) || (defined(HOST_DARWIN) && !defined(TARGET_ARM))
-	gchar *bindir, *installdir, *root, *name, *resolvedname, *config;
-
-#ifdef HOST_WIN32
-	name = mono_get_module_file_name ((HMODULE) &__ImageBase);
-#else
- 	{
-		/* 
-		 * _NSGetExecutablePath may return -1 to indicate buf is not large
-		 *  enough, but we ignore that case to avoid having to do extra dynamic
-		 *  allocation for the path and hope that 4096 is enough - this is 
-		 *  ok in the Linux/Solaris case below at least...
-		 */
- 		
-		gchar buf[4096];
- 		guint buf_size = sizeof (buf);
- 
-		name = NULL;
- 		if (_NSGetExecutablePath (buf, &buf_size) == 0)
- 			name = g_strdup (buf);
- 
- 		if (name == NULL) {
- 			fallback ();
- 			return;
- 		}
- 	}
+	char *path = getexepath();
+	if (path == NULL) {
+#ifndef HOST_WIN32
+		fallback ();
 #endif
+		return;
+	}
 
-	resolvedname = mono_path_resolve_symlinks (name);
+#if defined(HOST_WIN32) || (defined(HOST_DARWIN) && !defined(TARGET_ARM))
+	gchar *bindir, *installdir, *root, *config;
 
-	bindir = g_path_get_dirname (resolvedname);
+	bindir = g_path_get_dirname (path);
 	installdir = g_path_get_dirname (bindir);
 	root = g_build_path (G_DIR_SEPARATOR_S, installdir, "lib", (const char*)NULL);
 
@@ -572,44 +554,12 @@ mono_set_rootdir (void)
 	g_free (root);
 	g_free (installdir);
 	g_free (bindir);
-	g_free (name);
-	g_free (resolvedname);
+	g_free (path);
 #elif defined(DISABLE_MONO_AUTODETECTION)
 	fallback ();
 #else
-	char buf [4096];
-	int  s;
-	char *str;
-
-#if defined(HAVE_READLINK)
-	/* Linux style */
-	s = readlink ("/proc/self/exe", buf, sizeof (buf)-1);
-#else
-	s = -1;
-#endif
-
-	if (s != -1){
-		buf [s] = 0;
-		set_dirs (buf);
-		return;
-	}
-
-	/* Solaris 10 style */
-	str = g_strdup_printf ("/proc/%d/path/a.out", mono_process_current_pid ());
-
-#if defined(HAVE_READLINK)
-	s = readlink (str, buf, sizeof (buf)-1);
-#else
-	s = -1;
-#endif
-
-	g_free (str);
-	if (s != -1){
-		buf [s] = 0;
-		set_dirs (buf);
-		return;
-	} 
-	fallback ();
+	set_dirs (path);
+	return;
 #endif
 }
 

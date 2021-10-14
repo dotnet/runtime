@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#include <getexepath.h>
 
 #if defined(TARGET_ANDROID) && !defined(WIN32)
 #include <dlfcn.h>
@@ -613,18 +614,14 @@ MonoDl*
 mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 {
 	MonoDl *runtime_lib = NULL;
-	char buf [4096];
-	int binl;
 	*error_msg = NULL;
 
-	binl = mono_dl_get_executable_path (buf, sizeof (buf));
+	char *resolvedname = getexepath();
 
-	if (binl != -1) {
+	if (!resolvedname) {
 		char *base;
-		char *resolvedname, *name;
+		char *name;
 		char *baseparent = NULL;
-		buf [binl] = 0;
-		resolvedname = mono_path_resolve_symlinks (buf);
 		base = g_path_get_dirname (resolvedname);
 		name = g_strdup_printf ("%s/.libs", base);
 		runtime_lib = try_load (lib_name, name, flags, error_msg);
