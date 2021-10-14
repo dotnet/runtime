@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
@@ -43,6 +44,19 @@ namespace ILTrim.DependencyAnalysis
             if (typeDef.IsNested)
             {
                 yield return new DependencyListEntry(factory.TypeDefinition(_module, typeDef.GetDeclaringType()), "Declaring type of a type");
+            }
+
+            if (typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout) || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout))
+            {
+                // TODO: Postpone marking instance fields on reference types until the type is allocated (i.e. until we have a ConstructedTypeNode for it in the system).
+                foreach (var fieldHandle in typeDef.GetFields())
+                {
+                    var fieldDef = _module.MetadataReader.GetFieldDefinition(fieldHandle);
+                    if (!fieldDef.Attributes.HasFlag(FieldAttributes.Static))
+                    {
+                        yield return new DependencyListEntry(factory.FieldDefinition(_module, fieldHandle), "Instance field of a type with sequential or explicit layout");
+                    }
+                }
             }
 
             var ecmaType = (EcmaType)_module.GetObject(_handle);
