@@ -79,11 +79,11 @@ namespace ILTrim.DependencyAnalysis
                 case SignatureTypeCode.SZArray:
                 case SignatureTypeCode.Pointer:
                 case SignatureTypeCode.ByReference:
+                // Allthough multi-dimension arrays have additional rank and bounds information
+                // We dont need it in the analyzer phase
+                case SignatureTypeCode.Array: 
                     AnalyzeType();
                     break;
-                case SignatureTypeCode.Array:
-                    throw new NotImplementedException();
-                
                 case SignatureTypeCode.RequiredModifier:
                 case SignatureTypeCode.OptionalModifier:
                     AnalyzeCustomModifier(typeCode);

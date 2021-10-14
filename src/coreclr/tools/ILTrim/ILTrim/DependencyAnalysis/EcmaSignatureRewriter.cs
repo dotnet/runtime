@@ -4,6 +4,7 @@
 using System;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Collections.Immutable;
 
 using Internal.TypeSystem;
 
@@ -86,7 +87,24 @@ namespace ILTrim.DependencyAnalysis
                     RewriteType(encoder.SZArray());
                     break;
                 case SignatureTypeCode.Array:
-                    throw new NotImplementedException();
+                    //ECMA Spec for Array: type rank boundsCount bound1 …loCount lo1 …
+                    encoder.Array(out var arrayEncoder, out var shapeEncoder);
+                    RewriteType(arrayEncoder);
+
+                    var rank = _blobReader.ReadCompressedInteger();
+
+                    var boundsCount = _blobReader.ReadCompressedInteger();
+                    int[] bounds = boundsCount > 0 ? new int[boundsCount] : Array.Empty<int>();
+                    for (int i = 0; i < boundsCount; i++)
+                        bounds[i] = _blobReader.ReadCompressedInteger();
+
+                    var lowerBoundsCount = _blobReader.ReadCompressedInteger();
+                    int[] lowerBounds = lowerBoundsCount > 0 ? new int[lowerBoundsCount] : Array.Empty<int>();
+                    for (int j = 0; j < lowerBoundsCount; j++)
+                        lowerBounds[j] = _blobReader.ReadCompressedSignedInteger();
+
+                    shapeEncoder.Shape(rank, ImmutableArray.Create<int>(bounds), ImmutableArray.Create<int>(lowerBounds));
+                    break;
                 case SignatureTypeCode.Pointer:
                     {
                         // Special case void*
