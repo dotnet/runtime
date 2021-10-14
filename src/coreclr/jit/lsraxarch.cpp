@@ -2365,7 +2365,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     if (op1->isContained() || op1->IsRegOptional())
                     {
                         // op2 = ([op1] * op2) + op3
-                        srcCount += BuildOperandUses(op1);
+                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op2);
                         srcCount += BuildDelayFreeUses(op3, op2);
                     }
                     else
@@ -2383,7 +2383,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                     if (op1->isContained() || op1->IsRegOptional())
                     {
                         // op3 = ([op1] * op2) + op3
-                        srcCount += BuildOperandUses(op1);
+                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op3);
                         srcCount += BuildDelayFreeUses(op2, op3);
                     }
                     else
@@ -2404,7 +2404,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                         tgtPrefUse = BuildUse(op2);
                         srcCount += 1;
                         // result = ([op1] * op2) + op3
-                        srcCount += BuildOperandUses(op1);
+                        srcCount += op1->isContained() ? BuildOperandUses(op1) : BuildDelayFreeUses(op1, op2);
                         srcCount += BuildDelayFreeUses(op3, op2);
                     }
                     else
