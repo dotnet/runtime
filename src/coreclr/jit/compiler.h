@@ -5484,6 +5484,9 @@ public:
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
+    // Does value-numbering for a helper representing a cast operation.
+    void fgValueNumberCastHelper(GenTreeCall* call);
+
     // Does value-numbering for a helper "call" that has a VN function symbol "vnf".
     void fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc);
 
