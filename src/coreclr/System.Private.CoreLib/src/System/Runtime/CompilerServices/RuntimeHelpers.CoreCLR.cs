@@ -20,14 +20,14 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void GetSpanDataFrom(RuntimeFieldHandle fldHandle, void** data, int* sizeInBytes);
 
-        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) where T : unmanaged
+        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
         {
             unsafe
             {
                 void* data = default;
                 int sizeInBytes = default;
                 GetSpanDataFrom(fldHandle, &data, &sizeInBytes);
-                return new ReadOnlySpan<T>(data, sizeInBytes / sizeof(T));
+                return new ReadOnlySpan<T>(data, sizeInBytes / Marshal.SizeOf(typeof(T)));
             }
         }
 
