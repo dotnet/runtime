@@ -310,7 +310,7 @@ public:
 
 // CMake generated
 #include <config.h>
-#include <getexepath.h>
+#include <common/getexepath.h>
 
 #define MAIN main
 #define W(str) str
@@ -365,7 +365,7 @@ namespace pal
         assert(error == 0);
     }
 
-    inline string_t get_exe_path() { return { getexepath() }; }
+    inline string_t get_exe_path() { return minipal_getexepath(); }
 
     inline string_t get_absolute_path(const string_t& path)
     {

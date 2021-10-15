@@ -46,7 +46,7 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/metadata/mono-private-unstable.h>
-#include <getexepath.h>
+#include <common/getexepath.h>
 
 #ifndef HOST_WIN32
 #include <sys/types.h>
@@ -525,7 +525,7 @@ set_dirs (char *exe)
 void
 mono_set_rootdir (void)
 {
-	char *path = getexepath();
+	char *path = minipal_getexepath();
 	if (path == NULL) {
 #ifndef HOST_WIN32
 		fallback ();

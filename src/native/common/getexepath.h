@@ -25,7 +25,7 @@ extern "C" {
 
 // Returns the full path to the executable for the current process, resolving symbolic links.
 // The caller is responsible for releasing the buffer. Returns null on error.
-static inline char* getexepath(void)
+static inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)
     uint32_t path_length = 0;

@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
-#include <getexepath.h>
+#include <common/getexepath.h>
 
 #if defined(TARGET_ANDROID) && !defined(WIN32)
 #include <dlfcn.h>
@@ -616,7 +616,7 @@ mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 	MonoDl *runtime_lib = NULL;
 	*error_msg = NULL;
 
-	char *resolvedname = getexepath();
+	char *resolvedname = minipal_getexepath();
 
 	if (!resolvedname) {
 		char *base;

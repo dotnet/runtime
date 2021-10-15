@@ -811,7 +811,7 @@ if (TARGET_BROWSER)
 endif()
 ### End of OS specific checks
 
-include_directories("${CLR_SRC_NATIVE_DIR}/common")
+include_directories("${CLR_SRC_NATIVE_DIR}")
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)
