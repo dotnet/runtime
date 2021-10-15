@@ -1229,6 +1229,7 @@ namespace System.Diagnostics.Tests
 
         [Theory]
         [MemberData(nameof(MachineName_TestData))]
+        [PlatformSpecific(~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public void GetProcessesByName_ProcessNameMachineName_ReturnsExpected(string machineName)
         {
             Process currentProcess = Process.GetCurrentProcess();

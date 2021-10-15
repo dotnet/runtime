@@ -19,7 +19,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
         public void Symlink_ValidFile_Succeeds()
         {
             string filePath = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);
@@ -62,7 +62,7 @@ namespace System.Diagnostics.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSymLinkSupported))]
         public void Symlink_InvalidFile_Throws()
         {
             string sourcePath = Path.Combine(Directory.GetCurrentDirectory(), TestAssemblyFileName);

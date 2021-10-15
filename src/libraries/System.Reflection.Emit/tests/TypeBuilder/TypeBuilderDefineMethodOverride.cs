@@ -37,7 +37,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(2, createdMethod.Invoke(Activator.CreateInstance(createdType), null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DefineMethodOverride_InterfaceMethodWithConflictingName()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);

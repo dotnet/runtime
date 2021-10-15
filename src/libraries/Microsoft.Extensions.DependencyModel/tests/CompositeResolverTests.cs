@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class CompositeResolverTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ReturnsFirstSuccesfullResolve()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Times.Never());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void PassesLibraryToAllResolvers()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();
@@ -64,7 +64,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             failTwo.Verify(r => r.TryResolveAssemblyPaths(library, null), Times.Once());
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void PopulatedAssemblies()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();

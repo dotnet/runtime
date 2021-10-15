@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class CompilationLibraryTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ResolveReferencePathsAcceptsCustomResolvers()
         {
             var fail = new Mock<ICompilationAssemblyResolver>();

@@ -171,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider5.IsDisposed);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DisposesChangeTokenRegistrationsOnDispose()
         {
             var changeToken = new TestChangeToken();
@@ -189,7 +189,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Empty(changeToken.Callbacks);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DisposesChangeTokenRegistrationsOnRemoval()
         {
             var changeToken = new TestChangeToken();
