@@ -669,37 +669,37 @@ namespace System.Collections.Specialized
                     object o = _objects[index]!;
                     return _isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value;
                 }
-                set => throw new NotSupportedException(GetReadOnlyMessage());
+                set => throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
 
             void IList.Insert(int index, object? value)
             {
-                throw new NotSupportedException(GetReadOnlyMessage());
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
 
             void IList.Remove(object? value)
             {
-                throw new NotSupportedException(GetReadOnlyMessage());
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
 
             void IList.RemoveAt(int index)
             {
-                throw new NotSupportedException(GetReadOnlyMessage());
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
 
             int IList.Add(object? value)
             {
-                throw new NotSupportedException(GetReadOnlyMessage());
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
 
             void IList.Clear()
             {
-                throw new NotSupportedException(GetReadOnlyMessage());
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
 
-            private string GetReadOnlyMessage()
+            private string GetNotSupportedErrorMessage()
             {
-                return _isKeys ? SR.OrderedDictionaryKeys_ReadOnly : SR.OrderedDictionaryValues_ReadOnly;
+                return _isKeys ? SR.NotSupported_KeyCollectionSet : SR.NotSupported_ValueCollectionSet;
             }
         }
     }
