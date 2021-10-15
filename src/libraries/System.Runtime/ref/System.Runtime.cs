@@ -7900,7 +7900,7 @@ namespace System
     public partial struct ValueArray<T, R> // where R : System.Array
     {
         public static int Length { get { throw null; } }
-        public T Element0;
+        private T Element0;
         public T this[int index] { get { throw null; } set { } }
         public ref T Address(int index) { throw null; }
         public Span<T> Slice(int length) { throw null; }
