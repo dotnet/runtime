@@ -684,7 +684,7 @@ namespace System.Drawing
         /// WARNING: This method is for internal FX support only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-#if NET6_0_OR_GREATER
+#if NETCOREAPP3_1_OR_GREATER
         [Obsolete(Obsoletions.GetContextInfoMessage, DiagnosticId = Obsoletions.GetContextInfoDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         [SupportedOSPlatform("windows")]
@@ -765,7 +765,7 @@ namespace System.Drawing
             }
         }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP3_1_OR_GREATER
         /// <summary>
         ///  Gets the cumulative offset.
         /// </summary>
