@@ -123,6 +123,10 @@ namespace ILTrim.DependencyAnalysis
             if (!propertyHandle.IsNil)
                 builder.AddPropertyMap(Handle, propertyHandle);
 
+            EventDefinitionHandle eventHandle = writeContext.TokenMap.MapTypeEventList(Handle);
+            if (!eventHandle.IsNil)
+                builder.AddEventMap(Handle, eventHandle);
+
             TypeDefinitionHandle outputHandle = builder.AddTypeDefinition(typeDef.Attributes,
                 builder.GetOrAddString(reader.GetString(typeDef.Namespace)),
                 builder.GetOrAddString(reader.GetString(typeDef.Name)),

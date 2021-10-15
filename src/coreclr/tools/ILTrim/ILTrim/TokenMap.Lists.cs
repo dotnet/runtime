@@ -206,6 +206,45 @@ namespace ILTrim
             return result;
         }
 
+        public EventDefinitionHandle MapTypeEventList(TypeDefinitionHandle typeDefHandle)
+        {
+            // Grabbing the mapped token to use as a EventList is awkward because
+            // S.R.Metadata abstracts away the raw value of the EventList field of the record.
+            //
+            // All we can do is enumerate the events on the type. Unlike fields and methods,
+            // the event/type association is stored in a separate table that should not contain
+            // entries for types without events.
+            EventDefinitionHandle sourceToken = default;
+            EventDefinitionHandleCollection eventList = _reader.GetTypeDefinition(typeDefHandle).GetEvents();
+            if (eventList.Count > 0)
+            {
+                var enumerator = eventList.GetEnumerator();
+                enumerator.MoveNext();
+                sourceToken = enumerator.Current;
+            }
+
+            EventDefinitionHandle result = default;
+            if (!sourceToken.IsNil)
+            {
+                // We got a token in the source assembly, but the token might not be present in the output.
+                // We need to find the first token starting with this one that is part of the output.
+                for (int currentEventRow = MetadataTokens.GetRowNumber(sourceToken);
+                    currentEventRow < _tokenMap[(int)TableIndex.Event].Length;
+                    currentEventRow++)
+                {
+                    EntityHandle currentEvent = _tokenMap[(int)TableIndex.Event][currentEventRow];
+                    if (!currentEvent.IsNil)
+                    {
+                        result = (EventDefinitionHandle)currentEvent;
+                        break;
+                    }
+                }
+            }
+
+            // The result token may be nil if this type has no marked events.
+            return result;
+        }
+
         public PropertyDefinitionHandle MapTypePropertyList(TypeDefinitionHandle typeDefHandle)
         {
             // Grabbing the mapped token to use as a PropertyList is awkward because

@@ -54,7 +54,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.StandaloneSignature:
                     return StandaloneSignature(module, (StandaloneSignatureHandle)handle);
                 case HandleKind.EventDefinition:
-                    throw new NotImplementedException();
+                    return EventDefinition(module, (EventDefinitionHandle)handle);
                 case HandleKind.PropertyDefinition:
                     return PropertyDefinition(module, (PropertyDefinitionHandle)handle);
                 case HandleKind.MethodImplementation:
@@ -183,9 +183,17 @@ namespace ILTrim.DependencyAnalysis
             return _standaloneSignatures.GetOrAdd(new HandleKey<StandaloneSignatureHandle>(module, handle));
         }
 
+        NodeCache<HandleKey<EventDefinitionHandle>, EventDefinitionNode> _eventDefinitions
+            = new NodeCache<HandleKey<EventDefinitionHandle>, EventDefinitionNode>(key
+                => new EventDefinitionNode(key.Module, key.Handle));
+        public EventDefinitionNode EventDefinition(EcmaModule module, EventDefinitionHandle handle)
+        {
+            return _eventDefinitions.GetOrAdd(new HandleKey<EventDefinitionHandle>(module, handle));
+        }
+
         NodeCache<HandleKey<PropertyDefinitionHandle>, PropertyDefinitionNode> _propertyDefinitions
-            = new NodeCache<HandleKey<PropertyDefinitionHandle>, PropertyDefinitionNode>(key
-                => new PropertyDefinitionNode(key.Module, key.Handle));
+                = new NodeCache<HandleKey<PropertyDefinitionHandle>, PropertyDefinitionNode>(key
+                    => new PropertyDefinitionNode(key.Module, key.Handle));
         public PropertyDefinitionNode PropertyDefinition(EcmaModule module, PropertyDefinitionHandle handle)
         {
             return _propertyDefinitions.GetOrAdd(new HandleKey<PropertyDefinitionHandle>(module, handle));
