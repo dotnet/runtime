@@ -76,7 +76,7 @@ namespace System.Diagnostics
                     if (internalSwitch is null)
                     {
                         internalSwitch = new SourceSwitch(_sourceName, _switchLevel.ToString());
-                        _listeners = new TraceListenerCollection { new DefaultTraceListener() };
+                        _listeners = new TraceListenerCollection(new DefaultTraceListener());
                         _internalSwitch = internalSwitch;
                     }
                     return internalSwitch;

@@ -39,7 +39,7 @@ namespace System.Diagnostics
             public override void WriteLine(string? message) => TraceInternal.WriteLine(message);
         }
 
-        private static string? s_appName;
+        private static volatile string? s_appName;
         private static TraceListenerCollection? s_listeners;
         private static volatile bool s_autoFlush;
         private static volatile bool s_noGlobalLock;
@@ -57,22 +57,19 @@ namespace System.Diagnostics
                 var listeners = s_listeners;
                 if (listeners == null)
                 {
-                    s_appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
                     // This is where we override default DebugProvider because we know
                     // for sure that we have some Listeners to write to.
                     Debug.SetProvider(new TraceProvider());
                     // In the absence of config support, the listeners by default add
                     // DefaultTraceListener to the listener collection.
-                    listeners = new TraceListenerCollection();
-                    TraceListener defaultListener = new DefaultTraceListener();
-                    defaultListener.IndentLevel = Debug.IndentLevel;
-                    defaultListener.IndentSize = Debug.IndentSize;
-                    listeners.Add(defaultListener);
+                    listeners = new TraceListenerCollection(new DefaultTraceListener());
                     s_listeners = listeners;
                 }
                 return listeners;
             }
         }
+
+        internal static string AppName => s_appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
 
         public static bool AutoFlush
         {
@@ -251,6 +248,7 @@ namespace System.Diagnostics
         public static void TraceEvent(TraceEventType eventType, int id, string? format, params object?[]? args)
         {
             var eventCache = new TraceEventCache();
+            string appName = s_appName ?? AppName;
 
             if (UseGlobalLock)
             {
@@ -262,7 +260,7 @@ namespace System.Diagnostics
                         for (int i = 0; i < listeners.Count; i++)
                         {
                             var listener = listeners[i];
-                            listener.TraceEvent(eventCache, s_appName!, eventType, id, format);
+                            listener.TraceEvent(eventCache, appName, eventType, id, format);
                             if (AutoFlush) listener.Flush();
                         }
                     }
@@ -271,7 +269,7 @@ namespace System.Diagnostics
                         for (int i = 0; i < listeners.Count; i++)
                         {
                             var listener = listeners[i];
-                            listener.TraceEvent(eventCache, s_appName!, eventType, id, format!, args);
+                            listener.TraceEvent(eventCache, appName, eventType, id, format!, args);
                             if (AutoFlush) listener.Flush();
                         }
                     }
@@ -289,13 +287,13 @@ namespace System.Diagnostics
                         {
                             lock (listener)
                             {
-                                listener.TraceEvent(eventCache, s_appName!, eventType, id, format);
+                                listener.TraceEvent(eventCache, appName, eventType, id, format);
                                 if (AutoFlush) listener.Flush();
                             }
                         }
                         else
                         {
-                            listener.TraceEvent(eventCache, s_appName!, eventType, id, format);
+                            listener.TraceEvent(eventCache, appName, eventType, id, format);
                             if (AutoFlush) listener.Flush();
                         }
                     }
@@ -309,13 +307,13 @@ namespace System.Diagnostics
                         {
                             lock (listener)
                             {
-                                listener.TraceEvent(eventCache, s_appName!, eventType, id, format!, args);
+                                listener.TraceEvent(eventCache, appName, eventType, id, format!, args);
                                 if (AutoFlush) listener.Flush();
                             }
                         }
                         else
                         {
-                            listener.TraceEvent(eventCache, s_appName!, eventType, id, format!, args);
+                            listener.TraceEvent(eventCache, appName, eventType, id, format!, args);
                             if (AutoFlush) listener.Flush();
                         }
                     }

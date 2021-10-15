@@ -82,7 +82,7 @@ namespace System.Diagnostics
         public int IndentLevel
         {
             get => _indentLevel;
-            set => _indentLevel = (value < 0) ? 0 : value;
+            set => _indentLevel = value < 0 ? 0 : value;
         }
 
         /// <devdoc>
