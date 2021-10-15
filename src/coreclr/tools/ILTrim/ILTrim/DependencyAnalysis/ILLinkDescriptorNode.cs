@@ -100,7 +100,6 @@ namespace ILTrim.DependencyAnalysis
                     string typeName = _reader.GetAttribute("fullname");
 
                     List<TypeDesc> types = new List<TypeDesc>();
-                    bool hasContent = false;
                     if (typeName.Contains('*'))
                     {
                         typeName = typeName.Replace("*", ".*");
@@ -124,13 +123,14 @@ namespace ILTrim.DependencyAnalysis
                             return;
                         }
 
+                        ProcessTypeAttributes(!_reader.IsEmptyElement, type);
+
                         if (!_reader.IsEmptyElement)
                         {
                             _reader.Read();
 
                             while (_reader.IsStartElement())
                             {
-                                hasContent = true;
                                 if (_reader.Name == "method")
                                 {
                                     ProcessMethod(type);
@@ -156,45 +156,49 @@ namespace ILTrim.DependencyAnalysis
                                 "Type rooted by descriptor");
                             _dependencies.Add(_factory.ConstructedType(ecmaType), "Type rooted by descriptor");
                         }
-
-                        string preserve = _reader.GetAttribute("preserve");
-
-                        bool preserveMethods = false;
-                        bool preserveFields = false;
-
-                        if ((!hasContent && preserve != "nothing") || (preserve == "all"))
-                        {
-                            preserveFields = true;
-                            preserveMethods = true;
-                        }
-                        else if (preserve == "fields")
-                        {
-                            preserveFields = true;
-                        }
-                        else if (preserve == "methods")
-                        {
-                            preserveMethods = true;
-                        }
-
-                        if (preserveFields)
-                        {
-                            foreach (FieldDesc field in type.GetFields())
-                            {
-                                ProcessField(field);
-                            }
-                        }
-
-                        if (preserveMethods)
-                        {
-                            foreach (MethodDesc method in type.GetMethods())
-                            {
-                                ProcessMethod(method);
-                            }
-                        }
                     }
                 }
 
                 _reader.Skip();
+            }
+
+            private void ProcessTypeAttributes(bool hasContent, TypeDesc type)
+            {
+
+                string preserve = _reader.GetAttribute("preserve");
+
+                bool preserveMethods = false;
+                bool preserveFields = false;
+
+                if ((!hasContent && preserve != "nothing") || (preserve == "all"))
+                {
+                    preserveFields = true;
+                    preserveMethods = true;
+                }
+                else if (preserve == "fields")
+                {
+                    preserveFields = true;
+                }
+                else if (preserve == "methods")
+                {
+                    preserveMethods = true;
+                }
+
+                if (preserveFields)
+                {
+                    foreach (FieldDesc field in type.GetFields())
+                    {
+                        ProcessField(field);
+                    }
+                }
+
+                if (preserveMethods)
+                {
+                    foreach (MethodDesc method in type.GetMethods())
+                    {
+                        ProcessMethod(method);
+                    }
+                }
             }
 
             protected override void ProcessField(FieldDesc field)
