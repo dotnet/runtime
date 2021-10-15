@@ -190,7 +190,7 @@ namespace System.IO.Tests
             {
                 Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
                 Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
-                cts.CancelAfter(TimeSpan.FromSeconds(50));
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
 
                 await writingServerTask;
                 byte[] readBytes = await readTask;
