@@ -25,6 +25,6 @@ namespace Mono.Linker.Tests.Cases.Basic
         [Kept]
         int Field = 42;
 
-        static int StaticField = 1;
+        static int StaticField; // Must not assign value, otherwise .cctor would keep the field
     }
 }
