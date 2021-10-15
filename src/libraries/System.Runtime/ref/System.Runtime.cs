@@ -7898,7 +7898,7 @@ namespace System
     }
     public partial struct ValueArray<T, R> // where R : System.Array
     {
-        public static readonly int Length;
+        public static int Length { get { throw null; } }
         public T Element0;
         public T this[int index] { get { throw null; } set { } }
         public ref T Address(int index) { throw null; }

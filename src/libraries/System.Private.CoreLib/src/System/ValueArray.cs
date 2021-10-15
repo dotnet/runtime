@@ -9,7 +9,7 @@ namespace System
 {
     public struct ValueArray<T, R> // where R : System.Array
     {
-        public static readonly int Length = typeof(R).GetArrayRank();
+        public static int Length => RankOf<R>.Value;
 
         // For the array of Length N, we will have N+1 elements immdiately follow.
         public T Element0;
@@ -45,6 +45,24 @@ namespace System
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
             return new Span<T>(ref Element0, length);
+        }
+    }
+
+    // internal helper to compute and cache the Rank of an object array.
+    internal static class RankOf<R>
+    {
+        public static readonly int Value = GetRank();
+
+        private static int GetRank()
+        {
+            var type = typeof(R);
+            if (!type.IsArray)
+                throw new ArgumentException("R must be an array");
+
+            if (type.GetElementType() != typeof(object))
+                throw new ArgumentException("R must be an object array");
+
+            return type.GetArrayRank();
         }
     }
 }
