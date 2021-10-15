@@ -1898,7 +1898,7 @@ void CodeGen::genSetBlockSize(GenTreeBlk* blkNode, regNumber sizeReg)
         if (!blkNode->OperIs(GT_STORE_DYN_BLK))
         {
             assert((blkNode->gtRsvdRegs & genRegMask(sizeReg)) != 0);
-            genSetRegToIcon(sizeReg, blockSize);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, sizeReg, blockSize);
         }
         else
         {

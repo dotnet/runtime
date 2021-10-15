@@ -1583,7 +1583,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/59777", TestPlatforms.Android)]
         public static void ExportCertificatePems_MultiCert()
         {
             const string MultiPem = "-----BEGIN CERTIFICATE-----\n" +
@@ -1745,7 +1744,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 using (ImportedCollection imported = Cert.Import(data))
                 {
-                    Assert.Equal(expected.ToArray(), imported.Collection.ToArray(), new X509Certificate2EqualityComparer());
+                    X509Certificate2[] expectedCollection = expected.OrderBy(c => c.Thumbprint).ToArray();
+                    X509Certificate2[] actualCollection = imported.Collection.OrderBy(c => c.Thumbprint).ToArray();
+                    Assert.Equal(expectedCollection, actualCollection, new X509Certificate2EqualityComparer());
                 }
             }
 

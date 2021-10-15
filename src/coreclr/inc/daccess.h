@@ -769,7 +769,7 @@ HRESULT DacReplacePatchesInHostMemory(MemoryRange range, PVOID pBuffer);
 #ifdef __cplusplus
 }
 class ReflectionModule;
-interface IMDInternalImport* DacGetMDImport(const class PEFile* peFile,
+interface IMDInternalImport* DacGetMDImport(const class PEAssembly* pPEAssembly,
                                             bool throwEx);
 interface IMDInternalImport* DacGetMDImport(const ReflectionModule* reflectionModule,
                                             bool throwEx);

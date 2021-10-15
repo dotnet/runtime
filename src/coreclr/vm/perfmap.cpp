@@ -219,22 +219,22 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
 }
 
 
-void PerfMap::LogImageLoad(PEFile * pFile)
+void PerfMap::LogImageLoad(PEAssembly * pPEAssembly)
 {
     if (s_enabled)
     {
-        s_Current->LogImage(pFile);
+        s_Current->LogImage(pPEAssembly);
     }
 }
 
 // Log an image load to the map.
-void PerfMap::LogImage(PEFile * pFile)
+void PerfMap::LogImage(PEAssembly * pPEAssembly)
 {
     CONTRACTL{
         THROWS;
         GC_NOTRIGGER;
         MODE_PREEMPTIVE;
-        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pPEAssembly != nullptr);
     } CONTRACTL_END;
 
 
@@ -247,9 +247,9 @@ void PerfMap::LogImage(PEFile * pFile)
     EX_TRY
     {
         WCHAR wszSignature[39];
-        GetNativeImageSignature(pFile, wszSignature, lengthof(wszSignature));
+        GetNativeImageSignature(pPEAssembly, wszSignature, lengthof(wszSignature));
 
-        m_PerfInfo->LogImage(pFile, wszSignature);
+        m_PerfInfo->LogImage(pPEAssembly, wszSignature);
     }
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
@@ -361,10 +361,10 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
     EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
 }
 
-void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned int nSigSize)
+void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, WCHAR * pwszSig, unsigned int nSigSize)
 {
     CONTRACTL{
-        PRECONDITION(pFile != nullptr);
+        PRECONDITION(pPEAssembly != nullptr);
         PRECONDITION(pwszSig != nullptr);
         PRECONDITION(nSigSize >= 39);
     } CONTRACTL_END;
@@ -372,7 +372,7 @@ void PerfMap::GetNativeImageSignature(PEFile * pFile, WCHAR * pwszSig, unsigned 
     // We use the MVID as the signature, since ready to run images
     // don't have a native image signature.
     GUID mvid;
-    pFile->GetMVID(&mvid);
+    pPEAssembly->GetMVID(&mvid);
     if(!StringFromGUID2(mvid, pwszSig, nSigSize))
     {
         pwszSig[0] = '\0';
@@ -417,7 +417,7 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 {
     STANDARD_VM_CONTRACT;
 
-    PEImageLayout * pLoadedLayout = pModule->GetFile()->GetLoaded();
+    PEImageLayout * pLoadedLayout = pModule->GetPEAssembly()->GetLoadedLayout();
     _ASSERTE(pLoadedLayout != nullptr);
 
     ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());

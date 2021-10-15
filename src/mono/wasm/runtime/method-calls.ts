@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer } from "./roots";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull, VoidPtr, Int32Ptr } from "./types";
 import { Module, runtimeHelpers } from "./modules";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";

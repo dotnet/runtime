@@ -848,7 +848,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 					continue;
 			}
 			/* FIXME: should not happen, flag as type load error */
-			if (field->type->byref)
+			if (m_type_is_byref (field->type))
 				break;
 
 			if (static_fields && field->offset == -1)
@@ -2654,7 +2654,7 @@ mono_copy_value (MonoType *type, void *dest, void *value, int deref_pointer)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	int t;
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		/* object fields cannot be byref, so we don't need a
 		   wbarrier here */
 		gpointer *p = (gpointer*)dest;
@@ -2997,7 +2997,7 @@ mono_field_get_value_object_checked (MonoClassField *field, MonoObject *obj, Mon
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8:
 	case MONO_TYPE_VALUETYPE:
-		is_ref = type->byref;
+		is_ref = m_type_is_byref (type);
 		break;
 	case MONO_TYPE_GENERICINST:
 		is_ref = !mono_type_generic_inst_is_valuetype (type);
@@ -4556,7 +4556,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
 					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
 					result = *pa_obj;
-					if (t->byref)
+					if (m_type_is_byref (t))
 						*has_byref_nullables = TRUE;
 				} else {
 					/* MS seems to create the objects if a null is passed in */
@@ -4568,7 +4568,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 						was_null = TRUE;
 					}
 
-					if (t->byref) {
+					if (m_type_is_byref (t)) {
 						/*
 						 * We can't pass the unboxed vtype byref to the callee, since
 						 * that would mean the callee would be able to modify boxed
@@ -4583,7 +4583,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 					}
 					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
 					result = mono_object_unbox_internal (*pa_obj);
-					if (!t->byref && was_null)
+					if (!m_type_is_byref (t) && was_null)
 						mono_array_setref_internal (params, i, NULL);
 				}
 				break;
@@ -4592,7 +4592,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 			case MONO_TYPE_CLASS:
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
-				if (t->byref) {
+				if (m_type_is_byref (t)) {
 					result = mono_array_addr_internal (params, MonoObject*, i);
 					// FIXME: I need to check this code path
 				} else {
@@ -4601,7 +4601,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 				}
 				break;
 			case MONO_TYPE_GENERICINST:
-				if (t->byref)
+				if (m_type_is_byref (t))
 					t = m_class_get_this_arg (t->data.generic_class->container_class);
 				else
 					t = m_class_get_byval_arg (t->data.generic_class->container_class);
@@ -4875,10 +4875,10 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			} else {
 				box_args [0] = NULL;
 			}
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				// byref is already unboxed by the invoke code
 				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
-				tmpret->byref = FALSE;
+				tmpret->byref__ = FALSE;
 				MonoReflectionTypeHandle type_h = mono_type_get_object_handle (tmpret, error);
 				box_args [1] = MONO_HANDLE_RAW (type_h);
 				mono_metadata_free_type (tmpret);
@@ -4902,7 +4902,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			for (i = 0; i < mono_array_length_internal (params); i++) {
 				MonoType *t = sig->params [i];
 
-				if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+				if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 					mono_array_setref_internal (params, i, pa [i]);
 			}
 		}
@@ -7851,7 +7851,7 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 	GString *cmd_line = NULL;
 
 	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_UNISTD_H)
+#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
 		host_path = mono_w32process_get_path (getpid ());
 #elif defined(HOST_WIN32)
 		gunichar2 *host_path_ucs2 = NULL;

@@ -35,8 +35,8 @@ static int g_BreakOnEnCResolveField = -1;
 // The constructor phase initializes just enough so that Destruct() can be safely called.
 // It cannot throw or fail.
 //
-EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEFile *file)
-  : Module(pAssembly, moduleRef, file)
+EditAndContinueModule::EditAndContinueModule(Assembly *pAssembly, mdToken moduleRef, PEAssembly *pPEAssembly)
+  : Module(pAssembly, moduleRef, pPEAssembly)
 {
     CONTRACTL
     {
@@ -175,7 +175,7 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     {
         // ConvertMDInternalToReadWrite should only ever be called on EnC capable files.
         _ASSERTE(IsEditAndContinueCapable()); // this also checks that the file is EnC capable
-        GetFile()->ConvertMDInternalToReadWrite();
+        GetPEAssembly()->ConvertMDInternalToReadWrite();
     }
     EX_CATCH_HRESULT(hr);
 

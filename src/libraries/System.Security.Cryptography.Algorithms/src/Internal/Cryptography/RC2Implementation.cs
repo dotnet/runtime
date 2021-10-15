@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -76,8 +77,8 @@ namespace Internal.Cryptography
                 ValidateCFBFeedbackSize(FeedbackSize);
             }
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
-            return CreateTransformCore(Mode, Padding, rgbKey, effectiveKeySize, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, GetPaddingSize(), encrypting);
+            Debug.Assert(EffectiveKeySize == KeySize);
+            return CreateTransformCore(Mode, Padding, rgbKey, rgbIV, BlockSize / BitsPerByte, FeedbackSize / BitsPerByte, GetPaddingSize(), encrypting);
         }
 
         protected override bool TryDecryptEcbCore(
@@ -89,12 +90,11 @@ namespace Internal.Cryptography
             if (!ValidKeySize(Key.Length, out int keySize))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
+            Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
                 paddingMode,
                 Key,
-                effectiveKeyLength: effectiveKeySize,
                 iv: null,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */
@@ -116,12 +116,11 @@ namespace Internal.Cryptography
             if (!ValidKeySize(Key.Length, out int keySize))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
+            Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.ECB,
                 paddingMode,
                 Key,
-                effectiveKeyLength: effectiveKeySize,
                 iv: default,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */
@@ -144,12 +143,11 @@ namespace Internal.Cryptography
             if (!ValidKeySize(Key.Length, out int keySize))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
+            Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
                 paddingMode,
                 Key,
-                effectiveKeyLength: effectiveKeySize,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */
@@ -172,12 +170,11 @@ namespace Internal.Cryptography
             if (!ValidKeySize(Key.Length, out int keySize))
                 throw new InvalidOperationException(SR.Cryptography_InvalidKeySize);
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? keySize : EffectiveKeySize;
+            Debug.Assert(EffectiveKeySize == KeySize);
             ILiteSymmetricCipher cipher = CreateLiteCipher(
                 CipherMode.CBC,
                 paddingMode,
                 Key,
-                effectiveKeyLength: effectiveKeySize,
                 iv,
                 blockSize: BlockSize / BitsPerByte,
                 0, /*feedback size */

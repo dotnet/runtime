@@ -2388,41 +2388,6 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
 
 /*****************************************************************************
  *
- *  Emit a MemoryBarrier instruction
- *
- *     Note: all MemoryBarriers instructions can be removed by
- *           SET COMPlus_JitNoMemoryBarriers=1
- */
-void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
-{
-#ifdef DEBUG
-    if (JitConfig.JitNoMemoryBarriers() == 1)
-    {
-        return;
-    }
-#endif // DEBUG
-
-#if defined(TARGET_XARCH)
-    // only full barrier needs to be emitted on Xarch
-    if (barrierKind != BARRIER_FULL)
-    {
-        return;
-    }
-
-    instGen(INS_lock);
-    GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
-#elif defined(TARGET_ARM)
-    // ARM has only full barriers, so all barriers need to be emitted as full.
-    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
-#elif defined(TARGET_ARM64)
-    GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
-#else
-#error "Unknown TARGET"
-#endif
-}
-
-/*****************************************************************************
- *
  *  Machine independent way to move a Zero value into a register
  */
 void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags)

@@ -1216,6 +1216,11 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
+    bool IsPositive()
+    {
+        return m_lowerBound >= SymbolicIntegerValue::Zero;
+    }
+
     bool Equals(IntegralRange other) const
     {
         return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
@@ -1230,6 +1235,7 @@ public:
         return {LowerBoundForType(type), UpperBoundForType(type)};
     }
 
+    static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
 
@@ -1632,26 +1638,6 @@ struct FuncInfoDsc
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
 };
-
-enum class NonStandardArgKind : unsigned
-{
-    None,
-    PInvokeFrame,
-    PInvokeTarget,
-    PInvokeCookie,
-    WrapperDelegateCell,
-    ShiftLow,
-    ShiftHigh,
-    FixedRetBuffer,
-    VirtualStubCell,
-    R2RIndirectionCell,
-
-    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
-};
-
-#ifdef DEBUG
-const char* getNonStandardArgKindName(NonStandardArgKind kind);
-#endif
 
 struct fgArgTabEntry
 {
@@ -5498,6 +5484,9 @@ public:
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
+    // Does value-numbering for a helper representing a cast operation.
+    void fgValueNumberCastHelper(GenTreeCall* call);
+
     // Does value-numbering for a helper "call" that has a VN function symbol "vnf".
     void fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc);
 
@@ -6363,7 +6352,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
-    GenTree* fgOptimizeCast(GenTree* tree);
+    GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
@@ -6376,6 +6365,7 @@ private:
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
+    GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
