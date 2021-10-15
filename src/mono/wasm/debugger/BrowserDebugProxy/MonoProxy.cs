@@ -13,9 +13,114 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using System.Net.Sockets;
+using Microsoft.Extensions.Primitives;
+using System.Text;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
+
+    public class FirefoxProxyServer
+    {
+        private int portProxy;
+        private int portBrowser;
+        private ILoggerFactory loggerFactory;
+
+        public FirefoxProxyServer(ILoggerFactory loggerFactory, int portProxy, int portBrowser)
+        {
+            this.portBrowser = portBrowser;
+            this.portProxy = portProxy;
+            this.loggerFactory = loggerFactory;
+        }
+
+        public async void Run()
+        {
+            var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), portProxy);
+            _server.Start();
+            // wait for client connection
+            TcpClient newClient = await _server.AcceptTcpClientAsync();
+
+            // client found.
+            // create a thread to handle communication
+            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
+            monoProxy.Run(newClient);
+        }
+
+
+    }
+    internal class FirefoxMonoProxy : FirefoxProxy
+    {
+        private int portBrowser;
+
+        public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser) : base(loggerFactory, portBrowser)
+        {
+            this.portBrowser = portBrowser;
+        }
+        protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
+        {
+            if (args["type"] == null)
+                return await Task.FromResult(false);
+            if (args["messages"] != null)
+            {
+                var messages = args["messages"].Value<JArray>();
+                foreach (var message in messages)
+                {
+                    var messageArgs = message["message"]["arguments"].Value<JArray>();
+                    if (messageArgs.Count == 2)
+                    {
+                        if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
+                        {
+
+                        }
+                    }
+                }
+                return true;
+            }
+            switch (args["type"].Value<string>())
+            {
+                case "paused":
+                    {
+                        var topFunc = args["frame"]["displayName"].Value<string>();
+                        switch (topFunc)
+                        {
+                            case "mono_wasm_fire_debugger_agent_message":
+                            case "_mono_wasm_fire_debugger_agent_message":
+                                {
+                                    /*try
+                                    {
+                                        return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
+                                    }
+                                    catch (Exception) //if the page is refreshed maybe it stops here.
+                                    {
+                                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                        return true;
+                                    }*/
+                                    return true;
+                                }
+                        }
+                        break;
+                    }
+            }
+            return await Task.FromResult(false);
+        }
+        protected override async Task<bool> AcceptCommand(MessageId id, JObject args, CancellationToken token)
+        {
+            if (args["type"] == null)
+                return await Task.FromResult(false);
+
+            switch (args["type"].Value<string>())
+            {
+                case "setBreakpoint":
+                {
+                        break;
+                }
+                default:
+                    return false;
+            }
+            return false;
+        }
+    }
+
     internal class MonoProxy : DevToolsProxy
     {
         internal MonoSDBHelper SdbHelper { get; set; }
@@ -49,8 +154,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
-        protected override async Task<bool> AcceptEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject parms, CancellationToken token)
         {
+            var method = parms["method"].Value<string>();
+            var args = parms["params"] as JObject;
             switch (method)
             {
                 case "Runtime.consoleAPICalled":
@@ -60,7 +167,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         {
                             JToken a = args["args"];
                             if (a?[0]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY &&
-                                a?[1]?["value"]?.ToString() == "fe00e07a-5519-4dfe-b35a-f867dbaf2e28")
+                                a?[1]?["value"]?.ToString() == MonoConstants.RUNTIME_IS_READY_ID)
                             {
                                 if (a.Count() > 2)
                                 {
@@ -241,8 +348,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             return res.Value?["result"]?["value"]?.Value<bool>() ?? false;
         }
 
-        protected override async Task<bool> AcceptCommand(MessageId id, string method, JObject args, CancellationToken token)
+        protected override async Task<bool> AcceptCommand(MessageId id, JObject parms, CancellationToken token)
         {
+            var method = parms["method"].Value<string>();
+            var args = parms["params"] as JObject;
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
             if (id == SessionId.Null)

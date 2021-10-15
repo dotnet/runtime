@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -24,6 +25,13 @@ namespace Microsoft.WebAssembly.Diagnostics
     {
         public static void Main(string[] args)
         {
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
+                builder.AddSimpleConsole(options => options.SingleLine = true)
+                       .AddFilter(null, LogLevel.Information)
+            );
+            FirefoxProxyServer proxyFirefox = new FirefoxProxyServer(loggerFactory, 7000, 6000);
+            proxyFirefox.Run();
+
             IWebHost host = new WebHostBuilder()
                 .UseSetting("UseIISIntegration", false.ToString())
                 .UseKestrel()
@@ -38,5 +46,5 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             host.Run();
         }
-    }
+}
 }
