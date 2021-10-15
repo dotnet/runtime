@@ -49,7 +49,7 @@ namespace ILTrim.DependencyAnalysis
                 ConstantTypeCode.NullReference => null,
                 ConstantTypeCode.SByte => valueBlob.ReadSByte(),
                 ConstantTypeCode.Single => valueBlob.ReadSingle(),
-                ConstantTypeCode.String => valueBlob.ReadSerializedString(),
+                ConstantTypeCode.String => valueBlob.ReadUTF16(valueBlob.Length),
                 ConstantTypeCode.UInt16 => valueBlob.ReadUInt16(),
                 ConstantTypeCode.UInt32 => valueBlob.ReadUInt32(),
                 ConstantTypeCode.UInt64 => valueBlob.ReadUInt64(),
