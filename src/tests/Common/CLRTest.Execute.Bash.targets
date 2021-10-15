@@ -310,6 +310,9 @@ _DebuggerArgsSeparator=
 if [[ "$_DebuggerFullPath" == *lldb* ]];
 then
   _DebuggerArgsSeparator=--
+elif [[ "$_DebuggerFullPath" == *gdb* ]]
+then
+  _DebuggerArgsSeparator=--args
 fi
 
 if [ ! -z "$CLRCustomTestLauncher" ];
