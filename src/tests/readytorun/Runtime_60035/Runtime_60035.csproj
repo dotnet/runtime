@@ -1,0 +1,238 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_X86Base.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Sse.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Sse2.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Sse3.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Ssse3.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Sse41.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Sse42.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Avx.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Avx2.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_AvxVnni.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Bmi1.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Bmi2.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Fma.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Lzcnt.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Pclmulqdq.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_X86_Popcnt.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_ArmBase.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_AdvSimd.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_Aes.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_Crc32.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_Dp.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_Rdm.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_Sha1.csproj" />
+    <ProjectReference Include="Helper_System_Runtime_Intrinsics_Arm_Sha256.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+setlocal
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_X86Base.dll ..\Helper_System_Runtime_Intrinsics_X86_X86Base\Helper_System_Runtime_Intrinsics_X86_X86Base.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_X86Base.dll ..\Helper_System_Runtime_Intrinsics_X86_X86Base\Helper_System_Runtime_Intrinsics_X86_X86Base.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse\Helper_System_Runtime_Intrinsics_X86_Sse.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse\Helper_System_Runtime_Intrinsics_X86_Sse.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse2.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse2\Helper_System_Runtime_Intrinsics_X86_Sse2.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse2.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse2\Helper_System_Runtime_Intrinsics_X86_Sse2.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse3.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse3\Helper_System_Runtime_Intrinsics_X86_Sse3.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse3.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse3\Helper_System_Runtime_Intrinsics_X86_Sse3.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Ssse3.dll ..\Helper_System_Runtime_Intrinsics_X86_Ssse3\Helper_System_Runtime_Intrinsics_X86_Ssse3.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Ssse3.dll ..\Helper_System_Runtime_Intrinsics_X86_Ssse3\Helper_System_Runtime_Intrinsics_X86_Ssse3.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse41.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse41\Helper_System_Runtime_Intrinsics_X86_Sse41.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse41.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse41\Helper_System_Runtime_Intrinsics_X86_Sse41.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse42.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse42\Helper_System_Runtime_Intrinsics_X86_Sse42.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Sse42.dll ..\Helper_System_Runtime_Intrinsics_X86_Sse42\Helper_System_Runtime_Intrinsics_X86_Sse42.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Avx.dll ..\Helper_System_Runtime_Intrinsics_X86_Avx\Helper_System_Runtime_Intrinsics_X86_Avx.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Avx.dll ..\Helper_System_Runtime_Intrinsics_X86_Avx\Helper_System_Runtime_Intrinsics_X86_Avx.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Avx2.dll ..\Helper_System_Runtime_Intrinsics_X86_Avx2\Helper_System_Runtime_Intrinsics_X86_Avx2.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Avx2.dll ..\Helper_System_Runtime_Intrinsics_X86_Avx2\Helper_System_Runtime_Intrinsics_X86_Avx2.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_AvxVnni.dll ..\Helper_System_Runtime_Intrinsics_X86_AvxVnni\Helper_System_Runtime_Intrinsics_X86_AvxVnni.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_AvxVnni.dll ..\Helper_System_Runtime_Intrinsics_X86_AvxVnni\Helper_System_Runtime_Intrinsics_X86_AvxVnni.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Bmi1.dll ..\Helper_System_Runtime_Intrinsics_X86_Bmi1\Helper_System_Runtime_Intrinsics_X86_Bmi1.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Bmi1.dll ..\Helper_System_Runtime_Intrinsics_X86_Bmi1\Helper_System_Runtime_Intrinsics_X86_Bmi1.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Bmi2.dll ..\Helper_System_Runtime_Intrinsics_X86_Bmi2\Helper_System_Runtime_Intrinsics_X86_Bmi2.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Bmi2.dll ..\Helper_System_Runtime_Intrinsics_X86_Bmi2\Helper_System_Runtime_Intrinsics_X86_Bmi2.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Fma.dll ..\Helper_System_Runtime_Intrinsics_X86_Fma\Helper_System_Runtime_Intrinsics_X86_Fma.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Fma.dll ..\Helper_System_Runtime_Intrinsics_X86_Fma\Helper_System_Runtime_Intrinsics_X86_Fma.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Lzcnt.dll ..\Helper_System_Runtime_Intrinsics_X86_Lzcnt\Helper_System_Runtime_Intrinsics_X86_Lzcnt.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Lzcnt.dll ..\Helper_System_Runtime_Intrinsics_X86_Lzcnt\Helper_System_Runtime_Intrinsics_X86_Lzcnt.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Pclmulqdq.dll ..\Helper_System_Runtime_Intrinsics_X86_Pclmulqdq\Helper_System_Runtime_Intrinsics_X86_Pclmulqdq.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Pclmulqdq.dll ..\Helper_System_Runtime_Intrinsics_X86_Pclmulqdq\Helper_System_Runtime_Intrinsics_X86_Pclmulqdq.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Popcnt.dll ..\Helper_System_Runtime_Intrinsics_X86_Popcnt\Helper_System_Runtime_Intrinsics_X86_Popcnt.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_X86_Popcnt.dll ..\Helper_System_Runtime_Intrinsics_X86_Popcnt\Helper_System_Runtime_Intrinsics_X86_Popcnt.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_ArmBase.dll ..\Helper_System_Runtime_Intrinsics_Arm_ArmBase\Helper_System_Runtime_Intrinsics_Arm_ArmBase.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_ArmBase.dll ..\Helper_System_Runtime_Intrinsics_Arm_ArmBase\Helper_System_Runtime_Intrinsics_Arm_ArmBase.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_AdvSimd.dll ..\Helper_System_Runtime_Intrinsics_Arm_AdvSimd\Helper_System_Runtime_Intrinsics_Arm_AdvSimd.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_AdvSimd.dll ..\Helper_System_Runtime_Intrinsics_Arm_AdvSimd\Helper_System_Runtime_Intrinsics_Arm_AdvSimd.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Aes.dll ..\Helper_System_Runtime_Intrinsics_Arm_Aes\Helper_System_Runtime_Intrinsics_Arm_Aes.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Aes.dll ..\Helper_System_Runtime_Intrinsics_Arm_Aes\Helper_System_Runtime_Intrinsics_Arm_Aes.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Crc32.dll ..\Helper_System_Runtime_Intrinsics_Arm_Crc32\Helper_System_Runtime_Intrinsics_Arm_Crc32.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Crc32.dll ..\Helper_System_Runtime_Intrinsics_Arm_Crc32\Helper_System_Runtime_Intrinsics_Arm_Crc32.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Dp.dll ..\Helper_System_Runtime_Intrinsics_Arm_Dp\Helper_System_Runtime_Intrinsics_Arm_Dp.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Dp.dll ..\Helper_System_Runtime_Intrinsics_Arm_Dp\Helper_System_Runtime_Intrinsics_Arm_Dp.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Rdm.dll ..\Helper_System_Runtime_Intrinsics_Arm_Rdm\Helper_System_Runtime_Intrinsics_Arm_Rdm.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Rdm.dll ..\Helper_System_Runtime_Intrinsics_Arm_Rdm\Helper_System_Runtime_Intrinsics_Arm_Rdm.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Sha1.dll ..\Helper_System_Runtime_Intrinsics_Arm_Sha1\Helper_System_Runtime_Intrinsics_Arm_Sha1.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Sha1.dll ..\Helper_System_Runtime_Intrinsics_Arm_Sha1\Helper_System_Runtime_Intrinsics_Arm_Sha1.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Sha256.dll ..\Helper_System_Runtime_Intrinsics_Arm_Sha256\Helper_System_Runtime_Intrinsics_Arm_Sha256.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+if not !CrossGenStatus! == 0 (
+    echo ERROR: "%CORE_ROOT%\corerun.exe %CORE_ROOT%\crossgen2\crossgen2.dll -r:%CORE_ROOT%\*.dll -o:Helper_System_Runtime_Intrinsics_Arm_Sha256.dll ..\Helper_System_Runtime_Intrinsics_Arm_Sha256\Helper_System_Runtime_Intrinsics_Arm_Sha256.dll" returned %CrossGenStatus%
+    exit /b 1
+)
+
+endlocal
+]]></CLRTestBatchPreCommands>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+</Project>
