@@ -24,7 +24,9 @@ namespace System.Runtime.CompilerServices
             RuntimeTypeHandle targetTypeHandle,
             void** data,
             int* count)
-            => throw new NotImplementedException();
+        {
+            GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(data), new IntPtr(count));
+        }
 
         public static int OffsetToStringData
         {
@@ -171,6 +173,13 @@ namespace System.Runtime.CompilerServices
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitializeArray(Array array, IntPtr fldHandle);
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private static extern unsafe void GetSpanDataFrom(
+            IntPtr fldHandle,
+            IntPtr targetTypeHandle,
+            IntPtr data,
+            IntPtr count);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void RunClassConstructor(IntPtr type);
