@@ -1305,7 +1305,8 @@ namespace System.Net.Http
                 else
                 {
                     // We shouldn't be using a managed instance here, but don't have much choice -- we
-                    // need to remove the stream from the connection's GOAWAY collection.
+                    // need to remove the stream from the connection's GOAWAY collection and properly abort.
+                    stream.AbortStream();
                     stream._connection.RemoveStream(stream._stream);
                     stream._connection = null!;
                 }

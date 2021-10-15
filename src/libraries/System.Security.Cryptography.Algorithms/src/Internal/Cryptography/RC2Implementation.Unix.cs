@@ -13,7 +13,6 @@ namespace Internal.Cryptography
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
-            int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
             int feedbackSize,
@@ -25,7 +24,7 @@ namespace Internal.Cryptography
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
@@ -33,7 +32,6 @@ namespace Internal.Cryptography
             CipherMode cipherMode,
             PaddingMode paddingMode,
             ReadOnlySpan<byte> key,
-            int effectiveKeyLength,
             ReadOnlySpan<byte> iv,
             int blockSize,
             int feedbackSizeInBytes,
@@ -44,7 +42,7 @@ namespace Internal.Cryptography
             IntPtr algorithm = GetAlgorithm(cipherMode);
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
-            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength, iv, encrypting);
+            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
         }
 
         private static IntPtr GetAlgorithm(CipherMode cipherMode) => cipherMode switch

@@ -1639,26 +1639,6 @@ struct FuncInfoDsc
     // that isn't shared between the main function body and funclets.
 };
 
-enum class NonStandardArgKind : unsigned
-{
-    None,
-    PInvokeFrame,
-    PInvokeTarget,
-    PInvokeCookie,
-    WrapperDelegateCell,
-    ShiftLow,
-    ShiftHigh,
-    FixedRetBuffer,
-    VirtualStubCell,
-    R2RIndirectionCell,
-
-    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
-};
-
-#ifdef DEBUG
-const char* getNonStandardArgKindName(NonStandardArgKind kind);
-#endif
-
 struct fgArgTabEntry
 {
     GenTreeCall::Use* use;     // Points to the argument's GenTreeCall::Use in gtCallArgs or gtCallThisArg.

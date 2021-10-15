@@ -3,8 +3,7 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 #
-##
-# Title               : superpmi_setup.py
+# Title               : superpmi_collect_setup.py
 #
 # Notes:
 #
@@ -21,7 +20,7 @@
 #     `CORE_ROOT` folder and this script will copy `max_size` bytes of those files under `payload/libraries/0/binaries`,
 #     `payload/libraries/1/binaries` and so forth.
 # 4.  Lastly, it sets the pipeline variables.
-
+#
 # Below are the helix queues it sets depending on the OS/architecture:
 # | Arch  | windows              | Linux                                                                                                                                |
 # |-------|----------------------|--------------------------------------------------------------------------------------------------------------------------------------|
@@ -29,20 +28,17 @@
 # | x64   | Windows.10.Amd64.X86 | Ubuntu.1804.Amd64                                                                                                                    |
 # | arm   | -                    | (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440 |
 # | arm64 | Windows.10.Arm64     | (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652 |
+#
 ################################################################################
 ################################################################################
-
 
 import argparse
-import shutil
+import os
 import stat
-import subprocess
-import tempfile
 
-from os import linesep, listdir, path, walk
-from os.path import isfile, join, getsize
 from coreclr_arguments import *
-from superpmi import ChangeDir
+from azdo_pipelines_util import run_command, copy_directory, copy_files, set_pipeline_variable, ChangeDir, TempDir
+
 
 # Start of parser object creation.
 
@@ -251,7 +247,7 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
 
     filename_with_size = []
 
-    for file_path, dirs, files in walk(src_directory, topdown=True):
+    for file_path, dirs, files in os.walk(src_directory, topdown=True):
         # Credit: https://stackoverflow.com/a/19859907
         dirs[:] = [d for d in dirs if d not in exclude_directories]
         for name in files:
@@ -259,14 +255,14 @@ def get_files_sorted_by_size(src_directory, exclude_directories, exclude_files):
             exclude_files_lower = [filename.lower() for filename in exclude_files]
             if name.lower() in exclude_files_lower:
                 continue
-            curr_file_path = path.join(file_path, name)
+            curr_file_path = os.path.join(file_path, name)
 
-            if not isfile(curr_file_path):
+            if not os.path.isfile(curr_file_path):
                 continue
             if not name.endswith(".dll") and not name.endswith(".exe"):
                 continue
 
-            size = getsize(curr_file_path)
+            size = os.path.getsize(curr_file_path)
             filename_with_size.append((curr_file_path, size))
 
     return sorter_by_size(filename_with_size)
@@ -312,110 +308,6 @@ def first_fit(sorted_by_size, max_size):
     return partitions
 
 
-def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=None):
-    """ Runs the command.
-
-    Args:
-        command_to_run ([string]): Command to run along with arguments.
-        _cwd (string): Current working directory.
-        _exit_on_fail (bool): If it should exit on failure.
-    Returns:
-        (string, string, int): Returns a tuple of stdout, stderr, and command return code if _output_file= None
-        Otherwise stdout, stderr are empty.
-    """
-    print("Running: " + " ".join(command_to_run))
-    command_stdout = ""
-    command_stderr = ""
-    return_code = 1
-
-    output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
-    with subprocess.Popen(command_to_run, stdout=subprocess.PIPE, stderr=output_type, cwd=_cwd) as proc:
-
-        # For long running command, continuously print the output
-        if _output_file:
-            while True:
-                with open(_output_file, 'a') as of:
-                    output = proc.stdout.readline()
-                    if proc.poll() is not None:
-                        break
-                    if output:
-                        of.write(output.strip().decode("utf-8") + "\n")
-        else:
-            command_stdout, command_stderr = proc.communicate()
-            if len(command_stdout) > 0:
-                print(command_stdout.decode("utf-8"))
-            if len(command_stderr) > 0:
-                print(command_stderr.decode("utf-8"))
-
-        return_code = proc.returncode
-        if _exit_on_fail and return_code != 0:
-            print("Command failed. Exiting.")
-            sys.exit(1)
-    return command_stdout, command_stderr, return_code
-
-
-def copy_directory(src_path, dst_path, verbose_output=True, match_func=lambda path: True):
-    """Copies directory in 'src_path' to 'dst_path' maintaining the directory
-    structure. https://docs.python.org/3.5/library/shutil.html#shutil.copytree can't
-    be used in this case because it expects the destination directory should not
-    exist, however we do call copy_directory() to copy files to same destination directory.
-
-    Args:
-        src_path (string): Path of source directory that need to be copied.
-        dst_path (string): Path where directory should be copied.
-        verbose_output (bool): True to print every copy or skipped file.
-        match_func (str -> bool) : Criteria function determining if a file is copied.
-    """
-    if not os.path.exists(dst_path):
-        os.makedirs(dst_path)
-    for item in os.listdir(src_path):
-        src_item = os.path.join(src_path, item)
-        dst_item = os.path.join(dst_path, item)
-        if os.path.isdir(src_item):
-            copy_directory(src_item, dst_item, verbose_output, match_func)
-        else:
-            try:
-                if match_func(src_item):
-                    if verbose_output:
-                        print("> copy {0} => {1}".format(src_item, dst_item))
-                    try:
-                        shutil.copy2(src_item, dst_item)
-                    except PermissionError as pe_error:
-                        print('Ignoring PermissionError: {0}'.format(pe_error))
-                else:
-                    if verbose_output:
-                        print("> skipping {0}".format(src_item))
-            except UnicodeEncodeError:
-                if verbose_output:
-                    print("> Got UnicodeEncodeError")
-
-
-def copy_files(src_path, dst_path, file_names):
-    """Copy files from 'file_names' list from 'src_path' to 'dst_path'.
-    It retains the original directory structure of src_path.
-
-    Args:
-        src_path (string): Source directory from where files are copied.
-        dst_path (string): Destination directory where files to be copied.
-        file_names ([string]): List of full path file names to be copied.
-    """
-
-    print('### Copying below files from {0} to {1}:'.format(src_path, dst_path))
-    print('')
-    print(os.linesep.join(file_names))
-    for f in file_names:
-        # Create same structure in dst so we don't clobber same files names present in different directories
-        dst_path_of_file = f.replace(src_path, dst_path)
-
-        dst_directory = path.dirname(dst_path_of_file)
-        if not os.path.exists(dst_directory):
-            os.makedirs(dst_directory)
-        try:
-            shutil.copy2(f, dst_path_of_file)
-        except PermissionError as pe_error:
-            print('Ignoring PermissionError: {0}'.format(pe_error))
-
-
 def partition_files(src_directory, dst_directory, max_size, exclude_directories=[],
                     exclude_files=native_binaries_to_ignore):
     """ Copy bucketized files based on size to destination folder.
@@ -435,7 +327,7 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
     index = 0
     for p_index in partitions:
         file_names = [curr_file[0] for curr_file in partitions[p_index]]
-        curr_dst_path = path.join(dst_directory, str(index), "binaries")
+        curr_dst_path = os.path.join(dst_directory, str(index), "binaries")
         copy_files(src_directory, curr_dst_path, file_names)
         index += 1
 
@@ -447,7 +339,7 @@ def setup_microbenchmark(workitem_directory, arch):
         workitem_directory (string): Path to work
         arch (string): Architecture for which dotnet will be installed
     """
-    performance_directory = path.join(workitem_directory, "performance")
+    performance_directory = os.path.join(workitem_directory, "performance")
 
     run_command(
         ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
@@ -456,7 +348,7 @@ def setup_microbenchmark(workitem_directory, arch):
         dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
         dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
 
-        if not isfile(dotnet_install_script):
+        if not os.path.isfile(dotnet_install_script):
             print("Missing " + dotnet_install_script)
             return
 
@@ -477,18 +369,6 @@ def get_python_name():
         return ["python3"]
 
 
-def set_pipeline_variable(name, value):
-    """ This method sets pipeline variable.
-
-    Args:
-        name (string): Name of the variable.
-        value (string): Value of the variable.
-    """
-    define_variable_format = "##vso[task.setvariable variable={0}]{1}"
-    print("{0} -> {1}".format(name, value))  # logging
-    print(define_variable_format.format(name, value))  # set variable
-
-
 def main(main_args):
     """ Main entrypoint
 
@@ -499,9 +379,9 @@ def main(main_args):
     source_directory = coreclr_args.source_directory
 
     # CorrelationPayload directories
-    correlation_payload_directory = path.join(coreclr_args.source_directory, "payload")
-    superpmi_src_directory = path.join(source_directory, 'src', 'coreclr', 'scripts')
-    superpmi_dst_directory = path.join(correlation_payload_directory, "superpmi")
+    correlation_payload_directory = os.path.join(coreclr_args.source_directory, "payload")
+    superpmi_src_directory = os.path.join(source_directory, 'src', 'coreclr', 'scripts')
+    superpmi_dst_directory = os.path.join(correlation_payload_directory, "superpmi")
     arch = coreclr_args.arch
     helix_source_prefix = "official"
     creator = ""
@@ -547,7 +427,7 @@ def main(main_args):
 
             print("Inside make_readable")
             run_command(["ls", "-l", folder_name])
-            for file_path, dirs, files in walk(folder_name, topdown=True):
+            for file_path, dirs, files in os.walk(folder_name, topdown=True):
                 for d in dirs:
                     os.chmod(os.path.join(file_path, d),
                     # read+write+execute for owner
@@ -571,7 +451,7 @@ def main(main_args):
         copy_directory(coreclr_args.input_directory, superpmi_dst_directory, match_func=acceptable_copy)
 
     # Workitem directories
-    workitem_directory = path.join(source_directory, "workitem")
+    workitem_directory = os.path.join(source_directory, "workitem")
     input_artifacts = ""
 
     if coreclr_args.collection_name == "benchmarks":
@@ -582,21 +462,21 @@ def main(main_args):
 
         # Clone and build jitutils
         try:
-            with tempfile.TemporaryDirectory() as jitutils_directory:
+            with TempDir() as jitutils_directory:
                 run_command(
                     ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/jitutils", jitutils_directory])
 
                 # Make sure ".dotnet" directory exists, by running the script at least once
                 dotnet_script_name = "dotnet.cmd" if is_windows else "dotnet.sh"
-                dotnet_script_path = path.join(source_directory, dotnet_script_name)
+                dotnet_script_path = os.path.join(source_directory, dotnet_script_name)
                 run_command([dotnet_script_path, "--info"], jitutils_directory)
 
                 # Set dotnet path to run build
-                os.environ["PATH"] = path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
+                os.environ["PATH"] = os.path.join(source_directory, ".dotnet") + os.pathsep + os.environ["PATH"]
                 build_file = "build.cmd" if is_windows else "build.sh"
-                run_command([path.join(jitutils_directory, build_file), "-p"], jitutils_directory)
+                run_command([os.path.join(jitutils_directory, build_file), "-p"], jitutils_directory)
 
-                copy_files(path.join(jitutils_directory, "bin"), superpmi_dst_directory, [path.join(jitutils_directory, "bin", "pmi.dll")])
+                copy_files(os.path.join(jitutils_directory, "bin"), superpmi_dst_directory, [os.path.join(jitutils_directory, "bin", "pmi.dll")])
         except PermissionError as pe_error:
             # Details: https://bugs.python.org/issue26660
             print('Ignoring PermissionError: {0}'.format(pe_error))
@@ -607,14 +487,14 @@ def main(main_args):
 
         # # Copy ".dotnet" to correlation_payload_directory for crossgen2 job; it is needed to invoke crossgen2.dll
         # if coreclr_args.collection_type == "crossgen2":
-        #     dotnet_src_directory = path.join(source_directory, ".dotnet")
-        #     dotnet_dst_directory = path.join(correlation_payload_directory, ".dotnet")
+        #     dotnet_src_directory = os.path.join(source_directory, ".dotnet")
+        #     dotnet_dst_directory = os.path.join(correlation_payload_directory, ".dotnet")
         #     print('Copying {} -> {}'.format(dotnet_src_directory, dotnet_dst_directory))
         #     copy_directory(dotnet_src_directory, dotnet_dst_directory, verbose_output=False)
 
         # payload
-        pmiassemblies_directory = path.join(workitem_directory, "pmiAssembliesDirectory")
-        input_artifacts = path.join(pmiassemblies_directory, coreclr_args.collection_name)
+        pmiassemblies_directory = os.path.join(workitem_directory, "pmiAssembliesDirectory")
+        input_artifacts = os.path.join(pmiassemblies_directory, coreclr_args.collection_name)
         exclude_directory = ['Core_Root'] if coreclr_args.collection_name == "coreclr_tests" else []
         exclude_files = native_binaries_to_ignore
         if coreclr_args.collection_type == "crossgen2":
@@ -626,7 +506,7 @@ def main(main_args):
             # libraries_tests artifacts contains files from core_root folder. Exclude them.
             core_root_dir = coreclr_args.core_root_directory
             exclude_files += [item for item in os.listdir(core_root_dir)
-                              if isfile(join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
+                              if os.path.isfile(os.path.join(core_root_dir, item)) and (item.endswith(".dll") or item.endswith(".exe"))]
 
         partition_files(coreclr_args.input_directory, input_artifacts, coreclr_args.max_size, exclude_directory,
                         exclude_files)

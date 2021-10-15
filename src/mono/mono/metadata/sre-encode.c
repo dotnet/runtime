@@ -162,7 +162,7 @@ encode_type (MonoDynamicImage *assembly, MonoType *type, SigBuffer *buf)
 		return;
 	}
 		
-	if (type->byref)
+	if (m_type_is_byref (type))
 		sigbuffer_add_value (buf, MONO_TYPE_BYREF);
 
 	switch (type->type){
