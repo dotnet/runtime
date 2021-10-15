@@ -179,34 +179,30 @@ namespace System.IO
             {
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
             }
+            if ((uint)_pos >= (uint)_length)
+                return null;
 
-            int i = _pos;
-            while (i < _length)
+            ReadOnlySpan<char> remaining = _s.AsSpan(_pos);
+            int foundLineLength = remaining.IndexOfAny('\r', '\n');
+            if (foundLineLength >= 0)
             {
-                char ch = _s[i];
-                if (ch == '\r' || ch == '\n')
-                {
-                    string result = _s.Substring(_pos, i - _pos);
-                    _pos = i + 1;
-                    if (ch == '\r' && _pos < _length && _s[_pos] == '\n')
-                    {
-                        _pos++;
-                    }
+                string result = _s.Substring(_pos, foundLineLength);
 
-                    return result;
+                char ch = remaining[foundLineLength];
+                _pos += foundLineLength + 1;
+                if (ch == '\r' && _pos < _length && _s[_pos] == '\n')
+                {
+                    _pos++;
                 }
 
-                i++;
-            }
-
-            if (i > _pos)
-            {
-                string result = _s.Substring(_pos, i - _pos);
-                _pos = i;
                 return result;
             }
-
-            return null;
+            else
+            {
+                string result = _s.Substring(_pos, _length - _pos);
+                _pos = _length;
+                return result;
+            }
         }
 
         #region Task based Async APIs
