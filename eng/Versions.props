@@ -145,16 +145,10 @@
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
     <MicrosoftDiagnosticsNETCoreClientVersion>0.2.61701</MicrosoftDiagnosticsNETCoreClientVersion>
-    <!--
-      These are used as reference assemblies only, so they must not take a ProdCon/source-build
-      version. Insert "RefOnly" to avoid assignment via PVP.
-    -->
-    <RefOnlyMicrosoftBuildVersion>16.10.0</RefOnlyMicrosoftBuildVersion>
-    <RefOnlyMicrosoftBuildFrameworkVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildFrameworkVersion>
-    <RefOnlyMicrosoftBuildTasksCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildTasksCoreVersion>
-    <RefOnlyMicrosoftBuildUtilitiesCoreVersion>$(RefOnlyMicrosoftBuildVersion)</RefOnlyMicrosoftBuildUtilitiesCoreVersion>
-    <RefOnlyNugetProjectModelVersion>5.8.0</RefOnlyNugetProjectModelVersion>
-    <RefOnlyNugetPackagingVersion>5.8.0</RefOnlyNugetPackagingVersion>
+    <MicrosoftBuildVersion>16.10.0</MicrosoftBuildVersion>
+    <MicrosoftBuildTasksCoreVersion>$(MicrosoftBuildVersion)</MicrosoftBuildTasksCoreVersion>
+    <NugetProjectModelVersion>5.8.0</NugetProjectModelVersion>
+    <NugetPackagingVersion>5.8.0</NugetPackagingVersion>
     <!-- Testing -->
     <MicrosoftNETCoreCoreDisToolsVersion>1.0.1-prerelease-00006</MicrosoftNETCoreCoreDisToolsVersion>
     <MicrosoftNETTestSdkVersion>16.9.0-preview-20201201-01</MicrosoftNETTestSdkVersion>
