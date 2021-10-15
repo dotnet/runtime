@@ -11,8 +11,8 @@ namespace System
     {
         public static int Length => RankOf<R>.Value;
 
-        // For the array of Length N, we will have N+1 elements immdiately follow.
-        public T Element0;
+        // For the array of Length N, runtime will add N-1 elements immediately after this one.
+        private T Element0;
 
         /// <summary>
         /// Gets or sets the element at the specified index.
