@@ -6232,6 +6232,11 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     {
         JITDUMP("Not emitting compare due to flags being already set\n");
     }
+    else if (canReuseFlags && emit->AreFlagsSetForSignJumpOpt(op1->GetRegNum(), emitTypeSize(type), tree))
+    {
+        JITDUMP("Not emitting compare due to sign being already set, follow up instr will transform jump\n");
+        tree->gtFlags |= GTF_RELOP_SJUMP_OPT;
+    }
     else
     {
         emit->emitInsBinary(ins, emitTypeSize(type), op1, op2);
