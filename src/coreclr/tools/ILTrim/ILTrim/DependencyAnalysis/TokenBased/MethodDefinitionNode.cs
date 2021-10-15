@@ -103,7 +103,7 @@ namespace ILTrim.DependencyAnalysis
 
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
-            int rva = bodyNode.Marked
+            int bodyOffset = bodyNode.Marked
                 ? bodyNode.Write(writeContext)
                 : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
@@ -118,7 +118,7 @@ namespace ILTrim.DependencyAnalysis
                 methodDef.ImplAttributes,
                 builder.GetOrAddString(reader.GetString(methodDef.Name)),
                 builder.GetOrAddBlob(signatureBlob),
-                rva,
+                bodyOffset,
                 writeContext.TokenMap.MapMethodParamList(Handle));
 
             if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
