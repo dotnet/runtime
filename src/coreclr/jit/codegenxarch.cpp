@@ -5696,15 +5696,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             // clang-format on
         }
     }
-#ifdef FEATURE_READYTORUN
-    else if (call->gtEntryPoint.addr != nullptr)
+    else
     {
-        emitter::EmitCallType type =
-            (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
-        if (call->IsFastTailCall() && (type == emitter::EC_FUNC_TOKEN_INDIR))
+        // If we have no target and this is a call with indirection cell
+        // then emit call through that indir cell. This means we generate e.g.
+        // lea r11, [addr of cell]
+        // call [r11]
+        // which is more efficent than
+        // lea r11, [addr of cell]
+        // call [addr of cell]
+        regNumber indirCellReg = getCallIndirectionCellReg(call);
+        if (indirCellReg != REG_NA)
         {
-            // For fast tailcall with func token indir we already have the indirection cell in REG_R2R_INDIRECT_PARAM,
-            // so get it from there.
             // clang-format off
             GetEmitter()->emitIns_Call(
                 emitter::EC_INDIR_ARD,
@@ -5717,11 +5720,15 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 gcInfo.gcVarPtrSetCur,
                 gcInfo.gcRegGCrefSetCur,
                 gcInfo.gcRegByrefSetCur,
-                ilOffset, REG_R2R_INDIRECT_PARAM, REG_NA, 0, 0, true);
+                ilOffset, indirCellReg, REG_NA, 0, 0,
+                call->IsFastTailCall());
             // clang-format on
         }
-        else
+#ifdef FEATURE_READYTORUN
+        else if (call->gtEntryPoint.addr != nullptr)
         {
+            emitter::EmitCallType type =
+                (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
             // clang-format off
             genEmitCall(type,
                         methHnd,
@@ -5735,46 +5742,46 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         call->IsFastTailCall());
             // clang-format on
         }
-    }
 #endif
-    else
-    {
-        // Generate a direct call to a non-virtual user defined or helper method
-        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
-
-        void* addr = nullptr;
-        if (call->gtCallType == CT_HELPER)
-        {
-            // Direct call to a helper method.
-            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-            void* pAddr = nullptr;
-            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-            assert(pAddr == nullptr);
-        }
         else
         {
-            // Direct call to a non-virtual user function.
-            addr = call->gtDirectCallAddress;
+            // Generate a direct call to a non-virtual user defined or helper method
+            assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+
+            void* addr = nullptr;
+            if (call->gtCallType == CT_HELPER)
+            {
+                // Direct call to a helper method.
+                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                void* pAddr = nullptr;
+                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                assert(pAddr == nullptr);
+            }
+            else
+            {
+                // Direct call to a non-virtual user function.
+                addr = call->gtDirectCallAddress;
+            }
+
+            assert(addr != nullptr);
+
+            // Non-virtual direct calls to known addresses
+
+            // clang-format off
+            genEmitCall(emitter::EC_FUNC_TOKEN,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        addr
+                        X86_ARG(argSizeForEmitter),
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        ilOffset,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
         }
-
-        assert(addr != nullptr);
-
-        // Non-virtual direct calls to known addresses
-
-        // clang-format off
-        genEmitCall(emitter::EC_FUNC_TOKEN,
-                    methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo)
-                    addr
-                    X86_ARG(argSizeForEmitter),
-                    retSize
-                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                    ilOffset,
-                    REG_NA,
-                    call->IsFastTailCall());
-        // clang-format on
     }
 }
 
