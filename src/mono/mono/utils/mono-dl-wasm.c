@@ -58,7 +58,7 @@ mono_dl_convert_flags (int mono_flags, int native_flags)
 	// Specifying both will default to LOCAL
 	if (mono_flags & MONO_DL_GLOBAL && !(mono_flags & MONO_DL_LOCAL))
 		lflags |= RTLD_GLOBAL;
-	else 
+	else
 		lflags |= RTLD_LOCAL;
 
 	if (mono_flags & MONO_DL_LAZY)

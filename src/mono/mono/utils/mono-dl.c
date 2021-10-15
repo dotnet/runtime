@@ -175,7 +175,7 @@ fix_libc_name (const char *name)
  * mono_dl_open_self:
  * \param error_msg pointer for error message on failure
  *
- * Returns a handle to the main program, on android x86 it's not possible to 
+ * Returns a handle to the main program, on android x86 it's not possible to
  * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
  * handle in this platform.
  */
@@ -198,9 +198,9 @@ mono_dl_open_self (char **error_msg)
 	module->dl_fallback = NULL;
 	module->full_name = NULL;
 	return module;
-#else 
+#else
 	return mono_dl_open (NULL, MONO_DL_LAZY, error_msg);
-#endif	
+#endif
 }
 
 /**
@@ -258,11 +258,11 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 			MonoDlFallbackHandler *handler = (MonoDlFallbackHandler *) node->data;
 			if (error_msg)
 				*error_msg = NULL;
-			
+
 			lib = handler->load_func (name, lflags, error_msg, handler->user_data);
 			if (error_msg && *error_msg != NULL)
 				g_free (*error_msg);
-			
+
 			if (lib != NULL){
 				dl_fallback = handler;
 				found_name = g_strdup (name);
@@ -280,7 +280,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 			g_free (module);
 			return NULL;
 		}
-		
+
 		suff = ".la";
 		ext = strrchr (name, '.');
 		if (ext && strcmp (ext, ".la") == 0)
@@ -380,13 +380,13 @@ void
 mono_dl_close (MonoDl *module)
 {
 	MonoDlFallbackHandler *dl_fallback = module->dl_fallback;
-	
+
 	if (dl_fallback){
 		if (dl_fallback->close_func != NULL)
 			dl_fallback->close_func (module->handle, dl_fallback->user_data);
 	} else
 		mono_dl_close_handle (module);
-	
+
 	g_free (module->full_name);
 	g_free (module);
 }
@@ -574,7 +574,7 @@ mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol sy
 	handler->user_data = user_data;
 
 	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
-	
+
 leave:
 	return handler;
 }
