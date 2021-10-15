@@ -64,10 +64,10 @@ namespace ILTrim.DependencyAnalysis
                     if (impl.OwningType == _type)
                     {
                         // If the slot defining virtual method is used, make sure we generate the implementation method.
-                        var ecmaImpl = (EcmaMethod)impl;
+                        var ecmaImpl = (EcmaMethod)impl.GetTypicalMethodDefinition();
                         yield return new(
                             factory.MethodDefinition(ecmaImpl.Module, ecmaImpl.Handle),
-                            factory.VirtualMethodUse((EcmaMethod)decl),
+                            factory.VirtualMethodUse((EcmaMethod)decl.GetTypicalMethodDefinition()),
                             "Virtual method");
                     }
                 }
