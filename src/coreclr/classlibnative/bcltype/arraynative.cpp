@@ -1153,3 +1153,40 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+
+FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetType, void** data, INT32* count)
+{
+    FCALL_CONTRACT;
+    struct
+    {
+        REFLECTFIELDREF refField;
+    } gc;
+    gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
+    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+
+    FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
+
+    if (!pField->IsRVA())
+        COMPlusThrow(kArgumentException);
+
+    TypeHandle targetTypeHandle = FCALL_RTH_TO_REFLECTCLASS(targetType)->GetType();
+    if (!CorTypeInfo::IsPrimitiveType(targetTypeHandle.GetSignatureCorElementType()) && !targetTypeHandle.IsEnum())
+        COMPlusThrow(kArgumentException);
+
+    DWORD totalSize = pField->LoadSize();
+    DWORD targetTypeSize = targetTypeHandle.GetSize();
+
+    // Report the RVA field to the logger.
+    g_IBCLogger.LogRVADataAccess(pField);
+
+    _ASSERTE(data != NULL && count != NULL);
+    *data = pField->GetStaticAddressHandle(NULL);
+    *count = (INT32)totalSize / targetTypeSize;
+
+#if BIGENDIAN
+    COMPlusThrow(kPlatformNotSupportedException);
+#endif
+
+   HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND

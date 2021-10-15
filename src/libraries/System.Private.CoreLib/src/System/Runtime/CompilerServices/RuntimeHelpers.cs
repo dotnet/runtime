@@ -109,5 +109,16 @@ namespace System.Runtime.CompilerServices
         internal static bool IsPrimitiveType(this CorElementType et)
             // COR_ELEMENT_TYPE_I1,I2,I4,I8,U1,U2,U4,U8,R4,R8,I,U,CHAR,BOOLEAN
             => ((1 << (int)et) & 0b_0011_0000_0000_0011_1111_1111_1100) != 0;
+
+        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+        {
+            unsafe
+            {
+                void* data = default;
+                int count = default;
+                GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, &data, &count);
+                return new ReadOnlySpan<T>(data, count);
+            }
+        }
     }
 }
