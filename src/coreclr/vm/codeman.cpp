@@ -4461,7 +4461,7 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
     }
 #endif
 
-    ReaderLockHolder rlh;
+    ReaderLockHolder rlh(HostCallPreference::NoHostCalls);
 
 #ifndef DACCESS_COMPILE
     //negative case
