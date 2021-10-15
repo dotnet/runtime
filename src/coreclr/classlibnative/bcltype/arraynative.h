@@ -14,6 +14,7 @@
 #define _ARRAYNATIVE_H_
 
 #include "fcall.h"
+#include "runtimehandles.h"
 
 struct FCALLRuntimeFieldHandle
 {
@@ -47,7 +48,7 @@ public:
 
     // This method will acquire data to create a span from a TypeHandle
     // to a field.
-    static FCDECL3(void, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, void** data, INT32* sizeInBytes);
+    static FCDECL4(void, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetType, void** data, INT32* count);
 
 private:
     // Helper for CreateInstance

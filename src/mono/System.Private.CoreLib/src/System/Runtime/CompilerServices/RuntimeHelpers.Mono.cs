@@ -19,8 +19,12 @@ namespace System.Runtime.CompilerServices
             InitializeArray(array, fldHandle.Value);
         }
 
-        public static Span<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)  where T : unmanaged
-            => throw new Exception();
+        private static unsafe void GetSpanDataFrom(
+            RuntimeFieldHandle fldHandle,
+            RuntimeTypeHandle targetTypeHandle,
+            void** data,
+            int* count)
+            => throw new NotImplementedException();
 
         public static int OffsetToStringData
         {

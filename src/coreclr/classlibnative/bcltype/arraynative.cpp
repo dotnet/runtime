@@ -1154,10 +1154,9 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
 }
 FCIMPLEND
 
-FCIMPL3(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField, void** data, INT32* sizeInBytes)
+FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField, FCALLRuntimeTypeHandle targetType, void** data, INT32* count)
 {
     FCALL_CONTRACT;
-
     struct
     {
         REFLECTFIELDREF refField;
@@ -1167,14 +1166,23 @@ FCIMPL3(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField,
 
     FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
 
-    // Only RVA static fields supported
     if (!pField->IsRVA())
-    {
         COMPlusThrow(kArgumentException);
-    }
 
-    *sizeInBytes = pField->LoadSize();
+    DWORD totalSize = pField->LoadSize();
+    DWORD targetTypeSize = FCALL_RTH_TO_REFLECTCLASS(targetType)->GetType().GetSize();
+
+    // Report the RVA field to the logger.
+    g_IBCLogger.LogRVADataAccess(pField);
+
+    _ASSERTE(data != NULL && count != NULL);
     *data = pField->GetStaticAddressHandle(NULL);
+    *count = (INT32)totalSize / targetTypeSize;
+
+#if BIGENDIAN
+    COMPlusThrow(kArgumentException);
+#endif
+
    HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND

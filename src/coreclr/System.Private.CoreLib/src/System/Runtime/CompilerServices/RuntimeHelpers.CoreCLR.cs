@@ -18,35 +18,11 @@ namespace System.Runtime.CompilerServices
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern unsafe void GetSpanDataFrom(RuntimeFieldHandle fldHandle, void** data, int* sizeInBytes);
-
-        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
-        {
-            unsafe
-            {
-                void* data = default;
-                int sizeInBytes = default;
-                if (typeof(T) != typeof(byte) &&
-                    typeof(T) != typeof(sbyte) &&
-                    typeof(T) != typeof(short) &&
-                    typeof(T) != typeof(ushort) &&
-                    typeof(T) != typeof(int) &&
-                    typeof(T) != typeof(uint) &&
-                    typeof(T) != typeof(long) &&
-                    typeof(T) != typeof(ulong) &&
-                    typeof(T) != typeof(IntPtr) &&
-                    typeof(T) != typeof(UIntPtr) &&
-                    typeof(T) != typeof(float) &&
-                    typeof(T) != typeof(double) &&
-                    typeof(T) != typeof(char)
-                    )
-                {
-                    throw new InvalidProgramException();
-                }
-                GetSpanDataFrom(fldHandle, &data, &sizeInBytes);
-                return new ReadOnlySpan<T>(data, sizeInBytes / Unsafe.SizeOf<T>());
-            }
-        }
+        private static extern unsafe void GetSpanDataFrom(
+            RuntimeFieldHandle fldHandle,
+            RuntimeTypeHandle targetTypeHandle,
+            void** data,
+            int* count);
 
         // GetObjectValue is intended to allow value classes to be manipulated as 'Object'
         // but have aliasing behavior of a value class.  The intent is that you would use
