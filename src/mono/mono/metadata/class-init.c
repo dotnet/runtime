@@ -811,6 +811,49 @@ check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 	return TRUE;
 }
 
+static gboolean
+type_is_byreflike_no_init  (MonoType *type)
+{
+	MonoClass *klass = NULL;
+	/* have to be careful not to recursively invoke mono_class_init on a
+	 * static field.  for example - if a field or a generic argument is an
+	 * array of a subclass of a class on which we called
+	 * mono_class_create_generic_inst or mono_class_layout_fields, we can
+	 * loop.
+	 */
+	switch (type->type) {
+	case MONO_TYPE_TYPEDBYREF:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_GENERICINST:
+		klass = mono_class_from_mono_type_internal (type);
+		if (m_class_is_byreflike (klass))
+			return TRUE;
+		break;
+	default:
+		break;
+	}
+	return FALSE;
+}
+
+static gboolean
+generic_inst_any_byreflike (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i)
+	{
+		MonoType *type = inst->type_argv[i];
+		if (m_type_is_byref (type) || type_is_byreflike_no_init (type))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+generic_context_any_byreflike (MonoGenericContext *context)
+{
+	g_assert (context->method_inst == NULL);
+	return generic_inst_any_byreflike (context->class_inst);
+}
+
 /*
  * Create the `MonoClass' for an instantiation of a generic type.
  * We only do this if we actually need it.
@@ -868,18 +911,24 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 
 	klass->cast_class = klass->element_class = klass;
 
-        // FIXME: CoreCLR says the following (see src/coreclr/vm/methodtablebuilder.cpp):
-        // Make struct ByRefLike if it has ByRef or ByRefLike generic arguments
-        //
-        // The behavior of this is that Generic structures with ByRef/ByRefLike generic
-        // arguments will be ByRefLike, but since we only check this on structs, normal
-        // classes will not be marked as ByRefLike.
-        //
-        // HACKATHON todo... should we allow a means to not do this, for nested structs in classes, and enums?
-        //
         
 	if (m_class_is_valuetype (klass)) {
 		klass->is_byreflike = gklass->is_byreflike;
+
+		if (!klass->is_byreflike) {
+			// If any of the instantiation types are byref or ByRefLike, make this generic instance as byreflike.
+			// From CoreCLR: (see src/coreclr/vm/methodtablebuilder.cpp):
+			// Make struct ByRefLike if it has ByRef or ByRefLike generic arguments
+			//
+			// The behavior of this is that Generic structures with ByRef/ByRefLike generic
+			// arguments will be ByRefLike, but since we only check this on structs, normal
+			// classes will not be marked as ByRefLike.
+			//
+			// HACKATHON todo... should we allow a means to not do this, for nested structs in classes, and enums?
+			//
+
+			klass->is_byreflike = generic_context_any_byreflike (&gclass->context);
+		}
 	}
 
 	if (gclass->is_dynamic) {
@@ -2484,24 +2533,11 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			continue;
-		if (field->type->byref && !allow_isbyreflike_fields) {
+		if (m_type_is_byref (field->type) && !allow_isbyreflike_fields) {
 			mono_class_set_type_load_failure (klass, "Instance ref field '%s' not in a ref struct", field->name);
 			return;
 		}
-		MonoClass *field_class = NULL;
-		/* have to be careful not to recursively invoke mono_class_init on a static field.
-		 * for example - if the field is an array of a subclass of klass, we can loop.
-		 */
-		switch (field->type->type) {
-		case MONO_TYPE_TYPEDBYREF:
-		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_GENERICINST:
-			field_class = mono_class_from_mono_type_internal (field->type);
-			break;
-		default:
-			break;
-		}
-		if (!field_class || !m_class_is_byreflike (field_class))
+		if (!type_is_byreflike_no_init (field->type))
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' 0x%08x is not allowed", field->name, (int)field->type->attrs);
