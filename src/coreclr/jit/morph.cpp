@@ -12228,13 +12228,20 @@ DONE_MORPHING_CHILDREN:
             if (!varTypeIsFloating(tree->gtType) && fgGlobalMorph)
             {
                 // Codegen for this instruction needs to be able to throw two exceptions:
-                if (tree->OperIs(GT_DIV) && (!op2->IsIntegralConst() || op2->IsIntegralConst(-1)))
-                {
-                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-                }
-                if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+                if (tree->OperIs(GT_DIV) &&
+                    (!op2->IsIntegralConst() || op2->IsIntegralConst(0) || op2->IsIntegralConst(-1)))
                 {
                     fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                }
+                else if (tree->OperIs(GT_UDIV) && (!op2->IsIntegralConst() || op2->IsIntegralConst(0)))
+                {
+                    // Codegen for this instruction needs to be able to throw one exception:
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                }
+                else
+                {
+                    tree->gtFlags &= ~GTF_EXCEPT;
                 }
             }
             break;
