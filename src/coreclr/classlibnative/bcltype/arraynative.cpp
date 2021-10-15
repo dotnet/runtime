@@ -1169,8 +1169,12 @@ FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField,
     if (!pField->IsRVA())
         COMPlusThrow(kArgumentException);
 
+    TypeHandle targetTypeHandle = FCALL_RTH_TO_REFLECTCLASS(targetType)->GetType();
+    if (!CorTypeInfo::IsPrimitiveType(targetTypeHandle.GetSignatureCorElementType()) && !targetTypeHandle.IsEnum())
+        COMPlusThrow(kArgumentException);
+
     DWORD totalSize = pField->LoadSize();
-    DWORD targetTypeSize = FCALL_RTH_TO_REFLECTCLASS(targetType)->GetType().GetSize();
+    DWORD targetTypeSize = targetTypeHandle.GetSize();
 
     // Report the RVA field to the logger.
     g_IBCLogger.LogRVADataAccess(pField);
@@ -1180,7 +1184,7 @@ FCIMPL4(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField,
     *count = (INT32)totalSize / targetTypeSize;
 
 #if BIGENDIAN
-    COMPlusThrow(kArgumentException);
+    COMPlusThrow(kPlatformNotSupportedException);
 #endif
 
    HELPER_METHOD_FRAME_END();
