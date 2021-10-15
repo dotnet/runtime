@@ -50,22 +50,26 @@ namespace ILTrim.DependencyAnalysis
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
             // For each virtual method slot (e.g. Object.GetHashCode()), check whether the current type
-            // provides an implementation of the virtual method (e.g. SomeFoo.GetHashCode()).
-            foreach (MethodDesc decl in _type.EnumAllVirtualSlots())
+            // provides an implementation of the virtual method (e.g. SomeFoo.GetHashCode()),
+            // if so, make sure we generate the body.
+            if (factory.IsModuleTrimmed(_type.EcmaModule))
             {
-                MethodDesc impl = _type.FindVirtualFunctionTargetMethodOnObjectType(decl);
-
-                // We're only interested in the case when it's implemented on this type.
-                // If the implementation comes from a base type, that's covered by the base type
-                // ConstructedTypeNode.
-                if (impl.OwningType == _type)
+                foreach (MethodDesc decl in _type.EnumAllVirtualSlots())
                 {
-                    // If the slot defining virtual method is used, make sure we generate the implementation method.
-                    var ecmaImpl = (EcmaMethod)impl;
-                    yield return new(
-                        factory.MethodDefinition(ecmaImpl.Module, ecmaImpl.Handle),
-                        factory.VirtualMethodUse((EcmaMethod)decl),
-                        "Virtual method");
+                    MethodDesc impl = _type.FindVirtualFunctionTargetMethodOnObjectType(decl);
+
+                    // We're only interested in the case when it's implemented on this type.
+                    // If the implementation comes from a base type, that's covered by the base type
+                    // ConstructedTypeNode.
+                    if (impl.OwningType == _type)
+                    {
+                        // If the slot defining virtual method is used, make sure we generate the implementation method.
+                        var ecmaImpl = (EcmaMethod)impl;
+                        yield return new(
+                            factory.MethodDefinition(ecmaImpl.Module, ecmaImpl.Handle),
+                            factory.VirtualMethodUse((EcmaMethod)decl),
+                            "Virtual method");
+                    }
                 }
             }
 
