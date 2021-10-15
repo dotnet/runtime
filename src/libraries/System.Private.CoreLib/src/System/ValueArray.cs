@@ -15,7 +15,7 @@ namespace System
         public T Element0;
 
         /// <summary>
-        /// Indexer.
+        /// Gets or sets the element at the specified index.
         /// </summary>
         public T this[int index]
         {
@@ -24,8 +24,7 @@ namespace System
         }
 
         /// <summary>
-        /// Returns an address to an element of the ValueArray.
-        /// Caller must statically know the upperBound and pass it in.
+        /// Gets an element address at the specified index.
         /// </summary>
         public ref T Address(int index)
         {
@@ -37,7 +36,6 @@ namespace System
 
         /// <summary>
         /// Returns a slice of the ValueArray.
-        /// Caller must statically know the upperBound and pass it in.
         /// </summary>
         public Span<T> Slice(int length)
         {
