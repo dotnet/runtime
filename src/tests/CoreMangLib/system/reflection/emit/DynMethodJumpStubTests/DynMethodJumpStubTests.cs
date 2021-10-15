@@ -9,22 +9,9 @@ using System.Threading;
 
 public static class DynamicMethodJumpStubTests
 {
-    public static readonly int[] MYFIELD = new int[] { 10, 9, 8, 7, 6 };
-
     private static int Main()
     {
-        // var ffffff = DynamicMethodJumpStubTests.MYFIELD;
-        FieldInfo fi = typeof(DynamicMethodJumpStubTests).GetField(nameof(MYFIELD), BindingFlags.Static | BindingFlags.Public);
-
-        ReadOnlySpan<int> t = new int[]{ 4, 5, 6, 7 };
-
-        Span<int> tt = System.Runtime.CompilerServices.RuntimeHelpers.CreateSpan<int>(fi.FieldHandle);
-
-        Console.WriteLine($"LENGTH: {tt.Length}");
-        for (int i = 0; i < tt.Length; ++i)
-        {
-            Console.WriteLine(tt[i]);
-        }
+        DynamicMethodJumpStubTest();
         return 100;
     }
 
