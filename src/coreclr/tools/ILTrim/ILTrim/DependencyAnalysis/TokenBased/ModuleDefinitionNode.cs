@@ -36,6 +36,8 @@ namespace ILTrim.DependencyAnalysis
             {
                 yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a module");
             }
+
+            yield return new(new ILLinkDescriptorNode(_module), "IL Link descriptor");
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

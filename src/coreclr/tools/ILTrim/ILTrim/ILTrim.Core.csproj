@@ -5,6 +5,9 @@
     <Platforms>x64;x86</Platforms>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\ProcessLinkerXmlBase.cs" Link="ProcessLinkerXmlBase.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
