@@ -1709,7 +1709,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
         g_pValueArrayClass->GetCl() == GetCl() &&
         g_pValueArrayClass->GetModule() == bmtInternal->pType->GetModule())
     {
-        bmtFP->NumValueArrayElements = 42;
+        TypeHandle R = bmtGenericsInfo->GetInstantiation()[1];
+        if (R.IsArray())
+        {
+            bmtFP->NumValueArrayElements = bmtGenericsInfo->GetInstantiation()[1].GetRank();
+        }
     }
 
     // Place regular static fields

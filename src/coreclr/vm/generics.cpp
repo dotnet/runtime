@@ -37,6 +37,14 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     CorElementType et = thGenericArg.GetSignatureCorElementType();
 
+    //TODO: we can narrow the scenario
+    //      by requiring a special/unspeakable/unusable element type
+    if (et == ELEMENT_TYPE_ARRAY &&
+        thGenericArg.GetArrayElementTypeHandle() == TypeHandle(g_pObjectClass))
+    {
+        RETURN(thGenericArg);
+    }
+
     // Note that generic variables do not share
 
     if (CorTypeInfo::IsObjRef_NoThrow(et))
