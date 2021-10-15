@@ -16,6 +16,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void NoInt32OverflowInTheBufferingLogic()
         {
             const long positon1 = 10;
