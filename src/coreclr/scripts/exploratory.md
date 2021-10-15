@@ -1,23 +1,49 @@
-# Documentation of Exploratory tool Antigen
+# Documentation of Exploratory tools Antigen and Fuzzlyn
 
-Antigen is a an exploratory fuzzing tool to test JIT compiler. Currently the source code is present at https://github.com/kunalspathak/antigen and will eventually become a separate repository under "dotnet" organization or part of [dotnet/jitutils](https://github.com/dotnet/jitutils) repository.
+[Antigen](https://github.com/kunalspathak/antigen) and [Fuzzlyn](https://github.com/jakobbotsch/Fuzzlyn) are exploratory fuzzing tools used to test the JIT compiler.
 
 ## Overview
 
-Antigen generates random test cases, compile them using Roslyn APIs and then execute it against `CoreRun.exe` in baseline and test mode. Baseline mode is without tiered JIT with minimum optimizations enabled while test mode is run by setting various combination of `COMPlus_*` environment variables. The output of both modes are compared to ensure they are same. If the output is different or an assert is hit in test mode, the tool saves the produced C# file in a `UniqueIssue` folder. Similar issues are placed in `UniqueIssueN` folder.
+The basics of both tools are the same: they generate random programs using Roslyn and execute them with `corerun.exe` in a baseline and a test mode.
+Typically, baseline uses the JIT with minimum optimizations enabled while the test mode has optimizations enabled.
+Antigen also sets various `COMPlus_*` variables in its test mode to turn off different stress modes.
 
-Antigen also comes with `Trimmer` that can be used to reduce the generated file and still reproduce the issue. Some more work needs to be done in this tool to make it efficient.
+The fuzzers detect issues by checking for assertion failures and by comparing results between the baseline and test modes.
+For more information, see the respectives repos.
 
 ## Pipeline
 
-Antigen tool is ran every night using CI pipeline. It can also be triggered on PRs. The pipeline would run Antigen tool for 3 hours on x86/x64 platforms and 2 hours for arm/arm64 platforms to generate test cases and verify if it contains issues. Once the run duration is complete, for each OS/arch, the pipeline will upload the issues that Antigen has found has an artifact that can be downloaded. The issues will be `.cs` files that will contain the program's output, environment variables that are needed to reproduce the issue. Since there can be several issues, the pipeline will just upload at most 5 issues from each `UniqueIssueN` folder.
+Both Antigen and Fuzzlyn run on a schedule using the CI pipeline. They can also be triggered on PRs with `/azp run Antigen` and `/azp run Fuzzlyn` respectively.
+The pipeline produces a summary of issues found under the "Extensions" tab when looking at the pipeline results.
+
+## Getting test examples from Antigen runs
+
+For Antigen runs the summary will show the assertion errors that were hit.
+Individual test examples are available as artifacts that can be downloaded for each OS/arch.
+The issues will be `.cs` files that will contain the program's output, environment variables that are needed to reproduce the issue.
+Since there can be several issues, the pipeline will just upload at most 5 issues.
+
+## Getting test examples from Fuzzlyn runs
+
+The Fuzzlyn pipeline will automatically reduce silent bad codegen examples that are found and include them as source code in the summary that can be viewed under "Extensions".
+The pipeline does not currently reduce assertion error examples automatically and instead only displays the seeds for the programs that failed.
+To reduce these examples manually, clone Fuzzlyn and run it as follows (adapting for Linux platforms as necessary):
+```powershell
+Fuzzlyn.exe --host <path to corerun.exe under test (typically a checked build)> --reduce --seed <seed from the summary>
+```
+This will take a long time if the example being reduced is one that brings down the host process on every run (e.g. for assertion failures).
+When completed, the reduced example will be output on stdout.
 
 ### Pipeline details
 
-1. `eng/pipeline/coreclr/jit-exploratory.yml` : This is the main pipeline which will perform Coreclr/libraries build and then further trigger `jit-exploratory-job.yml` pipeline.
+1. `eng/pipeline/coreclr/exploratory.yml` : This is the main pipeline which will perform Coreclr/libraries build and then further trigger `jit-exploratory-job.yml` pipeline.
+    It uses the name of the pipeline being run to determine whether Antigen or Fuzzlyn is being used.
 1. `eng/pipeline/coreclr/templates/jit-exploratory-job.yml` : This pipeline will download all the Coreclr/libraries artifacts and create `CORE_ROOT` folder. It further triggers `jit-run-exploratory-job.yml`  pipeline.
 1. `eng/pipeline/coreclr/templates/jit-run-exploratory-job.yml` : This pipeline will perform the actual run in 3 steps:
-   * `src/coreclr/scripts/antigen_setup.py`: This script will clone the Antigen repo, build and prepare the payloads to be sent for testing.
-   * `src/coreclr/scripts/antigen_run.py`: This script will execute Antigen tool and upload back the issues.
-   * `src/coreclr/scripts/antigen_unique_issues.py`: In addition to uploading the issues, this script will also print the output of unique issues it has found so the developer can quickly take a look at them and decide which platform's artifacts to download. If there is any issue found by Antigen, this script will make the pipeline as "FAIL".
-1. `src/coreclr/scripts/exploratory.proj`: This proj file is the one that creates the helix jobs. Currently, this file configures to run Antigen on 4 partitions. Thus, if Antigen can generate and test 1000 test cases on 1 machine, with current setup, the pipeline will be able to test 4000 test cases.
+   * `src/coreclr/scripts/fuzzer_setup.py`: This script will clone the Antigen/Fuzzlyn repo, build and prepare the payloads to be sent for testing.
+   * `src/coreclr/scripts/<antigen or fuzzlyn>_run.py`: This script will execute the tool and upload back the issues.
+   * `src/coreclr/scripts/<antigen or fuzzlyn>_summarize.py`: In addition to uploading the issues, this script will also summarize the issues that were found so the developer can quickly take a look at them and decide how to proceed.
+   This script is responsible for printing the markdown summary that uses Azure devops features to show up under the "Extensions" tab.
+   Furthermore, it returns an error code if any issues were found.
+1. `src/coreclr/scripts/exploratory.proj`: This proj file is the one that creates the helix jobs. Currently, this file configures to run Antigen/Fuzzlyn on 4 partitions.
+    Thus, if Antigen can generate and test 1000 test cases on 1 machine, with current setup, the pipeline will be able to test 4000 test cases.
