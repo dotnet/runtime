@@ -526,7 +526,8 @@ netcore_probe_for_module (MonoImage *image, const char *file_name, int flags)
 		module = netcore_probe_for_module_variations (pinvoke_search_directories[i], file_name, lflags);
 
 	// Check the assembly directory if the search flag is set and the image exists
-	if (flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY && image != NULL && module == NULL) {
+	if ((flags & DLLIMPORTSEARCHPATH_ASSEMBLY_DIRECTORY) != 0 && image != NULL && 
+		module == NULL && (image->filename != NULL)) {
 		char *mdirname = g_path_get_dirname (image->filename);
 		if (mdirname)
 			module = netcore_probe_for_module_variations (mdirname, file_name, lflags);
