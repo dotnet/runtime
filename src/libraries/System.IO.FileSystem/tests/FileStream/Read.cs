@@ -41,7 +41,16 @@ namespace System.IO.Tests
                 Assert.Equal(buffer.Length, stream.Read(buffer));
                 Assert.Equal(data1, buffer);
 
-                Array.Clear(buffer);
+                stream.Seek(positon2, SeekOrigin.Begin);
+                Assert.Equal(buffer.Length, stream.Read(buffer));
+                Assert.Equal(data2, buffer);
+            }
+
+            using (var stream = new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize: 0)))
+            {
+                stream.Seek(positon1, SeekOrigin.Begin);
+                Assert.Equal(buffer.Length, stream.Read(buffer));
+                Assert.Equal(data1, buffer);
 
                 stream.Seek(positon2, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));
