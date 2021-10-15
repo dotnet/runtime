@@ -707,6 +707,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		 * ->byref and ->attrs from @type are propagated to the returned type.
 		 */
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
+		/* FIXME: if the mvar is byref and the type is byref, make a MONO_TYPE_BYREF */
 		nt->byref__ = type->byref__;
 		nt->attrs = type->attrs;
 		return nt;
@@ -749,6 +750,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 #endif
 
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
+		/* FIXME: if the var is byref and the type is byref, make a MONO_TYPE_BYREF */
 		nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
 		nt->attrs = type->attrs;
 #ifdef DEBUG_INFLATE_CMODS
@@ -845,6 +847,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		nt->data.generic_class = gclass;
 		return nt;
 	}
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_PTR: {
 		MonoType *nt, *inflated = inflate_generic_type (image, type->data.type, context, error);
 		if ((!inflated && !changed) || !is_ok (error))
