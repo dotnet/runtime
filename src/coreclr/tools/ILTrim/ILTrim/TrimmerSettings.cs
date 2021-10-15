@@ -10,9 +10,19 @@ using System.Threading.Tasks;
 namespace ILTrim
 {
     public record class TrimmerSettings(
-        int? MaxDegreeOfParallelism = null
+        int? MaxDegreeOfParallelism = null,
+        LogStrategy LogStrategy = LogStrategy.None,
+        string LogFile = null
         )
     {
         public int EffectiveDegreeOfParallelism => MaxDegreeOfParallelism ?? Environment.ProcessorCount;
+    }
+
+    public enum LogStrategy
+    {
+        None,
+        FirstMark,
+        FullGraph,
+        EventSource
     }
 }

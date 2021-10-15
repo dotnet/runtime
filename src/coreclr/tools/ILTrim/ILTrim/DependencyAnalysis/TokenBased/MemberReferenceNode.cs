@@ -29,17 +29,18 @@ namespace ILTrim.DependencyAnalysis
 
             switch (methodOrFieldDef)
             {
-                case EcmaMethod method:
-                    if (factory.IsModuleTrimmed(method.Module))
+                case MethodDesc method:
+                    if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod && factory.IsModuleTrimmed(ecmaMethod.Module))
                     {
-                        dependencies.Add(factory.GetNodeForToken(method.Module, method.Handle), "Target method def of member reference");
+                        dependencies.Add(factory.GetNodeForToken(ecmaMethod.Module, ecmaMethod.Handle), "Target method def of member reference");
                     }
                     break;
 
-                case EcmaField field:
-                    if (factory.IsModuleTrimmed(field.Module))
+                case FieldDesc field:
+                    var ecmaField = (EcmaField)field.GetTypicalFieldDefinition();
+                    if (factory.IsModuleTrimmed(ecmaField.Module))
                     {
-                        dependencies.Add(factory.GetNodeForToken(field.Module, field.Handle), "Target field def of member reference");
+                        dependencies.Add(factory.GetNodeForToken(ecmaField.Module, ecmaField.Handle), "Target field def of member reference");
                     }
                     break;
             }
