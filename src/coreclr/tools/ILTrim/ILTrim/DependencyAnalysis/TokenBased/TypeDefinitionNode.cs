@@ -137,16 +137,42 @@ namespace ILTrim.DependencyAnalysis
             if (!typeLayout.IsDefault)
                 builder.AddTypeLayout(outputHandle, (ushort)typeLayout.PackingSize, (uint)typeLayout.Size);
 
-            foreach (InterfaceImplementationHandle intfImplHandle in typeDef.GetInterfaceImplementations())
+            // Workaround for https://github.com/dotnet/runtime/issues/60454
+            if (typeDef.GetInterfaceImplementations().Count > 0)
             {
-                InterfaceImplementation intfImpl = reader.GetInterfaceImplementation(intfImplHandle);
-                EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
-                if (interfaceType != null && writeContext.Factory.InterfaceUse(interfaceType).Marked)
+                ArrayBuilder<EntityHandle> interfaceListEntries = new ArrayBuilder<EntityHandle>();
+                ArrayBuilder<int> interfaceListCodedIndices = new ArrayBuilder<int>();
+                foreach (InterfaceImplementationHandle intfImplHandle in typeDef.GetInterfaceImplementations())
                 {
-                    builder.AddInterfaceImplementation(outputHandle,
-                        writeContext.TokenMap.MapToken(intfImpl.Interface));
+                    InterfaceImplementation intfImpl = reader.GetInterfaceImplementation(intfImplHandle);
+                    EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
+                    if (interfaceType != null && writeContext.Factory.InterfaceUse(interfaceType).Marked)
+                    {
+                        EntityHandle intfToken = writeContext.TokenMap.MapToken(intfImpl.Interface);
+                        interfaceListEntries.Add(intfToken);
+                        interfaceListCodedIndices.Add(System.Reflection.Metadata.Ecma335.CodedIndex.TypeDefOrRefOrSpec(intfToken));
+                    }
+                }
+                int[] keys = interfaceListCodedIndices.ToArray();
+                EntityHandle[] values = interfaceListEntries.ToArray();
+                System.Array.Sort(keys, values);
+                foreach (EntityHandle intf in values)
+                {
+                    builder.AddInterfaceImplementation(outputHandle, intf);
                 }
             }
+            // End workaround. Good code follows.
+
+            //foreach (InterfaceImplementationHandle intfImplHandle in typeDef.GetInterfaceImplementations())
+            //{
+            //    InterfaceImplementation intfImpl = reader.GetInterfaceImplementation(intfImplHandle);
+            //    EcmaType interfaceType = _module.TryGetType(intfImpl.Interface)?.GetTypeDefinition() as EcmaType;
+            //    if (interfaceType != null && writeContext.Factory.InterfaceUse(interfaceType).Marked)
+            //    {
+            //        builder.AddInterfaceImplementation(outputHandle,
+            //            writeContext.TokenMap.MapToken(intfImpl.Interface));
+            //    }
+            //}
 
             return outputHandle;
         }
