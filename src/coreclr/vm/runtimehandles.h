@@ -118,8 +118,8 @@ typedef RuntimeTypeHandle FCALLRuntimeTypeHandle;
 #define FCALL_RTH_TO_REFLECTCLASS(x) (x).pRuntimeTypeDONOTUSEDIRECTLY
 
 class RuntimeTypeHandle {
-    ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
 public:
+    ReflectClassBaseObject *pRuntimeTypeDONOTUSEDIRECTLY;
 
     // Static method on RuntimeTypeHandle
 

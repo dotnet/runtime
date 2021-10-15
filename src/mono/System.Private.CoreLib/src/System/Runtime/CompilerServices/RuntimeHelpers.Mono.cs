@@ -19,6 +19,13 @@ namespace System.Runtime.CompilerServices
             InitializeArray(array, fldHandle.Value);
         }
 
+        private static unsafe void GetSpanDataFrom(
+            RuntimeFieldHandle fldHandle,
+            RuntimeTypeHandle targetTypeHandle,
+            void** data,
+            int* count)
+            => throw new NotImplementedException();
+
         public static int OffsetToStringData
         {
             [Intrinsic]
