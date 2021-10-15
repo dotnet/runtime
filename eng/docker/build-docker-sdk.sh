@@ -53,7 +53,8 @@ if [[ $privateaspnetcore -eq 1 ]]; then
     docker_file="$scriptroot/libraries-sdk-aspnetcore.linux.Dockerfile"
 fi
 
-docker build --tag $imagename \
+docker build --pull \
+    --tag $imagename \
     --build-arg CONFIGURATION=$configuration \
     --file $docker_file \
     $repo_root

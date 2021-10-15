@@ -35,7 +35,8 @@ if ($buildWindowsContainers)
 
   $dockerFile="$dockerFilePrefix.windows.Dockerfile"
 
-  docker build --tag $imageName `
+  docker build --pull `
+    --tag $imageName `
     --build-arg CONFIGURATION=$configuration `
     --build-arg TESTHOST_LOCATION=. `
     --file $dockerFile `
