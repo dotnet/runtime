@@ -55,6 +55,11 @@ namespace ILTrim.DependencyAnalysis
                 }
             }
 
+            if (type.GetStaticConstructor() is EcmaMethod cctor)
+            {
+                yield return new(factory.MethodDefinition(_module, cctor.Handle), "Static constructor");
+            }
+
             if (typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout) || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout))
             {
                 // TODO: Postpone marking instance fields on reference types until the type is allocated (i.e. until we have a ConstructedTypeNode for it in the system).
