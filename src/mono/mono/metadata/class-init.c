@@ -2360,7 +2360,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			continue;
 		if (field->type->byref && !allow_isbyreflike_fields) {
-			mono_class_set_type_load_failure (klass, "Instance ByRefLike field '%s' not in a ref struct", field->name);
+			mono_class_set_type_load_failure (klass, "Instance ref field '%s' not in a ref struct", field->name);
 			return;
 		}
 		MonoClass *field_class = NULL;
