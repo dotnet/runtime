@@ -19,8 +19,8 @@ namespace System.IO.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void NoInt32OverflowInTheBufferingLogic()
         {
-            const long positon1 = 10;
-            const long positon2 = (1L << 32) + positon1;
+            const long position1 = 10;
+            const long position2 = (1L << 32) + position1;
 
             string filePath = GetTestFilePath();
             byte[] data1 = new byte[] { 1, 2, 3, 4, 5 };
@@ -29,31 +29,31 @@ namespace System.IO.Tests
 
             using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
             {
-                stream.Seek(positon1, SeekOrigin.Begin);
+                stream.Seek(position1, SeekOrigin.Begin);
                 stream.Write(data1, 0, data1.Length);
 
-                stream.Seek(positon2, SeekOrigin.Begin);
+                stream.Seek(position2, SeekOrigin.Begin);
                 stream.Write(data2, 0, data2.Length);
             }
 
             using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             {
-                stream.Seek(positon1, SeekOrigin.Begin);
+                stream.Seek(position1, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));
                 Assert.Equal(data1, buffer);
 
-                stream.Seek(positon2, SeekOrigin.Begin);
+                stream.Seek(position2, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));
                 Assert.Equal(data2, buffer);
             }
 
             using (var stream = new BufferedStream(new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.None, bufferSize: 0)))
             {
-                stream.Seek(positon1, SeekOrigin.Begin);
+                stream.Seek(position1, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));
                 Assert.Equal(data1, buffer);
 
-                stream.Seek(positon2, SeekOrigin.Begin);
+                stream.Seek(position2, SeekOrigin.Begin);
                 Assert.Equal(buffer.Length, stream.Read(buffer));
                 Assert.Equal(data2, buffer);
             }
