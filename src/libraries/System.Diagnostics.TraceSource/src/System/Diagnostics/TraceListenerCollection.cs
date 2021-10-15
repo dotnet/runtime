@@ -121,10 +121,7 @@ namespace System.Diagnostics
         /// <para>Copies a section of the current <see cref='System.Diagnostics.TraceListenerCollection'/> list to the specified array at the specified
         ///    index.</para>
         /// </devdoc>
-        public void CopyTo(TraceListener[] listeners, int index)
-        {
-            _list.CopyTo(listeners, index);
-        }
+        public void CopyTo(TraceListener[] listeners, int index) => _list.CopyTo(listeners, index);
 
         /// <devdoc>
         ///    <para>
@@ -178,13 +175,16 @@ namespace System.Diagnostics
         /// </devdoc>
         public void Remove(string name)
         {
-            var listeners = _list;
-            for (int i = 0; i < listeners.Count; i++)
+            lock (TraceInternal.critSec)
             {
-                if (listeners[i].Name == name)
+                var listeners = _list;
+                for (int i = 0; i < listeners.Count; i++)
                 {
-                    RemoveAt(i);
-                    break;
+                    if (listeners[i].Name == name)
+                    {
+                        listeners.RemoveAt(i);
+                        break;
+                    }
                 }
             }
         }
