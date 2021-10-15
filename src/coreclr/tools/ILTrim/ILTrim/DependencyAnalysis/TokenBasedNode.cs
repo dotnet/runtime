@@ -48,7 +48,7 @@ namespace ILTrim.DependencyAnalysis
             builder.AddTokenMapping(_handle);
         }
 
-        public int CompareTo(TokenBasedNode other)
+        public virtual int CompareTo(TokenBasedNode other)
         {
             int result = MetadataTokens.GetToken(_handle).CompareTo(MetadataTokens.GetToken(other._handle));
 

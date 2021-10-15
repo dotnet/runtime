@@ -32,12 +32,39 @@ namespace ILTrim
 
         public void Save(Stream outputStream)
         {
+            List<TokenBasedNode> earlySortedTokens = new();
+            List<TokenBasedNodeWithDelayedSort> delaySortedTokens = new();
+
+            foreach (TokenBasedNode token in _tokensToWrite)
+            {
+                if (token is TokenBasedNodeWithDelayedSort delaySortedToken)
+                {
+                    delaySortedTokens.Add(delaySortedToken);
+                }
+                else
+                {
+                    earlySortedTokens.Add(token);
+                }
+            }
+
             // Sort the tokens so that tokens start from the lowest source token (this is the emission order)
-            _tokensToWrite.Sort();
+            earlySortedTokens.Sort();
 
             // Ask each of the output nodes to assign their tokens in the output.
             var tokenMapBuilder = new TokenMap.Builder(_module.MetadataReader);
-            foreach (TokenBasedNode node in _tokensToWrite)
+            foreach (TokenBasedNode node in earlySortedTokens)
+            {
+                node.BuildTokens(tokenMapBuilder);
+            }
+
+            foreach (TokenBasedNodeWithDelayedSort node in delaySortedTokens)
+            {
+                node.PrepareForDelayedSort(tokenMapBuilder);
+            }
+
+            delaySortedTokens.Sort();
+
+            foreach (TokenBasedNodeWithDelayedSort node in delaySortedTokens)
             {
                 node.BuildTokens(tokenMapBuilder);
             }
@@ -45,7 +72,11 @@ namespace ILTrim
             // Ask each node to write itself out.
             TokenMap tokenMap = tokenMapBuilder.ToTokenMap();
             ModuleWritingContext context = new ModuleWritingContext(_factory, tokenMap);
-            foreach (TokenBasedNode node in _tokensToWrite)
+            foreach (TokenBasedNode node in earlySortedTokens)
+            {
+                node.Write(context);
+            }
+            foreach (TokenBasedNode node in delaySortedTokens)
             {
                 node.Write(context);
             }

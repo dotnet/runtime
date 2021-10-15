@@ -1,9 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.Metadata;
-
+using System.Reflection.Metadata.Ecma335;
 using Internal.TypeSystem.Ecma;
 
 namespace ILTrim.DependencyAnalysis
@@ -11,7 +13,7 @@ namespace ILTrim.DependencyAnalysis
     /// <summary>
     /// Represents an entry in the GenericParam metadata table.
     /// </summary>
-    public sealed class GenericParameterNode : TokenBasedNode
+    public sealed class GenericParameterNode : TokenBasedNodeWithDelayedSort, IComparable<TokenBasedNode>
     {
         public GenericParameterNode(EcmaModule module, GenericParameterHandle handle)
             : base(module, handle)
@@ -19,6 +21,9 @@ namespace ILTrim.DependencyAnalysis
         }
 
         private GenericParameterHandle Handle => (GenericParameterHandle)_handle;
+
+        private int _ownerCodedIndex = -1;
+        private int _index = -1;
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -46,6 +51,30 @@ namespace ILTrim.DependencyAnalysis
         {
             MetadataReader reader = _module.MetadataReader;
             return reader.GetString(reader.GetGenericParameter(Handle).Name);
+        }
+
+        public override void PrepareForDelayedSort(TokenMap.Builder tokenMap)
+        {
+            GenericParameter genericParam = _module.MetadataReader.GetGenericParameter(Handle);
+            _ownerCodedIndex = CodedIndex.TypeOrMethodDef(tokenMap.MapToken(genericParam.Parent));
+            _index = genericParam.Index;
+        }
+
+        public override int CompareTo(TokenBasedNode other)
+        {
+            if (other is GenericParameterNode otherGenericParameter)
+            {
+                Debug.Assert(_ownerCodedIndex >= 0 && otherGenericParameter._ownerCodedIndex >= 0);
+
+                if (_ownerCodedIndex == otherGenericParameter._ownerCodedIndex)
+                    return _index.CompareTo(otherGenericParameter._index);
+                else
+                    return _ownerCodedIndex.CompareTo(otherGenericParameter._ownerCodedIndex);
+            }
+            else
+            {
+                return base.CompareTo(other);
+            }
         }
     }
 }

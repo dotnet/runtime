@@ -80,6 +80,20 @@ namespace ILTrim
                 return result;
             }
 
+            public EntityHandle MapToken(EntityHandle sourceToken)
+            {
+                bool gotIndex = MetadataTokens.TryGetTableIndex(sourceToken.Kind, out TableIndex index);
+                Debug.Assert(gotIndex); // Not expected we would need to map tokens that don't have a table
+
+                EntityHandle result = _tokenMap[(int)index][MetadataTokens.GetRowNumber(sourceToken)];
+
+                // If this hits, whoever is asking for the token mapping didn't declare the dependency
+                // during the dependency analysis phase. The fix is to declare the dependency.
+                Debug.Assert(!result.IsNil || sourceToken.IsNil);
+
+                return result;
+            }
+
             public TokenMap ToTokenMap()
             {
                 return new TokenMap(_reader, _tokenMap, _preAssignedRowIdsPerTable);
