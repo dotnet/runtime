@@ -68,6 +68,12 @@ namespace ILTrim.DependencyAnalysis
                 dependencies.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
             }
 
+            if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
+            {
+                MethodImport import = methodDef.GetImport();
+                dependencies.Add(factory.ModuleReference(_module, import.Module), "DllImport");
+            }
+
             return dependencies;
         }
 
@@ -107,13 +113,24 @@ namespace ILTrim.DependencyAnalysis
                 writeContext.TokenMap,
                 signatureBlob);
 
-            return builder.AddMethodDefinition(
+            MethodDefinitionHandle outputHandle = builder.AddMethodDefinition(
                 methodDef.Attributes,
                 methodDef.ImplAttributes,
                 builder.GetOrAddString(reader.GetString(methodDef.Name)),
                 builder.GetOrAddBlob(signatureBlob),
                 rva,
                 writeContext.TokenMap.MapMethodParamList(Handle));
+
+            if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
+            {
+                MethodImport import = methodDef.GetImport();
+                builder.AddMethodImport(outputHandle,
+                    import.Attributes,
+                    builder.GetOrAddString(reader.GetString(import.Name)),
+                    (ModuleReferenceHandle)writeContext.TokenMap.MapToken(import.Module));
+            }
+
+            return outputHandle;
         }
 
         public override string ToString()

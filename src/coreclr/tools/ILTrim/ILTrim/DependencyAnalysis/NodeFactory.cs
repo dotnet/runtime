@@ -60,7 +60,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.MethodImplementation:
                     throw new NotImplementedException();
                 case HandleKind.ModuleReference:
-                    throw new NotImplementedException();
+                    return ModuleReference(module, (ModuleReferenceHandle)handle);
                 case HandleKind.TypeSpecification:
                     return TypeSpecification(module, (TypeSpecificationHandle)handle);
                 case HandleKind.AssemblyReference:
@@ -237,6 +237,14 @@ namespace ILTrim.DependencyAnalysis
         public AssemblyReferenceNode AssemblyReference(EcmaModule module, AssemblyReferenceHandle handle)
         {
             return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<ModuleReferenceHandle>, ModuleReferenceNode> _moduleReferences
+            = new NodeCache<HandleKey<ModuleReferenceHandle>, ModuleReferenceNode>(key
+                => new ModuleReferenceNode(key.Module, key.Handle));
+        public ModuleReferenceNode ModuleReference(EcmaModule module, ModuleReferenceHandle handle)
+        {
+            return _moduleReferences.GetOrAdd(new HandleKey<ModuleReferenceHandle>(module, handle));
         }
 
         NodeCache<HandleKey<GenericParameterHandle>, GenericParameterNode> _genericParameters
