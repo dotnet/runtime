@@ -1,10 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Xml", "..\System.Private.Xml\src\System.Private.Xml.csproj", "{B7D48F78-4580-4398-A93F-FD02A15AD0BD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{846BD820-3A18-4D7B-9E50-641608AAA3D5}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{F2BF826D-8CAB-48C5-9D0C-B88F0B53BC8D}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XPath", "ref\System.Xml.XPath.csproj", "{38040AE0-59E4-46CE-861D-A33A383BB0FC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.XPath", "src\System.Xml.XPath.csproj", "{F825C114-FF6D-4826-BC8A-586246369695}"
@@ -23,14 +19,6 @@ Global
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{846BD820-3A18-4D7B-9E50-641608AAA3D5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{846BD820-3A18-4D7B-9E50-641608AAA3D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{846BD820-3A18-4D7B-9E50-641608AAA3D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{846BD820-3A18-4D7B-9E50-641608AAA3D5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F2BF826D-8CAB-48C5-9D0C-B88F0B53BC8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F2BF826D-8CAB-48C5-9D0C-B88F0B53BC8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F2BF826D-8CAB-48C5-9D0C-B88F0B53BC8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F2BF826D-8CAB-48C5-9D0C-B88F0B53BC8D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,8 +33,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B7D48F78-4580-4398-A93F-FD02A15AD0BD} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
-		{846BD820-3A18-4D7B-9E50-641608AAA3D5} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
-		{F2BF826D-8CAB-48C5-9D0C-B88F0B53BC8D} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
 		{F825C114-FF6D-4826-BC8A-586246369695} = {73688A49-11B7-47C8-BF09-A6C1C11EA0BD}
 		{38040AE0-59E4-46CE-861D-A33A383BB0FC} = {1EF0B525-2611-41AB-AA69-28A1B9689C3A}
 	EndGlobalSection
