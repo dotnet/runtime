@@ -707,9 +707,21 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
 		 * ->byref and ->attrs from @type are propagated to the returned type.
 		 */
-		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref__ = type->byref__;
-		nt->attrs = type->attrs;
+		if (G_UNLIKELY (m_type_is_byref (type) && m_type_is_byref (inst->type_argv[num]))) {
+			/* if the VAR/MVAR is a byref and the instance type is byref, make a byref
+			 * of byref. The outer byref has the attributes and cmods of the VAR */
+			MonoType *inner_type = mono_metadata_type_dup (image, inst->type_argv[num]);
+			/* FIXME: this is a little bit fragile: we're relying on type_dup not to
+			 * make a deep copy of the MonoGenericParam. */
+			nt = mono_metadata_type_dup (image, type);
+			nt->type = MONO_TYPE_BYREF;
+			nt->data.type = inner_type;
+		} else {
+			nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
+			/* otherwise the type is byref if either the var or the type was byref */
+			nt->byref__ = type->byref__ || nt->byref__;
+			nt->attrs = type->attrs;
+		}
 		return nt;
 	}
 	case MONO_TYPE_VAR: {
@@ -749,9 +761,20 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		}
 #endif
 
-		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
-		nt->attrs = type->attrs;
+		if (G_UNLIKELY (m_type_is_byref (type) && m_type_is_byref (inst->type_argv[num]))) {
+			/* if the VAR/MVAR is a byref and the instance type is byref, make a byref
+			 * of byref. The outer byref has the attributes and cmods of the VAR */
+			MonoType *inner_type = mono_metadata_type_dup (image, inst->type_argv[num]);
+			/* FIXME: this is a little bit fragile: we're relying on type_dup not to
+			 * make a deep copy of the MonoGenericParam. */
+			nt = mono_metadata_type_dup (image, type);
+			nt->type = MONO_TYPE_BYREF;
+			nt->data.type = inner_type;
+		} else {
+			nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
+			nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
+			nt->attrs = type->attrs;
+		}
 #ifdef DEBUG_INFLATE_CMODS
 		if (append_cmods) {
 			char *ntname = mono_type_full_name (nt);
