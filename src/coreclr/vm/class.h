@@ -1975,7 +1975,7 @@ class ArrayClass : public EEClass
 private:
 
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    unsigned char   m_rank;
+    DWORD m_rank;
     CorElementType  m_ElementType;// Cache of element type in m_ElementTypeHnd
 
 public:
@@ -1986,10 +1986,7 @@ public:
     }
     void SetRank (unsigned Rank) {
         LIMITED_METHOD_CONTRACT;
-        // The only code path calling this function is code:ClassLoader::CreateTypeHandleForTypeKey, which has
-        // checked the rank already.  Assert that the rank is less than MAX_RANK and that it fits in one byte.
-        _ASSERTE((Rank <= MAX_RANK) && (Rank <= (unsigned char)(-1)));
-        m_rank = (unsigned char)Rank;
+        m_rank = Rank;
     }
 
     CorElementType GetArrayElementType() {

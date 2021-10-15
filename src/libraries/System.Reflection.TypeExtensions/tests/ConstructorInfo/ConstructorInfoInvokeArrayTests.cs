@@ -226,7 +226,6 @@ namespace System.Reflection.Tests
             Type type = Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]");
             ConstructorInfo[] cia = TypeExtensions.GetConstructors(type);
             Assert.Equal(2, cia.Length);
-            Assert.Throws<TypeLoadException>(() => Type.GetType("System.Type[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]"));
         }
 
         [Fact]

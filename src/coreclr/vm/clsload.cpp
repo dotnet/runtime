@@ -3046,10 +3046,6 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 }
             }
 
-            if (rank > MAX_RANK)
-            {
-                ThrowTypeLoadException(pKey, IDS_CLASSLOAD_RANK_TOOLARGE);
-            }
 
             templateMT = pLoaderModule->CreateArrayMethodTable(paramType, kind, rank, pamTracker);
             typeHnd = TypeHandle(templateMT);

@@ -7,30 +7,29 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    //    [Obsolete("Never use this type directly as that would be an array of unknown length.")]
-    //    [EditorBrowsable(EditorBrowsableState.Never)]
-    public struct ValueArray<T>
+    public struct ValueArray<T, R> // where R : System.Array
     {
+        public static readonly int Length = typeof(R).GetArrayRank();
+
         // For the array of Length N, we will have N+1 elements immdiately follow.
         public T Element0;
 
         /// <summary>
         /// Indexer.
-        /// Caller must statically know the upperBound and pass it in.
         /// </summary>
-        public T this[int index, int upperBound = 42]
+        public T this[int index]
         {
-            get => Address(index, upperBound);
-            set => Address(index, upperBound) = value;
+            get => Address(index);
+            set => Address(index) = value;
         }
 
         /// <summary>
         /// Returns an address to an element of the ValueArray.
         /// Caller must statically know the upperBound and pass it in.
         /// </summary>
-        public ref T Address(int index, int upperBound = 42)
+        public ref T Address(int index)
         {
-            if ((uint)index >= (uint)upperBound)
+            if ((uint)index >= (uint)Length)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
             return ref Unsafe.Add(ref new ByReference<T>(ref Element0).Value, (nint)(uint)index /* force zero-extension */);
@@ -40,9 +39,9 @@ namespace System
         /// Returns a slice of the ValueArray.
         /// Caller must statically know the upperBound and pass it in.
         /// </summary>
-        public Span<T> Slice(int length, int upperBound = 42)
+        public Span<T> Slice(int length)
         {
-            if ((uint)length >= (uint)upperBound)
+            if ((uint)length >= (uint)Length)
                 ThrowHelper.ThrowIndexOutOfRangeException();
 
             return new Span<T>(ref Element0, length);
