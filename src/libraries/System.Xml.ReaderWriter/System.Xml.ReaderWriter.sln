@@ -1,10 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Private.Xml", "..\System.Private.Xml\src\System.Private.Xml.csproj", "{4886A8C5-3546-459A-8800-ED0DA91C6B15}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{097D5C7E-E0D1-4B06-9026-8C0E9ED2F1FC}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{93D62540-9A64-4B14-B3FA-4A88307130E3}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.ReaderWriter", "ref\System.Xml.ReaderWriter.csproj", "{2FE5F437-4CE1-4A27-8547-B950F8043D89}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Xml.ReaderWriter", "src\System.Xml.ReaderWriter.csproj", "{FA7C251C-D1FD-45C3-8CC8-D094F70A03AA}"
@@ -23,14 +19,6 @@ Global
 		{4886A8C5-3546-459A-8800-ED0DA91C6B15}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4886A8C5-3546-459A-8800-ED0DA91C6B15}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4886A8C5-3546-459A-8800-ED0DA91C6B15}.Release|Any CPU.Build.0 = Release|Any CPU
-		{097D5C7E-E0D1-4B06-9026-8C0E9ED2F1FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{097D5C7E-E0D1-4B06-9026-8C0E9ED2F1FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{097D5C7E-E0D1-4B06-9026-8C0E9ED2F1FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{097D5C7E-E0D1-4B06-9026-8C0E9ED2F1FC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{93D62540-9A64-4B14-B3FA-4A88307130E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{93D62540-9A64-4B14-B3FA-4A88307130E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{93D62540-9A64-4B14-B3FA-4A88307130E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{93D62540-9A64-4B14-B3FA-4A88307130E3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2FE5F437-4CE1-4A27-8547-B950F8043D89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2FE5F437-4CE1-4A27-8547-B950F8043D89}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FE5F437-4CE1-4A27-8547-B950F8043D89}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -45,8 +33,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{4886A8C5-3546-459A-8800-ED0DA91C6B15} = {311C66CC-47AC-4965-B704-3C62E57FE29D}
-		{097D5C7E-E0D1-4B06-9026-8C0E9ED2F1FC} = {311C66CC-47AC-4965-B704-3C62E57FE29D}
-		{93D62540-9A64-4B14-B3FA-4A88307130E3} = {311C66CC-47AC-4965-B704-3C62E57FE29D}
 		{FA7C251C-D1FD-45C3-8CC8-D094F70A03AA} = {311C66CC-47AC-4965-B704-3C62E57FE29D}
 		{2FE5F437-4CE1-4A27-8547-B950F8043D89} = {6AA53AA1-786A-4B35-B1C5-9D3B2EC10CF1}
 	EndGlobalSection
