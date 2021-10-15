@@ -12224,19 +12224,21 @@ DONE_MORPHING_CHILDREN:
 
 #ifdef TARGET_ARM64
         case GT_DIV:
-            if (!varTypeIsFloating(tree->gtType))
+        case GT_UDIV:
+            if (!varTypeIsFloating(tree->gtType) && fgGlobalMorph)
             {
                 // Codegen for this instruction needs to be able to throw two exceptions:
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                if (tree->OperIs(GT_DIV) && (!op2->IsIntegralConst() || op2->IsIntegralConst(-1)))
+                {
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                }
+                if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+                {
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                }
             }
             break;
-        case GT_UDIV:
-            // Codegen for this instruction needs to be able to throw one exception:
-            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
-            break;
 #endif
-
         case GT_ADD:
 
         CM_OVF_OP:
