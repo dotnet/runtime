@@ -7899,11 +7899,10 @@ namespace System
     }
     public partial struct ValueArray<T, R> // where R : System.Array
     {
-        public static int Length { get { throw null; } }
+        public int Length { get { throw null; } }
         private T Element0;
-        public T this[int index] { get { throw null; } set { } }
-        public ref T Address(int index) { throw null; }
-        public Span<T> Slice(int length) { throw null; }
+        public ref T this[int index] { get { throw null; } }
+        public Span<T> Slice(int start) { throw null; }
     }
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
     {

@@ -9,40 +9,43 @@ namespace System
 {
     public struct ValueArray<T, R> // where R : System.Array
     {
-        public static int Length => RankOf<R>.Value;
+        public int Length => RankOf<R>.Value;
 
         // For the array of Length N, runtime will add N-1 elements immediately after this one.
         private T Element0;
 
         /// <summary>
-        /// Gets or sets the element at the specified index.
+        /// Returns a reference to specified element of the value array.
         /// </summary>
-        public T this[int index]
+        /// <param name="index"></param>
+        /// <returns></returns>
+        /// <exception cref="System.IndexOutOfRangeException">
+        /// Thrown when index less than 0 or index greater than or equal to Length
+        /// </exception>
+        public ref T this[int index]
         {
-            get => Address(index);
-            set => Address(index) = value;
+            get
+            {
+                if ((uint)index >= (uint)Length)
+                    ThrowHelper.ThrowIndexOutOfRangeException();
+
+                return ref Unsafe.Add(ref new ByReference<T>(ref Element0).Value, (nint)(uint)index /* force zero-extension */);
+            }
         }
 
         /// <summary>
-        /// Gets an element address at the specified index.
+        /// Forms a slice out of the given value array, beginning at 'start'.
         /// </summary>
-        public ref T Address(int index)
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// </exception>
+        public Span<T> Slice(int start)
         {
-            if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowIndexOutOfRangeException();
+            if ((uint)start > (uint)Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException();
 
-            return ref Unsafe.Add(ref new ByReference<T>(ref Element0).Value, (nint)(uint)index /* force zero-extension */);
-        }
-
-        /// <summary>
-        /// Returns a slice of the ValueArray.
-        /// </summary>
-        public Span<T> Slice(int length)
-        {
-            if ((uint)length >= (uint)Length)
-                ThrowHelper.ThrowIndexOutOfRangeException();
-
-            return new Span<T>(ref Element0, length);
+            return new Span<T>(ref Unsafe.Add(ref Element0, (nint)(uint)start /* force zero-extension */), Length - start);
         }
     }
 
