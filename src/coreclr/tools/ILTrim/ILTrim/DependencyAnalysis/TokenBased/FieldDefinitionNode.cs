@@ -68,10 +68,16 @@ namespace ILTrim.DependencyAnalysis
                 WriteRvaData(writeContext, fieldDef.GetRelativeVirtualAddress());
             }
 
-            return builder.AddFieldDefinition(
+            FieldDefinitionHandle outputHandle = builder.AddFieldDefinition(
                 fieldDef.Attributes,
                 builder.GetOrAddString(reader.GetString(fieldDef.Name)),
                 builder.GetOrAddBlob(signatureBlob));
+
+            int offset = fieldDef.GetOffset();
+            if (offset != -1)
+                builder.AddFieldLayout(outputHandle, offset);
+
+            return outputHandle;
         }
 
         unsafe private void WriteRvaData(ModuleWritingContext writeContext, int rva)
