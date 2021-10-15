@@ -59,6 +59,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Array_Clone,
     NI_System_Object_MemberwiseClone,
 
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_StackAlloc,
 
     NI_System_String_get_Chars,
