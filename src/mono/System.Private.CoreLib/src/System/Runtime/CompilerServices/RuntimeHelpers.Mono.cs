@@ -25,7 +25,7 @@ namespace System.Runtime.CompilerServices
             void** data,
             int* count)
         {
-            GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, data, count);
+            GetSpanDataFrom(fldHandle.Value, targetTypeHandle.Value, new IntPtr(data), new IntPtr(count));
         }
 
         public static int OffsetToStringData
@@ -178,8 +178,8 @@ namespace System.Runtime.CompilerServices
         private static extern unsafe void GetSpanDataFrom(
             IntPtr fldHandle,
             IntPtr targetTypeHandle,
-            void** data,
-            int* count);
+            IntPtr data,
+            IntPtr count);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void RunClassConstructor(IntPtr type);

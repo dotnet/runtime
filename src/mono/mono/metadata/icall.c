@@ -943,8 +943,10 @@ ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_lengt
 }
 
 void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, char_ptr_ref data, gint32_ref count, MonoError *error)
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, gpointer dataPtr, gpointer countPtr, MonoError *error)
 {
+	gint32* count = (gint32*)countPtr;
+	const char **data = (const char **)dataPtr;
 	MonoType *field_type = mono_field_get_type_checked (field_handle, error);
 	if (!field_type)
 		return;
