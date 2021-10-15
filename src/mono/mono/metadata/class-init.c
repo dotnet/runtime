@@ -868,6 +868,16 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 
 	klass->cast_class = klass->element_class = klass;
 
+        // FIXME: CoreCLR says the following (see src/coreclr/vm/methodtablebuilder.cpp):
+        // Make struct ByRefLike if it has ByRef or ByRefLike generic arguments
+        //
+        // The behavior of this is that Generic structures with ByRef/ByRefLike generic
+        // arguments will be ByRefLike, but since we only check this on structs, normal
+        // classes will not be marked as ByRefLike.
+        //
+        // HACKATHON todo... should we allow a means to not do this, for nested structs in classes, and enums?
+        //
+        
 	if (m_class_is_valuetype (klass)) {
 		klass->is_byreflike = gklass->is_byreflike;
 	}
@@ -2494,7 +2504,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (!field_class || !m_class_is_byreflike (field_class))
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' is not allowed", field->name);
+			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' 0x%08x is not allowed", field->name, (int)field->type->attrs);
 			return;
 		} else {
 			/* instance field */
