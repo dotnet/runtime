@@ -943,7 +943,7 @@ ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8 *p, size_t byte_lengt
 }
 
 void
-ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, void** data, gint32* count, MonoError *error)
+ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoClassField *field_handle, MonoType_ptr targetTypeHandle, char_ptr_ref data, gint32_ref count, MonoError *error)
 {
 	MonoType *field_type = mono_field_get_type_checked (field_handle, error);
 	if (!field_type)
@@ -960,13 +960,15 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		return;
 	}
 
-	*data = mono_field_get_data (field_handle);
-	int dummy;
+	int swizzle = 1;
 	int align;
-	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
 #if G_BYTE_ORDER != G_LITTLE_ENDIAN
-#error BIG ENDIAN not yet implemented
+	swizzle = mono_type_size (type, &align);
 #endif
+
+	*data = mono_field_get_rva (field_handle, swizzle);
+	int dummy;
+	*count = mono_type_size (field_type, &dummy)/mono_type_size (type, &align);
 }
 
 void
