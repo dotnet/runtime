@@ -27,6 +27,12 @@ namespace ILTrim.DependencyAnalysis
         {
             TypeReference typeRef = _module.MetadataReader.GetTypeReference(Handle);
 
+            var typeDescObject = _module.GetObject(Handle);
+            if (typeDescObject is EcmaType typeDef && factory.IsModuleTrimmed(typeDef.EcmaModule))
+            {
+                yield return new(factory.GetNodeForToken(typeDef.EcmaModule, typeDef.Handle), "Target of a type reference");
+            }
+
             yield return new(factory.GetNodeForToken(_module, typeRef.ResolutionScope), "Resolution Scope of a type reference");
         }
 
