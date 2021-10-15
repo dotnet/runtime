@@ -18,10 +18,12 @@ namespace ILTrim.DependencyAnalysis
     public sealed class NodeFactory
     {
         IReadOnlySet<string> _trimAssemblies { get; }
+        bool _libraryTrimMode { get; }
 
-        public NodeFactory(IEnumerable<string> trimAssemblies)
+        public NodeFactory(IEnumerable<string> trimAssemblies, bool libraryTrimMode)
         {
             _trimAssemblies = new HashSet<string>(trimAssemblies);
+            _libraryTrimMode = libraryTrimMode;
         }
 
         /// <summary>
@@ -266,6 +268,11 @@ namespace ILTrim.DependencyAnalysis
         public bool IsModuleTrimmed(EcmaModule module)
         {
             return _trimAssemblies.Contains(module.Assembly.GetName().Name);
+        }
+
+        public bool IsModuleTrimmedInLibraryMode()
+        {
+            return _libraryTrimMode;
         }
 
         private struct HandleKey<T> : IEquatable<HandleKey<T>> where T : struct, IEquatable<T>

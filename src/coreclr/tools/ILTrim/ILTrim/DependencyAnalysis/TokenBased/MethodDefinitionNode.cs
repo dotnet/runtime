@@ -47,7 +47,7 @@ namespace ILTrim.DependencyAnalysis
 
             dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
 
-            if (!IsInstanceMethodOnReferenceType)
+            if (!IsInstanceMethodOnReferenceType || factory.IsModuleTrimmedInLibraryMode())
             {
                 // Static methods and methods on value types are not subject to the unused method body optimization.
                 dependencies.Add(factory.MethodBody(_module, Handle), "Method body");

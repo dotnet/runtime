@@ -27,7 +27,8 @@ namespace ILTrim
             IReadOnlyList<string> additionalTrimPaths,
             string outputDir,
             IReadOnlyList<string> referencePaths,
-            TrimmerSettings settings = null)
+            TrimmerSettings settings = null,
+            bool libraryTrimMode=false)
         {
             var context = new ILTrimTypeSystemContext();
             settings = settings ?? new TrimmerSettings();
@@ -49,7 +50,7 @@ namespace ILTrim
 
             var trimmedAssemblies = new List<string>(additionalTrimPaths.Select(p => Path.GetFileNameWithoutExtension(p)));
             trimmedAssemblies.Add(Path.GetFileNameWithoutExtension(inputPath));
-            var factory = new NodeFactory(trimmedAssemblies);
+            var factory = new NodeFactory(trimmedAssemblies, libraryTrimMode);
 
             DependencyAnalyzerBase<NodeFactory> analyzer = settings.LogStrategy switch
             {
@@ -59,11 +60,30 @@ namespace ILTrim
                 LogStrategy.EventSource => new DependencyAnalyzer<EventSourceLogStrategy<NodeFactory>, NodeFactory>(factory, resultSorter: null),
                 _ => throw new ArgumentException("Invalid log strategy")
             };
+
             analyzer.ComputeDependencyRoutine += ComputeDependencyNodeDependencies;
 
-            MethodDefinitionHandle entrypointToken = (MethodDefinitionHandle)MetadataTokens.Handle(module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress);
+            if (!libraryTrimMode)
+            {
+                MethodDefinitionHandle entrypointToken = (MethodDefinitionHandle)MetadataTokens.Handle(module.PEReader.PEHeaders.CorHeader.EntryPointTokenOrRelativeVirtualAddress);
 
-            analyzer.AddRoot(factory.MethodDefinition(module, entrypointToken), "Entrypoint");
+                analyzer.AddRoot(factory.MethodDefinition(module, entrypointToken), "Entrypoint");
+
+            }
+            else
+            {
+                int rootNumber = 1;
+                List<string> methodNames = new List<string>();
+                foreach (var methodH in module.MetadataReader.MethodDefinitions)
+                {
+                    var method = module.MetadataReader.GetMethodDefinition(methodH);
+                    var type = module.MetadataReader.GetTypeDefinition(method.GetDeclaringType());
+                    if (!type.IsNested && method.Attributes.IsPublic())
+                    {
+                        analyzer.AddRoot(factory.MethodDefinition(module, methodH), $"LibraryMode_{rootNumber++}");
+                    }
+                }
+            }
 
             analyzer.AddRoot(factory.VirtualMethodUse(
                 (EcmaMethod)context.GetWellKnownType(WellKnownType.Object).GetMethod("Finalize", null)),

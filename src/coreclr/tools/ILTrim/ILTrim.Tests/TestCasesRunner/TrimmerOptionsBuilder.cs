@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Mono.Linker.Tests.Extensions;
 
 namespace Mono.Linker.Tests.TestCasesRunner
@@ -113,9 +114,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 		}
 
-		public virtual void AddAdditionalArgument (string flag, string[] values)
+        public virtual void AddAdditionalArgument (string flag, string[] values)
 		{
-		}
+            if(flag == "-a" && values.Contains("library"))
+                Options.IsLibraryMode = true;
+        }
 
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)
 		{
