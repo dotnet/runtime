@@ -46,6 +46,15 @@ namespace ILTrim.DependencyAnalysis
                 yield return new DependencyListEntry(factory.TypeDefinition(_module, typeDef.GetDeclaringType()), "Declaring type of a type");
             }
 
+            var type = _module.GetType(Handle);
+            if (type.IsEnum)
+            {
+                foreach (var field in typeDef.GetFields())
+                {
+                    yield return new DependencyListEntry(factory.FieldDefinition(_module, field), "Field of enum type");
+                }
+            }
+
             if (typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout) || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout))
             {
                 // TODO: Postpone marking instance fields on reference types until the type is allocated (i.e. until we have a ConstructedTypeNode for it in the system).

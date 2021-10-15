@@ -269,7 +269,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
                 return;
             }
 
-            if (src.Constant != linked.Constant)
+            if (!object.Equals(src.Constant, linked.Constant))
             {
                 Assert.True(false, $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
             }
