@@ -2768,40 +2768,6 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
     }
 }
 
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert alignment instruction(s) here to ensure that
-//  we can properly align the code.
-//
-//  This emits more than one `INS_align` instruction depending on the
-//  alignmentBoundary parameter.
-//
-void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
-{
-    unsigned short nPaddingBytes    = alignmentBoundary - 1;
-    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-    unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
-    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
-    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
-
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
-
-    /* Insert a pseudo-instruction to ensure that we align
-    the next instruction properly */
-
-    while (insAlignCount)
-    {
-        emitLoopAlign(MAX_ENCODED_SIZE);
-        insAlignCount--;
-    }
-    emitLoopAlign(lastInsAlignSize);
-}
-
 /*****************************************************************************
  *
  *  Add a NOP instruction of the given size.

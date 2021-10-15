@@ -81,38 +81,6 @@ const emitJumpKind emitReverseJumpKinds[] = {
     return emitReverseJumpKinds[jumpKind];
 }
 
-#if FEATURE_LOOP_ALIGN
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert alignment instruction(s) here to ensure that
-//  we can properly align the code.
-//
-//  This emits more than one `INS_align` instruction depending on the
-//  alignmentBoundary parameter.
-//
-void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
-{
-    unsigned short nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
-    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
-
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
-
-    /* Insert a pseudo-instruction to ensure that we align
-    the next instruction properly */
-
-    while (nAlignInstr)
-    {
-        emitLoopAlign(INSTR_ENCODED_SIZE);
-        nAlignInstr--;
-    }
-}
-#endif
-
 /*****************************************************************************
  *
  *  Return the allocated size (in bytes) of the given instruction descriptor.

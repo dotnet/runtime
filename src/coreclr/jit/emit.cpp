@@ -4825,6 +4825,51 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
 }
 
 //-----------------------------------------------------------------------------
+//
+//  The next instruction will be a loop head entry point
+//  So insert alignment instruction(s) here to ensure that
+//  we can properly align the code.
+//
+//  This emits more than one `INS_align` instruction depending on the
+//  alignmentBoundary parameter.
+//
+void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
+{
+#if defined(TARGET_XARCH)
+    unsigned short nPaddingBytes    = alignmentBoundary - 1;
+    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
+    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
+    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
+    unsigned short paddingBytes     = MAX_ENCODED_SIZE;
+#elif defined(TARGET_ARM64)
+    unsigned short nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
+    unsigned short insAlignCount = nAlignInstr;
+    unsigned short paddingBytes = INSTR_ENCODED_SIZE;
+#endif
+
+    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
+
+    /* Insert a pseudo-instruction to ensure that we align
+    the next instruction properly */
+
+    while (insAlignCount)
+    {
+        emitLoopAlign(paddingBytes);
+        insAlignCount--;
+    }
+
+#if defined(TARGET_XARCH)
+    emitLoopAlign(lastInsAlignSize);
+#endif
+}
+
+//-----------------------------------------------------------------------------
 // emitLoopAlignment: Insert an align instruction at the end of emitCurIG and
 //                    mark it as IGF_LOOP_ALIGN to indicate that next IG  is a
 //                    loop needing alignment.
@@ -5359,8 +5404,8 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
         {
 #ifdef TARGET_XARCH
             // Cannot align to 32B, so try to align to 16B boundary.
-            // Only applicable for xarch since for arm64, it is recommended to align at
-            // 32B only.
+            // Only applicable for xarch. For arm64, it is recommended to align
+            // at 32B only.
             alignmentBoundary >>= 1;
             nMaxPaddingBytes = 1 << (maxLoopBlocksAllowed - minBlocksNeededForLoop + 1);
             nPaddingBytes    = (-(int)(size_t)offset) & (alignmentBoundary - 1);
@@ -5792,7 +5837,6 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     memset(&args, 0, sizeof(args));
 
 #ifdef TARGET_ARM64
-
     // For arm64, we want to allocate JIT data always adjacent to code similar to what native compiler does.
     // This way allows us to use a single `ldr` to access such data like float constant/jmp table.
     if (emitTotalColdCodeSize > 0)
