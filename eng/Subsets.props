@@ -72,7 +72,7 @@
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">host.native</DefaultHostSubsets>
 
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
-    <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
+    <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
   </PropertyGroup>
 

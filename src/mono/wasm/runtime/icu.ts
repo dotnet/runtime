@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { GlobalizationMode } from "./types";
+import { GlobalizationMode, VoidPtr } from "./types";
 
 let num_icu_assets_loaded_successfully = 0;
 

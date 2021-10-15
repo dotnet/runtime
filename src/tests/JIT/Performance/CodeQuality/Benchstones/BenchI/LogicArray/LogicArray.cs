@@ -20,8 +20,6 @@ public static class LogicArray
     public const int Iterations = 3000;
 #endif
 
-    const int ArraySize = 50;
-
     struct Workarea
     {
         public int X;

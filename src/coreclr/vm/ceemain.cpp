@@ -848,7 +848,6 @@ void EEStartupHelper()
         // Setup the domains. Threads are started in a default domain.
 
         // Static initialization
-        PEAssembly::Attach();
         BaseDomain::Attach();
         SystemDomain::Attach();
 

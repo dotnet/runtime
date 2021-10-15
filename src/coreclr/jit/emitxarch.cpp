@@ -8846,7 +8846,12 @@ void emitter::emitDispIns(
             }
             else
             {
-                printf("%s", sstr);
+                // GC ref bit is for the return value for calls, do not print it before the address mode
+                if ((ins != INS_call) && (ins != INS_tail_i_jmp))
+                {
+                    printf("%s", sstr);
+                }
+
                 emitDispAddrMode(id, isNew);
                 emitDispShift(ins);
             }
@@ -10292,7 +10297,7 @@ GOT_DSP:
                     noway_assert((int)dsp == dsp);
 
                     // This requires, specifying a SIB byte after ModRM byte.
-                    if (EncodedBySSE38orSSE3A(ins))
+                    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x04);
                     }

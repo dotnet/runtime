@@ -3,7 +3,6 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
-  container: ''
   runtimeVariant: ''
   testGroup: ''
   framework: net6.0 # Specify the appropriate framework when running release branches (ie netcoreapp3.0 for release/3.0)
@@ -13,8 +12,6 @@ parameters:
   runtimeType: 'coreclr'
   pool: ''
   codeGenType: 'JIT'
-  projetFile: ''
-  runKind: ''
   runJobTemplate: '/eng/pipelines/coreclr/templates/jit-run-exploratory-job.yml'
   additionalSetupParameters: ''
 
@@ -27,8 +24,8 @@ jobs:
 - template: ${{ parameters.runJobTemplate }}
   parameters:
     # Compute job name from template parameters
-    jobName: ${{ format('exploratory_{0}{1}_{2}_{3}_{4}_{5}_{6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
-    displayName: ${{ format('Exploratory {0}{1} {2} {3} {4} {5} {6}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType, parameters.runKind) }}
+    jobName: ${{ format('exploratory_{0}{1}_{2}_{3}_{4}_{5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
+    displayName: ${{ format('Exploratory {0}{1} {2} {3} {4} {5}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.runtimeType, parameters.codeGenType) }}
     pool: ${{ parameters.pool }}
     buildConfig: ${{ parameters.buildConfig }}
     archType: ${{ parameters.archType }}
@@ -38,7 +35,6 @@ jobs:
     liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
     runtimeType: ${{ parameters.runtimeType }}
     codeGenType: ${{ parameters.codeGenType }}
-    runKind: ${{ parameters.runKind }}
     testGroup: ${{ parameters.testGroup }}
     helixQueues: ${{ parameters.helixQueues }}
     additionalSetupParameters: ${{ parameters.additionalSetupParameters }}

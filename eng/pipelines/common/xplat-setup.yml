@@ -114,12 +114,12 @@ jobs:
     ${{ if eq(parameters.jobParameters.pool, '') }}:
       pool:
         # Public Linux Build Pool
-        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android'), eq(parameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android', 'Tizen'), eq(parameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
           name:  NetCore1ESPool-Public
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
-        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android'), eq(parameters.hostedOs, 'Linux')), ne(variables['System.TeamProject'], 'public')) }}:
+        ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android', 'Tizen'), eq(parameters.hostedOs, 'Linux')), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
 

@@ -345,7 +345,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "specialstatics.h"
 #include "object.h"  // <NICE> We should not really need to put this so early... </NICE>
 #include "gchelpers.h"
-#include "pefile.h"
+#include "peassembly.h"
 #include "clrex.h"
 #include "clsload.hpp"  // <NICE> We should not really need to put this so early... </NICE>
 #include "siginfo.hpp"
@@ -362,7 +362,7 @@ inline void ClrRestoreNonvolatileContext(PCONTEXT ContextRecord)
 #include "appdomain.hpp"
 #include "appdomain.inl"
 #include "assembly.hpp"
-#include "pefile.inl"
+#include "peassembly.inl"
 #include "excep.h"
 #include "method.hpp"
 #include "field.h"

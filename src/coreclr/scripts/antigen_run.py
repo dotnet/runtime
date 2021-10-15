@@ -20,8 +20,7 @@ from os import path, walk
 from os.path import getsize
 import os
 from coreclr_arguments import *
-from superpmi_setup import run_command
-from superpmi import TempDir
+from azdo_pipelines_util import run_command, TempDir
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -30,6 +29,7 @@ parser.add_argument("-antigen_directory", help="Path to antigen tool")
 parser.add_argument("-output_directory", help="Path to output directory")
 parser.add_argument("-partition", help="Partition name")
 parser.add_argument("-core_root", help="path to CORE_ROOT directory")
+parser.add_argument("-run_duration", help="Run duration in minutes")
 is_windows = platform.system() == "Windows"
 
 
@@ -71,6 +71,10 @@ def setup_args(args):
                         lambda core_root: os.path.isdir(core_root),
                         "core_root doesn't exist")
 
+    coreclr_args.verify(args,
+                        "run_duration",
+                        lambda unused: True,
+                        "Unable to set run_duration")
     return coreclr_args
 
 
@@ -164,7 +168,16 @@ def copy_issues(issues_directory, upload_directory, tag_name):
         except PermissionError as pe_error:
             print('Ignoring PermissionError: {0}'.format(pe_error))
 
+        src_antigen_log = os.path.join(issues_directory, get_antigen_filename(tag_name))
+        dst_antigen_log = os.path.join(upload_directory, get_antigen_filename(tag_name))
+        print("Copying {} to {}".format(src_antigen_log, dst_antigen_log))
+        try:
+            shutil.copy2(src_antigen_log, dst_antigen_log)
+        except PermissionError as pe_error:
+            print('Ignoring PermissionError: {0}'.format(pe_error))
 
+def get_antigen_filename(tag_name):
+    return "Antigen-{}.log".format(tag_name)
 
 def main(main_args):
     """Main entrypoint
@@ -179,7 +192,9 @@ def main(main_args):
     core_root = coreclr_args.core_root
     tag_name = "{}-{}".format(coreclr_args.run_configuration, coreclr_args.partition)
     output_directory = coreclr_args.output_directory
-    run_duration = 120 # Run for 2 hours
+    run_duration = coreclr_args.run_duration
+    if not run_duration:
+        run_duration = 60
 
     path_to_corerun = os.path.join(core_root, "corerun")
     path_to_tool = os.path.join(antigen_directory, "Antigen")
@@ -187,13 +202,17 @@ def main(main_args):
         path_to_corerun += ".exe"
         path_to_tool += ".exe"
 
-    # Run tool such that issues are placed in a temp folder
-    with TempDir() as temp_location:
-        run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _long_running= True)
+    try:
+        # Run tool such that issues are placed in a temp folder
+        with TempDir() as temp_location:
+            antigen_log = path.join(temp_location, get_antigen_filename(tag_name))
+            run_command([path_to_tool, "-c", path_to_corerun, "-o", temp_location, "-d", str(run_duration)], _exit_on_fail=True, _output_file= antigen_log)
 
-        # Copy issues for upload
-        print("Copying issues to " + output_directory)
-        copy_issues(temp_location, output_directory, tag_name)
+            # Copy issues for upload
+            print("Copying issues to " + output_directory)
+            copy_issues(temp_location, output_directory, tag_name)
+    except PermissionError as pe:
+        print("Got error: %s", pe)
 
 if __name__ == "__main__":
     args = parser.parse_args()

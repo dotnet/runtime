@@ -710,7 +710,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 			t->pinned = TRUE;
 			++p;
 		} else if (*p == MONO_TYPE_BYREF) {
-			t->byref = TRUE;
+			t->byref__ = TRUE;
 			++p;
 		} else {
 			break;

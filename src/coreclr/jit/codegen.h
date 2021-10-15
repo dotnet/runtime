@@ -1145,10 +1145,6 @@ protected:
     void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
 #endif // FEATURE_HW_INTRINSICS
     void genEmitGSCookieCheck(bool pushReg);
-    void genSetRegToIcon(regNumber reg,
-                         ssize_t   val,
-                         var_types type = TYP_INT,
-                         insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1259,6 +1255,7 @@ protected:
     instruction genGetInsForOper(genTreeOps oper, var_types type);
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
     GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
+    regNumber getCallIndirectionCellReg(const GenTreeCall* call);
     void genCall(GenTreeCall* call);
     void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);

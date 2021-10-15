@@ -19,8 +19,7 @@ from os import path
 import os
 from os import listdir
 from coreclr_arguments import *
-from superpmi_setup import run_command, copy_directory, set_pipeline_variable
-from superpmi import ChangeDir, TempDir
+from azdo_pipelines_util import run_command, copy_directory, set_pipeline_variable, ChangeDir, TempDir
 import tempfile
 
 parser = argparse.ArgumentParser(description="description")
@@ -88,7 +87,6 @@ def main(main_args):
 
     helix_source_prefix = "official"
     creator = ""
-    ci = True
 
     # create exploratory directory
     print('Copying {} -> {}'.format(scripts_src_directory, coreroot_dst_directory))

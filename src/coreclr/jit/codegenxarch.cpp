@@ -23,32 +23,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfoencoder.h"
 #include "patchpointinfo.h"
 
-/*****************************************************************************
- *
- *  Generate code that will set the given register to the integer constant.
- */
-
-void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFlags flags DEBUGARG(GenTreeFlags gtFlags))
-{
-    // Reg cannot be a FP reg
-    assert(!genIsValidFloatReg(reg));
-
-    // The only TYP_REF constant that can come this path is a managed 'null' since it is not
-    // relocatable.  Other ref type constants (e.g. string objects) go through a different
-    // code path.
-    noway_assert(type != TYP_REF || val == 0);
-
-    if (val == 0)
-    {
-        instGen_Set_Reg_To_Zero(emitActualTypeSize(type), reg, flags);
-    }
-    else
-    {
-        // TODO-XArch-CQ: needs all the optimized cases
-        GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val DEBUGARG(gtFlags));
-    }
-}
-
 //---------------------------------------------------------------------
 // genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
 //
@@ -82,7 +56,7 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         if ((size_t)(int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
         {
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
-            genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, compiler->gsGlobalSecurityCookieVal);
             GetEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
             *pInitRegZeroed = false;
         }
@@ -230,7 +204,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         // Otherwise, load the value into a reg and use 'cmp mem64, reg64'.
         if ((int)compiler->gsGlobalSecurityCookieVal != (ssize_t)compiler->gsGlobalSecurityCookieVal)
         {
-            genSetRegToIcon(regGSCheck, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+            instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSCheck, compiler->gsGlobalSecurityCookieVal);
             GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
         }
         else
@@ -445,9 +419,11 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     // reg cannot be a FP register
     assert(!genIsValidFloatReg(reg));
 
+    emitAttr origAttr = size;
     if (!compiler->opts.compReloc)
     {
-        size = EA_SIZE(size); // Strip any Reloc flags from size if we aren't doing relocs
+        // Strip any reloc flags from size if we aren't doing relocs
+        size = EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG | EA_DSP_RELOC_FLG);
     }
 
     if ((imm == 0) && !EA_IS_RELOC(size))
@@ -456,19 +432,17 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr  size,
     }
     else
     {
-        if (genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
+        // Only use lea if the original was relocatable. Otherwise we can get spurious
+        // instruction selection due to different memory placement at runtime.
+        if (EA_IS_RELOC(origAttr) && genDataIndirAddrCanBeEncodedAsPCRelOffset(imm))
         {
-            emitAttr newSize = EA_PTR_DSP_RELOC;
-            if (EA_IS_BYREF(size))
-            {
-                newSize = EA_SET_FLG(newSize, EA_BYREF_FLG);
-            }
-
-            GetEmitter()->emitIns_R_AI(INS_lea, newSize, reg, imm);
+            // We will use lea so displacement and not immediate will be relocatable
+            size = EA_SET_FLG(EA_REMOVE_FLG(size, EA_CNS_RELOC_FLG), EA_DSP_RELOC_FLG);
+            GetEmitter()->emitIns_R_AI(INS_lea, size, reg, imm);
         }
         else
         {
-            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm DEBUGARG(gtFlags));
         }
     }
     regSet.verifyRegUsed(reg);
@@ -491,22 +465,19 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
-            if (con->ImmedValNeedsReloc(compiler))
+            emitAttr attr = emitActualTypeSize(targetType);
+            if (con->IsIconHandle())
             {
-                emitAttr size = EA_HANDLE_CNS_RELOC;
-
-                if (targetType == TYP_BYREF)
-                {
-                    size = EA_SET_FLG(size, EA_BYREF_FLG);
-                }
-
-                instGen_Set_Reg_To_Imm(size, targetReg, cnsVal);
-                regSet.verifyRegUsed(targetReg);
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
-            else
+
+            if (targetType == TYP_BYREF)
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType, INS_FLAGS_DONT_CARE DEBUGARG(tree->gtFlags));
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal, INS_FLAGS_DONT_CARE DEBUGARG(0) DEBUGARG(tree->gtFlags));
+            regSet.verifyRegUsed(targetReg);
         }
         break;
 
@@ -2515,7 +2486,7 @@ void CodeGen::genLclHeap(GenTree* tree)
             amount /= STACK_ALIGN;
         }
 
-        genSetRegToIcon(regCnt, amount, ((size_t)(int)amount == amount) ? TYP_INT : TYP_LONG);
+        instGen_Set_Reg_To_Imm(((size_t)(int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
     if (compiler->info.compInitMem)
@@ -5696,15 +5667,18 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
             // clang-format on
         }
     }
-#ifdef FEATURE_READYTORUN
-    else if (call->gtEntryPoint.addr != nullptr)
+    else
     {
-        emitter::EmitCallType type =
-            (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
-        if (call->IsFastTailCall() && (type == emitter::EC_FUNC_TOKEN_INDIR))
+        // If we have no target and this is a call with indirection cell
+        // then emit call through that indir cell. This means we generate e.g.
+        // lea r11, [addr of cell]
+        // call [r11]
+        // which is more efficent than
+        // lea r11, [addr of cell]
+        // call [addr of cell]
+        regNumber indirCellReg = getCallIndirectionCellReg(call);
+        if (indirCellReg != REG_NA)
         {
-            // For fast tailcall with func token indir we already have the indirection cell in REG_R2R_INDIRECT_PARAM,
-            // so get it from there.
             // clang-format off
             GetEmitter()->emitIns_Call(
                 emitter::EC_INDIR_ARD,
@@ -5717,11 +5691,15 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                 gcInfo.gcVarPtrSetCur,
                 gcInfo.gcRegGCrefSetCur,
                 gcInfo.gcRegByrefSetCur,
-                ilOffset, REG_R2R_INDIRECT_PARAM, REG_NA, 0, 0, true);
+                ilOffset, indirCellReg, REG_NA, 0, 0,
+                call->IsFastTailCall());
             // clang-format on
         }
-        else
+#ifdef FEATURE_READYTORUN
+        else if (call->gtEntryPoint.addr != nullptr)
         {
+            emitter::EmitCallType type =
+                (call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN : emitter::EC_FUNC_TOKEN_INDIR;
             // clang-format off
             genEmitCall(type,
                         methHnd,
@@ -5735,46 +5713,46 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
                         call->IsFastTailCall());
             // clang-format on
         }
-    }
 #endif
-    else
-    {
-        // Generate a direct call to a non-virtual user defined or helper method
-        assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
-
-        void* addr = nullptr;
-        if (call->gtCallType == CT_HELPER)
-        {
-            // Direct call to a helper method.
-            CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-
-            void* pAddr = nullptr;
-            addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
-            assert(pAddr == nullptr);
-        }
         else
         {
-            // Direct call to a non-virtual user function.
-            addr = call->gtDirectCallAddress;
+            // Generate a direct call to a non-virtual user defined or helper method
+            assert(call->gtCallType == CT_HELPER || call->gtCallType == CT_USER_FUNC);
+
+            void* addr = nullptr;
+            if (call->gtCallType == CT_HELPER)
+            {
+                // Direct call to a helper method.
+                CorInfoHelpFunc helperNum = compiler->eeGetHelperNum(methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+
+                void* pAddr = nullptr;
+                addr        = compiler->compGetHelperFtn(helperNum, (void**)&pAddr);
+                assert(pAddr == nullptr);
+            }
+            else
+            {
+                // Direct call to a non-virtual user function.
+                addr = call->gtDirectCallAddress;
+            }
+
+            assert(addr != nullptr);
+
+            // Non-virtual direct calls to known addresses
+
+            // clang-format off
+            genEmitCall(emitter::EC_FUNC_TOKEN,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        addr
+                        X86_ARG(argSizeForEmitter),
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        ilOffset,
+                        REG_NA,
+                        call->IsFastTailCall());
+            // clang-format on
         }
-
-        assert(addr != nullptr);
-
-        // Non-virtual direct calls to known addresses
-
-        // clang-format off
-        genEmitCall(emitter::EC_FUNC_TOKEN,
-                    methHnd,
-                    INDEBUG_LDISASM_COMMA(sigInfo)
-                    addr
-                    X86_ARG(argSizeForEmitter),
-                    retSize
-                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                    ilOffset,
-                    REG_NA,
-                    call->IsFastTailCall());
-        // clang-format on
     }
 }
 
@@ -8443,7 +8421,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 #endif
 
             callTarget = callTargetReg;
-            CodeGen::genSetRegToIcon(callTarget, (ssize_t)pAddr, TYP_I_IMPL);
+            instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, callTarget, (ssize_t)pAddr);
             callType = emitter::EC_INDIR_ARD;
         }
     }
@@ -8818,16 +8796,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        // No need to record relocations, if we are generating ELT hooks under the influence
-        // of COMPlus_JitELTHookEnabled=1
-        if (compiler->opts.compJitELTHookEnabled)
-        {
-            genSetRegToIcon(REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
-        }
+        instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // RDX = caller's SP
@@ -8902,16 +8871,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        // No need to record relocations, if we are generating ELT hooks under the influence
-        // of COMPlus_JitELTHookEnabled=1
-        if (compiler->opts.compJitELTHookEnabled)
-        {
-            genSetRegToIcon(REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
-        }
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // R15 = caller's SP
@@ -8990,16 +8950,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        // Don't record relocations, if we are generating ELT hooks under the influence
-        // of COMPlus_JitELTHookEnabled=1
-        if (compiler->opts.compJitELTHookEnabled)
-        {
-            genSetRegToIcon(REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
-        }
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // RDX = caller's SP
@@ -9040,14 +8991,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        if (compiler->opts.compJitELTHookEnabled)
-        {
-            genSetRegToIcon(REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
-        }
-        else
-        {
-            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
-        }
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     // RSI = caller's SP
@@ -9132,6 +9076,32 @@ void CodeGen::genPushCalleeSavedRegisters()
 #endif // USING_SCOPE_INFO
             rsPushRegs &= ~regBit;
         }
+    }
+}
+
+//-----------------------------------------------------------------------------------
+// instGen_MemoryBarrier: Emit a MemoryBarrier instruction
+//
+// Arguments:
+//     barrierKind - kind of barrier to emit (Load-only is no-op on xarch)
+//
+// Notes:
+//     All MemoryBarriers instructions can be removed by DOTNET_JitNoMemoryBarriers=1
+//
+void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
+{
+#ifdef DEBUG
+    if (JitConfig.JitNoMemoryBarriers() == 1)
+    {
+        return;
+    }
+#endif // DEBUG
+
+    // only full barrier needs to be emitted on Xarch
+    if (barrierKind == BARRIER_FULL)
+    {
+        instGen(INS_lock);
+        GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
     }
 }
 

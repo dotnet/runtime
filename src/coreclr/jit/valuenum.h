@@ -291,7 +291,7 @@ public:
 
     // Packs information about the cast into an integer constant represented by the returned value number,
     // to be used as the second operand of VNF_Cast & VNF_CastOvf.
-    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned = false DEBUGARG(bool printResult = true));
+    ValueNum VNForCastOper(var_types castToType, bool srcIsUnsigned);
 
     // Unpacks the information stored by VNForCastOper in the constant represented by the value number.
     void GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool* pSrcIsUnsigned);
@@ -556,8 +556,12 @@ public:
                                                    rhs.GetConservative(), indType, block));
     }
 
-    // Compute the normal ValueNumber for a cast with no exceptions
-    ValueNum VNForCast(ValueNum srcVN, var_types castToType, var_types castFromType, bool srcIsUnsigned = false);
+    // Compute the ValueNumber for a cast
+    ValueNum VNForCast(ValueNum  srcVN,
+                       var_types castToType,
+                       var_types castFromType,
+                       bool      srcIsUnsigned    = false,
+                       bool      hasOverflowCheck = false);
 
     // Compute the ValueNumberPair for a cast
     ValueNumPair VNPairForCast(ValueNumPair srcVNPair,
@@ -897,6 +901,10 @@ public:
     // Prints a representation (comma-separated list of field names) on standard out.
     void vnDumpSimdType(Compiler* comp, VNFuncApp* simdType);
 #endif // FEATURE_SIMD
+
+    // Requires "castVN" to represent VNF_Cast or VNF_CastOvf.
+    // Prints the cast's representation mirroring GT_CAST's dump format.
+    void vnDumpCast(Compiler* comp, ValueNum castVN);
 
     // Returns the string name of "vnf".
     static const char* VNFuncName(VNFunc vnf);

@@ -26,6 +26,7 @@ namespace System.Security.Cryptography.Pkcs
         static partial void PrepareRegistrationDsa(Dictionary<string, CmsSignature> lookup);
         static partial void PrepareRegistrationECDsa(Dictionary<string, CmsSignature> lookup);
 
+        internal abstract RSASignaturePadding? SignaturePadding { get; }
         protected abstract bool VerifyKeyType(AsymmetricAlgorithm key);
 
         internal abstract bool VerifySignature(
@@ -52,12 +53,53 @@ namespace System.Security.Cryptography.Pkcs
             AsymmetricAlgorithm? key,
             bool silent,
             [NotNullWhen(true)] out string? signatureAlgorithm,
-            [NotNullWhen(true)] out byte[]? signatureValue);
+            [NotNullWhen(true)] out byte[]? signatureValue,
+            out byte[]? signatureParameters);
 
-        internal static CmsSignature? ResolveAndVerifyKeyType(string signatureAlgorithmOid, AsymmetricAlgorithm? key)
+        internal static CmsSignature? ResolveAndVerifyKeyType(
+            string signatureAlgorithmOid,
+            AsymmetricAlgorithm? key,
+            RSASignaturePadding? rsaSignaturePadding)
         {
+            // Rules:
+            // RSASignaturePadding 'wins' if specified if the signatureAlgorithmOid is any RSA OID.
+            // if there is no rsaSignaturePadding, the OID is used.
+            // If the rsaSignaturePadding is specified and the signatureAlgorithm OID is not any
+            // RSA OID, this is invalid, so null.
             if (s_lookup.TryGetValue(signatureAlgorithmOid, out CmsSignature? processor))
             {
+                // We have a padding that might override the OID.
+                if (rsaSignaturePadding is not null)
+                {
+                    // The processor does not support RSA signature padding
+                    if (processor.SignaturePadding is null)
+                    {
+                        // We were given an RSA signature padding, but the processor is not any known RSA.
+                        // We won't override a non-RSA OID (like ECDSA) to RSA based on the padding, so return null.
+                        return null;
+                    }
+
+                    // The processor is RSA, but does not agree with the specified signature padding, so override.
+                    if (processor.SignaturePadding != rsaSignaturePadding)
+                    {
+                        if (rsaSignaturePadding == RSASignaturePadding.Pkcs1)
+                        {
+                            processor = s_lookup[Oids.Rsa];
+                            Debug.Assert(processor is not null);
+                        }
+                        else if (rsaSignaturePadding == RSASignaturePadding.Pss)
+                        {
+                            processor = s_lookup[Oids.RsaPss];
+                            Debug.Assert(processor is not null);
+                        }
+                        else
+                        {
+                            Debug.Fail("Unhandled RSA signature padding.");
+                            return null;
+                        }
+                    }
+                }
+
                 if (key != null && !processor.VerifyKeyType(key))
                 {
                     return null;
@@ -79,21 +121,33 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2 certificate,
             AsymmetricAlgorithm? key,
             bool silent,
+            RSASignaturePadding? rsaSignaturePadding,
             out string? oid,
-            out ReadOnlyMemory<byte> signatureValue)
+            out ReadOnlyMemory<byte> signatureValue,
+            out ReadOnlyMemory<byte> signatureParameters)
         {
-            CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);
+            CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key, rsaSignaturePadding);
 
             if (processor == null)
             {
                 oid = null;
                 signatureValue = default;
+                signatureParameters = default;
                 return false;
             }
 
-            bool signed = processor.Sign(dataHash, hashAlgorithmName, certificate, key, silent, out oid, out byte[]? signature);
+            bool signed = processor.Sign(
+                dataHash,
+                hashAlgorithmName,
+                certificate,
+                key,
+                silent,
+                out oid,
+                out byte[]? signature,
+                out byte[]? parameters);
 
             signatureValue = signature;
+            signatureParameters = parameters;
             return signed;
         }
 

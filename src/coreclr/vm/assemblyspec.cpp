@@ -231,7 +231,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
-    ReleaseHolder<IMDInternalImport> pImport(pFile->GetMDImportWithRef());
+    IMDInternalImport* pImport = pFile->GetMDImport();
     mdAssembly a;
     IfFailThrow(pImport->GetAssemblyFromScope(&a));
 
@@ -690,7 +690,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     if(pParentDomainAssembly != NULL)
     {
         // Get the PEAssembly associated with the parent's domain assembly
-        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetFile();
+        PEAssembly *pParentPEAssembly = pParentDomainAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
@@ -754,7 +754,7 @@ DomainAssembly *AssemblySpec::LoadDomainAssembly(FileLoadLevel targetLevel,
     if (pAssembly)
     {
         BinderTracing::AssemblyBindOperation bindOperation(this);
-        bindOperation.SetResult(pAssembly->GetFile(), true /*cached*/);
+        bindOperation.SetResult(pAssembly->GetPEAssembly(), true /*cached*/);
 
         pDomain->LoadDomainFile(pAssembly, targetLevel);
         RETURN pAssembly;
@@ -1219,7 +1219,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    AssemblyBinder* pBinderContextForLookup = pAssembly->GetFile()->GetAssemblyBinder();
+    AssemblyBinder* pBinderContextForLookup = pAssembly->GetPEAssembly()->GetAssemblyBinder();
     key = key ^ (UPTR)pBinderContextForLookup;
 
     if (!pSpec->GetBinder())
@@ -1240,13 +1240,13 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
         }
 
         entry = abHolder.CreateAssemblyBinding(pHeap);
-        entry->Init(pSpec,pAssembly->GetFile(),pAssembly,NULL,pHeap, abHolder.GetPamTracker());
+        entry->Init(pSpec,pAssembly->GetPEAssembly(),pAssembly,NULL,pHeap, abHolder.GetPamTracker());
 
         m_map.InsertValue(key, entry);
 
         abHolder.SuppressRelease();
 
-        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StoreFile (StoreAssembly): Add cached entry (%p) with PEFile %p",entry,pAssembly->GetFile());
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreAssembly): Add cached entry (%p) with PEAssembly %p",entry,pAssembly->GetPEAssembly());
         RETURN TRUE;
     }
     else
@@ -1263,7 +1263,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
             {
                 // OK if we have have a matching PEAssembly
                 if (entry->GetFile() != NULL
-                    && pAssembly->GetFile()->Equals(entry->GetFile()))
+                    && pAssembly->GetPEAssembly()->Equals(entry->GetFile()))
                 {
                     entry->SetAssembly(pAssembly);
                     RETURN TRUE;
@@ -1280,7 +1280,7 @@ BOOL AssemblySpecBindingCache::StoreAssembly(AssemblySpec *pSpec, DomainAssembly
 // Returns TRUE if add was successful - if FALSE is returned, caller should honor current
 // cached value to ensure consistency.
 
-BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
+BOOL AssemblySpecBindingCache::StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly)
 {
     CONTRACT(BOOL)
     {
@@ -1288,14 +1288,14 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pFile)));
+        POSTCONDITION((!RETVAL) || (UnsafeContains(this, pSpec) && UnsafeVerifyLookupFile(this, pSpec, pPEAssembly)));
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACT_END;
 
     UPTR key = (UPTR)pSpec->Hash();
 
-    AssemblyBinder* pBinderContextForLookup = pFile->GetAssemblyBinder();
+    AssemblyBinder* pBinderContextForLookup = pPEAssembly->GetAssemblyBinder();
     key = key ^ (UPTR)pBinderContextForLookup;
 
     if (!pSpec->GetBinder())
@@ -1325,12 +1325,12 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
 
         entry = abHolder.CreateAssemblyBinding(pHeap);
 
-        entry->Init(pSpec,pFile,NULL,NULL,pHeap, abHolder.GetPamTracker());
+        entry->Init(pSpec, pPEAssembly,NULL,NULL,pHeap, abHolder.GetPamTracker());
 
         m_map.InsertValue(key, entry);
         abHolder.SuppressRelease();
 
-        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StoreFile: Add cached entry (%p) with PEFile %p\n", entry, pFile);
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly: Add cached entry (%p) with PEAssembly %p\n", entry, pPEAssembly);
 
         RETURN TRUE;
     }
@@ -1340,7 +1340,7 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
         {
             // OK if this is a duplicate
             if (entry->GetFile() != NULL
-                && pFile->Equals(entry->GetFile()))
+                && pPEAssembly->Equals(entry->GetFile()))
                 RETURN TRUE;
         }
         else
@@ -1350,7 +1350,7 @@ BOOL AssemblySpecBindingCache::StoreFile(AssemblySpec *pSpec, PEAssembly *pFile)
             entry->ThrowIfError();
 
         }
-        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"Incompatible cached entry found (%p) when adding PEFile %p\n", entry, pFile);
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"Incompatible cached entry found (%p) when adding PEAssembly %p\n", entry, pPEAssembly);
         // Invalid cache transition (see above note about state transitions)
         RETURN FALSE;
     }
@@ -1396,7 +1396,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         m_map.InsertValue(key, entry);
         abHolder.SuppressRelease();
 
-        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StoreFile (StoreException): Add cached entry (%p) with exception %p",entry,pEx);
+        STRESS_LOG2(LF_CLASSLOADER,LL_INFO10,"StorePEAssembly (StoreException): Add cached entry (%p) with exception %p",entry,pEx);
         RETURN TRUE;
     }
     else
