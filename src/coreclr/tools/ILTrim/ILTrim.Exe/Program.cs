@@ -3,7 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.IO;
+using System.Linq;
 using System.Reflection.PortableExecutable;
 
 namespace ILTrim
@@ -12,46 +15,55 @@ namespace ILTrim
     {
         static void Main(string[] args)
         {
-            var inputPath = args[0];
-            int i = 1;
-            List<string> referencePaths = new();
-            List<string> trimPaths = new();
-            string outputDir = null;
-            var logStrategy = LogStrategy.None;
+            RootCommand root = new RootCommand()
+            {
+                new Argument<string>("input"),
+                new Option<string[]>(new [] { "--reference", "-r" }, "Reference assembly"),
+                new Option<string[]>(new [] { "--trim", "-t"}, "Trim assembly"),
+                new Option<string>(new [] { "--output", "-o" }, "Output path"),
+                new Option(new [] { "--log", "-l" }, "Log strategy", typeof(string[]), arity: new ArgumentArity(0, 2)),
+                new Option<int?>("--parallelism", "Degree of parallelism")
+            };
+            root.Handler = CommandHandler.Create(Run);
+
+            root.Invoke(args);
+        }
+
+        static void Run(string input, string[] reference, string[] trim, string output, string[] log, int? parallelism)
+        {
+            LogStrategy logStrategy = LogStrategy.None;
             string logFile = null;
-            while (args.Length > i) {
-                if (args[i] == "-r")
+            if (log is { Length: > 0 })
+            {
+                if (!Enum.TryParse<LogStrategy>(log[0], out logStrategy))
                 {
-                    referencePaths.Add(args[i + 1]);
-                    i += 2;
+                    throw new ArgumentException("Invalid log strategy");
                 }
-                else if (args[i] == "-t")
+
+                if (logStrategy == LogStrategy.FullGraph || logStrategy == LogStrategy.FirstMark)
                 {
-                    trimPaths.Add(args[i + 1]);
-                    i += 2;
-                }
-                else if (args[i] == "-o")
-                {
-                    outputDir = args[i + 1];
-                    i += 2;
-                }
-                else if (args[i] == "-l")
-                {
-                    logStrategy = Enum.Parse<LogStrategy>(args[i + 1]);
-                    if (logStrategy == LogStrategy.FirstMark || logStrategy == LogStrategy.FullGraph) {
-                        logFile = args[i + 2];
-                        i += 1;
-                    }
-                    i += 2;
+                    if (log.Length != 2)
+                        throw new ArgumentException("Specified log strategy requires a file path parameter");
+
+                    logFile = log[1];
                 }
                 else
                 {
-                    throw new ArgumentException("Invalid argument");
+                    if (log.Length != 1)
+                        throw new ArgumentException("Specified log strategy doesn't need value");
                 }
             }
-            outputDir ??= Directory.GetCurrentDirectory();
-            var settings = new TrimmerSettings(LogStrategy: logStrategy, LogFile: logFile);
-            Trimmer.TrimAssembly(inputPath, trimPaths, outputDir, referencePaths, settings);
+
+            var settings = new TrimmerSettings(
+                MaxDegreeOfParallelism: parallelism,
+                LogStrategy: logStrategy,
+                LogFile: logFile);
+            Trimmer.TrimAssembly(
+                input.Trim(),
+                trim.Select(p => p.Trim()).ToList(),
+                output?.Trim() ?? Directory.GetCurrentDirectory(),
+                reference.Select(p => p.Trim()).ToList(),
+                settings);
         }
     }
 }
