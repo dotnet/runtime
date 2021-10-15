@@ -13,7 +13,7 @@ namespace ILTrim.DependencyAnalysis
     /// <summary>
     /// Represents an entry in the GenericParam metadata table.
     /// </summary>
-    public sealed class GenericParameterNode : TokenBasedNodeWithDelayedSort, IComparable<TokenBasedNode>
+    public sealed class GenericParameterNode : TokenBasedNodeWithDelayedSort
     {
         public GenericParameterNode(EcmaModule module, GenericParameterHandle handle)
             : base(module, handle)
@@ -60,7 +60,7 @@ namespace ILTrim.DependencyAnalysis
             _index = genericParam.Index;
         }
 
-        public override int CompareTo(TokenBasedNode other)
+        public override int CompareTo(TokenWriterNode other)
         {
             if (other is GenericParameterNode otherGenericParameter)
             {

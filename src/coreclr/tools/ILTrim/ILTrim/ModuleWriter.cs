@@ -23,19 +23,19 @@ namespace ILTrim
     {
         private readonly NodeFactory _factory;
         private readonly EcmaModule _module;
-        private readonly List<TokenBasedNode> _tokensToWrite;
+        private readonly List<TokenWriterNode> _tokensToWrite;
 
         public string AssemblyName => _module.Assembly.GetName().Name;
 
-        private ModuleWriter(NodeFactory factory, EcmaModule module, List<TokenBasedNode> tokensToWrite)
+        private ModuleWriter(NodeFactory factory, EcmaModule module, List<TokenWriterNode> tokensToWrite)
             => (_factory, _module, _tokensToWrite) = (factory, module, tokensToWrite);
 
         public void Save(Stream outputStream)
         {
-            List<TokenBasedNode> earlySortedTokens = new();
+            List<TokenWriterNode> earlySortedTokens = new();
             List<TokenBasedNodeWithDelayedSort> delaySortedTokens = new();
 
-            foreach (TokenBasedNode token in _tokensToWrite)
+            foreach (TokenWriterNode token in _tokensToWrite)
             {
                 if (token is TokenBasedNodeWithDelayedSort delaySortedToken)
                 {
@@ -52,7 +52,7 @@ namespace ILTrim
 
             // Ask each of the output nodes to assign their tokens in the output.
             var tokenMapBuilder = new TokenMap.Builder(_module.MetadataReader);
-            foreach (TokenBasedNode node in earlySortedTokens)
+            foreach (TokenWriterNode node in earlySortedTokens)
             {
                 node.BuildTokens(tokenMapBuilder);
             }
@@ -72,11 +72,11 @@ namespace ILTrim
             // Ask each node to write itself out.
             TokenMap tokenMap = tokenMapBuilder.ToTokenMap();
             ModuleWritingContext context = new ModuleWritingContext(_factory, tokenMap);
-            foreach (TokenBasedNode node in earlySortedTokens)
+            foreach (TokenWriterNode node in earlySortedTokens)
             {
                 node.Write(context);
             }
-            foreach (TokenBasedNode node in delaySortedTokens)
+            foreach (TokenBasedNodeWithDelayedSort node in delaySortedTokens)
             {
                 node.Write(context);
             }
@@ -110,15 +110,15 @@ namespace ILTrim
         public static ModuleWriter[] CreateWriters(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodeList)
         {
             // Go over all marked vertices and make a list of vertices for each module
-            var moduleToTokenList = new Dictionary<EcmaModule, List<TokenBasedNode>>();
+            var moduleToTokenList = new Dictionary<EcmaModule, List<TokenWriterNode>>();
             foreach (DependencyNodeCore<NodeFactory> node in markedNodeList)
             {
-                if (node is not TokenBasedNode tokenNode)
+                if (node is not TokenWriterNode tokenNode)
                     continue;
 
-                if (!moduleToTokenList.TryGetValue(tokenNode.Module, out List<TokenBasedNode> list))
+                if (!moduleToTokenList.TryGetValue(tokenNode.Module, out List<TokenWriterNode> list))
                 {
-                    list = new List<TokenBasedNode>();
+                    list = new List<TokenWriterNode>();
                     moduleToTokenList.Add(tokenNode.Module, list);
                 }
 
@@ -128,7 +128,7 @@ namespace ILTrim
             // Create a ModuleWriter for each of the output modules.
             ModuleWriter[] result = new ModuleWriter[moduleToTokenList.Count];
             int i = 0;
-            foreach (KeyValuePair<EcmaModule, List<TokenBasedNode>> moduleAndTokens in moduleToTokenList)
+            foreach (KeyValuePair<EcmaModule, List<TokenWriterNode>> moduleAndTokens in moduleToTokenList)
             {
                 result[i++] = new ModuleWriter(factory, moduleAndTokens.Key, moduleAndTokens.Value);
             }

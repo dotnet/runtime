@@ -59,7 +59,9 @@ namespace ILTrim
                     // RID 0 always maps to RID 0
                     handles[0] = MetadataTokens.EntityHandle((TableIndex)tableIndex, 0);
 
-                    _tokenMap[tableIndex] = handles;
+                    // AssemblyReferences tokens are tracked by AssemblyReferenceNode instead.
+                    if (tableIndex != (int)TableIndex.AssemblyRef)
+                        _tokenMap[tableIndex] = handles;
                 }
 
                 _preAssignedRowIdsPerTable = new int[MetadataTokens.TableCount];
@@ -77,6 +79,14 @@ namespace ILTrim
                 Debug.Assert(_tokenMap[(int)index][MetadataTokens.GetRowNumber(sourceToken)].IsNil);
                 _tokenMap[(int)index][MetadataTokens.GetRowNumber(sourceToken)] = result;
 
+                return result;
+            }
+
+            public EntityHandle AddToken(TableIndex index)
+            {
+                int assignedRowId = ++_preAssignedRowIdsPerTable[(int)index];
+
+                EntityHandle result = MetadataTokens.EntityHandle(index, assignedRowId);
                 return result;
             }
 

@@ -66,7 +66,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.TypeSpecification:
                     return TypeSpecification(module, (TypeSpecificationHandle)handle);
                 case HandleKind.AssemblyReference:
-                    return AssemblyReference(module, (AssemblyReferenceHandle)handle);
+                    throw new InvalidOperationException("Assembly references are not represented by token-based nodes.");
                 case HandleKind.AssemblyFile:
                     throw new NotImplementedException();
                 case HandleKind.ExportedType:
@@ -233,12 +233,12 @@ namespace ILTrim.DependencyAnalysis
             return _assemblyDefinitions.GetOrAdd(module);
         }
 
-        NodeCache<HandleKey<AssemblyReferenceHandle>, AssemblyReferenceNode> _assemblyReferences
-            = new NodeCache<HandleKey<AssemblyReferenceHandle>, AssemblyReferenceNode>(key
-                => new AssemblyReferenceNode(key.Module, key.Handle));
-        public AssemblyReferenceNode AssemblyReference(EcmaModule module, AssemblyReferenceHandle handle)
+        NodeCache<HandleKey<AssemblyReferenceValue>, AssemblyReferenceNode> _assemblyReferences
+            = new NodeCache<HandleKey<AssemblyReferenceValue>, AssemblyReferenceNode>(key
+                => new AssemblyReferenceNode(key.Module, key.Handle.Reference));
+        public AssemblyReferenceNode AssemblyReference(EcmaModule module, EcmaAssembly reference)
         {
-            return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceHandle>(module, handle));
+            return _assemblyReferences.GetOrAdd(new HandleKey<AssemblyReferenceValue>(module, new AssemblyReferenceValue(reference)));
         }
 
         NodeCache<HandleKey<ModuleReferenceHandle>, ModuleReferenceNode> _moduleReferences
