@@ -188,8 +188,8 @@ namespace System.IO.Tests
 
             using (var cts = new CancellationTokenSource())
             {
-                Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
                 Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
+                Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
                 cts.CancelAfter(TimeSpan.FromSeconds(3));
 
                 await writingServerTask;
