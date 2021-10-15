@@ -236,15 +236,20 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
-            if (con->ImmedValNeedsReloc(compiler))
+            emitAttr attr = emitActualTypeSize(targetType);
+
+            if (con->IsIconHandle())
             {
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
-                regSet.verifyRegUsed(targetReg);
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
-            else
+
+            if (targetType == TYP_BYREF)
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType);
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal);
+            regSet.verifyRegUsed(targetReg);
         }
         break;
 
@@ -259,7 +264,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 regNumber tmpReg = tree->GetSingleTempReg();
 
                 float f = forceCastToFloat(constValue);
-                genSetRegToIcon(tmpReg, *((int*)(&f)));
+                instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg, *((int*)(&f)));
                 GetEmitter()->emitIns_Mov(INS_vmov_i2f, EA_4BYTE, targetReg, tmpReg, /* canSkip */ false);
             }
             else
@@ -272,8 +277,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 regNumber tmpReg1 = tree->ExtractTempReg();
                 regNumber tmpReg2 = tree->GetSingleTempReg();
 
-                genSetRegToIcon(tmpReg1, cv[0]);
-                genSetRegToIcon(tmpReg2, cv[1]);
+                instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg1, cv[0]);
+                instGen_Set_Reg_To_Imm(EA_4BYTE, tmpReg2, cv[1]);
 
                 GetEmitter()->emitIns_R_R_R(INS_vmov_i2d, EA_8BYTE, targetReg, tmpReg1, tmpReg2);
             }
@@ -460,7 +465,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         }
 
         // regCnt will be the total number of bytes to locAlloc
-        genSetRegToIcon(regCnt, amount, TYP_INT);
+        instGen_Set_Reg_To_Imm(EA_4BYTE, regCnt, amount);
     }
     else
     {

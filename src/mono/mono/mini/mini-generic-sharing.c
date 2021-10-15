@@ -1260,7 +1260,7 @@ get_wrapper_shared_vtype (MonoType *t)
 static MonoType*
 get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return m_class_get_this_arg (mono_defaults.int_class);
 	t = mini_get_underlying_type (t);
 
@@ -1381,7 +1381,7 @@ get_wrapper_shared_type_reg (MonoType *t, gboolean pinvoke)
 	MonoType *orig_t = t;
 
 	t = get_wrapper_shared_type (t);
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return t;
 
 	switch (t->type) {
@@ -1507,9 +1507,9 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	}
 	for (i = 0; i < sig->param_count; i++) {
 		gsharedvt_sig->params [pindex] = sig->params [i];
-		if (!sig->params [i]->byref) {
+		if (!m_type_is_byref (sig->params [i])) {
 			gsharedvt_sig->params [pindex] = mono_metadata_type_dup (NULL, gsharedvt_sig->params [pindex]);
-			gsharedvt_sig->params [pindex]->byref = 1;
+			gsharedvt_sig->params [pindex]->byref__ = 1;
 		}
 		pindex ++;
 	}
@@ -1534,7 +1534,7 @@ mini_get_gsharedvt_in_sig_wrapper (MonoMethodSignature *sig)
 	if (sig->ret->type != MONO_TYPE_VOID)
 		mono_mb_emit_ldloc_addr (mb, retval_var);
 	for (i = 0; i < sig->param_count; i++) {
-		if (sig->params [i]->byref)
+		if (m_type_is_byref (sig->params [i]))
 			mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 		else
 			mono_mb_emit_ldarg_addr (mb, i + (sig->hasthis == TRUE));
@@ -1621,9 +1621,9 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	for (i = 0; i < sig->param_count; i++) {
 		csig->params [pindex] = sig->params [i];
 		param_names [pindex] = g_strdup_printf ("%d", i);
-		if (!sig->params [i]->byref) {
+		if (!m_type_is_byref (sig->params [i])) {
 			csig->params [pindex] = mono_metadata_type_dup (NULL, csig->params [pindex]);
-			csig->params [pindex]->byref = 1;
+			csig->params [pindex]->byref__ = 1;
 		}
 		pindex ++;
 	}
@@ -1655,7 +1655,7 @@ mini_get_gsharedvt_out_sig_wrapper (MonoMethodSignature *sig)
 	if (sig->hasthis)
 		mono_mb_emit_ldarg (mb, 0);
 	for (i = 0; i < sig->param_count; i++) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			mono_mb_emit_ldarg (mb, args_start + i);
 		} else {
 			ldind_op = mono_type_to_ldind (sig->params [i]);
@@ -1769,7 +1769,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	memcpy (csig, sig, mono_metadata_signature_size (sig));
 
 	for (i = 0; i < sig->param_count; i++) {
-		if (sig->params [i]->byref)
+		if (m_type_is_byref (sig->params [i]))
 			csig->params [i] = m_class_get_this_arg (mono_defaults.int_class);
 	}
 
@@ -1804,9 +1804,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		}
 		for (i = 0; i < sig->param_count; i++) {
 			entry_sig->params [pindex] = sig->params [i];
-			if (!sig->params [i]->byref) {
+			if (!m_type_is_byref (sig->params [i])) {
 				entry_sig->params [pindex] = mono_metadata_type_dup (NULL, entry_sig->params [pindex]);
-				entry_sig->params [pindex]->byref = 1;
+				entry_sig->params [pindex]->byref__ = 1;
 			}
 			pindex ++;
 		}
@@ -1852,7 +1852,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 			mono_mb_emit_ldloc (mb, args_var);
 			mono_mb_emit_icon (mb, TARGET_SIZEOF_VOID_P * i);
 			mono_mb_emit_byte (mb, CEE_ADD);
-			if (sig->params [i]->byref)
+			if (m_type_is_byref (sig->params [i]))
 				mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 			else
 				mono_mb_emit_ldarg_addr (mb, i + (sig->hasthis == TRUE));
@@ -1878,7 +1878,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 		else if (sig->ret->type != MONO_TYPE_VOID)
 			mono_mb_emit_ldloc_addr (mb, retval_var);
 		for (i = 0; i < sig->param_count; i++) {
-			if (sig->params [i]->byref)
+			if (m_type_is_byref (sig->params [i]))
 				mono_mb_emit_ldarg (mb, i + (sig->hasthis == TRUE));
 			else
 				mono_mb_emit_ldarg_addr (mb, i + (sig->hasthis == TRUE));
@@ -3218,10 +3218,10 @@ type_is_sharable (MonoType *type, gboolean allow_type_vars, gboolean allow_parti
 		return TRUE;
 
 	/* Allow non ref arguments if they are primitive types or enums (partial sharing). */
-	if (allow_partial && !type->byref && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))))
+	if (allow_partial && !m_type_is_byref (type) && (((type->type >= MONO_TYPE_BOOLEAN) && (type->type <= MONO_TYPE_R8)) || (type->type == MONO_TYPE_I) || (type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass))))
 		return TRUE;
 
-	if (allow_partial && !type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
+	if (allow_partial && !m_type_is_byref (type) && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
 		MonoGenericClass *gclass = type->data.generic_class;
 
 		if (gclass->context.class_inst && !mini_generic_inst_is_sharable (gclass->context.class_inst, allow_type_vars, allow_partial))
@@ -3723,9 +3723,9 @@ mini_class_get_context (MonoClass *klass)
 static MonoType*
 mini_get_basic_type_from_generic (MonoType *type)
 {
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
+	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
 		return type;
-	else if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+	else if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		MonoType *constraint = type->data.generic_param->gshared_constraint;
 		/* The gparam constraint encodes the type this gparam can represent */
 		if (!constraint) {
@@ -3753,9 +3753,9 @@ mini_type_get_underlying_type (MonoType *type)
 {
 	type = mini_native_type_replace_type (type);
 
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return mono_get_int_type ();
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
+	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) && mini_is_gsharedvt_type (type))
 		return type;
 	type = mini_get_basic_type_from_generic (mono_type_get_underlying_type (type));
 	switch (type->type) {
@@ -4054,7 +4054,7 @@ get_shared_type (MonoType *t, MonoType *type)
 {
 	MonoTypeEnum ttype;
 
-	if (!type->byref && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
+	if (!m_type_is_byref (type) && type->type == MONO_TYPE_GENERICINST && MONO_TYPE_ISSTRUCT (type)) {
 		ERROR_DECL (error);
 		MonoGenericClass *gclass = type->data.generic_class;
 		MonoGenericContext context;
@@ -4356,7 +4356,7 @@ mini_is_gsharedvt_type (MonoType *t)
 {
 	int i;
 
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return FALSE;
 	if ((t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && t->data.generic_param->gshared_constraint && t->data.generic_param->gshared_constraint->type == MONO_TYPE_VALUETYPE)
 		return TRUE;
@@ -4446,7 +4446,7 @@ is_variable_size (MonoType *t)
 {
 	int i;
 
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return FALSE;
 
 	if (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) {

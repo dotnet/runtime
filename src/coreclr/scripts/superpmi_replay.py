@@ -3,22 +3,19 @@
 # Licensed to the .NET Foundation under one or more agreements.
 # The .NET Foundation licenses this file to you under the MIT license.
 #
-##
-# Title               : superpmi_setup.py
+# Title               : superpmi_replay.py
 #
 # Notes:
 #
-# Script to run "superpmi replay" for various collections under various COMPlus_JitStressRegs value.
+# Script to run "superpmi replay" for various collections under various COMPlus_JitStressRegs values.
+#
 ################################################################################
 ################################################################################
-
 
 import argparse
-from os import path
 import os
-from os import listdir
 from coreclr_arguments import *
-from superpmi_setup import run_command
+from azdo_pipelines_util import run_command
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -86,40 +83,47 @@ def main(main_args):
     python_path = sys.executable
     cwd = os.path.dirname(os.path.realpath(__file__))
     coreclr_args = setup_args(main_args)
-    spmi_location = path.join(cwd, "artifacts", "spmi")
+    spmi_location = os.path.join(cwd, "artifacts", "spmi")
     log_directory = coreclr_args.log_directory
     platform_name = coreclr_args.platform
     os_name = "win" if platform_name.lower() == "windows" else "unix"
     arch_name = coreclr_args.arch
     host_arch_name = "x64" if arch_name.endswith("64") else "x86"
     os_name = "universal" if arch_name.startswith("arm") else os_name
-    jit_path = path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
+    jit_path = os.path.join(coreclr_args.jit_directory, 'clrjit_{}_{}_{}.dll'.format(os_name, arch_name, host_arch_name))
 
     print("Running superpmi.py download")
-    run_command([python_path, path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name,
+    run_command([python_path, os.path.join(cwd, "superpmi.py"), "download", "--no_progress", "-target_os", platform_name,
                  "-target_arch", arch_name, "-core_root", cwd, "-spmi_location", spmi_location], _exit_on_fail=True)
 
     failed_runs = []
     for jit_flag in jit_flags:
-        log_file = path.join(log_directory, 'superpmi_{}.log'.format(jit_flag.replace("=", "_")))
+        log_file = os.path.join(log_directory, 'superpmi_{}.log'.format(jit_flag.replace("=", "_")))
         print("Running superpmi.py replay for {}".format(jit_flag))
 
         _, _, return_code = run_command([
-            python_path, path.join(cwd, "superpmi.py"), "replay", "-core_root", cwd,
-            "-jitoption", jit_flag, "-jitoption", "TieredCompilation=0",
-            "-target_os", platform_name, "-target_arch", arch_name,
+            python_path,
+            os.path.join(cwd, "superpmi.py"),
+            "replay",
+            "-core_root", cwd,
+            "-jitoption", jit_flag,
+            "-jitoption", "TieredCompilation=0",
+            "-target_os", platform_name,
+            "-target_arch", arch_name,
             "-arch", host_arch_name,
-            "-jit_path", jit_path, "-spmi_location", spmi_location,
-            "-log_level", "debug", "-log_file", log_file])
+            "-jit_path", jit_path,
+            "-spmi_location", spmi_location,
+            "-log_level", "debug",
+            "-log_file", log_file])
 
         if return_code != 0:
             failed_runs.append("Failure in {}".format(log_file))
 
     # Consolidate all superpmi_*.logs in superpmi_platform_architecture.log
-    final_log_name = path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
+    final_log_name = os.path.join(log_directory, "superpmi_{}_{}.log".format(platform_name, arch_name))
     print("Consolidating final {}".format(final_log_name))
     with open(final_log_name, "a") as final_superpmi_log:
-        for superpmi_log in listdir(log_directory):
+        for superpmi_log in os.listdir(log_directory):
             if not superpmi_log.startswith("superpmi_Jit") or not superpmi_log.endswith(".log"):
                 continue
 
@@ -127,7 +131,7 @@ def main(main_args):
             final_superpmi_log.write("======================================================={}".format(os.linesep))
             final_superpmi_log.write("Contents from {}{}".format(superpmi_log, os.linesep))
             final_superpmi_log.write("======================================================={}".format(os.linesep))
-            with open(path.join(log_directory, superpmi_log), "r") as current_superpmi_log:
+            with open(os.path.join(log_directory, superpmi_log), "r") as current_superpmi_log:
                 contents = current_superpmi_log.read()
                 final_superpmi_log.write(contents)
 
