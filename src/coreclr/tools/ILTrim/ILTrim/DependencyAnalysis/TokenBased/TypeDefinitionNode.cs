@@ -47,6 +47,17 @@ namespace ILTrim.DependencyAnalysis
             }
 
             var type = _module.GetType(Handle);
+            if (type.IsDelegate)
+            {
+                var invokeMethod = type.GetMethod("Invoke", null) as EcmaMethod;
+                if (invokeMethod != null)
+                    yield return new(factory.MethodDefinition(_module, invokeMethod.Handle), "Delegate invoke");
+
+                var ctorMethod = type.GetMethod(".ctor", null) as EcmaMethod;
+                if (ctorMethod != null)
+                    yield return new(factory.MethodDefinition(_module, ctorMethod.Handle), "Delegate ctor");
+            }
+
             if (type.IsEnum)
             {
                 foreach (var field in typeDef.GetFields())
