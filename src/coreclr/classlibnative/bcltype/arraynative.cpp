@@ -1153,3 +1153,54 @@ FCIMPL2_IV(void, ArrayNative::InitializeArray, ArrayBase* pArrayRef, FCALLRuntim
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
+
+FCIMPL3(void, ArrayNative::GetSpanDataFrom, FCALLRuntimeFieldHandle structField, void** data, INT32* sizeInBytes)
+{
+    FCALL_CONTRACT;
+    struct
+    {
+        REFLECTFIELDREF refField;
+        OBJECTREF arrayMaybe;
+        BASEARRAYREF array;
+    } gc;
+    gc.refField = (REFLECTFIELDREF)ObjectToOBJECTREF(FCALL_RFH_TO_REFLECTFIELD(structField));
+    gc.arrayMaybe = NULL;
+    gc.array = NULL;
+    HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
+
+    FieldDesc* pField = (FieldDesc*)gc.refField->GetField();
+
+    // Only static fields supported
+    if (pField->IsStatic())
+        COMPlusThrow(kArgumentException);
+
+    gc.arrayMaybe = pField->GetStaticOBJECTREF();
+
+    // Verify the field is an array
+    if (gc.arrayMaybe->GetMethodTable()->IsArray())
+        COMPlusThrow(kArgumentException);
+
+    gc.arrayMaybe = (BASEARRAYREF)gc.arrayMaybe;
+
+    // Only support array's of primitives.
+    if (!CorTypeInfo::IsPrimitiveType(gc.array->GetArrayElementType())
+        && !gc.array->GetArrayElementTypeHandle().IsEnum())
+    {
+        COMPlusThrow(kArgumentException);
+    }
+
+    _ASSERTE(data != NULL && sizeInBytes != NULL);
+    SIZE_T compSize = gc.array->GetComponentSize();
+    SIZE_T elemCnt = gc.array->GetNumComponents();
+    SIZE_T totalSize = compSize * elemCnt;
+
+    *data = gc.array->GetDataPtr();
+    *sizeInBytes = (INT32)totalSize;
+
+#if BIGENDIAN
+    COMPlusThrow(kArgumentException);
+#endif
+
+   HELPER_METHOD_FRAME_END();
+}
+FCIMPLEND

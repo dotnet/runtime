@@ -45,6 +45,10 @@ public:
     // to a field.
     static FCDECL2_IV(void, InitializeArray, ArrayBase* vArrayRef, FCALLRuntimeFieldHandle structField);
 
+    // This method will acquire data to create a span from a TypeHandle
+    // to a field.
+    static FCDECL3(void, GetSpanDataFrom, FCALLRuntimeFieldHandle structField, void** data, INT32* sizeInBytes);
+
 private:
     // Helper for CreateInstance
     static void CheckElementType(TypeHandle elementType);
