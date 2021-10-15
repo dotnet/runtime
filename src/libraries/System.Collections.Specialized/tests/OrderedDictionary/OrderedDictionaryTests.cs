@@ -611,11 +611,11 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void KeysAndValuesPropertiesNotSupportWritableIList(bool isKeysProperty)
+        public void KeysAndValuesPropertiesNotSupportWritableIList(bool testKeysProperty)
         {
             var orderedDictionary = new OrderedDictionary();
             orderedDictionary.Add("foo", "bar");
-            IList list = (IList)(isKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
+            IList list = (IList)(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
 
             Assert.Throws<NotSupportedException>(() =>
             {
