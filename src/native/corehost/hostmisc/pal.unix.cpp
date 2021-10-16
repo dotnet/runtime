@@ -595,7 +595,7 @@ pal::string_t pal::get_current_os_rid_platform()
             }
             else
             {
-                // for 10.x the significant relases are actully the second digit
+                // for 10.x the significant releases are actually the second digit
                 pos = strchr(pos + 1, '.');
 
                 if (pos != NULL)
