@@ -231,8 +231,8 @@ namespace System.IO
         public static void SetLastWriteTime(string path, DateTime lastWriteTime)
             => FileSystem.SetLastWriteTime(Path.GetFullPath(path), lastWriteTime, false);
 
-        public static void SetLastWriteTime(SafeFileHandle handle, DateTime lastWriteTime)
-            => FileSystem.SetLastWriteTime(handle, lastWriteTime);
+        public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTime lastWriteTime)
+            => FileSystem.SetLastWriteTime(fileHandle, lastWriteTime);
 
         public static void SetLastWriteTimeUtc(string path, DateTime lastWriteTimeUtc)
             => FileSystem.SetLastWriteTime(Path.GetFullPath(path), GetUtcDateTimeOffset(lastWriteTimeUtc), false);
