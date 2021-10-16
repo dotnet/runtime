@@ -53,11 +53,13 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    if (ShouldFlush(writer, ref state))
+                    if (!ShouldFlush(writer, ref state))
                     {
-                        state.Current.EnumeratorIndex = ++index;
-                        return false;
+                        continue;
                     }
+
+                    state.Current.EnumeratorIndex = ++index;
+                    return false;
                 }
             }
 
