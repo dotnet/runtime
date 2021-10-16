@@ -3614,7 +3614,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     GenTree* fieldTokenNode = impStackTop(0).val;
 
     //
-    // Verify that the field token is known and valid.  Note that It's also
+    // Verify that the field token is known and valid.  Note that it's also
     // possible for the token to come from reflection, in which case we cannot do
     // the optimization and must therefore revert to calling the helper.  You can
     // see an example of this in bvt\DynIL\initarray2.exe (in Main).
@@ -3629,7 +3629,6 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 
     // Strip helper call away
     fieldTokenNode = fieldTokenNode->AsCall()->gtCallArgs->GetNode();
-
     if (fieldTokenNode->gtOper == GT_IND)
     {
         fieldTokenNode = fieldTokenNode->AsOp()->gtOp1;
@@ -3655,8 +3654,14 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 
     const unsigned totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
 
+    // Limit to primitive or enum type - see ArrayNative::GetSpanDataFrom()
     CORINFO_CLASS_HANDLE targetElemHnd  = sig->sigInst.methInst[0];
-    const unsigned       targetElemSize = info.compCompHnd->getClassSize(targetElemHnd);
+    if (info.compCompHnd->getTypeForPrimitiveValueClass(targetElemHnd) == CORINFO_TYPE_UNDEF)
+    {
+        return nullptr;
+    }
+
+    const unsigned targetElemSize = info.compCompHnd->getClassSize(targetElemHnd);
     assert(targetElemSize != 0);
 
     const unsigned count = totalFieldSize / targetElemSize;
@@ -3672,15 +3677,17 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
     }
 
     //
-    // Ready to do the work
+    // Ready to commit to the work
     //
 
     impPopStack();
 
+    // Turn count and pointer value into constants.
     GenTree* spanElemCount = gtNewIconNode(count, TYP_INT);
     GenTree* spanPointerField = gtNewIconNode((ssize_t)data, TYP_I_IMPL);
 
-    unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("Span<T> for StackAlloc<T>"));
+    // Construct ReadOnlySpan<T> to return.
+    unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
     lvaSetStruct(spanTTemp, sig->retTypeClass, false);
     GenTree* addrOfSpanTTempPointer = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
     GenTree* dereffedSpanTTempPointer = gtNewOperNode(GT_IND, TYP_BYREF, addrOfSpanTTempPointer);
