@@ -51,8 +51,7 @@
                                      System.ServiceModel.Duplex;
                                      System.ServiceModel.Http;
                                      System.ServiceModel.NetTcp;
-                                     System.ServiceModel.Security;
-                                     System.Web.Services.Description"
+                                     System.ServiceModel.Security"
                       Version="$(SystemServiceModelPrimitivesVersion)" />
   </ItemGroup>
 
