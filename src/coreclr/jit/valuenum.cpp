@@ -6786,8 +6786,9 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
             for (Compiler::LoopDsc::FieldHandleSet::KeyIterator ki = fieldsMod->Begin(); !ki.Equal(fieldsMod->End());
                  ++ki)
             {
-                CORINFO_FIELD_HANDLE fldHnd   = ki.Get();
-                ValueNum             fldHndVN = vnStore->VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
+                CORINFO_FIELD_HANDLE fldHnd    = ki.Get();
+                ValueNum             fldHndVN  = vnStore->VNForHandle(ssize_t(fldHnd), GTF_ICON_FIELD_HDL);
+                var_types            fieldType = JITtype2varType(info.compCompHnd->getFieldType(fldHnd));
 
 #ifdef DEBUG
                 if (verbose)
@@ -6797,9 +6798,8 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                     printf("     VNForHandle(%s) is " FMT_VN "\n", fldName, fldHndVN);
                 }
 #endif // DEBUG
-
                 newMemoryVN =
-                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, TYP_REF));
+                    vnStore->VNForMapStore(TYP_REF, newMemoryVN, fldHndVN, vnStore->VNForExpr(entryBlock, fieldType));
             }
         }
         // Now do the array maps.
@@ -6810,11 +6810,11 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                  !ki.Equal(elemTypesMod->End()); ++ki)
             {
                 CORINFO_CLASS_HANDLE elemClsHnd = ki.Get();
+                var_types            elemTyp    = DecodeElemType(elemClsHnd);
 
 #ifdef DEBUG
                 if (verbose)
                 {
-                    var_types elemTyp = DecodeElemType(elemClsHnd);
                     // If a valid class handle is given when the ElemType is set, DecodeElemType will
                     // return TYP_STRUCT, and elemClsHnd is that handle.
                     // Otherwise, elemClsHnd is NOT a valid class handle, and is the encoded var_types value.
@@ -6829,9 +6829,9 @@ ValueNum Compiler::fgMemoryVNForLoopSideEffects(MemoryKind  memoryKind,
                 }
 #endif // DEBUG
 
-                ValueNum elemTypeVN = vnStore->VNForHandle(ssize_t(elemClsHnd), GTF_ICON_CLASS_HDL);
-                ValueNum uniqueVN   = vnStore->VNForExpr(entryBlock, TYP_REF);
-                newMemoryVN         = vnStore->VNForMapStore(TYP_REF, newMemoryVN, elemTypeVN, uniqueVN);
+                ValueNum elemTypeEqVN = vnStore->VNForHandle(ssize_t(elemClsHnd), GTF_ICON_CLASS_HDL);
+                ValueNum elemTypeMap  = vnStore->VNForExpr(entryBlock, elemTyp);
+                newMemoryVN           = vnStore->VNForMapStore(TYP_REF, newMemoryVN, elemTypeEqVN, elemTypeMap);
             }
         }
     }
