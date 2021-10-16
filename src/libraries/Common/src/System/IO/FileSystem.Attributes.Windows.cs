@@ -112,17 +112,6 @@ namespace System.IO
             return errorCode;
         }
 
-        /// <summary>
-        /// Returns 0 on success, otherwise a Win32 error code.  Note that
-        /// classes should use -1 as the uninitialized state for dataInitialized.
-        /// </summary>
-        /// <param name="handle">The file handle from which the file attribute information will be filled.</param>
-        /// <param name="data">A struct that will contain the attribute information.</param>
-        /// <param name="returnErrorOnNotFound">Return the error code for not found errors?</param>
-        internal static int FillAttributeInfo(SafeFileHandle handle,
-            ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data, bool returnErrorOnNotFound)
-            => FillAttributeInfo(handle.Path, ref data, returnErrorOnNotFound);
-
         internal static bool IsPathUnreachableError(int errorCode)
         {
             switch (errorCode)
