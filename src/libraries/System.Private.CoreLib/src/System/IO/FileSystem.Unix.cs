@@ -552,14 +552,50 @@ namespace System.IO
             return attributes;
         }
 
+        public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                return GetAttributes(path);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
+        }
+
         public static void SetAttributes(string fullPath, FileAttributes attributes)
         {
             new FileInfo(fullPath, null).Attributes = attributes;
         }
 
+        public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                SetAttributes(path, attributes);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
+        }
+
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
             return new FileInfo(fullPath, null).CreationTimeUtc;
+        }
+
+        public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                return GetCreationTime(path);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -571,9 +607,33 @@ namespace System.IO
             info.CreationTimeCore = time;
         }
 
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                SetCreationTime(path, time, false);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
+        }
+
         public static DateTimeOffset GetLastAccessTime(string fullPath)
         {
             return new FileInfo(fullPath, null).LastAccessTimeUtc;
+        }
+
+        public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                return GetLastAccessTime(path);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
         }
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -585,9 +645,33 @@ namespace System.IO
             info.LastAccessTimeCore = time;
         }
 
+        public static void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                GetLastAccessTime(path, time, false);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
+        }
+
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
             return new FileInfo(fullPath, null).LastWriteTimeUtc;
+        }
+
+        public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                return GetLastWriteTime(path);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
         }
 
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
@@ -597,6 +681,18 @@ namespace System.IO
                 (FileSystemInfo)new FileInfo(fullPath, null);
 
             info.LastWriteTimeCore = time;
+        }
+
+        public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
+        {
+            if (fileHandle.Path is { } path)
+            {
+                SetLastWriteTime(path, time, false);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+            }
         }
 
         public static string[] GetLogicalDrives()

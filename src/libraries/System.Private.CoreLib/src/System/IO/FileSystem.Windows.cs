@@ -110,21 +110,35 @@ namespace System.IO
         public static FileAttributes GetAttributes(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
-            if (errorCode != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+            int errorCode = FillAttributeInfo(fullPath, ref data, true);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath)
+                : (FileAttributes)data.dwFileAttributes;
+        }
 
-            return (FileAttributes)data.dwFileAttributes;
+        public static FileAttributes GetAttributes(SafeFileHandle handle)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FillAttributeInfo(handle, ref data, true);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
+                : (FileAttributes)data.dwFileAttributes;
         }
 
         public static DateTimeOffset GetCreationTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
-            if (errorCode != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+            int errorCode = FillAttributeInfo(fullPath, ref data, false);
+            return errorCode != 0 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath) : data.ftCreationTime.ToDateTimeOffset();
+        }
 
-            return data.ftCreationTime.ToDateTimeOffset();
+        public static DateTimeOffset GetCreationTime(SafeFileHandle handle)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FillAttributeInfo(handle, ref data, false);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
+                : data.ftCreationTime.ToDateTimeOffset();
         }
 
         public static FileSystemInfo GetFileSystemInfo(string fullPath, bool asDirectory)
@@ -138,20 +152,36 @@ namespace System.IO
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
             int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
-            if (errorCode != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath)
+                : data.ftLastAccessTime.ToDateTimeOffset();
+        }
 
-            return data.ftLastAccessTime.ToDateTimeOffset();
+        public static DateTimeOffset GetLastAccessTime(SafeFileHandle handle)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FillAttributeInfo(handle, ref data, false);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
+                : data.ftLastAccessTime.ToDateTimeOffset();
         }
 
         public static DateTimeOffset GetLastWriteTime(string fullPath)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: false);
-            if (errorCode != 0)
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+            int errorCode = FillAttributeInfo(fullPath, ref data, false);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath)
+                : data.ftLastWriteTime.ToDateTimeOffset();
+        }
 
-            return data.ftLastWriteTime.ToDateTimeOffset();
+        public static DateTimeOffset GetLastWriteTime(SafeFileHandle handle)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FillAttributeInfo(handle, ref data, false);
+            return errorCode != 0
+                ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, handle.Path)
+                : data.ftLastWriteTime.ToDateTimeOffset();
         }
 
         public static void MoveDirectory(string sourceFullPath, string destFullPath)
@@ -406,17 +436,31 @@ namespace System.IO
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
         {
-            if (!Interop.Kernel32.SetFileAttributes(fullPath, (int)attributes))
+            if (Interop.Kernel32.SetFileAttributes(fullPath, (int)attributes))
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
-                    throw new ArgumentException(SR.Arg_InvalidFileAttrs, nameof(attributes));
-                throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+                return;
+            }
+
+            int errorCode = Marshal.GetLastWin32Error();
+            if (errorCode == Interop.Errors.ERROR_INVALID_PARAMETER)
+                throw new ArgumentException(SR.Arg_InvalidFileAttrs, nameof(attributes));
+            throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
+        }
+
+        public static void SetAttributes(SafeFileHandle handle, FileAttributes attributes)
+        {
+            if (handle.Path is { } path)
+            {
+                SetAttributes(path, attributes);
+            }
+            else
+            {
+                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
             }
         }
 
-        // Default values indicate "no change".  Use defaults so that we don't force callsites to be aware of the default values
-        private static unsafe void SetFileTime(
+        // Default values indicate "no change". Use defaults so that we don't force callsites to be aware of the default values
+        private static void SetFileTime(
             string fullPath,
             bool asDirectory,
             long creationTime = -1,
@@ -425,32 +469,49 @@ namespace System.IO
             long changeTime = -1,
             uint fileAttributes = 0)
         {
-            using (SafeFileHandle handle = OpenHandle(fullPath, asDirectory))
-            {
-                var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
-                {
-                    CreationTime = creationTime,
-                    LastAccessTime = lastAccessTime,
-                    LastWriteTime = lastWriteTime,
-                    ChangeTime = changeTime,
-                    FileAttributes = fileAttributes
-                };
+            using SafeFileHandle handle = OpenHandle(fullPath, asDirectory);
+            SetFileTime(handle, creationTime, lastAccessTime, lastWriteTime, changeTime, fileAttributes);
+        }
 
-                if (!Interop.Kernel32.SetFileInformationByHandle(handle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
-                {
-                    throw Win32Marshal.GetExceptionForLastWin32Error(fullPath);
-                }
+        private static unsafe void SetFileTime(
+            SafeFileHandle handle, long creationTime = -1,
+            long lastAccessTime = -1,
+            long lastWriteTime = -1,
+            long changeTime = -1,
+            uint fileAttributes = 0)
+        {
+            var basicInfo = new Interop.Kernel32.FILE_BASIC_INFO()
+            {
+                CreationTime = creationTime,
+                LastAccessTime = lastAccessTime,
+                LastWriteTime = lastWriteTime,
+                ChangeTime = changeTime,
+                FileAttributes = fileAttributes
+            };
+
+            if (!Interop.Kernel32.SetFileInformationByHandle(handle, Interop.Kernel32.FileBasicInfo, &basicInfo, (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
+            {
+                throw Win32Marshal.GetExceptionForLastWin32Error(handle.Path);
             }
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-           => SetFileTime(fullPath, asDirectory, creationTime: time.ToFileTime());
+           => SetFileTime(fullPath, asDirectory, time.ToFileTime());
+
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time) =>
+            SetFileTime(fileHandle, time.ToFileTime());
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
            => SetFileTime(fullPath, asDirectory, lastAccessTime: time.ToFileTime());
 
+        public static void SetLastAccessTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => SetFileTime(fileHandle, lastAccessTime: time.ToFileTime());
+
         public static void SetLastWriteTime(string fullPath, DateTimeOffset time, bool asDirectory)
            => SetFileTime(fullPath, asDirectory, lastWriteTime: time.ToFileTime());
+
+        public static void SetLastWriteTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => SetFileTime(fileHandle, lastWriteTime: time.ToFileTime());
 
         public static string[] GetLogicalDrives()
             => DriveInfoInternal.GetLogicalDrives();
