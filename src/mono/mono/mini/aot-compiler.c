@@ -6925,6 +6925,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			case MONO_PATCH_INFO_FIELD:
 				encode_field_info (acfg, (MonoClassField *)template_->data, p, &p);
 				break;
+			case MONO_PATCH_INFO_METHOD:
+				encode_method_ref (acfg, (MonoMethod*)template_->data, p, &p);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;

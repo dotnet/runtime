@@ -2798,9 +2798,17 @@ mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type)
 	case MONO_RGCTX_INFO_NULLABLE_CLASS_UNBOX:
 	case MONO_RGCTX_INFO_LOCAL_OFFSET:
 		return MONO_PATCH_INFO_CLASS;
+	case MONO_RGCTX_INFO_CLASS_FIELD:
 	case MONO_RGCTX_INFO_FIELD_OFFSET:
 		return MONO_PATCH_INFO_FIELD;
+	case MONO_RGCTX_INFO_METHOD:
+	case MONO_RGCTX_INFO_METHOD_RGCTX:
+	case MONO_RGCTX_INFO_METHOD_FTNDESC:
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER:
+	case MONO_RGCTX_INFO_GSHAREDVT_OUT_WRAPPER_VIRT:
+		return MONO_PATCH_INFO_METHOD;
 	default:
+		printf ("%d\n", info_type);
 		g_assert_not_reached ();
 		return (MonoJumpInfoType)-1;
 	}

@@ -2576,6 +2576,9 @@ mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean i
 }
 
 static MonoInst*
+emit_get_gsharedvt_info (MonoCompile *cfg, gpointer data, MonoRgctxInfoType rgctx_type);
+
+static MonoInst*
 emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *entry)
 {
 	MonoInst *call;
@@ -2584,8 +2587,8 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	EMIT_NEW_AOTCONST (cfg, slot_ins, MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 
 	// Can't add basic blocks during decompose/interp entry mode etc.
-	// FIXME: Add a fastpath for in_mrgctx
-	if (cfg->after_method_to_ir || cfg->gsharedvt || cfg->interp_entry_only || entry->in_mrgctx) {
+	// Can't add basic blocks to the gsharedvt init block either
+	if (cfg->after_method_to_ir || entry->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO || cfg->interp_entry_only) {
 		MonoInst *args [2] = { rgctx, slot_ins };
 		if (entry->in_mrgctx)
 			call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
@@ -2610,13 +2613,19 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	NEW_BBLOCK (cfg, end_bb);
 	NEW_BBLOCK (cfg, slowpath_bb);
 
-	rgctx_reg = alloc_preg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, rgctx_reg, rgctx->dreg, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
-	// FIXME: Avoid this check by allocating the table when the vtable is created etc.
-	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+	if (entry->in_mrgctx) {
+		rgctx_reg = rgctx->dreg;
+	} else {
+		rgctx_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, rgctx_reg, rgctx->dreg, MONO_STRUCT_OFFSET (MonoVTable, runtime_generic_context));
+		// FIXME: Avoid this check by allocating the table when the vtable is created etc.
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rgctx_reg, 0);
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
+	}
 
-	int table_size = mono_class_rgctx_get_array_size (0, FALSE);
+	int table_size = mono_class_rgctx_get_array_size (0, entry->in_mrgctx);
+	if (entry->in_mrgctx)
+		table_size -= MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (TARGET_SIZEOF_VOID_P);
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, slot_ins->dreg, table_size - 1);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBGE, slowpath_bb);
 
@@ -2627,7 +2636,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, addr_reg, rgctx_reg);
 	EMIT_NEW_BIALU (cfg, ins, OP_PADD, addr_reg, addr_reg, shifted_slot_reg);
 	int val_reg = alloc_preg (cfg);
-	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, addr_reg, TARGET_SIZEOF_VOID_P);
+	MONO_EMIT_NEW_LOAD_MEMBASE (cfg, val_reg, addr_reg, TARGET_SIZEOF_VOID_P + (entry->in_mrgctx ? MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT : 0));
 
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, val_reg, 0);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, slowpath_bb);
@@ -2641,7 +2650,10 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	slowpath_bb->out_of_line = TRUE;
 
 	MonoInst *args[2] = { rgctx, slot_ins };
-	call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
+	if (entry->in_mrgctx)
+		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
+	else
+		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
 	EMIT_NEW_UNALU (cfg, ins, OP_MOVE, res_reg, call->dreg);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
@@ -2693,6 +2705,10 @@ mini_emit_get_rgctx_klass (MonoCompile *cfg, int context_used,
 			g_assert_not_reached ();
 		}
 	}
+
+	// Its cheaper to load these from the gsharedvt info struct
+	if (cfg->llvm_only && cfg->gsharedvt)
+		return mini_emit_get_gsharedvt_info_klass (cfg, klass, rgctx_type);
 
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_CLASS, klass, rgctx_type);
 
@@ -2789,6 +2805,10 @@ emit_get_rgctx_method (MonoCompile *cfg, int context_used,
 			g_assert_not_reached ();
 		}
 	} else {
+		// Its cheaper to load these from the gsharedvt info struct
+		if (cfg->llvm_only && cfg->gsharedvt)
+			return emit_get_gsharedvt_info (cfg, cmethod, rgctx_type);
+
 		MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_METHODCONST, cmethod, rgctx_type);
 
 		return emit_rgctx_fetch (cfg, context_used, entry);
@@ -2799,6 +2819,10 @@ static MonoInst*
 emit_get_rgctx_field (MonoCompile *cfg, int context_used,
 					  MonoClassField *field, MonoRgctxInfoType rgctx_type)
 {
+	// Its cheaper to load these from the gsharedvt info struct
+	if (cfg->llvm_only && cfg->gsharedvt)
+		return emit_get_gsharedvt_info (cfg, field, rgctx_type);
+
 	MonoJumpInfoRgctxEntry *entry = mono_patch_info_rgctx_entry_new (cfg->mempool, cfg->method, context_used_is_mrgctx (cfg, context_used), MONO_PATCH_INFO_FIELD, field, rgctx_type);
 
 	return emit_rgctx_fetch (cfg, context_used, entry);
