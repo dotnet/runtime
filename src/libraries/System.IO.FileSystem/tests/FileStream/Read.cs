@@ -15,7 +15,7 @@ namespace System.IO.Tests
                 new FileStream(Path.GetPathRoot(Directory.GetCurrentDirectory()), FileMode.Open, FileAccess.Read));
         }
 
-        [ConditionalFact(nameof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/45954", TestPlatforms.Browser)]
         public void NoInt32OverflowInTheBufferingLogic()
         {
