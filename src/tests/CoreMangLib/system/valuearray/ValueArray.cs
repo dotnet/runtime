@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
 
 public class Program
 {
@@ -17,9 +18,45 @@ public class Program
         TestGCRootsRef();
         TestGCRootsStruct();
         TestListT();
+        TestAsField();
 
         Console.WriteLine("DONE");
         return returnVal;
+    }
+
+    class QuadTree
+    {
+        private ValueArray<QuadTree, object[,,,]> _nodes;
+
+        public ValueArray<QuadTree, object[,,,]> Nodes { get => _nodes; }
+
+        public QuadTree(int depth)
+        {
+            if (depth > 0)
+            {
+                for (int i = 0; i < _nodes.Length; i++)
+                {
+                    _nodes[i] = new QuadTree(depth - 1);
+                }
+            }
+        }
+
+        public int CountNodes()
+        {
+            int val = 1;
+            for (int i = 0; i < Nodes.Length; i++)
+            {
+                val += Nodes[i]?.CountNodes() ?? 0;
+            }
+
+            return val;
+        }
+    }
+
+    private static void TestAsField()
+    {
+        QuadTree tree = new QuadTree(10);
+        Test(10, tree.CountNodes());
     }
 
     private unsafe static void TestSizeOf()
