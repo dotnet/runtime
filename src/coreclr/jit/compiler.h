@@ -4434,6 +4434,7 @@ protected:
                                      bool                 readonlyCall,
                                      CorInfoIntrinsics    intrinsicID);
     GenTree* impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig);
+    GenTree* impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig);
 
     GenTree* impKeepAliveIntrinsic(GenTree* objToKeepAlive);
 
