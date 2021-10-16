@@ -576,6 +576,7 @@ enum GenTreeFlags : unsigned int
                                               // Requires an overflow check. Use gtOverflow(Ex)() to check this flag.
 
     GTF_DIV_BY_CNS_OPT          = 0x80000000, // GT_DIV -- Uses the division by constant optimization to compute this division
+    GTF_SAFE_DIV                = 0x20000000, // GT_DIV -- Uses the division that never throws DividedByZero or Overflow exceptions
 
     GTF_ARR_BOUND_INBND         = 0x80000000, // GT_ARR_BOUNDS_CHECK -- have proved this check is always in-bounds
 

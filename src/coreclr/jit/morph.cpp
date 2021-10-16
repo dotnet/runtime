@@ -12243,6 +12243,7 @@ DONE_MORPHING_CHILDREN:
                 {
                     // Update side-effects as DIV itself doesn't need GTF_EXCEPT now
                     tree->SetAllEffectsFlags(op1, op2);
+                    tree->gtFlags |= GTF_SAFE_DIV;
                 }
             }
             break;

@@ -2498,7 +2498,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
     genConsumeOperands(tree);
 
     // Floating point divide never raises an exception
-    if (!varTypeIsFloating(targetType) && (tree->gtFlags & GTF_EXCEPT))
+    if (!varTypeIsFloating(targetType) && !(tree->gtFlags & GTF_SAFE_DIV))
     {
         GenTree* divisorOp = tree->gtGetOp2();
         emitAttr size      = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
