@@ -32,6 +32,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using InteropServicesCallingConvention = System.Runtime.InteropServices.CallingConvention;
@@ -139,7 +140,7 @@ namespace System.Reflection
 
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class RuntimeMethodInfo : MethodInfo
+    internal sealed partial class RuntimeMethodInfo : MethodInfo
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
@@ -148,6 +149,22 @@ namespace System.Reflection
 #pragma warning restore 649
 #endregion
         private string? toString;
+        private RuntimeType[]? parameterTypes;
+        private InvocationFlags invocationFlags;
+
+        internal InvocationFlags InvocationFlags
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                InvocationFlags flags = invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
+                {
+                    flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
+                }
+                return flags;
+            }
+        }
 
         public override Module Module
         {
@@ -326,6 +343,27 @@ namespace System.Reflection
             return MonoMethodInfo.GetParametersInfo(mhandle, this).Length;
         }
 
+        private RuntimeType[] ArgumentTypes
+        {
+            get
+            {
+                if (parameterTypes != null)
+                {
+                    return parameterTypes;
+                }
+
+                ParameterInfo[] src = GetParametersInternal();
+                RuntimeType[] dest = new RuntimeType[src.Length];
+                for (int i = 0; i < dest.Length; ++i)
+                {
+                    dest[i] = (RuntimeType)src[i].ParameterType;
+                }
+
+                Interlocked.CompareExchange(ref parameterTypes, dest, null);
+                return dest;
+            }
+        }
+
         /*
          * InternalInvoke() receives the parameters correctly converted by the
          * binder to match the types of the method signature.
@@ -333,33 +371,11 @@ namespace System.Reflection
          * Exceptions thrown by the called method propagate normally.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object? InternalInvoke(object? obj, object?[]? parameters, out Exception? exc);
+        internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> parameters)
         {
-            if (!IsStatic)
-            {
-                if (!DeclaringType.IsInstanceOfType(obj))
-                {
-                    if (obj == null)
-                        throw new TargetException("Non-static method requires a target.");
-                    else
-                        throw new TargetException("Object does not match target type.");
-                }
-            }
-
-            if (binder == null)
-                binder = Type.DefaultBinder;
-
-            /*Avoid allocating an array every time*/
-            ParameterInfo[] pinfo = GetParametersInternal();
-            ConvertValues(binder, parameters, pinfo, culture, invokeAttr);
-
-            if (ContainsGenericParameters)
-                throw new InvalidOperationException("Late bound operations cannot be performed on types or methods for which ContainsGenericParameters is true.");
-
             Exception? exc;
             object? o = null;
 
@@ -758,7 +774,7 @@ namespace System.Reflection
     }
 #region Sync with _MonoReflectionMethod in object-internals.h
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class RuntimeConstructorInfo : ConstructorInfo
+    internal sealed partial class RuntimeConstructorInfo : ConstructorInfo
     {
 #pragma warning disable 649
         internal IntPtr mhandle;
@@ -767,6 +783,22 @@ namespace System.Reflection
 #pragma warning restore 649
 #endregion
         private string? toString;
+        private RuntimeType[]? parameterTypes;
+        private InvocationFlags invocationFlags;
+
+        internal InvocationFlags InvocationFlags
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                InvocationFlags flags = invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
+                {
+                    flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
+                }
+                return flags;
+            }
+        }
 
         public override Module Module
         {
@@ -802,51 +834,55 @@ namespace System.Reflection
             return pi == null ? 0 : pi.Length;
         }
 
+        private RuntimeType[] ArgumentTypes
+        {
+            get
+            {
+                if (parameterTypes != null)
+                {
+                    return parameterTypes;
+                }
+
+                ParameterInfo[] src = GetParametersInternal();
+                RuntimeType[] dest = new RuntimeType[src.Length];
+                for (int i = 0; i < dest.Length; ++i)
+                {
+                    dest[i] = (RuntimeType)src[i].ParameterType;
+                }
+
+                Interlocked.CompareExchange(ref parameterTypes, dest, null);
+                return dest;
+            }
+        }
+
+        private void InvokeClassConstructor()
+        {
+            // [TODO] Mechanism for invoking class constructor
+            // See https://github.com/dotnet/runtime/issues/40351
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
+        {
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            return InternalInvoke(obj, arguments, wrapExceptions);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
+        {
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            return InternalInvoke(null, arguments, wrapExceptions)!;
+        }
+
         /*
          * InternalInvoke() receives the parameters correctly converted by the binder
          * to match the types of the method signature.
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern object InternalInvoke(object? obj, object?[]? parameters, out Exception exc);
+        internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
 
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-        {
-            if (obj == null)
-            {
-                if (!IsStatic)
-                    throw new TargetException("Instance constructor requires a target");
-            }
-            else if (!DeclaringType.IsInstanceOfType(obj))
-            {
-                throw new TargetException("Constructor does not match target type");
-            }
-
-            return DoInvoke(obj, invokeAttr, binder, parameters, culture);
-        }
-
-        private object DoInvoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-        {
-            if (binder == null)
-                binder = Type.DefaultBinder;
-
-            ParameterInfo[] pinfo = MonoMethodInfo.GetParametersInfo(mhandle, this);
-
-            RuntimeMethodInfo.ConvertValues(binder, parameters, pinfo, culture, invokeAttr);
-
-            if (obj == null && DeclaringType.ContainsGenericParameters)
-                throw new MemberAccessException("Cannot create an instance of " + DeclaringType + " because Type.ContainsGenericParameters is true.");
-
-            if ((invokeAttr & BindingFlags.CreateInstance) != 0 && DeclaringType.IsAbstract)
-            {
-                throw new MemberAccessException(string.Format("Cannot create an instance of {0} because it is an abstract class", DeclaringType));
-            }
-
-            return InternalInvoke(obj, parameters, (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)!;
-        }
-
-        public object? InternalInvoke(object? obj, object?[]? parameters, bool wrapExceptions)
+        private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
         {
             Exception exc;
             object? o = null;
@@ -879,13 +915,6 @@ namespace System.Reflection
                 throw exc;
 
             return obj == null ? o : null;
-        }
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-        {
-            return DoInvoke(null, invokeAttr, binder, parameters, culture);
         }
 
         public override RuntimeMethodHandle MethodHandle

@@ -4516,8 +4516,8 @@ mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **ex
 	return do_try_exec_main (method, args, exc);
 }
 
-/** invoke_array_extract_argument:
- * @params: array of arguments to the method.
+/** invoke_span_extract_argument:
+ * @params: span of object arguments to the method.
  * @i: the index of the argument to extract.
  * @t: ith type from the method signature.
  * @has_byref_nullables: outarg - TRUE if method expects a byref nullable argument
@@ -4529,7 +4529,7 @@ mono_runtime_try_exec_main (MonoMethod *method, MonoArray *args, MonoObject **ex
  * On failure sets @error and returns NULL.
  */
 static gpointer
-invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject **pa_obj, gboolean* has_byref_nullables, MonoError *error)
+invoke_span_extract_argument (MonoSpanOfObjects *params_span, int i, MonoType *t, MonoObject **pa_obj, gboolean* has_byref_nullables, MonoError *error)
 {
 	MonoType *t_orig = t;
 	gpointer result = NULL;
@@ -4554,17 +4554,17 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 			case MONO_TYPE_VALUETYPE:
 				if (t->type == MONO_TYPE_VALUETYPE && mono_class_is_nullable (mono_class_from_mono_type_internal (t_orig))) {
 					/* The runtime invoke wrapper needs the original boxed vtype, it does handle byref values as well. */
-					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
 					if (m_type_is_byref (t))
 						*has_byref_nullables = TRUE;
 				} else {
 					/* MS seems to create the objects if a null is passed in */
 					gboolean was_null = FALSE;
-					if (!mono_array_get_internal (params, MonoObject*, i)) {
+					if (!mono_span_get (params_span, MonoObject*, i)) {
 						MonoObject *o = mono_object_new_checked (mono_class_from_mono_type_internal (t_orig), error);
 						return_val_if_nok (error, NULL);
-						mono_array_setref_internal (params, i, o); 
+						mono_span_setref (params_span, i, o);
 						was_null = TRUE;
 					}
 
@@ -4576,15 +4576,15 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 						 * object, pass that to the callee, and replace the original
 						 * boxed object in the arg array with the copy.
 						 */
-						MonoObject *orig = mono_array_get_internal (params, MonoObject*, i);
+						MonoObject *orig = mono_span_get (params_span, MonoObject*, i);
 						MonoObject *copy = mono_value_box_checked (orig->vtable->klass, mono_object_unbox_internal (orig), error);
 						return_val_if_nok (error, NULL);
-						mono_array_setref_internal (params, i, copy);
+						mono_span_setref (params_span, i, copy);
 					}
-					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = mono_object_unbox_internal (*pa_obj);
 					if (!m_type_is_byref (t) && was_null)
-						mono_array_setref_internal (params, i, NULL);
+						mono_span_setref (params_span, i, NULL);
 				}
 				break;
 			case MONO_TYPE_STRING:
@@ -4593,10 +4593,10 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 			case MONO_TYPE_ARRAY:
 			case MONO_TYPE_SZARRAY:
 				if (m_type_is_byref (t)) {
-					result = mono_array_addr_internal (params, MonoObject*, i);
+					result = mono_span_addr (params_span, MonoObject*, i);
 					// FIXME: I need to check this code path
 				} else {
-					*pa_obj = mono_array_get_internal (params, MonoObject*, i);
+					*pa_obj = mono_span_get (params_span, MonoObject*, i);
 					result = *pa_obj;
 				}
 				break;
@@ -4610,7 +4610,7 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, MonoObject
 				MonoObject *arg;
 
 				/* The argument should be an IntPtr */
-				arg = mono_array_get_internal (params, MonoObject*, i);
+				arg = mono_span_get (params_span, MonoObject*, i);
 				if (arg == NULL) {
 					result = NULL;
 				} else {
@@ -4683,93 +4683,10 @@ mono_runtime_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	return res;
 }
 
-/**
- * mono_runtime_invoke_array_checked:
- * \param method method to invoke
- * \param obj object instance
- * \param params arguments to the method
- * \param error set on failure.
- * Invokes the method represented by \p method on the object \p obj.
- *
- * \p obj is the \c this pointer, it should be NULL for static
- * methods, a \c MonoObject* for object instances and a pointer to
- * the value type for value types.
- *
- * The \p params array contains the arguments to the method with the
- * same convention: \c MonoObject* pointers for object instances and
- * pointers to the value type otherwise. The \c _invoke_array
- * variant takes a C# \c object[] as the \p params argument (\c MonoArray*):
- * in this case the value types are boxed inside the
- * respective reference representation.
- *
- * From unmanaged code you'll usually use the
- * mono_runtime_invoke_checked() variant.
- *
- * Note that this function doesn't handle virtual methods for
- * you, it will exec the exact method you pass: we still need to
- * expose a function to lookup the derived class implementation
- * of a virtual method (there are examples of this in the code,
- * though).
- *
- * On failure or exception, \p error will be set. In that case, you
- * can't use the \c MonoObject* result from the function.
- *
- * If the method returns a value type, it is boxed in an object
- * reference.
- */
-MonoObject*
-mono_runtime_invoke_array_checked (MonoMethod *method, void *obj, MonoArray *params,
-				   MonoError *error)
-{
-	error_init (error);
-	return mono_runtime_try_invoke_array (method, obj, params, NULL, error);
-}
-
-/**
- * mono_runtime_try_invoke_array:
- * \param method method to invoke
- * \param obj object instance
- * \param params arguments to the method
- * \param exc exception information.
- * \param error set on failure.
- * Invokes the method represented by \p method on the object \p obj.
- *
- * \p obj is the \c this pointer, it should be NULL for static
- * methods, a \c MonoObject* for object instances and a pointer to
- * the value type for value types.
- *
- * The \p params array contains the arguments to the method with the
- * same convention: \c MonoObject* pointers for object instances and
- * pointers to the value type otherwise. The \c _invoke_array
- * variant takes a C# \c object[] as the params argument (\c MonoArray*):
- * in this case the value types are boxed inside the
- * respective reference representation.
- *
- * From unmanaged code you'll usually use the
- * mono_runtime_invoke_checked() variant.
- *
- * Note that this function doesn't handle virtual methods for
- * you, it will exec the exact method you pass: we still need to
- * expose a function to lookup the derived class implementation
- * of a virtual method (there are examples of this in the code,
- * though).
- *
- * You can pass NULL as the \p exc argument if you don't want to catch
- * exceptions, otherwise, \c *exc will be set to the exception thrown, if
- * any.  On other failures, \p error will be set. If an exception is
- * thrown or there's an error, you can't use the \c MonoObject* result
- * from the function.
- *
- * If the method returns a value type, it is boxed in an object
- * reference.
- */
-MonoObject*
-mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+static MonoObject*
+mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *params_span,
 			       MonoObject **exc, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-	HANDLE_FUNCTION_ENTER ();
-
 	error_init (error);
 
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
@@ -4777,13 +4694,14 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	MonoObject *res = NULL;
 	int i;
 	gboolean has_byref_nullables = FALSE;
+	int params_length = mono_span_length (params_span);
 
-	if (NULL != params) {
-		pa = g_newa (gpointer, mono_array_length_internal (params));
-		for (i = 0; i < mono_array_length_internal (params); i++) {
+	if (params_length > 0) {
+		pa = g_newa (gpointer, params_length);
+		for (i = 0; i < params_length; i++) {
 			MonoType *t = sig->params [i];
 			MonoObject *pa_obj;
-			pa [i] = invoke_array_extract_argument (params, i, t, &pa_obj, &has_byref_nullables, error);
+			pa [i] = invoke_span_extract_argument (params_span, i, t, &pa_obj, &has_byref_nullables, error);
 			if (pa_obj)
 				MONO_HANDLE_PIN (pa_obj);
 			goto_if_nok (error, exit_null);
@@ -4797,7 +4715,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			/* Need to create a boxed vtype instead */
 			g_assert (!obj);
 
-			if (!params) {
+			if (params_length == 0) {
 				goto_if_nok (error, exit_null);
 			} else {
 				res = mono_value_box_checked (m_class_get_cast_class (method->klass), pa [0], error);
@@ -4892,25 +4810,104 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 			g_assert (box_exc == NULL);
 			mono_error_assert_ok (error);
 		}
-
-		if (has_byref_nullables) {
-			/* 
-			 * The runtime invoke wrapper already converted byref nullables back,
-			 * and stored them in pa, we just need to copy them back to the
-			 * managed array.
-			 */
-			for (i = 0; i < mono_array_length_internal (params); i++) {
-				MonoType *t = sig->params [i];
-
-				if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
-					mono_array_setref_internal (params, i, pa [i]);
-			}
-		}
 	}
 	goto exit;
 exit_null:
 	res = NULL;
 exit:
+	return res;
+}
+
+/**
+ * mono_runtime_invoke_array_checked:
+ * \param method method to invoke
+ * \param obj object instance
+ * \param params arguments to the method
+ * \param error set on failure.
+ * Invokes the method represented by \p method on the object \p obj.
+ *
+ * \p obj is the \c this pointer, it should be NULL for static
+ * methods, a \c MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The \p params span contains the arguments to the method with the
+ * same convention: \c MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The \c _invoke_array
+ * variant takes a C# \c object[] as the \p params argument (\c MonoArray*):
+ * in this case the value types are boxed inside the
+ * respective reference representation.
+ *
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke_checked() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ *
+ * On failure or exception, \p error will be set. In that case, you
+ * can't use the \c MonoObject* result from the function.
+ *
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
+MonoObject*
+mono_runtime_invoke_span_checked (MonoMethod *method, void *obj, MonoSpanOfObjects *params,
+				   MonoError *error)
+{
+	error_init (error);
+	return mono_runtime_try_invoke_span (method, obj, params, NULL, error);
+}
+
+/**
+ * mono_runtime_try_invoke_array:
+ * \param method method to invoke
+ * \param obj object instance
+ * \param params arguments to the method
+ * \param exc exception information.
+ * \param error set on failure.
+ * Invokes the method represented by \p method on the object \p obj.
+ *
+ * \p obj is the \c this pointer, it should be NULL for static
+ * methods, a \c MonoObject* for object instances and a pointer to
+ * the value type for value types.
+ *
+ * The \p params array contains the arguments to the method with the
+ * same convention: \c MonoObject* pointers for object instances and
+ * pointers to the value type otherwise. The \c _invoke_array
+ * variant takes a C# \c object[] as the params argument (\c MonoArray*):
+ * in this case the value types are boxed inside the
+ * respective reference representation.
+ *
+ * From unmanaged code you'll usually use the
+ * mono_runtime_invoke_checked() variant.
+ *
+ * Note that this function doesn't handle virtual methods for
+ * you, it will exec the exact method you pass: we still need to
+ * expose a function to lookup the derived class implementation
+ * of a virtual method (there are examples of this in the code,
+ * though).
+ *
+ * You can pass NULL as the \p exc argument if you don't want to catch
+ * exceptions, otherwise, \c *exc will be set to the exception thrown, if
+ * any.  On other failures, \p error will be set. If an exception is
+ * thrown or there's an error, you can't use the \c MonoObject* result
+ * from the function.
+ *
+ * If the method returns a value type, it is boxed in an object
+ * reference.
+ */
+MonoObject*
+mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
+			       MonoObject **exc, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoSpanOfObjects params_span = mono_span_create_from_object_array (params);
+	MonoObject *res = mono_runtime_try_invoke_span (method, obj, &params_span, exc, error);
+
 	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
