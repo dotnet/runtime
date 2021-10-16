@@ -135,7 +135,7 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
                 fileName = fileName.substr(1);
             if (parentDirectory) {
                 if (ctx.tracing)
-                    console.log("MONO_WASM: Creating directory '" + parentDirectory + "'");
+                    console.log(`MONO_WASM: Creating directory '${parentDirectory}'`);
 
                 ctx.createPath(
                     "/", parentDirectory, true, true // fixme: should canWrite be false?
@@ -145,7 +145,7 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
             }
 
             if (ctx.tracing)
-                console.log("MONO_WASM: Creating file '" + fileName + "' in directory '" + parentDirectory + "'");
+                console.log(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
 
             if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
                 ctx.createDataFile(
@@ -169,7 +169,7 @@ function _handle_loaded_asset(ctx: MonoInitContext, asset: AssetEntry, url: stri
     }
     else if (asset.behavior === "icu") {
         if (!mono_wasm_load_icu_data(offset!))
-            console.error("Error loading ICU asset", asset.name);
+            console.error(`Error loading ICU asset ${asset.name}`);
     }
     else if (asset.behavior === "resource") {
         cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
@@ -219,7 +219,7 @@ export function mono_load_runtime_and_bcl_args(args: MonoConfig): void {
     try {
         return _load_assets_and_runtime(args);
     } catch (exc: any) {
-        console.error("error in mono_load_runtime_and_bcl_args:", exc.toString());
+        console.error("error in mono_load_runtime_and_bcl_args:", exc);
         throw exc;
     }
 }
@@ -446,7 +446,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
                     attemptNextSource();
                     return;
                 } catch (exc) {
-                    console.error("MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset", asset.name, exc);
+                    console.error(`MONO_WASM: Unhandled exception in handleFetchResponse attemptNextSource for asset ${asset.name}`, exc);
                     throw exc;
                 }
             }
@@ -455,14 +455,14 @@ function _load_assets_and_runtime(args: MonoConfig) {
                 const bufferPromise = response.arrayBuffer();
                 bufferPromise.then((data) => processFetchResponseBuffer(asset, response.url, data));
             } catch (exc) {
-                console.error("MONO_WASM: Unhandled exception in handleFetchResponse for asset", asset.name, exc);
+                console.error(`MONO_WASM: Unhandled exception in handleFetchResponse for asset ${asset.name}`, exc);
                 attemptNextSource();
             }
         };
 
         const attemptNextSource = function () {
             if (sourceIndex >= sourcesList.length) {
-                const msg = "MONO_WASM: Failed to load " + asset.name;
+                const msg = `MONO_WASM: Failed to load ${asset.name}`;
                 try {
                     const isOk = asset.is_optional ||
                         (asset.name.match(/\.pdb$/) && args.ignore_pdb_load_errors);
@@ -502,15 +502,15 @@ function _load_assets_and_runtime(args: MonoConfig) {
             try {
                 if (asset.name === attemptUrl) {
                     if (ctx.tracing)
-                        console.log("Attempting to fetch '" + attemptUrl + "'");
+                        console.log(`Attempting to fetch '${attemptUrl}'`);
                 } else {
                     if (ctx.tracing)
-                        console.log("Attempting to fetch '" + attemptUrl + "' for", asset.name);
+                        console.log(`Attempting to fetch '${attemptUrl}' for ${asset.name}`);
                 }
                 const fetch_promise = fetch_file_cb(attemptUrl);
                 fetch_promise.then(handleFetchResponse);
             } catch (exc) {
-                console.error("MONO_WASM: Error fetching " + attemptUrl, exc);
+                console.error(`MONO_WASM: Error fetching ${attemptUrl}`, exc);
                 attemptNextSource();
             }
         };
