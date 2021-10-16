@@ -2497,8 +2497,12 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
     genConsumeOperands(tree);
 
-    // Floating point divide never raises an exception
-    if (!varTypeIsFloating(targetType) && !(tree->gtFlags & GTF_SAFE_DIV))
+    if (varTypeIsFloating(targetType))
+    {
+        // Floating point divide never raises an exception
+        genCodeForBinary(tree);
+    }
+    else if (!(tree->gtFlags & GTF_SAFE_DIV)) // an integer divide operation
     {
         GenTree* divisorOp = tree->gtGetOp2();
         emitAttr size      = EA_ATTR(genTypeSize(genActualType(tree->TypeGet())));
@@ -2566,6 +2570,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
                     genDefineTempLabel(sdivLabel);
                 }
+                genCodeForBinary(tree); // Generate the sdiv instruction
             }
             else // (tree->gtOper == GT_UDIV)
             {
@@ -2582,9 +2587,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
                     genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
                 }
+                genCodeForBinary(tree);
             }
         }
-        genCodeForBinary(tree);
     }
 }
 
