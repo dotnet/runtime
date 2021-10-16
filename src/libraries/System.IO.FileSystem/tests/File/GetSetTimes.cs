@@ -67,41 +67,149 @@ namespace System.IO.Tests
             if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
             {
                 yield return TimeFunction.Create(
-                    ((path, time) => File.SetCreationTime(path, time)),
-                    ((path) => File.GetCreationTime(path)),
+                    File.SetCreationTime,
+                    File.GetCreationTime,
                     DateTimeKind.Local);
                 yield return TimeFunction.Create(
-                    ((path, time) => File.SetCreationTimeUtc(path, time)),
-                    ((path) => File.GetCreationTimeUtc(path)),
+                    (path, time) =>
+                    {
+                        using var fileHandle = File.OpenHandle(path);
+                        File.SetCreationTime(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = File.OpenHandle(path);
+                        return File.GetCreationTime(fileHandle);
+                    },
+                    DateTimeKind.Local);
+                yield return TimeFunction.Create(
+                    File.SetCreationTimeUtc,
+                    File.GetCreationTimeUtc,
                     DateTimeKind.Unspecified);
                 yield return TimeFunction.Create(
-                    ((path, time) => File.SetCreationTimeUtc(path, time)),
-                    ((path) => File.GetCreationTimeUtc(path)),
+                    (path, time) =>
+                    {
+                        using var fileHandle = File.OpenHandle(path);
+                        File.SetCreationTimeUtc(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = File.OpenHandle(path);
+                        return File.GetCreationTimeUtc(fileHandle);
+                    },
+                    DateTimeKind.Unspecified);
+                yield return TimeFunction.Create(
+                    File.SetCreationTimeUtc,
+                    File.GetCreationTimeUtc,
+                    DateTimeKind.Utc);
+                yield return TimeFunction.Create(
+                    (path, time) =>
+                    {
+                        using var fileHandle = File.OpenHandle(path);
+                        File.SetCreationTimeUtc(fileHandle, time);
+                    },
+                    path =>
+                    {
+                        using var fileHandle = File.OpenHandle(path);
+                        return File.GetCreationTimeUtc(fileHandle);
+                    },
                     DateTimeKind.Utc);
             }
             yield return TimeFunction.Create(
-                ((path, time) => File.SetLastAccessTime(path, time)),
-                ((path) => File.GetLastAccessTime(path)),
+                File.SetLastAccessTime,
+                File.GetLastAccessTime,
                 DateTimeKind.Local);
             yield return TimeFunction.Create(
-                ((path, time) => File.SetLastAccessTimeUtc(path, time)),
-                ((path) => File.GetLastAccessTimeUtc(path)),
+                (path, time) =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    File.SetLastAccessTime(fileHandle, time);
+                },
+                path =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    return File.GetLastAccessTime(fileHandle);
+                },
+                DateTimeKind.Local);
+            yield return TimeFunction.Create(
+                File.SetLastAccessTimeUtc,
+                File.GetLastAccessTimeUtc,
                 DateTimeKind.Unspecified);
             yield return TimeFunction.Create(
-                ((path, time) => File.SetLastAccessTimeUtc(path, time)),
-                ((path) => File.GetLastAccessTimeUtc(path)),
+                (path, time) =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    File.SetLastAccessTimeUtc(fileHandle, time);
+                },
+                path =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    return File.GetLastAccessTimeUtc(fileHandle);
+                },
+                DateTimeKind.Unspecified);
+            yield return TimeFunction.Create(
+                File.SetLastAccessTimeUtc,
+                File.GetLastAccessTimeUtc,
                 DateTimeKind.Utc);
             yield return TimeFunction.Create(
-                ((path, time) => File.SetLastWriteTime(path, time)),
-                ((path) => File.GetLastWriteTime(path)),
+                (path, time) =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    File.SetLastAccessTimeUtc(fileHandle, time);
+                },
+                path =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    return File.GetLastAccessTimeUtc(fileHandle);
+                },
+                DateTimeKind.Utc);
+            yield return TimeFunction.Create(
+                File.SetLastWriteTime,
+                File.GetLastWriteTime,
                 DateTimeKind.Local);
             yield return TimeFunction.Create(
-                ((path, time) => File.SetLastWriteTimeUtc(path, time)),
-                ((path) => File.GetLastWriteTimeUtc(path)),
+                (path, time) =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    File.SetLastWriteTime(fileHandle, time);
+                },
+                path =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    return File.GetLastWriteTime(fileHandle);
+                },
+                DateTimeKind.Local);
+            yield return TimeFunction.Create(
+                File.SetLastWriteTimeUtc,
+                File.GetLastWriteTimeUtc,
                 DateTimeKind.Unspecified);
             yield return TimeFunction.Create(
-                ((path, time) => File.SetLastWriteTimeUtc(path, time)),
-                ((path) => File.GetLastWriteTimeUtc(path)),
+                (path, time) =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    File.SetLastWriteTimeUtc(fileHandle, time);
+                },
+                path =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    return File.GetLastWriteTimeUtc(fileHandle);
+                },
+                DateTimeKind.Unspecified);
+            yield return TimeFunction.Create(
+                File.SetLastWriteTimeUtc,
+                File.GetLastWriteTimeUtc,
+                DateTimeKind.Utc);
+            yield return TimeFunction.Create(
+                (path, time) =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    File.SetLastWriteTimeUtc(fileHandle, time);
+                },
+                path =>
+                {
+                    using var fileHandle = File.OpenHandle(path);
+                    return File.GetLastWriteTimeUtc(fileHandle);
+                },
                 DateTimeKind.Utc);
         }
 

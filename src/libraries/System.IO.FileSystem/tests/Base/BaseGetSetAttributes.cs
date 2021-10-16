@@ -2,13 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Tests
 {
     public abstract class BaseGetSetAttributes : FileSystemTest
     {
         protected abstract FileAttributes GetAttributes(string path);
+        protected abstract FileAttributes GetAttributes(SafeFileHandle fileHandle);
         protected abstract void SetAttributes(string path, FileAttributes attributes);
+        protected abstract void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes);
 
         /// <summary>
         /// Create an appropriate filesystem object at the given path.
