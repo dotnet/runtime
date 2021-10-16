@@ -560,7 +560,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -577,7 +577,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -594,7 +594,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -615,7 +615,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -632,7 +632,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -653,7 +653,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -670,7 +670,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
@@ -691,7 +691,7 @@ namespace System.IO
             }
             else
             {
-                throw new IOException($"Underlying file handle has no {nameof(handle.Path)}");
+                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
             }
         }
 
