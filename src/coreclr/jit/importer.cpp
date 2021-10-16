@@ -3606,6 +3606,102 @@ GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
                           true); // copyBlock
 }
 
+GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
+{
+    assert(sig->numArgs == 1);
+    assert(sig->sigInst.methInstCount == 1);
+
+    GenTree* fieldTokenNode = impStackTop(0).val;
+
+    //
+    // Verify that the field token is known and valid.  Note that it's also
+    // possible for the token to come from reflection, in which case we cannot do
+    // the optimization and must therefore revert to calling the helper.  You can
+    // see an example of this in bvt\DynIL\initarray2.exe (in Main).
+    //
+
+    // Check to see if the ldtoken helper call is what we see here.
+    if (fieldTokenNode->gtOper != GT_CALL || (fieldTokenNode->AsCall()->gtCallType != CT_HELPER) ||
+        (fieldTokenNode->AsCall()->gtCallMethHnd != eeFindHelper(CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD)))
+    {
+        return nullptr;
+    }
+
+    // Strip helper call away
+    fieldTokenNode = fieldTokenNode->AsCall()->gtCallArgs->GetNode();
+    if (fieldTokenNode->gtOper == GT_IND)
+    {
+        fieldTokenNode = fieldTokenNode->AsOp()->gtOp1;
+    }
+
+    // Check for constant
+    if (fieldTokenNode->gtOper != GT_CNS_INT)
+    {
+        return nullptr;
+    }
+
+    CORINFO_FIELD_HANDLE fieldToken = (CORINFO_FIELD_HANDLE)fieldTokenNode->AsIntCon()->gtCompileTimeHandle;
+    if (!fieldTokenNode->IsIconHandle(GTF_ICON_FIELD_HDL) || (fieldToken == nullptr))
+    {
+        return nullptr;
+    }
+
+    CORINFO_CLASS_HANDLE fieldOwnerHnd = info.compCompHnd->getFieldClass(fieldToken);
+
+    CORINFO_CLASS_HANDLE fieldClsHnd;
+    var_types fieldElementType = JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
+    assert(fieldElementType == var_types::TYP_STRUCT);
+
+    const unsigned totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
+
+    // Limit to primitive or enum type - see ArrayNative::GetSpanDataFrom()
+    CORINFO_CLASS_HANDLE targetElemHnd  = sig->sigInst.methInst[0];
+    if (info.compCompHnd->getTypeForPrimitiveValueClass(targetElemHnd) == CORINFO_TYPE_UNDEF)
+    {
+        return nullptr;
+    }
+
+    const unsigned targetElemSize = info.compCompHnd->getClassSize(targetElemHnd);
+    assert(targetElemSize != 0);
+
+    const unsigned count = totalFieldSize / targetElemSize;
+    if (count == 0)
+    {
+        return nullptr;
+    }
+
+    void* data = info.compCompHnd->getArrayInitializationData(fieldToken, totalFieldSize);
+    if (!data)
+    {
+        return nullptr;
+    }
+
+    //
+    // Ready to commit to the work
+    //
+
+    impPopStack();
+
+    // Turn count and pointer value into constants.
+    GenTree* spanElemCount = gtNewIconNode(count, TYP_INT);
+    GenTree* spanPointerField = gtNewIconNode((ssize_t)data, TYP_I_IMPL);
+
+    // Construct ReadOnlySpan<T> to return.
+    unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
+    lvaSetStruct(spanTTemp, sig->retTypeClass, false);
+    GenTree* addrOfSpanTTempPointer = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
+    GenTree* dereffedSpanTTempPointer = gtNewOperNode(GT_IND, TYP_BYREF, addrOfSpanTTempPointer);
+    GenTree* gtAssignedSpanTTempPointer = gtNewAssignNode(dereffedSpanTTempPointer, spanPointerField);
+
+    GenTree* addrOfSpanTTempPointer2 = gtNewOperNode(GT_ADDR, TYP_BYREF, impCreateLocalNode(spanTTemp DEBUGARG(0))); // HACKATHON OFFSET not set usefully here
+    GenTree* addrOfSpanTTempSize = gtNewOperNode(GT_ADD, TYP_BYREF, addrOfSpanTTempPointer2, gtNewIconNode(TARGET_POINTER_SIZE, TYP_I_IMPL)); // HACKATHON OFFSET not set usefully here
+    GenTree* dereffedSpanTTempSize = gtNewOperNode(GT_IND, TYP_INT, addrOfSpanTTempSize);
+    GenTree* gtAssignedSpanTTempSize = gtNewAssignNode(dereffedSpanTTempSize, spanElemCount);
+
+    GenTree* gtCommaAssignPointerAndGetResult = gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempPointer, impCreateLocalNode(spanTTemp DEBUGARG(0)));
+    return gtNewOperNode(GT_COMMA, TYP_STRUCT, gtAssignedSpanTTempSize, gtCommaAssignPointerAndGetResult);
+}
+
 //------------------------------------------------------------------------
 // impIntrinsic: possibly expand intrinsic call into alternate IR sequence
 //
@@ -4030,6 +4126,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 op1->gtFlags |= GTF_EXCEPT;
 
                 retNode = op1;
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
+            {
+                retNode = impCreateSpanIntrinsic(sig);
                 break;
             }
 
@@ -5273,7 +5375,11 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #endif // FEATURE_HW_INTRINSICS
     else if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) && (strcmp(className, "RuntimeHelpers") == 0))
     {
-        if (strcmp(methodName, "StackAlloc") == 0)
+        if (strcmp(methodName, "CreateSpan") == 0)
+        {
+            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+        }
+        else if (strcmp(methodName, "StackAlloc") == 0)
         {
             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_StackAlloc;
         }

@@ -114,6 +114,7 @@ namespace System.Runtime.CompilerServices
         [CLSCompliant(false)]
         public static Span<T> StackAlloc<T>(int length) { throw new InvalidProgramException(); }
 
+        [Intrinsic]
         public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
         {
             unsafe
