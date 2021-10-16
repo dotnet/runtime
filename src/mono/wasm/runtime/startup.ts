@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { INTERNAL, Module, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtr, CharPtrNull, Int32Ptr, MonoConfig, MonoString, MonoStringNull, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { AssetEntry, CharPtr, CharPtrNull, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -10,82 +10,6 @@ import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
-import { conv_string } from "./strings";
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
-    try {
-        const blazorExports = (<any>globalThis).Blazor;
-        if (!blazorExports) {
-            throw new Error("The blazor.webassembly.js library is not loaded.");
-        }
-
-        return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
-    }
-}
-
-// This is for back-compat only and will eventually be removed
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, asyncHandleLongPtr: number, functionName: MonoString, argsJson: MonoString, treatResultAsVoid: boolean): MonoString {
-    try {
-        // Passing a .NET long into JS via Emscripten is tricky. The method here is to pass
-        // as pointer to the long, then combine two reads from the HEAPU32 array.
-        // Even though JS numbers can't represent the full range of a .NET long, it's OK
-        // because we'll never exceed Number.MAX_SAFE_INTEGER (2^53 - 1) in this case.
-        //var u32Index = $1 >> 2;
-        const u32Index = asyncHandleLongPtr >> 2;
-        const asyncHandleJsNumber = Module.HEAPU32[u32Index + 1] * 4294967296 + Module.HEAPU32[u32Index];
-
-        // var funcNameJsString = UTF8ToString (functionName);
-        // var argsJsonJsString = argsJson && UTF8ToString (argsJson);
-        const funcNameJsString = conv_string(functionName);
-        const argsJsonJsString = argsJson && conv_string(argsJson);
-
-        const dotNetExports = (<any>globalThis).DotNet;
-        if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
-        }
-
-        if (asyncHandleJsNumber) {
-            dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return MonoStringNull;
-        } else {
-            const resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return resultJson === null ? MonoStringNull : cwraps.mono_wasm_string_from_js(resultJson);
-        }
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return MonoStringNull;
-    }
-}
-
-// This is for back-compat only and will eventually be removed
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, funcName: MonoString, arg0: any, arg1: any, arg2: any): void | number {
-    try {
-        // Get the function you're trying to invoke
-        const funcNameJsString = conv_string(funcName);
-        const dotNetExports = (<any>globalThis).DotNet;
-        if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
-        }
-        const funcInstance = dotNetExports.jsCallDispatcher.findJSFunction(funcNameJsString);
-
-        return funcInstance.call(null, arg0, arg1, arg2);
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
-    }
-}
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
@@ -595,10 +519,10 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
             config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
         }
         runtimeHelpers.config = config;
-    } catch (e) {
+    } catch (exc) {
         const errMessage = "failed to load config file " + configFilePath;
-        console.error(errMessage);
-        runtimeHelpers.config = { message: errMessage, error: e };
+        console.error(errMessage, exc);
+        runtimeHelpers.config = { message: errMessage, error: exc };
     } finally {
         Module.removeRunDependency(configFilePath);
     }

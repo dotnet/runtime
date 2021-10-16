@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_root, mono_wasm_new_root_buffer, WasmRoot, WasmRootBuffer } from "./roots";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull, VoidPtr, Int32Ptr } from "./types";
-import { Module, runtimeHelpers } from "./modules";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, MonoString, coerceNull as coerceNull, VoidPtrNull, VoidPtr, Int32Ptr, MonoStringNull } from "./types";
+import { Module, MONO, BINDING, INTERNAL, runtimeHelpers } from "./modules";
 import { _mono_array_root_to_js_array, _unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { js_array_to_mono_array, _box_js_bool, _js_to_mono_obj } from "./js-to-cs";
@@ -396,6 +396,15 @@ export function wrap_error(is_exception: Int32Ptr | null, ex: any): MonoString {
     let res = "unknown exception";
     if (ex) {
         res = ex.toString();
+        const stack = ex.stack;
+        if (stack) {
+            // Some JS runtimes insert the error message at the top of the stack, some don't,
+            //  so normalize it by using the stack as the result if it already contains the error
+            if (stack.startsWith(res))
+                res = stack;
+            else
+                res += "\n" + stack;
+        }
     }
     if (is_exception) {
         Module.setValue(is_exception, 1, "i32");
@@ -446,4 +455,73 @@ export function mono_method_resolve(fqn: string): MonoMethod {
     if (!method)
         throw new Error("Could not find method: " + methodname);
     return method;
+}
+
+// Blazor specific custom routine
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
+    try {
+        const blazorExports = (<any>globalThis).Blazor;
+        if (!blazorExports) {
+            throw new Error("The blazor.webassembly.js library is not loaded.");
+        }
+
+        return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
+    } catch (ex: any) {
+        const exceptionJsString = ex.message + "\n" + ex.stack;
+        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
+        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
+        return 0;
+    }
+}
+
+// code like `App.call_test_method();`
+export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): MonoString | null {
+    if (code === MonoStringNull)
+        return MonoStringNull;
+
+    const js_code = conv_string(code);
+
+    try {
+        const closure = {
+            Module, MONO, BINDING, INTERNAL
+        };
+        const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; const __fn = function(){ ${js_code} }; return __fn.call(__closure);`;
+        const fn_defn = new Function("__closure", fn_body_template);
+        const res = fn_defn(closure);
+        Module.setValue(is_exception, 0, "i32");
+        if (typeof res === "undefined" || res === null)
+            return MonoStringNull;
+        if (typeof res !== "string")
+            return wrap_error(is_exception, `Code could return an instance of a JavaScript string. It was ${typeof res}.`);
+        return js_string_to_mono_string(res);
+    } catch (ex) {
+        return wrap_error(is_exception, ex);
+    }
+}
+
+// TODO is this unused code ?
+// Compiles a JavaScript function from the function data passed.
+// Note: code snippet is not a function definition. Instead it must create and return a function instance.
+// code like `return function() { App.call_test_method(); };`
+export function mono_wasm_compile_function(code: MonoString, is_exception: Int32Ptr): MonoObject {
+    if (code === MonoStringNull)
+        return MonoStringNull;
+
+    const js_code = conv_string(code);
+
+    try {
+        const closure = {
+            Module, MONO, BINDING, INTERNAL
+        };
+        const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; ${js_code} ;`;
+        const fn_defn = new Function("__closure", fn_body_template);
+        const res = fn_defn(closure);
+        if (!res || typeof res !== "function")
+            return wrap_error(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.");
+        Module.setValue(is_exception, 0, "i32");
+        return _js_to_mono_obj(true, res);
+    } catch (ex) {
+        return wrap_error(is_exception, ex);
+    }
 }

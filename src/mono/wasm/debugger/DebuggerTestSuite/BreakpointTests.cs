@@ -36,7 +36,7 @@ namespace DebuggerTests
         {
             // Test that js breakpoints get set correctly
             // 13 24
-            // 13 33
+            // 13 40
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 24);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -48,7 +48,7 @@ namespace DebuggerTests
             Assert.Equal(13, loc["lineNumber"]);
             Assert.Equal(24, loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 40);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -57,14 +57,14 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(33, loc2["columnNumber"]);
+            Assert.Equal(40, loc2["columnNumber"]);
         }
 
         [Fact]
         public async Task CreateJS0Breakpoint()
         {
             // 13 24
-            // 13 33
+            // 13 40
             var bp1_res = await SetBreakpoint("/debugger-driver.html", 13, 0);
 
             Assert.EndsWith("debugger-driver.html", bp1_res.Value["breakpointId"].ToString());
@@ -76,7 +76,7 @@ namespace DebuggerTests
             Assert.Equal(13, loc["lineNumber"]);
             Assert.Equal(24, loc["columnNumber"]);
 
-            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 33);
+            var bp2_res = await SetBreakpoint("/debugger-driver.html", 13, 40);
 
             Assert.EndsWith("debugger-driver.html", bp2_res.Value["breakpointId"].ToString());
             Assert.Equal(1, bp2_res.Value["locations"]?.Value<JArray>()?.Count);
@@ -85,7 +85,7 @@ namespace DebuggerTests
 
             Assert.NotNull(loc2["scriptId"]);
             Assert.Equal(13, loc2["lineNumber"]);
-            Assert.Equal(33, loc2["columnNumber"]);
+            Assert.Equal(40, loc2["columnNumber"]);
         }
 
         [Theory]

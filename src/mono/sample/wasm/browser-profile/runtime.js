@@ -3,21 +3,22 @@
 
 "use strict";
 var Module = {
+    no_global_exports: true,
     is_testing: false,
     config: null,
 
     preInit: async function () {
-        await MONO.mono_wasm_load_config("./mono-config.json"); // sets MONO.config implicitly
+        await Module.MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.MONO.config implicitly
     },
 
     // Called when the runtime is initialized and wasm is ready
     onRuntimeInitialized: function () {
-        if (!MONO.config || MONO.config.error) {
+        if (!Module.MONO.config || Module.MONO.config.error) {
             console.log("An error occured while loading the config file");
             return;
         }
 
-        MONO.config.loaded_cb = function () {
+        Module.MONO.config.loaded_cb = function () {
             try {
                 Module.init();
             } catch (error) {
@@ -25,19 +26,19 @@ var Module = {
                 throw (error);
             }
         };
-        MONO.config.fetch_file_cb = function (asset) {
+        Module.MONO.config.fetch_file_cb = function (asset) {
             return fetch(asset, { credentials: 'same-origin' });
         }
 
-        if (MONO.config.enable_profiler) {
-            MONO.config.aot_profiler_options = {
+        if (Module.MONO.config.enable_profiler) {
+            Module.MONO.config.aot_profiler_options = {
                 write_at: "Sample.Test::StopProfile",
                 send_to: "System.Runtime.InteropServices.JavaScript.Runtime::DumpAotProfileData"
             }
         }
 
         try {
-            MONO.mono_load_runtime_and_bcl_args(MONO.config);
+            Module.MONO.mono_load_runtime_and_bcl_args(Module.MONO.config);
         } catch (error) {
             Module.test_exit(1);
             throw (error);
@@ -46,7 +47,7 @@ var Module = {
 
     init: function () {
         console.log("not ready yet")
-        const ret = INTERNAL.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning", []);
+        const ret = Module.INTERNAL.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:TestMeaning", []);
         document.getElementById("out").innerHTML = ret;
         console.log("ready");
 
@@ -56,8 +57,8 @@ var Module = {
             Module.test_exit(exit_code);
         }
 
-        if (MONO.config.enable_profiler) {
-            INTERNAL.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile", []);
+        if (Module.MONO.config.enable_profiler) {
+            Module.INTERNAL.call_static_method("[Wasm.BrowserProfile.Sample] Sample.Test:StopProfile", []);
             Module.saveProfile();
         }
     },
@@ -85,7 +86,7 @@ var Module = {
 
     saveProfile: function () {
         const a = document.createElement('a');
-        const blob = new Blob([INTERNAL.aot_profile_data]);
+        const blob = new Blob([Module.INTERNAL.aot_profile_data]);
         a.href = URL.createObjectURL(blob);
         a.download = "data.aotprofile";
         // Append anchor to body.

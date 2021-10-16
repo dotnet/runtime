@@ -18,12 +18,12 @@ namespace DebuggerTests
         {
             var bad_expressions = new[]
             {
-                    "INTERNAL.mono_wasm_raise_debug_event('')",
-                    "INTERNAL.mono_wasm_raise_debug_event(undefined)",
-                    "INTERNAL.mono_wasm_raise_debug_event({})",
+                    "Module.INTERNAL.mono_wasm_raise_debug_event('')",
+                    "Module.INTERNAL.mono_wasm_raise_debug_event(undefined)",
+                    "Module.INTERNAL.mono_wasm_raise_debug_event({})",
 
-                    "INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
-                    "INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
+                    "Module.INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, '')",
+                    "Module.INTERNAL.mono_wasm_raise_debug_event({eventName:'foo'}, 12)"
                 };
 
             foreach (var expression in bad_expressions)
@@ -58,7 +58,7 @@ namespace DebuggerTests
             });
 
             var trace_str = trace.HasValue ? $"trace: {trace.ToString().ToLower()}" : String.Empty;
-            var expression = $"INTERNAL.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
+            var expression = $"Module.INTERNAL.mono_wasm_raise_debug_event({{ eventName:'qwe' }}, {{ {trace_str} }})";
             var res = await cli.SendCommand($"Runtime.evaluate", JObject.FromObject(new { expression }), token);
             Assert.True(res.IsOk, $"Expected to pass for {expression}");
 
@@ -139,7 +139,7 @@ namespace DebuggerTests
                 pdb_base64 = Convert.ToBase64String(bytes);
             }
 
-            var expression = $@"INTERNAL.mono_wasm_raise_debug_event({{
+            var expression = $@"Module.INTERNAL.mono_wasm_raise_debug_event({{
                     eventName: 'AssemblyLoaded',
                     assembly_name: '{asm_name}',
                     assembly_b64: '{asm_base64}',
