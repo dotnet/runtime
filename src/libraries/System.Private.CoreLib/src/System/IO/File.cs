@@ -294,8 +294,7 @@ namespace System.IO
         public static byte[] ReadAllBytes(string path)
         {
             // bufferSize == 1 used to avoid unnecessary buffer in FileStream
-            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1,
-                FileOptions.SequentialScan))
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan))
             {
                 long fileLength = 0;
                 if (sfh.CanSeek && (fileLength = RandomAccess.GetFileLength(sfh)) > Array.MaxLength)
