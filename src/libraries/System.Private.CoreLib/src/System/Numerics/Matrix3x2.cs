@@ -84,46 +84,13 @@ namespace System.Numerics
             }
             set
             {
-                switch (row)
+                if ((uint)row >= 3)
+                    throw new ArgumentOutOfRangeException(nameof(row));
+
+                unsafe
                 {
-                    case 0:
-                        switch (column)
-                        {
-                            case 0:
-                                M11 = value;
-                                break;
-                            case 1:
-                                M12 = value;
-                                break;
-                        }
-
-                        throw new ArgumentOutOfRangeException(nameof(column));
-                    case 1:
-                        switch (column)
-                        {
-                            case 0:
-                                M21 = value;
-                                break;
-                            case 1:
-                                M22 = value;
-                                break;
-                        }
-
-                        throw new ArgumentOutOfRangeException(nameof(column));
-                    case 2:
-                        switch (column)
-                        {
-                            case 0:
-                                M31 = value;
-                                break;
-                            case 1:
-                                M32 = value;
-                                break;
-                        }
-
-                        throw new ArgumentOutOfRangeException(nameof(column));
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(row));
+                    ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
+                    vrow.WithElement(column, value);
                 }
             }
         }

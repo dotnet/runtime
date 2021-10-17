@@ -38,7 +38,7 @@ namespace System.Numerics
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static void WithElement(this Quaternion quaternion, int index, float value)
+        public static Quaternion WithElement(this Quaternion quaternion, int index, float value)
         {
             if ((uint)index >= Quaternion.Count)
             {
@@ -46,6 +46,7 @@ namespace System.Numerics
             }
 
             quaternion.WithElementUnsafe(index, value);
+            return quaternion;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

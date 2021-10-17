@@ -38,7 +38,7 @@ namespace System.Numerics
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static void WithElement(this Vector4 vector, int index, float value)
+        public static Vector4 WithElement(this Vector4 vector, int index, float value)
         {
             if ((uint)index >= Vector4.Count)
             {
@@ -46,6 +46,7 @@ namespace System.Numerics
             }
 
             vector.WithElementUnsafe(index, value);
+            return vector;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -167,6 +167,17 @@ namespace System.Numerics
                     return vrow[column];
                 }
             }
+            set
+            {
+                if ((uint)row >= 4)
+                    throw new ArgumentOutOfRangeException(nameof(row));
+
+                unsafe
+                {
+                    ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
+                    vrow.WithElement(column, value);
+                }
+            }
         }
 
         /// <summary>Indicates whether the current matrix is the identity matrix.</summary>
