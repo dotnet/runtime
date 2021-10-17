@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -74,43 +75,25 @@ namespace System.Numerics
             {
                 if ((uint)row > 2 || (uint)column > 1) ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                switch (row)
+                if (row == 0)
                 {
-                    case 0:
-                        switch (column)
-                        {
-                            case 0:
-                                return M11;
-                            case 1:
-                                return M12;
-                        }
-
-                        break;
-                    case 1:
-                        switch (column)
-                        {
-                            case 0:
-                                return M21;
-                            case 1:
-                                return M22;
-                        }
-
-                        break;
-                    default:
-                        switch (column)
-                        {
-                            case 0:
-                                return M31;
-                            case 1:
-                                return M32;
-                        }
-
-                        break;
+                    if (column == 0) return M11;
+                    if (column == 1) return M12;
+                }
+                else if (row == 1)
+                {
+                    if (column == 0) return M21;
+                    if (column == 1) return M22;
+                }
+                else
+                {
+                    if (column == 0) return M31;
+                    if (column == 1) return M32;
                 }
 
                 // unreachable
-                ThrowHelper.ThrowInvalidOperationException();
-                return -1;
+                Debug.Assert(true);
+                return 0;
             }
             set
             {
