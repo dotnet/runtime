@@ -1724,10 +1724,16 @@ MethodTableBuilder::BuildMethodTableThrowing(
         g_pValueArrayClass->GetCl() == GetCl() &&
         g_pValueArrayClass->GetModule() == bmtInternal->pType->GetModule())
     {
-        TypeHandle R = bmtGenericsInfo->GetInstantiation()[1];
-        if (R.IsArray())
+        TypeHandle lengthMarker = bmtGenericsInfo->GetInstantiation()[1];
+        if (lengthMarker.IsArray())
         {
-            bmtFP->NumValueArrayElements = bmtGenericsInfo->GetInstantiation()[1].GetRank();
+            DWORD rank = lengthMarker.GetRank();
+            if (rank > 1)
+            {
+                bmtFP->NumValueArrayElements = rank;
+                // there is no scenario when tearing a value array into pieces is desirable.
+                GetHalfBakedClass()->SetNoPromotionFlag();
+            }
         }
     }
 

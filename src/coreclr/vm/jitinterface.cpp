@@ -3719,8 +3719,13 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
         }
+
         if (pClass->HasExplicitFieldOffsetLayout() && pClass->HasOverLayedField())
             ret |= CORINFO_FLG_OVERLAPPING_FIELDS;
+
+        if (pClass->HasNoPromotionFlagSet())
+            ret |= CORINFO_FLG_DONT_PROMOTE;
+
         if (VMClsHnd.IsCanonicalSubtype())
             ret |= CORINFO_FLG_SHAREDINST;
 
