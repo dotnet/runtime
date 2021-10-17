@@ -558,6 +558,8 @@ namespace Internal.JitInterface
             _actualInstructionSetUnsupported = default(InstructionSetFlags);
 #endif
 
+            _instantiationToJitVisibleInstantiation = null;
+
             _pgoResults.Clear();
         }
 
@@ -644,6 +646,25 @@ namespace Internal.JitInterface
             return true;
         }
 
+        private Dictionary<Instantiation, IntPtr[]> _instantiationToJitVisibleInstantiation = null;
+        private CORINFO_CLASS_STRUCT_** GetJitInstantiation(Instantiation inst)
+        {
+            IntPtr [] jitVisibleInstantiation;
+            if (_instantiationToJitVisibleInstantiation == null)
+            {
+                _instantiationToJitVisibleInstantiation = new Dictionary<Instantiation, IntPtr[]>();
+            }
+
+            if (!_instantiationToJitVisibleInstantiation.TryGetValue(inst, out jitVisibleInstantiation))
+            {
+                jitVisibleInstantiation =  new IntPtr[inst.Length];
+                for (int i = 0; i < inst.Length; i++)
+                    jitVisibleInstantiation[i] = (IntPtr)ObjectToHandle(inst[i]);
+                _instantiationToJitVisibleInstantiation.Add(inst, jitVisibleInstantiation);
+            }
+            return (CORINFO_CLASS_STRUCT_**)GetPin(jitVisibleInstantiation);
+        }
+
         private void Get_CORINFO_SIG_INFO(MethodDesc method, CORINFO_SIG_INFO* sig, bool suppressHiddenArgument = false)
         {
             Get_CORINFO_SIG_INFO(method.Signature, sig);
@@ -668,10 +689,12 @@ namespace Internal.JitInterface
                 sig->sigInst.classInstCount = (uint)owningTypeInst.Length;
                 if (owningTypeInst.Length > 0)
                 {
-                    var classInst = new IntPtr[owningTypeInst.Length];
-                    for (int i = 0; i < owningTypeInst.Length; i++)
-                        classInst[i] = (IntPtr)ObjectToHandle(owningTypeInst[i]);
-                    sig->sigInst.classInst = (CORINFO_CLASS_STRUCT_**)GetPin(classInst);
+                    sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
+                }
+
+                if (method.Instantiation.Length != 0)
+                {
+                    sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
                 }
             }
 
