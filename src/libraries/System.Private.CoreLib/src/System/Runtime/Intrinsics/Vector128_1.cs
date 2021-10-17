@@ -103,15 +103,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        public unsafe T this[int index]
-        {
-            get
-            {
-                if ((uint)index >= Count)
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
-                return Unsafe.Add(ref Unsafe.As<ulong, T>(ref Unsafe.AsRef(in _00)), index);
-            }
-        }
+        public unsafe T this[int index] => this.GetElement(index);
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
