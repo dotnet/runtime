@@ -70,28 +70,48 @@ namespace System.Numerics
 
         public float this[int row, int column]
         {
-            get => row switch
+            get
             {
-                0 => column switch
+                if ((uint)row > 2 || (uint)column > 1) ThrowHelper.ThrowArgumentOutOfRangeException();
+
+                switch (row)
                 {
-                    0 => M11,
-                    1 => M12,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                1 => column switch
-                {
-                    0 => M21,
-                    1 => M22,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                2 => column switch
-                {
-                    0 => M31,
-                    1 => M32,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                _ => throw new ArgumentOutOfRangeException(nameof(row))
-            };
+                    case 0:
+                        switch (column)
+                        {
+                            case 0:
+                                return M11;
+                            case 1:
+                                return M12;
+                        }
+
+                        break;
+                    case 1:
+                        switch (column)
+                        {
+                            case 0:
+                                return M21;
+                            case 1:
+                                return M22;
+                        }
+
+                        break;
+                    default:
+                        switch (column)
+                        {
+                            case 0:
+                                return M31;
+                            case 1:
+                                return M32;
+                        }
+
+                        break;
+                }
+
+                // unreachable
+                ThrowHelper.ThrowInvalidOperationException();
+                return -1;
+            }
             set
             {
                 switch (row)
