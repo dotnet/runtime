@@ -65,16 +65,20 @@ namespace ILTrim.DependencyAnalysis
             if (other is GenericParameterNode otherGenericParameter)
             {
                 Debug.Assert(_ownerCodedIndex >= 0 && otherGenericParameter._ownerCodedIndex >= 0);
-
-                if (_ownerCodedIndex == otherGenericParameter._ownerCodedIndex)
-                    return _index.CompareTo(otherGenericParameter._index);
-                else
-                    return _ownerCodedIndex.CompareTo(otherGenericParameter._ownerCodedIndex);
+                return CompareGenericParameters(_ownerCodedIndex, _index, otherGenericParameter._ownerCodedIndex, otherGenericParameter._index);
             }
             else
             {
                 return base.CompareTo(other);
             }
+        }
+
+        internal static int CompareGenericParameters(int thisCodedIndex, int thisIndex, int otherCodedIndex, int otherIndex)
+        {
+            if (thisCodedIndex == otherCodedIndex)
+                return thisIndex.CompareTo(otherIndex);
+            else
+                return thisCodedIndex.CompareTo(otherCodedIndex);
         }
     }
 }
