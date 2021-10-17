@@ -46,7 +46,7 @@ namespace System.IO
         {
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
             if (_pos == _length)
             {
@@ -63,7 +63,7 @@ namespace System.IO
         {
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
             if (_pos == _length)
             {
@@ -98,7 +98,7 @@ namespace System.IO
             }
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
 
             int n = _length - _pos;
@@ -126,7 +126,7 @@ namespace System.IO
 
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
 
             int n = _length - _pos;
@@ -150,7 +150,7 @@ namespace System.IO
         {
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
 
             string s;
@@ -177,7 +177,7 @@ namespace System.IO
         {
             if (_s == null)
             {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
+                ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
             if ((uint)_pos >= (uint)_length)
                 return null;
@@ -186,7 +186,9 @@ namespace System.IO
             int foundLineLength = remaining.IndexOfAny('\r', '\n');
             if (foundLineLength >= 0)
             {
-                string result = _s.Substring(_pos, foundLineLength);
+                string result = foundLineLength == 0
+                    ? string.Empty
+                    : _s.Substring(_pos, foundLineLength);
 
                 char ch = remaining[foundLineLength];
                 _pos += foundLineLength + 1;
