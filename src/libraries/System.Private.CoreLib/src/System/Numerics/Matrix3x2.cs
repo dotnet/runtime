@@ -68,6 +68,76 @@ namespace System.Numerics
             get => _identity;
         }
 
+        public float this[int row, int column]
+        {
+            get => row switch
+            {
+                0 => column switch
+                {
+                    0 => M11,
+                    1 => M12,
+                    _ => throw new ArgumentOutOfRangeException(nameof(column))
+                },
+                1 => column switch
+                {
+                    0 => M21,
+                    1 => M22,
+                    _ => throw new ArgumentOutOfRangeException(nameof(column))
+                },
+                2 => column switch
+                {
+                    0 => M31,
+                    1 => M32,
+                    _ => throw new ArgumentOutOfRangeException(nameof(column))
+                },
+                _ => throw new ArgumentOutOfRangeException(nameof(row))
+            };
+            set
+            {
+                switch (row)
+                {
+                    case 0:
+                        switch (column)
+                        {
+                            case 0:
+                                M11 = value;
+                                break;
+                            case 1:
+                                M12 = value;
+                                break;
+                        }
+
+                        throw new ArgumentOutOfRangeException(nameof(column));
+                    case 1:
+                        switch (column)
+                        {
+                            case 0:
+                                M21 = value;
+                                break;
+                            case 1:
+                                M22 = value;
+                                break;
+                        }
+
+                        throw new ArgumentOutOfRangeException(nameof(column));
+                    case 2:
+                        switch (column)
+                        {
+                            case 0:
+                                M31 = value;
+                                break;
+                            case 1:
+                                M32 = value;
+                                break;
+                        }
+
+                        throw new ArgumentOutOfRangeException(nameof(column));
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(row));
+                }
+            }
+        }
+
         /// <summary>Gets a value that indicates whether the current matrix is the identity matrix.</summary>
         /// <value><see langword="true" /> if the current matrix is the identity matrix; otherwise, <see langword="false" />.</value>
         public readonly bool IsIdentity
