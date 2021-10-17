@@ -20,7 +20,14 @@ namespace Mono.Linker.Tests.TestCases
 			Run (t);
 		}
 
-		protected virtual void Run (string testName)
+        [Theory]
+        [MemberData(nameof(TestDatabase.LinkXml), MemberType = typeof(TestDatabase))]
+        public void LinkXml(string t)
+        {
+            Run(t);
+        }
+
+        protected virtual void Run (string testName)
 		{
             TestCase testCase = TestDatabase.GetTestCaseFromName(testName) ?? throw new InvalidOperationException ($"Unknown test {testName}");
 			var runner = new TestRunner (new ObjectFactory ());

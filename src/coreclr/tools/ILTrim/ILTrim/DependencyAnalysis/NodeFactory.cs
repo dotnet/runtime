@@ -72,7 +72,7 @@ namespace ILTrim.DependencyAnalysis
                 case HandleKind.ExportedType:
                     throw new NotImplementedException();
                 case HandleKind.ManifestResource:
-                    throw new NotImplementedException();
+                    return ManifestResource(module, (ManifestResourceHandle)handle);
                 case HandleKind.GenericParameter:
                     return GenericParameter(module, (GenericParameterHandle)handle);
                 case HandleKind.MethodSpecification:
@@ -247,6 +247,14 @@ namespace ILTrim.DependencyAnalysis
         public ModuleReferenceNode ModuleReference(EcmaModule module, ModuleReferenceHandle handle)
         {
             return _moduleReferences.GetOrAdd(new HandleKey<ModuleReferenceHandle>(module, handle));
+        }
+
+        NodeCache<HandleKey<ManifestResourceHandle>, ManifestResourceNode> _manifestResources
+           = new NodeCache<HandleKey<ManifestResourceHandle>, ManifestResourceNode>(key
+               => new ManifestResourceNode(key.Module, key.Handle));
+        public ManifestResourceNode ManifestResource(EcmaModule module, ManifestResourceHandle handle)
+        {
+            return _manifestResources.GetOrAdd(new HandleKey<ManifestResourceHandle>(module, handle));
         }
 
         NodeCache<HandleKey<GenericParameterHandle>, GenericParameterNode> _genericParameters

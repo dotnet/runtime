@@ -99,6 +99,7 @@ namespace ILTrim
                 mdRootBuilder,
                 context.MethodBodyEncoder.Builder,
                 mappedFieldData: context.FieldDataBuilder,
+                managedResources: context.ManagedResourceBuilder,
                 entryPoint: (MethodDefinitionHandle)tokenMap.MapToken(sourceEntryPoint));
 
             var o = new BlobBuilder();

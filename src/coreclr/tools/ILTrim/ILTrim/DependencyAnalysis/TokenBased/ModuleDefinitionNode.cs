@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-
 using Internal.TypeSystem.Ecma;
 
 using Debug = System.Diagnostics.Debug;
@@ -37,7 +36,10 @@ namespace ILTrim.DependencyAnalysis
                 yield return new(factory.CustomAttribute(_module, customAttribute), "Custom attribute of a module");
             }
 
-            yield return new(new ILLinkDescriptorNode(_module), "IL Link descriptor");
+            foreach (var resourceHandle in _module.MetadataReader.ManifestResources)
+            {
+                yield return new(factory.ManifestResource(_module, resourceHandle), "Manifest resource of a module");
+            }
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

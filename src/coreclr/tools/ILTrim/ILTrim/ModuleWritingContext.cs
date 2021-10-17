@@ -22,6 +22,8 @@ namespace ILTrim
 
         public BlobBuilder FieldDataBuilder { get; } = new BlobBuilder();
 
+        public BlobBuilder ManagedResourceBuilder { get; } = new BlobBuilder();
+
         public MethodBodyStreamEncoder MethodBodyEncoder { get; } = new MethodBodyStreamEncoder(new BlobBuilder());
 
         public TokenMap TokenMap { get; }

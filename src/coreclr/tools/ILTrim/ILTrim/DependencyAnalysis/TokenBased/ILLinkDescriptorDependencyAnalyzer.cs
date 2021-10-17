@@ -3,75 +3,31 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 using System.Xml;
-
-using ILCompiler.DependencyAnalysisFramework;
-
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
+using static ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILTrim.DependencyAnalysis.NodeFactory>;
 
 namespace ILTrim.DependencyAnalysis
 {
     /// <summary>
     /// Represents an IL Link descriptor based root.
     /// </summary>
-    public class ILLinkDescriptorNode : DependencyNodeCore<NodeFactory>
+    internal class ILLinkDescriptorDependencyAnalyzer : ManifestResourceNode.IManifestResourceDependencyAnalyzer
     {
         private readonly EcmaModule _module;
+        private readonly IReadOnlyDictionary<string, bool> _featureSwitches;
 
-        public ILLinkDescriptorNode(EcmaModule module)
+        public ILLinkDescriptorDependencyAnalyzer(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitches)
         {
             _module = module;
+            _featureSwitches = featureSwitches;
         }
 
-        protected override string GetName(NodeFactory factory)
+        public DependencyList GetDependencies(NodeFactory factory, Stream content)
         {
-            return $"Roots from {_module} ILLink.Descriptors.xml";
+            return DescriptorReader.GetDependencies(_module.Context, XmlReader.Create(content), _module, _featureSwitches, factory);
         }
-
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
-        {
-            PEMemoryBlock resourceDirectory = _module.PEReader.GetSectionData(_module.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
-
-            foreach (var resourceHandle in _module.MetadataReader.ManifestResources)
-            {
-                ManifestResource resource = _module.MetadataReader.GetManifestResource(resourceHandle);
-
-                // Don't try to process linked resources or resources in other assemblies
-                if (!resource.Implementation.IsNil)
-                {
-                    continue;
-                }
-
-                string resourceName = _module.MetadataReader.GetString(resource.Name);
-                if (resourceName == "ILLink.Descriptors.xml")
-                {
-                    BlobReader reader = resourceDirectory.GetReader((int)resource.Offset, resourceDirectory.Length - (int)resource.Offset);
-                    int length = (int)reader.ReadUInt32();
-
-                    UnmanagedMemoryStream ms;
-                    unsafe
-                    {
-                        ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
-                    }
-
-                    return DescriptorReader.GetDependencies(_module.Context, XmlReader.Create(ms), _module, new Dictionary<string, bool>(), factory);
-                }
-            }
-
-            return null;
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override bool HasConditionalStaticDependencies => false;
-        public override bool InterestingForDynamicDependencyAnalysis => false;
-        public override bool HasDynamicDependencies => false;
-        public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
         private class DescriptorReader : ILCompiler.ProcessLinkerXmlBase
         {

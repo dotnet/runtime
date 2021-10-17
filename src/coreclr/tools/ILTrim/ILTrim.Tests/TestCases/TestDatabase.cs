@@ -20,7 +20,12 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName("MultiAssembly");
 		}
 
-		public static TestCaseCollector CreateCollector ()
+        public static IEnumerable<object[]> LinkXml()
+        {
+            return TestNamesBySuiteName("LinkXml");
+        }
+
+        public static TestCaseCollector CreateCollector ()
 		{
 			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);
 			return new TestCaseCollector (rootSourceDirectory, testCaseAssemblyPath);
