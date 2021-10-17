@@ -678,6 +678,7 @@ typedef struct {
 	// Same as compile_method, but returns a MonoFtnDesc in llvmonly mode
 	gpointer (*get_ftnptr)(MonoMethod *method, MonoError *error);
 	void (*interp_jit_info_foreach)(InterpJitInfoFunc func, gpointer user_data);
+	gboolean (*interp_sufficient_stack)(gsize size);
 } MonoRuntimeCallbacks;
 
 typedef gboolean (*MonoInternalStackWalk) (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data);

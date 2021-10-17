@@ -7520,6 +7520,14 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 	}
 }
 
+static gboolean
+interp_sufficient_stack (gsize size)
+{
+	ThreadContext *context = get_context ();
+
+	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
+}
+
 static void
 interp_cleanup (void)
 {
