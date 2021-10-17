@@ -105,6 +105,16 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+        public unsafe T this[int index]
+        {
+            get
+            {
+                var items = new T[Count];
+                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref items[0]), this);
+                return items[index];
+            }
+        }
+
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
