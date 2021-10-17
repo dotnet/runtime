@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Threading.Tasks;
+using Internal.Runtime.CompilerServices;
 
 namespace System.IO
 {
@@ -188,7 +189,7 @@ namespace System.IO
             {
                 string result = foundLineLength == 0
                     ? string.Empty
-                    : _s.Substring(_pos, foundLineLength);
+                    : new string(new ReadOnlySpan<char>(ref Unsafe.AsRef(remaining.GetPinnableReference()), foundLineLength)); //_s.Substring(_pos, foundLineLength);
 
                 char ch = remaining[foundLineLength];
                 _pos += foundLineLength + 1;
@@ -201,7 +202,7 @@ namespace System.IO
             }
             else
             {
-                string result = _s.Substring(_pos, _length - _pos);
+                string result = new string(remaining); // _s.Substring(_pos, _length - _pos);
                 _pos = _length;
                 return result;
             }
