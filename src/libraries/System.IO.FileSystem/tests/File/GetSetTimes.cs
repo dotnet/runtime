@@ -288,13 +288,13 @@ namespace System.IO.Tests
         public void SetLastWriteTimeTicks_SafeFileHandle()
         {
             string firstFilePath = GetTestFilePath();
-            using var firstFileHandle = File.OpenHandle(firstFilePath);
-
             string secondFilePath = GetTestFilePath();
-            using var secondFileHandle = File.OpenHandle(secondFilePath);
 
-            File.WriteAllText(firstFileHandle, "");
-            File.WriteAllText(secondFileHandle, "");
+            File.WriteAllText(firstFilePath, "");
+            File.WriteAllText(secondFilePath, "");
+
+            using var secondFileHandle = File.OpenHandle(secondFilePath);
+            using var firstFileHandle = File.OpenHandle(firstFilePath);
 
             File.SetLastAccessTimeUtc(secondFileHandle, DateTime.UtcNow);
             long firstFileTicks = File.GetLastWriteTimeUtc(firstFileHandle).Ticks;
