@@ -314,23 +314,33 @@ namespace ILTrim.DependencyAnalysis
         private struct NodeCache<TKey, TValue>
         {
             private Func<TKey, TValue> _creator;
+#if SINGLE_THREADED
+            private Dictionary<TKey, TValue> _cache;
+#else
             private ConcurrentDictionary<TKey, TValue> _cache;
-
-            public NodeCache(Func<TKey, TValue> creator, IEqualityComparer<TKey> comparer)
-            {
-                _creator = creator;
-                _cache = new ConcurrentDictionary<TKey, TValue>(comparer);
-            }
+#endif
 
             public NodeCache(Func<TKey, TValue> creator)
             {
                 _creator = creator;
+#if SINGLE_THREADED
+                _cache = new Dictionary<TKey, TValue>();
+#else
                 _cache = new ConcurrentDictionary<TKey, TValue>();
+#endif
             }
 
             public TValue GetOrAdd(TKey key)
             {
+#if SINGLE_THREADED
+                if (_cache.TryGetValue(key, out var value))
+                    return value;
+
+                _cache[key] = value = _creator(key);
+                return value;
+#else
                 return _cache.GetOrAdd(key, _creator);
+#endif
             }
         }
     }

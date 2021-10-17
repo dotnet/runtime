@@ -114,11 +114,14 @@ namespace ILTrim
 
             void RunForEach<T>(IEnumerable<T> inputs, Action<T> action)
             {
+#if !SINGLE_THREADED
                 if (settings.MaxDegreeOfParallelism == 1)
+#endif
                 {
                     foreach (var input in inputs)
                         action(input);
                 }
+#if !SINGLE_THREADED
                 else
                 {
                     Parallel.ForEach(
@@ -126,6 +129,7 @@ namespace ILTrim
                         new() { MaxDegreeOfParallelism = settings.EffectiveDegreeOfParallelism },
                         action);
                 }
+#endif
             }
         }
 
