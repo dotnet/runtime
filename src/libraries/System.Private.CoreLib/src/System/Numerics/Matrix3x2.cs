@@ -78,7 +78,7 @@ namespace System.Numerics
                     throw new ArgumentOutOfRangeException(nameof(row));
                 unsafe
                 {
-                    var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector3));
+                    var vrow = Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
                     return vrow[column];
                 }
             }
