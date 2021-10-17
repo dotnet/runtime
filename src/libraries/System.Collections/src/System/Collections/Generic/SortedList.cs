@@ -536,11 +536,19 @@ namespace System.Collections.Generic
         }
 
         // Returns the value of the entry at the given index.
-        private TValue GetByIndex(int index)
+        public TValue GetValueAtIndex(int index)
         {
             if (index < 0 || index >= _size)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
             return values[index];
+        }
+
+        public void SetValueAtIndex(int index, TValue value)
+        {
+            if (index< 0 || index >= _size)
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+            values[index] = value;
+            version++;
         }
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
@@ -564,7 +572,7 @@ namespace System.Collections.Generic
         }
 
         // Returns the key of the entry at the given index.
-        private TKey GetKey(int index)
+        public TKey GetKeyAtIndex(int index)
         {
             if (index < 0 || index >= _size)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
@@ -1082,7 +1090,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    return _dict.GetKey(index);
+                    return _dict.GetKeyAtIndex(index);
                 }
                 set
                 {
@@ -1201,7 +1209,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    return _dict.GetByIndex(index);
+                    return _dict.GetValueAtIndex(index);
                 }
                 set
                 {
