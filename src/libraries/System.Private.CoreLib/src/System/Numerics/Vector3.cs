@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -26,6 +27,8 @@ namespace System.Numerics
 
         /// <summary>The Z component of the vector.</summary>
         public float Z;
+
+        private static int Count => 12 / sizeof(float);
 
         /// <summary>Creates a new <see cref="System.Numerics.Vector3" /> object whose three elements have the same value.</summary>
         /// <param name="value">The value to assign to all three elements.</param>
@@ -105,30 +108,52 @@ namespace System.Numerics
 
         public float this[int index]
         {
-            get => index switch
+            get => GetElement(index);
+            set => SetElement(index, value);
+        }
+
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        public float GetElement(int index)
+        {
+            if ((uint)index >= (uint)Count)
             {
-                0 => X,
-                1 => Y,
-                2 => Z,
-                _ => throw new ArgumentOutOfRangeException(nameof(index))
-            };
-            set
-            {
-                switch (index)
-                {
-                    case 0:
-                        X = value;
-                        break;
-                    case 1:
-                        Y = value;
-                        break;
-                    case 2:
-                        Z = value;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                }
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
+
+            return GetElementUnsafe(index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal float GetElementUnsafe(int index)
+        {
+            Debug.Assert(index >= 0 && index < Count);
+            return Unsafe.Add(ref Unsafe.As<Vector3, float>(ref Unsafe.AsRef(in this)), index);
+        }
+
+        /// <summary>Sets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value of the element to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        public void SetElement(int index, float value)
+        {
+            if ((uint)index >= (uint)Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            SetElementUnsafe(index, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void SetElementUnsafe(int index, float value)
+        {
+            Debug.Assert(index >= 0 && index < Count);
+            Unsafe.Add(ref Unsafe.As<Vector3, float>(ref Unsafe.AsRef(in this)), index) = value;
         }
 
         /// <summary>Adds two vectors together.</summary>
