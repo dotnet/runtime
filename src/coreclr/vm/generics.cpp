@@ -627,7 +627,7 @@ BOOL CheckInstantiation(Module* pModule, mdToken tkGeneric, Instantiation inst)
             || type == ELEMENT_TYPE_TYPEDBYREF
             || type == ELEMENT_TYPE_PTR
             || type == ELEMENT_TYPE_FNPTR
-            || (pMT = th.GetMethodTable(), (pMT != NULL) && (pMT->IsByRefLike() || (g_fEEStarted && pMT->IsDelegate()))))
+            || (pMT = th.GetMethodTable(), (pMT != NULL) && pMT->IsByRefLike()))
         {
             if (pSupportsAnyType == NULL)
             {
