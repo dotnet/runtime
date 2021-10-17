@@ -109,7 +109,7 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                if ((uint)index >= 256 / Unsafe.SizeOf<T>())
+                if ((uint)index >= Count)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 return Unsafe.Add(ref Unsafe.As<ulong, T>(ref Unsafe.AsRef(in _00)), index);
             }
