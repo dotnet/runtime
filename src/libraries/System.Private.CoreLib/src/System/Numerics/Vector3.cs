@@ -28,7 +28,7 @@ namespace System.Numerics
         /// <summary>The Z component of the vector.</summary>
         public float Z;
 
-        private static int Count => 12 / sizeof(float);
+        private const int Count = 3;
 
         /// <summary>Creates a new <see cref="System.Numerics.Vector3" /> object whose three elements have the same value.</summary>
         /// <param name="value">The value to assign to all three elements.</param>

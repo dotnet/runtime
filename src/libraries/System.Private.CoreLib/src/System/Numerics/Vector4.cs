@@ -32,7 +32,7 @@ namespace System.Numerics
         /// <summary>The W component of the vector.</summary>
         public float W;
 
-        private static int Count => 16 / sizeof(float);
+        private const int Count = 4;
 
         /// <summary>Creates a new <see cref="System.Numerics.Vector4" /> object whose four elements have the same value.</summary>
         /// <param name="value">The value to assign to all four elements.</param>

@@ -24,7 +24,8 @@ namespace System.Numerics
 
         /// <summary>The Y component of the vector.</summary>
         public float Y;
-        private static int Count => 8 / sizeof(float);
+
+        private const int Count = 2;
 
         /// <summary>Creates a new <see cref="System.Numerics.Vector2" /> object whose two elements have the same value.</summary>
         /// <param name="value">The value to assign to both elements.</param>
