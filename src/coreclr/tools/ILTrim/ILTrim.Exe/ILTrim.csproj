@@ -7,11 +7,40 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../ILTrim/ILTrim.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <ToolsCommonPath>$(MSBuildThisFileDirectory)..\..\Common\</ToolsCommonPath>
+    <CommandLinePath>$(ToolsCommonPath)\CommandLine\</CommandLinePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(CommandLinePath)\Argument.cs" Link="CommandLine/Argument.cs" />
+    <Compile Include="$(CommandLinePath)\Argument_1.cs" Link="CommandLine/Argument_1.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentCommand.cs" Link="CommandLine/ArgumentCommand.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentCommand_1.cs" Link="CommandLine/ArgumentCommand_1.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentLexer.cs" Link="CommandLine/ArgumentLexer.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentList_1.cs" Link="CommandLine/ArgumentList_1.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentParser.cs" Link="CommandLine/ArgumentParser.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentSyntax.cs" Link="CommandLine/ArgumentSyntax.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentSyntax_Definers.cs" Link="CommandLine/ArgumentSyntax_Definers.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentSyntaxException.cs" Link="CommandLine/ArgumentSyntaxException.cs" />
+    <Compile Include="$(CommandLinePath)\ArgumentToken.cs" Link="CommandLine/ArgumentToken.cs" />
+    <Compile Include="$(CommandLinePath)\CommandLineException.cs" Link="CommandLine/CommandLineException.cs" />
+    <Compile Include="$(CommandLinePath)\CommandLineHelpers.cs" Link="CommandLine/CommandLineHelpers.cs" />
+    <Compile Include="$(CommandLinePath)\Enumerable.cs" Link="CommandLine/Enumerable.cs" />
+    <Compile Include="$(CommandLinePath)\HelpTextGenerator.cs" Link="CommandLine/HelpTextGenerator.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="$(CommandLinePath)\Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>Internal.CommandLine.Strings</ClassName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

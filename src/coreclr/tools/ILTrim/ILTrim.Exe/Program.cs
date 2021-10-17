@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+
+using Internal.CommandLine;
 
 namespace ILTrim
 {
@@ -15,54 +15,71 @@ namespace ILTrim
     {
         static void Main(string[] args)
         {
-            RootCommand root = new RootCommand()
-            {
-                new Argument<string>("input"),
-                new Option<string[]>(new [] { "--reference", "-r" }, "Reference assembly"),
-                new Option<string[]>(new [] { "--trim", "-t"}, "Trim assembly"),
-                new Option<string>(new [] { "--output", "-o" }, "Output path"),
-                new Option(new [] { "--log", "-l" }, "Log strategy", typeof(string[]), arity: new ArgumentArity(0, 2)),
-                new Option<int?>("--parallelism", "Degree of parallelism")
-            };
-            root.Handler = CommandHandler.Create(Run);
-
-            root.Invoke(args);
-        }
-
-        static void Run(string input, string[] reference, string[] trim, string output, string[] log, int? parallelism)
-        {
+            string input = null;
+            IReadOnlyList<string> references = null;
+            IReadOnlyList<string> trimAssemblies = null;
+            string outputPath = null;
             LogStrategy logStrategy = LogStrategy.None;
             string logFile = null;
-            if (log is { Length: > 0 })
+            int? parallelism = null;
+            bool libraryMode = false;
+
+            ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
-                if (!Enum.TryParse<LogStrategy>(log[0], out logStrategy))
+                syntax.ApplicationName = typeof(Program).Assembly.GetName().Name;
+
+                syntax.DefineOptionList("r|reference", ref references, requireValue: false, "Reference assemblies");
+                syntax.DefineOptionList("t|trim", ref trimAssemblies, requireValue: false, "Trim assemblies");
+                syntax.DefineOption("o|out", ref outputPath, requireValue: false, "Output path");
+
+                string logStrategyName = null;
+                syntax.DefineOption("l|log", ref logStrategyName, requireValue: false, "Logging strategy");
+                syntax.DefineOption("logFile", ref logFile, requireValue: false, "Path to the log file");
+                if (logStrategyName != null)
                 {
-                    throw new ArgumentException("Invalid log strategy");
+                    if (!Enum.TryParse<LogStrategy>(logStrategyName, out logStrategy))
+                    {
+                        throw new CommandLineException("Unknown log strategy");
+                    }
+
+                    if (logStrategy == LogStrategy.FullGraph || logStrategy == LogStrategy.FirstMark)
+                    {
+                        if (logFile == null)
+                            throw new CommandLineException("Specified log strategy requires a logFile option");
+                    }
+                    else
+                    {
+                        if (logFile != null)
+                            throw new CommandLineException("Specified log strategy can't use logFile option");
+                    }
+                }
+                else if (logFile != null)
+                {
+                    throw new CommandLineException("Log file can only be specified with logging strategy selection.");
                 }
 
-                if (logStrategy == LogStrategy.FullGraph || logStrategy == LogStrategy.FirstMark)
-                {
-                    if (log.Length != 2)
-                        throw new ArgumentException("Specified log strategy requires a file path parameter");
+                int p = -1;
+                syntax.DefineOption("parallelism", ref p, requireValue: false, "Degree of parallelism");
+                parallelism = p == -1 ? null : p;
 
-                    logFile = log[1];
-                }
-                else
-                {
-                    if (log.Length != 1)
-                        throw new ArgumentException("Specified log strategy doesn't need value");
-                }
-            }
+                syntax.DefineOption("library", ref libraryMode, "Use library mode for the input assembly");
+
+                syntax.DefineParameter("input", ref input, "The input assembly");
+            });
+
+            if (input == null)
+                throw new CommandLineException("Input assembly is required");
 
             var settings = new TrimmerSettings(
                 MaxDegreeOfParallelism: parallelism,
                 LogStrategy: logStrategy,
-                LogFile: logFile);
+                LogFile: logFile,
+                LibraryMode: libraryMode);
             Trimmer.TrimAssembly(
                 input.Trim(),
-                trim.Select(p => p.Trim()).ToList(),
-                output?.Trim() ?? Directory.GetCurrentDirectory(),
-                reference.Select(p => p.Trim()).ToList(),
+                trimAssemblies,
+                outputPath ?? Directory.GetCurrentDirectory(),
+                references,
                 settings);
         }
     }

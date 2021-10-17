@@ -11,7 +11,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
     {
         public void Trim (TrimmerOptions options)
         {
-            Trimmer.TrimAssembly(options.InputPath, options.AdditionalLinkAssemblies, options.OutputDirectory, options.ReferencePaths, null, options.IsLibraryMode);
+            TrimmerSettings settings = new TrimmerSettings(
+                LibraryMode: options.IsLibraryMode);
+            Trimmer.TrimAssembly(
+                options.InputPath,
+                options.AdditionalLinkAssemblies,
+                options.OutputDirectory,
+                options.ReferencePaths,
+                settings);
         }
     }
 }

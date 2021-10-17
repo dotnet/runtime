@@ -12,7 +12,8 @@ namespace ILTrim
     public record class TrimmerSettings(
         int? MaxDegreeOfParallelism = null,
         LogStrategy LogStrategy = LogStrategy.None,
-        string LogFile = null
+        string LogFile = null,
+        bool LibraryMode = false
         )
     {
         public int EffectiveDegreeOfParallelism => MaxDegreeOfParallelism ?? Environment.ProcessorCount;
