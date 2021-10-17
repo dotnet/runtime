@@ -19,6 +19,7 @@ public class Program
         TestGCRootsStruct();
         TestListT();
         TestAsField();
+        TestInFixed();
 
         if (returnVal == 100)
             Console.WriteLine("PASS");
@@ -26,9 +27,32 @@ public class Program
         return returnVal;
     }
 
+    private unsafe static void TestInFixed()
+    {
+        Console.WriteLine(nameof(TestInFixed));
+
+        var arr1 = new ValueArray<long, object[,,,,,,,,]>();
+        for (int i = 0; i < arr1.Length; i++)
+        {
+            arr1[i] = i;
+        }
+
+        fixed (long* p = arr1)
+        {
+            for (long* pElement = p; pElement < p + 9; pElement++)
+            {
+                *pElement = *pElement + 1;
+            }
+        }
+
+        for (int i = 0; i < arr1.Length; i++)
+        {
+            Test(i + 1, arr1[i]);
+        }
+    }
+
     class QuadTree
     {
-        // embedded indexable data with no indirections!!
         private ValueArray<QuadTree, object[,,,]> _nodes;
 
         // NB: intentionally returning byval here - just to test byval returning.
