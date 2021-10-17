@@ -160,6 +160,7 @@ static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 static void mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data);
+static gboolean mini_interp_sufficient_stack (gsize size);
 
 gboolean
 mono_running_on_valgrind (void)
@@ -4445,6 +4446,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
+	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
 	callbacks.init_mem_manager = init_jit_mem_manager;
 	callbacks.free_mem_manager = free_jit_mem_manager;
 
@@ -5213,6 +5215,12 @@ static void
 mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data)
 {
 	mini_get_interp_callbacks ()->jit_info_foreach (func, user_data);
+}
+
+static gboolean
+mini_interp_sufficient_stack (gsize size)
+{
+	return mini_get_interp_callbacks ()->sufficient_stack (size);
 }
 
 /*

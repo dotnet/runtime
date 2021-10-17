@@ -1075,6 +1075,10 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 	if (current < limit)
 		return FALSE;
 
+	if (mono_get_runtime_callbacks ()->is_interpreter_enabled () &&
+			!mono_get_runtime_callbacks ()->interp_sufficient_stack (MONO_MIN_EXECUTION_STACK_SIZE))
+		return FALSE;
+
 	return TRUE;
 }
 
