@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILTrim.DependencyAnalysis
@@ -72,6 +73,22 @@ namespace ILTrim.DependencyAnalysis
             {
                 MethodImport import = methodDef.GetImport();
                 dependencies.Add(factory.ModuleReference(_module, import.Module), "DllImport");
+
+                EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
+                if (method.Signature.ReturnType.GetTypeDefinition() is EcmaType ecmaReturnType)
+                    AddInteropAllocatedType(factory, dependencies, ecmaReturnType);
+                foreach (var parameter in method.Signature)
+                {
+                    if (parameter.IsByRef && ((ByRefType)parameter).ParameterType.GetTypeDefinition() is EcmaType ecmaByRefParam)
+                        AddInteropAllocatedType(factory, dependencies, ecmaByRefParam);
+                }
+
+                static void AddInteropAllocatedType(NodeFactory factory, DependencyList dependencies, EcmaType type)
+                {
+                    dependencies.Add(factory.ConstructedType(type), "Interop-allocated instance");
+                    if (type.GetParameterlessConstructor() is EcmaMethod ctorMethod && factory.IsModuleTrimmed(ctorMethod.Module))
+                        dependencies.Add(factory.MethodDefinition(ctorMethod.Module, ctorMethod.Handle), "Interop-called ctor");
+                }
             }
 
             return dependencies;
