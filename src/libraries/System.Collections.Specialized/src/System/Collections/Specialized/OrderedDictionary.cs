@@ -603,15 +603,7 @@ namespace System.Collections.Specialized
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);
-                    object? entryValue = ((DictionaryEntry)o).Value;
-                    if (entryValue == null)
-                    {
-                        if (value == null)
-                        {
-                            return true;
-                        }
-                    }
-                    else if (entryValue.Equals(value))
+                    if (object.Equals(((DictionaryEntry)o).Value, value))
                     {
                         return true;
                     }
@@ -639,20 +631,9 @@ namespace System.Collections.Specialized
                             return i;
                         }
                     }
-                    else
+                    else if (object.Equals(((DictionaryEntry)_objects[i]!).Value, value))
                     {
-                        object? entryValue = ((DictionaryEntry)_objects[i]!).Value;
-                        if (entryValue == null)
-                        {
-                            if (value == null)
-                            {
-                                return i;
-                            }
-                        }
-                        else if (entryValue.Equals(value))
-                        {
-                            return i;
-                        }
+                        return i;
                     }
                 }
 
@@ -666,8 +647,8 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    object o = _objects[index]!;
-                    return _isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value;
+                    DictionaryEntry entry = (DictionaryEntry)_objects[index]!;
+                    return _isKeys ? entry.Key : entry.Value;
                 }
                 set => throw new NotSupportedException(GetNotSupportedErrorMessage());
             }

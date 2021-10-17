@@ -580,7 +580,7 @@ namespace System.Collections.Specialized.Tests
                 orderedDictionary.Add(item, item);
             }
 
-            IList list = (IList)(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
+            IList list = Assert.IsAssignableFrom<IList>(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
 
             Assert.True(list.IsFixedSize);
             Assert.True(list.IsReadOnly);
@@ -615,7 +615,7 @@ namespace System.Collections.Specialized.Tests
         {
             var orderedDictionary = new OrderedDictionary();
             orderedDictionary.Add("foo", "bar");
-            IList list = (IList)(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
+            IList list = Assert.IsAssignableFrom<IList>(testKeysProperty ? orderedDictionary.Keys : orderedDictionary.Values);
 
             Assert.Throws<NotSupportedException>(() =>
             {
