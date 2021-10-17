@@ -9,8 +9,8 @@ namespace System.IO.Tests
     public class File_GetSetAttributesCommon : FileGetSetAttributes
     {
         protected override FileAttributes GetAttributes(string path) => File.GetAttributes(path);
-        protected override FileAttributes GetAttributes(SafeFileHandle fileHandle) => File.GetAttributes(fileHandle);
+        protected FileAttributes GetAttributes(SafeFileHandle fileHandle) => File.GetAttributes(fileHandle);
         protected override void SetAttributes(string path, FileAttributes attributes) => File.SetAttributes(path, attributes);
-        protected override void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes) => File.SetAttributes(fileHandle, attributes);
+        protected void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes) => File.SetAttributes(fileHandle, attributes);
     }
 }

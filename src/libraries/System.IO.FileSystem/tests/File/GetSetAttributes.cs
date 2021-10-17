@@ -9,15 +9,25 @@ namespace System.IO.Tests
     public class File_GetSetAttributes : BaseGetSetAttributes
     {
         protected override FileAttributes GetAttributes(string path) => File.GetAttributes(path);
-        protected override FileAttributes GetAttributes(SafeFileHandle fileHandle) => File.GetAttributes(fileHandle);
+        protected FileAttributes GetAttributes(SafeFileHandle fileHandle) => File.GetAttributes(fileHandle);
         protected override void SetAttributes(string path, FileAttributes attributes) => File.SetAttributes(path, attributes);
-        protected override void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes) => File.SetAttributes(fileHandle, attributes);
+        protected void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes) => File.SetAttributes(fileHandle, attributes);
 
         // Getting only throws for File, not FileInfo
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void GetAttributes_MissingFile(char trailingChar)
         {
             Assert.Throws<FileNotFoundException>(() => GetAttributes(GetTestFilePath() + trailingChar));
+        }
+
+        [Theory, MemberData(nameof(TrailingCharacters))]
+        public void GetAttributes_MissingFile_SafeFileHandle(char trailingChar)
+        {
+            Assert.Throws<FileNotFoundException>(() =>
+            {
+                using var fileHandle = File.OpenHandle(GetTestFilePath() + trailingChar);
+                GetAttributes(fileHandle);
+            });
         }
 
         // Getting only throws for File, not FileInfo

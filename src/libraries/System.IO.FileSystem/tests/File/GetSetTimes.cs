@@ -43,6 +43,24 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
+        public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes_SafeFileHandle()
+        {
+            // On Linux, we synthesize CreationTime from the oldest of status changed time and write time
+            //  if birth time is not available. So WriteTime should never be earlier.
+
+            // Set different values for all three
+            // Status changed time will be when the file was first created, in this case)
+            string path = GetExistingItem();
+            using var fileHandle = File.OpenHandle(path);
+            File.SetLastWriteTime(fileHandle, DateTime.Now.AddMinutes(1));
+            File.SetLastAccessTime(fileHandle, DateTime.Now.AddMinutes(2));
+
+            // Assert.InRange is inclusive.
+            Assert.InRange(File.GetCreationTimeUtc(fileHandle), DateTime.MinValue, File.GetLastWriteTimeUtc(fileHandle));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture()
         {
             // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
@@ -60,6 +78,28 @@ namespace System.IO.Tests
             Assert.Equal(newCreationTimeUTC, File.GetLastWriteTimeUtc(path));
 
             Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(path));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture_SafeFileHandle()
+        {
+            // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
+            // Changing the CreationTime, updates mtime and causes ctime to change to the current time.
+            // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
+
+            string path = GetTestFilePath();
+            await File.WriteAllTextAsync(path, "");
+
+            // Set the creation time to a value in the past that is between ctime and now.
+            using var fileHandle = File.OpenHandle(path);
+            await Task.Delay(600);
+            DateTime newCreationTimeUTC = DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(300));
+            File.SetCreationTimeUtc(fileHandle, newCreationTimeUTC);
+
+            Assert.Equal(newCreationTimeUTC, File.GetLastWriteTimeUtc(fileHandle));
+
+            Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(fileHandle));
         }
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
@@ -244,6 +284,24 @@ namespace System.IO.Tests
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
 
+        [Fact]
+        public void SetLastWriteTimeTicks_SafeFileHandle()
+        {
+            string firstFilePath = GetTestFilePath();
+            using var firstFileHandle = File.OpenHandle(firstFilePath);
+
+            string secondFilePath = GetTestFilePath();
+            using var secondFileHandle = File.OpenHandle(secondFilePath);
+
+            File.WriteAllText(firstFileHandle, "");
+            File.WriteAllText(secondFileHandle, "");
+
+            File.SetLastAccessTimeUtc(secondFileHandle, DateTime.UtcNow);
+            long firstFileTicks = File.GetLastWriteTimeUtc(firstFileHandle).Ticks;
+            long secondFileTicks = File.GetLastWriteTimeUtc(secondFileHandle).Ticks;
+            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
+        }
+
         [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format/Browser Platform do not support nanosecond granularity.
         public void SetUptoNanoseconds()
         {
@@ -255,6 +313,22 @@ namespace System.IO.Tests
             long ticks = File.GetLastWriteTimeUtc(file).Ticks;
 
             Assert.Equal(dateTime, File.GetLastWriteTimeUtc(file));
+            Assert.Equal(ticks, dateTime.Ticks);
+        }
+
+        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format/Browser Platform do not support nanosecond granularity.
+        public void SetUptoNanoseconds_SafeFileHandle()
+        {
+            string filePath = GetTestFilePath();
+            File.WriteAllText(filePath, "");
+
+            using var fileHandle = File.OpenHandle(filePath);
+
+            DateTime dateTime = DateTime.UtcNow;
+            File.SetLastWriteTimeUtc(fileHandle, dateTime);
+            long ticks = File.GetLastWriteTimeUtc(fileHandle).Ticks;
+
+            Assert.Equal(dateTime, File.GetLastWriteTimeUtc(fileHandle));
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
@@ -274,6 +348,23 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
+        // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
+        [PlatformSpecific(~TestPlatforms.Linux)]
+        [ConditionalFact(nameof(SupportsLongMaxDateTime))]
+        public void SetDateTimeMax_SafeFileHandle()
+        {
+            string file = GetTestFilePath();
+            File.WriteAllText(file, "");
+
+            using var fileHandle = File.OpenHandle(file);
+            DateTime dateTime = new (9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
+            File.SetLastWriteTimeUtc(fileHandle, dateTime);
+            long ticks = File.GetLastWriteTimeUtc(fileHandle).Ticks;
+
+            Assert.Equal(dateTime, File.GetLastWriteTimeUtc(fileHandle));
+            Assert.Equal(ticks, dateTime.Ticks);
+        }
+
         [Fact]
         public void SetLastAccessTimeTicks()
         {
@@ -286,6 +377,24 @@ namespace System.IO.Tests
             File.SetLastWriteTimeUtc(secondFile, DateTime.UtcNow);
             long firstFileTicks = File.GetLastAccessTimeUtc(firstFile).Ticks;
             long secondFileTicks = File.GetLastAccessTimeUtc(secondFile).Ticks;
+            Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
+        }
+
+        [Fact]
+        public void SetLastAccessTimeTicks_SafeFileHandle()
+        {
+            string firstFilePath = GetTestFilePath();
+            string secondFilePath = GetTestFilePath();
+
+            File.WriteAllText(firstFilePath, "");
+            File.WriteAllText(secondFilePath, "");
+
+            using var firstFileHandle = File.OpenHandle(firstFilePath);
+            using var secondFileHandle = File.OpenHandle(secondFilePath);
+
+            File.SetLastWriteTimeUtc(secondFileHandle, DateTime.UtcNow);
+            long firstFileTicks = File.GetLastAccessTimeUtc(firstFileHandle).Ticks;
+            long secondFileTicks = File.GetLastAccessTimeUtc(secondFileHandle).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
     }
