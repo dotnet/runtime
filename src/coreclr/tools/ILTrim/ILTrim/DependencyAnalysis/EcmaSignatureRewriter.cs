@@ -149,8 +149,6 @@ namespace ILTrim.DependencyAnalysis
                         }
                     }
                     break;
-                case SignatureTypeCode.TypedReference:
-                    encoder.PrimitiveType(PrimitiveTypeCode.TypedReference); break;
                 case SignatureTypeCode.FunctionPointer:
                     {
                         SignatureHeader header = _blobReader.ReadSignatureHeader();
@@ -216,7 +214,16 @@ namespace ILTrim.DependencyAnalysis
                     isByRef = true;
                     goto again;
                 }
-                RewriteType(typeCode, localVarTypeEncoder.Type(isByRef, isPinned));
+
+                if (typeCode == SignatureTypeCode.TypedReference)
+                {
+                    System.Diagnostics.Debug.Assert(!isPinned && !isByRef);
+                    localVarTypeEncoder.TypedReference();
+                }
+                else
+                {
+                    RewriteType(typeCode, localVarTypeEncoder.Type(isByRef, isPinned));
+                }
             }
         }
 
@@ -268,6 +275,10 @@ namespace ILTrim.DependencyAnalysis
             {
                 returnTypeEncoder.Void();
             }
+            else if (typeCode == SignatureTypeCode.TypedReference)
+            {
+                returnTypeEncoder.TypedReference();
+            }
             else
             {
                 RewriteType(typeCode, returnTypeEncoder.Type(isByRef));
@@ -291,7 +302,15 @@ namespace ILTrim.DependencyAnalysis
                     isByRef = true;
                     goto againParameter;
                 }
-                RewriteType(typeCode, paramEncoder.Type(isByRef));
+
+                if (typeCode == SignatureTypeCode.TypedReference)
+                {
+                    paramEncoder.TypedReference();
+                }
+                else
+                {
+                    RewriteType(typeCode, paramEncoder.Type(isByRef));
+                }
             }
         }
 
