@@ -125,6 +125,38 @@ namespace System.Numerics
             get => new Vector4(0.0f, 0.0f, 0.0f, 1.0f);
         }
 
+        public float this[int index]
+        {
+            get => index switch
+            {
+                0 => X,
+                1 => Y,
+                2 => Z,
+                3 => W,
+                _ => throw new ArgumentOutOfRangeException(nameof(index))
+            };
+            set
+            {
+                switch (index)
+                {
+                    case 0:
+                        X = value;
+                        break;
+                    case 1:
+                        Y = value;
+                        break;
+                    case 2:
+                        Z = value;
+                        break;
+                    case 3:
+                        W = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index));
+                }
+            }
+        }
+
         /// <summary>Adds two vectors together.</summary>
         /// <param name="left">The first vector to add.</param>
         /// <param name="right">The second vector to add.</param>
