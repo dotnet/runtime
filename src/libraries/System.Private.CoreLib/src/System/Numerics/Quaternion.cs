@@ -65,6 +65,38 @@ namespace System.Numerics
             get => new Quaternion(0, 0, 0, 1);
         }
 
+        public float this[int index]
+        {
+            get => index switch
+            {
+                0 => X,
+                1 => Y,
+                2 => Z,
+                3 => W,
+                _ => throw new ArgumentOutOfRangeException(nameof(index))
+            };
+            set
+            {
+                switch (index)
+                {
+                    case 0:
+                        X = value;
+                        break;
+                    case 1:
+                        Y = value;
+                        break;
+                    case 2:
+                        Z = value;
+                        break;
+                    case 3:
+                        W = value;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(index));
+                }
+            }
+        }
+
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
         /// <value><see langword="true" /> if the current instance is the identity quaternion; otherwise, <see langword="false" />.</value>
         /// <altmember cref="System.Numerics.Quaternion.Identity"/>
