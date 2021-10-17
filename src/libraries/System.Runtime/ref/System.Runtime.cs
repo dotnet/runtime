@@ -7900,6 +7900,7 @@ namespace System
         : System.IEquatable<ValueArray<T, R>>
     {
         public int Length { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public ref T GetPinnableReference() { throw null; }
         private T Element0;
         public ref T this[int index] { get { throw null; } }
