@@ -3650,9 +3650,17 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 
     CORINFO_CLASS_HANDLE fieldClsHnd;
     var_types fieldElementType = JITtype2varType(info.compCompHnd->getFieldType(fieldToken, &fieldClsHnd, fieldOwnerHnd));
-    assert(fieldElementType == var_types::TYP_STRUCT);
+    unsigned totalFieldSize;
 
-    const unsigned totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
+    // Most static initialization data fields are of some structure, but it is possible for them to be of various primitive types as well
+    if (fieldElementType == var_types::TYP_STRUCT)
+    {
+        totalFieldSize = info.compCompHnd->getClassSize(fieldClsHnd);
+    }
+    else
+    {
+        totalFieldSize = genTypeSize(fieldElementType);
+    }
 
     // Limit to primitive or enum type - see ArrayNative::GetSpanDataFrom()
     CORINFO_CLASS_HANDLE targetElemHnd  = sig->sigInst.methInst[0];
