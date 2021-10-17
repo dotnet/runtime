@@ -37,8 +37,7 @@ TypeHandle ClassLoader::CanonicalizeGenericArg(TypeHandle thGenericArg)
 #if defined(FEATURE_SHARE_GENERIC_CODE)
     CorElementType et = thGenericArg.GetSignatureCorElementType();
 
-    //TODO: we can narrow the scenario
-    //      by requiring a special/unspeakable/unusable element type
+    // canonical form of MD object array is an MD object array - do not lose the rank
     if (et == ELEMENT_TYPE_ARRAY &&
         thGenericArg.GetArrayElementTypeHandle() == TypeHandle(g_pObjectClass))
     {

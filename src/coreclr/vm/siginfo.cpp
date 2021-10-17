@@ -1365,6 +1365,15 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                             if (tmpEType == ELEMENT_TYPE_CLASS)
                                 typeHnd = TypeHandle(g_pCanonMethodTableClass);
                         }
+                        if (elemType == ELEMENT_TYPE_ARRAY)
+                        {
+                            IfFailThrowBF(tempsig.GetElemType(&elemType), BFA_BAD_SIGNATURE, pModule);
+                            // canonical form of MD object array is an MD object array - do not lose the rank
+                            if (elemType != ELEMENT_TYPE_OBJECT)
+                            {
+                                typeHnd = TypeHandle(g_pCanonMethodTableClass);
+                            }
+                        }
                         else if ((elemType == (CorElementType)ELEMENT_TYPE_CANON_ZAPSIG) ||
                                  (CorTypeInfo::GetGCType_NoThrow(elemType) == TYPE_GC_REF))
                         {
