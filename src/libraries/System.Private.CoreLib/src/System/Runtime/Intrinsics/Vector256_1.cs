@@ -109,9 +109,9 @@ namespace System.Runtime.Intrinsics
         {
             get
             {
-                var items = new T[Count];
-                Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref items[0]), this);
-                return items[index];
+                if ((uint)index >= 256 / Unsafe.SizeOf<T>())
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                return Unsafe.Add(ref Unsafe.As<ulong, T>(ref Unsafe.AsRef(in _00)), index);
             }
         }
 

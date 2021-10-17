@@ -86,9 +86,15 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        public unsafe T this[int index] => (uint)index >= 64 / Unsafe.SizeOf<T>()
-            ? throw new ArgumentOutOfRangeException(nameof(index))
-            : Unsafe.Add(ref Unsafe.As<ulong, T>(ref Unsafe.AsRef(in _00)), index);
+        public unsafe T this[int index]
+        {
+            get
+            {
+                if ((uint)index >= 64 / Unsafe.SizeOf<T>())
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                return Unsafe.Add(ref Unsafe.As<ulong, T>(ref Unsafe.AsRef(in _00)), index);
+            }
+        }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
