@@ -1475,6 +1475,28 @@ namespace System.Runtime.Intrinsics
             return vector.GetElementUnsafe(index);
         }
 
+        /// <summary>Sets the element at the specified index.</summary>
+        /// <typeparam name="T">The type of the input vector.</typeparam>
+        /// <param name="vector">The vector to set the element.</param>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value of the element to set.</param>
+        /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        public static void SetElement<T>(this Vector64<T> vector, int index, T value)
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+
+            if ((uint)(index) >= (uint)(Vector64<T>.Count))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            vector.SetElementUnsafe(index, value);
+        }
+
+
         /// <summary>Compares two vectors to determine which is greater on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="left" />.</param>
         /// <param name="right">The vector to compare with <paramref name="right" />.</param>

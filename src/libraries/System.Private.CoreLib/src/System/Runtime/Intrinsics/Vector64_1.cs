@@ -85,7 +85,12 @@ namespace System.Runtime.Intrinsics
                 }
             }
         }
-        public unsafe T this[int index] => this.GetElement(index);
+
+        public T this[int index]
+        {
+            get => this.GetElement(index);
+            set => this.SetElement(index, value);
+        }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
