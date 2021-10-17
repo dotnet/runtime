@@ -1,18 +1,25 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Internal.Runtime.CompilerServices;
 
 namespace System
 {
     public struct ValueArray<T, R> // where R : System.Array
+        : IEquatable<ValueArray<T, R>>
     {
         public int Length => RankOf<R>.Value;
 
         // For the array of Length N, runtime will add N-1 elements immediately after this one.
         private T Element0;
+
+        /// <summary>
+        /// Returns a reference to the first element of the value array.
+        /// </summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ref T GetPinnableReference() => ref new ByReference<T>(ref Element0).Value;
 
         /// <summary>
         /// Returns a reference to specified element of the value array.
@@ -29,7 +36,7 @@ namespace System
                 if ((uint)index >= (uint)Length)
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
-                return ref Unsafe.Add(ref new ByReference<T>(ref Element0).Value, (nint)(uint)index /* force zero-extension */);
+                return ref Unsafe.Add(ref GetPinnableReference(), (nint)(uint)index /* force zero-extension */);
             }
         }
 
@@ -46,6 +53,35 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException();
 
             return new Span<T>(ref Unsafe.Add(ref Element0, (nint)(uint)start /* force zero-extension */), Length - start);
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj)
+        {
+            return obj is ValueArray<T, R> other && Equals(other);
+        }
+
+        public bool Equals(ValueArray<T, R> other)
+        {
+            for (int i = 0; i < Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(this[i], other[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            HashCode hashCode = default;
+            for (int i = 0; i < Length; i++)
+            {
+                hashCode.Add(this[i]);
+            }
+
+            return hashCode.ToHashCode();
         }
     }
 

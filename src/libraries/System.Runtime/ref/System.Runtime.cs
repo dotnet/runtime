@@ -7897,11 +7897,16 @@ namespace System
         Query = 3,
     }
     public partial struct ValueArray<T, R> // where R : System.Array
+        : System.IEquatable<ValueArray<T, R>>
     {
         public int Length { get { throw null; } }
+        public ref T GetPinnableReference() { throw null; }
         private T Element0;
         public ref T this[int index] { get { throw null; } }
         public Span<T> Slice(int start) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(ValueArray<T, R> other) { throw null; }
+        public override int GetHashCode() { throw null; }
     }
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
     {
