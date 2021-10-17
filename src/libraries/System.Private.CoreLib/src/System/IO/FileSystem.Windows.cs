@@ -119,7 +119,7 @@ namespace System.IO
         public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fileHandle.Path, ref data, true);
+            int errorCode = FillAttributeInfo(fileHandle, ref data);
             return errorCode != 0
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fileHandle.Path)
                 : (FileAttributes)data.dwFileAttributes;
@@ -135,7 +135,7 @@ namespace System.IO
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fileHandle.Path, ref data, false);
+            int errorCode = FillAttributeInfo(fileHandle, ref data);
             return errorCode != 0
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fileHandle.Path)
                 : data.ftCreationTime.ToDateTimeOffset();
@@ -160,7 +160,7 @@ namespace System.IO
         public static DateTimeOffset GetLastAccessTime(SafeFileHandle fileHandle)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fileHandle.Path, ref data, false);
+            int errorCode = FillAttributeInfo(fileHandle, ref data);
             return errorCode != 0
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fileHandle.Path)
                 : data.ftLastAccessTime.ToDateTimeOffset();
@@ -178,7 +178,7 @@ namespace System.IO
         public static DateTimeOffset GetLastWriteTime(SafeFileHandle fileHandle)
         {
             Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
-            int errorCode = FillAttributeInfo(fileHandle.Path, ref data, false);
+            int errorCode = FillAttributeInfo(fileHandle, ref data);
             return errorCode != 0
                 ? throw Win32Marshal.GetExceptionForWin32Error(errorCode, fileHandle.Path)
                 : data.ftLastWriteTime.ToDateTimeOffset();

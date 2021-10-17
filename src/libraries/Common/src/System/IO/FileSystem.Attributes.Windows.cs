@@ -112,6 +112,22 @@ namespace System.IO
             return errorCode;
         }
 
+        internal static int FillAttributeInfo(SafeFileHandle fileHandle, ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data)
+        {
+            if (fileHandle.IsInvalid)
+            {
+                return Marshal.GetLastWin32Error();
+            }
+            else
+            {
+                Interop.Kernel32.BY_HANDLE_FILE_INFORMATION fileInformationData = default;
+                Interop.Kernel32.GetFileInformationByHandle(fileHandle, fileInformationData);
+                data.PopulateFrom(ref fileInformationData);
+
+                return Interop.Errors.ERROR_SUCCESS;
+            }
+        }
+
         internal static bool IsPathUnreachableError(int errorCode)
         {
             switch (errorCode)
