@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 
 using ILCompiler.DependencyAnalysisFramework;
 
@@ -65,10 +66,23 @@ namespace ILTrim.DependencyAnalysis
                     {
                         // If the slot defining virtual method is used, make sure we generate the implementation method.
                         var ecmaImpl = (EcmaMethod)impl.GetTypicalMethodDefinition();
+
+                        EcmaMethod declDefinition = (EcmaMethod)decl.GetTypicalMethodDefinition();
+                        VirtualMethodUseNode declUse = factory.VirtualMethodUse(declDefinition);
+
                         yield return new(
                             factory.MethodDefinition(ecmaImpl.Module, ecmaImpl.Handle),
-                            factory.VirtualMethodUse((EcmaMethod)decl.GetTypicalMethodDefinition()),
+                            declUse,
                             "Virtual method");
+
+                        var implHandle = TryGetMethodImplementationHandle(_type, declDefinition);
+                        if (!implHandle.IsNil)
+                        {
+                            yield return new(
+                                factory.MethodImplementation(_type.EcmaModule, implHandle),
+                                declUse,
+                                "Explicitly implemented virtual method");
+                        }
                     }
                 }
             }
@@ -85,10 +99,24 @@ namespace ILTrim.DependencyAnalysis
                     MethodDesc implMethod = _type.ResolveInterfaceMethodToVirtualMethodOnType(interfaceMethod);
                     if (implMethod != null)
                     {
+                        var interfaceMethodDefinition = (EcmaMethod)interfaceMethod.GetTypicalMethodDefinition();
+                        VirtualMethodUseNode interfaceMethodUse = factory.VirtualMethodUse(interfaceMethodDefinition);
+
                         // Interface method implementation provided within the class hierarchy.
                         yield return new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
-                            factory.VirtualMethodUse((EcmaMethod)interfaceMethod.GetTypicalMethodDefinition()),
+                            interfaceMethodUse,
                             "Interface method");
+
+                        if (factory.IsModuleTrimmed(_type.EcmaModule))
+                        {
+                            MethodImplementationHandle implHandle = TryGetMethodImplementationHandle(_type, interfaceMethodDefinition);
+                            if (!implHandle.IsNil)
+                            {
+                                yield return new(factory.MethodImplementation(_type.EcmaModule, implHandle),
+                                    interfaceMethodUse,
+                                    "Explicitly implemented interface method");
+                            }
+                        }
                     }
                     else
                     {
@@ -137,5 +165,21 @@ namespace ILTrim.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+
+        private static MethodImplementationHandle TryGetMethodImplementationHandle(EcmaType implementingType, EcmaMethod declMethod)
+        {
+            MetadataReader reader = implementingType.MetadataReader;
+
+            foreach (MethodImplementationHandle implRecordHandle in reader.GetTypeDefinition(implementingType.Handle).GetMethodImplementations())
+            {
+                MethodImplementation implRecord = reader.GetMethodImplementation(implRecordHandle);
+                if (implementingType.EcmaModule.TryGetMethod(implRecord.MethodDeclaration) == declMethod)
+                {
+                    return implRecordHandle;
+                }
+            }
+
+            return default;
+        }
     }
 }
