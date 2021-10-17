@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -73,27 +74,13 @@ namespace System.Numerics
         {
             get
             {
-                if ((uint)row > 2 || (uint)column > 1) ThrowHelper.ThrowArgumentOutOfRangeException();
-
-                if (row == 0)
+                if ((uint)row >= 3)
+                    throw new ArgumentOutOfRangeException(nameof(row));
+                unsafe
                 {
-                    if (column == 0) return M11;
-                    if (column == 1) return M12;
+                    var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector3));
+                    return vrow[column];
                 }
-                else if (row == 1)
-                {
-                    if (column == 0) return M21;
-                    if (column == 1) return M22;
-                }
-                else
-                {
-                    if (column == 0) return M31;
-                    if (column == 1) return M32;
-                }
-
-                // unreachable
-                Debug.Assert(true);
-                return 0;
             }
             set
             {

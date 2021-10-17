@@ -156,102 +156,15 @@ namespace System.Numerics
 
         public float this[int row, int column]
         {
-            get => row switch
+            get
             {
-                0 => column switch
-                {
-                    0 => M11,
-                    1 => M12,
-                    2 => M13,
-                    3 => M14,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                1 => column switch
-                {
-                    0 => M21,
-                    1 => M22,
-                    2 => M23,
-                    3 => M24,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                2 => column switch
-                {
-                    0 => M31,
-                    1 => M32,
-                    2 => M33,
-                    3 => M34,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                3 => column switch
-                {
-                    0 => M41,
-                    1 => M42,
-                    2 => M43,
-                    3 => M44,
-                    _ => throw new ArgumentOutOfRangeException(nameof(column))
-                },
-                _ => throw new ArgumentOutOfRangeException(nameof(row))
-            };
-            set
-            {
-                switch (row)
-                {
-                    case 0:
-                        switch (column)
-                        {
-                            case 0:
-                                M11 = value;
-                                break;
-                            case 1:
-                                M12 = value;
-                                break;
-                            case 2:
-                                M13 = value;
-                                break;
-                            case 3:
-                                M14 = value;
-                                break;
-                        }
+                if ((uint)row >= 4)
+                    throw new ArgumentOutOfRangeException(nameof(row));
 
-                        throw new ArgumentOutOfRangeException(nameof(column));
-                    case 1:
-                        switch (column)
-                        {
-                            case 0:
-                                M21 = value;
-                                break;
-                            case 1:
-                                M22 = value;
-                                break;
-                            case 2:
-                                M23 = value;
-                                break;
-                            case 3:
-                                M24 = value;
-                                break;
-                        }
-
-                        throw new ArgumentOutOfRangeException(nameof(column));
-                    case 2:
-                        switch (column)
-                        {
-                            case 0:
-                                M31 = value;
-                                break;
-                            case 1:
-                                M32 = value;
-                                break;
-                            case 2:
-                                M33 = value;
-                                break;
-                            case 3:
-                                M34 = value;
-                                break;
-                        }
-
-                        throw new ArgumentOutOfRangeException(nameof(column));
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(row));
+                unsafe
+                {
+                    var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
+                    return vrow[column];
                 }
             }
         }
