@@ -1,8 +1,8 @@
 
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 public class Program
 {
@@ -12,7 +12,7 @@ public class Program
     {
         TestSizeOf();
         TestLength();
-        TestValueSemantic();
+        TestByValueSemantic();
         TestIndexing();
         TestSlice();
         TestGCRootsRef();
@@ -20,15 +20,25 @@ public class Program
         TestListT();
         TestAsField();
 
-        Console.WriteLine("DONE");
+        if (returnVal == 100)
+            Console.WriteLine("PASS");
+
         return returnVal;
     }
 
     class QuadTree
     {
+        // embedded indexable data with no indirections!!
         private ValueArray<QuadTree, object[,,,]> _nodes;
 
-        public ValueArray<QuadTree, object[,,,]> Nodes { get => _nodes; }
+        // NB: intentionally returning byval here - just to test byval returning.
+        public ValueArray<QuadTree, object[,,,]> Nodes
+        {
+            get
+            {
+                return _nodes;
+            }
+        }
 
         public QuadTree(int depth)
         {
@@ -55,8 +65,9 @@ public class Program
 
     private static void TestAsField()
     {
+        Console.WriteLine(nameof(TestAsField));
         QuadTree tree = new QuadTree(10);
-        Test(10, tree.CountNodes());
+        Test(1398101, tree.CountNodes());
     }
 
     private unsafe static void TestSizeOf()
@@ -113,9 +124,9 @@ public class Program
         Test(42, new ValueArray<int, object[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>().Length);
     }
 
-    private static void TestValueSemantic()
+    private static void TestByValueSemantic()
     {
-        Console.WriteLine(nameof(TestValueSemantic));
+        Console.WriteLine(nameof(TestByValueSemantic));
 
         var arr1 = new ValueArray<int, object[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>();
         for (int i = 0; i < arr1.Length; i++)
@@ -124,7 +135,6 @@ public class Program
         }
 
         var arr2 = arr1;
-
         for (int i = 0; i < arr1.Length; i++)
         {
             arr1[i]++;
@@ -135,6 +145,17 @@ public class Program
             Test(i, arr2[i]);
             Test(i + 1, arr1[i]);
         }
+
+        // NB: also testing boxing here.
+        IEquatable<ValueArray<int, object[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]>> ieq = arr1;
+
+        var arr3 = arr1;
+        Test(true, ieq.Equals(arr3));
+        Test(arr3, arr1);
+        arr3[10] = -1;
+
+        Test(false, ieq.Equals(arr3));
+        Test(false, arr1.Equals(arr3));
     }
 
     private static void TestGCRootsRef()
@@ -168,7 +189,7 @@ public class Program
         }
     }
 
-    internal struct BSI
+    public struct BSI
     {
         public byte B;
         public string S;
