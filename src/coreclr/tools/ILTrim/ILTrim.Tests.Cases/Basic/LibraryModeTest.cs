@@ -32,4 +32,17 @@ namespace Mono.Linker.Tests.Cases.Basic
         void P_M2() { }
         void P_M3() { }
     }
+
+    internal class InternalType
+    {
+        public void M1() { }
+    }
+
+    [Kept]
+    [KeptMember(".ctor()")] // Public types are assumed to be constructed
+    public class AnotherPublicType
+    {
+        [Kept]
+        public void M1() { }
+    }
 }

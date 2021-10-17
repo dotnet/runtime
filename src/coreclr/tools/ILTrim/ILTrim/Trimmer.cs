@@ -74,13 +74,13 @@ namespace ILTrim
             {
                 int rootNumber = 1;
                 List<string> methodNames = new List<string>();
-                foreach (var methodH in module.MetadataReader.MethodDefinitions)
+                foreach (var methodHandle in module.MetadataReader.MethodDefinitions)
                 {
-                    var method = module.MetadataReader.GetMethodDefinition(methodH);
+                    var method = module.MetadataReader.GetMethodDefinition(methodHandle);
                     var type = module.MetadataReader.GetTypeDefinition(method.GetDeclaringType());
-                    if (!type.IsNested && method.Attributes.IsPublic())
+                    if (!type.IsNested && IsPublic(type.Attributes) && method.Attributes.IsPublic())
                     {
-                        analyzer.AddRoot(factory.MethodDefinition(module, methodH), $"LibraryMode_{rootNumber++}");
+                        analyzer.AddRoot(factory.MethodDefinition(module, methodHandle), $"LibraryMode_{rootNumber++}");
                     }
                 }
             }
@@ -128,5 +128,8 @@ namespace ILTrim
                 }
             }
         }
+
+        private static bool IsPublic(TypeAttributes typeAttributes) =>
+            (typeAttributes & TypeAttributes.VisibilityMask) == TypeAttributes.Public;
     }
 }
