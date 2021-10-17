@@ -27,6 +27,8 @@ namespace System.Numerics
         /// <summary>The rotation component of the quaternion.</summary>
         public float W;
 
+        internal const int Count = 16;
+
         /// <summary>Constructs a quaternion from the specified components.</summary>
         /// <param name="x">The value to assign to the X component of the quaternion.</param>
         /// <param name="y">The value to assign to the Y component of the quaternion.</param>
@@ -67,34 +69,8 @@ namespace System.Numerics
 
         public float this[int index]
         {
-            get => index switch
-            {
-                0 => X,
-                1 => Y,
-                2 => Z,
-                3 => W,
-                _ => throw new ArgumentOutOfRangeException(nameof(index))
-            };
-            set
-            {
-                switch (index)
-                {
-                    case 0:
-                        X = value;
-                        break;
-                    case 1:
-                        Y = value;
-                        break;
-                    case 2:
-                        Z = value;
-                        break;
-                    case 3:
-                        W = value;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(index));
-                }
-            }
+            get => this.GetElement(index);
+            set => this.WithElement(index, value);
         }
 
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
