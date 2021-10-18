@@ -123,7 +123,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34443")]
         public void XmlNodeReaderMoveToUnexistedAttribute()
         {
             string xml = "<root><child attr1='value1'><other /></child></root>";

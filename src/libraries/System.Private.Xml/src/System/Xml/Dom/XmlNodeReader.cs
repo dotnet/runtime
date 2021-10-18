@@ -1360,32 +1360,23 @@ namespace System.Xml
         // Moves to the attribute with the specified name.
         public override bool MoveToAttribute(string name)
         {
-            if (!IsInReadingStates())
-                return false;
-            _readerNav.ResetMove(ref _curDepth, ref _nodeType);
-            if (_readerNav.MoveToAttribute(name))
-            { //, ref curDepth ) ) {
-                _curDepth++;
-                _nodeType = _readerNav.NodeType;
-                if (_bInReadBinary)
-                {
-                    FinishReadBinary();
-                }
-                return true;
-            }
-            _readerNav.RollBackMove(ref _curDepth);
-            return false;
+            return MoveToAttribute(name, string.Empty);
         }
 
         // Moves to the attribute with the specified name and namespace.
         public override bool MoveToAttribute(string name, string? namespaceURI)
         {
             if (!IsInReadingStates())
+            {
                 return false;
+            }
+
+            XmlNodeType savedNodeType = _nodeType;
+
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = namespaceURI ?? string.Empty;
             if (_readerNav.MoveToAttribute(name, ns))
-            { //, ref curDepth ) ) {
+            {
                 _curDepth++;
                 _nodeType = _readerNav.NodeType;
                 if (_bInReadBinary)
@@ -1395,6 +1386,7 @@ namespace System.Xml
                 return true;
             }
             _readerNav.RollBackMove(ref _curDepth);
+            _nodeType = savedNodeType;
             return false;
         }
 
