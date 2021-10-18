@@ -587,7 +587,7 @@ pal::string_t pal::get_current_os_rid_platform()
                 *pos = 0;
 
             }
-            else if (major == 11)
+            else if (major == 12)
             {
                 // for 11.x we publish RID as 11.0
                 // if wwe return anytrhing else, it would brek the graph porocessing
@@ -602,7 +602,6 @@ pal::string_t pal::get_current_os_rid_platform()
                 {
                     // strip anything after second dot and return something like 10.5
                     *pos = 0;
-                    size = pos - str - 1;
                 }
             }
         }
