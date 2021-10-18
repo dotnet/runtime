@@ -23,6 +23,7 @@ namespace ILTrim
             string logFile = null;
             int? parallelism = null;
             bool libraryMode = false;
+            IReadOnlyList<KeyValuePair<string, bool>> featureSwitches = null;
 
             ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
             {
@@ -64,17 +65,30 @@ namespace ILTrim
 
                 syntax.DefineOption("library", ref libraryMode, "Use library mode for the input assembly");
 
+                syntax.DefineOptionList<KeyValuePair<string, bool>>("feature", ref featureSwitches, requireValue: false, help: "Feature switch", valueConverter: (value) =>
+                {
+                    int sep = value.IndexOf('=');
+                    if (sep == -1)
+                        throw new CommandLineException("The format of --feature value is <featureswitch>=<value>");
+
+                    string fsName = value.Substring(0, sep);
+                    string fsValue = value.Substring(sep + 1);
+                    return new KeyValuePair<string, bool>(fsName, bool.Parse(fsValue));
+                });
+
                 syntax.DefineParameter("input", ref input, "The input assembly");
             });
 
             if (input == null)
                 throw new CommandLineException("Input assembly is required");
 
+            Dictionary<string, bool> featureSwitchesDictionary = new(featureSwitches);
             var settings = new TrimmerSettings(
                 MaxDegreeOfParallelism: parallelism,
                 LogStrategy: logStrategy,
                 LogFile: logFile,
-                LibraryMode: libraryMode);
+                LibraryMode: libraryMode,
+                FeatureSwitches: featureSwitchesDictionary);
             Trimmer.TrimAssembly(
                 input.Trim(),
                 trimAssemblies,

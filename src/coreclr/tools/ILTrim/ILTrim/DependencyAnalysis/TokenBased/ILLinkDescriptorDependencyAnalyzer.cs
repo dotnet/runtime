@@ -16,17 +16,20 @@ namespace ILTrim.DependencyAnalysis
     internal class ILLinkDescriptorDependencyAnalyzer : ManifestResourceNode.IManifestResourceDependencyAnalyzer
     {
         private readonly EcmaModule _module;
-        private readonly IReadOnlyDictionary<string, bool> _featureSwitches;
 
-        public ILLinkDescriptorDependencyAnalyzer(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitches)
+        public ILLinkDescriptorDependencyAnalyzer(EcmaModule module)
         {
             _module = module;
-            _featureSwitches = featureSwitches;
         }
 
         public DependencyList GetDependencies(NodeFactory factory, Stream content)
         {
-            return DescriptorReader.GetDependencies(_module.Context, XmlReader.Create(content), _module, _featureSwitches, factory);
+            return DescriptorReader.GetDependencies(
+                _module.Context,
+                XmlReader.Create(content),
+                _module,
+                factory.Settings.FeatureSwitches,
+                factory);
         }
 
         private class DescriptorReader : ILCompiler.ProcessLinkerXmlBase

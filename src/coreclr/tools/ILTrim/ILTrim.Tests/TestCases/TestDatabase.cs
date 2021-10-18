@@ -25,6 +25,11 @@ namespace Mono.Linker.Tests.TestCases
             return TestNamesBySuiteName("LinkXml");
         }
 
+        public static IEnumerable<object[]> FeatureSettings()
+        {
+            return TestNamesBySuiteName("FeatureSettings");
+        }
+
         public static TestCaseCollector CreateCollector ()
 		{
 			GetDirectoryPaths (out string rootSourceDirectory, out string testCaseAssemblyPath);

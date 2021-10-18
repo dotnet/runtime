@@ -12,7 +12,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public void Trim (TrimmerOptions options)
         {
             TrimmerSettings settings = new TrimmerSettings(
-                LibraryMode: options.IsLibraryMode);
+                LibraryMode: options.IsLibraryMode,
+                FeatureSwitches: options.FeatureSwitches);
             Trimmer.TrimAssembly(
                 options.InputPath,
                 options.AdditionalLinkAssemblies,

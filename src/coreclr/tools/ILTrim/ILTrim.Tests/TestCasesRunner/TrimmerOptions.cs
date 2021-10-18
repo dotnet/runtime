@@ -12,5 +12,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
         public string? OutputDirectory { get; set; }
         public List<string> ReferencePaths { get; set; } = new List<string> ();
         public bool IsLibraryMode { get; set; } = false;
+        public Dictionary<string, bool> FeatureSwitches { get; set; } = new Dictionary<string, bool>();
     }
 }

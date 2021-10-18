@@ -30,7 +30,7 @@ namespace ILTrim.DependencyAnalysis
             switch (reader.GetString(resource.Name))
             {
                 case "ILLink.Descriptors.xml":
-                    _dependencyAnalyzer = new ILLinkDescriptorDependencyAnalyzer(_module, new Dictionary<string, bool>());
+                    _dependencyAnalyzer = new ILLinkDescriptorDependencyAnalyzer(_module);
                     _skipWritingResource = true;
                     break;
 

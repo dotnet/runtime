@@ -118,6 +118,10 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
             if(flag == "-a" && values.Contains("library"))
                 Options.IsLibraryMode = true;
+            else if (flag == "--feature")
+            {
+                Options.FeatureSwitches.Add(values[0], bool.Parse(values[1]));
+            }
         }
 
 		public virtual void ProcessTestInputAssembly (NPath inputAssemblyPath)

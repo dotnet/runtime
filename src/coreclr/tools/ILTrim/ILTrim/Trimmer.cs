@@ -49,7 +49,7 @@ namespace ILTrim
 
             var trimmedAssemblies = new List<string>(additionalTrimPaths.Select(p => Path.GetFileNameWithoutExtension(p)));
             trimmedAssemblies.Add(Path.GetFileNameWithoutExtension(inputPath));
-            var factory = new NodeFactory(trimmedAssemblies, settings.LibraryMode);
+            var factory = new NodeFactory(trimmedAssemblies, settings);
 
             DependencyAnalyzerBase<NodeFactory> analyzer = settings.LogStrategy switch
             {

@@ -13,7 +13,8 @@ namespace ILTrim
         int? MaxDegreeOfParallelism = null,
         LogStrategy LogStrategy = LogStrategy.None,
         string LogFile = null,
-        bool LibraryMode = false
+        bool LibraryMode = false,
+        IReadOnlyDictionary<string, bool> FeatureSwitches = null
         )
     {
         public int EffectiveDegreeOfParallelism => MaxDegreeOfParallelism ?? Environment.ProcessorCount;
