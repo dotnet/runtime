@@ -1506,6 +1506,10 @@ mono_class_create_ptr (MonoType *type)
 MonoClass *
 mono_class_create_byref (MonoType *type)
 {
+#ifndef ENABLE_EXPERIMENT_ANY_BYREF
+	g_assert_not_reached ();
+#endif
+
 	MonoClass *result;
 	MonoClass *el_class;
 	MonoImage *image;
@@ -1535,7 +1539,7 @@ mono_class_create_byref (MonoType *type)
 		}
 		mono_image_unlock (image);
 	}
-	
+
 	result = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
 
 	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
@@ -4126,8 +4130,10 @@ mono_classes_init (void)
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_array_count);
 	mono_counters_register ("MonoClassPointer count",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_pointer_count);
+#ifdef ENABLE_EXPERIMENT_ANY_BYREF
 	mono_counters_register ("MonoClassPointer (byref) count",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_byref_count);
+#endif
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mono_inflated_methods_size);
 	mono_counters_register ("Inflated classes size",
