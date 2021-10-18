@@ -590,12 +590,12 @@ pal::string_t pal::get_current_os_rid_platform()
             else if (major == 12)
             {
                 // for 11.x we publish RID as 11.0
-                // if wwe return anytrhing else, it would brek the graph porocessing
+                // if we return anything else, it would break the RID graph processing
                 strcpy(str, "11.0");
             }
             else
             {
-                // for 10.x the significant relases are actully the second digit
+                // for 10.x the significant releases are actually the second digit
                 pos = strchr(pos + 1, '.');
 
                 if (pos != NULL)
