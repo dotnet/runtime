@@ -12,9 +12,9 @@
       <Uri>https://github.com/dotnet/emsdk</Uri>
       <Sha>fd04453453de7a7d5581f4f129de09ad6838d89e</Sha>
     </Dependency>
-    <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
+    <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0">
       <Uri>https://github.com/dotnet/wcf</Uri>
-      <Sha>7f504aabb1988e9a093c1e74d8040bd52feb2f01</Sha>
+      <Sha>04c3656e0325277aefa18378f24238d39b259222</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
