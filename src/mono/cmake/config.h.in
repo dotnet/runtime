@@ -1025,6 +1025,9 @@
 /* Enable experiment 'Tiered Compilation' */
 #cmakedefine ENABLE_EXPERIMENT_TIERED 1
 
+/* Enable support for byref of any type */
+#cmakedefine ENABLE_EXPERIMENT_ANY_BYREF 1
+
 /* Enable checked build */
 #cmakedefine ENABLE_CHECKED_BUILD 1
 
