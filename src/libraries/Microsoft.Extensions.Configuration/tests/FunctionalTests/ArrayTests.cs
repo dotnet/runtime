@@ -47,6 +47,7 @@ i=ini_i.i.i.i
 ";
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_KeysAreSorted()
         {
             var config = BuildConfig();
@@ -75,6 +76,7 @@ i=ini_i.i.i.i
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_WithOverwrites()
         {
             var config = BuildConfig();

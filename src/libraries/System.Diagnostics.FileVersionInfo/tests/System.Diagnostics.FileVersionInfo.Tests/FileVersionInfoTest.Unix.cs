@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
 {
     public partial class FileVersionInfoTest
     {
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         [Fact]
         public void NonRegularFile_Throws()
         {
