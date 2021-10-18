@@ -153,7 +153,6 @@ mono_class_check_context_used (MonoClass *klass)
 {
 	int context_used = 0;
 
-	context_used |= type_check_context_used (m_class_get_this_arg (klass), FALSE);
 	context_used |= type_check_context_used (m_class_get_byval_arg (klass), FALSE);
 
 	if (mono_class_is_ginst (klass))
@@ -1261,7 +1260,7 @@ static MonoType*
 get_wrapper_shared_type_full (MonoType *t, gboolean is_field)
 {
 	if (m_type_is_byref (t))
-		return m_class_get_this_arg (mono_defaults.int_class);
+		return mono_class_get_byref_type (mono_defaults.int_class);
 	t = mini_get_underlying_type (t);
 
 	switch (t->type) {
@@ -1770,7 +1769,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 
 	for (i = 0; i < sig->param_count; i++) {
 		if (m_type_is_byref (sig->params [i]))
-			csig->params [i] = m_class_get_this_arg (mono_defaults.int_class);
+			csig->params [i] = mono_class_get_byref_type (mono_defaults.int_class);
 	}
 
 	MonoType *int_type = mono_get_int_type ();

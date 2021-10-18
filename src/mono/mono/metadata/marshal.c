@@ -2306,7 +2306,7 @@ get_runtime_invoke_type (MonoType *t, gboolean ret)
 			return t;
 
 		/* Can't share this with 'I' as that needs another indirection */
-		return m_class_get_this_arg (mono_defaults.int_class);
+		return mono_class_get_byref_type (mono_defaults.int_class);
 	}
 
 	if (MONO_TYPE_IS_REFERENCE (t))
