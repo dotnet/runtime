@@ -21,10 +21,28 @@
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
 
+/* Note "byref":
+ *   How are "byref"/"&"/"managed pointer" types represented?
+ *   For historical reasons, mono has a MonoType:byref__ bit that is used most of the time.  This
+ *   made sense when .NET only allowed a single byref modifier, but now that byref of byref is
+ *   possible, it doesn't make a lot of sense anymore.  But it's difficult now to get rid of it (and
+ *   there is a cost to creating a MonoClass to represent benign byref occurrences in method
+ *   signatures, etc).
+ *
+ *   So the representation is:
+ *     if the element type is not a byref type itself, just make a MonoType like the element type and set the byref__ bit.
+ *     if the element type is a byref type, make a MonoType with type == MONO_TYPE_BYREF and set the byref__ bit.
+ *
+ *   To get the element type of a byref type:
+ *     if the byref__ bit is not set, it's not a byref type.
+ *     if the byref__ bit is set and the type is MONO_TYPE_BYREF, return data.type;
+ *     otherwise, return a type like the input type, with byref__ cleared.
+ *
+ */
 struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */
-		MonoType *type;   /* for PTR */
+		MonoType *type;   /* for PTR or BYREF (see Note "byref")*/
 		MonoArrayType *array; /* for ARRAY */
 		MonoMethodSignature *method;
 		MonoGenericParam *generic_param; /* for VAR and MVAR */
@@ -33,7 +51,7 @@ struct _MonoType {
 	unsigned int attrs    : 16; /* param attributes or field flags */
 	MonoTypeEnum type     : 8;
 	unsigned int has_cmods : 1;  
-	unsigned int byref    : 1;
+	unsigned int byref__    : 1; /* don't access directly, use m_type_is_byref */
 	unsigned int pinned   : 1;  /* valid when included in a local var signature */
 };
 
@@ -434,6 +452,7 @@ struct _MonoImage {
 	 */
 	GHashTable *array_cache;
 	GHashTable *ptr_cache;
+	GHashTable *byref_cache;
 
 	GHashTable *szarray_cache;
 	/* This has a separate lock to improve scalability */
@@ -1183,15 +1202,15 @@ mono_type_get_signature_internal (MonoType *type)
 }
 
 /**
- * mono_type_is_byref_internal:
+ * m_type_is_byref:
  * \param type the \c MonoType operated on
  * \returns TRUE if \p type represents a type passed by reference,
  * FALSE otherwise.
  */
-static inline mono_bool
-mono_type_is_byref_internal (MonoType *type)
+static inline gboolean
+m_type_is_byref (const MonoType *type)
 {
-	return type->byref;
+	return type->byref__;
 }
 
 /**

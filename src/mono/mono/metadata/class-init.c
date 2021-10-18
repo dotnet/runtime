@@ -46,7 +46,7 @@ gint32 mono_simd_register_size;
 static gint32 classes_size;
 static gint32 inflated_classes_size;
 gint32 mono_inflated_methods_size;
-static gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
+static gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count, class_byref_count;
 
 /* Low level lock which protects data structures in this module */
 static mono_mutex_t classes_mutex;
@@ -493,9 +493,9 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
 			/*WARNING: this must satisfy mono_metadata_type_hash*/
-			klass->this_arg.byref = 1;
-			klass->this_arg.data.klass = klass;
-			klass->this_arg.type = MONO_TYPE_CLASS;
+			klass->_this_arg.byref__ = 1;
+			klass->_this_arg.data.klass = klass;
+			klass->_this_arg.type = MONO_TYPE_CLASS;
 			klass->_byval_arg.data.klass = klass;
 			klass->_byval_arg.type = MONO_TYPE_CLASS;
 		}
@@ -811,6 +811,49 @@ check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 	return TRUE;
 }
 
+static gboolean
+type_is_byreflike_no_init  (MonoType *type)
+{
+	MonoClass *klass = NULL;
+	/* have to be careful not to recursively invoke mono_class_init on a
+	 * static field.  for example - if a field or a generic argument is an
+	 * array of a subclass of a class on which we called
+	 * mono_class_create_generic_inst or mono_class_layout_fields, we can
+	 * loop.
+	 */
+	switch (type->type) {
+	case MONO_TYPE_TYPEDBYREF:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_GENERICINST:
+		klass = mono_class_from_mono_type_internal (type);
+		if (m_class_is_byreflike (klass))
+			return TRUE;
+		break;
+	default:
+		break;
+	}
+	return FALSE;
+}
+
+static gboolean
+generic_inst_any_byreflike (MonoGenericInst *inst)
+{
+	for (int i = 0; i < inst->type_argc; ++i)
+	{
+		MonoType *type = inst->type_argv[i];
+		if (m_type_is_byref (type) || type_is_byreflike_no_init (type))
+			return TRUE;
+	}
+	return FALSE;
+}
+
+static gboolean
+generic_context_any_byreflike (MonoGenericContext *context)
+{
+	g_assert (context->method_inst == NULL);
+	return generic_inst_any_byreflike (context->class_inst);
+}
+
 /*
  * Create the `MonoClass' for an instantiation of a generic type.
  * We only do this if we actually need it.
@@ -844,9 +887,9 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	((MonoClassGenericInst*)klass)->generic_class = gclass;
 
 	klass->_byval_arg.type = MONO_TYPE_GENERICINST;
-	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
-	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
-	klass->this_arg.byref = TRUE;
+	klass->_this_arg.type = m_class_get_byval_arg (klass)->type;
+	klass->_this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
+	klass->_this_arg.byref__ = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -868,8 +911,24 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 
 	klass->cast_class = klass->element_class = klass;
 
+        
 	if (m_class_is_valuetype (klass)) {
 		klass->is_byreflike = gklass->is_byreflike;
+
+		if (!klass->is_byreflike) {
+			// If any of the instantiation types are byref or ByRefLike, make this generic instance as byreflike.
+			// From CoreCLR: (see src/coreclr/vm/methodtablebuilder.cpp):
+			// Make struct ByRefLike if it has ByRef or ByRefLike generic arguments
+			//
+			// The behavior of this is that Generic structures with ByRef/ByRefLike generic
+			// arguments will be ByRefLike, but since we only check this on structs, normal
+			// classes will not be marked as ByRefLike.
+			//
+			// HACKATHON todo... should we allow a means to not do this, for nested structs in classes, and enums?
+			//
+
+			klass->is_byreflike = generic_context_any_byreflike (&gclass->context);
+		}
 	}
 
 	if (gclass->is_dynamic) {
@@ -1147,8 +1206,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->_byval_arg.type = MONO_TYPE_SZARRAY;
 		klass->_byval_arg.data.klass = eclass;
 	}
-	klass->this_arg = klass->_byval_arg;
-	klass->this_arg.byref = 1;
+	klass->_this_arg = klass->_byval_arg;
+	klass->_this_arg.byref__ = 1;
 
 	if (rank > 32) {
 		ERROR_DECL (prepared_error);
@@ -1318,10 +1377,10 @@ make_generic_param_class (MonoGenericParam *param)
 
 	MonoTypeEnum t = is_mvar ? MONO_TYPE_MVAR : MONO_TYPE_VAR;
 	klass->_byval_arg.type = t;
-	klass->this_arg.type = t;
-	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data.generic_param ,  param );
+	klass->_this_arg.type = t;
+	CHECKED_METADATA_WRITE_PTR ( klass->_this_arg.data.generic_param ,  param );
 	CHECKED_METADATA_WRITE_PTR ( klass->_byval_arg.data.generic_param , param );
-	klass->this_arg.byref = TRUE;
+	klass->_this_arg.byref__ = TRUE;
 
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = !is_anonymous ? pinfo->token : 0;
@@ -1462,9 +1521,9 @@ mono_class_create_ptr (MonoType *type)
 		result->cast_class = el_class;
 	class_composite_fixup_cast_class (result, TRUE);
 
-	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
-	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
-	result->this_arg.byref = TRUE;
+	result->_this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
+	result->_this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
+	result->_this_arg.byref__ = TRUE;
 
 	mono_class_setup_supertypes (result);
 
@@ -1500,6 +1559,121 @@ mono_class_create_ptr (MonoType *type)
 	return result;
 }
 
+/**
+ * mono_class_create_byref:
+ */
+MonoClass *
+mono_class_create_byref (MonoType *type)
+{
+	MonoClass *result;
+	MonoClass *el_class;
+	MonoImage *image;
+	char *name;
+	MonoMemoryManager *mm;
+
+	el_class = mono_class_from_mono_type2 (type, FALSE);
+	image = el_class->image;
+	// FIXME: Optimize this
+	mm = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_mem_manager_for_class (el_class) : NULL;
+
+	if (mm) {
+		mono_mem_manager_lock (mm);
+		if (!mm->byref_cache)
+			mm->byref_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		result = (MonoClass *)g_hash_table_lookup (mm->byref_cache, el_class);
+		mono_mem_manager_unlock (mm);
+		if (result)
+			return result;
+	} else {
+		mono_image_lock (image);
+		if (image->byref_cache) {
+			if ((result = (MonoClass *)g_hash_table_lookup (image->byref_cache, el_class))) {
+				mono_image_unlock (image);
+				return result;
+			}
+		}
+		mono_image_unlock (image);
+	}
+	
+	result = mm ? (MonoClass *)mono_mem_manager_alloc0 (mm, sizeof (MonoClassPointer)) : (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
+
+	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
+	++class_byref_count;
+
+	result->parent = NULL; /* no parent for BYREF types */
+	result->name_space = el_class->name_space;
+	name = g_strdup_printf ("%s&", el_class->name);
+	result->name = mm ? mono_mem_manager_strdup (mm, name) : mono_image_strdup (image, name);
+	result->class_kind = MONO_CLASS_POINTER;
+	g_free (name);
+
+	MONO_PROFILER_RAISE (class_loading, (result));
+
+	result->image = el_class->image;
+	result->inited = TRUE;
+	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
+	result->min_align = sizeof (gpointer);
+	result->element_class = el_class;
+	result->blittable = FALSE;
+
+	if (el_class->enumtype)
+		result->cast_class = el_class->element_class;
+	else
+		result->cast_class = el_class;
+	class_composite_fixup_cast_class (result, TRUE);
+
+	gboolean higher = m_type_is_byref (type);
+	if (higher) {
+		/* The MonoType for ElementType&.  See Note "byref" near the definition of _MonoType for why the "byref__" bit is set. */
+		result->_byval_arg.type = MONO_TYPE_BYREF;
+		result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
+		result->_byval_arg.byref__ = TRUE;
+	
+	} else {
+		/* slice off a copy of the byval element class and set the byref bit to true to make a byref version of that type */
+		result->_byval_arg = *m_class_get_byval_arg (el_class);
+		result->_byval_arg.byref__ = TRUE;
+	}
+
+	/* The MonoType for ElementType&&. */
+	result->_this_arg.type = MONO_TYPE_BYREF;
+	result->_this_arg.data.type = &result->_byval_arg;
+	result->_this_arg.byref__ = TRUE;
+	
+	mono_class_setup_supertypes (result);
+
+	if (mm) {
+		mono_mem_manager_lock (mm);
+		MonoClass *result2;
+		result2 = (MonoClass *)g_hash_table_lookup (mm->byref_cache, el_class);
+		if (!result2)
+			g_hash_table_insert (mm->byref_cache, el_class, result);
+		mono_mem_manager_unlock (mm);
+		if (result2) {
+			MONO_PROFILER_RAISE (class_failed, (result));
+			return result2;
+		}
+	} else {
+		mono_image_lock (image);
+		if (image->byref_cache) {
+			MonoClass *result2;
+			if ((result2 = (MonoClass *)g_hash_table_lookup (image->byref_cache, el_class))) {
+				mono_image_unlock (image);
+				MONO_PROFILER_RAISE (class_failed, (result));
+				return result2;
+			}
+		} else {
+			image->byref_cache = g_hash_table_new (mono_aligned_addr_hash, NULL);
+		}
+		g_hash_table_insert (image->byref_cache, el_class, result);
+		mono_image_unlock (image);
+	}
+
+	MONO_PROFILER_RAISE (class_loaded, (result));
+
+	return result;
+}
+
 MonoClass *
 mono_class_create_fnptr (MonoMethodSignature *sig)
 {
@@ -1527,9 +1701,9 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->instance_size = MONO_ABI_SIZEOF (MonoObject) + MONO_ABI_SIZEOF (gpointer);
 	result->min_align = sizeof (gpointer);
 	result->cast_class = result->element_class = result;
-	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
-	result->this_arg.data.method = result->_byval_arg.data.method = sig;
-	result->this_arg.byref = TRUE;
+	result->_this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
+	result->_this_arg.data.method = result->_byval_arg.data.method = sig;
+	result->_this_arg.byref__ = TRUE;
 	result->blittable = TRUE;
 	result->inited = TRUE;
 
@@ -1805,7 +1979,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 {
 	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
-	if (!ftype->byref && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
+	if (!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
 		MonoGenericParam *gparam = ftype->data.generic_param;
 
 		if (gparam->gshared_constraint)
@@ -1974,7 +2148,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (blittable) {
-			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
+			if (m_type_is_byref (field->type) || MONO_TYPE_IS_REFERENCE (field->type)) {
 				blittable = FALSE;
 			} else if (mono_type_is_generic_parameter (field->type) &&
 				   mono_class_is_gparam_with_nonblittable_parent (mono_class_from_mono_type_internal (field->type))) {
@@ -2359,27 +2533,14 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_LITERAL))
 			continue;
-		if (field->type->byref && !allow_isbyreflike_fields) {
+		if (m_type_is_byref (field->type) && !allow_isbyreflike_fields) {
 			mono_class_set_type_load_failure (klass, "Instance ref field '%s' not in a ref struct", field->name);
 			return;
 		}
-		MonoClass *field_class = NULL;
-		/* have to be careful not to recursively invoke mono_class_init on a static field.
-		 * for example - if the field is an array of a subclass of klass, we can loop.
-		 */
-		switch (field->type->type) {
-		case MONO_TYPE_TYPEDBYREF:
-		case MONO_TYPE_VALUETYPE:
-		case MONO_TYPE_GENERICINST:
-			field_class = mono_class_from_mono_type_internal (field->type);
-			break;
-		default:
-			break;
-		}
-		if (!field_class || !m_class_is_byreflike (field_class))
+		if (!type_is_byreflike_no_init (field->type))
 			continue;
 		if ((field->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
-			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' is not allowed", field->name);
+			mono_class_set_type_load_failure (klass, "Static ByRefLike field '%s' 0x%08x is not allowed", field->name, (int)field->type->attrs);
 			return;
 		} else {
 			/* instance field */
@@ -3106,9 +3267,9 @@ mono_class_setup_mono_type (MonoClass *klass)
 	const char *nspace = klass->name_space;
 	gboolean is_corlib = mono_is_corlib_image (klass->image);
 
-	klass->this_arg.byref = 1;
-	klass->this_arg.data.klass = klass;
-	klass->this_arg.type = MONO_TYPE_CLASS;
+	klass->_this_arg.byref__ = 1;
+	klass->_this_arg.data.klass = klass;
+	klass->_this_arg.type = MONO_TYPE_CLASS;
 	klass->_byval_arg.data.klass = klass;
 	klass->_byval_arg.type = MONO_TYPE_CLASS;
 
@@ -3128,13 +3289,13 @@ mono_class_setup_mono_type (MonoClass *klass)
 			klass->enumtype = 0;
 		} else if (!strcmp (name, "Object")) {
 			klass->_byval_arg.type = MONO_TYPE_OBJECT;
-			klass->this_arg.type = MONO_TYPE_OBJECT;
+			klass->_this_arg.type = MONO_TYPE_OBJECT;
 		} else if (!strcmp (name, "String")) {
 			klass->_byval_arg.type = MONO_TYPE_STRING;
-			klass->this_arg.type = MONO_TYPE_STRING;
+			klass->_this_arg.type = MONO_TYPE_STRING;
 		} else if (!strcmp (name, "TypedReference")) {
 			klass->_byval_arg.type = MONO_TYPE_TYPEDBYREF;
-			klass->this_arg.type = MONO_TYPE_TYPEDBYREF;
+			klass->_this_arg.type = MONO_TYPE_TYPEDBYREF;
 		}
 	}
 
@@ -3217,7 +3378,7 @@ mono_class_setup_mono_type (MonoClass *klass)
 			}
 		}
 		klass->_byval_arg.type = (MonoTypeEnum)t;
-		klass->this_arg.type = (MonoTypeEnum)t;
+		klass->_this_arg.type = (MonoTypeEnum)t;
 	}
 
 	mono_class_setup_interface_id_nolock (klass);
@@ -3344,7 +3505,7 @@ mono_class_setup_methods (MonoClass *klass)
 		methods [method_num++] = amethod;
 		/* element& Address (idx11, [idx2, ...]) */
 		sig = mono_metadata_signature_alloc (klass->image, klass->rank);
-		sig->ret = &klass->element_class->this_arg;
+		sig->ret = &klass->element_class->_this_arg;
 		sig->pinvoke = TRUE;
 		sig->hasthis = TRUE;
 		for (i = 0; i < klass->rank; ++i)
@@ -4015,6 +4176,8 @@ mono_classes_init (void)
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_array_count);
 	mono_counters_register ("MonoClassPointer count",
 							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_pointer_count);
+	mono_counters_register ("MonoClassPointer (byref) count",
+							MONO_COUNTER_METADATA | MONO_COUNTER_INT, &class_byref_count);
 	mono_counters_register ("Inflated methods size",
 							MONO_COUNTER_GENERICS | MONO_COUNTER_INT, &mono_inflated_methods_size);
 	mono_counters_register ("Inflated classes size",

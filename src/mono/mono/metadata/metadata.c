@@ -1850,7 +1850,7 @@ mono_type_hash (gconstpointer data)
 	if (type->type == MONO_TYPE_GENERICINST)
 		return mono_generic_class_hash (type->data.generic_class);
 	else
-		return type->type | (type->byref << 8) | (type->attrs << 9);
+		return type->type | ((m_type_is_byref (type) ? 1 : 0) << 8) | (type->attrs << 9);
 }
 
 static gint
@@ -1859,7 +1859,7 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 	const MonoType *a = (const MonoType *) ka;
 	const MonoType *b = (const MonoType *) kb;
 	
-	if (a->type != b->type || a->byref != b->byref || a->attrs != b->attrs || a->pinned != b->pinned)
+	if (a->type != b->type || m_type_is_byref (a) != m_type_is_byref (b) || a->attrs != b->attrs || a->pinned != b->pinned)
 		return 0;
 	/* need other checks */
 	return 1;
@@ -2001,7 +2001,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 {
 	MonoType *type, *cached;
 	MonoType stype;
-	gboolean byref = FALSE;
+	int byref = 0;
 	gboolean pinned = FALSE;
 	const char *tmp_ptr;
 	int count = 0; // Number of mod arguments
@@ -2061,6 +2061,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	}
 
 	/* Iterate again, but now parse pinned, byref and custom modifiers */
+	/* FIXME: modifiers before and after a byref are different.  For example: int32 modopt(Const) & modopt(Const) is a C++/CLI const managed pointer to a const int32 */
 	found = TRUE;
 	/* cmods are encoded in reverse order from how we normally see them.
 	 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
@@ -2072,7 +2073,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			++ptr;
 			break;
 		case MONO_TYPE_BYREF:
-			byref = TRUE;
+			byref++;
 			++ptr;
 			break;
 		case MONO_TYPE_CMOD_REQD:
@@ -2087,8 +2088,18 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	// either there were no cmods, or else we iterated through all of cmods backwards to populate it.
 	g_assert (count == 0);
 
+        if (byref > 1) {
+                /* FIXME: there could be parameter attributes or a pinned flag.  They should go on the outer MonoType not the inner ones. */
+                g_assert (!opt_attrs);
+                g_assert (!pinned);
+        }
+
 	type->attrs = opt_attrs;
-	type->byref = byref;
+	if (byref > 0) {
+		/* innermost byref just flips a bit on the element type. */
+		type->byref__ = 1;
+		byref--;
+	}
 	type->pinned = pinned ? 1 : 0;
 
 	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, error))
@@ -2101,7 +2112,7 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	if (!type->has_cmods && !transient) {
 		/* no need to free type here, because it is on the stack */
 		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
-			MonoType *ret = type->byref ? m_class_get_this_arg (type->data.klass) : m_class_get_byval_arg (type->data.klass);
+			MonoType *ret = m_type_is_byref (type) ? m_class_get_this_arg (type->data.klass) : m_class_get_byval_arg (type->data.klass);
 
 			/* Consider the case:
 
@@ -2122,21 +2133,33 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 			            of a MonoClass which currently holds the loader lock.  'type' is local.
 			*/
 			if (ret->data.klass == type->data.klass) {
-				return ret;
+				type = ret;
 			}
 		}
 		/* No need to use locking since nobody is modifying the hash table */
 		if ((cached = (MonoType *)g_hash_table_lookup (type_cache, type))) {
-			return cached;
+			type = cached;
 		}
 	}
-	
-	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
-	
+
 	if (type == &stype) { // Type was allocated on the stack, so we need to copy it to safety
 		type = transient ? (MonoType *)g_malloc (MONO_SIZEOF_TYPE) : (MonoType *)mono_image_alloc (m, MONO_SIZEOF_TYPE);
 		memcpy (type, &stype, MONO_SIZEOF_TYPE);
 	}
+
+	/* Add the remaining byref types */
+	while (byref > 0) {
+		MonoType *byref_type = transient ? (MonoType*)g_malloc0 (MONO_SIZEOF_TYPE) : (MonoType*)mono_image_alloc0 (m, MONO_SIZEOF_TYPE);
+		byref_type->type = MONO_TYPE_BYREF;
+		byref_type->byref__ = TRUE;
+		byref_type->data.type = type;
+
+		type = byref_type;
+		byref--;
+	}
+
+	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
+
 	return type;
 }
 
@@ -2813,6 +2836,7 @@ retry:
 	case MONO_TYPE_GENERICINST:
 		return gclass_in_image (type->data.generic_class, image);
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		type = type->data.type;
 		goto retry;
 	case MONO_TYPE_SZARRAY:
@@ -2987,6 +3011,7 @@ retry:
 		collect_gclass_images (type->data.generic_class, data);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		type = type->data.type;
 		goto retry;
 	case MONO_TYPE_SZARRAY:
@@ -3992,6 +4017,7 @@ mono_metadata_free_type (MonoType *type)
 			return;
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		mono_metadata_free_type (type->data.type);
 		break;
 	case MONO_TYPE_FNPTR:
@@ -5100,7 +5126,7 @@ mono_type_size (MonoType *t, int *align)
 		*align = 1;
 		return 0;
 	}
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*align = MONO_ABI_ALIGNOF (gpointer);
 		return MONO_ABI_SIZEOF (gpointer);
 	}
@@ -5152,6 +5178,7 @@ mono_type_size (MonoType *t, int *align)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 		*align = MONO_ABI_ALIGNOF (gpointer);
@@ -5215,7 +5242,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	if (!align)
 		align = &tmp;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*align = stack_slot_align;
 		return stack_slot_size;
 	}
@@ -5237,6 +5264,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_ARRAY:
 		*align = stack_slot_align;
@@ -5408,7 +5436,7 @@ mono_metadata_type_hash (MonoType *t1)
 {
 	guint hash = t1->type;
 
-	hash |= t1->byref << 6; /* do not collide with t1->type values */
+	hash |= (m_type_is_byref (t1) ? 1 : 0) << 6; /* do not collide with t1->type values */
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
@@ -5423,10 +5451,11 @@ mono_metadata_type_hash (MonoType *t1)
 		 * inserted in a bunch of hash tables before been finished.
 		 */
 		if (image_is_dynamic (m_class_get_image (klass)))
-			return (t1->byref << 6) | mono_metadata_str_hash (m_class_get_name (klass));
+			return ((m_type_is_byref (t1) ? 1 : 0) << 6) | mono_metadata_str_hash (m_class_get_name (klass));
 		return ((hash << 5) - hash) ^ mono_metadata_str_hash (m_class_get_name (klass));
 	}
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (t1->data.type);
 	case MONO_TYPE_ARRAY:
 		return ((hash << 5) - hash) ^ mono_metadata_type_hash (m_class_get_byval_arg (t1->data.array->eklass));
@@ -5598,7 +5627,7 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
 static gboolean
 do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
-	if (t1->type != t2->type || t1->byref != t2->byref)
+	if (t1->type != t2->type || m_type_is_byref (t1) != m_type_is_byref (t2))
 		return FALSE;
 
 	gboolean cmod_reject = FALSE;
@@ -5638,6 +5667,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
 		break;
 	case MONO_TYPE_ARRAY:
@@ -5953,7 +5983,7 @@ mono_metadata_type_dup_with_cmods (MonoImage *image, const MonoType *o, const Mo
 static void
 deep_type_dup_fixup (MonoImage *image, MonoType *r, const MonoType *o)
 {
-	if (o->type == MONO_TYPE_PTR) {
+	if (o->type == MONO_TYPE_PTR || o->type == MONO_TYPE_BYREF) {
 		r->data.type = mono_metadata_type_dup (image, o->data.type);
 	} else if (o->type == MONO_TYPE_ARRAY) {
 		r->data.array = mono_dup_array_type (image, o->data.array);
@@ -6552,7 +6582,7 @@ mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_fiel
 
 	*conv = MONO_MARSHAL_CONV_NONE;
 
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MONO_NATIVE_UINT;
 
 handle_enum:
@@ -7147,7 +7177,7 @@ mono_type_is_byref (MonoType *type)
 {
 	mono_bool result;
 	MONO_ENTER_GC_UNSAFE; // FIXME slow
-	result = mono_type_is_byref_internal (type);
+	result = m_type_is_byref (type);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -7239,7 +7269,7 @@ mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 mono_bool
 mono_type_is_struct (MonoType *type)
 {
-	return (!type->byref && ((type->type == MONO_TYPE_VALUETYPE &&
+	return (!m_type_is_byref (type) && ((type->type == MONO_TYPE_VALUETYPE &&
 		!m_class_is_enumtype (type->data.klass)) || (type->type == MONO_TYPE_TYPEDBYREF) ||
 		((type->type == MONO_TYPE_GENERICINST) && 
 		mono_metadata_generic_class_is_valuetype (type->data.generic_class) &&
@@ -7254,7 +7284,7 @@ mono_type_is_struct (MonoType *type)
 mono_bool
 mono_type_is_void (MonoType *type)
 {
-	return (type && (type->type == MONO_TYPE_VOID) && !type->byref);
+	return (type && (type->type == MONO_TYPE_VOID) && !m_type_is_byref (type));
 }
 
 /**
@@ -7265,7 +7295,7 @@ mono_type_is_void (MonoType *type)
 mono_bool
 mono_type_is_pointer (MonoType *type)
 {
-	return (type && ((type->byref || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING)
+	return (type && ((m_type_is_byref (type) || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING)
 		|| (type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
 		(type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_OBJECT) ||
 		(type->type == MONO_TYPE_ARRAY) || (type->type == MONO_TYPE_PTR) ||
@@ -7295,7 +7325,7 @@ mono_type_is_reference (MonoType *type)
 mono_bool
 mono_type_is_generic_parameter (MonoType *type)
 {
-	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
+	return !m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
 }
 
 /**
@@ -7730,13 +7760,14 @@ mono_guid_signature_append_type (GString *res, MonoType *type)
 		mono_guid_signature_append_method (res, type->data.method);
 		break;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
 		mono_guid_signature_append_type (res, type->data.type);
-		g_string_append_c (res, '*');
+		g_string_append_c (res, type->type == MONO_TYPE_PTR ? '*' : '&');
 		break;
 	default:
 		break;
 	}
-	if (type->byref) g_string_append_c (res, '&');
+	if (m_type_is_byref (type)) g_string_append_c (res, '&');
 }
 
 static void

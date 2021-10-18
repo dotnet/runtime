@@ -403,11 +403,11 @@ mono_type_normalize (MonoType *type)
 	}
 
 	if (is_denorm_gtd)
-		return type->byref == m_class_get_byval_arg (gtd)->byref ? m_class_get_byval_arg (gtd) : m_class_get_this_arg (gtd);
+		return !m_type_is_byref (type) ? m_class_get_byval_arg (gtd) : m_class_get_this_arg (gtd);
 
 	if (requires_rebind) {
 		MonoClass *klass = mono_class_bind_generic_parameters (gtd, ginst->type_argc, argv, gclass->is_dynamic);
-		return type->byref == m_class_get_byval_arg (klass)->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
+		return !m_type_is_byref (type) ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 	}
 
 	return type;
@@ -442,15 +442,24 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	error_init (error);
 
 	g_assert (type != NULL);
-	klass = mono_class_from_mono_type_internal (type);
+	klass = mono_class_from_mono_type2 (type, TRUE); /* peel off outermost byref, if present */
 	MonoMemoryManager *memory_manager = m_class_get_mem_manager (klass);
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
 	 * expects that is can be freed.
-	 * Using the right type from 
+	 * Using the right type from the MonoClass
 	 */
-	type = m_class_get_byval_arg (klass)->byref == type->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
+	if (!m_type_is_byref (type))
+		type = m_class_get_byval_arg (klass);
+	else {
+		/*
+		 * Note that klass had its outermost `byref` peeled off.  We don't want to create
+		 * a MonoClassPointer for the byref version of it unless we absolutely have to.
+		 * Since we only want a MonoType with an extra indirection, get that from m_class_this_arg (klass).
+		 */
+		type = mono_class_get_byref_type (klass);
+	}
 
 	/* We don't want to return types with custom modifiers to the managed
 	 * world since they're hard to distinguish from plain types using the
@@ -463,7 +472,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	g_assert (!type->has_cmods);
 
 	/* void is very common */
-	if (!type->byref && type->type == MONO_TYPE_VOID && domain->typeof_void)
+	if (!m_type_is_byref (type) && type->type == MONO_TYPE_VOID && domain->typeof_void)
 		return (MonoReflectionType*)domain->typeof_void;
 
 	/*
@@ -531,7 +540,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto leave;
 	}
 
-	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !type->byref) {
+	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !m_type_is_byref (type)) {
 		res = &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
 		goto leave;
 	}
@@ -547,7 +556,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		res = cached;
 	} else {
 		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
-		if (type->type == MONO_TYPE_VOID && !type->byref)
+		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
 			domain->typeof_void = (MonoObject*)res;
 	}
 	mono_mem_manager_unlock (memory_manager);
@@ -2126,7 +2135,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 	for (mod = info->modifiers; mod; mod = mod->next) {
 		modval = GPOINTER_TO_UINT (mod->data);
 		if (!modval) { /* byref: must be last modifier */
-			type = m_class_get_this_arg (klass);
+			type = mono_class_get_byref_type (klass);
 			goto leave;
 		} else if (modval == -1) {
 			klass = mono_class_create_ptr (m_class_get_byval_arg (klass));

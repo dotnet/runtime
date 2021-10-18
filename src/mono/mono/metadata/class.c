@@ -283,7 +283,7 @@ _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 static void
 mono_type_name_check_byref (MonoType *type, GString *str)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		g_string_append_c (str, '&');
 }
 
@@ -394,6 +394,7 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 			_mono_type_get_assembly_name (type->data.klass, str);
 		break;
 	}
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_PTR: {
 		MonoTypeNameFormat nested_format;
 
@@ -402,7 +403,8 @@ mono_type_get_name_recurse (MonoType *type, GString *str, gboolean is_recursed,
 
 		mono_type_get_name_recurse (
 			type->data.type, str, FALSE, nested_format);
-		g_string_append_c (str, '*');
+		if (type->type == MONO_TYPE_PTR)
+			g_string_append_c (str, '*');
 
 		mono_type_name_check_byref (type, str);
 
@@ -575,9 +577,9 @@ mono_type_get_name (MonoType *type)
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !type->byref)
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !type->byref)
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
 	return type;
 }
@@ -626,10 +628,7 @@ mono_type_is_valid_generic_argument (MonoType *type)
 {
 	switch (type->type) {
 	case MONO_TYPE_VOID:
-	case MONO_TYPE_TYPEDBYREF:
 		return FALSE;
-	case MONO_TYPE_VALUETYPE:
-		return !m_class_is_byreflike (type->data.klass);
 	default:
 		return TRUE;
 	}
@@ -707,9 +706,21 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
 		 * ->byref and ->attrs from @type are propagated to the returned type.
 		 */
-		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref = type->byref;
-		nt->attrs = type->attrs;
+		if (G_UNLIKELY (m_type_is_byref (type) && m_type_is_byref (inst->type_argv[num]))) {
+			/* if the VAR/MVAR is a byref and the instance type is byref, make a byref
+			 * of byref. The outer byref has the attributes and cmods of the VAR */
+			MonoType *inner_type = mono_metadata_type_dup (image, inst->type_argv[num]);
+			/* FIXME: this is a little bit fragile: we're relying on type_dup not to
+			 * make a deep copy of the MonoGenericParam. */
+			nt = mono_metadata_type_dup (image, type);
+			nt->type = MONO_TYPE_BYREF;
+			nt->data.type = inner_type;
+		} else {
+			nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
+			/* otherwise the type is byref if either the var or the type was byref */
+			nt->byref__ = type->byref__ || nt->byref__;
+			nt->attrs = type->attrs;
+		}
 		return nt;
 	}
 	case MONO_TYPE_VAR: {
@@ -749,9 +760,20 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		}
 #endif
 
-		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref = type->byref || inst->type_argv[num]->byref;
-		nt->attrs = type->attrs;
+		if (G_UNLIKELY (m_type_is_byref (type) && m_type_is_byref (inst->type_argv[num]))) {
+			/* if the VAR/MVAR is a byref and the instance type is byref, make a byref
+			 * of byref. The outer byref has the attributes and cmods of the VAR */
+			MonoType *inner_type = mono_metadata_type_dup (image, inst->type_argv[num]);
+			/* FIXME: this is a little bit fragile: we're relying on type_dup not to
+			 * make a deep copy of the MonoGenericParam. */
+			nt = mono_metadata_type_dup (image, type);
+			nt->type = MONO_TYPE_BYREF;
+			nt->data.type = inner_type;
+		} else {
+			nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
+			nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
+			nt->attrs = type->attrs;
+		}
 #ifdef DEBUG_INFLATE_CMODS
 		if (append_cmods) {
 			char *ntname = mono_type_full_name (nt);
@@ -846,6 +868,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		nt->data.generic_class = gclass;
 		return nt;
 	}
+	case MONO_TYPE_BYREF:
 	case MONO_TYPE_PTR: {
 		MonoType *nt, *inflated = inflate_generic_type (image, type->data.type, context, error);
 		if ((!inflated && !changed) || !is_ok (error))
@@ -1691,7 +1714,7 @@ MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
+	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
 		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return mono_get_object_type ();
 	return type;
@@ -2167,7 +2190,26 @@ mono_class_from_mono_type (MonoType *type)
 MonoClass *
 mono_class_from_mono_type_internal (MonoType *type)
 {
+	/* TODO: Change callers of mono_class_from_mono_type_internal to handle byref themselves. */
+	return mono_class_from_mono_type2 (type, TRUE);
+}
+
+MonoClass *
+mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref)
+{
 	g_assert (type);
+	if (!strip_byref) {
+		if (m_type_is_byref (type)) {
+			if (type->type != MONO_TYPE_BYREF) {
+				/* strip off the byref bit and get a class */
+				MonoClass *el_class = mono_class_from_mono_type2 (type, TRUE);
+				return mono_class_create_byref (m_class_get_byval_arg (el_class));
+			} else
+				return mono_class_create_byref (type->data.type);
+		}
+		g_assert (!m_type_is_byref (type) && type->type != MONO_TYPE_BYREF);
+	}
+
 	switch (type->type) {
 	case MONO_TYPE_OBJECT:
 		return type->data.klass? type->data.klass: mono_defaults.object_class;
@@ -2211,6 +2253,13 @@ mono_class_from_mono_type_internal (MonoType *type)
 		return mono_class_create_ptr (type->data.type);
 	case MONO_TYPE_FNPTR:
 		return mono_class_create_fnptr (type->data.method);
+	case MONO_TYPE_BYREF:
+		/* case where strip_byref is false is handled above.  if strip_byref is true, we
+		 * want to peel off one layer of "byref".
+		 */
+		g_assert (strip_byref);
+		g_assert (type->byref__);
+		return mono_class_from_mono_type2 (type->data.type, FALSE);
 	case MONO_TYPE_SZARRAY:
 		return mono_class_create_array (type->data.klass, 1);
 	case MONO_TYPE_CLASS:
@@ -3782,8 +3831,8 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
 gboolean
 mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
 {
-	g_assert (type->byref);
-	g_assert (ctype->byref);
+	g_assert (m_type_is_byref (type));
+	g_assert (m_type_is_byref (ctype));
 	MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
 	MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
 
@@ -6752,5 +6801,16 @@ mono_class_has_default_constructor (MonoClass *klass, gboolean public_only)
 			(!public_only || (method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))
 			return TRUE;
 	}
+	return FALSE;
+}
+
+gboolean
+mono_class_is_byref (MonoClass *klass)
+{
+	if (G_LIKELY (m_class_get_class_kind (klass) != MONO_CLASS_POINTER))
+		return FALSE;
+	MonoType *t = m_class_get_byval_arg (klass);
+	if (t->type == MONO_TYPE_BYREF || m_type_is_byref (t))
+		return TRUE;
 	return FALSE;
 }
