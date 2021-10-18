@@ -175,7 +175,7 @@ namespace System.Numerics
                 unsafe
                 {
                     ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
-                    vrow.WithElement(column, value);
+                    Vector4.WithElement(vrow, column, value);
                 }
             }
         }
