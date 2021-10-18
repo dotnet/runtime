@@ -36,10 +36,6 @@ namespace System.Net.Http
         private const string Response = "response";
         private const string Stale = "stale";
 
-        // Define alphanumeric characters for cnonce
-        // 48='0', 65='A', 97='a'
-        private static readonly int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
-
         public static async Task<string?> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
@@ -219,7 +215,11 @@ namespace System.Net.Http
                 // Get a random digit 0-9, a random alphabet in a-z, or a random alphabeta in A-Z
                 int rangeIndex = randomNumbers[i++] % 3;
                 int value = randomNumbers[i++] % (rangeIndex == 0 ? 10 : 26);
-                sb.Append((char)(s_alphaNumChooser[rangeIndex] + value));
+
+                // Define alphanumeric characters for cnonce
+                // 48='0', 65='A', 97='a'
+                ReadOnlySpan<int> alphaNumChooser = new int[] { 48, 65, 97 };
+                sb.Append((char)(alphaNumChooser[rangeIndex] + value));
             }
 
             return StringBuilderCache.GetStringAndRelease(sb);
@@ -422,31 +422,27 @@ namespace System.Net.Http
 
     internal static class StringBuilderExtensions
     {
-        // Characters that require escaping in quoted string
-        private static readonly char[] SpecialCharacters = new[] { '"', '\\' };
-
-        public static void AppendKeyValue(this StringBuilder sb, string key, string value, bool includeQuotes = true, bool includeComma = true)
+        public static void AppendKeyValue(this StringBuilder sb, string key, ReadOnlySpan<char> value, bool includeQuotes = true, bool includeComma = true)
         {
             sb.Append(key);
             sb.Append('=');
             if (includeQuotes)
             {
                 sb.Append('"');
-                int lastSpecialIndex = 0;
-                int specialIndex;
+                ReadOnlySpan<char> specialCharacters = new char[2] { '"', '\\' }; // characters that require escaping in quoted string
                 while (true)
                 {
-                    specialIndex = value.IndexOfAny(SpecialCharacters, lastSpecialIndex);
-                    if (specialIndex >= 0)
+                    int index = value.IndexOfAny(specialCharacters);
+                    if (index >= 0)
                     {
-                        sb.Append(value, lastSpecialIndex, specialIndex - lastSpecialIndex);
+                        sb.Append(value.Slice(0, index));
                         sb.Append('\\');
-                        sb.Append(value[specialIndex]);
-                        lastSpecialIndex = specialIndex + 1;
+                        sb.Append(value[index]);
+                        value = value.Slice(index + 1);
                     }
                     else
                     {
-                        sb.Append(value, lastSpecialIndex, value.Length - lastSpecialIndex);
+                        sb.Append(value);
                         break;
                     }
                 }

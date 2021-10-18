@@ -31,12 +31,12 @@ namespace System.Globalization
         // Number of days in 4 years
         private const int JulianDaysPer4Years = JulianDaysPerYear * 4 + 1;
 
-        private static readonly int[] s_daysToMonth365 =
+        private static ReadOnlySpan<int> DaysToMonth365 => new int[]
         {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365
         };
 
-        private static readonly int[] s_daysToMonth366 =
+        private static ReadOnlySpan<int> DaysToMonth366 => new int[]
         {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366
         };
@@ -106,7 +106,7 @@ namespace System.Globalization
             }
 
             bool isLeapYear = (year % 4) == 0;
-            int[] days = isLeapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = isLeapYear ? DaysToMonth366 : DaysToMonth365;
             int monthDays = days[month] - days[month - 1];
             if (day < 1 || day > monthDays)
             {
@@ -153,7 +153,7 @@ namespace System.Globalization
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
             bool leapYear = (y1 == 3);
-            int[] days = leapYear ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = leapYear ? DaysToMonth366 : DaysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
             int m = (n >> 5) + 1;
@@ -178,7 +178,7 @@ namespace System.Globalization
         /// </summary>
         internal static long DateToTicks(int year, int month, int day)
         {
-            int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0) ? DaysToMonth366 : DaysToMonth365;
             int y = year - 1;
             int n = y * 365 + y / 4 + days[month - 1] + day - 1;
             // Gregorian 1/1/0001 is Julian 1/3/0001. n * TicksPerDay is the ticks in JulianCalendar.
@@ -212,7 +212,7 @@ namespace System.Globalization
                 y += (i - 11) / 12;
             }
 
-            int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
             int days = daysArray[m] - daysArray[m - 1];
             if (d > days)
             {
@@ -245,7 +245,7 @@ namespace System.Globalization
         {
             CheckYearEraRange(year, era);
             CheckMonthRange(month);
-            int[] days = (year % 4 == 0) ? s_daysToMonth366 : s_daysToMonth365;
+            ReadOnlySpan<int> days = (year % 4 == 0) ? DaysToMonth366 : DaysToMonth365;
             return days[month] - days[month - 1];
         }
 

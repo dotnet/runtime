@@ -13,18 +13,6 @@ namespace System.IO.Enumeration
     /// <summary>Provides methods for matching file system names.</summary>
     public static class FileSystemName
     {
-        // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
-        // https://msdn.microsoft.com/en-us/library/ff469270.aspx
-        private static readonly char[] s_wildcardChars =
-        {
-            '\"', '<', '>', '*', '?'
-        };
-
-        private static readonly char[] s_simpleWildcardChars =
-        {
-            '*', '?'
-        };
-
         /// <summary>Translates the given Win32 expression. Change '*' and '?' to '&lt;', '&gt;' and '"' to match Win32 behavior.</summary>
         /// <param name="expression">The expression to translate.</param>
         /// <returns>A string with the translated Win32 expression.</returns>
@@ -165,7 +153,14 @@ namespace System.IO.Enumeration
                     return true;
 
                 ReadOnlySpan<char> expressionEnd = expression.Slice(1);
-                if (expressionEnd.IndexOfAny(useExtendedWildcards ? s_wildcardChars : s_simpleWildcardChars) == -1)
+
+                // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
+                // https://msdn.microsoft.com/en-us/library/ff469270.aspx
+                ReadOnlySpan<char> wildcardChars = useExtendedWildcards ?
+                    (ReadOnlySpan<char>)new char[] { '\"', '<', '>', '*', '?' } :
+                    (ReadOnlySpan<char>)new char[] { '*', '?' };
+
+                if (expressionEnd.IndexOfAny(wildcardChars) == -1)
                 {
                     // Handle the special case of a single starting *, which essentially means "ends with"
 

@@ -360,7 +360,7 @@ namespace System.Xml.Xsl.XPath
             if (_scanner!.Kind == LexKind.Minus)
             {
                 op = XPathOperator.UnaryMinus;
-                int opPrec = s_XPathOperatorPrecedence[(int)op];
+                int opPrec = XPathOperatorPrecedence[(int)op];
                 _scanner.NextLex();
                 opnd = _builder!.Operator(op, ParseSubExpr(opPrec), default(Node));
             }
@@ -373,7 +373,7 @@ namespace System.Xml.Xsl.XPath
             while (true)
             {
                 op = (_scanner.Kind <= LexKind.LastOperator) ? (XPathOperator)_scanner.Kind : XPathOperator.Unknown;
-                int opPrec = s_XPathOperatorPrecedence[(int)op];
+                int opPrec = XPathOperatorPrecedence[(int)op];
                 if (opPrec <= callerPrec)
                 {
                     break;
@@ -387,7 +387,7 @@ namespace System.Xml.Xsl.XPath
             return opnd;
         }
 
-        private static readonly int[] s_XPathOperatorPrecedence = {
+        private static ReadOnlySpan<int> XPathOperatorPrecedence => new int[] {
             /*Unknown    */ 0,
             /*Or         */ 1,
             /*And        */ 2,

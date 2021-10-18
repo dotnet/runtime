@@ -63,12 +63,12 @@ namespace System.Text
         private static int InternalGetCodePageFromName(string name)
         {
             int left = 0;
-            int right = s_encodingNameIndices.Length - 2;
+            int right = EncodingNameIndices.Length - 2;
             int index;
             int result;
 
-            Debug.Assert(s_encodingNameIndices.Length == s_codePagesByName.Length + 1);
-            Debug.Assert(s_encodingNameIndices[s_encodingNameIndices.Length - 1] == s_encodingNames.Length);
+            Debug.Assert(EncodingNameIndices.Length == CodePagesByName.Length + 1);
+            Debug.Assert(EncodingNameIndices[^1] == s_encodingNames.Length);
 
             name = name.ToLowerInvariant();
 
@@ -78,12 +78,12 @@ namespace System.Text
             {
                 index = ((right - left) / 2) + left;
 
-                Debug.Assert(index < s_encodingNameIndices.Length - 1);
-                result = CompareOrdinal(name, s_encodingNames, s_encodingNameIndices[index], s_encodingNameIndices[index + 1] - s_encodingNameIndices[index]);
+                Debug.Assert(index < EncodingNameIndices.Length - 1);
+                result = CompareOrdinal(name, s_encodingNames, EncodingNameIndices[index], EncodingNameIndices[index + 1] - EncodingNameIndices[index]);
                 if (result == 0)
                 {
                     //We found the item, return the associated codePage.
-                    return (s_codePagesByName[index]);
+                    return (CodePagesByName[index]);
                 }
                 else if (result < 0)
                 {
@@ -100,10 +100,10 @@ namespace System.Text
             //Walk the remaining elements (it'll be 3 or fewer).
             for (; left <= right; left++)
             {
-                Debug.Assert(left < s_encodingNameIndices.Length - 1);
-                if (CompareOrdinal(name, s_encodingNames, s_encodingNameIndices[left], s_encodingNameIndices[left + 1] - s_encodingNameIndices[left]) == 0)
+                Debug.Assert(left < EncodingNameIndices.Length - 1);
+                if (CompareOrdinal(name, s_encodingNames, EncodingNameIndices[left], EncodingNameIndices[left + 1] - EncodingNameIndices[left]) == 0)
                 {
-                    return (s_codePagesByName[left]);
+                    return (CodePagesByName[left]);
                 }
             }
 
@@ -129,25 +129,25 @@ namespace System.Text
 
         internal static string? GetWebNameFromCodePage(int codePage)
         {
-            return GetNameFromCodePage(codePage, s_webNames, s_webNameIndices, s_codePageToWebNameCache);
+            return GetNameFromCodePage(codePage, s_webNames, WebNameIndices, s_codePageToWebNameCache);
         }
 
         internal static string? GetEnglishNameFromCodePage(int codePage)
         {
-            return GetNameFromCodePage(codePage, s_englishNames, s_englishNameIndices, s_codePageToEnglishNameCache);
+            return GetNameFromCodePage(codePage, s_englishNames, EnglishNameIndices, s_codePageToEnglishNameCache);
         }
 
-        private static string? GetNameFromCodePage(int codePage, string names, int[] indices, Dictionary<int, string> cache)
+        private static string? GetNameFromCodePage(int codePage, string names, ReadOnlySpan<int> indices, Dictionary<int, string> cache)
         {
             string? name;
 
-            Debug.Assert(s_mappedCodePages.Length + 1 == indices.Length);
+            Debug.Assert(MappedCodePages.Length + 1 == indices.Length);
             Debug.Assert(indices[indices.Length - 1] == names.Length);
 
             //This is a linear search, but we probably won't be doing it very often.
-            for (int i = 0; i < s_mappedCodePages.Length; i++)
+            for (int i = 0; i < MappedCodePages.Length; i++)
             {
-                if (s_mappedCodePages[i] == codePage)
+                if (MappedCodePages[i] == codePage)
                 {
                     Debug.Assert(i < indices.Length - 1);
 

@@ -287,7 +287,7 @@ namespace System.Numerics
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
                                                            | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
 
-        private static readonly uint[] s_uint32PowersOfTen = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+        private static ReadOnlySpan<uint> UInt32PowersOfTen => new uint[] { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
 
         private struct BigNumberBuffer
         {
@@ -522,7 +522,7 @@ namespace System.Numerics
 
                 if (partialDigitCount > 0)
                 {
-                    MultiplyAdd(ref currentBuffer, s_uint32PowersOfTen[partialDigitCount], partialValue);
+                    MultiplyAdd(ref currentBuffer, UInt32PowersOfTen[partialDigitCount], partialValue);
                 }
 
                 int trailingZeroCount = numberScale - totalDigitCount;
@@ -535,7 +535,7 @@ namespace System.Numerics
 
                 if (trailingZeroCount > 0)
                 {
-                    MultiplyAdd(ref currentBuffer, s_uint32PowersOfTen[trailingZeroCount], 0);
+                    MultiplyAdd(ref currentBuffer, UInt32PowersOfTen[trailingZeroCount], 0);
                 }
 
                 int sign;

@@ -796,7 +796,7 @@ namespace System
                 int maxColors = TerminalFormatStrings.Instance.MaxColors; // often 8 or 16; 0 is invalid
                 if (maxColors > 0)
                 {
-                    int ansiCode = _consoleColorToAnsiCode[ccValue] % maxColors;
+                    int ansiCode = ConsoleColorToAnsiCode[ccValue] % maxColors;
                     evaluatedString = TermInfo.ParameterizedStrings.Evaluate(formatString, ansiCode);
 
                     WriteStdoutAnsiString(evaluatedString);
@@ -860,7 +860,7 @@ namespace System
         /// corresponding ANSI values.  We need to do the mapping manually.
         /// See http://en.wikipedia.org/wiki/ANSI_escape_code#Colors
         /// </summary>
-        private static readonly int[] _consoleColorToAnsiCode = new int[]
+        private static ReadOnlySpan<byte> ConsoleColorToAnsiCode => new byte[]
         {
             // Dark/Normal colors
             0, // Black,

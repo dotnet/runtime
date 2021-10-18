@@ -184,7 +184,7 @@ namespace System.Globalization
         private const int c_damp = 700;
 
         // Legal "dot" separators (i.e: . in www.microsoft.com)
-        private static readonly char[] s_dotSeparators = { '.', '\u3002', '\uFF0E', '\uFF61' };
+        private static ReadOnlySpan<char> DotSeparators => new char[] { '.', '\u3002', '\uFF0E', '\uFF61' };
 
         private string GetAsciiInvariant(string unicode, int index, int count)
         {
@@ -322,10 +322,9 @@ namespace System.Globalization
             while (iNextDot < unicode.Length)
             {
                 // Find end of this segment
-                iNextDot = unicode.IndexOfAny(s_dotSeparators, iAfterLastDot);
+                iNextDot = unicode.AsSpan(iAfterLastDot).IndexOfAny(DotSeparators);
                 Debug.Assert(iNextDot <= unicode.Length, "[IdnMapping.punycode_encode]IndexOfAny is broken");
-                if (iNextDot < 0)
-                    iNextDot = unicode.Length;
+                iNextDot = iNextDot < 0 ? unicode.Length : iNextDot + iAfterLastDot;
 
                 // Only allowed to have empty . section at end (www.microsoft.com.)
                 if (iNextDot == iAfterLastDot)

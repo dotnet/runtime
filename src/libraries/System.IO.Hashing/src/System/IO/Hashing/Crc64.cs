@@ -157,7 +157,7 @@ namespace System.IO.Hashing
             {
                 ulong idx = (crc >> 56);
                 idx ^= source[i];
-                crc = s_crcLookup[idx] ^ (crc << 8);
+                crc = CrcLookup[(int)idx] ^ (crc << 8);
             }
 
             return crc;

@@ -1056,7 +1056,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        private static readonly char[] s_curlyBraces = { '{', '}' };
+        private static ReadOnlySpan<char> CurlyBraces => new char[] { '{', '}' };
 
         [return: NotNullIfNotNull("avt")]
         private QilNode? CompileStringAvt(string? avt)
@@ -1065,20 +1065,24 @@ namespace System.Xml.Xsl.Xslt
             {
                 return null;
             }
-            if (avt.IndexOfAny(s_curlyBraces) == -1)
+
+            if (avt.AsSpan().IndexOfAny(CurlyBraces) < 0)
             {
                 return _f.String(avt);
             }
+
             return _f.StrConcat(CompileAvt(avt));
         }
 
         private QilNode CompileTextAvt(string avt)
         {
             Debug.Assert(avt != null);
-            if (avt.IndexOfAny(s_curlyBraces) == -1)
+
+            if (avt.AsSpan().IndexOfAny(CurlyBraces) == -1)
             {
                 return _f.TextCtor(_f.String(avt));
             }
+
             QilNode avtParts = CompileAvt(avt);
             if (avtParts.NodeType == QilNodeType.Sequence)
             {

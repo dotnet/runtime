@@ -13,7 +13,7 @@ namespace System.Text.Json
     [DebuggerDisplay("Path:{JsonPath()} Current: ConverterStrategy.{Current.JsonTypeInfo.PropertyInfoForTypeInfo.ConverterStrategy}, {Current.JsonTypeInfo.Type.Name}")]
     internal struct ReadStack
     {
-        internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
+        internal static ReadOnlySpan<char> SpecialCharacters => new char[] { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
 
         /// <summary>
         /// Exposes the stackframe that is currently active.
@@ -289,7 +289,7 @@ namespace System.Text.Json
             {
                 if (propertyName != null)
                 {
-                    if (propertyName.IndexOfAny(SpecialCharacters) != -1)
+                    if (propertyName.AsSpan().IndexOfAny(SpecialCharacters) != -1)
                     {
                         sb.Append(@"['");
                         sb.Append(propertyName);

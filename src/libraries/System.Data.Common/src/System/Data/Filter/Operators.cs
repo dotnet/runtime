@@ -121,34 +121,32 @@ namespace System.Data
         ///     Mapping from Operator to priorities
         ///     CONSIDER: fast, but hard to maintain
         /// </summary>
-
-        private static readonly int[] s_priority = new int[] {
-            priStart,  // Noop
-            priNeg, priNeg, priNot, // Unary -, +, Not
-            priBetweenAnd, priBetweenInLike, priBetweenInLike,
-            priRelOp, priRelOp, priRelOp, priRelOp, priRelOp, priRelOp,
-            priIs,
-            priBetweenInLike,                       // Like
-
-            priPlusMinus, priPlusMinus,             // +, -
-            priMulDiv, priMulDiv, priIDiv, priMod,  // *, /, \, Mod
-            priExp,                                 // **
-
-            priAnd, priOr, priXor, priNot,
-            priAnd, priOr,
-
-            priParen, priProc, priDot, priDot,      // Proc, Iff, Qula, Dot..
-
-            priMax, priMax, priMax, priMax, priMax, priMax, priMax,
-            priMax, priMax, priMax, priMax,
-            priMax,
-        };
-
         internal static int Priority(int op)
         {
-            if (op > s_priority.Length)
-                return priMax;
-            return s_priority[op];
+            ReadOnlySpan<int> priority = new int[]
+            {
+                priStart,  // Noop
+                priNeg, priNeg, priNot, // Unary -, +, Not
+                priBetweenAnd, priBetweenInLike, priBetweenInLike,
+                priRelOp, priRelOp, priRelOp, priRelOp, priRelOp, priRelOp,
+                priIs,
+                priBetweenInLike,                       // Like
+
+                priPlusMinus, priPlusMinus,             // +, -
+                priMulDiv, priMulDiv, priIDiv, priMod,  // *, /, \, Mod
+                priExp,                                 // **
+
+                priAnd, priOr, priXor, priNot,
+                priAnd, priOr,
+
+                priParen, priProc, priDot, priDot,      // Proc, Iff, Qula, Dot..
+
+                priMax, priMax, priMax, priMax, priMax, priMax, priMax,
+                priMax, priMax, priMax, priMax,
+                priMax,
+            };
+
+            return (uint)op < priority.Length ? priority[op] : priMax;
         }
 
         /// <summary>

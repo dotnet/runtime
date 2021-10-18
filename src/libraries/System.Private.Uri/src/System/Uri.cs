@@ -1821,16 +1821,13 @@ namespace System
         //
         // Returns true if a colon is found in the first path segment, false otherwise
         //
-
-        // Check for anything that may terminate the first regular path segment
-        // or an illegal colon
-        private static readonly char[] s_pathDelims = { ':', '\\', '/', '?', '#' };
-
         private static bool CheckForColonInFirstPathSegment(string uriString)
         {
-            int index = uriString.IndexOfAny(s_pathDelims);
-
-            return (index >= 0 && uriString[index] == ':');
+            // Check for anything that may terminate the first regular path segment
+            // or an illegal colon
+            ReadOnlySpan<char> PathDelims = new char[] { ':', '\\', '/', '?', '#' };
+            int index = uriString.AsSpan().IndexOfAny(PathDelims);
+            return (uint)index < (uint)uriString.Length && uriString[index] == ':';
         }
 
         internal static string InternalEscapeString(string rawString) =>

@@ -5446,9 +5446,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             Index + target.Length <= Length &&
             m_info.Compare(Value.Slice(Index, target.Length), target, CompareOptions.IgnoreCase) == 0;
 
-        private static readonly char[] WhiteSpaceChecks = new char[] { ' ', '\u00A0' };
-
-        internal bool MatchSpecifiedWords(string target, bool checkWordBoundary, ref int matchLength)
+        internal bool MatchSpecifiedWords(ReadOnlySpan<char> target, bool checkWordBoundary, ref int matchLength)
         {
             int valueRemaining = Value.Length - Index;
             matchLength = target.Length;
@@ -5456,20 +5454,22 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (matchLength > valueRemaining || m_info.Compare(Value.Slice(Index, matchLength), target, CompareOptions.IgnoreCase) != 0)
             {
                 // Check word by word
-                int targetPosition = 0;                 // Where we are in the target string
                 int thisPosition = Index;         // Where we are in this string
-                int wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition);
-                if (wsIndex == -1)
+                ReadOnlySpan<char> whiteSpaceChecks = new char[] { ' ', '\u00A0' };
+                int segmentLength = target.IndexOfAny(whiteSpaceChecks);
+                if (segmentLength < 0)
                 {
                     return false;
                 }
+
                 do
                 {
-                    int segmentLength = wsIndex - targetPosition;
                     if (thisPosition >= Value.Length - segmentLength)
-                    { // Subtraction to prevent overflow.
+                    {
+                        // Subtraction to prevent overflow.
                         return false;
                     }
+
                     if (segmentLength == 0)
                     {
                         // If segmentLength == 0, it means that we have leading space in the target string.
@@ -5483,7 +5483,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         {
                             return false;
                         }
-                        if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan(targetPosition, segmentLength)) != 0)
+                        if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.Slice(0, segmentLength)) != 0)
                         {
                             return false;
                         }
@@ -5491,7 +5491,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         thisPosition = thisPosition + segmentLength + 1;
                     }
                     // Advance our target string
-                    targetPosition = wsIndex + 1;
+                    target = target.Slice(segmentLength + 1);
 
                     // Skip past multiple whitespace
                     while (thisPosition < Value.Length && char.IsWhiteSpace(Value[thisPosition]))
@@ -5499,16 +5499,16 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         thisPosition++;
                         matchLength++;
                     }
-                } while ((wsIndex = target.IndexOfAny(WhiteSpaceChecks, targetPosition)) >= 0);
+                } while ((segmentLength = target.IndexOfAny(whiteSpaceChecks)) >= 0);
+
                 // now check the last segment;
-                if (targetPosition < target.Length)
+                if (!target.IsEmpty)
                 {
-                    int segmentLength = target.Length - targetPosition;
-                    if (thisPosition > Value.Length - segmentLength)
+                    if (thisPosition > Value.Length - target.Length)
                     {
                         return false;
                     }
-                    if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target.AsSpan(targetPosition, segmentLength)) != 0)
+                    if (m_info.CompareOptionIgnoreCase(Value.Slice(thisPosition, segmentLength), target) != 0)
                     {
                         return false;
                     }

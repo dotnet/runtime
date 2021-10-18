@@ -51,12 +51,6 @@ namespace System.Data.SqlTypes
 
         private const int s_dayBase = 693595;               // Jan 1 1900 is this many days from Jan 1 0001
 
-
-        private static readonly int[] s_daysToMonth365 = new int[] {
-            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-        private static readonly int[] s_daysToMonth366 = new int[] {
-            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
-
         private static readonly DateTime s_minDateTime = new DateTime(1753, 1, 1);
         private static readonly DateTime s_maxDateTime = DateTime.MaxValue;
         private static readonly TimeSpan s_minTimeSpan = s_minDateTime.Subtract(s_SQLBaseDate);
@@ -105,7 +99,9 @@ namespace System.Data.SqlTypes
         {
             if (year >= s_minYear && year <= s_maxYear && month >= 1 && month <= 12)
             {
-                int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
+                ReadOnlySpan<int> days = IsLeapYear(year) ?
+                    (ReadOnlySpan<int>)new int[] { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 } :
+                    (ReadOnlySpan<int>)new int[] { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
                 if (day >= 1 && day <= days[month] - days[month - 1])
                 {
                     int y = year - 1;
