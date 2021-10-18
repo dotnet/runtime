@@ -4464,6 +4464,7 @@ RangeSection* ExecutionManager::GetRangeSection(TADDR addr)
     ReaderLockHolder rlh(HostCallPreference::NoHostCalls);
 
 #ifndef DACCESS_COMPILE
+    while (!rlh.Acquired()); // rlh con did not yield and we have HOST_NOCALLS limitation
     //negative case
     LastUsedRSIndex = (int)m_LastUsedRSIndex;
     if ((LastUsedRSIndex > 0)
