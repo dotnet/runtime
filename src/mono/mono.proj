@@ -442,7 +442,7 @@
 
     <!-- Experimental byref of any type support -->
     <ItemGroup Condition="'$(MonoFeatureAnyByref)' == 'true'">
-      <_MonoCMakeArgs Include="-DMONO_EXPERIMENT_ANY_BYREF" />
+      <_MonoCMakeArgs Include="-DMONO_EXPERIMENT_ANY_BYREF=1" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
