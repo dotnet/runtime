@@ -60,11 +60,11 @@ if ($useWindowsContainers)
 $originalErrorPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
-	docker-compose --file "$compose_file" pull client
+	docker-compose --file "$COMPOSE_FILE" pull client
 	if ($LASTEXITCODE -ne 0) {
 		throw "docker-compose exited with error code $LASTEXITCODE"
 	}
-	docker-compose --file "$compose_file" pull server
+	docker-compose --file "$COMPOSE_FILE" pull server
 	if ($LASTEXITCODE -ne 0) {
 		throw "docker-compose exited with error code $LASTEXITCODE"
 	}
