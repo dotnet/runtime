@@ -11,6 +11,7 @@
     <RegKeyProductName>sharedhost</RegKeyProductName>
     <WixDependencyKeyName>Dotnet_CLI_SharedHost</WixDependencyKeyName>
     <OutputFilesCandleVariable>HostSrc</OutputFilesCandleVariable>
+    <MajorUpgradeSchedule>afterInstallExecute</MajorUpgradeSchedule>
     <VersionInstallerName>false</VersionInstallerName>
     <UseBrandingNameInLinuxPackageDescription>true</UseBrandingNameInLinuxPackageDescription>
     <MacOSComponentNamePackType>sharedhost</MacOSComponentNamePackType>

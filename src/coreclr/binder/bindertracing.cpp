@@ -147,12 +147,12 @@ namespace
         DomainAssembly *parentAssembly = spec->GetParentAssembly();
         if (parentAssembly != nullptr)
         {
-            PEAssembly *peAssembly = parentAssembly->GetFile();
-            _ASSERTE(peAssembly != nullptr);
-            peAssembly->GetDisplayName(request.RequestingAssembly);
+            PEAssembly *pPEAssembly = parentAssembly->GetPEAssembly();
+            _ASSERTE(pPEAssembly != nullptr);
+            pPEAssembly->GetDisplayName(request.RequestingAssembly);
 
             AppDomain *domain = parentAssembly->GetAppDomain();
-            AssemblyBinder *binder = peAssembly->GetAssemblyBinder();
+            AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
             GetAssemblyLoadContextNameFromBinder(binder, domain, request.RequestingAssemblyLoadContext);
         }

@@ -71,7 +71,6 @@
       <_EmccCommonFlags Include="--source-map-base http://example.com" />
 
       <_EmccCommonFlags Include="-s STRICT_JS=1" />      
-
       <_EmccCommonFlags Include="-s MODULARIZE=1" Condition="'$(WasmEnableES6)' != 'false'" />
       <_EmccCommonFlags Include="-s EXPORT_ES6=1" Condition="'$(WasmEnableES6)' != 'false'" />
     </ItemGroup>
@@ -150,9 +149,8 @@
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
-      <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Debug'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
-      <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot; -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot; -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot; -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot; -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot; -DSYSTEM_NATIVE_DIR=&quot;$(RepoRoot)src/libraries/Native/Unix/System.Native&quot; -DSOURCE_DIR=&quot;$(MSBuildThisFileDirectory.TrimEnd('\/'))/runtime&quot;$(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
-      <CMakeBuildRuntimeConfigureCmd Condition="'$(Configuration)' == 'Debug'">emcmake cmake $(MSBuildThisFileDirectory)runtime -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot; -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot; -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot; -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot; -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot; -DSYSTEM_NATIVE_DIR=&quot;$(RepoRoot)src/libraries/Native/Unix/System.Native&quot; -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot; -DSOURCE_DIR=&quot;$(MSBuildThisFileDirectory.TrimEnd('\/'))/runtime&quot;</CMakeBuildRuntimeConfigureCmd>
+      <CMakeConfigurationEmsdkPath Condition="'$(Configuration)' == 'Release'"> -DEMSDK_PATH=&quot;$(EMSDK_PATH.TrimEnd('\/'))&quot;</CMakeConfigurationEmsdkPath>
+      <CMakeBuildRuntimeConfigureCmd>emcmake cmake $(MSBuildThisFileDirectory)runtime -DCMAKE_BUILD_TYPE=$(Configuration) -DCONFIGURATION_EMCC_FLAGS=&quot;$(CMakeConfigurationEmccFlags)&quot; -DMONO_INCLUDES=&quot;$(MonoArtifactsPath)include/mono-2.0&quot; -DMONO_OBJ_INCLUDES=&quot;$(MonoObjDir.TrimEnd('\/'))&quot; -DICU_LIB_DIR=&quot;$(ICULibDir.TrimEnd('\/'))&quot; -DMONO_ARTIFACTS_DIR=&quot;$(MonoArtifactsPath.TrimEnd('\/'))&quot; -DNATIVE_BIN_DIR=&quot;$(NativeBinDir.TrimEnd('\/'))&quot; -DSYSTEM_NATIVE_DIR=&quot;$(RepoRoot)src/libraries/Native/Unix/System.Native&quot; -DSOURCE_DIR=&quot;$(MSBuildThisFileDirectory.TrimEnd('\/'))/runtime&quot;$(CMakeConfigurationEmsdkPath)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' == 'Windows_NT'">call &quot;$(RepositoryEngineeringDir)native\init-vs-env.cmd&quot; &amp;&amp; call &quot;$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emsdk_env.bat'))&quot; &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)</CMakeBuildRuntimeConfigureCmd>
       <CMakeBuildRuntimeConfigureCmd Condition="'$(OS)' != 'Windows_NT'">bash -c 'source $(EMSDK_PATH)/emsdk_env.sh 2>&amp;1 &amp;&amp; $(CMakeBuildRuntimeConfigureCmd)'</CMakeBuildRuntimeConfigureCmd>
 
@@ -207,6 +205,7 @@
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)src\dotnet.d.ts;
                        $(NativeBinDir)dotnet.wasm;
                        $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"

@@ -10,11 +10,7 @@ using System.IO;
 using System.Text;
 using System.Buffers;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     internal static partial class FileSystem
     {

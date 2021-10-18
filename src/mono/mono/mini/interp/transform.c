@@ -582,7 +582,7 @@ interp_merge_bblocks (TransformData *td, InterpBasicBlock *bb, InterpBasicBlock 
 	if (bb->last_ins) {
 		InterpInst *last_ins = (bb->last_ins->opcode != MINT_NOP) ? bb->last_ins : interp_prev_ins (bb->last_ins);
 		if (last_ins) {
-			if (last_ins->opcode == MINT_BR || last_ins->opcode == MINT_BR_S) {
+			if (last_ins->opcode == MINT_BR) {
 				g_assert (last_ins->info.target_bb == bbadd);
 				interp_clear_ins (last_ins);
 			} else if (last_ins->opcode == MINT_SWITCH) {
@@ -779,9 +779,8 @@ init_bb_stack_state (TransformData *td, InterpBasicBlock *bb)
 }
 
 static void 
-handle_branch (TransformData *td, int short_op, int long_op, int offset)
+handle_branch (TransformData *td, int long_op, int offset)
 {
-	int shorten_branch = 0;
 	int target = td->ip + offset - td->il_code;
 	if (target < 0 || target >= td->code_size)
 		g_assert_not_reached ();
@@ -794,7 +793,7 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 	InterpBasicBlock *target_bb = td->offset_to_bb [target];
 	g_assert (target_bb);
 
-	if (short_op == MINT_LEAVE_S || short_op == MINT_LEAVE_S_CHECK)
+	if (long_op == MINT_LEAVE || long_op == MINT_LEAVE_CHECK)
 		target_bb->eh_block = TRUE;
 
 	fixup_newbb_stack_locals (td, target_bb);
@@ -803,16 +802,8 @@ handle_branch (TransformData *td, int short_op, int long_op, int offset)
 
 	interp_link_bblocks (td, td->cbb, target_bb);
 
-	if (td->header->code_size <= 25000) /* FIX to be precise somehow? */
-		shorten_branch = 1;
-
-	if (shorten_branch) {
-		interp_add_ins (td, short_op);
-		td->last_ins->info.target_bb = target_bb;
-	} else {
-		interp_add_ins (td, long_op);
-		td->last_ins->info.target_bb = target_bb;
-	}
+	interp_add_ins (td, long_op);
+	td->last_ins->info.target_bb = target_bb;
 }
 
 static void 
@@ -820,11 +811,10 @@ one_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 {
 	int type = td->sp [-1].type == STACK_TYPE_O || td->sp [-1].type == STACK_TYPE_MP ? STACK_TYPE_I : td->sp [-1].type;
 	int long_op = mint_op + type - STACK_TYPE_I4;
-	int short_op = long_op + MINT_BRFALSE_I4_S - MINT_BRFALSE_I4;
 	CHECK_STACK(td, 1);
 	--td->sp;
 	if (offset) {
-		handle_branch (td, short_op, long_op, offset + inst_size);
+		handle_branch (td, long_op, offset + inst_size);
 		interp_ins_set_sreg (td->last_ins, td->sp->local);
 	} else {
 		interp_add_ins (td, MINT_NOP);
@@ -870,10 +860,9 @@ two_arg_branch(TransformData *td, int mint_op, int offset, int inst_size)
 	}
 
 	int long_op = mint_op + type1 - STACK_TYPE_I4;
-	int short_op = long_op + MINT_BEQ_I4_S - MINT_BEQ_I4;
 	td->sp -= 2;
 	if (offset) {
-		handle_branch (td, short_op, long_op, offset + inst_size);
+		handle_branch (td, long_op, offset + inst_size);
 		interp_ins_set_sregs2 (td->last_ins, td->sp [0].local, td->sp [1].local);
 	} else {
 		interp_add_ins (td, MINT_NOP);
@@ -3322,7 +3311,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			for (i = csignature->param_count - 1 + !!csignature->hasthis; i >= 0; --i)
 				store_arg (td, i);
 
-			interp_add_ins (td, MINT_BR_S);
+			interp_add_ins (td, MINT_BR);
 			// We are branching to the beginning of the method
 			td->last_ins->info.target_bb = td->entry_bb;
 			int in_offset = td->ip - td->il_code;
@@ -3511,7 +3500,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				interp_add_ins (td, MINT_CALLI);
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
-				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			}
 		} else {
 			InterpMethod *imethod = mono_interp_get_imethod (target_method, error);
@@ -4958,7 +4946,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			if (inlining) {
 				td->ip++;
 				fixup_newbb_stack_locals (td, exit_bb);
-				interp_add_ins (td, MINT_BR_S);
+				interp_add_ins (td, MINT_BR);
 				td->last_ins->info.target_bb = exit_bb;
 				init_bb_stack_state (td, exit_bb);
 				interp_link_bblocks (td, td->cbb, exit_bb);
@@ -5022,7 +5010,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_BR: {
 			int offset = read32 (td->ip + 1);
 			if (offset) {
-				handle_branch (td, MINT_BR_S, MINT_BR, 5 + offset);
+				handle_branch (td, MINT_BR, 5 + offset);
 				link_bblocks = FALSE;
 			}
 			td->ip += 5;
@@ -5031,7 +5019,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_BR_S: {
 			int offset = (gint8)td->ip [1];
 			if (offset) {
-				handle_branch (td, MINT_BR_S, MINT_BR, 2 + (gint8)td->ip [1]);
+				handle_branch (td, MINT_BR, 2 + (gint8)td->ip [1]);
 				link_bblocks = FALSE;
 			}
 			td->ip += 2;
@@ -6906,20 +6894,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					continue;
 				if (MONO_OFFSET_IN_CLAUSE (clause, (td->ip - header->code)) &&
 						(!MONO_OFFSET_IN_CLAUSE (clause, (target_offset + in_offset)))) {
-					handle_branch (td, MINT_CALL_HANDLER_S, MINT_CALL_HANDLER, clause->handler_offset - in_offset);
-					// FIXME We need new IR to get rid of _S ugliness
-					if (td->last_ins->opcode == MINT_CALL_HANDLER_S)
-						td->last_ins->data [1] = i;
-					else
-						td->last_ins->data [2] = i;
+					handle_branch (td, MINT_CALL_HANDLER, clause->handler_offset - in_offset);
+					td->last_ins->data [2] = i;
 				}
 			}
 
 			if (td->clause_indexes [in_offset] != -1) {
 				/* LEAVE instructions in catch clauses need to check for abort exceptions */
-				handle_branch (td, MINT_LEAVE_S_CHECK, MINT_LEAVE_CHECK, target_offset);
+				handle_branch (td, MINT_LEAVE_CHECK, target_offset);
 			} else {
-				handle_branch (td, MINT_LEAVE_S, MINT_LEAVE, target_offset);
+				handle_branch (td, MINT_LEAVE, target_offset);
 			}
 
 			if (*td->ip == CEE_LEAVE)
@@ -7143,12 +7127,28 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				save_last_error = TRUE;
 				++td->ip;
 				break;
-			case CEE_MONO_GET_SP:
-				interp_add_ins (td, MINT_MONO_GET_SP);
-				push_simple_type (td, STACK_TYPE_I);
-				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+			case CEE_MONO_GET_SP: {
 				++td->ip;
+				g_assert (*td->ip == MONO_CUSTOM_PREFIX);
+				++td->ip;
+				g_assert (*td->ip == CEE_MONO_ICALL);
+				// in coop gc transitions we use mono.get.sp + calli to implement enter/exit
+				// on interpreter we do these transitions explicitly when entering/exiting the
+				// interpreter so we can ignore them here in the wrappers.
+				MonoJitICallId const jit_icall_id = (MonoJitICallId)read32 (td->ip + 1);
+				MonoJitICallInfo const * const info = mono_find_jit_icall_info (jit_icall_id);
+
+				if (info->sig->ret->type != MONO_TYPE_VOID) {
+					// Push a dummy coop gc var
+					push_simple_type (td, STACK_TYPE_I);
+					interp_add_ins (td, MINT_MONO_ENABLE_GCTRANS);
+				} else {
+					// Pop the unused gc var
+					td->sp--;
+				}
+				td->ip += 5;
 				break;
+			}
 			default:
 				g_error ("transform.c: Unimplemented opcode: 0xF0 %02x at 0x%x\n", *td->ip, td->ip-header->code);
 			}
@@ -7643,6 +7643,60 @@ get_inst_length (InterpInst *ins)
 		return mono_interp_oplen [ins->opcode];
 }
 
+static int
+compute_native_offset_estimates (TransformData *td)
+{
+	InterpBasicBlock *bb;
+	int noe = 0;
+	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
+		InterpInst *ins;
+		bb->native_offset_estimate = noe;
+		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
+			int opcode = ins->opcode;
+			// Skip dummy opcodes for more precise offset computation
+			if (MINT_IS_NOP (opcode))
+				continue;
+			noe += get_inst_length (ins);
+		}
+	}
+	return noe;
+}
+
+static gboolean
+is_short_offset (int src_offset, int dest_offset)
+{
+	int diff = dest_offset - src_offset;
+	if (diff >= G_MININT16 && diff <= G_MAXINT16)
+		return TRUE;
+	return FALSE;
+}
+
+static int
+get_short_brop (int opcode)
+{
+	if (MINT_IS_UNCONDITIONAL_BRANCH (opcode)) {
+		if (opcode == MINT_BR)
+			return MINT_BR_S;
+		else if (opcode == MINT_LEAVE)
+			return MINT_LEAVE_S;
+		else if (opcode == MINT_LEAVE_CHECK)
+			return MINT_LEAVE_S_CHECK;
+		else if (opcode == MINT_CALL_HANDLER)
+			return MINT_CALL_HANDLER_S;
+		else
+			return opcode;
+	}
+
+	if (opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_R8)
+		return opcode + MINT_BRFALSE_I4_S - MINT_BRFALSE_I4;
+
+	if (opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8)
+		return opcode + MINT_BEQ_I4_S - MINT_BEQ_I4;
+
+	// Already short branch
+	return opcode;
+}
+
 
 static guint16*
 emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *ins)
@@ -7682,56 +7736,47 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 			*ip++ = 0xdead;
 			*ip++ = 0xbeef;
 		}
-	} else if ((opcode >= MINT_BRFALSE_I4_S && opcode <= MINT_BRTRUE_R8_S) ||
-			(opcode >= MINT_BEQ_I4_S && opcode <= MINT_BLT_UN_R8_S) ||
-			(opcode >= MINT_BRFALSE_I4_SP && opcode <= MINT_BLT_UN_I8_IMM_SP) ||
-			opcode == MINT_BR_S || opcode == MINT_LEAVE_S || opcode == MINT_LEAVE_S_CHECK || opcode == MINT_CALL_HANDLER_S) {
+	} else if (MINT_IS_UNCONDITIONAL_BRANCH (opcode) || MINT_IS_CONDITIONAL_BRANCH (opcode) || MINT_IS_SUPER_BRANCH (opcode)) {
 		const int br_offset = start_ip - td->new_code;
 		gboolean has_imm = opcode >= MINT_BEQ_I4_IMM_SP && opcode <= MINT_BLT_UN_I8_IMM_SP;
 		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
 			*ip++ = td->locals [ins->sregs [i]].offset;
 		if (has_imm)
 			*ip++ = ins->data [0];
+
 		if (ins->info.target_bb->native_offset >= 0) {
+			int offset = ins->info.target_bb->native_offset - br_offset;
 			// Backwards branch. We can already patch it.
-			*ip++ = ins->info.target_bb->native_offset - br_offset;
-		} else if (opcode == MINT_BR_S && ins->info.target_bb == td->cbb->next_bb) {
-			// Ignore branch to the next basic block. Revert the added MINT_BR_S.
+			if (is_short_offset (br_offset, ins->info.target_bb->native_offset)) {
+				// Replace the long opcode we added at the start
+				*start_ip = get_short_brop (opcode);
+				*ip++ = ins->info.target_bb->native_offset - br_offset;
+			} else {
+				WRITE32 (ip, &offset);
+			}
+		} else if (opcode == MINT_BR && ins->info.target_bb == td->cbb->next_bb) {
+			// Ignore branch to the next basic block. Revert the added MINT_BR.
 			ip--;
 		} else {
+			// If the estimate offset is short, then surely the real offset is short
+			gboolean is_short = is_short_offset (br_offset, ins->info.target_bb->native_offset_estimate);
+			if (is_short)
+				*start_ip = get_short_brop (opcode);
+
 			// We don't know the in_offset of the target, add a reloc
 			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
-			reloc->type = RELOC_SHORT_BRANCH;
+			reloc->type = is_short ? RELOC_SHORT_BRANCH : RELOC_LONG_BRANCH;
 			reloc->skip = mono_interp_op_sregs [opcode] + has_imm;
 			reloc->offset = br_offset;
 			reloc->target_bb = ins->info.target_bb;
 			g_ptr_array_add (td->relocs, reloc);
 			*ip++ = 0xdead;
-		}
-		if (opcode == MINT_CALL_HANDLER_S)
-			*ip++ = ins->data [1];
-	} else if ((opcode >= MINT_BRFALSE_I4 && opcode <= MINT_BRTRUE_R8) ||
-			(opcode >= MINT_BEQ_I4 && opcode <= MINT_BLT_UN_R8) ||
-			opcode == MINT_BR || opcode == MINT_LEAVE || opcode == MINT_LEAVE_CHECK || opcode == MINT_CALL_HANDLER) {
-		const int br_offset = start_ip - td->new_code;
-		for (int i = 0; i < mono_interp_op_sregs [opcode]; i++)
-			*ip++ = td->locals [ins->sregs [i]].offset;
-		if (ins->info.target_bb->native_offset >= 0) {
-			// Backwards branch. We can already patch it
-			int target_offset = ins->info.target_bb->native_offset - br_offset;
-			WRITE32 (ip, &target_offset);
-		} else {
-			Reloc *reloc = (Reloc*)mono_mempool_alloc0 (td->mempool, sizeof (Reloc));
-			reloc->type = RELOC_LONG_BRANCH;
-			reloc->skip = mono_interp_op_sregs [opcode];
-			reloc->offset = br_offset;
-			reloc->target_bb = ins->info.target_bb;
-			g_ptr_array_add (td->relocs, reloc);
-			*ip++ = 0xdead;
-			*ip++ = 0xbeef;
+			if (!is_short)
+				*ip++ = 0xbeef;
 		}
 		if (opcode == MINT_CALL_HANDLER)
 			*ip++ = ins->data [2];
+
 	} else if (opcode == MINT_SDB_SEQ_POINT || opcode == MINT_IL_SEQ_POINT) {
 		SeqPoint *seqp = (SeqPoint*)mono_mempool_alloc0 (td->mempool, sizeof (SeqPoint));
 		InterpBasicBlock *cbb;
@@ -7801,7 +7846,7 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 #endif
 	} else if (opcode >= MINT_MOV_8_2 && opcode <= MINT_MOV_8_4) {
 		// This instruction is not marked as operating on any vars, all instruction slots are
-		// actually vas. Resolve their offset
+		// actually vars. Resolve their offset
 		int num_vars = mono_interp_oplen [opcode] - 1;
 		for (int i = 0; i < num_vars; i++)
 			*ip++ = td->locals [ins->data [i]].offset;
@@ -7835,18 +7880,13 @@ static void
 generate_compacted_code (TransformData *td)
 {
 	guint16 *ip;
-	int size = 0;
+	int size;
 	td->relocs = g_ptr_array_new ();
 	InterpBasicBlock *bb;
 
-	// Iterate once for preliminary computations
-	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
-		InterpInst *ins = bb->first_ins;
-		while (ins) {
-			size += get_inst_length (ins);
-			ins = ins->next;
-		}
-	}
+	// This iteration could be avoided at the cost of less precise size result, following
+	// super instruction pass
+	size = compute_native_offset_estimates (td);
 
 	// Generate the compacted stream of instructions
 	td->new_code = ip = (guint16*)mono_mem_manager_alloc0 (td->mem_manager, size * sizeof (guint16));
@@ -8073,7 +8113,7 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 #define INTERP_FOLD_UNOP_BR(_opcode,_local_type,_cond) \
 	case _opcode: \
 		if (_cond) { \
-			ins->opcode = MINT_BR_S; \
+			ins->opcode = MINT_BR; \
 			if (cbb->next_bb != ins->info.target_bb) \
 				interp_unlink_bblocks (cbb, cbb->next_bb); \
 			for (InterpInst *it = ins->next; it != NULL; it = it->next) \
@@ -8097,10 +8137,10 @@ interp_fold_unop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue *
 
 	// Top of the stack is a constant
 	switch (ins->opcode) {
-		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4_S, LOCAL_VALUE_I4, val->i == 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8_S, LOCAL_VALUE_I8, val->l == 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4_S, LOCAL_VALUE_I4, val->i != 0);
-		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8_S, LOCAL_VALUE_I8, val->l != 0);
+		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I4, LOCAL_VALUE_I4, val->i == 0);
+		INTERP_FOLD_UNOP_BR (MINT_BRFALSE_I8, LOCAL_VALUE_I8, val->l == 0);
+		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I4, LOCAL_VALUE_I4, val->i != 0);
+		INTERP_FOLD_UNOP_BR (MINT_BRTRUE_I8, LOCAL_VALUE_I8, val->l != 0);
 
 		default:
 			return ins;
@@ -8249,11 +8289,11 @@ interp_fold_binop (TransformData *td, LocalValue *local_defs, InterpInst *ins, g
 // Due to poor current design, the branch op might not be the last instruction in the bblock
 // (in case we fallthrough and need to have the stack locals match the ones from next_bb, done
 // in fixup_newbb_stack_locals). If that's the case, clear all these mov's. This helps bblock
-// merging quickly find the MINT_BR_S opcode.
+// merging quickly find the MINT_BR opcode.
 #define INTERP_FOLD_BINOP_BR(_opcode,_local_type,_cond) \
 	case _opcode: \
 		if (_cond) { \
-			ins->opcode = MINT_BR_S; \
+			ins->opcode = MINT_BR; \
 			if (cbb->next_bb != ins->info.target_bb) \
 				interp_unlink_bblocks (cbb, cbb->next_bb); \
 			for (InterpInst *it = ins->next; it != NULL; it = it->next) \
@@ -8280,27 +8320,27 @@ interp_fold_binop_cond_br (TransformData *td, InterpBasicBlock *cbb, LocalValue 
 		return ins;
 
 	switch (ins->opcode) {
-		INTERP_FOLD_BINOP_BR (MINT_BEQ_I4_S, LOCAL_VALUE_I4, val1->i == val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BEQ_I8_S, LOCAL_VALUE_I8, val1->l == val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_I4_S, LOCAL_VALUE_I4, val1->i >= val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_I8_S, LOCAL_VALUE_I8, val1->l >= val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_I4_S, LOCAL_VALUE_I4, val1->i > val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_I8_S, LOCAL_VALUE_I8, val1->l > val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_I4_S, LOCAL_VALUE_I4, val1->i < val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_I8_S, LOCAL_VALUE_I8, val1->l < val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_I4_S, LOCAL_VALUE_I4, val1->i <= val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_I8_S, LOCAL_VALUE_I8, val1->l <= val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BEQ_I4, LOCAL_VALUE_I4, val1->i == val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BEQ_I8, LOCAL_VALUE_I8, val1->l == val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_I4, LOCAL_VALUE_I4, val1->i >= val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_I8, LOCAL_VALUE_I8, val1->l >= val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_I4, LOCAL_VALUE_I4, val1->i > val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_I8, LOCAL_VALUE_I8, val1->l > val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_I4, LOCAL_VALUE_I4, val1->i < val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_I8, LOCAL_VALUE_I8, val1->l < val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_I4, LOCAL_VALUE_I4, val1->i <= val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_I8, LOCAL_VALUE_I8, val1->l <= val2->l);
 
-		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I4_S, LOCAL_VALUE_I4, val1->i != val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I8_S, LOCAL_VALUE_I8, val1->l != val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I4_S, LOCAL_VALUE_I4, (guint32)val1->i >= (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I8_S, LOCAL_VALUE_I8, (guint64)val1->l >= (guint64)val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I4_S, LOCAL_VALUE_I4, (guint32)val1->i > (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I8_S, LOCAL_VALUE_I8, (guint64)val1->l > (guint64)val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I4_S, LOCAL_VALUE_I4, (guint32)val1->i <= (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I8_S, LOCAL_VALUE_I8, (guint64)val1->l <= (guint64)val2->l);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I4_S, LOCAL_VALUE_I4, (guint32)val1->i < (guint32)val2->i);
-		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I8_S, LOCAL_VALUE_I8, (guint64)val1->l < (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I4, LOCAL_VALUE_I4, val1->i != val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BNE_UN_I8, LOCAL_VALUE_I8, val1->l != val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i >= (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGE_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l >= (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i > (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BGT_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l > (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i <= (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLE_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l <= (guint64)val2->l);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I4, LOCAL_VALUE_I4, (guint32)val1->i < (guint32)val2->i);
+		INTERP_FOLD_BINOP_BR (MINT_BLT_UN_I8, LOCAL_VALUE_I8, (guint64)val1->l < (guint64)val2->l);
 
 		default:
 			return ins;
@@ -8710,26 +8750,26 @@ static int
 get_binop_condbr_imm_sp (int opcode)
 {
 	switch (opcode) {
-		case MINT_BEQ_I4_S: return MINT_BEQ_I4_IMM_SP;
-		case MINT_BEQ_I8_S: return MINT_BEQ_I8_IMM_SP;
-		case MINT_BGE_I4_S: return MINT_BGE_I4_IMM_SP;
-		case MINT_BGE_I8_S: return MINT_BGE_I8_IMM_SP;
-		case MINT_BGT_I4_S: return MINT_BGT_I4_IMM_SP;
-		case MINT_BGT_I8_S: return MINT_BGT_I8_IMM_SP;
-		case MINT_BLT_I4_S: return MINT_BLT_I4_IMM_SP;
-		case MINT_BLT_I8_S: return MINT_BLT_I8_IMM_SP;
-		case MINT_BLE_I4_S: return MINT_BLE_I4_IMM_SP;
-		case MINT_BLE_I8_S: return MINT_BLE_I8_IMM_SP;
-		case MINT_BNE_UN_I4_S: return MINT_BNE_UN_I4_IMM_SP;
-		case MINT_BNE_UN_I8_S: return MINT_BNE_UN_I8_IMM_SP;
-		case MINT_BGE_UN_I4_S: return MINT_BGE_UN_I4_IMM_SP;
-		case MINT_BGE_UN_I8_S: return MINT_BGE_UN_I8_IMM_SP;
-		case MINT_BGT_UN_I4_S: return MINT_BGT_UN_I4_IMM_SP;
-		case MINT_BGT_UN_I8_S: return MINT_BGT_UN_I8_IMM_SP;
-		case MINT_BLE_UN_I4_S: return MINT_BLE_UN_I4_IMM_SP;
-		case MINT_BLE_UN_I8_S: return MINT_BLE_UN_I8_IMM_SP;
-		case MINT_BLT_UN_I4_S: return MINT_BLT_UN_I4_IMM_SP;
-		case MINT_BLT_UN_I8_S: return MINT_BLT_UN_I8_IMM_SP;
+		case MINT_BEQ_I4: return MINT_BEQ_I4_IMM_SP;
+		case MINT_BEQ_I8: return MINT_BEQ_I8_IMM_SP;
+		case MINT_BGE_I4: return MINT_BGE_I4_IMM_SP;
+		case MINT_BGE_I8: return MINT_BGE_I8_IMM_SP;
+		case MINT_BGT_I4: return MINT_BGT_I4_IMM_SP;
+		case MINT_BGT_I8: return MINT_BGT_I8_IMM_SP;
+		case MINT_BLT_I4: return MINT_BLT_I4_IMM_SP;
+		case MINT_BLT_I8: return MINT_BLT_I8_IMM_SP;
+		case MINT_BLE_I4: return MINT_BLE_I4_IMM_SP;
+		case MINT_BLE_I8: return MINT_BLE_I8_IMM_SP;
+		case MINT_BNE_UN_I4: return MINT_BNE_UN_I4_IMM_SP;
+		case MINT_BNE_UN_I8: return MINT_BNE_UN_I8_IMM_SP;
+		case MINT_BGE_UN_I4: return MINT_BGE_UN_I4_IMM_SP;
+		case MINT_BGE_UN_I8: return MINT_BGE_UN_I8_IMM_SP;
+		case MINT_BGT_UN_I4: return MINT_BGT_UN_I4_IMM_SP;
+		case MINT_BGT_UN_I8: return MINT_BGT_UN_I8_IMM_SP;
+		case MINT_BLE_UN_I4: return MINT_BLE_UN_I4_IMM_SP;
+		case MINT_BLE_UN_I8: return MINT_BLE_UN_I8_IMM_SP;
+		case MINT_BLT_UN_I4: return MINT_BLT_UN_I4_IMM_SP;
+		case MINT_BLT_UN_I8: return MINT_BLT_UN_I8_IMM_SP;
 		default: return MINT_NOP;
 	}
 }
@@ -8738,26 +8778,26 @@ static int
 get_binop_condbr_sp (int opcode)
 {
 	switch (opcode) {
-		case MINT_BEQ_I4_S: return MINT_BEQ_I4_SP;
-		case MINT_BEQ_I8_S: return MINT_BEQ_I8_SP;
-		case MINT_BGE_I4_S: return MINT_BGE_I4_SP;
-		case MINT_BGE_I8_S: return MINT_BGE_I8_SP;
-		case MINT_BGT_I4_S: return MINT_BGT_I4_SP;
-		case MINT_BGT_I8_S: return MINT_BGT_I8_SP;
-		case MINT_BLT_I4_S: return MINT_BLT_I4_SP;
-		case MINT_BLT_I8_S: return MINT_BLT_I8_SP;
-		case MINT_BLE_I4_S: return MINT_BLE_I4_SP;
-		case MINT_BLE_I8_S: return MINT_BLE_I8_SP;
-		case MINT_BNE_UN_I4_S: return MINT_BNE_UN_I4_SP;
-		case MINT_BNE_UN_I8_S: return MINT_BNE_UN_I8_SP;
-		case MINT_BGE_UN_I4_S: return MINT_BGE_UN_I4_SP;
-		case MINT_BGE_UN_I8_S: return MINT_BGE_UN_I8_SP;
-		case MINT_BGT_UN_I4_S: return MINT_BGT_UN_I4_SP;
-		case MINT_BGT_UN_I8_S: return MINT_BGT_UN_I8_SP;
-		case MINT_BLE_UN_I4_S: return MINT_BLE_UN_I4_SP;
-		case MINT_BLE_UN_I8_S: return MINT_BLE_UN_I8_SP;
-		case MINT_BLT_UN_I4_S: return MINT_BLT_UN_I4_SP;
-		case MINT_BLT_UN_I8_S: return MINT_BLT_UN_I8_SP;
+		case MINT_BEQ_I4: return MINT_BEQ_I4_SP;
+		case MINT_BEQ_I8: return MINT_BEQ_I8_SP;
+		case MINT_BGE_I4: return MINT_BGE_I4_SP;
+		case MINT_BGE_I8: return MINT_BGE_I8_SP;
+		case MINT_BGT_I4: return MINT_BGT_I4_SP;
+		case MINT_BGT_I8: return MINT_BGT_I8_SP;
+		case MINT_BLT_I4: return MINT_BLT_I4_SP;
+		case MINT_BLT_I8: return MINT_BLT_I8_SP;
+		case MINT_BLE_I4: return MINT_BLE_I4_SP;
+		case MINT_BLE_I8: return MINT_BLE_I8_SP;
+		case MINT_BNE_UN_I4: return MINT_BNE_UN_I4_SP;
+		case MINT_BNE_UN_I8: return MINT_BNE_UN_I8_SP;
+		case MINT_BGE_UN_I4: return MINT_BGE_UN_I4_SP;
+		case MINT_BGE_UN_I8: return MINT_BGE_UN_I8_SP;
+		case MINT_BGT_UN_I4: return MINT_BGT_UN_I4_SP;
+		case MINT_BGT_UN_I8: return MINT_BGT_UN_I8_SP;
+		case MINT_BLE_UN_I4: return MINT_BLE_UN_I4_SP;
+		case MINT_BLE_UN_I8: return MINT_BLE_UN_I8_SP;
+		case MINT_BLT_UN_I4: return MINT_BLT_UN_I4_SP;
+		case MINT_BLT_UN_I8: return MINT_BLT_UN_I8_SP;
 		default: return MINT_NOP;
 	}
 }
@@ -8766,10 +8806,10 @@ static int
 get_unop_condbr_sp (int opcode)
 {
 	switch (opcode) {
-		case MINT_BRFALSE_I4_S: return MINT_BRFALSE_I4_SP;
-		case MINT_BRFALSE_I8_S: return MINT_BRFALSE_I8_SP;
-		case MINT_BRTRUE_I4_S: return MINT_BRTRUE_I4_SP;
-		case MINT_BRTRUE_I8_S: return MINT_BRTRUE_I8_SP;
+		case MINT_BRFALSE_I4: return MINT_BRFALSE_I4_SP;
+		case MINT_BRFALSE_I8: return MINT_BRFALSE_I8_SP;
+		case MINT_BRTRUE_I4: return MINT_BRTRUE_I4_SP;
+		case MINT_BRTRUE_I8: return MINT_BRTRUE_I8_SP;
 		default: return MINT_NOP;
 	}
 }
@@ -8779,16 +8819,20 @@ interp_super_instructions (TransformData *td)
 {
 	InterpBasicBlock *bb;
 	int *local_ref_count = td->local_ref_count;
+
+	compute_native_offset_estimates (td);
+
 	// Add some actual super instructions
 	for (bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins;
+		int noe;
 
 		// Set cbb since we do some instruction inserting below
 		td->cbb = bb;
-
+		noe = bb->native_offset_estimate;
 		for (ins = bb->first_ins; ins != NULL; ins = ins->next) {
 			int opcode = ins->opcode;
-			if (opcode == MINT_NOP)
+			if (MINT_IS_NOP (opcode))
 				continue;
 			if (mono_interp_op_dregs [opcode] && !(td->locals [ins->dreg].flags & INTERP_LOCAL_FLAG_GLOBAL))
 				td->locals [ins->dreg].def = ins;
@@ -8956,7 +9000,7 @@ interp_super_instructions (TransformData *td)
 					local_ref_count [obj_sreg]--;
 					mono_interp_stats.super_instructions++;
 				}
-			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
+			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				gint16 imm;
 				int sreg_imm = ins->sregs [1];
 				if (get_sreg_imm (td, sreg_imm, &imm)) {
@@ -8992,7 +9036,7 @@ interp_super_instructions (TransformData *td)
 						}
 					}
 				}
-			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
+			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode) && is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				InterpInst *prev_ins = interp_prev_ins (ins);
 				if (prev_ins && prev_ins->opcode == MINT_SAFEPOINT) {
 					int condbr_op = get_unop_condbr_sp (opcode);
@@ -9007,6 +9051,7 @@ interp_super_instructions (TransformData *td)
 
 				}
 			}
+			noe += get_inst_length (ins);
 		}
 	}
 }

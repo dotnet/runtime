@@ -42,6 +42,12 @@
     <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) --arg=-c=$(XUnitClassName)</AdditionalXHarnessArguments>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">
+    <!-- Pass the -m or -c flag along to the app bundle, note that due to the double hyphen this needs to be the last argument -->
+    <AdditionalXHarnessArguments Condition="'$(XUnitMethodName)' != ''">$(AdditionalXHarnessArguments) -- -m=$(XUnitMethodName)</AdditionalXHarnessArguments>
+    <AdditionalXHarnessArguments Condition="'$(XUnitClassName)' != ''">$(AdditionalXHarnessArguments) -- -c=$(XUnitClassName)</AdditionalXHarnessArguments>
+  </PropertyGroup>
+
   <UsingTask Condition="'$(RunAOTCompilation)' == 'true'" TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
   <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 

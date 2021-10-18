@@ -3,7 +3,7 @@
 
 import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
-    GCHandle, JSHandleDisposed, MonoArray,
+    GCHandle, Int32Ptr, JSHandleDisposed, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString
 } from "./types";
 import { Module, runtimeHelpers } from "./modules";

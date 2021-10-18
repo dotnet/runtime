@@ -392,7 +392,7 @@ BOOL ReadyToRunInfo::IsReadyToRunEnabled()
 // Any other value: Handle of the log file.
 static  FILE * volatile s_r2rLogFile = (FILE *)(-1);
 
-static void LogR2r(const char *msg, PEFile *pFile)
+static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -430,7 +430,7 @@ static void LogR2r(const char *msg, PEFile *pFile)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pFile->GetPath().GetUnicode());
+    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pPEAssembly->GetPath().GetUnicode());
     fflush(r2rLogFile);
 }
 
@@ -503,7 +503,7 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
 
     if (ownerCompositeExecutableName != NULL)
     {
-        AssemblyBinder *binder = pModule->GetFile()->GetAssemblyBinder();
+        AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
         return binder->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
 
@@ -514,7 +514,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 {
     STANDARD_VM_CONTRACT;
 
-    PEFile * pFile = pModule->GetFile();
+    PEAssembly * pFile = pModule->GetPEAssembly();
 
     if (!IsReadyToRunEnabled())
     {
@@ -529,13 +529,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    if (!pFile->HasLoadedIL())
+    if (!pFile->HasLoadedPEImage())
     {
-        DoLog("Ready to Run disabled - no loaded IL image");
+        DoLog("Ready to Run disabled - no loaded PE image");
         return NULL;
     }
 
-    PEImageLayout * pLayout = pFile->GetLoadedIL();
+    PEImageLayout * pLayout = pFile->GetLoadedLayout();
     if (!pLayout->HasReadyToRunHeader())
     {
         DoLog("Ready to Run header not found");

@@ -9,6 +9,7 @@ parameters:
   crossBuild: false
   crossrootfsDir: ''
   dependOnEvaluatePaths: false
+  disableClrTest: false
   isOfficialBuild: false
   osGroup: ''
   osSubgroup: ''
@@ -38,6 +39,7 @@ jobs:
     pool: ${{ parameters.pool }}
     condition: ${{ parameters.condition }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    disableClrTest: ${{ parameters.disableClrTest }}
     pgoType: ${{ parameters.pgoType }}
 
     # Compute job name from template parameters
@@ -141,6 +143,12 @@ jobs:
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
 
+    - name: clrRuntimePortableBuildArg
+      value: ''
+    - ${{ if eq(parameters.archType, 'armel' )}}:
+      - name: clrRuntimePortableBuildArg
+        value: '-portablebuild=false'
+
     - ${{ parameters.variables }}
 
     steps:
@@ -188,7 +196,7 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
@@ -210,7 +218,7 @@ jobs:
         displayName: Run CoreCLR Tools unit tests
 
     # Build native test components
-    - ${{ if ne(parameters.isOfficialBuild, true) }}:
+    - ${{ if and(ne(parameters.isOfficialBuild, true), ne(parameters.disableClrTest, true)) }}:
       - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
 
@@ -257,7 +265,7 @@ jobs:
         condition: always()
 
     # Builds using gcc are not tested, and clrTools unitests do not publish the build artifacts
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
       # Publish product output directory for consumption by tests.
       - template: /eng/pipelines/common/upload-artifact-step.yml
         parameters:
@@ -276,7 +284,7 @@ jobs:
           osGroup: ${{ parameters.osGroup }}
           osSubgroup: ${{ parameters.osSubgroup }}
 
-    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
+    - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools'), ne(parameters.disableClrTest, true)) }}:
       # Publish test native components for consumption by test execution.
       - ${{ if and(ne(parameters.isOfficialBuild, true), eq(parameters.pgoType, '')) }}:
         - template: /eng/pipelines/common/upload-artifact-step.yml
