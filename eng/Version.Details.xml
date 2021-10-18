@@ -10,7 +10,7 @@
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-6.0.100" Version="6.0.0">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>11bf236f281ca8a156febe7b78ae0fdd7bcaad9c</Sha>
+      <Sha>7b2c3228bec174e2ef12bc189e9c176eafd24334</Sha>
     </Dependency>
     <Dependency Name="System.ServiceModel.Primitives" Version="4.9.0-rc2.21473.1">
       <Uri>https://github.com/dotnet/wcf</Uri>
