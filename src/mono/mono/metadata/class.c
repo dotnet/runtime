@@ -707,6 +707,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
 		 * ->byref and ->attrs from @type are propagated to the returned type.
 		 */
+#ifdef ENABLE_EXPERIMENT_ANY_BYREF
 		if (G_UNLIKELY (m_type_is_byref (type) && m_type_is_byref (inst->type_argv[num]))) {
 			/* if the VAR/MVAR is a byref and the instance type is byref, make a byref
 			 * of byref. The outer byref has the attributes and cmods of the VAR */
@@ -716,7 +717,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			nt = mono_metadata_type_dup (image, type);
 			nt->type = MONO_TYPE_BYREF;
 			nt->data.type = inner_type;
-		} else {
+		} else
+#endif
+		{
 			nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
 			/* otherwise the type is byref if either the var or the type was byref */
 			nt->byref__ = type->byref__ || nt->byref__;
@@ -761,6 +764,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		}
 #endif
 
+#ifdef ENABLE_EXPERIMENT_ANY_BYREF
 		if (G_UNLIKELY (m_type_is_byref (type) && m_type_is_byref (inst->type_argv[num]))) {
 			/* if the VAR/MVAR is a byref and the instance type is byref, make a byref
 			 * of byref. The outer byref has the attributes and cmods of the VAR */
@@ -770,7 +774,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 			nt = mono_metadata_type_dup (image, type);
 			nt->type = MONO_TYPE_BYREF;
 			nt->data.type = inner_type;
-		} else {
+		} else
+#endif
+		{
 			nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
 			nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
 			nt->attrs = type->attrs;
