@@ -151,9 +151,9 @@ def print_unique_issues_summary(issues_directory, platform, arch, build_config):
                 f.write(issue.strip() + "\n")
                 f.write("```\n\n")
 
+        if len(remaining_issues) > 0:
+            f.write("# {} uncategorized issues found\n", len(remaining_issues))
 # Turned off since the output does not seem particularly useful
-#        if len(remaining_issues) > 0:
-#            f.write("# {} uncategorized issues found\n", len(remaining_issues))
 #            for issue, occurences in sorted(remaining_issues.items(), key=lambda p: p[1], reverse=True):
 #                f.write("## {} occurences\n".format(occurences))
 #                f.write("```scala\n")

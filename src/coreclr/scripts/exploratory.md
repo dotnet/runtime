@@ -6,7 +6,7 @@
 
 The basics of both tools are the same: they generate random programs using Roslyn and execute them with `corerun.exe` in a baseline and a test mode.
 Typically, baseline uses the JIT with minimum optimizations enabled while the test mode has optimizations enabled.
-Antigen also sets various `COMPlus_*` variables in its test mode to turn off different stress modes.
+Antigen also sets various `COMPlus_*` variables in its test mode to turn on different stress modes or turn on/off different optimizations.
 
 The fuzzers detect issues by checking for assertion failures and by comparing results between the baseline and test modes.
 For more information, see the respectives repos.
@@ -18,7 +18,7 @@ The pipeline produces a summary of issues found under the "Extensions" tab when 
 
 ## Getting test examples from Antigen runs
 
-For Antigen runs the summary will show the assertion errors that were hit.
+For Antigen runs, the summary will show the assertion errors that were hit.
 Individual test examples are available as artifacts that can be downloaded for each OS/arch.
 The issues will be `.cs` files that will contain the program's output, environment variables that are needed to reproduce the issue.
 Since there can be several issues, the pipeline will just upload at most 5 issues.

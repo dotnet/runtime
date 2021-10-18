@@ -179,7 +179,7 @@ jobs:
       condition: always()
 
     - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/$(SummarizeScript) -issues_directory $(IssuesLocation) -arch $(archType) -platform $(osGroup)$(osSubgroup) -build_config $(buildConfig)
-      displayName: ${{ format('Summarize ({0})', parameters.osGroup) }}
+      displayName: ${{ format('Summarize ({0}{1} {2})', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
       condition: always()
 
     - task: PublishPipelineArtifact@1

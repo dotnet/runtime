@@ -97,6 +97,8 @@ def main(main_args):
         "Fuzzlyn": "https://github.com/jakobbotsch/Fuzzlyn.git",
     }
 
+    # tool_name is verifed in setup_args
+    assert coreclr_args.tool_name in repo_urls
     repo_url = repo_urls[coreclr_args.tool_name]
 
     # create exploratory directory
