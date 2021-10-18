@@ -45,8 +45,9 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            vector.WithElementUnsafe(index, value);
-            return vector;
+            var newVector = new Vector3(vector.X, vector.Y, vector.Z);
+            newVector.WithElementUnsafe(index, value);
+            return newVector;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

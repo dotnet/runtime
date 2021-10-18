@@ -45,8 +45,9 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            quaternion.WithElementUnsafe(index, value);
-            return quaternion;
+            var newQuaternion = new Quaternion(quaternion.X, quaternion.Y, quaternion.Z, quaternion.W);
+            newQuaternion.WithElementUnsafe(index, value);
+            return newQuaternion;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
