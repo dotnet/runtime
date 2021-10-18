@@ -132,7 +132,7 @@ namespace System.Numerics
         public float this[int index]
         {
             get => GetElement(this, index);
-            set => WithElement(this, index, value);
+            set => this = WithElement(this, index, value);
         }
 
         /// <summary>Gets the element at the specified index.</summary>
