@@ -243,7 +243,8 @@ namespace Tracing.Tests.ProcessInfoValidation
 
             string expectedClrProductVersion = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
-            Utils.Assert(expectedClrProductVersion.Equals(clrProductVersion), $"ClrProductVersion must match. Expected: \"{expectedClrProductVersion}\", received: \"{clrProductVersion}\"");
+            // https://github.com/dotnet/runtime/issues/60532
+            // Utils.Assert(expectedClrProductVersion.Equals(clrProductVersion), $"ClrProductVersion must match. Expected: \"{expectedClrProductVersion}\", received: \"{clrProductVersion}\"");
 
             Utils.Assert(end == totalSize, $"Full payload should have been read. Expected: {totalSize}, Received: {end}");
 

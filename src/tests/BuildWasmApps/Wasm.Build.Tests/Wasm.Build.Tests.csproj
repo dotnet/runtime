@@ -18,6 +18,7 @@
 
     <!-- don't run any wasm build steps -->
     <IsWasmProject>false</IsWasmProject>
+    <PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersion>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -35,8 +36,8 @@
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersion)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersion)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
