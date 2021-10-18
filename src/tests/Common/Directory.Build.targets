@@ -122,73 +122,57 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-
+       
         <RunTimeDependencyCopyLocal
           Include="$(EmSdkDir)\**"
           TargetDir="build/emsdk/"/>
 
+        
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="build/WasmAppBuilder"/>
 
-        <!--
-        <RunTimeDependencyCopyLocal
-          Include="@(RuntimeFiles)"
-          TargetDir="runtimepack/native/"/>
-        -->
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoAOTCompilerDir)/**"
           TargetDir="build/MonoAOTCompiler/"
         />
 
+        
         <RunTimeDependencyCopyLocal
           Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.*"
           TargetDir="build/microsoft.netcore.app.runtime.browser-wasm/"/>
 
 
-        <!-- TODO: Need to find a way to compute this path instead of hard coding-->
         <RuntimeDependencyCopyLocal
            Include="$(MonoAotCrossDir)/**"
            TargetDir="build/cross/"
         />
-
-         <RunTimeDependencyCopyLocal
-            Include="$(JsonToItemsTaskFactoryDir)/**"     
-            Destination="build/Json ToItemsTaskFactory/"
-         />
-
-        <!-- This throws everything in 'native', include many non-native assemblies.
-             This is done because LibrariesRuntimeFiles includes some .js files that
-             WasmAppBuilder expects in native -->
-
-        <!-- <RunTimeDependencyCopyLocal
-          Include="@(LibrariesRuntimeFiles)"
-          TargetDir="runtimepack/native/%(LibrariesRuntimeFiles.NativeSubDirectory)/"
-          Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' != ''" />-->
 
         <RunTimeDependencyCopyLocal
           Include="@(LibrariesRuntimeFiles)"
           TargetDir="runtimepack/native/"
           Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
 
+        
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
           TargetDir="TargetingPack/"/>
-
-        <!-- Wasm App Builder always builds in Debug -->
+        
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
           TargetDir="/build/WasmAppBuilder/"/>
 
+        
 	      <RunTimeDependencyCopyLocal
 	        Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
 	        TargetDir="/build/MonoAOTCompiler/" />
-
+        
         <RunTimeDependencyCopyLocal
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
           TargetDir="wasm-test-runner/"/>
 
+        
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
@@ -196,7 +180,6 @@
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
           TargetDir="build/"/>
-
 
     </ItemGroup>
 
