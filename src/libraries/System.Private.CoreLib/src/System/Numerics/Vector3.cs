@@ -157,7 +157,7 @@ namespace System.Numerics
         internal static void SetElementUnsafe(ref Vector3 vector, int index, float value)
         {
             Debug.Assert(index is >= 0 and < Count);
-            Unsafe.Add(ref Unsafe.As<Vector3, float>(ref Unsafe.AsRef(in vector)), index) = value;
+            Unsafe.Add(ref Unsafe.As<Vector3, float>(ref vector), index) = value;
         }
 
         /// <summary>Adds two vectors together.</summary>
