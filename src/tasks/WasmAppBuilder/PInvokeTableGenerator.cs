@@ -326,7 +326,7 @@ public class PInvokeTableGenerator : Task
             sb.Append($" (*WasmInterpEntrySig_{cb_index}) (");
             int pindex = 0;
             if (method.ReturnType.Name != "Void") {
-                sb.Append("int");
+                sb.Append("int*");
                 pindex++;
             }
             foreach (var p in method.GetParameters()) {
