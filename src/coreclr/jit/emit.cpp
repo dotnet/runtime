@@ -4844,7 +4844,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 #elif defined(TARGET_ARM64)
     unsigned short nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
     unsigned short insAlignCount = nAlignInstr;
-    unsigned short paddingBytes = INSTR_ENCODED_SIZE;
+    unsigned short paddingBytes  = INSTR_ENCODED_SIZE;
 #endif
 
     unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
