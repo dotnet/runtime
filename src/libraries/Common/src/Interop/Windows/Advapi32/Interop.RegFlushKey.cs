@@ -12,7 +12,13 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32)]
+        internal static partial int RegFlushKey(
+#else
         [DllImport(Libraries.Advapi32)]
-        internal static extern int RegFlushKey(SafeRegistryHandle hKey);
+        internal static extern int RegFlushKey(
+#endif
+            SafeRegistryHandle hKey);
     }
 }
