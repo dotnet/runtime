@@ -506,9 +506,7 @@ namespace System.Net.Security
                     }
                     break;
                 case TlsContentType.Handshake:
-                    if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                        (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
-                        _sslAuthenticationOptions!.ServerOptionDelegate != null))
+                    if (!_isRenego && _handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello)
                     {
                         TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                     TlsFrameHelper.ProcessingOptions.All :
@@ -528,7 +526,7 @@ namespace System.Net.Security
                                 _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
                             }
 
-                            if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                            if (_sslAuthenticationOptions!.ServerOptionDelegate != null)
                             {
                                 SslServerAuthenticationOptions userOptions =
                                     await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
