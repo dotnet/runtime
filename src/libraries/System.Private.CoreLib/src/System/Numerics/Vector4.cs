@@ -164,7 +164,7 @@ namespace System.Numerics
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        internal static Vector4 WithElement(Vector4 vector, int index, float value)
+        public static Vector4 WithElement(Vector4 vector, int index, float value)
         {
             if ((uint)index >= Count)
             {
@@ -177,7 +177,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetElementUnsafe(ref Vector4 vector, int index, float value)
+        internal static void SetElementUnsafe(ref Vector4 vector, int index, float value)
         {
             Debug.Assert(index is >= 0 and < Count);
             Unsafe.Add(ref Unsafe.As<Vector4, float>(ref Unsafe.AsRef(in vector)), index) = value;
