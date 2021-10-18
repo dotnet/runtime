@@ -119,6 +119,7 @@
     <PlatformManifestFileEntry Include="libmscordbi.so" IsNative="true" />
     <PlatformManifestFileEntry Include="libmscordbi.dylib" IsNative="true" />
     <PlatformManifestFileEntry Include="mscorrc.dll" IsNative="true" />
+    <PlatformManifestFileEntry Include="api-ms-win-core-fibers-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-console-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-console-l1-2-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
     <PlatformManifestFileEntry Include="api-ms-win-core-datetime-l1-1-0.dll" IsNative="true" FallbackFileVersion="$(WindowsForwarderFileVersion)" />
