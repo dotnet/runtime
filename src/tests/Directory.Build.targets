@@ -416,9 +416,4 @@
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>
 
   <Import Project="$(RepoRoot)src\coreclr\clr.featuredefines.props" />
-
-  <PropertyGroup>
-    <PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersion>
-  </PropertyGroup>
-
 </Project>
