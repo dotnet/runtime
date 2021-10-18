@@ -57,10 +57,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\CompilerServices\Unsafe.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\QuaternionExtensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2Extensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector3Extensions.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector4Extensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs" />

@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -69,8 +71,56 @@ namespace System.Numerics
 
         public float this[int index]
         {
-            get => this.GetElement(index);
-            set => this.WithElement(index, value);
+            get => GetElement(this, index);
+            set => WithElement(this, index, value);
+        }
+
+        /// <summary>Gets the element at the specified index.</summary>
+        /// <param name="quaternion">The vector of the element to get.</param>
+        /// <param name="index">The index of the element to get.</param>
+        /// <returns>The value of the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        internal static float GetElement(Quaternion quaternion, int index)
+        {
+            if ((uint)index >= Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            return GetElementUnsafe(quaternion, index);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float GetElementUnsafe(Quaternion quaternion, int index)
+        {
+            Debug.Assert(index is >= 0 and < Count);
+            return Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref Unsafe.AsRef(in quaternion)), index);
+        }
+
+        /// <summary>Sets the element at the specified index.</summary>
+        /// <param name="quaternion">The vector of the element to get.</param>
+        /// <param name="index">The index of the element to set.</param>
+        /// <param name="value">The value of the element to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
+        [Intrinsic]
+        internal static Quaternion WithElement(Quaternion quaternion, int index, float value)
+        {
+            if ((uint)index >= Count)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+            }
+
+            var result = quaternion;
+            SetElementUnsafe(ref result, index, value);
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void SetElementUnsafe(ref Quaternion quaternion, int index, float value)
+        {
+            Debug.Assert(index is >= 0 and < Count);
+            Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref Unsafe.AsRef(in quaternion)), index) = value;
         }
 
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
