@@ -440,11 +440,17 @@
       <_MonoCMakeArgs Include="-DENABLE_MSCORDBI=1" />
     </ItemGroup>
 
+    <!-- Experimental byref of any type support -->
+    <ItemGroup Condition="'$(MonoFeatureAnyByref)' == 'true'">
+      <_MonoCMakeArgs Include="-DMONO_EXPERIMENT_ANY_BYREF" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_DISABLE_DEFAULT_LISTEN_PORT=1"/>
       <_MonoCMakeArgs Include="-DDISABLE_LINK_STATIC_COMPONENTS=1" Condition="!('$(TargetsiOSSimulator)' == 'true' or '$(TargetstvOSSimulator)' == 'true')"/>
     </ItemGroup>
+
 
     <ItemGroup Condition="'$(TargetsAndroid)' == 'true'">
       <_MonoCMakeArgs Include="-DFEATURE_PERFTRACING_PAL_TCP=1"/>

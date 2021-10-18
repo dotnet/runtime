@@ -122,6 +122,7 @@
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
+    <DefineConstants Condition="'$(MonoFeatureAnyByref)' == 'true'">$(DefineConstants);MONO_FEATURE_ANY_BYREF</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
