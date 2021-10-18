@@ -82,7 +82,7 @@ namespace ILTrim
             if (input == null)
                 throw new CommandLineException("Input assembly is required");
 
-            Dictionary<string, bool> featureSwitchesDictionary = new(featureSwitches);
+            Dictionary<string, bool> featureSwitchesDictionary = new(featureSwitches ?? Array.Empty<KeyValuePair<string, bool>>());
             var settings = new TrimmerSettings(
                 MaxDegreeOfParallelism: parallelism,
                 LogStrategy: logStrategy,
