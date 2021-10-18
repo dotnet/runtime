@@ -1692,14 +1692,29 @@ namespace System.Xml.Schema
 
         internal override bool MatchEnumeration(object value, ArrayList enumeration, XmlSchemaDatatype datatype)
         {
-            for (int i = 0; i < enumeration.Count; ++i)
+            Array values = (value as Array)!;
+            Datatype_List list = (datatype as Datatype_List)!;
+            Debug.Assert(list != null);
+
+            for (int j = 0; j < values.Length; ++j)
             {
-                if (datatype.Compare(value, enumeration[i]!) == 0)
+                bool found = false;
+                for (int i = 0; i < enumeration.Count; ++i)
                 {
-                    return true;
+                    Array enumValue = (enumeration[i] as Array)!;
+                    Debug.Assert(enumValue != null);
+                    if (list.ItemType.Compare(values.GetValue(j)!, enumValue.GetValue(0)!) == 0)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                {
+                    return false;
                 }
             }
-            return false;
+            return true;
         }
     }
 
