@@ -1,4 +1,9 @@
 <Project>
+
+  <PropertyGroup>
+    <PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersion>
+  </PropertyGroup>
+
   <Target Name="ProvisionSdkForWorkloadTesting"
           DependsOnTargets="_ProvisionSdkWithNoWorkload"
           Condition="!Exists($(SdkWithNoWorkloadStampPath)) or !Exists($(SdkWithWorkloadStampPath))">

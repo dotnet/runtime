@@ -241,7 +241,8 @@ namespace Tracing.Tests.ProcessInfoValidation
             string clrProductVersion = System.Text.Encoding.Unicode.GetString(response.Payload[start..end]).TrimEnd('\0');
             Logger.logger.Log($"ClrProductVersion: \"{clrProductVersion}\"");
 
-            string expectedClrProductVersion = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            // https://github.com/dotnet/runtime/issues/60532
+            // string expectedClrProductVersion = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
             Utils.Assert(expectedClrProductVersion.Equals(clrProductVersion), $"ClrProductVersion must match. Expected: \"{expectedClrProductVersion}\", received: \"{clrProductVersion}\"");
 
