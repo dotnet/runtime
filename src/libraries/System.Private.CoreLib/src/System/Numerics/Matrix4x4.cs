@@ -154,29 +154,24 @@ namespace System.Numerics
             get => _identity;
         }
 
-        public float this[int row, int column]
+        public unsafe float this[int row, int column]
         {
             get
             {
                 if ((uint)row >= 4)
                     throw new ArgumentOutOfRangeException(nameof(row));
 
-                unsafe
-                {
-                    var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
-                    return vrow[column];
-                }
+                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
+                return vrow[column];
             }
             set
             {
                 if ((uint)row >= 4)
                     throw new ArgumentOutOfRangeException(nameof(row));
 
-                unsafe
-                {
-                    ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
-                    Vector4.WithElement(vrow, column, value);
-                }
+                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector4>(ref M11), row * sizeof(Vector4));
+                var tmp = Vector4.WithElement(vrow, column, value);
+                vrow = tmp;
             }
         }
 

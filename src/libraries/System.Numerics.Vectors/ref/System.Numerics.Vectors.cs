@@ -16,7 +16,7 @@ namespace System.Numerics
         public float M32;
         public Matrix3x2(float m11, float m12, float m21, float m22, float m31, float m32) { throw null; }
         public static System.Numerics.Matrix3x2 Identity { get { throw null; } }
-        public float this[int row, int column] { get { throw null; } set { throw null; } }
+        public unsafe float this[int row, int column] { get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public System.Numerics.Vector2 Translation { readonly get { throw null; } set { } }
         public static System.Numerics.Matrix3x2 Add(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
@@ -72,7 +72,7 @@ namespace System.Numerics
         public Matrix4x4(System.Numerics.Matrix3x2 value) { throw null; }
         public Matrix4x4(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44) { throw null; }
         public static System.Numerics.Matrix4x4 Identity { get { throw null; } }
-        public float this[int row, int column] { get { throw null; } set { throw null; } }
+        public unsafe float this[int row, int column] { get { throw null; } set { throw null; } }
         public readonly bool IsIdentity { get { throw null; } }
         public System.Numerics.Vector3 Translation { readonly get { throw null; } set { } }
         public static System.Numerics.Matrix4x4 Add(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }

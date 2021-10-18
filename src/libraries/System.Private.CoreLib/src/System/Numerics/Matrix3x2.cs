@@ -70,28 +70,24 @@ namespace System.Numerics
             get => _identity;
         }
 
-        public float this[int row, int column]
+        public unsafe float this[int row, int column]
         {
             get
             {
                 if ((uint)row >= 3)
                     throw new ArgumentOutOfRangeException(nameof(row));
-                unsafe
-                {
-                    var vrow = Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
-                    return vrow[column];
-                }
+
+                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
+                return vrow[column];
             }
             set
             {
                 if ((uint)row >= 3)
                     throw new ArgumentOutOfRangeException(nameof(row));
 
-                unsafe
-                {
-                    ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
-                    Vector2.WithElement(vrow, column, value);
-                }
+                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
+                var tmp = Vector2.WithElement(vrow, column, value);
+                vrow = tmp;
             }
         }
 

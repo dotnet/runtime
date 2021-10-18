@@ -100,19 +100,20 @@ namespace System.Numerics
         [Intrinsic]
         internal static float GetElement(Vector2 vector, int index)
         {
-            if ((uint)index >= Vector2.Count)
+            if ((uint)index >= Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetElementUnsafe(vector, index);
+            var result = vector;
+            return GetElementUnsafe(ref result, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetElementUnsafe(Vector2 vector, int index)
+        private static float GetElementUnsafe(ref Vector2 vector, int index)
         {
             Debug.Assert(index is >= 0 and < Count);
-            return Unsafe.Add(ref Unsafe.As<Vector2, float>(ref Unsafe.AsRef(in vector)), index);
+            return Unsafe.Add(ref Unsafe.As<Vector2, float>(ref vector), index);
         }
 
         /// <summary>Sets the element at the specified index.</summary>

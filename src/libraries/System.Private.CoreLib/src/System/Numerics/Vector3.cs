@@ -125,14 +125,15 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetElementUnsafe(vector, index);
+            var result = vector;
+            return GetElementUnsafe(ref result, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetElementUnsafe(Vector3 vector, int index)
+        private static float GetElementUnsafe(ref Vector3 vector, int index)
         {
             Debug.Assert(index is >= 0 and < Count);
-            return Unsafe.Add(ref Unsafe.As<Vector3, float>(ref Unsafe.AsRef(in vector)), index);
+            return Unsafe.Add(ref Unsafe.As<Vector3, float>(ref vector), index);
         }
 
         /// <summary>Sets the element at the specified index.</summary>

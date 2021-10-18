@@ -88,14 +88,15 @@ namespace System.Numerics
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
             }
 
-            return GetElementUnsafe(quaternion, index);
+            var result = quaternion;
+            return GetElementUnsafe(ref result, index);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetElementUnsafe(Quaternion quaternion, int index)
+        private static float GetElementUnsafe(ref Quaternion quaternion, int index)
         {
             Debug.Assert(index is >= 0 and < Count);
-            return Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref Unsafe.AsRef(in quaternion)), index);
+            return Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref quaternion), index);
         }
 
         /// <summary>Sets the element at the specified index.</summary>
