@@ -958,7 +958,7 @@ compute_class_non_ref_bitmap (MonoClass *klass, gsize *bitmap, int size, int off
 			if (field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA))
 				continue;
 			/* FIXME: should not happen, flag as type load error */
-			if (field->type->byref)
+			if (m_type_is_byref (field->type))
 				break;
 
 			pos = field->offset / wordsize;
