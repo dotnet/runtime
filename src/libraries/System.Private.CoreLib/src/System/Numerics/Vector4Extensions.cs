@@ -7,7 +7,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-    public static class Vector4Extensions
+    internal static class Vector4Extensions
     {
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="vector">The vector of the element to get.</param>
@@ -15,7 +15,7 @@ namespace System.Numerics
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static float GetElement(this Vector4 vector, int index)
+        internal static float GetElement(this Vector4 vector, int index)
         {
             if ((uint)index >= Vector4.Count)
             {
@@ -26,7 +26,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static float GetElementUnsafe(this Vector4 vector, int index)
+        private static float GetElementUnsafe(this Vector4 vector, int index)
         {
             Debug.Assert(index is >= 0 and < Vector4.Count);
             return Unsafe.Add(ref Unsafe.As<Vector4, float>(ref Unsafe.AsRef(in vector)), index);
@@ -38,7 +38,7 @@ namespace System.Numerics
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static Vector4 WithElement(this Vector4 vector, int index, float value)
+        internal static Vector4 WithElement(this Vector4 vector, int index, float value)
         {
             if ((uint)index >= Vector4.Count)
             {
@@ -51,7 +51,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WithElementUnsafe(this Vector4 vector, int index, float value)
+        private static void WithElementUnsafe(this Vector4 vector, int index, float value)
         {
             Debug.Assert(index is >= 0 and < Vector4.Count);
             Unsafe.Add(ref Unsafe.As<Vector4, float>(ref Unsafe.AsRef(in vector)), index) = value;

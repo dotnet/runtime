@@ -7,7 +7,7 @@ using Internal.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
-    public static class QuaternionExtensions
+    internal static class QuaternionExtensions
     {
         /// <summary>Gets the element at the specified index.</summary>
         /// <param name="quaternion">The vector of the element to get.</param>
@@ -15,7 +15,7 @@ namespace System.Numerics
         /// <returns>The value of the element at <paramref name="index" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static float GetElement(this Quaternion quaternion, int index)
+        internal static float GetElement(this Quaternion quaternion, int index)
         {
             if ((uint)index >= Quaternion.Count)
             {
@@ -26,7 +26,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static float GetElementUnsafe(this Quaternion quaternion, int index)
+        private static float GetElementUnsafe(this Quaternion quaternion, int index)
         {
             Debug.Assert(index is >= 0 and < Quaternion.Count);
             return Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref Unsafe.AsRef(in quaternion)), index);
@@ -38,7 +38,7 @@ namespace System.Numerics
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static Quaternion WithElement(this Quaternion quaternion, int index, float value)
+        internal static Quaternion WithElement(this Quaternion quaternion, int index, float value)
         {
             if ((uint)index >= Quaternion.Count)
             {
@@ -51,7 +51,7 @@ namespace System.Numerics
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void WithElementUnsafe(this Quaternion quaternion, int index, float value)
+        private static void WithElementUnsafe(this Quaternion quaternion, int index, float value)
         {
             Debug.Assert(index is >= 0 and < Quaternion.Count);
             Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref Unsafe.AsRef(in quaternion)), index) = value;
