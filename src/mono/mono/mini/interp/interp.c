@@ -748,7 +748,7 @@ static int
 stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean pinvoke)
 {
 	type = mini_native_type_replace_type (type);
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		result->data.p = *(gpointer*)data;
 		return MINT_STACK_SLOT_SIZE;
 	}
@@ -835,7 +835,7 @@ static int
 stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
 	type = mini_native_type_replace_type (type);
-	if (type->byref) {
+	if (m_type_is_byref (type)) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
 		return MINT_STACK_SLOT_SIZE;
@@ -1248,7 +1248,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		margs->ilen++;
 
 	for (int i = 0; i < sig->param_count; i++) {
-		guint32 ptype = sig->params [i]->byref ? MONO_TYPE_PTR : sig->params [i]->type;
+		guint32 ptype = m_type_is_byref (sig->params [i]) ? MONO_TYPE_PTR : sig->params [i]->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1322,7 +1322,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		MonoType *type = sig->params [i];
 		guint32 ptype;
 retry:
-		ptype = type->byref ? MONO_TYPE_PTR : type->type;
+		ptype = m_type_is_byref (type) ? MONO_TYPE_PTR : type->type;
 		switch (ptype) {
 		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_CHAR:
@@ -1626,7 +1626,7 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 	if (del->interp_method) {
 		/* Delegate created by a call to ves_icall_mono_delegate_ctor_interp () */
 		del->method = ((InterpMethod *)del->interp_method)->method;
-	} if (del->method_ptr && !del->method) {
+	} else if (del->method_ptr && !del->method) {
 		/* Delegate created from methodInfo.MethodHandle.GetFunctionPointer() */
 		del->interp_method = (InterpMethod *)del->method_ptr;
 		if (mono_llvm_only)
@@ -2022,7 +2022,7 @@ interp_entry (InterpEntryData *data)
 	else
 		params = data->args;
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			sp_args->data.p = params [i];
 			sp_args++;
 		} else {
@@ -2366,7 +2366,7 @@ init_jit_call_info (InterpMethod *rmethod, MonoError *error)
 		for (int i = 0; i < rmethod->param_count; ++i) {
 			MonoType *t = rmethod->param_types [i];
 			int mt = mint_type (t);
-			if (sig->params [i]->byref) {
+			if (m_type_is_byref (sig->params [i])) {
 				cinfo->arginfo [i] = JIT_ARG_BYVAL;
 			} else if (mt == MINT_TYPE_O) {
 				cinfo->arginfo [i] = JIT_ARG_BYREF;
@@ -7518,6 +7518,14 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 			func (copy_jit_info_data.jit_info_array [i], user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}
+}
+
+static gboolean
+interp_sufficient_stack (gsize size)
+{
+	ThreadContext *context = get_context ();
+
+	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
 }
 
 static void

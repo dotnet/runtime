@@ -1697,17 +1697,21 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
-            if (con->ImmedValNeedsReloc(compiler))
+            emitAttr attr = emitActualTypeSize(targetType);
+            if (con->IsIconHandle())
             {
-                instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal,
-                                       INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
-                                           DEBUGARG(tree->AsIntCon()->gtFlags));
-                regSet.verifyRegUsed(targetReg);
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
-            else
+
+            if (targetType == TYP_BYREF)
             {
-                genSetRegToIcon(targetReg, cnsVal, targetType);
+                attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
+
+            instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
+                                   INS_FLAGS_DONT_CARE DEBUGARG(tree->AsIntCon()->gtTargetHandle)
+                                       DEBUGARG(tree->AsIntCon()->gtFlags));
+            regSet.verifyRegUsed(targetReg);
         }
         break;
 
@@ -2279,7 +2283,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         {
             regCnt = tree->ExtractTempReg();
         }
-        genSetRegToIcon(regCnt, amount, ((unsigned int)amount == amount) ? TYP_INT : TYP_LONG);
+        instGen_Set_Reg_To_Imm(((unsigned int)amount == amount) ? EA_4BYTE : EA_8BYTE, regCnt, amount);
     }
 
     if (compiler->info.compInitMem)
@@ -4623,7 +4627,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     }
     else
     {
-        genSetRegToIcon(REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_ENTER_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
@@ -4667,7 +4671,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     }
     else
     {
-        genSetRegToIcon(REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, REG_PROFILER_LEAVE_ARG_FUNC_ID, (ssize_t)compiler->compProfilerMethHnd);
     }
 
     gcInfo.gcMarkRegSetNpt(RBM_PROFILER_LEAVE_ARG_FUNC_ID);

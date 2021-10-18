@@ -13,7 +13,7 @@ using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
 {
-    internal sealed class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
+    internal sealed partial class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
         private IntPtr m_handle;
@@ -27,58 +27,20 @@ namespace System.Reflection
         private Signature? m_signature;
         private RuntimeType m_declaringType;
         private object? m_keepalive;
-        private INVOCATION_FLAGS m_invocationFlags;
+        private InvocationFlags m_invocationFlags;
 
-        internal INVOCATION_FLAGS InvocationFlags
+        internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy invocation flags population out of the hot path
-                INVOCATION_FLAGS LazyCreateInvocationFlags()
+                InvocationFlags flags = m_invocationFlags;
+                if ((flags & InvocationFlags.Initialized) == 0)
                 {
-                    INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_UNKNOWN;
-
-                    Type? declaringType = DeclaringType;
-
-                    //
-                    // first take care of all the NO_INVOKE cases.
-                    if (ContainsGenericParameters ||
-                         IsDisallowedByRefType(ReturnType) ||
-                         (declaringType != null && declaringType.ContainsGenericParameters) ||
-                         ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
-                    {
-                        // We don't need other flags if this method cannot be invoked
-                        invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
-                    }
-                    else
-                    {
-                        // Check for byref-like types
-                        if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
-                    }
-
-                    invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
-                    m_invocationFlags = invocationFlags; // accesses are guaranteed atomic
-                    return invocationFlags;
-                }
-
-                INVOCATION_FLAGS flags = m_invocationFlags;
-                if ((flags & INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED) == 0)
-                {
-                    flags = LazyCreateInvocationFlags();
+                    flags = ComputeAndUpdateInvocationFlags(this, ref m_invocationFlags);
                 }
                 return flags;
             }
-        }
-
-        private static bool IsDisallowedByRefType(Type type)
-        {
-            if (!type.IsByRef)
-                return false;
-
-            Type elementType = type.GetElementType()!;
-            return elementType.IsByRefLike || elementType == typeof(void);
         }
         #endregion
 
@@ -339,6 +301,8 @@ namespace System.Reflection
 
         public override CallingConventions CallingConvention => Signature.CallingConvention;
 
+        private RuntimeType[] ArgumentTypes => Signature.Arguments;
+
         [RequiresUnreferencedCode("Trimming may change method bodies. For example it can change some instructions, remove branches or local variables.")]
         public override MethodBody? GetMethodBody()
         {
@@ -352,106 +316,26 @@ namespace System.Reflection
 
         #region Invocation Logic(On MemberBase)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void CheckConsistency(object? target)
+        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, in Span<object?> arguments)
         {
-            // only test instance methods
-            if ((m_methodAttributes & MethodAttributes.Static) == 0)
-            {
-                if (!m_declaringType.IsInstanceOfType(target))
-                {
-                    if (target == null)
-                        throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
-                    else
-                        throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
-                }
-            }
-        }
-
-        [DoesNotReturn]
-        private void ThrowNoInvokeException()
-        {
-            // method is on a class that contains stack pointers
-            if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS) != 0)
-            {
-                throw new NotSupportedException();
-            }
-            // method is vararg
-            else if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
-            {
-                throw new NotSupportedException();
-            }
-            // method is generic or on a generic class
-            else if (DeclaringType!.ContainsGenericParameters || ContainsGenericParameters)
-            {
-                throw new InvalidOperationException(SR.Arg_UnboundGenParam);
-            }
-            // method is abstract class
-            else if (IsAbstract)
-            {
-                throw new MemberAccessException();
-            }
-            else if (ReturnType.IsByRef)
-            {
-                Type elementType = ReturnType.GetElementType()!;
-                if (elementType.IsByRefLike)
-                    throw new NotSupportedException(SR.NotSupported_ByRefToByRefLikeReturn);
-                if (elementType == typeof(void))
-                    throw new NotSupportedException(SR.NotSupported_ByRefToVoidReturn);
-            }
-
-            throw new TargetException();
-        }
-
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
-        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
-        {
-            // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
-            // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
-            // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
-            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
-                ThrowNoInvokeException();
-
-            // check basic method consistency. This call will throw if there are problems in the target/method relationship
-            CheckConsistency(obj);
-
-            Signature sig = Signature;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
-            if (sig.Arguments.Length != actualCount)
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
-
-            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
-            Span<object?> arguments = default;
-            if (actualCount != 0)
-            {
-                arguments = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
-            }
-
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
-
-            // copy out. This should be made only if ByRef are present.
-            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
-                parameters![index] = arguments[index];
-
-            return retValue;
+            return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal object? InvokeOneParameter(object? obj, BindingFlags invokeAttr, Binder? binder, object? parameter, CultureInfo? culture)
         {
-            // INVOCATION_FLAGS_CONTAINS_STACK_POINTERS means that the struct (either the declaring type or the return type)
+            // ContainsStackPointers means that the struct (either the declaring type or the return type)
             // contains pointers that point to the stack. This is either a ByRef or a TypedReference. These structs cannot
             // be boxed and thus cannot be invoked through reflection which only deals with boxed value type objects.
-            if ((InvocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS)) != 0)
+            if ((InvocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
                 ThrowNoInvokeException();
             }
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
-            CheckConsistency(obj);
+            ValidateInvokeTarget(obj);
 
             Signature sig = Signature;
             if (sig.Arguments.Length != 1)
@@ -460,7 +344,7 @@ namespace System.Reflection
             }
 
             StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig);
+            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig.Arguments);
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);
