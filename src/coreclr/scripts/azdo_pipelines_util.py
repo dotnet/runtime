@@ -47,7 +47,9 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
                     if proc.poll() is not None:
                         break
                     if output:
-                        of.write(output.strip().decode("utf-8") + "\n")
+                        output_str = output.strip().decode("utf-8") + "\n"
+                        print(output_str)
+                        of.write(output_str)
         else:
             command_stdout, command_stderr = proc.communicate()
             if len(command_stdout) > 0:
