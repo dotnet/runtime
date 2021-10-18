@@ -18,6 +18,8 @@
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="$(CommonPath)System\Text\ConsoleEncoding.cs"
              Link="Common\System\Text\ConsoleEncoding.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueStack.cs"
+             Link="Common\System\Text\ConsoleEncoding.cs" />
   </ItemGroup>
   <!-- iOS/tvOS -->
   <ItemGroup Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">

@@ -214,15 +214,6 @@ namespace System.Net
             VerifySignature
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private ref struct ThreeByteArrays
-        {
-            public const int NumItems = 3;
-            internal byte[] _item0;
-            private byte[] _item1;
-            private byte[] _item2;
-        }
-
         private static unsafe int EncryptDecryptHelper(OP op, ISSPIInterface secModule, SafeDeleteContext context, Span<SecurityBuffer> input, uint sequenceNumber)
         {
             Debug.Assert(Enum.IsDefined<OP>(op), $"Unknown op: {op}");
@@ -239,8 +230,7 @@ namespace System.Net
             {
                 sdcInOut.pBuffers = unmanagedBufferPtr;
 
-                ThreeByteArrays byteArrayStruct = default;
-                Span<byte[]> buffers = MemoryMarshal.CreateSpan(ref byteArrayStruct._item0!, ThreeByteArrays.NumItems).Slice(0, input.Length);
+                Span<byte[]> buffers = RuntimeHelpers.StackAlloc<byte[]>(input.Length);
 
                 for (int i = 0; i < input.Length; i++)
                 {

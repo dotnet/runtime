@@ -30,6 +30,8 @@
              Link="Common\System\Collections\Generic\BitHelper.cs" />
     <Compile Include="$(CommonPath)System\Collections\Generic\EnumerableHelpers.cs"
              Link="Common\System\Collections\Generic\EnumerableHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueStack.cs"
+             Link="Common\System\Collections\Generic\ValueStack.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

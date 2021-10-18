@@ -1233,7 +1233,7 @@ namespace System.Data
             _countColumnChange = 0;
         }
 
-        internal void SetKeyValues(DataKey key, object[] keyValues)
+        internal void SetKeyValues(DataKey key, ReadOnlySpan<object> keyValues)
         {
             bool fFirstCall = true;
             bool immediate = (_tempRecord == -1);
@@ -1356,7 +1356,7 @@ namespace System.Data
                 throw ExceptionBuilder.SetParentRowTableMismatch(relation.ChildKey.Table.TableName, _table.TableName);
             }
 
-            object[] parentKeyValues = new object[1];
+            Span<object> parentKeyValues = RuntimeHelpers.StackAlloc<object>(1);
             parentKeyValues[0] = DBNull.Value;
             SetKeyValues(relation.ChildKey, parentKeyValues);
         }

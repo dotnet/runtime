@@ -420,11 +420,10 @@ namespace System.Reflection
             if (sig.Arguments.Length != actualCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
-            StackAllocedArguments stackArgs = default; // try to avoid intermediate array allocation if possible
             Span<object?> arguments = default;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters!, binder, invokeAttr, culture, sig);
+                arguments = CheckArguments(RuntimeHelpers.StackAlloc<object?>(4), parameters!, binder, invokeAttr, culture, sig);
             }
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
@@ -459,8 +458,7 @@ namespace System.Reflection
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
             }
 
-            StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = CheckArguments(ref stackArgs, new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig);
+            Span<object?> arguments = CheckArguments(RuntimeHelpers.StackAlloc<object?>(1), new ReadOnlySpan<object?>(ref parameter, 1), binder, invokeAttr, culture, sig);
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             return RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, constructor: false, wrapExceptions);

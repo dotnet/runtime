@@ -111,8 +111,7 @@ namespace System.Net.Security
             buffer.CopyTo(output.AsSpan(4 + sizes.cbSecurityTrailer));
 
             // Prepare buffers TOKEN(signature), DATA and Padding.
-            ThreeSecurityBuffers buffers = default;
-            var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 3);
+            Span<SecurityBuffer> buffers = RuntimeHelpers.StackAlloc<SecurityBuffer>(3);
             securityBuffer[0] = new SecurityBuffer(output, 4, sizes.cbSecurityTrailer, SecurityBufferType.SECBUFFER_TOKEN);
             securityBuffer[1] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer, buffer.Length, SecurityBufferType.SECBUFFER_DATA);
             securityBuffer[2] = new SecurityBuffer(output, 4 + sizes.cbSecurityTrailer + buffer.Length, sizes.cbBlockSize, SecurityBufferType.SECBUFFER_PADDING);
@@ -196,8 +195,7 @@ namespace System.Net.Security
             //
             // Kerberos and up
             //
-            TwoSecurityBuffers buffers = default;
-            var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 2);
+            Span<SecurityBuffer> buffers = RuntimeHelpers.StackAlloc<SecurityBuffer>(2);
             securityBuffer[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_STREAM);
             securityBuffer[1] = new SecurityBuffer(0, SecurityBufferType.SECBUFFER_DATA);
 
@@ -244,8 +242,7 @@ namespace System.Net.Security
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            TwoSecurityBuffers buffers = default;
-            var securityBuffer = MemoryMarshal.CreateSpan(ref buffers._item0, 2);
+            Span<SecurityBuffer> buffers = RuntimeHelpers.StackAlloc<SecurityBuffer>(2);
             securityBuffer[0] = new SecurityBuffer(buffer, offset, ntlmSignatureLength, SecurityBufferType.SECBUFFER_TOKEN);
             securityBuffer[1] = new SecurityBuffer(buffer, offset + ntlmSignatureLength, count - ntlmSignatureLength, SecurityBufferType.SECBUFFER_DATA);
 

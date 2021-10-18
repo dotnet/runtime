@@ -79,17 +79,16 @@ namespace System.Drawing
 
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverterTrimUnsafe(typeof(int));
-                    string?[] args;
+                    Span<string?> args = RuntimeHelpers.StackAlloc<string>(4);
                     int nArg = 0;
 
                     if (c.A < 255)
                     {
-                        args = new string?[4];
                         args[nArg++] = intConverter.ConvertToString(context, culture, (object)c.A);
                     }
                     else
                     {
-                        args = new string[3];
+                        args = args.Slice(0, 3);
                     }
 
                     // Note: ConvertToString will raise exception if value cannot be converted.

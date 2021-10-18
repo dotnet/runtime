@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using Interlocked = System.Threading.Interlocked;
 
@@ -55,6 +56,8 @@ namespace System.Collections.Generic
         private int version;
 
         private SerializationInfo? siInfo; // A temporary variable which we need during deserialization.
+
+        private const int StackThreshold = 32;
 
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
         private const string CountName = "Count"; // Do not rename (binary serialization)
@@ -191,7 +194,11 @@ namespace System.Collections.Generic
             // Note: It's not strictly necessary to provide the stack capacity, but we don't
             // want the stack to unnecessarily allocate arrays as it grows.
 
-            var stack = new Stack<Node>(2 * (int)Log2(Count + 1));
+            int capacity = 2 * Log2(Count + 1);
+            using var stack = capacity <= StackThreshold ?
+                new ValueStack<Node>(RuntimeHelpers.StackAlloc<Node>(capacity)) :
+                new ValueStack<Node>(capacity);
+
             Node? current = root;
 
             while (current != null)
@@ -200,9 +207,8 @@ namespace System.Collections.Generic
                 current = current.Left;
             }
 
-            while (stack.Count != 0)
+            while (stack.TryPop(out current))
             {
-                current = stack.Pop();
                 if (!action(current))
                 {
                     return false;
@@ -1684,8 +1690,16 @@ namespace System.Collections.Generic
 
                 // Breadth-first traversal to recreate nodes, preorder traversal to replicate nodes.
 
-                var originalNodes = new Stack<Node>(2 * Log2(count) + 2);
-                var newNodes = new Stack<Node>(2 * Log2(count) + 2);
+                int capacity = 2 * Log2(count) + 2;
+
+                using var originalNodes = capacity <= StackThreshold ?
+                    new ValueStack<Node>(RuntimeHelpers.StackAlloc<Node>(capacity)) :
+                    new ValueStack<Node>(capacity);
+
+                using var newNodes = capacity <= StackThreshold ?
+                    new ValueStack<Node>(RuntimeHelpers.StackAlloc<Node>(capacity)) :
+                    new ValueStack<Node>(capacity);
+
                 Node newRoot = ShallowClone();
 
                 Node? originalCurrent = this;
@@ -1700,9 +1714,8 @@ namespace System.Collections.Generic
                     newCurrent = newCurrent.Left!;
                 }
 
-                while (originalNodes.Count != 0)
+                while (originalNodes.TryPop(out originalCurrent))
                 {
-                    originalCurrent = originalNodes.Pop();
                     newCurrent = newNodes.Pop();
 
                     Node? originalRight = originalCurrent.Right;

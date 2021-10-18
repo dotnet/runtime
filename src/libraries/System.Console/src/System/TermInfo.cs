@@ -507,78 +507,15 @@ namespace System
         /// <summary>Provides support for evaluating parameterized terminfo database format strings.</summary>
         internal static class ParameterizedStrings
         {
-            /// <summary>A cached stack to use to avoid allocating a new stack object for every evaluation.</summary>
-            [ThreadStatic]
-            private static Stack<FormatParam>? t_cachedStack;
-
-            /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
-            [ThreadStatic]
-            private static FormatParam[]? t_cachedOneElementArgsArray;
-
-            /// <summary>A cached array of arguments to use to avoid allocating a new array object for every evaluation.</summary>
-            [ThreadStatic]
-            private static FormatParam[]? t_cachedTwoElementArgsArray;
-
-            /// <summary>Evaluates a terminfo formatting string, using the supplied argument.</summary>
-            /// <param name="format">The format string.</param>
-            /// <param name="arg">The argument to the format string.</param>
-            /// <returns>The formatted string.</returns>
-            public static string Evaluate(string format, FormatParam arg)
-            {
-                FormatParam[]? args = t_cachedOneElementArgsArray;
-                if (args == null)
-                {
-                    t_cachedOneElementArgsArray = args = new FormatParam[1];
-                }
-
-                args[0] = arg;
-
-                return Evaluate(format, args);
-            }
-
-            /// <summary>Evaluates a terminfo formatting string, using the supplied arguments.</summary>
-            /// <param name="format">The format string.</param>
-            /// <param name="arg1">The first argument to the format string.</param>
-            /// <param name="arg2">The second argument to the format string.</param>
-            /// <returns>The formatted string.</returns>
-            public static string Evaluate(string format, FormatParam arg1, FormatParam arg2)
-            {
-                FormatParam[]? args = t_cachedTwoElementArgsArray;
-                if (args == null)
-                {
-                    t_cachedTwoElementArgsArray = args = new FormatParam[2];
-                }
-
-                args[0] = arg1;
-                args[1] = arg2;
-
-                return Evaluate(format, args);
-            }
-
             /// <summary>Evaluates a terminfo formatting string, using the supplied arguments.</summary>
             /// <param name="format">The format string.</param>
             /// <param name="args">The arguments to the format string.</param>
             /// <returns>The formatted string.</returns>
-            public static string Evaluate(string format, params FormatParam[] args)
+            public static string Evaluate(string format, params ReadOnlySpan<FormatParam> args)
             {
                 if (format == null)
                 {
                     throw new ArgumentNullException(nameof(format));
-                }
-                if (args == null)
-                {
-                    throw new ArgumentNullException(nameof(args));
-                }
-
-                // Initialize the stack to use for processing.
-                Stack<FormatParam>? stack = t_cachedStack;
-                if (stack == null)
-                {
-                    t_cachedStack = stack = new Stack<FormatParam>();
-                }
-                else
-                {
-                    stack.Clear();
                 }
 
                 // "dynamic" and "static" variables are much less often used (the "dynamic" and "static"
@@ -587,7 +524,7 @@ namespace System
                 FormatParam[]? dynamicVars = null, staticVars = null;
 
                 int pos = 0;
-                return EvaluateInternal(format, ref pos, args, stack, ref dynamicVars, ref staticVars);
+                return EvaluateInternal(format, ref pos, args, ref dynamicVars, ref staticVars);
 
                 // EvaluateInternal may throw IndexOutOfRangeException and InvalidOperationException
                 // if the format string is malformed or if it's inconsistent with the parameters provided.
@@ -597,7 +534,6 @@ namespace System
             /// <param name="format">The format string.</param>
             /// <param name="pos">The position in <paramref name="format"/> to start processing.</param>
             /// <param name="args">The arguments to the format string.</param>
-            /// <param name="stack">The stack to use as the format string is evaluated.</param>
             /// <param name="dynamicVars">A lazily-initialized collection of variables.</param>
             /// <param name="staticVars">A lazily-initialized collection of variables.</param>
             /// <returns>
@@ -606,7 +542,7 @@ namespace System
             /// of recursion, and a 0 at the top if we're still inside of a conditional that requires more processing.
             /// </returns>
             private static string EvaluateInternal(
-                string format, ref int pos, FormatParam[] args, Stack<FormatParam> stack,
+                string format, ref int pos, ReadOnlySpan<FormatParam> args,
                 ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars)
             {
                 // Create a StringBuilder to store the output of this processing.  We use the format's length as an
@@ -621,6 +557,9 @@ namespace System
                 // We use recursion to process these subsequent parts, and we track whether we're processing
                 // at the same level of the initial if clause (or whether we're nested).
                 bool sawIfConditional = false;
+
+                // The stack to use as the format string is evaluated.
+                var stack = new ValueStack<FormatParam>(RuntimeHelpers.StackAlloc<FormatParam>(4));
 
                 // Process each character in the format string, starting from the position passed in.
                 for (; pos < format.Length; pos++)

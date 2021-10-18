@@ -311,8 +311,10 @@ namespace System.Data
 
                 case Rule.SetNull:
                     {
-                        object[] proposedKey = new object[_childKey.ColumnsReference.Length];
-                        for (int i = 0; i < _childKey.ColumnsReference.Length; i++)
+                        Span<object> proposedKey = _childKey.ColumnsReference.Length < 8 ?
+                            RuntimeHelpers.StackAlloc<object>(_childKey.ColumnsReference.Length) :
+                            new object[_childKey.ColumnsReference.Length];
+                        for (int i = 0; i < proposedKey.Length; i++)
                             proposedKey[i] = DBNull.Value;
                         Range range = childIndex.FindRecords(currentKey);
                         if (!range.IsNull)
@@ -330,8 +332,10 @@ namespace System.Data
                     }
                 case Rule.SetDefault:
                     {
-                        object[] proposedKey = new object[_childKey.ColumnsReference.Length];
-                        for (int i = 0; i < _childKey.ColumnsReference.Length; i++)
+                        Span<object> proposedKey = _childKey.ColumnsReference.Length < 8 ?
+                            RuntimeHelpers.StackAlloc<object>(_childKey.ColumnsReference.Length) :
+                            new object[_childKey.ColumnsReference.Length];
+                        for (int i = 0; i < proposedKey.Length; i++)
                             proposedKey[i] = _childKey.ColumnsReference[i].DefaultValue;
                         Range range = childIndex.FindRecords(currentKey);
                         if (!range.IsNull)
@@ -451,8 +455,10 @@ namespace System.Data
 
                 case Rule.SetNull:
                     {
-                        object[] proposedKey = new object[_childKey.ColumnsReference.Length];
-                        for (int i = 0; i < _childKey.ColumnsReference.Length; i++)
+                        Span<object> proposedKey = _childKey.ColumnsReference.Length < 8 ?
+                            RuntimeHelpers.StackAlloc<object>(_childKey.ColumnsReference.Length) :
+                            new object[_childKey.ColumnsReference.Length];
+                        for (int i = 0; i < proposedKey.Length; i++)
                             proposedKey[i] = DBNull.Value;
                         Range range = childIndex.FindRecords(currentKey);
                         if (!range.IsNull)
@@ -469,8 +475,10 @@ namespace System.Data
                     }
                 case Rule.SetDefault:
                     {
-                        object[] proposedKey = new object[_childKey.ColumnsReference.Length];
-                        for (int i = 0; i < _childKey.ColumnsReference.Length; i++)
+                        Span<object> proposedKey = _childKey.ColumnsReference.Length < 8 ?
+                            RuntimeHelpers.StackAlloc<object>(_childKey.ColumnsReference.Length) :
+                            new object[_childKey.ColumnsReference.Length];
+                        for (int i = 0; i < proposedKey.Length; i++)
                             proposedKey[i] = _childKey.ColumnsReference[i].DefaultValue;
                         Range range = childIndex.FindRecords(currentKey);
                         if (!range.IsNull)

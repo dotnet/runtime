@@ -540,6 +540,9 @@ namespace System
             return JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), new ReadOnlySpan<string?>(value));
         }
 
+        public static string Join(char separator, params ReadOnlySpan<string?> value) =>
+            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), value);
+
         public static string Join(string? separator, params string?[] value)
         {
             if (value == null)
@@ -549,6 +552,9 @@ namespace System
 
             return JoinCore(separator.AsSpan(), new ReadOnlySpan<string?>(value));
         }
+
+        public static string Join(string? separator, params ReadOnlySpan<string?> value) =>
+            JoinCore(separator.AsSpan(), value);
 
         public static string Join(char separator, string?[] value, int startIndex, int count) =>
             JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), value, startIndex, count);

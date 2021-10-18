@@ -194,11 +194,11 @@ namespace System.Net.Security
             // setup security buffers for ssp call
             // one points at signed data
             // two will receive payload if signature is valid
+            Span<SecurityBuffer> securityBuffer =
 #if NETSTANDARD2_0
-            Span<SecurityBuffer> securityBuffer = new SecurityBuffer[2];
+                new SecurityBuffer[2];
 #else
-            TwoSecurityBuffers stackBuffer = default;
-            Span<SecurityBuffer> securityBuffer = MemoryMarshal.CreateSpan(ref stackBuffer._item0, 2);
+                RuntimeHelpers.StackAlloc<securityBuffer>(2);
 #endif
             securityBuffer[0] = new SecurityBuffer(buffer, offset, count, SecurityBufferType.SECBUFFER_STREAM);
             securityBuffer[1] = new SecurityBuffer(0, SecurityBufferType.SECBUFFER_DATA);
@@ -241,11 +241,11 @@ namespace System.Net.Security
             Buffer.BlockCopy(buffer, offset, output, sizes.cbMaxSignature, count);
 
             // setup security buffers for ssp call
+            Span<SecurityBuffer> securityBuffer =
 #if NETSTANDARD2_0
-            Span<SecurityBuffer> securityBuffer = new SecurityBuffer[2];
+                new SecurityBuffer[2];
 #else
-            TwoSecurityBuffers stackBuffer = default;
-            Span<SecurityBuffer> securityBuffer = MemoryMarshal.CreateSpan(ref stackBuffer._item0, 2);
+                RuntimeHelpers.StackAlloc<securityBuffer>(2);
 #endif
             securityBuffer[0] = new SecurityBuffer(output, 0, sizes.cbMaxSignature, SecurityBufferType.SECBUFFER_TOKEN);
             securityBuffer[1] = new SecurityBuffer(output, sizes.cbMaxSignature, count, SecurityBufferType.SECBUFFER_DATA);

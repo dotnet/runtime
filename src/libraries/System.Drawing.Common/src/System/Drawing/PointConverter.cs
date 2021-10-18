@@ -114,7 +114,7 @@ namespace System.Drawing {
                     }
                     string sep = culture.TextInfo.ListSeparator + " ";
                     TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
-                    string[] args = new string[2];
+                    Span<string> args = RuntimeHelpers.StackAlloc<string>();
                     int nArg = 0;
 
                     // Note: ConvertToString will raise exception if value cannot be converted.

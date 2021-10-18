@@ -192,7 +192,7 @@ namespace System.Data
             }
         }
 
-        internal void SetKeyValues(int record, DataKey key, object[] keyValues)
+        internal void SetKeyValues(int record, DataKey key, ReadOnlySpan<object> keyValues)
         {
             for (int i = 0; i < keyValues.Length; i++)
             {

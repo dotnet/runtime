@@ -193,7 +193,11 @@ namespace System.Collections.Generic
 
                 // The maximum height of a red-black tree is 2*lg(n+1).
                 // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
-                Stack<Node> stack = new Stack<Node>(2 * (int)SortedSet<T>.Log2(count + 1)); // this is not exactly right if count is out of date, but the stack can grow
+                int capacity = 2 * Log2(count + 1); // this is not exactly right if count is out of date, but the stack can grow
+                using var stack = capacity <= StackThreshold ?
+                    new ValueStack<Node>(RuntimeHelpers.StackAlloc<Node>(capacity) :
+                    new ValueStack<Node>(capacity);
+
                 Node? current = root;
                 while (current != null)
                 {

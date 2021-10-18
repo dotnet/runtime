@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -999,10 +1000,8 @@ namespace System.Diagnostics.Tracing
                 int[] refObjPosition = new int[EtwAPIMaxRefObjCount];
                 object?[] dataRefObj = new object?[EtwAPIMaxRefObjCount];
 #else
-                Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
-                EightObjects eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
-                Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
+                Span<object?> dataRefObj = RuntimeHelpers.StackAlloc<object?>(EtwAPIMaxRefObjCount);
 #endif
 
                 EventData* userData = stackalloc EventData[2 * argCount];
@@ -1174,23 +1173,6 @@ namespace System.Diagnostics.Tracing
 
             return true;
         }
-
-#if !ES_BUILD_STANDALONE
-        /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
-        private struct EightObjects
-        {
-            internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-            private object? _arg4;
-            private object? _arg5;
-            private object? _arg6;
-            private object? _arg7;
-#pragma warning restore CA1823, CS0169, IDE0051
-        }
-#endif
 
         /// <summary>
         /// WriteEvent, method to be used by generated code on a derived class

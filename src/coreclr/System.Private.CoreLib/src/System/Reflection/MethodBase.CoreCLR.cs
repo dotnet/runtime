@@ -67,11 +67,9 @@ namespace System.Reflection
             return parameterTypes;
         }
 
-        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, ReadOnlySpan<object?> parameters, Binder? binder,
+        private protected Span<object?> CheckArguments(Span<object?> stackArgs, ReadOnlySpan<object?> parameters, Binder? binder,
             BindingFlags invokeAttr, CultureInfo? culture, Signature sig)
         {
-            Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
-                "MaxStackAllocArgCount not properly defined.");
             Debug.Assert(!parameters.IsEmpty);
 
             // We need to perform type safety validation against the incoming arguments, but we also need
@@ -81,9 +79,11 @@ namespace System.Reflection
             // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
             // considered user-visible to threads which may still be holding on to returned instances.
 
-            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
-                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
-                    : new Span<object?>(new object?[parameters.Length]);
+            Span<object?> copyOfParameters = stackArgs;
+            if (parameters.Length > copyOfParameters.Length)
+            {
+                copyOfParameters = new object?[parameters.Length];
+            }
 
             ParameterInfo[]? p = null;
             for (int i = 0; i < parameters.Length; i++)
@@ -102,21 +102,6 @@ namespace System.Reflection
             }
 
             return copyOfParameters;
-        }
-
-        // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
-        // Typical usage is to define a local of type default(StackAllocedArguments), then pass 'ref theLocal'
-        // as the first parameter to CheckArguments. CheckArguments will try to utilize storage within this
-        // struct instance if there's sufficient space; otherwise CheckArguments will allocate a temp array.
-        private protected struct StackAllocedArguments
-        {
-            internal const int MaxStackAllocArgCount = 4;
-            internal object? _arg0;
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private object? _arg1;
-            private object? _arg2;
-            private object? _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
         }
         #endregion
     }

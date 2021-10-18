@@ -335,11 +335,10 @@ namespace System.Reflection
             // if we are here we passed all the previous checks. Time to look at the arguments
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
 
-            StackAllocedArguments stackArgs = default;
             Span<object?> arguments = default;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+                arguments = CheckArguments(RuntimeHelpers.StackAlloc<object?>(4), parameters, binder, invokeAttr, culture, sig);
             }
 
             object? retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
@@ -394,11 +393,10 @@ namespace System.Reflection
             // if we are here we passed all the previous checks. Time to look at the arguments
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
 
-            StackAllocedArguments stackArgs = default;
             Span<object?> arguments = default;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+                arguments = CheckArguments(RuntimeHelpers.StackAlloc<object?>(4), parameters, binder, invokeAttr, culture, sig);
             }
 
             object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions)!; // ctor must return non-null
