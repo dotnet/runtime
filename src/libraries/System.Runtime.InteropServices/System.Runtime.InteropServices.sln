@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.Ancillary
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator.Tests", "tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj", "{57A1A6FD-9231-4DFB-8619-F0EDEDA208E3}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator.UnitTests", "tests\DllImportGenerator.UnitTests\DllImportGenerator.UnitTests.csproj", "{4B516949-4AD4-44D6-AF86-C2E6058608D5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DllImportGenerator.Unit.Tests", "tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj", "{4B516949-4AD4-44D6-AF86-C2E6058608D5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.ComDisabled.Tests", "tests\System.Runtime.InteropServices.ComDisabled.UnitTests\System.Runtime.InteropServices.ComDisabled.Tests.csproj", "{25D66424-2EAF-464D-8460-10C04EDEF3C3}"
 EndProject

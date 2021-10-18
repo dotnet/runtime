@@ -118,13 +118,7 @@ namespace DllImportGenerator.UnitTests
 
         public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies()
         {
-            // TODO: When .NET 6.0 releases, we can simplify this.
-            var referenceAssemblies = new ReferenceAssemblies(
-                    "net6.0",
-                    new PackageIdentity(
-                        "Microsoft.NETCore.App.Ref",
-                        "6.0.0-preview.7.21377.19"),
-                    Path.Combine("ref", "net6.0"))
+            var referenceAssemblies = ReferenceAssemblies.Net.Net60
                 .WithNuGetConfigFilePath(Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "NuGet.config"));
 
             // Include the assembly containing the new attribute and all of its references.
