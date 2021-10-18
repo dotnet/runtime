@@ -91,7 +91,7 @@
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == '' and '$(DisableAutoWasmBuildApp)' != 'true'">Build</WasmBuildAppAfterThisTarget>
 
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'">Publish</WasmTriggerPublishAppAfterThisTarget>
-    <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
+    <WasmNestedPublishAppPreTarget Condition="'$(WasmNestedPublishAppPreTarget)' == '' and '$(DisableAutoWasmPublishApp)' != 'true'">Publish</WasmNestedPublishAppPreTarget>
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
     <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and '$(DeployOnBuild)' == 'true'">true</WasmBuildOnlyAfterPublish>
@@ -123,7 +123,7 @@
 
   <!-- Public target. Do not depend on this target, as it is meant to be run by a msbuild task -->
   <Target Name="WasmNestedPublishApp"
-          DependsOnTargets="ResolveRuntimePackAssets;$(_WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn)"
+          DependsOnTargets="ResolveRuntimePackAssets;$(WasmNestedPublishAppPreTarget);$(WasmNestedPublishAppDependsOn)"
           Condition="'$(WasmBuildingForNestedPublish)' == 'true'"
           Returns="@(WasmNativeAsset);@(WasmAssembliesFinal);@(FileWrites)">
 
