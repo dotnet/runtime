@@ -6865,6 +6865,12 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // the opcode stack becomes empty
         impBoxTempInUse = true;
 
+        // Remember the current last statement in case we need to move
+        // a range of statements to ensure the box temp is initialized
+        // before it's used.
+        //
+        Statement* const cursor = impLastStmt;
+
         const bool useParent = false;
         op1                  = gtNewAllocObjNode(pResolvedToken, useParent);
         if (op1 == nullptr)
@@ -6882,17 +6888,18 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         compCurBB->bbFlags |= BBF_HAS_NEWOBJ;
         optMethodFlags |= OMF_HAS_NEWOBJ;
 
-        // Allocate the boxed object
+        // Assign the boxed object to the box temp.
         //
         GenTree*   asg     = gtNewTempAssign(impBoxTemp, op1);
-        Statement* asgStmt = nullptr;
+        Statement* asgStmt = impAppendTree(asg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
 
         // If the exprToBox is a call that returns its value via a ret buf arg,
-        // place the assignment before the call (which must be a top level tree).
+        // move the assignment statement(s) before the call (which must be a top level tree).
         //
         // We do this because impAssignStructPtr (invoked below) will
         // back-substitute into a call when it sees a GT_RET_EXPR and the call
-        // has a hidden buffer pointer, creating out-of-sequence IR.
+        // has a hidden buffer pointer, So we need to reorder things to avoid
+        // creating out-of-sequence IR.
         //
         if (varTypeIsStruct(exprToBox) && exprToBox->OperIs(GT_RET_EXPR))
         {
@@ -6900,10 +6907,14 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
             if (call->HasRetBufArg())
             {
-                JITDUMP("Must insert newobj for box before call [%06u]\n", dspTreeID(call));
+                JITDUMP("Must insert newobj stmts for box before call [%06u]\n", dspTreeID(call));
 
                 // Walk back through the statements in this block, looking for the one
-                // that has this call at top level.
+                // that has this call as the root node.
+                //
+                // Because gtNewTempAssign (above) may have added statements that
+                // feed into the actual assignment we need to move this set of added
+                // statements as a group.
                 //
                 // Note boxed allocations are side-effect free (no com or finalizer) so
                 // our only worries here are (correctness) not overlapping the box temp
@@ -6919,35 +6930,36 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
                 // the allocation back down to just before the copy, once we figure out
                 // where the copy is. We defer for now.
                 //
-                Statement* lastStmt = impLastStmt;
+                Statement* insertBeforeStmt = cursor;
+                noway_assert(insertBeforeStmt != nullptr);
 
-                while (lastStmt != nullptr)
+                while (true)
                 {
-                    // This may be too weak. We might need to track where the call
-                    // statement is via the ret expr.
-                    //
-                    if (lastStmt->GetRootNode() == call)
+                    if (insertBeforeStmt->GetRootNode() == call)
                     {
-                        asgStmt = gtNewStmt(asg, impCurStmtOffs);
-                        impInsertStmtBefore(asgStmt, lastStmt);
                         break;
                     }
 
-                    lastStmt = lastStmt->GetPrevStmt();
+                    // If we've searched all the statements in the block and failed to
+                    // find the call, then something's wrong.
+                    //
+                    noway_assert(insertBeforeStmt != impStmtList);
+
+                    insertBeforeStmt = insertBeforeStmt->GetPrevStmt();
                 }
 
-                // We should have found something.
+                // Found the call. Move the statements comprising the assignment.
                 //
-                noway_assert(asgStmt != nullptr);
+                JITDUMP("Moving " FMT_STMT "..." FMT_STMT " before " FMT_STMT "\n", cursor->GetNextStmt()->GetID(),
+                        asgStmt->GetID(), insertBeforeStmt->GetID());
+                assert(asgStmt == impLastStmt);
+                do
+                {
+                    Statement* movingStmt = impExtractLastStmt();
+                    impInsertStmtBefore(movingStmt, insertBeforeStmt);
+                    insertBeforeStmt = movingStmt;
+                } while (impLastStmt != cursor);
             }
-        }
-
-        // If we didn't do an "early assignment" of the box temp, assign it now.
-        // This is the typical case.
-        //
-        if (asgStmt == nullptr)
-        {
-            asgStmt = impAppendTree(asg, (unsigned)CHECK_SPILL_NONE, impCurStmtOffs);
         }
 
         // Create a pointer to the box payload in op1.
