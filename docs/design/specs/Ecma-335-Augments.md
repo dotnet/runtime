@@ -365,12 +365,11 @@ This text should be deleted, and the _metadata merging_ entry should be removed 
 
 ## Metadata logical format
 
-The requirement to sort InterfaceImpl table using the Interface column as a secondary key in § II.22 _Metadata logical format: tables_ is a spec bug. The interface declaration order affects resolution and a requirement to sort it would make it impossible to emit certain sequences of interface (e.g. not possible to have an interface list I1, I2, while also having interface list I2, I1 elsewhere in the module).
+The requirement to sort InterfaceImpl table using the Interface column as a secondary key in § II.22 _Metadata logical format: tables_ is a spec bug. The interface declaration order affects resolution and a requirement to sort it would make it impossible to emit certain sequences of interfaces (e.g. not possible to have an interface list I1, I2, while also having interface list I2, I1 elsewhere in the module).
 
 The text should be deleted:
 
-> Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the 
-GenericParam table is sorted using the Number column as a secondary key.
+> Furthermore, ~~the InterfaceImpl table is sorted using the Interface column as a secondary key, and~~ the GenericParam table is sorted using the Number column as a secondary key.
 
 ## Module Initializer
 
