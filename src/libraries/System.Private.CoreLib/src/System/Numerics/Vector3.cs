@@ -141,7 +141,7 @@ namespace System.Numerics
         /// <param name="value">The value of the element to set.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         [Intrinsic]
-        public static Vector3 WithElement(Vector3 vector, int index, float value)
+        internal static Vector3 WithElement(Vector3 vector, int index, float value)
         {
             if ((uint)index >= Count)
             {

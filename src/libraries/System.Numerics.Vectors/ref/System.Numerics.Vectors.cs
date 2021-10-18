@@ -189,7 +189,6 @@ namespace System.Numerics
         public static System.Numerics.Quaternion Slerp(System.Numerics.Quaternion quaternion1, System.Numerics.Quaternion quaternion2, float amount) { throw null; }
         public static System.Numerics.Quaternion Subtract(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public override readonly string ToString() { throw null; }
-		public static System.Numerics.Quaternion WithElement(System.Numerics.Quaternion quaternion, int index, float value) { throw null; }
     }
     public static partial class Vector
     {
@@ -365,7 +364,6 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector2 TransformNormal(System.Numerics.Vector2 normal, System.Numerics.Matrix3x2 matrix) { throw null; }
         public static System.Numerics.Vector2 TransformNormal(System.Numerics.Vector2 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
-		public static System.Numerics.Vector2 WithElement(System.Numerics.Vector2 vector, int index, float value) { throw null; }
     }
     public partial struct Vector3 : System.IEquatable<System.Numerics.Vector3>, System.IFormattable
     {
@@ -427,7 +425,6 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector3 TransformNormal(System.Numerics.Vector3 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
-		public static System.Numerics.Vector3 WithElement(System.Numerics.Vector3 vector, int index, float value) { throw null; }
     }
     public partial struct Vector4 : System.IEquatable<System.Numerics.Vector4>, System.IFormattable
     {
@@ -493,7 +490,6 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 vector, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector4 value, System.Numerics.Quaternion rotation) { throw null; }
-		public static System.Numerics.Vector4 WithElement(System.Numerics.Vector4 vector, int index, float value) { throw null; }
     }
     public readonly partial struct Vector<T> : System.IEquatable<System.Numerics.Vector<T>>, System.IFormattable where T : struct
     {
