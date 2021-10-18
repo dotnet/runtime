@@ -153,7 +153,6 @@ namespace Microsoft.Extensions.Primitives
             cancellationTokenSource.Cancel();
 
             var x = 0;
-
             Func<IChangeToken> producer = () =>
             {
                 ++ x;
@@ -178,6 +177,35 @@ namespace Microsoft.Extensions.Primitives
             }
 
             Assert.Equal(3, fired);
+        }
+
+        [Fact]
+        public void OnChangeFiresCallbackForEveryChangeOccurrence()
+        {
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+
+            Func<IChangeToken> producer = () =>
+            {
+                cancellationTokenSource = new CancellationTokenSource();
+                cancellationChangeToken = new CancellationChangeToken(cancellationTokenSource.Token);
+
+                return cancellationChangeToken;
+            };
+
+            var fired = 0;
+            Action consumer = () => ++ fired;
+
+            using (ChangeToken.OnChange(producer, consumer))
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Cancel();
+            }
+
+            Assert.Equal(5, fired);
         }
 
         [Fact]

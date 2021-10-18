@@ -57,6 +57,8 @@ namespace Microsoft.Extensions.Primitives
             private readonly Func<IChangeToken?> _changeTokenProducer;
             private readonly Action<TState> _changeTokenConsumer;
             private readonly TState _state;
+
+            private IChangeToken? _oldToken;
             private IDisposable? _disposable;
 
             private static readonly NoopDisposable s_disposedSentinel = new();
@@ -68,40 +70,50 @@ namespace Microsoft.Extensions.Primitives
                 _state = state;
 
                 IChangeToken? token = changeTokenProducer();
-
                 RegisterChangeTokenCallback(token);
             }
 
             private void OnChangeTokenFired()
             {
-                // The order here is important. We need to take the token and then apply our changes BEFORE
-                // registering. This prevents us from possibly having two change updates to process concurrently.
-                //
-                // If the token changes after we take the token, then we'll process the update immediately upon
-                // registering the callback.
-                IChangeToken? token = _changeTokenProducer();
+                while (true)
+                {
+                    // The order here is important. We need to take the token and then apply our changes BEFORE
+                    // registering. This prevents us from possibly having two change updates to process concurrently.
+                    //
+                    // If the token changes after we take the token, then we'll process the update immediately upon
+                    // registering the callback.
+                    IChangeToken? newToken = _changeTokenProducer();
 
-                try
-                {
-                    _changeTokenConsumer(_state);
-                }
-                finally
-                {
-                    RegisterChangeTokenCallback(token, fromCallback: true);
+                    try
+                    {
+                        _changeTokenConsumer(_state);
+                    }
+                    finally
+                    {
+                        if (Equals(_oldToken, newToken))
+                        {
+                            throw new NotSupportedException("The change token provider should return a new token.");
+                        }
+
+                        if (newToken is { HasChanged: true })
+                        {
+                            // The new token has already fired, so we can jump to the top of the loop,
+                            // get a new token and fire the consumer.
+                        }
+                        else
+                        {
+                            RegisterChangeTokenCallback(newToken);
+                            _oldToken = newToken;
+                        }
+                    }
+
+                    break;
                 }
             }
 
-            private void RegisterChangeTokenCallback(IChangeToken? token, bool fromCallback = false)
+            private void RegisterChangeTokenCallback(IChangeToken? token)
             {
                 if (token is null)
-                {
-                    return;
-                }
-
-                // When the token has already changed, and the regstration call
-                // was made from the consuming callback, we do not need to register again.
-                // Otherwise this causes an infinite loop and StackOverflowException.
-                if (token.HasChanged && fromCallback)
                 {
                     return;
                 }
