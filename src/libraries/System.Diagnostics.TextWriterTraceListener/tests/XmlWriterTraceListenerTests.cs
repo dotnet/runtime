@@ -187,7 +187,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [Theory]
         [InlineData("Fail:", null)]
         [InlineData("Fail:", "the process failed when running")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50925", TestPlatforms.Android)]
         public void FailTest(string message, string detailMessage)
         {
             string file = GetTestFilePath();
