@@ -1581,9 +1581,9 @@ mono_class_create_byref (MonoType *type)
 	}
 
 	/* The MonoType for ElementType&&. */
-	result->_this_arg.type = MONO_TYPE_BYREF;
-	result->_this_arg.data.type = &result->_byval_arg;
-	result->_this_arg.byref__ = TRUE;
+	result->this_arg.type = MONO_TYPE_BYREF;
+	result->this_arg.data.type = &result->_byval_arg;
+	result->this_arg.byref__ = TRUE;
 	
 	mono_class_setup_supertypes (result);
 
