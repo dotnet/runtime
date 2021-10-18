@@ -28,8 +28,8 @@ namespace System.IO.Compression
         private uint _numberOfThisDisk; //only valid after ReadCentralDirectory
         private long _expectedNumberOfEntries;
         private Stream? _backingStream;
-        private string? _archiveComment;
-        private byte[]? _archiveCommentBytes;
+        private byte[]? _archiveComment;
+        private string? _archiveCommentAsString;
         private Encoding? _entryNameAndCommentEncoding;
 
 #if DEBUG_FORCE_ZIP64
@@ -176,7 +176,7 @@ namespace System.IO.Compression
                 _isDisposed = false;
                 _numberOfThisDisk = 0; // invalid until ReadCentralDirectory
                 _archiveComment = null;
-                _archiveCommentBytes = null;
+                _archiveCommentAsString = null;
 
                 switch (mode)
                 {
@@ -223,28 +223,28 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_archiveComment == null)
+                if (_archiveCommentAsString == null)
                 {
-                    _archiveComment = _archiveCommentBytes != null ? ZipHelper.DecodeBytesToString(EntryNameAndCommentEncoding, _archiveCommentBytes) : string.Empty;
+                    _archiveCommentAsString = _archiveComment != null ? ZipHelper.DecodeBytesToString(EntryNameAndCommentEncoding, _archiveComment) : string.Empty;
                 }
-                return _archiveComment;
+                return _archiveCommentAsString;
             }
             set
             {
                 // Reset it. Will re-acquire value in getter.
-                _archiveComment = null;
+                _archiveCommentAsString = null;
 
                 if (value != null)
                 {
-                    _archiveCommentBytes = ZipHelper.EncodeStringToBytes(value, EntryNameAndCommentEncoding, out _);
-                    if (_archiveCommentBytes.Length > ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength)
+                    _archiveComment = ZipHelper.EncodeStringToBytes(value, EntryNameAndCommentEncoding, out _);
+                    if (_archiveComment.Length > ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength)
                     {
-                        _archiveCommentBytes = _archiveCommentBytes[0..ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength];
+                        _archiveComment = _archiveComment[0..ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength];
                     }
                 }
                 else
                 {
-                    _archiveCommentBytes = null;
+                    _archiveComment = null;
                 }
             }
         }
@@ -409,7 +409,7 @@ namespace System.IO.Compression
                         (value.Equals(Encoding.BigEndianUnicode)
                         || value.Equals(Encoding.Unicode)))
                 {
-                    throw new ArgumentException(SR.EntryNameEncodingNotSupported, nameof(EntryNameAndCommentEncoding));
+                    throw new ArgumentException(SR.EntryNameAndCommentEncodingNotSupported, nameof(EntryNameAndCommentEncoding));
                 }
 
                 _entryNameAndCommentEncoding = value;
@@ -586,7 +586,7 @@ namespace System.IO.Compression
 
                 _expectedNumberOfEntries = eocd.NumberOfEntriesInTheCentralDirectory;
 
-                _archiveCommentBytes = eocd.ArchiveComment;
+                _archiveComment = eocd.ArchiveComment;
 
                 TryReadZip64EndOfCentralDirectory(eocd, eocdStart);
 
@@ -722,7 +722,7 @@ namespace System.IO.Compression
             }
 
             // write normal eocd
-            ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveCommentBytes);
+            ZipEndOfCentralDirectoryBlock.WriteBlock(_archiveStream, _entries.Count, startOfCentralDirectory, sizeOfCentralDirectory, _archiveComment);
         }
     }
 }
