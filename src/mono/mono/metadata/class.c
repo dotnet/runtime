@@ -2174,6 +2174,9 @@ mono_class_from_mono_type_internal (MonoType *type)
 MonoClass *
 mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref)
 {
+#ifndef ENABLE_EXPERIMENT_ANY_BYREF
+	g_assert (strip_byref);
+#endif
 	g_assert (type);
 	if (!strip_byref) {
 		if (m_type_is_byref (type)) {
@@ -2231,6 +2234,10 @@ mono_class_from_mono_type2 (MonoType *type, gboolean strip_byref)
 	case MONO_TYPE_FNPTR:
 		return mono_class_create_fnptr (type->data.method);
 	case MONO_TYPE_BYREF:
+#ifndef ENABLE_EXPERIMENT_ANY_BYREF
+		g_warning ("mono_class_from_mono_type2: called on MONO_TYPE_BYREF");
+		g_assert_not_reached ();
+#endif
 		/* case where strip_byref is false is handled above.  if strip_byref is true, we
 		 * want to peel off one layer of "byref".
 		 */
