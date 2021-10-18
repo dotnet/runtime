@@ -12,7 +12,7 @@ COPY . .
 # Also note that in order to update to a newer msquic build, you have update this link.
 ARG MSQUIC_PACKAGE=libmsquic_1.9.0_amd64.deb
 ARG PACKAGES_DIR=UnsignedUnixPackages
-RUN wget 'https://dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_apis/build/builds/1417511/artifacts?artifactName=UnsignedUnixPackages&api-version=6.0&%24format=zip' -O "$PACKAGES_DIR".zip
+RUN wget 'https://dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_apis/build/builds/1426627/artifacts?artifactName=UnsignedUnixPackages&api-version=6.0&%24format=zip' -O "$PACKAGES_DIR".zip
 RUN apt-get update
 RUN apt-get install unzip
 RUN unzip $PACKAGES_DIR.zip
