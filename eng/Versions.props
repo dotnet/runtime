@@ -165,7 +165,7 @@
     <FsCheckVersion>2.14.3</FsCheckVersion>
     <SdkVersionForWorkloadTesting>6.0.100-rtm.21480.21</SdkVersionForWorkloadTesting>
     <!-- Docs -->
-    <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20211015.1</MicrosoftPrivateIntellisenseVersion>
+    <MicrosoftPrivateIntellisenseVersion>6.0.0-preview-20210916.1</MicrosoftPrivateIntellisenseVersion>
     <!-- ILLink -->
     <MicrosoftNETILLinkTasksVersion>6.0.100-1.21459.1</MicrosoftNETILLinkTasksVersion>
     <MicrosoftNETILLinkAnalyzerPackageVersion>$(MicrosoftNETILLinkTasksVersion)</MicrosoftNETILLinkAnalyzerPackageVersion>
