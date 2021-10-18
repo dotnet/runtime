@@ -1,4 +1,8 @@
 <Project>
+  <PropertyGroup>
+    <_NuGetConfigForWorkloadInstall>$(ArtifactsBinDir)workload-nuget.config</_NuGetConfigForWorkloadInstall>
+  </PropertyGroup>
+
   <Target Name="ProvisionSdkForWorkloadTesting"
           DependsOnTargets="_ProvisionSdkWithNoWorkload"
           Condition="!Exists($(SdkWithNoWorkloadStampPath)) or !Exists($(SdkWithWorkloadStampPath))">
@@ -61,7 +65,7 @@
 
   <Target Name="InstallWorkloadUsingArtifacts"
           AfterTargets="ArchiveTests"
-          DependsOnTargets="ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
+          DependsOnTargets="GenerateTestRestoreSourcesNuGetConfig_ForWorkloadInstall;ProvisionSdkForWorkloadTesting;GetWorkloadInputs;_InstallWorkload;_UpdateManifestsForSdkWithNoWorkload"
           Condition="'$(InstallWorkloadForTesting)' == 'true'" />
 
   <Target Name="_InstallWorkload"
@@ -100,7 +104,7 @@
     <InstallWorkloadFromArtifacts
                      WorkloadId="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
-                     LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
+                     NuGetConfigFile="$(_NuGetConfigForWorkloadInstall)"
                      ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
                      SdkDir="$(SdkWithWorkloadForTestingPath)" />
     <WriteLinesToFile File="$(SdkWithWorkload_WorkloadStampPath)" Lines="" Overwrite="true" />
@@ -113,11 +117,60 @@
     <InstallWorkloadFromArtifacts
                      WorkloadId="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
-                     LocalNuGetsPath="$(LibrariesShippingPackagesDir)"
+                     NuGetConfigFile="$(_NuGetConfigForWorkloadInstall)"
                      ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
                      SdkDir="$(SdkWithNoWorkloadForTestingPath)"
                      OnlyUpdateManifests="true"/>
 
     <WriteLinesToFile File="$(SdkWithNoWorkload_WorkloadStampPath)" Lines="" Overwrite="true" />
+  </Target>
+
+  <!-- Copy of the target from src/installer/tests/PrepareTestAssets/PrepareTestAssets.proj -->
+  <Target Name="GenerateTestRestoreSourcesNuGetConfig_ForWorkloadInstall">
+    <ItemGroup>
+      <RestoreTestSource Include="$(ArtifactsShippingPackagesDir)" Key="artifacts-shipping-packages" />
+      <RestoreTestSource Include="$(ArtifactsNonShippingPackagesDir)" Key="artifacts-nonshipping-packages" />
+      <RestoreTestSource Include="$(LibrariesShippingPackagesDir)" Condition="Exists('$(LibrariesShippingPackagesDir)')" Key="libraries-shipping-packages" />
+      <RestoreTestSource Include="$(LibrariesNonShippingPackagesDir)" Condition="Exists('$(LibrariesNonShippingPackagesDir)')" Key="libraries-nonshipping-packages" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(LibrariesPackagesDir)' != '$(LibrariesAllConfigPackagesDir)'">
+      <RestoreTestSource Include="$(LibrariesAllConfigShippingPackagesDir)" Condition="Exists('$(LibrariesAllConfigShippingPackagesDir)')" Key="libraries-allconfig-shipping-packages" />
+      <RestoreTestSource Include="$(LibrariesAllConfigNonShippingPackagesDir)" Condition="Exists('$(LibrariesAllConfigNonShippingPackagesDir)')" Key="libraries-allconfig-nonshipping-packages" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RestoreTestSource Include="$(TestStabilizedLegacyPackagesDir)" Key="stabilized-legacy-packages" />
+
+      <RestoreTestSource
+        Condition="'$(ContinuousIntegrationBuild)' == 'true'"
+        Include="$(InternalNupkgCacheDir)"
+        Key="internal-nupkg-cache-packages" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <TemplateNuGetConfigFile>$(RepoRoot)NuGet.config</TemplateNuGetConfigFile>
+
+      <RestoreTestSourceConfigLines>@(RestoreTestSource -> '&lt;add key="%(Key)" value="%(Identity)" /&gt;', '%0A    ')</RestoreTestSourceConfigLines>
+
+      <TestRestoreNuGetConfigContent>$([System.IO.File]::ReadAllText('$(TemplateNuGetConfigFile)').Replace(
+        '&lt;!-- TEST_RESTORE_SOURCES_INSERTION_LINE --&gt;',
+        '$(RestoreTestSourceConfigLines)'))</TestRestoreNuGetConfigContent>
+
+      <!--
+        Remove Azure DevOps feeds from NuGet.Config because they may require authenticated restore,
+        which is too flaky to use in test restore. See also
+        CopyPotentiallyInternalPackagesForTestRestore. https://github.com/dotnet/arcade/issues/3932
+      -->
+      <TestRestoreNuGetConfigContent>$([System.Text.RegularExpressions.Regex]::Replace(
+        '$(TestRestoreNuGetConfigContent)',
+        '&lt;add key=".+" value="https://pkgs.dev.azure.com/dnceng/internal/.+" /&gt;',
+        ''))</TestRestoreNuGetConfigContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile
+      File="$(_NuGetConfigForWorkloadInstall)"
+      Lines="$(TestRestoreNuGetConfigContent)"
+      Overwrite="true" />
   </Target>
 </Project>
