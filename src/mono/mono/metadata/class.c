@@ -875,6 +875,9 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		nt->data.generic_class = gclass;
 		return nt;
 	}
+#ifdef ENABLE_EXPERIMENT_ANY_BYREF
+	case MONO_TYPE_BYREF:
+#endif
 	case MONO_TYPE_PTR: {
 		MonoType *nt, *inflated = inflate_generic_type (image, type->data.type, context, error);
 		if ((!inflated && !changed) || !is_ok (error))
