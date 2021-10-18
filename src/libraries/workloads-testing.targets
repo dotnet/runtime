@@ -87,7 +87,6 @@
           WorkingDirectory="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App" />
 
     <ItemGroup>
-      <_NuGetSourceForWorkloads Include="dotnet6" Value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet6/nuget/v3/index.json" />
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
 
@@ -105,7 +104,6 @@
                      WorkloadId="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      NuGetConfigFile="$(_NuGetConfigForWorkloadInstall)"
-                     ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
                      SdkDir="$(SdkWithWorkloadForTestingPath)" />
     <WriteLinesToFile File="$(SdkWithWorkload_WorkloadStampPath)" Lines="" Overwrite="true" />
   </Target>
@@ -118,7 +116,6 @@
                      WorkloadId="@(WorkloadIdForTesting)"
                      VersionBand="$(SdkBandVersion)"
                      NuGetConfigFile="$(_NuGetConfigForWorkloadInstall)"
-                     ExtraNuGetSources="@(_NuGetSourceForWorkloads)"
                      SdkDir="$(SdkWithNoWorkloadForTestingPath)"
                      OnlyUpdateManifests="true"/>
 

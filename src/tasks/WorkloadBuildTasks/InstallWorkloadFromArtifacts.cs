@@ -32,8 +32,6 @@ namespace Microsoft.Workload.Build.Tasks
 
         public bool           OnlyUpdateManifests{ get; set; }
 
-        public ITaskItem[]    ExtraNuGetSources  { get; set; } = Array.Empty<ITaskItem>();
-
         public override bool Execute()
         {
             if (!HasMetadata(WorkloadId, nameof(WorkloadId), "Version") ||
