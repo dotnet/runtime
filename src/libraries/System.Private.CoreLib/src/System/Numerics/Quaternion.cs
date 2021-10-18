@@ -120,7 +120,7 @@ namespace System.Numerics
         internal static void SetElementUnsafe(ref Quaternion quaternion, int index, float value)
         {
             Debug.Assert(index is >= 0 and < Count);
-            Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref Unsafe.AsRef(in quaternion)), index) = value;
+            Unsafe.Add(ref Unsafe.As<Quaternion, float>(ref quaternion), index) = value;
         }
 
         /// <summary>Gets a value that indicates whether the current instance is the identity quaternion.</summary>
