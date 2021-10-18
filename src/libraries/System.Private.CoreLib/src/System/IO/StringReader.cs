@@ -3,7 +3,6 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-using Internal.Runtime.CompilerServices;
 
 namespace System.IO
 {
@@ -12,7 +11,6 @@ namespace System.IO
     {
         private string? _s;
         private int _pos;
-        private int _length;
 
         public StringReader(string s)
         {
@@ -22,7 +20,6 @@ namespace System.IO
             }
 
             _s = s;
-            _length = s.Length;
         }
 
         public override void Close()
@@ -34,7 +31,6 @@ namespace System.IO
         {
             _s = null;
             _pos = 0;
-            _length = 0;
             base.Dispose(disposing);
         }
 
@@ -49,7 +45,7 @@ namespace System.IO
             {
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
-            if (_pos == _length)
+            if (_pos == _s.Length)
             {
                 return -1;
             }
@@ -66,7 +62,7 @@ namespace System.IO
             {
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
-            if (_pos == _length)
+            if (_pos == _s.Length)
             {
                 return -1;
             }
@@ -102,7 +98,7 @@ namespace System.IO
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _length - _pos;
+            int n = _s.Length - _pos;
             if (n > 0)
             {
                 if (n > count)
@@ -130,7 +126,7 @@ namespace System.IO
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
 
-            int n = _length - _pos;
+            int n = _s.Length - _pos;
             if (n > 0)
             {
                 if (n > buffer.Length)
@@ -161,10 +157,10 @@ namespace System.IO
             }
             else
             {
-                s = _s.Substring(_pos, _length - _pos);
+                s = _s.Substring(_pos, _s.Length - _pos);
             }
 
-            _pos = _length;
+            _pos = _s.Length;
             return s;
         }
 
@@ -176,24 +172,25 @@ namespace System.IO
         //
         public override string? ReadLine()
         {
-            if (_s == null)
+            string? s = _s;
+            if (s == null)
             {
                 ThrowHelper.ThrowObjectDisposedException_ReaderClosed();
             }
-            if ((uint)_pos >= (uint)_length)
+            if ((uint)_pos >= (uint)s.Length)
                 return null;
 
-            ReadOnlySpan<char> remaining = _s.AsSpan(_pos);
+            ReadOnlySpan<char> remaining = s.AsSpan(_pos);
             int foundLineLength = remaining.IndexOfAny('\r', '\n');
             if (foundLineLength >= 0)
             {
                 string result = foundLineLength == 0
                     ? string.Empty
-                    : new string(new ReadOnlySpan<char>(ref Unsafe.AsRef(remaining.GetPinnableReference()), foundLineLength)); //_s.Substring(_pos, foundLineLength);
+                    : new string(remaining.Slice(0, foundLineLength));
 
                 char ch = remaining[foundLineLength];
                 _pos += foundLineLength + 1;
-                if (ch == '\r' && _pos < _length && _s[_pos] == '\n')
+                if (ch == '\r' && _pos < s.Length && s[_pos] == '\n')
                 {
                     _pos++;
                 }
@@ -202,8 +199,8 @@ namespace System.IO
             }
             else
             {
-                string result = new string(remaining); // _s.Substring(_pos, _length - _pos);
-                _pos = _length;
+                string result = new string(remaining);
+                _pos = s.Length;
                 return result;
             }
         }
