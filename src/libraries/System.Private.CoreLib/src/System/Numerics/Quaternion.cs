@@ -27,7 +27,7 @@ namespace System.Numerics
         /// <summary>The rotation component of the quaternion.</summary>
         public float W;
 
-        internal const int Count = 16;
+        internal const int Count = 4;
 
         /// <summary>Constructs a quaternion from the specified components.</summary>
         /// <param name="x">The value to assign to the X component of the quaternion.</param>
