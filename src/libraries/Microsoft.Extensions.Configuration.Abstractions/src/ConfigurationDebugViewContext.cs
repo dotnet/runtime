@@ -3,6 +3,9 @@
 
 namespace Microsoft.Extensions.Configuration.Abstractions
 {
+    /// <summary>
+    /// Configuration debug view context provides the data about current item of the configuration
+    /// </summary>
     public readonly struct ConfigurationDebugViewContext
     {
         public ConfigurationDebugViewContext(string path, string key, string value, IConfigurationProvider configurationProvider)
@@ -13,12 +16,24 @@ namespace Microsoft.Extensions.Configuration.Abstractions
             ConfigurationProvider = configurationProvider;
         }
 
+        /// <summary>
+        /// Path of the current item
+        /// </summary>
         public string Path { get; }
 
+        /// <summary>
+        /// Key of the current item
+        /// </summary>
         public string Key { get; }
 
+        /// <summary>
+        /// Value of the current item
+        /// </summary>
         public string Value { get; }
 
+        /// <summary>
+        /// Provider used to get the value of the current item
+        /// </summary>
         public IConfigurationProvider ConfigurationProvider { get; }
     }
 }
