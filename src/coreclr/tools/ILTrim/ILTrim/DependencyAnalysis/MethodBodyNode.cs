@@ -101,19 +101,6 @@ namespace ILTrim.DependencyAnalysis
                     case ILOpcode.constrained:
                         EntityHandle token = MetadataTokens.EntityHandle(ilReader.ReadILToken());
 
-                        if (opcode == ILOpcode.newobj && _module.TryGetMethod(token) is MethodDesc constructor)
-                        {
-                            TypeDesc owningTypeDefinition = constructor.OwningType.GetTypeDefinition();
-                            if (owningTypeDefinition is EcmaType ecmaOwningType)
-                            {
-                                _dependencies.Add(factory.ConstructedType(ecmaOwningType), "Newobj");
-                            }
-                            else
-                            {
-                                Debug.Assert(owningTypeDefinition is ArrayType);
-                            }
-                        }
-
                         if ((opcode == ILOpcode.callvirt || opcode == ILOpcode.ldvirtftn) &&
                             _module.TryGetMethod(token) is MethodDesc method && method.IsVirtual)
                         {
