@@ -32,10 +32,13 @@
 
     <ItemGroup>
       <!-- Figure out if we can support JustInterp mode -->
-      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" />
+      <AppleAssembliesToBundle Include="$(OriginalPublishDir)**\*.dll" Exclude="$(OriginalPublishDir)\**\*.resources.dll" />
 
       <!-- Extra files are NativeLibraries and should be excluded from AppleAssembliesToBundle -->
       <_ExtraFiles Include="$(ExtraFilesPath)**\*" />
+
+      <AppleNativeFilesToBundle Include="@(_ExtraFiles)" Exclude="$(OriginalPublishDir)\*.dll" />
+      <AppleNativeFilesToBundle Include="$(OriginalPublishDir)\**\*.*" Exclude="$(OriginalPublishDir)\*.dll" />
     </ItemGroup>
   </Target>
 

@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(compositeChangeToken.HasChanged);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_IsFalse_IfNoTokenHasChanged()
         {
             // Arrange

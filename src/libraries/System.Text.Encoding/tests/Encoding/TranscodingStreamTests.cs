@@ -824,7 +824,7 @@ namespace System.Text.Tests
             Assert.Equal(0, sink.Position);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithPartialData()
         {
             MemoryStream sink = new MemoryStream();

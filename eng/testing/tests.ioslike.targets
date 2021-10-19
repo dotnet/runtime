@@ -164,14 +164,6 @@
         <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
         <_IsNative>false</_IsNative>
       </AppleAssembliesToBundle>
-      <!--
-      <AppleAssembliesToBundle Include="@(_SatelliteAssemblies)">
-        <_InternalForceInterpret Condition="'$(UseMonoJustInterp)' == 'true'">true</_InternalForceInterpret>
-        <_IsNative>false</_IsNative>
-        <_CultureName>$([System.IO.Directory]::GetParent('%(FullPath)').Name)</_CultureName>
-        <_TargetPath>$([System.IO.Directory]::GetParent('%(FullPath)').Name)\%(FileName)%(Extension)</_TargetPath>
-      </AppleAssembliesToBundle>
-      -->
 
       <AppleNativeFilesToBundle Include="$(PublishDir)\**\*.*" Exclude="$(PublishDir)\*.dll" />
     </ItemGroup>
