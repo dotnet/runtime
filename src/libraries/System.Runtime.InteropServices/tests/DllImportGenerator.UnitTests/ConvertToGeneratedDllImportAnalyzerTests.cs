@@ -38,6 +38,7 @@ namespace DllImportGenerator.UnitTests
 
         [Theory]
         [MemberData(nameof(MarshallingRequiredTypes))]
+        [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
