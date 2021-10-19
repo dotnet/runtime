@@ -1,5 +1,13 @@
 <Project>
   <Import Project="..\Directory.Build.targets" />
+  
+  <PropertyGroup>
+    <!-- Central place to set the versions of all nuget packages produced in the repo -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == '' and '$(PreReleaseVersionLabel)' != 'servicing'">$(PackageVersion)</StableVersion>
+    <StableVersion Condition="'$(IsShippingPackage)' != 'true' and '$(MSBuildProjectExtension)' == '.pkgproj'"></StableVersion>
+  </PropertyGroup>
+
   <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
   <!--
