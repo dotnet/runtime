@@ -359,7 +359,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(TestComments))]
-        public static void Update_ZipArchive_Comment(string? comment)
+        public static void Update_ZipArchive_Comment(string? comment, Encoding? encoding)
         {
             string expectedComment = GetExpectedComment(comment);
             string updatedComment = "Updated comment " + comment;
@@ -369,24 +369,24 @@ namespace System.IO.Compression.Tests
             var testStream = new WrappedStream(stream, true, true, true, null);
 
             // Create
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, encoding))
             {
                 zip.Comment = comment;
                 Assert.Equal(expectedComment, zip.Comment);
             }
             // Read (verify creation)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, encoding))
             {
                 Assert.Equal(expectedComment, zip.Comment);
             }
             // Update
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, encoding))
             {
                 zip.Comment = updatedComment;
                 Assert.Equal(expectedUpdatedComment, zip.Comment);
             }
-            // Read (verify update)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read))
+            // Read (verify update) and autoclose
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, encoding))
             {
                 Assert.Equal(expectedUpdatedComment, zip.Comment);
             }
@@ -394,7 +394,7 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(TestComments))]
-        public static void Update_ZipArchiveEntry_Comment(string? comment)
+        public static void Update_ZipArchiveEntry_Comment(string? comment, Encoding? encoding)
         {
             string expectedComment = GetExpectedComment(comment);
             string updatedComment = "Updated comment " + comment;
@@ -404,7 +404,7 @@ namespace System.IO.Compression.Tests
             var testStream = new WrappedStream(stream, true, true, true, null);
 
             // Create
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, encoding))
             {
                 ZipArchiveEntry entry = zip.CreateEntry("testfile.txt", CompressionLevel.NoCompression);
 
@@ -412,7 +412,7 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(expectedComment, entry.Comment);
             }
             // Read (verify creation)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, encoding))
             {
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
@@ -420,7 +420,7 @@ namespace System.IO.Compression.Tests
                 }
             }
             // Update
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true))
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, encoding))
             {
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
@@ -428,8 +428,8 @@ namespace System.IO.Compression.Tests
                     Assert.Equal(expectedUpdatedComment, entry.Comment);
                 }
             }
-            // Read (verify update)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read))
+            // Read (verify update) and autoclose
+            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, encoding))
             {
                 foreach (ZipArchiveEntry entry in zip.Entries)
                 {
@@ -438,65 +438,51 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Fact]
-        // General purpose bit flag must get the appropriate bit set if a file comment is unicode
-        public static void Update_ZipArchive_And_ZipArchiveEntry_UnicodeComment()
+        private static Encoding[] s_encodings = new[] { Encoding.ASCII, Encoding.Latin1, Encoding.UTF8 };
+
+        // entryName, encoding
+        public static IEnumerable<object[]> TestEntryNames()
         {
-            string comment = "This Unicode string has 2 characters outside the " + "ASCII range:\n" + "Pi (\u03a0), and Sigma (\u03a3).";
-            string updatedComment = "Updated comment " + comment;
-
-            var stream = new MemoryStream();
-            var testStream = new WrappedStream(stream, true, true, true, null);
-
-            // Create with UTF8 encoding
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Create, leaveOpen: true, Encoding.UTF8))
+            var entryNames = new string[]
             {
-                zip.Comment = comment;
-                ZipArchiveEntry entry = zip.CreateEntry("testfile.txt", CompressionLevel.NoCompression);
-                entry.Comment = comment;
+                "entry.txt",
+                "ƒ‰÷ˆ’ı‹¸.txt",
+                new string('x', ushort.MaxValue),
+            };
 
-                Assert.Equal(comment, zip.Comment);
-                Assert.Equal(comment, entry.Comment);
-            }
-            // Read with UTF8 encoding (verify creation)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: true, Encoding.UTF8))
+            foreach (string entryName in entryNames)
             {
-                Assert.Equal(comment, zip.Comment);
-                foreach (ZipArchiveEntry entry in zip.Entries)
+                foreach (Encoding encoding in s_encodings)
                 {
-                    Assert.Equal(comment, entry.Comment);
-                }
-            }
-            // Update with UTF8 encoding
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Update, leaveOpen: true, Encoding.UTF8))
-            {
-                zip.Comment = updatedComment;
-                Assert.Equal(updatedComment, zip.Comment);
-
-                foreach (ZipArchiveEntry entry in zip.Entries)
-                {
-                    entry.Comment = updatedComment;
-                    Assert.Equal(updatedComment, entry.Comment);
-                }
-            }
-            // Read with UTF8 encoding (verify update)
-            using (var zip = new ZipArchive(testStream, ZipArchiveMode.Read, leaveOpen: false, Encoding.UTF8))
-            {
-                Assert.Equal(updatedComment, zip.Comment);
-                foreach (ZipArchiveEntry entry in zip.Entries)
-                {
-                    Assert.Equal(updatedComment, entry.Comment);
+                    yield return new object[] { entryName, encoding };
                 }
             }
         }
 
+        // comment, encoding
         public static IEnumerable<object[]> TestComments()
         {
-            yield return new object[] { null }; // Should get saved as empty string.
-            yield return new object[] { "" };
-            yield return new object[] { "1" };
-            yield return new object[] { new string('x', ushort.MaxValue) };
-            yield return new object[] { new string('y', ushort.MaxValue + 1) }; // Should get truncated.
+            var comments = new string[] {
+                "",
+                "1",
+                new string('x', ushort.MaxValue),
+                new string('y', ushort.MaxValue + 1), // Should get truncated
+            };
+
+            yield return new object[] { null, null }; // Should get saved as empty string.
+
+            foreach (string comment in comments)
+            {
+                foreach (Encoding encoding in s_encodings)
+                {
+                    yield return new object[] { comment, encoding };
+                }
+            }
+
+            foreach (Encoding encoding in new[] { Encoding.Latin1, Encoding.UTF8 })
+            {
+                yield return new object[] { "ƒ‰÷ˆ’ı‹¸", encoding };
+            }
         }
 
         // Ensures the specified comment is returned as a non-null string no longer than ushort.MaxValue.
