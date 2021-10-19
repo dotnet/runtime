@@ -123,7 +123,7 @@
 //             "$NewStructFieldForObjMap.Index == $AnotherStructField" => true, Value is $NewAnotherStructFieldMap.
 //               "$NewAnotherStructFieldMap.Index == $ScalarField" => true, Value is $ObjVal (found the value!).
 //
-// And smilarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
+// And similarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
 //
 // While the above example focuses on fields, the idea is universal to all supported location types. Statics are
 // modeled as straight indicies into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
