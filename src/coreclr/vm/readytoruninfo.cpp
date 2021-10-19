@@ -95,7 +95,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
     LPCUTF8 pszNameSpace = NULL;
     // Reserve stack space for parsing out the namespace in a name-based lookup
     // at this scope so the stack space is in scope for all usages in this method.
-    CQuickBytes szNamespace;
+    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
@@ -121,7 +121,7 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
                 SIZE_T d = p - pszName;
 
                 FAULT_NOT_FATAL();
-                pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
+                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
 
                 if (pszNameSpace == NULL)
                     return FALSE;
