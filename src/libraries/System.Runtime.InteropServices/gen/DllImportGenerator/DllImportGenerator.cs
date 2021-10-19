@@ -462,7 +462,7 @@ namespace Microsoft.Interop
         {
             if (options.GenerateForwarders)
             {
-                return (PrintForwarderStub(originalSyntax, dllImportStub), ImmutableArray<Diagnostic>.Empty);
+                return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics);
             }
 
             var diagnostics = new GeneratorDiagnostics();
@@ -476,7 +476,7 @@ namespace Microsoft.Interop
 
             if (stubGenerator.StubIsBasicForwarder)
             {
-                return (PrintForwarderStub(originalSyntax, dllImportStub), ImmutableArray<Diagnostic>.Empty);
+                return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = dllImportStub.ForwardedAttributes;
