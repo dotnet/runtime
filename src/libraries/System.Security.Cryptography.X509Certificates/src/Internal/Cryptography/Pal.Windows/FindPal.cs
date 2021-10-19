@@ -149,9 +149,9 @@ namespace Internal.Cryptography.Pal
                     // An example of Template Name can be "ClientAuth".
 
                     bool foundMatch = false;
-                    CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
+                    Interop.Crypt32.CERT_INFO* pCertInfo = pCertContext.CertContext->pCertInfo;
                     {
-                        CERT_EXTENSION* pV1Template = Interop.crypt32.CertFindExtension(Oids.EnrollCertTypeExtension,
+                        Interop.Crypt32.CERT_EXTENSION* pV1Template = Interop.crypt32.CertFindExtension(Oids.EnrollCertTypeExtension,
                             pCertInfo->cExtension, pCertInfo->rgExtension);
                         if (pV1Template != null)
                         {
