@@ -4282,18 +4282,24 @@ protected:
     PER_HEAP
     size_t    background_mark_stack_array_length;
 
+    // We can't process the ephemeral range concurrently so we
+    // wait till final mark to process it.
+    PER_HEAP
+    BOOL      processed_eph_overflow_p;
+
+#ifdef USE_REGIONS
+    PER_HEAP
+    BOOL      background_overflow_p;
+
+    PER_HEAP
+    BOOL      background_eph_overflow_p;
+#else
     PER_HEAP
     uint8_t*  background_min_overflow_address;
 
     PER_HEAP
     uint8_t*  background_max_overflow_address;
 
-    // We can't process the ephemeral range concurrently so we
-    // wait till final mark to process it.
-    PER_HEAP
-    BOOL      processed_eph_overflow_p;
-
-#ifndef USE_REGIONS
     PER_HEAP
     uint8_t*  background_min_soh_overflow_address;
 

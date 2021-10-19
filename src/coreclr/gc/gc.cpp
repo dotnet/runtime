@@ -2532,13 +2532,17 @@ uint8_t**   gc_heap::background_mark_stack_array = 0;
 
 size_t      gc_heap::background_mark_stack_array_length = 0;
 
+BOOL        gc_heap::processed_eph_overflow_p = FALSE;
+
+#ifdef USE_REGIONS
+BOOL        gc_heap::background_overflow_p = FALSE;
+
+BOOL        gc_heap::background_eph_overflow_p = FALSE;
+#else //USE_REGIONS
 uint8_t*    gc_heap::background_min_overflow_address =0;
 
 uint8_t*    gc_heap::background_max_overflow_address =0;
 
-BOOL        gc_heap::processed_eph_overflow_p = FALSE;
-
-#ifndef USE_REGIONS
 uint8_t*    gc_heap::background_min_soh_overflow_address =0;
 
 uint8_t*    gc_heap::background_max_soh_overflow_address =0;
@@ -2548,7 +2552,7 @@ heap_segment* gc_heap::saved_overflow_ephemeral_seg = 0;
 heap_segment* gc_heap::saved_sweep_ephemeral_seg = 0;
 
 uint8_t*    gc_heap::saved_sweep_ephemeral_start = 0;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
 
 Thread*     gc_heap::bgc_thread = 0;
 
@@ -23496,8 +23500,19 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 else
                 {
                     dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
+#ifdef USE_REGIONS
+                    heap_segment* overflow_region = region_of (oo);
+                    overflow_region->flags |= heap_segment_flags_overflow;
+                    gc_heap* overflow_heap = heap_of (oo);
+                    overflow_heap->background_overflow_p = TRUE;
+                    if (heap_segment_gen_num (overflow_region) < max_generation)
+                    {
+                        overflow_heap->background_eph_overflow_p = TRUE;
+                    }
+#else //USE_REGIONS
                     background_min_overflow_address = min (background_min_overflow_address, oo);
                     background_max_overflow_address = max (background_max_overflow_address, oo);
+#endif //USE_REGIONS
                 }
             }
             else
@@ -23610,8 +23625,19 @@ void gc_heap::background_mark_simple1 (uint8_t* oo THREAD_NUMBER_DCL)
                 else
                 {
                     dprintf (3,("mark stack overflow for object %Ix ", (size_t)oo));
+#ifdef USE_REGIONS
+                    heap_segment* overflow_region = region_of (oo);
+                    overflow_region->flags |= heap_segment_flags_overflow;
+                    gc_heap* overflow_heap = heap_of (oo);
+                    overflow_heap->background_overflow_p = TRUE;
+                    if (heap_segment_gen_num (overflow_region) < max_generation)
+                    {
+                        overflow_heap->background_eph_overflow_p = TRUE;
+                    }
+#else //USE_REGIONS
                     background_min_overflow_address = min (background_min_overflow_address, oo);
                     background_max_overflow_address = max (background_max_overflow_address, oo);
+#endif //USE_REGIONS
                 }
             }
         }
@@ -23887,13 +23913,13 @@ uint8_t* gc_heap::background_first_overflow (uint8_t* min_add,
                                           BOOL concurrent_p,
                                           BOOL small_object_p)
 {
+#ifdef USE_REGIONS
+        return heap_segment_mem (seg);
+#else
     uint8_t* o = 0;
 
     if (small_object_p)
     {
-#ifdef USE_REGIONS
-        return find_first_object (min_add, heap_segment_mem (seg));
-#else
         if (in_range_for_segment (min_add, seg))
         {
             // min_add was the beginning of gen1 when we did the concurrent
@@ -23919,11 +23945,11 @@ uint8_t* gc_heap::background_first_overflow (uint8_t* min_add,
                 }
             }
         }
-#endif //USE_REGIONS
     }
 
     o = max (heap_segment_mem (seg), min_add);
     return o;
+#endif //USE_REGIONS
 }
 
 void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8_t* max_add,
@@ -23979,11 +24005,16 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
             while (seg)
             {
 #ifdef USE_REGIONS
-                if (heap_segment_overflow_p (seg))
+                bool ephemeral = (heap_segment_gen_num (seg) < max_generation);
+                if ((heap_segment_overflow_p (seg) && !ephemeral) || (!concurrent_p && ephemeral))
                 {
-                    assert (!concurrent_p);
-                    current_min_add = max (heap_segment_mem (seg), min_add);
-                    current_max_add = min (heap_segment_allocated (seg), max_add);
+                    seg->flags &= ~heap_segment_flags_overflow;
+                    current_min_add = heap_segment_mem (seg);
+                    current_max_add = heap_segment_allocated (seg);
+                }
+                else
+                {
+                    current_min_add = current_max_add = 0;
                 }
 #endif //USE_REGIONS
                 uint8_t* o = hp->background_first_overflow (current_min_add, seg, concurrent_p, small_object_segments);
@@ -24071,36 +24102,18 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
     if (concurrent_p)
     {
         assert (!processed_eph_overflow_p);
-
+#ifndef USE_REGIONS
         if ((background_max_overflow_address != 0) &&
             (background_min_overflow_address != MAX_PTR))
         {
-#ifdef USE_REGIONS
-            // We don't want to step into the ephemeral regions so remember these regions and
-            // be sure to process them later. An FGC cannot happen while we are going through
-            // the region lists.
-            for (int i = 0; i < max_generation; i++)
-            {
-                heap_segment* region = generation_start_segment (generation_of (i));
-                while (region)
-                {
-                    if ((heap_segment_mem (region) <= background_max_overflow_address) &&
-                        (heap_segment_allocated (region) >= background_min_overflow_address))
-                    {
-                        region->flags |= heap_segment_flags_overflow;
-                    }
-                    region = heap_segment_next (region);
-                }
-            }
-#else //USE_REGIONS
             // We have overflow to process but we know we can't process the ephemeral generations
             // now (we actually could process till the current gen1 start but since we are going to
             // make overflow per segment, for now I'll just stop at the saved gen1 start.
             saved_overflow_ephemeral_seg = ephemeral_heap_segment;
             background_max_soh_overflow_address = heap_segment_reserved (saved_overflow_ephemeral_seg);
             background_min_soh_overflow_address = generation_allocation_start (generation_of (max_generation - 1));
-#endif //USE_REGIONS
         }
+#endif //USE_REGIONS
     }
     else
     {
@@ -24114,12 +24127,21 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
         {
             // if there was no more overflow we just need to process what we didn't process
             // on the saved ephemeral segment.
+#ifdef USE_REGIONS
+            if (!background_overflow_p)
+#else
             if ((background_max_overflow_address == 0) && (background_min_overflow_address == MAX_PTR))
+#endif //USE_REGIONS
             {
                 dprintf (2, ("final processing mark overflow - no more overflow since last time"));
                 grow_mark_array_p = FALSE;
             }
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+            if (background_eph_overflow_p)
+            {
+                background_overflow_p = TRUE;
+            }
+#else
             background_min_overflow_address = min (background_min_overflow_address,
                                                 background_min_soh_overflow_address);
             background_max_overflow_address = max (background_max_overflow_address,
@@ -24131,8 +24153,12 @@ BOOL gc_heap::background_process_mark_overflow (BOOL concurrent_p)
 
     BOOL  overflow_p = FALSE;
 recheck:
+#ifdef USE_REGIONS
+    if (background_overflow_p)
+#else
     if ((! ((background_max_overflow_address == 0)) ||
          ! ((background_min_overflow_address == MAX_PTR))))
+#endif
     {
         overflow_p = TRUE;
 
@@ -24155,11 +24181,17 @@ recheck:
             grow_mark_array_p = TRUE;
         }
 
+#ifdef USE_REGIONS
+        uint8_t*  min_add = 0;
+        uint8_t*  max_add = 0;
+        background_overflow_p = FALSE;
+#else
         uint8_t*  min_add = background_min_overflow_address;
         uint8_t*  max_add = background_max_overflow_address;
 
         background_max_overflow_address = 0;
         background_min_overflow_address = MAX_PTR;
+#endif
 
         background_process_mark_overflow_internal (min_add, max_add, concurrent_p);
         if (!concurrent_p)
@@ -24167,6 +24199,13 @@ recheck:
             goto recheck;
         }
     }
+
+#ifdef USE_REGIONS
+    if (!concurrent_p)
+    {
+        background_eph_overflow_p = FALSE;
+    }
+#endif
 
     return overflow_p;
 }
@@ -32375,6 +32414,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
 
             if (!s_fScanRequired)
             {
+#ifndef USE_REGIONS
                 uint8_t* all_heaps_max = 0;
                 uint8_t* all_heaps_min = MAX_PTR;
                 int i;
@@ -32390,6 +32430,7 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
                     g_heaps[i]->background_max_overflow_address = all_heaps_max;
                     g_heaps[i]->background_min_overflow_address = all_heaps_min;
                 }
+#endif //USE_REGIONS
             }
 
             dprintf(2, ("Starting all gc thread mark stack overflow processing"));
@@ -32920,9 +32961,11 @@ void gc_heap::background_mark_phase ()
     bpromoted_bytes (heap_number) = 0;
     static uint32_t num_sizedrefs = 0;
 
+#ifdef USE_REGIONS
+    background_overflow_p = FALSE;
+#else
     background_min_overflow_address = MAX_PTR;
     background_max_overflow_address = 0;
-#ifndef USE_REGIONS
     background_min_soh_overflow_address = MAX_PTR;
     background_max_soh_overflow_address = 0;
 #endif //!USE_REGIONS
@@ -33129,6 +33172,8 @@ void gc_heap::background_mark_phase ()
     bgc_t_join.join(this, gc_join_concurrent_overflow);
     if (bgc_t_join.joined())
     {
+// TODO: Can we simply get rid of the join - fine for running - but how about tooling?
+#ifndef USE_REGIONS
         uint8_t* all_heaps_max = 0;
         uint8_t* all_heaps_min = MAX_PTR;
         int i;
@@ -33142,12 +33187,14 @@ void gc_heap::background_mark_phase ()
                 all_heaps_max = g_heaps[i]->background_max_overflow_address;
             if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                 all_heaps_min = g_heaps[i]->background_min_overflow_address;
+
         }
         for (i = 0; i < n_heaps; i++)
         {
             g_heaps[i]->background_max_overflow_address = all_heaps_max;
             g_heaps[i]->background_min_overflow_address = all_heaps_min;
         }
+#endif //!USE_REGIONS
         dprintf(3, ("Starting all bgc threads after updating the overflow info"));
         bgc_t_join.restart();
     }
