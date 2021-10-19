@@ -1,6 +1,7 @@
 <Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
   <PropertyGroup>
+    <IsShipping>false</IsShipping>
     <CreatePackedPackage>false</CreatePackedPackage>
     <PackageDescription>Private transport package for .NET Core cross OS diagnostic tooling.</PackageDescription>
   </PropertyGroup>
