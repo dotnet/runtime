@@ -137,7 +137,7 @@ inline void FATAL_GC_ERROR()
 #define MAX_LONGPATH 1024
 #endif // MAX_LONGPATH
 
-//#define TRACE_GC
+#define TRACE_GC
 //#define SIMPLE_DPRINTF
 
 //#define JOIN_STATS         //amount of time spent in the join
@@ -261,7 +261,7 @@ void GCLog (const char *fmt, ... );
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
 //#define dprintf(l, x)
-#define dprintf(l,x) STRESS_LOG_VA(l,x);
+#define dprintf(l,x) {if ((l == 1) || (l == 5555)) {STRESS_LOG_VA(l,x);}}
 
 #endif //SIMPLE_DPRINTF
 
@@ -4527,6 +4527,8 @@ protected:
     // accounting into the alloc_list class.
     PER_HEAP
     size_t gen2_removed_no_undo;
+
+#define INVALID_SAVED_PINNED_PLUG_INDEX (~0)
 
     PER_HEAP
     size_t saved_pinned_plug_index;
