@@ -421,7 +421,7 @@ namespace DllImportGenerator.UnitTests
             Assert.Equal(numStubMethods, numInnerDllImports);
         }
 
-    public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
+        public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
         {
             yield break;
         }
