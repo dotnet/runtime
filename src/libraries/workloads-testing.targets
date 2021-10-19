@@ -1,7 +1,8 @@
 <Project>
 
   <PropertyGroup>
-    <PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</PackageVersion>
+    <_PackageVersion Condition="'$(StabilizePackageVersion)' == 'true'">$(ProductVersion)</_PackageVersion>
+    <_PackageVersion Condition="'$(_PackageVersion)' == ''">$(PackageVersion)</_PackageVersion>
   </PropertyGroup>
 
   <Target Name="ProvisionSdkForWorkloadTesting"
@@ -94,7 +95,7 @@
 
     <PropertyGroup>
       <!-- Eg. Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm.6.0.0-dev.nupkg -->
-      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(PackageVersion).nupkg</_AOTCrossNuGetPath>
+      <_AOTCrossNuGetPath>$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.AOT.$(NETCoreSdkRuntimeIdentifier).Cross.$(RuntimeIdentifier).$(_PackageVersion).nupkg</_AOTCrossNuGetPath>
     </PropertyGroup>
 
     <Error Text="Could not find cross compiler nupkg at $(_AOTCrossNuGetPath). Found packages: @(_BuiltNuGets)"
