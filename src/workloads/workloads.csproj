@@ -48,7 +48,7 @@
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
-  <Target Name="Build" DependsOnTargets="_GetVersionProps;_GenerateMsiVersionString">
+  <Target Name="Build" DependsOnTargets="GetAssemblyVersion;_GetVersionProps;_GenerateMsiVersionString">
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
