@@ -579,10 +579,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
 		{
-			var expectedResources = original.MainModule.AllDefinedTypes ()
-				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)));
+			var expectedResourceNames = original.MainModule.AllDefinedTypes ()
+				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)))
+				.ToList ();
 
-			Assert.That (linked.MainModule.Resources.Select (r => r.Name), Is.EquivalentTo (expectedResources));
+			foreach (var resource in linked.MainModule.Resources) {
+				if (!expectedResourceNames.Remove (resource.Name))
+					Assert.Fail ($"Resource '{resource.Name}' should be removed.");
+
+				EmbeddedResource embeddedResource = (EmbeddedResource) resource;
+
+				var expectedResource = (EmbeddedResource) original.MainModule.Resources.First (r => r.Name == resource.Name);
+
+				Assert.That (embeddedResource.GetResourceData (), Is.EquivalentTo (expectedResource.GetResourceData ()), $"Resource '{resource.Name}' data doesn't match.");
+			}
+
+			Assert.IsEmpty (expectedResourceNames, $"Resource '{expectedResourceNames.FirstOrDefault ()}' should be kept.");
 		}
 
 		void VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
