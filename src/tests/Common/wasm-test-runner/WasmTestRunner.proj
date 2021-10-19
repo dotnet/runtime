@@ -15,7 +15,7 @@
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$(CORE_ROOT)\MonoTargetsTasks\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
-    <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+
     <JsonToItemsTaskFactoryTasksAssemblyPath>$(CORE_ROOT)\JsonToItemsTaskFactory\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$(CORE_ROOT)\RuntimeConfigParser\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
     <EMSDK_PATH>$(CORE_ROOT)\build\emsdk</EMSDK_PATH>
@@ -27,7 +27,11 @@
   <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.props" />
   <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.targets" />
 
-  <Target Name="BuildApp" BeforeTargets="WasmBuildApp">
+  <PropertyGroup>
+    <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+  </PropertyGroup>
+  
+  <Target Name="BuildApp" >
     <PropertyGroup>
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
