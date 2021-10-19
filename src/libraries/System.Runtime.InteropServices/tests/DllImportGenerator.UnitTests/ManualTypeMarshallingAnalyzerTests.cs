@@ -12,6 +12,7 @@ using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<M
 
 namespace DllImportGenerator.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ManualTypeMarshallingAnalyzerTests
     {
         public static IEnumerable<object[]> NonBlittableTypeMarkedBlittable_ReportsDiagnostic_TestData {
@@ -421,7 +422,6 @@ unsafe struct Native
                 VerifyCS.Diagnostic(GetPinnableReferenceReturnTypeBlittableRule).WithLocation(0));
         }
 
-        
         [Fact]
         public async Task BlittableGetPinnableReferenceReturnType_DoesNotReportDiagnostic()
         {
@@ -518,7 +518,7 @@ unsafe struct Native
 
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
-    
+
         [Fact]
         public async Task TypeWithGetPinnableReferenceByRefReturnType_ReportsDiagnostic()
         {
@@ -852,7 +852,7 @@ struct Native
 
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
-        
+
         [Fact]
         public async Task NativeTypeWithOnlyStackallocConstructor_ReportsDiagnostic()
         {
@@ -897,7 +897,7 @@ struct {|#1:Native|}
     public Native(S s, Span<byte> buffer) {}
 
     public IntPtr Value => IntPtr.Zero;
-    
+
     public const int StackBufferSize = 0x100;
 }";
 
@@ -953,7 +953,7 @@ struct Native
             await VerifyCS.VerifyAnalyzerAsync(source,
                 VerifyCS.Diagnostic(ValuePropertyMustHaveSetterRule).WithLocation(0).WithArguments("Native"));
         }
-        
+
         [Fact]
         public async Task BlittableNativeTypeOnMarshalUsingParameter_DoesNotReportDiagnostic()
         {
@@ -1142,7 +1142,6 @@ struct Test
                 VerifyCS.Diagnostic(NativeTypeMustBeBlittableRule).WithLocation(0).WithArguments("Native", "S"));
         }
 
-        
         [Fact]
         public async Task GenericNativeTypeWithValueTypeValueProperty_DoesNotReportDiagnostic()
         {
@@ -1358,7 +1357,6 @@ unsafe struct S
         [Fact]
         public async Task BlittableGenericTypeInBlittableType_DoesNotReportDiagnostic()
         {
-            
             var source = @"
 using System.Runtime.InteropServices;
 

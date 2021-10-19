@@ -9,6 +9,7 @@ using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<M
 
 namespace DllImportGenerator.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class GeneratedDllImportAnalyzerTests
     {
         [Fact]

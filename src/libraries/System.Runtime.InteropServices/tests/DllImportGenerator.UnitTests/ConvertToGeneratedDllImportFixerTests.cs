@@ -14,6 +14,7 @@ using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpCodeFixVerifier<
 
 namespace DllImportGenerator.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToGeneratedDllImportFixerTests
     {
         [Theory]
@@ -29,7 +30,7 @@ partial class Test
     public static extern int [|Method|](out int ret);
 }}";
             // Fixed source will have CS8795 (Partial method must have an implementation) without generator run
-            string fixedSource = usePreprocessorDefines 
+            string fixedSource = usePreprocessorDefines
                 ? @$"
 using System.Runtime.InteropServices;
 partial class Test
@@ -41,7 +42,7 @@ partial class Test
     [DllImport(""DoesNotExist"")]
     public static extern int Method(out int ret);
 #endif
-}}" 
+}}"
                 : @$"
 using System.Runtime.InteropServices;
 partial class Test
