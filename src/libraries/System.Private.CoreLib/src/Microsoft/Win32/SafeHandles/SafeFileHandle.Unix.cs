@@ -16,6 +16,7 @@ namespace Microsoft.Win32.SafeHandles
 
         // not using bool? as it's not thread safe
         private volatile NullableBool _canSeek = NullableBool.Undefined;
+        private volatile NullableBool _supportsRandomAccess = NullableBool.Undefined;
         private bool _deleteOnClose;
         private bool _isLocked;
 
@@ -32,6 +33,25 @@ namespace Microsoft.Win32.SafeHandles
         public bool IsAsync { get; private set; }
 
         internal bool CanSeek => !IsClosed && GetCanSeek();
+
+        internal bool SupportsRandomAccess
+        {
+            get
+            {
+                NullableBool supportsRandomAccess = _supportsRandomAccess;
+                if (supportsRandomAccess == NullableBool.Undefined)
+                {
+                    _supportsRandomAccess = supportsRandomAccess = GetCanSeek() ? NullableBool.True : NullableBool.False;
+                }
+
+                return supportsRandomAccess == NullableBool.True;
+            }
+            set
+            {
+                Debug.Assert(value == false); // We should only use the setter to disable random access.
+                _supportsRandomAccess = value ? NullableBool.True : NullableBool.False;
+            }
+        }
 
         internal ThreadPoolBoundHandle? ThreadPoolBinding => null;
 

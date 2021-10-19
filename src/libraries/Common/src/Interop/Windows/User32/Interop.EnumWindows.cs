@@ -9,6 +9,6 @@ internal static partial class Interop
     internal static partial class User32
     {
         [DllImport(Libraries.User32)]
-        public static extern unsafe bool EnumWindows(delegate* unmanaged<IntPtr, IntPtr, Interop.BOOL> callback, IntPtr extraData);
+        public static extern unsafe Interop.BOOL EnumWindows(delegate* unmanaged<IntPtr, IntPtr, Interop.BOOL> callback, IntPtr extraData);
     }
 }

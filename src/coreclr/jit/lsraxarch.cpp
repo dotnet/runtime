@@ -1237,7 +1237,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
 
         // If it is a fast tail call, it is already preferenced to use RAX.
         // Therefore, no need set src candidates on call tgt again.
-        if (compFeatureVarArg() && call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
+        if (compFeatureVarArg() && call->IsVarargs() && callHasFloatRegArgs && (ctrlExprCandidates == RBM_NONE))
         {
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required

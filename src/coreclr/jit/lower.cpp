@@ -2689,7 +2689,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             {
                 cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
                 BlockRange().InsertAfter(cmp, cc);
-                cmpUse.ReplaceWith(comp, cc);
+                cmpUse.ReplaceWith(cc);
             }
 
             cc->gtFlags |= GTF_USE_FLAGS;
@@ -2953,7 +2953,7 @@ GenTreeCC* Lowering::LowerNodeCC(GenTree* node, GenCondition condition)
             {
                 cc = new (comp, GT_SETCC) GenTreeCC(GT_SETCC, condition, TYP_INT);
                 BlockRange().InsertAfter(node, cc);
-                use.ReplaceWith(comp, cc);
+                use.ReplaceWith(cc);
             }
         }
     }
@@ -3721,15 +3721,12 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
 
         case IAT_PVALUE:
         {
-            bool isR2RRelativeIndir = false;
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
-            // Skip inserting the indirection node to load the address that is already
-            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
-            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
-            isR2RRelativeIndir = call->IsR2RRelativeIndir();
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+            // If we are using an indirection cell for a direct call then apply
+            // an optimization that loads the call target directly from the
+            // indirection cell, instead of duplicating the tree.
+            bool hasIndirectionCell = call->GetIndirectionCellArgKind() != NonStandardArgKind::None;
 
-            if (!isR2RRelativeIndir)
+            if (!hasIndirectionCell)
             {
                 // Non-virtual direct calls to addresses accessed by
                 // a single indirection.
@@ -4796,16 +4793,13 @@ GenTree* Lowering::LowerVirtualStubCall(GenTreeCall* call)
         }
         else
         {
-
             bool shouldOptimizeVirtualStubCall = false;
-#if defined(FEATURE_READYTORUN) && defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_AMD64)
             // Skip inserting the indirection node to load the address that is already
-            // computed in REG_R2R_INDIRECT_PARAM as a hidden parameter. Instead during the
-            // codegen, just load the call target from REG_R2R_INDIRECT_PARAM.
-            // However, for tail calls, the call target is always computed in RBM_FASTTAILCALL_TARGET
-            // and so do not optimize virtual stub calls for such cases.
-            shouldOptimizeVirtualStubCall = !call->IsTailCall();
-#endif // FEATURE_READYTORUN && TARGET_ARMARCH
+            // computed in the VSD stub arg register as a hidden parameter. Instead during the
+            // codegen, just load the call target from there.
+            shouldOptimizeVirtualStubCall = true;
+#endif
 
             if (!shouldOptimizeVirtualStubCall)
             {
@@ -5064,7 +5058,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             DISPNODE(op1);
             if (BlockRange().TryGetUse(node, &use))
             {
-                use.ReplaceWith(comp, op1);
+                use.ReplaceWith(op1);
             }
             else
             {
@@ -5669,7 +5663,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
     BlockRange().Remove(divMod);
 
     // replace the original divmod node with the new divmod tree
-    use.ReplaceWith(comp, newDivMod);
+    use.ReplaceWith(newDivMod);
 
     return newDivMod->gtNext;
 }
@@ -5930,7 +5924,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     LIR::Use arrElemUse;
     if (BlockRange().TryGetUse(arrElem, &arrElemUse))
     {
-        arrElemUse.ReplaceWith(comp, leaNode);
+        arrElemUse.ReplaceWith(leaNode);
     }
     else
     {

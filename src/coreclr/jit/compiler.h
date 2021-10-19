@@ -1216,6 +1216,11 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
+    bool IsPositive()
+    {
+        return m_lowerBound >= SymbolicIntegerValue::Zero;
+    }
+
     bool Equals(IntegralRange other) const
     {
         return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
@@ -1230,6 +1235,7 @@ public:
         return {LowerBoundForType(type), UpperBoundForType(type)};
     }
 
+    static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
 
@@ -1632,26 +1638,6 @@ struct FuncInfoDsc
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
 };
-
-enum class NonStandardArgKind : unsigned
-{
-    None,
-    PInvokeFrame,
-    PInvokeTarget,
-    PInvokeCookie,
-    WrapperDelegateCell,
-    ShiftLow,
-    ShiftHigh,
-    FixedRetBuffer,
-    VirtualStubCell,
-    R2RIndirectionCell,
-
-    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
-};
-
-#ifdef DEBUG
-const char* getNonStandardArgKindName(NonStandardArgKind kind);
-#endif
 
 struct fgArgTabEntry
 {
@@ -3009,7 +2995,7 @@ public:
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
 
-    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTree* colon);
+    GenTreeQmark* gtNewQmarkNode(var_types type, GenTree* cond, GenTreeColon* colon);
 
     GenTree* gtNewLargeOperNode(genTreeOps oper,
                                 var_types  type = TYP_I_IMPL,
@@ -5363,6 +5349,8 @@ public:
     // rather than the "use" SSA number recorded in the tree "lcl".
     inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
 
+    inline bool PreciseRefCountsRequired();
+
     // Performs SSA conversion.
     void fgSsaBuild();
 
@@ -5495,6 +5483,9 @@ public:
 
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
+
+    // Does value-numbering for a helper representing a cast operation.
+    void fgValueNumberCastHelper(GenTreeCall* call);
 
     // Does value-numbering for a helper "call" that has a VN function symbol "vnf".
     void fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc);
@@ -6331,9 +6322,11 @@ private:
 
     GenTree* fgMorphPotentialTailCall(GenTreeCall* call);
     GenTree* fgGetStubAddrArg(GenTreeCall* call);
+    unsigned fgGetArgTabEntryParameterLclNum(GenTreeCall* call, fgArgTabEntry* argTabEntry);
     void fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCall* recursiveTailCall);
     Statement* fgAssignRecursiveCallArgToCallerParam(GenTree*       arg,
                                                      fgArgTabEntry* argTabEntry,
+                                                     unsigned       lclParamNum,
                                                      BasicBlock*    block,
                                                      IL_OFFSETX     callILOffset,
                                                      Statement*     tmpAssignmentInsertionPoint,
@@ -6359,7 +6352,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
-    GenTree* fgOptimizeCast(GenTree* tree);
+    GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
@@ -6372,6 +6365,7 @@ private:
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
+    GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
@@ -11284,6 +11278,7 @@ public:
             case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
+            case GT_FIELD:
             case GT_RETURN:
             case GT_RETFILT:
             case GT_RUNTIMELOOKUP:
@@ -11366,21 +11361,6 @@ public:
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;
-                }
-                break;
-            }
-
-            case GT_FIELD:
-            {
-                GenTreeField* const field = node->AsField();
-
-                if (field->gtFldObj != nullptr)
-                {
-                    result = WalkTree(&field->gtFldObj, field);
-                    if (result == fgWalkResult::WALK_ABORT)
-                    {
-                        return result;
-                    }
                 }
                 break;
             }

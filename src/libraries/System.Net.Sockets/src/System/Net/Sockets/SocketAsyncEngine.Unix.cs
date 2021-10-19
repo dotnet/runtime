@@ -140,15 +140,23 @@ namespace System.Net.Sockets
                 //
                 // Create the event port and buffer
                 //
-                Interop.Error err = Interop.Sys.CreateSocketEventPort(out _port);
-                if (err != Interop.Error.SUCCESS)
+                Interop.Error err;
+                fixed (IntPtr* portPtr = &_port)
                 {
-                    throw new InternalException(err);
+                    err = Interop.Sys.CreateSocketEventPort(portPtr);
+                    if (err != Interop.Error.SUCCESS)
+                    {
+                        throw new InternalException(err);
+                    }
                 }
-                err = Interop.Sys.CreateSocketEventBuffer(EventBufferCount, out _buffer);
-                if (err != Interop.Error.SUCCESS)
+
+                fixed (Interop.Sys.SocketEvent** bufferPtr = &_buffer)
                 {
-                    throw new InternalException(err);
+                    err = Interop.Sys.CreateSocketEventBuffer(EventBufferCount, bufferPtr);
+                    if (err != Interop.Error.SUCCESS)
+                    {
+                        throw new InternalException(err);
+                    }
                 }
 
                 var thread = new Thread(static s => ((SocketAsyncEngine)s!).EventLoop())

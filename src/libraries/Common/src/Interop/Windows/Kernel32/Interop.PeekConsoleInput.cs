@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "PeekConsoleInputW")]
-        internal static extern bool PeekConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "PeekConsoleInputW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool PeekConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
     }
 }

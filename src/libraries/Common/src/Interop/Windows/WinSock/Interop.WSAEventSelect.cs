@@ -9,11 +9,11 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError WSAEventSelect(
-            [In] SafeSocketHandle socketHandle,
-            [In] SafeHandle Event,
-            [In] AsyncEventBits NetworkEvents);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError WSAEventSelect(
+            SafeSocketHandle socketHandle,
+            SafeHandle Event,
+            AsyncEventBits NetworkEvents);
 
         [Flags]
         internal enum AsyncEventBits

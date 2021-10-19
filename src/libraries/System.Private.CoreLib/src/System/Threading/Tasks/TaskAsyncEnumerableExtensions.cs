@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 namespace System.Threading.Tasks
 {
     /// <summary>Provides a set of static methods for configuring <see cref="Task"/>-related behaviors on asynchronous enumerables and disposables.</summary>
-    public static class TaskAsyncEnumerableExtensions
+    public static partial class TaskAsyncEnumerableExtensions
     {
         /// <summary>Configures how awaits on the tasks returned from an async disposable will be performed.</summary>
         /// <param name="source">The source async disposable.</param>

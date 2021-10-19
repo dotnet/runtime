@@ -163,6 +163,9 @@
   #define REG_JUMP_THUNK_PARAM     REG_EAX
   #define RBM_JUMP_THUNK_PARAM     RBM_EAX
 
+  #define REG_R2R_INDIRECT_PARAM   REG_EAX // Indirection cell for R2R fast tailcall, not currently used in x86.
+  #define RBM_R2R_INDIRECT_PARAM   RBM_EAX
+
 #if NOGC_WRITE_BARRIERS
   #define REG_WRITE_BARRIER        REG_EDX
   #define RBM_WRITE_BARRIER        RBM_EDX

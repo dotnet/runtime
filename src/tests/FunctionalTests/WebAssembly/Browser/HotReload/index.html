@@ -36,7 +36,7 @@
 
       var App = {
         init: function () {
-          var exit_code = BINDING.call_static_method("[WebAssembly.Browser.HotReload.Test] Sample.Test:TestMeaning", []);
+          var exit_code = INTERNAL.call_static_method("[WebAssembly.Browser.HotReload.Test] Sample.Test:TestMeaning", []);
           document.getElementById("out").innerHTML = exit_code;
 
           if (is_testing)
