@@ -2639,15 +2639,14 @@ namespace System.Xml.Serialization
             if (typeDesc.IsArray)
             {
                 string arrayTypeFullName = typeDesc.ArrayElementTypeDesc!.CSharpName;
-                string castString = $"({arrayTypeFullName}[])";
-                init = $"{init}{a} = {castString}EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName)});";
+                init = $"{init}{a} = ({arrayTypeFullName}[])EnsureArrayIndex({a}, {c}, {RaCodeGen.GetStringForTypeof(arrayTypeFullName)});";
                 string arraySource = RaCodeGen.GetStringForArrayMember(a, $"{c}++", typeDesc);
                 if (multiRef)
                 {
                     init = $"{init} soap[1] = {a};";
                     init = $"{init} if (ReadReference(out soap[{c}+2])) {arraySource} = null; else ";
                 }
-                return init + arraySource;
+                return $"{init}{arraySource}";
             }
             else
             {
