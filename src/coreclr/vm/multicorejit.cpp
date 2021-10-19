@@ -255,25 +255,20 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
     // GetMVID can throw exception
     EX_TRY
     {
-        PEFile * pFile = pModule->GetFile();
+        PEAssembly * pAsm = pModule->GetPEAssembly();
 
-        if (pFile != NULL)
+        if (pAsm != NULL)
         {
-            PEAssembly * pAsm = pFile->GetAssembly();
+            // CorAssemblyFlags, only 16-bit used
+            versionFlags = pAsm->GetFlags();
 
-            if (pAsm != NULL)
-            {
-                // CorAssemblyFlags, only 16-bit used
-                versionFlags = pAsm->GetFlags();
+            _ASSERTE((versionFlags & 0x80000000) == 0);
 
-                _ASSERTE((versionFlags & 0x80000000) == 0);
+            pAsm->GetVersion(&major, &minor, &build, &revision);
 
-                pAsm->GetVersion(& major, & minor, & build, & revision);
+            pAsm->GetMVID(&mvid);
 
-                pAsm->GetMVID(& mvid);
-
-                hr = S_OK;
-            }
+            hr = S_OK;
         }
 
         // If the load context is LOADFROM, store it in the flags.

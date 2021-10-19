@@ -2,30 +2,30 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 "use strict";
-var Module = { 
+var Module = {
     config: null,
 
-    preInit: async function() {
-        await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
+    preInit: async function () {
+        await MONO.mono_wasm_load_config("./mono-config.json"); // sets MONO.config implicitly
     },
 
     // Called when the runtime is initialized and wasm is ready
     onRuntimeInitialized: function () {
-        if (!Module.config || Module.config.error) {
+        if (!MONO.config || MONO.config.error) {
             console.log("An error occured while loading the config file");
             return;
         }
 
-        Module.config.loaded_cb = function () {
-            App.init ();
+        MONO.config.loaded_cb = function () {
+            App.init();
         };
-        Module.config.environment_variables = {
+        MONO.config.environment_variables = {
             "DOTNET_MODIFIABLE_ASSEMBLIES": "debug"
         };
-        Module.config.fetch_file_cb = function (asset) {
-            return fetch (asset, { credentials: 'same-origin' });
+        MONO.config.fetch_file_cb = function (asset) {
+            return fetch(asset, { credentials: 'same-origin' });
         }
 
-        MONO.mono_load_runtime_and_bcl_args (Module.config);
+        MONO.mono_load_runtime_and_bcl_args(MONO.config);
     },
 };

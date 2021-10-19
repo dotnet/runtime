@@ -30,9 +30,6 @@ namespace System.Reflection
         {
             return GetTypes(this);
         }
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern bool IsResource(RuntimeModule module);
         #endregion
 
         #region Module overrides
@@ -472,7 +469,8 @@ namespace System.Reflection
 
         public override bool IsResource()
         {
-            return IsResource(this);
+            // CoreClr does not support resource-only modules.
+            return false;
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]

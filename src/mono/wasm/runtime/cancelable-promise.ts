@@ -3,7 +3,7 @@
 
 import { mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 import { wrap_error } from "./method-calls";
-import { JSHandle, MonoString } from "./types";
+import { Int32Ptr, JSHandle, MonoString } from "./types";
 
 export const _are_promises_supported = ((typeof Promise === "object") || (typeof Promise === "function")) && (typeof Promise.resolve === "function");
 const promise_control_symbol = Symbol.for("wasm promise_control");

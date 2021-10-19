@@ -502,7 +502,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
  */
 
 #define EMIT_NEW_VARLOAD_SFLOAT(cfg,dest,var,vartype) do { \
-		if (!COMPILE_LLVM ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (!COMPILE_LLVM ((cfg)) && !m_type_is_byref ((vartype)) && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [1]; \
 			EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
 			(dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
@@ -512,7 +512,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 	} while (0)
 
 #define EMIT_NEW_VARSTORE_SFLOAT(cfg,dest,var,vartype,inst) do {	\
-		if (COMPILE_SOFT_FLOAT ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
+		if (COMPILE_SOFT_FLOAT ((cfg)) && !m_type_is_byref ((vartype)) && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [2]; \
 			iargs [0] = (inst); \
 			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \

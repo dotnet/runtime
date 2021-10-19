@@ -10,15 +10,15 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackFieldCount")]
-        internal static extern int GetX509NameStackFieldCount(SafeSharedX509NameStackHandle sk);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackFieldCount")]
+        internal static partial int GetX509NameStackFieldCount(SafeSharedX509NameStackHandle sk);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackField")]
-        private static extern SafeSharedX509NameHandle GetX509NameStackField_private(SafeSharedX509NameStackHandle sk,
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameStackField")]
+        private static partial SafeSharedX509NameHandle GetX509NameStackField_private(SafeSharedX509NameStackHandle sk,
             int loc);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
-        private static extern int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetX509NameRawBytes")]
+        private static partial int GetX509NameRawBytes(SafeSharedX509NameHandle x509Name, byte[]? buf, int cBuf);
 
         internal static X500DistinguishedName LoadX500Name(SafeSharedX509NameHandle namePtr)
         {

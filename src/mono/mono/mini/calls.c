@@ -233,7 +233,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 				t = mono_get_int_type ();
 			t = mono_type_get_underlying_type (t);
 
-			if (!t->byref && t->type == MONO_TYPE_R4) {
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
 				MonoInst *iargs [1];
 				MonoInst *conv;
 
@@ -888,7 +888,7 @@ sig_to_rgctx_sig (MonoMethodSignature *sig)
 	res->param_count = sig->param_count + 1;
 	for (i = 0; i < sig->param_count; ++i)
 		res->params [i] = sig->params [i];
-	res->params [sig->param_count] = m_class_get_this_arg (mono_defaults.int_class);
+	res->params [sig->param_count] = mono_class_get_byref_type (mono_defaults.int_class);
 	return res;
 }
 
