@@ -11,11 +11,8 @@ using Internal.Runtime.CompilerServices;
 namespace System
 {
     [CLSCompliant(false)]
-    [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
-    public ref struct TypedReference
+    public ref partial struct TypedReference
     {
-        private readonly ByReference<byte> _value;
-        private readonly IntPtr _type;
 
         public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
