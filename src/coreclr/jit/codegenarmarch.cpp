@@ -1415,9 +1415,9 @@ void CodeGen::genRangeCheck(GenTree* oper)
     noway_assert(oper->OperIsBoundsCheck());
     GenTreeBoundsChk* bndsChk = oper->AsBoundsChk();
 
-    GenTree* arrLen    = bndsChk->gtArrLen;
-    GenTree* arrIndex  = bndsChk->gtIndex;
-    GenTree* arrRef    = NULL;
+    GenTree* arrLen    = bndsChk->GetArrayLength();
+    GenTree* arrIndex  = bndsChk->GetIndex();
+    GenTree* arrRef    = nullptr;
     int      lenOffset = 0;
 
     GenTree*     src1;

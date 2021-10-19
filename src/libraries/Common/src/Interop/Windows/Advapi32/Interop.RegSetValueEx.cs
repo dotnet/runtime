@@ -12,8 +12,13 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegSetValueEx(
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
+#endif
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -21,8 +26,13 @@ internal static partial class Interop
             byte[]? lpData,
             int cbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegSetValueEx(
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
+#endif
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -30,8 +40,13 @@ internal static partial class Interop
             char[]? lpData,
             int cbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegSetValueEx(
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
+#endif
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -39,8 +54,13 @@ internal static partial class Interop
             ref int lpData,
             int cbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegSetValueEx(
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
+#endif
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,
@@ -48,8 +68,13 @@ internal static partial class Interop
             ref long lpData,
             int cbData);
 
-        [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW", ExactSpelling = true)]
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static partial int RegSetValueEx(
+#else
+        [DllImport(Libraries.Advapi32, EntryPoint = "RegSetValueExW", BestFitMapping = false, CharSet = CharSet.Unicode, ExactSpelling = true)]
         internal static extern int RegSetValueEx(
+#endif
             SafeRegistryHandle hKey,
             string? lpValueName,
             int Reserved,

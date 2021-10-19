@@ -92,7 +92,7 @@ internal static partial class Interop
             internal uint cbSize;
             internal uint dwAuthType;
             internal uint fdwChecks;
-            internal char* pwszServerName;
+            internal ushort* pwszServerName;
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

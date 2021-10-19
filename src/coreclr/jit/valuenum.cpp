@@ -5835,6 +5835,12 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ADDR, GT_ARR_BOUNDS_CHECK,
+#ifdef FEATURE_SIMD
+                                                 GT_SIMD_CHK,
+#endif
+#ifdef FEATURE_HW_INTRINSICS
+                                                 GT_HW_INTRINSIC_CHK,
+#endif
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -5863,11 +5869,7 @@ void ValueNumStore::InitValueNumStoreStatics()
         {
             arity = 2;
         }
-        // Since GT_ARR_BOUNDS_CHECK is not currently GTK_BINOP
-        else if (gtOper == GT_ARR_BOUNDS_CHECK)
-        {
-            arity = 2;
-        }
+
         vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
 
         if (GenTree::OperIsCommutative(gtOper))
@@ -8922,6 +8924,39 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
+                    case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+                    case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+                    case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
+                    {
+                        ValueNumPair vnpIndex  = tree->AsBoundsChk()->GetIndex()->gtVNPair;
+                        ValueNumPair vnpArrLen = tree->AsBoundsChk()->GetArrayLength()->gtVNPair;
+
+                        ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+
+                        // And collect the exceptions  from Index and ArrLen
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
+
+                        // A bounds check node has no value, but may throw exceptions.
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
+
+                        // next add the bounds check exception set for the current tree node
+                        fgValueNumberAddExceptionSet(tree);
+
+                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
+                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum lengthVN = tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative();
+                        if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(lengthVN);
+                        }
+                    }
+                    break;
+
                     case GT_NULLCHECK:
                     {
                         // An Explicit null check, produces no value
@@ -9002,39 +9037,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_CALL:
                 fgValueNumberCall(tree->AsCall());
                 break;
-
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            {
-                ValueNumPair vnpIndex  = tree->AsBoundsChk()->gtIndex->gtVNPair;
-                ValueNumPair vnpArrLen = tree->AsBoundsChk()->gtArrLen->gtVNPair;
-
-                ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
-
-                // And collect the exceptions  from Index and ArrLen
-                vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
-
-                // A bounds check node has no value, but may throw exceptions.
-                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
-
-                // next add the bounds check exception set for the current tree node
-                fgValueNumberAddExceptionSet(tree);
-
-                // Record non-constant value numbers that are used as the length argument to bounds checks, so that
-                // assertion prop will know that comparisons against them are worth analyzing.
-                ValueNum lengthVN = tree->AsBoundsChk()->gtArrLen->gtVNPair.GetConservative();
-                if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
-                {
-                    vnStore->SetVNIsCheckedBound(lengthVN);
-                }
-            }
-            break;
 
             case GT_CMPXCHG: // Specialop
             {
@@ -10587,8 +10589,8 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
     GenTreeBoundsChk* node = tree->AsBoundsChk();
     assert(node != nullptr);
 
-    ValueNumPair vnpIndex  = node->gtIndex->gtVNPair;
-    ValueNumPair vnpArrLen = node->gtArrLen->gtVNPair;
+    ValueNumPair vnpIndex  = node->GetIndex()->gtVNPair;
+    ValueNumPair vnpArrLen = node->GetArrayLength()->gtVNPair;
 
     // Unpack, Norm,Exc for the tree's VN
     //

@@ -1876,7 +1876,7 @@ public:
     static unsigned char s_gtTrueSizes[];
 #endif
 #if COUNT_AST_OPERS
-    static LONG s_gtNodeCounts[];
+    static unsigned s_gtNodeCounts[];
 #endif
 
     static void InitNodeSize();
@@ -2831,7 +2831,6 @@ class GenTreeUseEdgeIterator final
 
     // Advance functions for special nodes
     void AdvanceCmpXchg();
-    void AdvanceBoundsChk();
     void AdvanceArrElem();
     void AdvanceArrOffset();
     void AdvanceDynBlk();
@@ -5481,39 +5480,38 @@ public:
 // - the "kind" of the throw block to branch to on failure
 // It generates no result.
 
-struct GenTreeBoundsChk : public GenTree
+struct GenTreeBoundsChk : public GenTreeOp
 {
-    GenTree* gtIndex;  // The index expression.
-    GenTree* gtArrLen; // An expression for the length of the array being indexed.
-
     BasicBlock*     gtIndRngFailBB; // Basic block to jump to for array-index-out-of-range
     SpecialCodeKind gtThrowKind;    // Kind of throw block to branch to on failure
 
     GenTreeBoundsChk(genTreeOps oper, var_types type, GenTree* index, GenTree* arrLen, SpecialCodeKind kind)
-        : GenTree(oper, type), gtIndex(index), gtArrLen(arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
+        : GenTreeOp(oper, type, index, arrLen), gtIndRngFailBB(nullptr), gtThrowKind(kind)
     {
-        // Effects flags propagate upwards.
-        gtFlags |= (index->gtFlags & GTF_ALL_EFFECT);
-        gtFlags |= (arrLen->gtFlags & GTF_ALL_EFFECT);
         gtFlags |= GTF_EXCEPT;
     }
 #if DEBUGGABLE_GENTREE
-    GenTreeBoundsChk() : GenTree()
+    GenTreeBoundsChk() : GenTreeOp()
     {
     }
 #endif
 
-    // If the gtArrLen is really an array length, returns array reference, else "NULL".
+    // If this check is against GT_ARR_LENGTH, returns array reference, else "NULL".
     GenTree* GetArray()
     {
-        if (gtArrLen->OperGet() == GT_ARR_LENGTH)
-        {
-            return gtArrLen->AsArrLen()->ArrRef();
-        }
-        else
-        {
-            return nullptr;
-        }
+        return GetArrayLength()->OperIs(GT_ARR_LENGTH) ? GetArrayLength()->AsArrLen()->ArrRef() : nullptr;
+    }
+
+    // The index expression.
+    GenTree* GetIndex()
+    {
+        return gtOp1;
+    }
+
+    // An expression for the length of the array being indexed.
+    GenTree* GetArrayLength()
+    {
+        return gtOp2;
     }
 };
 

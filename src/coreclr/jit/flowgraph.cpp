@@ -4133,18 +4133,6 @@ void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
             fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpComparand, isLIR);
             break;
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtIndex, isLIR);
-            fgSetTreeSeqHelper(tree->AsBoundsChk()->gtArrLen, isLIR);
-            break;
-
         case GT_STORE_DYN_BLK:
         case GT_DYN_BLK:
             noway_assert(!"DYN_BLK nodes should be sequenced as a special case");
