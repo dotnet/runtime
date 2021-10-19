@@ -49,7 +49,7 @@ namespace System.IO
             Interop.Error error =
                 Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong)) == 0 ?
                 Interop.Error.SUCCESS :
-                Interop.Sys.GetLastErrorInfo();
+                Interop.Sys.GetLastErrorInfo().Error;
 
             return error;
         }
