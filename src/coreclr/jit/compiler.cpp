@@ -2650,19 +2650,26 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #ifdef TARGET_XARCH
     if (opts.compJitAlignLoopAdaptive)
     {
+        // For adaptive alignment, padding limit is equal to the max instruction encoding
+        // size which is 15 bytes. Hence (32 >> 1) - 1 = 15 bytes.
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
     }
     else
     {
+        // For non-adaptive alignment, padding limit is 1 less than the alignment boundary
+        // specified.
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
     }
 #elif TARGET_ARM64
     if (opts.compJitAlignLoopAdaptive)
     {
+        // For adaptive alignment, padding limit is same as specified by the alignment
+        // boundary because all instructions are 4 bytes long. Hence (32 >> 1) = 16 bytes.
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1);
     }
     else
     {
+        // For non-adaptive, padding limit is same as specified by the alignment.
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
     }
 #endif

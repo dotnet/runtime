@@ -4821,6 +4821,8 @@ void emitter::emitLoopAlign(unsigned short paddingBytes)
     id->idaNext = emitCurIGAlignList;
 
     emitCurIGsize += paddingBytes;
+
+    dispIns(id);
     emitCurIGAlignList = id;
 }
 
@@ -4879,6 +4881,8 @@ void emitter::emitLoopAlignment()
     unsigned short paddingBytes;
 
 #if defined(TARGET_XARCH)
+    // For xarch, each align instruction can be maximum of MAX_ENCODED_SIZE bytes and if
+    // more padding is needed, multiple MAX_ENCODED_SIZE bytes instructions are added.
     if ((emitComp->opts.compJitAlignLoopBoundary > 16) && (!emitComp->opts.compJitAlignLoopAdaptive))
     {
         paddingBytes = emitComp->opts.compJitAlignLoopBoundary;
@@ -4890,6 +4894,8 @@ void emitter::emitLoopAlignment()
         emitLoopAlign(paddingBytes);
     }
 #elif defined(TARGET_ARM64)
+    // For Arm64, each align instruction is 4-bytes long because of fixed-length encoding.
+    // The padding added will be always be in multiple of 4-bytes.
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         paddingBytes = emitComp->opts.compJitAlignLoopBoundary >> 1;
@@ -5147,14 +5153,10 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     // If there are multiple align instructions, skip the align instructions after
                     // the first align instruction and fast forward to the next IG
                     insGroup* alignIG = alignInstr->idaIG;
-                    while (alignInstr != nullptr)
+                    while ((alignInstr != nullptr) && (alignInstr->idaNext != nullptr) &&
+                           (alignInstr->idaNext->idaIG == alignIG))
                     {
-                        if ((alignInstr->idaNext != nullptr) && (alignInstr->idaNext->idaIG == alignIG))
-                        {
-                            alignInstr = alignInstr->idaNext;
-                            continue;
-                        }
-                        break;
+                        alignInstr = alignInstr->idaNext;
                     }
                 }
 
