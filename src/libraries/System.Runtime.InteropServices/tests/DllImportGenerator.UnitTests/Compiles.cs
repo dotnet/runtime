@@ -350,10 +350,10 @@ namespace DllImportGenerator.UnitTests
 
             Assert.NotNull(method.GetDllImportData());
         }
+
         public static IEnumerable<object[]> FullyBlittableSnippetsToCompile()
         {
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
             yield return new[] { CodeSnippets.BasicParameterByValue("int") };
         }
 
@@ -364,28 +364,61 @@ namespace DllImportGenerator.UnitTests
             Compilation comp = await TestUtils.CreateCompilation(source);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
-                var newComp = TestUtils.RunGenerators(
-                    comp,
-                    new DllImportGeneratorOptionsProvider(useMarshalType: false, generateForwarders: true),
-                    out var generatorDiags,
-                    new Microsoft.Interop.DllImportGenerator());
+            var newComp = TestUtils.RunGenerators(
+                comp,
+                out var generatorDiags,
+                new Microsoft.Interop.DllImportGenerator());
 
             Assert.Empty(generatorDiags);
 
-                var newCompDiags = newComp.GetDiagnostics();
+            var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);
 
-                // Verify that the forwarder generates the method as a DllImport. 
-                SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            // Verify that the forwarder generates the method as a DllImport. 
+            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
             SemanticModel model = newComp.GetSemanticModel(generatedCode);
             var methods = generatedCode.GetRoot()
                 .DescendantNodes().OfType<MethodDeclarationSyntax>()
                 .ToList();
-            MethodDeclarationSyntax generatedMethod = Assert.Single(methods);
 
-            IMethodSymbol method = model.GetDeclaredSymbol(generatedMethod)!;
+            Assert.All(methods, method => Assert.NotNull(model.GetDeclaredSymbol(method)!.GetDllImportData()));
+        }
 
-            Assert.NotNull(method.GetDllImportData());
+        public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
+        {
+            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
+            yield return new[] { CodeSnippets.PreserveSigFalse<int>() };
+        }
+
+        [Theory]
+        [MemberData(nameof(SnippetsWithBlittableTypesButNonBlittableDataToCompile))]
+        public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string source)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(
+                comp,
+                out var generatorDiags,
+                new Microsoft.Interop.DllImportGenerator());
+
+            Assert.Empty(generatorDiags);
+
+            var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+
+            // Verify that the generator generates stubs with inner DllImports for all methods.
+            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            int numStubMethods = generatedCode.GetRoot()
+                .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .Count();
+            int numInnerDllImports = generatedCode.GetRoot()
+                .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
+                .Count();
+
+            Assert.Equal(numStubMethods, numInnerDllImports);
         }
 
     public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()

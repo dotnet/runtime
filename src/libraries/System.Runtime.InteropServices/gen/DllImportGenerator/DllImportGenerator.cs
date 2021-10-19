@@ -504,19 +504,10 @@ namespace Microsoft.Interop
 
         private MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
         {
-            SyntaxTokenList originalModifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);
-            SyntaxTokenList modifiers = TokenList();
-            foreach (var modifier in originalModifiers)
-            {
-                if (modifier.Kind() != SyntaxKind.PartialKeyword)
-                {
-                    modifiers = modifiers.Add(modifier);
-                }
-            }
-            modifiers = modifiers.Add(Token(SyntaxKind.ExternKeyword)).Add(Token(SyntaxKind.PartialKeyword));
+            SyntaxTokenList modifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);
+            modifiers = modifiers.Insert(modifiers.IndexOf(SyntaxKind.PartialKeyword), Token(SyntaxKind.ExternKeyword));
             // Create stub function
             MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.StubContext.StubReturnType, userDeclaredMethod.Identifier)
-                .AddAttributeLists(stub.StubContext.AdditionalAttributes.ToArray())
                 .WithModifiers(modifiers)
                 .WithParameterList(ParameterList(SeparatedList(stub.StubContext.StubParameters)))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))

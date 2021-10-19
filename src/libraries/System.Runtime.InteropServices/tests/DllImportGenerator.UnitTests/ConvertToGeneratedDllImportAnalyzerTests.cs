@@ -127,14 +127,6 @@ partial class Test
                     .WithArguments("Method2"));
         }
 
-        [Theory]
-        [MemberData(nameof(NoMarshallingRequiredTypes))]
-        public async Task BlittablePrimitive_NoDiagnostic(Type type)
-        {
-            string source = DllImportWithType(type.FullName!);
-            await VerifyCS.VerifyAnalyzerAsync(source);
-        }
-
         [Fact]
         public async Task NotDllImport_NoDiagnostic()
         {
