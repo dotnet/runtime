@@ -69,6 +69,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
@@ -84,6 +85,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
@@ -143,6 +145,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~(TestPlatforms.iOS | TestPlatforms.tvOS))]
         public static void GetLoadContextTest_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
