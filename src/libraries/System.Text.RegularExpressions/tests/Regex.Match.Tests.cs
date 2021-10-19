@@ -761,6 +761,12 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Match_Timeout_Loop_Throws(RegexEngine engine)
         {
+            if (RegexHelpers.IsNonBacktracking(engine))
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/60623")]
+                return;
+            }
+
             Regex regex = await RegexHelpers.GetRegexAsync(engine, @"a\s+", RegexOptions.None, TimeSpan.FromSeconds(1));
             string input = "a" + new string(' ', 800_000_000) + " ";
             Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
@@ -1434,6 +1440,18 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                // Currently too stressful for Roslyn.
+                return;
+            }
+
+            if (engine == RegexEngine.NonBacktracking)
+            {
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/60645")]
+                return;
+            }
+
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
@@ -1456,8 +1474,15 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, RegexOptions options, string input, int pattern_repetition, int input_repetition)
         {
+            if (engine == RegexEngine.SourceGenerated)
+            {
+                // Currently too stressful for Roslyn.
+                return;
+            }
+
             string fullpattern = string.Concat(Enumerable.Repeat(begin, pattern_repetition)) + inner + string.Concat(Enumerable.Repeat(end, pattern_repetition));
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
+
             var re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
             Assert.True(re.Match(fullinput).Success);
         }
@@ -1472,7 +1497,8 @@ namespace System.Text.RegularExpressions.Tests
         /// Causes NonBacktracking engine to switch to Antimirov mode internally.
         /// Antimirov mode is otherwise never triggered by typical cases.
         /// </summary>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(StressTestAntimirovMode_TestData))]
         public async Task StressTestAntimirovMode(string pattern, string input_suffix, int expected_matchlength)
         {
@@ -1721,7 +1747,8 @@ namespace System.Text.RegularExpressions.Tests
         /// while a backtracking engine takes the order into account.
         /// This may lead to different matches in ambiguous regexes.
         /// </summary>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [MemberData(nameof(MatchAmbiguousRegexes_TestData))]
         public async Task MatchAmbiguousRegexes(RegexEngine engine, string pattern, string input, (int,int) expected_match)
         {

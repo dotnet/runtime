@@ -284,7 +284,7 @@ namespace System.Text.RegularExpressions.Tests
                 // None and Compiled are separated into the Match_In_Different_Cultures_CriticalCases test
                 if (options == RegexHelpers.RegexOptionNonBacktracking)
                 {
-                    foreach (var data in Match_In_Different_Cultures_CriticalCases_TestData_For(options))
+                    foreach (object[] data in Match_In_Different_Cultures_CriticalCases_TestData_For(options))
                     {
                         yield return data;
                     }
@@ -318,7 +318,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Match_In_Different_Cultures(string pattern, RegexOptions options, CultureInfo culture, string input, string match_expected)
         {
             Regex r = RegexHelpers.CreateRegexInCulture(pattern, options, culture);
-            var match = r.Match(input);
+            Match match = r.Match(input);
             Assert.Equal(match_expected, match.Value);
         }
 
@@ -328,7 +328,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Match_In_Different_Cultures_CriticalCases(string pattern, RegexOptions options, CultureInfo culture, string input, string match_expected)
         {
             Regex r = RegexHelpers.CreateRegexInCulture(pattern, options, culture);
-            var match = r.Match(input);
+            Match match = r.Match(input);
             Assert.Equal(match_expected, match.Value);
         }
 
@@ -352,6 +352,7 @@ namespace System.Text.RegularExpressions.Tests
         /// It would need to be updated/regenerated if this test fails.
         /// </summary>
         [OuterLoop("May take several seconds due to large number of cultures tested")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [MemberData(nameof(RegexOptionsExtended_MemberData))]
         public void TestIgnoreCaseRelation(RegexOptions options)
@@ -372,7 +373,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // as baseline it is assumed the the invariant culture does not change
             HashSet<char>[] inv_table = ComputeIgnoreCaseTable(CultureInfo.InvariantCulture, treatedAsCaseInsensitive);
-            CultureInfo[] cultures = System.Globalization.CultureInfo.GetCultures(System.Globalization.CultureTypes.AllCultures);
+            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
 
             // expected difference between invariant and tr or az culture
             string tr_diff = string.Format("I:Ii/I{0},i:Ii/i{1},{1}:{1}/i{1},{0}:{0}/I{0}", Turkish_i_withoutDot, Turkish_I_withDot);
@@ -392,13 +393,12 @@ namespace System.Text.RegularExpressions.Tests
                 }
             }
 
-            foreach (var culture in testcultures)
+            foreach (CultureInfo culture in testcultures)
             {
                 HashSet<char>[] table = ComputeIgnoreCaseTable(culture, treatedAsCaseInsensitive);
                 string diff = GetDiff(inv_table, table);
                 if (culture.TwoLetterISOLanguageName == "tr" || culture.TwoLetterISOLanguageName == "az")
                 {
-
                     // tr or az alphabet
                     Assert.Equal(tr_diff, diff);
                 }

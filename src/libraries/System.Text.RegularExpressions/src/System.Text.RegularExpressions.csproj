@@ -61,7 +61,6 @@
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexKind.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexInfo.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexMatcher.cs" />
-    <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunner.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexRunnerFactory.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSampler.cs" />
     <Compile Include="System\Text\RegularExpressions\Symbolic\SymbolicRegexSet.cs" />
