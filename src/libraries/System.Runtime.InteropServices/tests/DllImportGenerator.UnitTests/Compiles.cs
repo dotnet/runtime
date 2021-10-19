@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -334,9 +337,58 @@ namespace DllImportGenerator.UnitTests
 
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);
+
+            // Verify that the forwarder generates the method as a DllImport. 
+            SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            var methods = generatedCode.GetRoot()
+                .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .ToList();
+            MethodDeclarationSyntax generatedMethod = Assert.Single(methods);
+
+            IMethodSymbol method = model.GetDeclaredSymbol(generatedMethod)!;
+
+            Assert.NotNull(method.GetDllImportData());
+        }
+        public static IEnumerable<object[]> FullyBlittableSnippetsToCompile()
+        {
+            yield return new[] { CodeSnippets.UserDefinedEntryPoint };
+            yield return new[] { CodeSnippets.AllSupportedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.BasicParameterByValue("int") };
         }
 
-        public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
+        [Theory]
+        [MemberData(nameof(FullyBlittableSnippetsToCompile))]
+        public async Task ValidateSnippetsWithBlittableAutoForwarding(string source)
+        {
+            Compilation comp = await TestUtils.CreateCompilation(source);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+                var newComp = TestUtils.RunGenerators(
+                    comp,
+                    new DllImportGeneratorOptionsProvider(useMarshalType: false, generateForwarders: true),
+                    out var generatorDiags,
+                    new Microsoft.Interop.DllImportGenerator());
+
+            Assert.Empty(generatorDiags);
+
+                var newCompDiags = newComp.GetDiagnostics();
+            Assert.Empty(newCompDiags);
+
+                // Verify that the forwarder generates the method as a DllImport. 
+                SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
+            SemanticModel model = newComp.GetSemanticModel(generatedCode);
+            var methods = generatedCode.GetRoot()
+                .DescendantNodes().OfType<MethodDeclarationSyntax>()
+                .ToList();
+            MethodDeclarationSyntax generatedMethod = Assert.Single(methods);
+
+            IMethodSymbol method = model.GetDeclaredSymbol(generatedMethod)!;
+
+            Assert.NotNull(method.GetDllImportData());
+        }
+
+    public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
         {
             yield break;
         }
