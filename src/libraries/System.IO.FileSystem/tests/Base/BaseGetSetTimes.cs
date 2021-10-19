@@ -86,11 +86,11 @@ namespace System.IO.Tests
             // increasing and decreasing timestamps as to not limit the test unnecessarily.
             // Only testing with utc because it would be hard to check if lastwrite utc was the
             // same type of method as lastwrite local since their .Getter fields are different.
-            // This test is required as some apis change more dates then they're supposed to.
-            // There were issues while developing this PR with specific orders of changes, so
-            // this code should almost fully eliminate any possibilities of that in the future
-            // by having a proper test for it. Also, it should be noted that the combination
-            // (A, B, false) is not the same as (B, A, true).
+            // This test is required as some apis change more dates than would be desired (eg.
+            // utimensat). There were issues related to the order in which the dates are set,
+            // so this test should almost fully eliminate any possibilities of that in the
+            // future by having a proper test for it. Also, it should be noted that the
+            // combination (A, B, false) is not the same as (B, A, true).
 
             // The order that these LINQ expression creates is (when all 3 are available):
             // [0] = (creation, access, False), [1] = (creation, access, True),  [2] = (creation, write, False),
