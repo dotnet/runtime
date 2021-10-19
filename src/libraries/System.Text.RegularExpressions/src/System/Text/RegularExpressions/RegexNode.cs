@@ -152,10 +152,7 @@ namespace System.Text.RegularExpressions
             N = n;
         }
 
-        public bool UseOptionR()
-        {
-            return (Options & RegexOptions.RightToLeft) != 0;
-        }
+        public bool UseOptionR() => (Options & RegexOptions.RightToLeft) != 0;
 
         public RegexNode ReverseLeft()
         {
@@ -172,7 +169,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void MakeRep(int type, int min, int max)
         {
-            Type += (type - One);
+            Type += type - One;
             M = min;
             N = max;
         }
@@ -384,6 +381,13 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
+            // RegexOptions.NonBacktracking doesn't support atomic groups, so when that option
+            // is set we don't want to create atomic groups where they weren't explicitly authored.
+            if ((node.Options & RegexOptions.NonBacktracking) != 0)
+            {
+                return;
+            }
+
             // Walk the tree starting from the provided node.
             while (true)
             {
@@ -560,6 +564,13 @@ namespace System.Text.RegularExpressions
         /// </remarks>
         private RegexNode ReduceAtomic()
         {
+            // RegexOptions.NonBacktracking doesn't support atomic groups, so when that option
+            // is set we don't want to create atomic groups where they weren't explicitly authored.
+            if ((Options & RegexOptions.NonBacktracking) != 0)
+            {
+                return this;
+            }
+
             Debug.Assert(Type == Atomic);
             Debug.Assert(ChildCount() == 1);
 
@@ -967,7 +978,7 @@ namespace System.Text.RegularExpressions
                             }
 
                             prev.Type = Set;
-                            prev.Str = prevCharClass.ToStringClass();
+                            prev.Str = prevCharClass.ToStringClass(Options);
                         }
                         else if (at.Type == Nothing)
                         {
@@ -1442,6 +1453,13 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private void ReduceConcatenationWithAutoAtomic()
         {
+            // RegexOptions.NonBacktracking doesn't support atomic groups, so when that option
+            // is set we don't want to create atomic groups where they weren't explicitly authored.
+            if ((Options & RegexOptions.NonBacktracking) != 0)
+            {
+                return;
+            }
+
             Debug.Assert(Type == Concatenate);
             Debug.Assert((Options & RegexOptions.RightToLeft) == 0);
             Debug.Assert(Children is List<RegexNode>);
@@ -1660,7 +1678,7 @@ namespace System.Text.RegularExpressions
                         case End:
                         case EndZ when !RegexCharClass.CharInClass('\n', node.Str!):
                         case Eol when !RegexCharClass.CharInClass('\n', node.Str!):
-                        case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass: // TODO: Expand these with a more inclusive overlap check that considers categories
+                        case Boundary when node.Str == RegexCharClass.WordClass || node.Str == RegexCharClass.DigitClass:
                         case NonBoundary when node.Str == RegexCharClass.NotWordClass || node.Str == RegexCharClass.NotDigitClass:
                         case ECMABoundary when node.Str == RegexCharClass.ECMAWordClass || node.Str == RegexCharClass.ECMADigitClass:
                         case NonECMABoundary when node.Str == RegexCharClass.NotECMAWordClass || node.Str == RegexCharClass.NotDigitClass:
