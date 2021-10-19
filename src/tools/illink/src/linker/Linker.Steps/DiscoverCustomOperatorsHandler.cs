@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Mono.Cecil;
@@ -9,10 +10,17 @@ namespace Mono.Linker.Steps
 {
 	public class DiscoverOperatorsHandler : IMarkHandler
 	{
-		LinkContext _context;
+		LinkContext? _context;
+		LinkContext Context {
+			get {
+				Debug.Assert (_context != null);
+				return _context;
+			}
+		}
+
 		bool _seenLinqExpressions;
 		readonly HashSet<TypeDefinition> _trackedTypesWithOperators;
-		Dictionary<TypeDefinition, List<MethodDefinition>> _pendingOperatorsForType;
+		Dictionary<TypeDefinition, List<MethodDefinition>>? _pendingOperatorsForType;
 
 		Dictionary<TypeDefinition, List<MethodDefinition>> PendingOperatorsForType {
 			get {
@@ -74,7 +82,7 @@ namespace Mono.Linker.Steps
 
 		void MarkOperator (MethodDefinition method)
 		{
-			_context.Annotations.Mark (method, new DependencyInfo (DependencyKind.PreservedOperator, method.DeclaringType));
+			Context.Annotations.Mark (method, new DependencyInfo (DependencyKind.PreservedOperator, method.DeclaringType));
 		}
 
 		bool ProcessCustomOperators (TypeDefinition type, bool mark)
@@ -93,7 +101,7 @@ namespace Mono.Linker.Steps
 				Debug.Assert (_seenLinqExpressions);
 				hasCustomOperators = true;
 
-				if (otherType == null || _context.Annotations.IsMarked (otherType)) {
+				if (otherType == null || Context.Annotations.IsMarked (otherType)) {
 					MarkOperator (method);
 					continue;
 				}
@@ -108,18 +116,18 @@ namespace Mono.Linker.Steps
 			return hasCustomOperators;
 		}
 
-		TypeDefinition _nullableOfT;
-		TypeDefinition NullableOfT {
+		TypeDefinition? _nullableOfT;
+		TypeDefinition? NullableOfT {
 			get {
 				if (_nullableOfT == null)
-					_nullableOfT = BCL.FindPredefinedType ("System", "Nullable`1", _context);
+					_nullableOfT = BCL.FindPredefinedType ("System", "Nullable`1", Context);
 				return _nullableOfT;
 			}
 		}
 
-		TypeDefinition NonNullableType (TypeReference type)
+		TypeDefinition? NonNullableType (TypeReference type)
 		{
-			var typeDef = _context.TryResolve (type);
+			var typeDef = Context.TryResolve (type);
 			if (typeDef == null)
 				return null;
 
@@ -134,10 +142,10 @@ namespace Mono.Linker.Steps
 				type = ((TypeSpecification) type).ElementType;
 			var nullableType = type as GenericInstanceType;
 			Debug.Assert (nullableType != null && nullableType.HasGenericArguments && nullableType.GenericArguments.Count == 1);
-			return _context.TryResolve (nullableType.GenericArguments[0]);
+			return Context.TryResolve (nullableType.GenericArguments[0]);
 		}
 
-		bool IsOperator (MethodDefinition method, out TypeDefinition otherType)
+		bool IsOperator (MethodDefinition method, out TypeDefinition? otherType)
 		{
 			otherType = null;
 

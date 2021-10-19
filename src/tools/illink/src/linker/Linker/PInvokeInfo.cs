@@ -18,7 +18,15 @@ namespace Mono.Linker
 		[DataMember (Name = "moduleName")]
 		internal string ModuleName { get; set; }
 
-		public int CompareTo (PInvokeInfo other)
+		public PInvokeInfo (string assemblyName, string entryPoint, string fullName, string moduleName)
+		{
+			AssemblyName = assemblyName;
+			EntryPoint = entryPoint;
+			FullName = fullName;
+			ModuleName = moduleName;
+		}
+
+		public int CompareTo (PInvokeInfo? other)
 		{
 			if (other == null) return 1;
 

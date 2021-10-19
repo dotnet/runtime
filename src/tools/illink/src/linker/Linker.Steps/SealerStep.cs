@@ -10,7 +10,7 @@ namespace Mono.Linker.Steps
 {
 	public class SealerStep : BaseStep
 	{
-		HashSet<TypeDefinition> referencedBaseTypeCache;
+		HashSet<TypeDefinition>? referencedBaseTypeCache;
 
 		public SealerStep ()
 		{
@@ -56,7 +56,7 @@ namespace Mono.Linker.Steps
 			}
 
 			var bt = Context.TryResolve (type);
-			return referencedBaseTypeCache.Contains (bt);
+			return bt != null && referencedBaseTypeCache.Contains (bt);
 		}
 
 		void ProcessType (TypeDefinition type)
@@ -123,7 +123,7 @@ namespace Mono.Linker.Steps
 			method.IsFinal = true;
 		}
 
-		bool IsAnyMarked (IEnumerable<OverrideInformation> list)
+		bool IsAnyMarked (IEnumerable<OverrideInformation>? list)
 		{
 			if (list == null)
 				return false;
@@ -135,7 +135,7 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		bool IsAnyMarked (List<MethodDefinition> list)
+		bool IsAnyMarked (List<MethodDefinition>? list)
 		{
 			if (list == null)
 				return false;
