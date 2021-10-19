@@ -1015,7 +1015,7 @@ int32_t SystemNative_FAllocate(intptr_t fd, int64_t offset, int64_t length)
     int fileDescriptor = ToFileDescriptor(fd);
     int32_t result;
 #if HAVE_FALLOCATE // Linux
-    while ((result = fallocate(fileDescriptor, FALLOC_FL_KEEP_SIZE, (off_t)offset, (off_t)length)) == EINTR);
+    while ((result = fallocate(fileDescriptor, FALLOC_FL_KEEP_SIZE, (off_t)offset, (off_t)length)) == -1 && errno == EINTR);
 #elif defined(F_PREALLOCATE) // macOS
     fstore_t fstore;
     fstore.fst_flags = F_ALLOCATEALL; // Allocate all requested space or no space at all.

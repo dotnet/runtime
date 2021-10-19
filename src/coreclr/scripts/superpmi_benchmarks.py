@@ -20,8 +20,7 @@ from os import path
 from os.path import isfile
 from shutil import copyfile
 from coreclr_arguments import *
-from superpmi import ChangeDir, TempDir
-from superpmi_setup import run_command
+from azdo_pipelines_util import run_command, ChangeDir, TempDir
 
 # Start of parser object creation.
 is_windows = platform.system() == "Windows"

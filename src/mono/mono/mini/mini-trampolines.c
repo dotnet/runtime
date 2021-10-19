@@ -1024,7 +1024,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 			if (sig->hasthis && m_class_is_valuetype (method->klass)) {
 				gboolean need_unbox = TRUE;
 
-				if (tramp_info->invoke_sig->param_count > sig->param_count && tramp_info->invoke_sig->params [0]->byref)
+				if (tramp_info->invoke_sig->param_count > sig->param_count && m_type_is_byref (tramp_info->invoke_sig->params [0]))
 					need_unbox = FALSE;
 
 				if (need_unbox) {

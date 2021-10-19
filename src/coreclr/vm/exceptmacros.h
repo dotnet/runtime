@@ -520,7 +520,7 @@ VOID ThrowBadFormatWorkerT(UINT resID, T * pImgObj DEBUGARG(__in_z const char *c
 // Worker macro for throwing BadImageFormat exceptions.
 //
 //     resID:     resource ID in mscorrc.rc. Message may not have substitutions. resID is permitted (but not encouraged) to be 0.
-//     imgObj:    one of Module* or PEFile* or PEImage* (must support GetPathForErrorMessages method.)
+//     imgObj:    one of Module* or PEAssembly* or PEImage* (must support GetPathForErrorMessages method.)
 //
 #define IfFailThrowBF(hresult, resID, imgObj)   \
     do                                          \

@@ -105,7 +105,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var js_str = MONO.string_decoder.copy ($0);
+		var js_str = INTERNAL.string_decoder.copy ($0);
 
 		try {
 			var res = eval (js_str);
@@ -154,8 +154,8 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 		var domain = Module.UTF8ToString ($3); // is this always Mono?
 		var dataPtr = $4;
 
-		if (MONO["logging"] && MONO.logging["trace"]) {
-			MONO.logging.trace(domain, log_level, message, isFatal, dataPtr);
+		if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
+			INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
 			return;
 		}
 
@@ -747,21 +747,6 @@ EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_string_get_utf8 (MonoString *str)
 {
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
-}
-
-// Deprecated
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_convert (MonoString *str)
-{
-	if (str == NULL)
-		return;
-
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-
-	EM_ASM ({
-		MONO.string_decoder.decode($0, $0 + $1, true);
-	}, (int)native_val, native_len);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoString *

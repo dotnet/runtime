@@ -600,9 +600,7 @@ namespace System.Text.Json
         {
             _haveTypesBeenCreated = true;
 
-            // todo: for performance and reduced instances, consider using the converters and JsonTypeInfo from s_defaultOptions by cloning (or reference directly if no changes).
-            // https://github.com/dotnet/runtime/issues/32357
-            if (!_classes.TryGetValue(type, out JsonTypeInfo? result))
+            if (!TryGetClass(type, out JsonTypeInfo? result))
             {
                 result = _classes.GetOrAdd(type, GetClassFromContextOrCreate(type));
             }
@@ -642,6 +640,20 @@ namespace System.Text.Json
             }
 
             return jsonTypeInfo;
+        }
+
+        internal bool TryGetClass(Type type, [NotNullWhen(true)] out JsonTypeInfo? jsonTypeInfo)
+        {
+            // todo: for performance and reduced instances, consider using the converters and JsonTypeInfo from s_defaultOptions by cloning (or reference directly if no changes).
+            // https://github.com/dotnet/runtime/issues/32357
+            if (!_classes.TryGetValue(type, out JsonTypeInfo? result))
+            {
+                jsonTypeInfo = null;
+                return false;
+            }
+
+            jsonTypeInfo = result;
+            return true;
         }
 
         internal bool TypeIsCached(Type type)

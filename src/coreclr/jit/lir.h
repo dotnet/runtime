@@ -73,7 +73,7 @@ public:
         void AssertIsValid() const;
         bool IsDummyUse() const;
 
-        void ReplaceWith(Compiler* compiler, GenTree* replacement);
+        void ReplaceWith(GenTree* replacement);
         unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** assign = nullptr);
     };
 

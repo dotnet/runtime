@@ -14,7 +14,6 @@ internal static partial class Interop
             IntPtr cipher,
             ref byte key,
             int keyLength,
-            int effectivekeyLength,
             ref byte iv,
             int enc);
 
