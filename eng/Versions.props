@@ -14,7 +14,7 @@
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
     <!-- Enable to remove prerelease label. -->
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">true</StabilizePackageVersion>
     <DotNetFinalVersionKind Condition="'$(StabilizePackageVersion)' == 'true'">release</DotNetFinalVersionKind>
     <!-- Opt-in/out repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
@@ -87,7 +87,7 @@
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemComponentModelAnnotationsVersion>5.0.0</SystemComponentModelAnnotationsVersion>
-    <SystemDataSqlClientVersion>4.8.2</SystemDataSqlClientVersion>
+    <SystemDataSqlClientVersion>4.8.3</SystemDataSqlClientVersion>
     <SystemDataDataSetExtensionsVersion>4.5.0</SystemDataDataSetExtensionsVersion>
     <SystemDiagnosticsContractsVersion>4.3.0</SystemDiagnosticsContractsVersion>
     <SystemDynamicRuntimeVersion>4.3.0</SystemDynamicRuntimeVersion>
@@ -113,7 +113,7 @@
     <SystemSecurityCryptographyCngVersion>5.0.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyOpenSslVersion>5.0.0</SystemSecurityCryptographyOpenSslVersion>
     <SystemSecurityPrincipalWindowsVersion>5.0.0</SystemSecurityPrincipalWindowsVersion>
-    <SystemServiceModelPrimitivesVersion>4.9.0-rc2.21473.1</SystemServiceModelPrimitivesVersion>
+    <SystemServiceModelPrimitivesVersion>4.9.0</SystemServiceModelPrimitivesVersion>
     <SystemTextJsonVersion>6.0.0-rc.1.21415.6</SystemTextJsonVersion>
     <SystemRuntimeCompilerServicesUnsafeVersion>6.0.0-rc.1.21415.6</SystemRuntimeCompilerServicesUnsafeVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
