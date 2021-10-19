@@ -291,6 +291,9 @@
       <Link>Common\TypeSystemConstraintsHelpers.cs</Link>
     </Compile>
 
+    <Compile Include="$(TypeSystemPath)\IL\EcmaMethodIL.cs">
+      <Link>IL\EcmaMethodIL.cs</Link>
+    </Compile>
     <Compile Include="$(TypeSystemPath)\IL\ILOpcode.cs">
       <Link>IL/ILOpcode.cs</Link>
     </Compile>
@@ -299,6 +302,18 @@
     </Compile>
     <Compile Include="$(TypeSystemPath)\IL\ILReader.cs">
       <Link>IL/ILReader.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\IL\MethodIL.cs">
+      <Link>IL/MethodIL.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\IL\MethodILDebugView.cs">
+      <Link>IL/MethodILDebugView.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\IL\ILDisassembler.cs">
+      <Link>IL/ILDisassembler.cs</Link>
+    </Compile>
+    <Compile Include="$(TypeSystemPath)\IL\InstantiatedMethodIL.cs">
+      <Link>IL/InstantiatedMethodIL.cs</Link>
     </Compile>
 
     <Compile Include="$(ToolsCommonPath)System\Collections\Generic\ArrayBuilder.cs">

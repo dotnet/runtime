@@ -8,7 +8,9 @@ using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Dataflow;
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.Logging;
 
 namespace ILTrim.DependencyAnalysis
 {
@@ -20,10 +22,16 @@ namespace ILTrim.DependencyAnalysis
         IReadOnlySet<string> _trimAssemblies { get; }
         public TrimmerSettings Settings { get; }
 
+        public ILCompiler.Logger Logger { get; }
+
+        public FlowAnnotations FlowAnnotations { get; }
+
         public NodeFactory(IEnumerable<string> trimAssemblies, TrimmerSettings settings)
         {
             _trimAssemblies = new HashSet<string>(trimAssemblies);
             Settings = settings;
+            Logger = new ILCompiler.Logger(Console.Out, isVerbose: false);
+            FlowAnnotations = new FlowAnnotations(Logger, new ILProvider());
         }
 
         /// <summary>
@@ -89,6 +97,13 @@ namespace ILTrim.DependencyAnalysis
         public ConstructedTypeNode ConstructedType(EcmaType type)
         {
             return _constructedTypes.GetOrAdd(type);
+        }
+
+        NodeCache<EcmaType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies = new NodeCache<EcmaType, ObjectGetTypeFlowDependenciesNode>(key
+            => new ObjectGetTypeFlowDependenciesNode(key));
+        public ObjectGetTypeFlowDependenciesNode ObjectGetTypeFlowDependencies(EcmaType type)
+        {
+            return _objectGetTypeFlowDependencies.GetOrAdd(type);
         }
 
         NodeCache<EcmaMethod, VirtualMethodUseNode> _virtualMethodUses = new NodeCache<EcmaMethod, VirtualMethodUseNode>(key

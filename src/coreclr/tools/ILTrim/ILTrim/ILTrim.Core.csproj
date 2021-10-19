@@ -1,11 +1,33 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <DefineConstants>$(DefineConstants);TRIMMER</DefineConstants>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>x64;x86</Platforms>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\DiagnosticUtilities.cs" Link="Dataflow\DiagnosticUtilities.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" Link="Dataflow\DynamicallyAccessedMembersBinder.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\EcmaExtensions.cs" Link="Dataflow\EcmaExtensions.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\FlowAnnotations.cs" Link="Dataflow\FlowAnnotations.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\MethodBodyScanner.cs" Link="Dataflow\MethodBodyScanner.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\Origin.cs" Link="Dataflow\Origin.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\ReflectionMethodBodyScanner.cs" Link="Dataflow\ReflectionMethodBodyScanner.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\ReflectionPatternContext.cs" Link="Dataflow\ReflectionPatternContext.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\ScannerExtensions.cs" Link="Dataflow\ScannerExtensions.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\TypeExtensions.cs" Link="Dataflow\TypeExtensions.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\Dataflow\ValueNode.cs" Link="Dataflow\ValueNode.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\DependencyAnalysis\ReflectionMethodBodyScanner.cs" Link="ReflectionMethodBodyScanner.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\EventPseudoDesc.cs" Link="EventPseudoDesc.cs" />
     <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\ProcessLinkerXmlBase.cs" Link="ProcessLinkerXmlBase.cs" />
+    <Compile Include="..\..\aot\ILCompiler.Compiler\Compiler\PropertyPseudoDesc.cs" Link="PropertyPseudoDesc.cs" />
+    <Compile Include="..\..\Common\Compiler\DisplayNameHelpers.cs" Link="DisplayNameHelpers.cs" />
+    <Compile Include="..\..\Common\Compiler\Logger.cs" Link="Logging\Logger.cs" />
+    <Compile Include="..\..\Common\Compiler\Logging\CompilerGeneratedState.cs" Link="Logging\CompilerGeneratedState.cs" />
+    <Compile Include="..\..\Common\Compiler\Logging\DocumentationSignatureGenerator.PartVisitor.cs" Link="Logging\DocumentationSignatureGenerator.PartVisitor.cs" />
+    <Compile Include="..\..\Common\Compiler\Logging\DocumentationSignatureParser.cs" Link="Logging\DocumentationSignatureParser.cs" />
+    <Compile Include="..\..\Common\Compiler\Logging\MessageContainer.cs" Link="Logging\MessageContainer.cs" />
+    <Compile Include="..\..\Common\Compiler\Logging\MessageOrigin.cs" Link="Logging\MessageOrigin.cs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />

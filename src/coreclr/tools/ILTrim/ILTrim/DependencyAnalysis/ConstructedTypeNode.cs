@@ -44,7 +44,13 @@ namespace ILTrim.DependencyAnalysis
                 //
                 // Notice Derived has no virtual methods, but needs to keep track of the
                 // fact that Base.Foo now implements IFooer.Foo.
-                return _type.RuntimeInterfaces.Length > 0;
+                if (_type.RuntimeInterfaces.Length > 0)
+                {
+                    return true;
+                }
+
+                // TODO: limit this somehow. We don't know if there's any flow annotations
+                return !_type.IsInterface;
             }
         }
 
@@ -143,6 +149,55 @@ namespace ILTrim.DependencyAnalysis
                 yield return new(factory.ConstructedType(interfaceDefinition),
                     factory.InterfaceUse(interfaceDefinition),
                     "Used interface on a constructed type");
+            }
+
+            // Check to see if we have any dataflow annotations on the type.
+            // The check below also covers flow annotations inherited through base classes and implemented interfaces.
+            if (!_type.IsInterface /* "IFoo x; x.GetType();" -> this doesn't actually return an interface type */
+                && factory.FlowAnnotations.GetTypeAnnotation(_type) != default)
+            {
+                // We have some flow annotations on this type.
+                //
+                // The flow annotations are supposed to ensure that should we call object.GetType on a location
+                // typed as one of the annotated subclasses of this type, this type is going to have the specified
+                // members kept. We don't keep them right away, but condition them on the object.GetType being called.
+                //
+                // Now we figure out where the annotations are coming from:
+
+                DefType baseType = _type.BaseType;
+                if (baseType != null && factory.FlowAnnotations.GetTypeAnnotation(baseType) != default)
+                {
+                    // There's an annotation on the base type. If object.GetType was called on something
+                    // statically typed as the base type, we might actually be calling it on this type.
+                    // Ensure we have the flow dependencies.
+                    yield return new(
+                        factory.ObjectGetTypeFlowDependencies(_type),
+                        factory.ObjectGetTypeFlowDependencies((EcmaType)baseType.GetTypeDefinition()),
+                        "GetType called on the base type");
+
+                    // We don't have to follow all the bases since the base MethodTable will bubble this up
+                }
+
+                foreach (DefType interfaceType in _type.RuntimeInterfaces)
+                {
+                    if (factory.FlowAnnotations.GetTypeAnnotation(interfaceType) != default)
+                    {
+                        // There's an annotation on the interface type. If object.GetType was called on something
+                        // statically typed as the interface type, we might actually be calling it on this type.
+                        // Ensure we have the flow dependencies.
+                        yield return new(
+                            factory.ObjectGetTypeFlowDependencies(_type),
+                            factory.ObjectGetTypeFlowDependencies((EcmaType)interfaceType.GetTypeDefinition()),
+                            "GetType called on the interface");
+                    }
+
+                    // We don't have to recurse into the interface because we're inspecting runtime interfaces
+                    // and this list is already flattened.
+                }
+
+                // Note we don't add any conditional dependencies if this type itself was annotated and none
+                // of the bases/interfaces are annotated.
+                // ObjectGetTypeFlowDependencies don't need to be conditional in that case. They'll be added as needed.
             }
         }
 

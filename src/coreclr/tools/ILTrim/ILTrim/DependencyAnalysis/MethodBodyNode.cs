@@ -14,6 +14,8 @@ using Internal.TypeSystem.Ecma;
 
 using ILCompiler.DependencyAnalysisFramework;
 
+using ReflectionMethodBodyScanner = ILCompiler.Dataflow.ReflectionMethodBodyScanner;
+
 namespace ILTrim.DependencyAnalysis
 {
     /// <summary>
@@ -61,6 +63,9 @@ namespace ILTrim.DependencyAnalysis
                 }
             }
 
+            bool requiresMethodBodyScanner = ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForMethodBody(
+                factory.FlowAnnotations, _module.GetMethod(_methodHandle));
+
             ILReader ilReader = new(bodyBlock.GetILBytes());
             while (ilReader.HasNext)
             {
@@ -101,8 +106,30 @@ namespace ILTrim.DependencyAnalysis
                     case ILOpcode.constrained:
                         EntityHandle token = MetadataTokens.EntityHandle(ilReader.ReadILToken());
 
+                        MethodDesc method;
+                        if (opcode == ILOpcode.newobj || opcode == ILOpcode.call || opcode == ILOpcode.callvirt ||
+                            opcode == ILOpcode.ldvirtftn || opcode == ILOpcode.ldftn)
+                        {
+                            method = _module.TryGetMethod(token);
+                        }
+                        else
+                        {
+                            method = null;
+                        }
+
+                        FieldDesc field;
+                        if (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda ||
+                            opcode == ILOpcode.ldsfld || opcode == ILOpcode.ldsflda)
+                        {
+                            field = _module.TryGetField(token);
+                        }
+                        else
+                        {
+                            field = null;
+                        }
+
                         if ((opcode == ILOpcode.callvirt || opcode == ILOpcode.ldvirtftn) &&
-                            _module.TryGetMethod(token) is MethodDesc method && method.IsVirtual)
+                            method != null && method.IsVirtual)
                         {
                             MethodDesc slotMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(
                                 method.GetTypicalMethodDefinition());
@@ -113,12 +140,31 @@ namespace ILTrim.DependencyAnalysis
                             _module,
                             token),
                             $"Instruction {opcode.ToString()} operand");
+
+                        if (method != null && !requiresMethodBodyScanner)
+                        {
+                            requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForCallSite(
+                                factory.FlowAnnotations, method);
+                        }
+                        if (field != null && !requiresMethodBodyScanner)
+                        {
+                            requiresMethodBodyScanner |= ReflectionMethodBodyScanner.RequiresReflectionMethodBodyScannerForAccess(
+                                factory.FlowAnnotations, field);
+                        }
+
                         break;
 
                     default:
                         ilReader.Skip(opcode);
                         break;
                 }
+            }
+
+            if (requiresMethodBodyScanner)
+            {
+                var list = ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, factory.FlowAnnotations, factory.Logger,
+                    EcmaMethodIL.Create((EcmaMethod)_module.GetMethod(_methodHandle)));
+                _dependencies.AddRange(list);
             }
         }
 
