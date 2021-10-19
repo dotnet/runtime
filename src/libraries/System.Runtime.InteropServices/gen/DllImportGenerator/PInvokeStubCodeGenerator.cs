@@ -138,6 +138,7 @@ namespace Microsoft.Interop
                 .ToList();
 
             StubIsBasicForwarder = !setLastError
+                && managedRetMarshaller.TypeInfo.IsNativeReturnPosition // If the managed return has native return position, then it's the return for both.
                 && _sortedMarshallers.All(
                     m => m is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
                         or { Generator: Forwarder });
