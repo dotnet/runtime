@@ -3061,16 +3061,17 @@ void Compiler::fgSimpleLowering()
     //    if there are any calls to PInvoke methods, there should be a call that we processed
     //    above. However, we still generate calls to PInvoke prolog helpers even if we have dead code
     //    eliminated all the calls.
+    // 4. We will be generating a stack cookie check. In this case we can call a helper to fail fast.
     //
     // An example for these two cases is Windows Amd64, where the ABI requires to have 4 slots for
     // the outgoing arg space if the method makes any calls.
     if (outgoingArgSpaceSize < MIN_ARG_AREA_FOR_CALL)
     {
         if (compUsesThrowHelper || compIsProfilerHookNeeded() ||
-            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()))
+            (compMethodRequiresPInvokeFrame() && !opts.ShouldUsePInvokeHelpers()) || getNeedsGSSecurityCookie())
         {
             outgoingArgSpaceSize = MIN_ARG_AREA_FOR_CALL;
-            JITDUMP("Bumping outgoingArgSpaceSize to %u for throw helper or profile hook or PInvoke helper",
+            JITDUMP("Bumping outgoingArgSpaceSize to %u for possible helper or profile hook call",
                     outgoingArgSpaceSize);
         }
     }
