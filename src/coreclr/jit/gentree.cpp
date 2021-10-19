@@ -14098,6 +14098,13 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         return tree;
     }
 
+    // This condition exists to preserve previous behavior.
+    // TODO-CQ: enable folding for bounds checks nodes.
+    if (tree->OperIsBoundsCheck())
+    {
+        return tree;
+    }
+
 #ifdef FEATURE_SIMD
     if (tree->OperIs(GT_SIMD))
     {
@@ -14449,19 +14456,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
     if (tree->OperIsAnyList())
     {
-        return tree;
-    }
-
-    if (tree->OperIsBoundsCheck())
-    {
-        ssize_t index  = op1->AsIntCon()->IconValue();
-        ssize_t length = op2->AsIntCon()->IconValue();
-
-        if ((0 <= index) && (index < length))
-        {
-            tree->gtBashToNOP();
-        }
-
         return tree;
     }
 
