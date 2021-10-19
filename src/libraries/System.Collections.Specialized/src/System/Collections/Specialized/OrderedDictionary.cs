@@ -128,7 +128,8 @@ namespace System.Collections.Specialized
             get
             {
                 ArrayList objectsArray = EnsureObjectsArray();
-                return new OrderedDictionaryKeyValueCollection(objectsArray, _objectsTable, _comparer);
+                Hashtable objectsTable = EnsureObjectsTable();
+                return new OrderedDictionaryKeyValueCollection(objectsArray, objectsTable, _comparer);
             }
         }
 
@@ -552,20 +553,18 @@ namespace System.Collections.Specialized
             private readonly IEqualityComparer? _comparer;
             private readonly bool _isKeys;
 
-            public OrderedDictionaryKeyValueCollection(ArrayList array, Hashtable? objectsTable, IEqualityComparer? comparer) : this(array, true)
-            {
-                _objectsTable = objectsTable;
-                _comparer = comparer;
-            }
-
-            public OrderedDictionaryKeyValueCollection(ArrayList array) : this(array, false)
-            {
-            }
-
-            private OrderedDictionaryKeyValueCollection(ArrayList array, bool isKeys)
+            public OrderedDictionaryKeyValueCollection(ArrayList array, Hashtable objectsTable, IEqualityComparer? comparer)
             {
                 _objects = array;
-                _isKeys = isKeys;
+                _objectsTable = objectsTable;
+                _comparer = comparer;
+                _isKeys = true;
+            }
+
+            public OrderedDictionaryKeyValueCollection(ArrayList array)
+            {
+                _objects = array;
+                _isKeys = false;
             }
 
             void ICollection.CopyTo(Array array, int index)
@@ -597,7 +596,8 @@ namespace System.Collections.Specialized
             {
                 if (_isKeys)
                 {
-                    return _objectsTable != null && value != null && _objectsTable.ContainsKey(value);
+                    Debug.Assert(_objectsTable is not null);
+                    return value != null && _objectsTable.ContainsKey(value);
                 }
 
                 foreach (object? o in _objects)
