@@ -26,7 +26,6 @@ namespace System.Net.Http.Headers
         private const string sharedMaxAgeString = "s-maxage";
 
         private static readonly HttpHeaderParser s_nameValueListParser = GenericHeaderParser.MultipleValueNameValueParser;
-        private static readonly Action<string> s_checkIsValidToken = CheckIsValidToken;
 
         private bool _noCache;
         private ObjectCollection<string>? _noCacheHeaders;
@@ -51,7 +50,7 @@ namespace System.Net.Http.Headers
             set { _noCache = value; }
         }
 
-        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
+        public ICollection<string> NoCacheHeaders => _noCacheHeaders ??= new TokenObjectCollection();
 
         public bool NoStore
         {
@@ -113,7 +112,7 @@ namespace System.Net.Http.Headers
             set { _privateField = value; }
         }
 
-        public ICollection<string> PrivateHeaders => _privateHeaders ??= new ObjectCollection<string>(s_checkIsValidToken);
+        public ICollection<string> PrivateHeaders => _privateHeaders ??= new TokenObjectCollection();
 
         public bool MustRevalidate
         {
@@ -127,7 +126,7 @@ namespace System.Net.Http.Headers
             set { _proxyRevalidate = value; }
         }
 
-        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Extensions => _extensions ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         public CacheControlHeaderValue()
         {
@@ -567,7 +566,7 @@ namespace System.Net.Http.Headers
                     return false;
                 }
 
-                destination ??= new ObjectCollection<string>(s_checkIsValidToken);
+                destination ??= new TokenObjectCollection();
                 destination.Add(valueString.Substring(current, tokenLength));
 
                 current = current + tokenLength;
@@ -638,14 +637,14 @@ namespace System.Net.Http.Headers
             }
         }
 
-        private static void CheckIsValidToken(string item)
-        {
-            HeaderUtilities.CheckValidToken(item, nameof(item));
-        }
-
         object ICloneable.Clone()
         {
             return new CacheControlHeaderValue(this);
+        }
+
+        private sealed class TokenObjectCollection : ObjectCollection<string>
+        {
+            public override void Validate(string item) => HeaderUtilities.CheckValidToken(item, nameof(item));
         }
     }
 }

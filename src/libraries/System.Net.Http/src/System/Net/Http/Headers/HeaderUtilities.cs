@@ -382,7 +382,7 @@ namespace System.Net.Http.Headers
             if (source == null)
                 return null;
 
-            var copy = new ObjectCollection<NameValueHeaderValue>();
+            var copy = new UnvalidatedObjectCollection<NameValueHeaderValue>();
             foreach (NameValueHeaderValue item in source)
             {
                 copy.Add(new NameValueHeaderValue(item));

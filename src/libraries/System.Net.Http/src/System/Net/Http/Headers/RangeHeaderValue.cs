@@ -24,7 +24,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new ObjectCollection<RangeItemHeaderValue>();
+        public ICollection<RangeItemHeaderValue> Ranges => _ranges ??= new UnvalidatedObjectCollection<RangeItemHeaderValue>();
 
         public RangeHeaderValue()
         {

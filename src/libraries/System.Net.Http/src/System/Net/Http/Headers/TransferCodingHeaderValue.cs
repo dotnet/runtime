@@ -15,12 +15,9 @@ namespace System.Net.Http.Headers
         private ObjectCollection<NameValueHeaderValue>? _parameters;
         private string _value = null!; // empty constructor only used internally and value set with non null
 
-        public string Value
-        {
-            get { return _value; }
-        }
+        public string Value => _value;
 
-        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new ObjectCollection<NameValueHeaderValue>();
+        public ICollection<NameValueHeaderValue> Parameters => _parameters ??= new UnvalidatedObjectCollection<NameValueHeaderValue>();
 
         internal TransferCodingHeaderValue()
         {
