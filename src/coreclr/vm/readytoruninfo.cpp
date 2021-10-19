@@ -108,7 +108,6 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
         pszName = pName->GetName();
         pszNameSpace = "";
-        
         if (pName->GetNameSpace() != NULL)
         {
             pszNameSpace = pName->GetNameSpace();
