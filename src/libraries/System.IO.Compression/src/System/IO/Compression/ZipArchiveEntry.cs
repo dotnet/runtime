@@ -43,8 +43,10 @@ namespace System.IO.Compression
         private string? _fileComment;
         private byte[]? _fileCommentBytes;
         private readonly CompressionLevel? _compressionLevel;
+        private bool _hasUnicodeEntryName;
+        private bool _hasUnicodeComment;
 
-        // Initializes, attaches it to archive
+        // Initializes a ZipArchiveEntry instance for an existing archive entry.
         internal ZipArchiveEntry(ZipArchive archive, ZipCentralDirectoryFileHeader cd)
         {
             _archive = archive;
@@ -81,9 +83,11 @@ namespace System.IO.Compression
             Comment = cd.FileComment != null ? DecodeBytesToString(cd.FileComment) : null;
 
             _compressionLevel = null;
+
+            _hasUnicodeEntryName = _hasUnicodeComment = IsGeneralPurposeUnicodeFlagSet();
         }
 
-        // Initializes new entry
+        // Initializes a ZipArchiveEntry instance for a new archive entry with a specified compression level.
         internal ZipArchiveEntry(ZipArchive archive, string entryName, CompressionLevel compressionLevel)
             : this(archive, entryName)
         {
@@ -94,7 +98,7 @@ namespace System.IO.Compression
             }
         }
 
-        // Initializes new entry
+        // Initializes a ZipArchiveEntry instance for a new archive entry.
         internal ZipArchiveEntry(ZipArchive archive, string entryName)
         {
             _archive = archive;
@@ -140,6 +144,9 @@ namespace System.IO.Compression
             {
                 _archive.AcquireArchiveStream(this);
             }
+
+            _hasUnicodeEntryName = false;
+            _hasUnicodeComment = false;
         }
 
         /// <summary>
@@ -200,17 +207,11 @@ namespace System.IO.Compression
 
                 if (value != null)
                 {
-                    bool isUTF8;
-                    _fileCommentBytes = ZipHelper.EncodeStringToBytes(value, _archive?.EntryNameAndCommentEncoding, out isUTF8);
-
+                    _fileCommentBytes = ZipHelper.EncodeStringToBytes(value, _archive?.EntryNameAndCommentEncoding, out _hasUnicodeComment);
                     if (_fileCommentBytes.Length > ushort.MaxValue)
                     {
                         _fileCommentBytes = _fileCommentBytes[0..ushort.MaxValue];
                     }
-                    if (isUTF8)
-                        _generalPurposeBitFlag |= BitFlagValues.UnicodeFileName;
-                    else
-                        _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileName;
                 }
                 else
                 {
@@ -236,14 +237,8 @@ namespace System.IO.Compression
                 if (value == null)
                     throw new ArgumentNullException(nameof(FullName));
 
-                bool isUTF8;
-                _storedEntryNameBytes = ZipHelper.EncodeStringToBytes(value, _archive?.EntryNameAndCommentEncoding, out isUTF8);
+                _storedEntryNameBytes = ZipHelper.EncodeStringToBytes(value, _archive?.EntryNameAndCommentEncoding, out _hasUnicodeEntryName);
                 _storedEntryName = value;
-
-                if (isUTF8)
-                    _generalPurposeBitFlag |= BitFlagValues.UnicodeFileName;
-                else
-                    _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileName;
 
                 if (ParseFileName(value, _versionMadeByPlatform) == "")
                     VersionToExtractAtLeast(ZipVersionNeededValues.ExplicitDirectory);
@@ -447,12 +442,16 @@ namespace System.IO.Compression
             Debug.Assert(bytes != null);
 
             Encoding encoding;
-            if ((_generalPurposeBitFlag & BitFlagValues.UnicodeFileName) == 0)
+            // If the bit flag is not set, it either means we are adding a new entry, or
+            // this is an existing entry with non-unicode (ASCII) comment and fullname.
+            // If the user chose a default encoding in the ZipArchive.ctor, then we use it, otherwise
+            // we default to UTF8.
+            if (!IsGeneralPurposeUnicodeFlagSet())
             {
-                encoding = _archive == null ?
-                    Encoding.UTF8 :
-                    _archive.EntryNameAndCommentEncoding ?? Encoding.UTF8;
+                encoding = _archive?.EntryNameAndCommentEncoding ?? Encoding.UTF8;
             }
+            // If bit flag is set, it either means we opened an existing archive entry with the unicode flag set, or
+            // we had already set the flag for this entry in a previous comment or fullname change.
             else
             {
                 encoding = Encoding.UTF8;
@@ -547,6 +546,11 @@ namespace System.IO.Compression
             {
                 extraFieldLength = (ushort)bigExtraFieldLength;
             }
+
+            if (_hasUnicodeEntryName || _hasUnicodeComment)
+                _generalPurposeBitFlag |= BitFlagValues.UnicodeFileNameAndComment;
+            else
+                _generalPurposeBitFlag &= ~BitFlagValues.UnicodeFileNameAndComment;
 
             writer.Write(ZipCentralDirectoryFileHeader.SignatureConstant);      // Central directory file header signature  (4 bytes)
             writer.Write((byte)_versionMadeBySpecification);                    // Version made by Specification (version)  (1 byte)
@@ -1113,6 +1117,8 @@ namespace System.IO.Compression
             _archive.ThrowIfDisposed();
         }
 
+        private bool IsGeneralPurposeUnicodeFlagSet() => (_generalPurposeBitFlag & BitFlagValues.UnicodeFileNameAndComment) != 0;
+
         /// <summary>
         /// Gets the file name of the path based on Windows path separator characters
         /// </summary>
@@ -1335,7 +1341,7 @@ namespace System.IO.Compression
         }
 
         [Flags]
-        internal enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileName = 0x800 }
+        internal enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
 
         internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
     }

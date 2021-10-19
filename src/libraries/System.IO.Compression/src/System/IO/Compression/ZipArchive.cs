@@ -231,8 +231,8 @@ namespace System.IO.Compression
             }
             set
             {
-                // Reset it. Will re-acquire value in getter.
-                _archiveCommentAsString = null;
+                _archiveCommentAsString = null; // Will re-acquire value in getter if needed.
+                _archiveComment = null; // Gets refreshed below if needed.
 
                 if (value != null)
                 {
@@ -241,10 +241,6 @@ namespace System.IO.Compression
                     {
                         _archiveComment = _archiveComment[0..ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength];
                     }
-                }
-                else
-                {
-                    _archiveComment = null;
                 }
             }
         }
