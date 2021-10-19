@@ -570,26 +570,43 @@ pal::string_t pal::get_current_os_rid_platform()
     char str[256];
     size_t size = sizeof(str);
 
-    // returns something like 10.5.2
+    // returns something like 10.5.2 or 11.6
     int ret = sysctlbyname("kern.osproductversion", str, &size, nullptr, 0);
     if (ret == 0)
     {
         // the value _should_ be null terminated but let's make sure
         str[size - 1] = 0;
+
         char* pos = strchr(str, '.');
         if (pos != NULL)
         {
-            pos = strchr(pos + 1, '.');
-
-            if (pos != NULL)
+            int major = atoi(str);
+            if (major > 11)
             {
-                // strip anything after second dot and return something like 10.5
+                // starting with 12.0 we track only major release
                 *pos = 0;
-                size = pos - str;
+
+            }
+            else if (major == 12)
+            {
+                // for 11.x we publish RID as 11.0
+                // if we return anything else, it would break the RID graph processing
+                strcpy(str, "11.0");
+            }
+            else
+            {
+                // for 10.x the significant releases are actually the second digit
+                pos = strchr(pos + 1, '.');
+
+                if (pos != NULL)
+                {
+                    // strip anything after second dot and return something like 10.5
+                    *pos = 0;
+                }
             }
         }
 
-        std::string release(str, size);
+        std::string release(str, strlen(str));
         ridOS.append(_X("osx."));
         ridOS.append(release);
     }
