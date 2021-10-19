@@ -62,6 +62,7 @@ jobs:
       - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.codeGenType) }}
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - ${{ 'build_Android_arm64_release_AndroidMono' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
       - ${{ 'build_iOS_arm64_release_iOSMono' }}
 
@@ -157,6 +158,14 @@ jobs:
           artifactFileName: 'AndroidMonoarm64.tar.gz'
           artifactName: 'AndroidMonoarm64'
           displayName: 'Mono Android runtime'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiAndroidApp.tar.gz'
+          artifactName: 'MauiAndroidApp'
+          displayName: 'Maui Android App'
+      
     
     # Download iOSMono tests
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
