@@ -16,11 +16,6 @@
 
     <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
-
-    <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">$(ProductVersion)</PackageVersion>
-    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == '' and '$(PreReleaseVersionLabel)' != 'servicing'">$(PackageVersion)</StableVersion>
-    <StableVersion Condition="($(MSBuildProjectName.Contains('Private')) or $(MSBuildProjectName.Contains('Experimental')) or $(MSBuildProjectName.Contains('Transport'))) and '$(MSBuildProjectExtension)' == '.pkgproj'"></StableVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PreReleaseVersionLabel)' == 'servicing'">
