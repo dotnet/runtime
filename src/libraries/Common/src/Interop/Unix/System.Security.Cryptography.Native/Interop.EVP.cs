@@ -10,29 +10,29 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCreate")]
-        internal static extern SafeEvpMdCtxHandle EvpMdCtxCreate(IntPtr type);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxCreate")]
+        internal static partial SafeEvpMdCtxHandle EvpMdCtxCreate(IntPtr type);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdCtxDestroy")]
         internal static extern void EvpMdCtxDestroy(IntPtr ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestReset")]
-        internal static extern int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestReset")]
+        internal static partial int EvpDigestReset(SafeEvpMdCtxHandle ctx, IntPtr type);
 
         internal static int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ReadOnlySpan<byte> d, int cnt) =>
             EvpDigestUpdate(ctx, ref MemoryMarshal.GetReference(d), cnt);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]
-        private static extern int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ref byte d, int cnt);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestUpdate")]
+        private static partial int EvpDigestUpdate(SafeEvpMdCtxHandle ctx, ref byte d, int cnt);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalEx")]
-        internal static extern int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestFinalEx")]
+        internal static partial int EvpDigestFinalEx(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestCurrent")]
-        internal static extern int EvpDigestCurrent(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestCurrent")]
+        internal static partial int EvpDigestCurrent(SafeEvpMdCtxHandle ctx, ref byte md, ref uint s);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpDigestOneShot")]
-        internal static unsafe extern int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, ref uint mdSize);
+        internal static unsafe extern int EvpDigestOneShot(IntPtr type, byte* source, int sourceSize, byte* md, uint* mdSize);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpMdSize")]
         internal static extern int EvpMdSize(IntPtr md);

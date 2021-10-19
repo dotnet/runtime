@@ -230,7 +230,7 @@ export class WasmRootBuffer {
     }
 
     toString(): string {
-        return "[root buffer @" + this.get_address(0) + ", size " + this.__count + "]";
+        return `[root buffer @${this.get_address(0)}, size ${this.__count} ]`;
     }
 }
 
@@ -290,6 +290,6 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     toString(): string {
-        return "[root @" + this.get_address() + "]";
+        return `[root @${this.get_address()}]`;
     }
 }

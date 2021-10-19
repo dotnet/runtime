@@ -220,6 +220,12 @@ stub_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 {
 }
 
+static gboolean
+stub_sufficient_stack (gsize size)
+{
+	g_assert_not_reached ();
+}
+
 #undef MONO_EE_CALLBACK
 #define MONO_EE_CALLBACK(ret, name, sig) stub_ ## name,
 

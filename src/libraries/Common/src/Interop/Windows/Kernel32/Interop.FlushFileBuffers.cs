@@ -7,8 +7,14 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool FlushFileBuffers(SafeHandle hHandle);
+#else
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool FlushFileBuffers(SafeHandle hHandle);
+#endif
     }
 }

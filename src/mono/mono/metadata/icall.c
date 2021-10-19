@@ -1075,6 +1075,10 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStac
 	if (current < limit)
 		return FALSE;
 
+	if (mono_get_runtime_callbacks ()->is_interpreter_enabled () &&
+			!mono_get_runtime_callbacks ()->interp_sufficient_stack (MONO_MIN_EXECUTION_STACK_SIZE))
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -3354,11 +3358,11 @@ ves_icall_RuntimeMethodInfo_GetGenericArguments (MonoReflectionMethodHandle ref_
 
 MonoObjectHandle
 ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHandle this_arg_handle,
-			  MonoArrayHandle params_handle, MonoExceptionHandleOut exception_out, MonoError *error)
+			  MonoSpanOfObjects *params_span, MonoExceptionHandleOut exception_out, MonoError *error)
 {
 	MonoReflectionMethod* const method = MONO_HANDLE_RAW (method_handle);
 	MonoObject* const this_arg = MONO_HANDLE_RAW (this_arg_handle);
-	MonoArray* const params = MONO_HANDLE_RAW (params_handle);
+	g_assert (params_span != NULL);
 
 	/* 
 	 * Invoke from reflection is supposed to always be a virtual call (the API
@@ -3388,17 +3392,6 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		}
 
 		if (this_arg) {
-			if (!mono_object_isinst_checked (this_arg, m->klass, error)) {
-				if (!is_ok (error)) {
-					exception = mono_error_convert_to_exception (error);
-					goto return_null;
-				}
-				this_name = mono_type_get_full_name (mono_object_class (this_arg));
-				target_name = mono_type_get_full_name (m->klass);
-				msg = g_strdup_printf ("Object of type '%s' doesn't match target type '%s'", this_name, target_name);
-				exception = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", msg);
-				goto return_null;
-			}
 			m = mono_object_get_virtual_method_internal (this_arg, m);
 			/* must pass the pointer to the value for valuetype methods */
 			if (m_class_is_valuetype (m->klass)) {
@@ -3411,43 +3404,15 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 		}
 	}
 
-	if ((m->klass != NULL && m_class_is_byreflike (m->klass)) || m_class_is_byreflike (mono_class_from_mono_type_internal (sig->ret))) {
-		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method with stack pointers via reflection");
-		goto return_null;
-	}
-
-	if (m_type_is_byref (sig->ret)) {
-		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
-		if (ret_byval->type == MONO_TYPE_VOID) {
-			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "ByRef to void return values are not supported in reflection invocation");
-			goto return_null;
-		}	
-		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ret_byval))) {
-			exception = mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef to ByRefLike type via reflection");
-			goto return_null;
-		}
-	}
-
-	pcount = params? mono_array_length_internal (params): 0;
-	if (pcount != sig->param_count) {
-		exception = mono_exception_from_name (mono_defaults.corlib, "System.Reflection", "TargetParameterCountException");
-		goto return_null;
-	}
-
-	if (mono_class_is_abstract (m->klass) && !strcmp (m->name, ".ctor") && !this_arg) {
-		exception = mono_exception_from_name_msg (mono_defaults.corlib, "System.Reflection", "TargetException", "Cannot invoke constructor of an abstract class.");
-		goto return_null;
-	}
-
 	image = m_class_get_image (m->klass);
 	
 	if (m_class_get_rank (m->klass) && !strcmp (m->name, ".ctor")) {
 		int i;
-		pcount = mono_array_length_internal (params);
+		pcount = mono_span_length (params_span);
 		uintptr_t * const lengths = g_newa (uintptr_t, pcount);
 		/* Note: the synthetized array .ctors have int32 as argument type */
 		for (i = 0; i < pcount; ++i)
-			lengths [i] = *(int32_t*) ((char*)mono_array_get_internal (params, gpointer, i) + sizeof (MonoObject));
+			lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, i) + sizeof (MonoObject));
 
 		if (m_class_get_rank (m->klass) == 1 && sig->param_count == 2 && m_class_get_rank (m_class_get_element_class (m->klass))) {
 			/* This is a ctor for jagged arrays. MS creates an array of arrays. */
@@ -3476,8 +3441,8 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			intptr_t * const lower_bounds = (intptr_t *)g_alloca (sizeof (intptr_t) * pcount);
 
 			for (i = 0; i < pcount / 2; ++i) {
-				lower_bounds [i] = *(int32_t*) ((char*)mono_array_get_internal (params, gpointer, (i * 2)) + sizeof (MonoObject));
-				lengths [i] = *(int32_t*) ((char*)mono_array_get_internal (params, gpointer, (i * 2) + 1) + sizeof (MonoObject));
+				lower_bounds [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2)) + sizeof (MonoObject));
+				lengths [i] = *(int32_t*) ((char*)mono_span_get (params_span, MonoObject*, (i * 2) + 1) + sizeof (MonoObject));
 			}
 
 			arr = mono_array_new_full_checked (m->klass, lengths, lower_bounds, error);
@@ -3485,7 +3450,7 @@ ves_icall_InternalInvoke (MonoReflectionMethodHandle method_handle, MonoObjectHa
 			goto exit;
 		}
 	}
-	result = mono_runtime_invoke_array_checked (m, obj, params, error);
+	result = mono_runtime_invoke_span_checked (m, obj, params_span, error);
 	goto exit;
 return_null:
 	result = NULL;

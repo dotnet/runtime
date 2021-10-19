@@ -178,6 +178,7 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // DOS device paths (\\.\ and \\?\) are a Windows concept
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60427")]
         public async Task ReadAllBytes_NonSeekableFileStream_InWindows()
         {
             string pipeName = FileSystemTest.GetNamedPipeServerStreamName();
@@ -190,7 +191,7 @@ namespace System.IO.Tests
             {
                 Task writingServerTask = WaitConnectionAndWritePipeStreamAsync(namedPipeWriterStream, contentBytes, cts.Token);
                 Task<byte[]> readTask = Task.Run(() => File.ReadAllBytes(pipePath), cts.Token);
-                cts.CancelAfter(TimeSpan.FromSeconds(50));
+                cts.CancelAfter(TimeSpan.FromSeconds(3));
 
                 await writingServerTask;
                 byte[] readBytes = await readTask;

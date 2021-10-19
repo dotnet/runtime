@@ -471,12 +471,12 @@ mini_native_type_replace_type (MonoType *type)
 	klass = type->data.klass;
 
 	if (mono_class_is_magic_int (klass))
-		return m_type_is_byref (type) ? m_class_get_this_arg (mono_defaults.int_class) : mono_get_int_type ();
+		return m_type_is_byref (type) ? mono_class_get_byref_type (mono_defaults.int_class) : mono_get_int_type ();
 	if (mono_class_is_magic_float (klass))
 #if TARGET_SIZEOF_VOID_P == 8
-		return m_type_is_byref (type) ? m_class_get_this_arg (mono_defaults.double_class) : m_class_get_byval_arg (mono_defaults.double_class);
+		return m_type_is_byref (type) ? mono_class_get_byref_type (mono_defaults.double_class) : m_class_get_byval_arg (mono_defaults.double_class);
 #else
-		return m_type_is_byref (type) ? m_class_get_this_arg (mono_defaults.single_class) : m_class_get_byval_arg (mono_defaults.single_class);
+		return m_type_is_byref (type) ? mono_class_get_byref_type (mono_defaults.single_class) : m_class_get_byval_arg (mono_defaults.single_class);
 #endif
 	return type;
 }

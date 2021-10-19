@@ -5325,24 +5325,24 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 {
     assert(node->OperIsBoundsCheck());
     GenTree* other;
-    if (CheckImmedAndMakeContained(node, node->gtIndex))
+    if (CheckImmedAndMakeContained(node, node->GetIndex()))
     {
-        other = node->gtArrLen;
+        other = node->GetArrayLength();
     }
-    else if (CheckImmedAndMakeContained(node, node->gtArrLen))
+    else if (CheckImmedAndMakeContained(node, node->GetArrayLength()))
     {
-        other = node->gtIndex;
+        other = node->GetIndex();
     }
-    else if (IsContainableMemoryOp(node->gtIndex))
+    else if (IsContainableMemoryOp(node->GetIndex()))
     {
-        other = node->gtIndex;
+        other = node->GetIndex();
     }
     else
     {
-        other = node->gtArrLen;
+        other = node->GetArrayLength();
     }
 
-    if (node->gtIndex->TypeGet() == node->gtArrLen->TypeGet())
+    if (node->GetIndex()->TypeGet() == node->GetArrayLength()->TypeGet())
     {
         if (IsContainableMemoryOp(other))
         {

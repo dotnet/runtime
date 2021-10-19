@@ -6781,19 +6781,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], double) = scalbn (LOCAL_VAR (ip [2], double), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGB) {
-			int result;
-			double x = LOCAL_VAR (ip [2], double);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogb (x);
-			LOCAL_VAR (ip [1],  gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 #define MATH_UNOPF(mathfunc) \
 	LOCAL_VAR (ip [1], float) = mathfunc (LOCAL_VAR (ip [2], float)); \
@@ -6834,19 +6821,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], float) = scalbnf (LOCAL_VAR (ip [2], float), LOCAL_VAR (ip [3], gint32));
 			ip += 4;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ILOGBF) {
-			int result;
-			float x = LOCAL_VAR (ip [2], float);
-			if (FP_ILOGB0 != INT_MIN && x == 0.0)
-				result = INT_MIN;
-			else if (FP_ILOGBNAN != INT_MAX && isnan(x))
-				result = INT_MAX;
-			else
-				result = ilogbf (x);
-			LOCAL_VAR (ip [1], gint32) = result;
-			ip += 3;
-			MINT_IN_BREAK;
-		}
 
 		MINT_IN_CASE(MINT_INTRINS_ENUM_HASFLAG) {
 			MonoClass *klass = (MonoClass*)frame->imethod->data_items [ip [4]];
@@ -7518,6 +7492,14 @@ interp_jit_info_foreach (InterpJitInfoFunc func, gpointer user_data)
 			func (copy_jit_info_data.jit_info_array [i], user_data);
 		g_free (copy_jit_info_data.jit_info_array);
 	}
+}
+
+static gboolean
+interp_sufficient_stack (gsize size)
+{
+	ThreadContext *context = get_context ();
+
+	return (context->stack_pointer + size) < (context->stack_start + INTERP_STACK_SIZE);
 }
 
 static void
