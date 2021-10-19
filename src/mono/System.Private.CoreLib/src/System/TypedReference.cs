@@ -11,9 +11,9 @@ namespace System
     {
         #region sync with object-internals.h
         #pragma warning disable CA1823 // used by runtime
-        private RuntimeTypeHandle type;
-        private IntPtr Value;
-        private IntPtr Type;
+        private readonly RuntimeTypeHandle type;
+        private readonly IntPtr _value;
+        private readonly IntPtr _type;
         #pragma warning restore CA1823
         #endregion
 
@@ -63,7 +63,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            if (Type == IntPtr.Zero)
+            if (_type == IntPtr.Zero)
                 return 0;
             else
                 return __reftype(this).GetHashCode();
@@ -86,7 +86,7 @@ namespace System
         {
             get
             {
-                return Value == IntPtr.Zero && Type == IntPtr.Zero;
+                return _value == IntPtr.Zero && _type == IntPtr.Zero;
             }
         }
 
