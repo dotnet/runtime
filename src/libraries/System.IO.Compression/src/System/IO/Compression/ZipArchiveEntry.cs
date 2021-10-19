@@ -78,8 +78,9 @@ namespace System.IO.Compression
             FullName = DecodeBytesToString(cd.Filename);
 
             _lhUnknownExtraFields = null;
-            // the cd should have these as null if we aren't in Update mode
+            // the cd should have this as null if we aren't in Update mode
             _cdUnknownExtraFields = cd.ExtraFields;
+
             Comment = cd.FileComment != null ? DecodeBytesToString(cd.FileComment) : null;
 
             _compressionLevel = null;
