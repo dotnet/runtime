@@ -190,6 +190,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_NonBacktracking()
         {
             var turkish = new CultureInfo("tr-TR");
@@ -275,11 +276,17 @@ namespace System.Text.RegularExpressions.Tests
                 yield return new object[] { "(?i:iI+)", options, invariant, "abc\u0130\u0131Ixyz", "" };
 
                 // Expected answers in the Turkish culture
-                yield return new object[] { "(?i:I)", options, turkish, "xy\u0131ab", "\u0131" };
-                yield return new object[] { "(?i:iI+)", options, turkish, "abcIIIxyz", "" };
-                yield return new object[] { "(?i:iI+)", options, turkish, "abcIi\u0130xyz", "" };
-                yield return new object[] { "(?i:iI+)", options, turkish, "abcI\u0130ixyz", "" };
-                yield return new object[] { "(?i:[^IJKLM]I)", options, turkish, "ii\u0130i\u0131ab", "i\u0131" };
+                //
+                // Android produces unexpected results for tr-TR
+                // https://github.com/dotnet/runtime/issues/60568
+                if (!PlatformDetection.IsAndroid)
+                {
+                    yield return new object[] { "(?i:I)", options, turkish, "xy\u0131ab", "\u0131" };
+                    yield return new object[] { "(?i:iI+)", options, turkish, "abcIIIxyz", "" };
+                    yield return new object[] { "(?i:iI+)", options, turkish, "abcIi\u0130xyz", "" };
+                    yield return new object[] { "(?i:iI+)", options, turkish, "abcI\u0130ixyz", "" };
+                    yield return new object[] { "(?i:[^IJKLM]I)", options, turkish, "ii\u0130i\u0131ab", "i\u0131" };
+                }
 
                 // None and Compiled are separated into the Match_In_Different_Cultures_CriticalCases test
                 if (options == RegexHelpers.RegexOptionNonBacktracking)
@@ -305,9 +312,14 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { "(?i:[^IJKLM]I)", options, invariant, "ii\u0130i\u0131ab", "\u0130i" }; // <-- failing for None, Compiled
 
             // Expected answers in the Turkish culture
-            yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130IIxyz", "\u0130II" };           // <-- failing for None, Compiled
-            yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130\u0131Ixyz", "\u0130\u0131I" }; // <-- failing for None, Compiled
-            yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130Iixyz", "\u0130I" };            // <-- failing for None, Compiled
+            // Android produces unexpected results for tr-TR
+            // https://github.com/dotnet/runtime/issues/60568
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130IIxyz", "\u0130II" };           // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130\u0131Ixyz", "\u0130\u0131I" }; // <-- failing for None, Compiled
+                yield return new object[] { "(?i:iI+)", options, turkish, "abc\u0130Iixyz", "\u0130I" };            // <-- failing for None, Compiled
+            }
         }
 
         public static IEnumerable<object[]> Match_In_Different_Cultures_CriticalCases_TestData() =>
