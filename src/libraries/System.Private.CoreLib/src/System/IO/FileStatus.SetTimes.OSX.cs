@@ -46,9 +46,9 @@ namespace System.IO
             attrList.bitmapCount = Interop.libc.AttrList.ATTR_BIT_MAP_COUNT;
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
-            Interop.Error error = 
-                Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong)) == 0 ? 
-                Interop.Error.Success : 
+            Interop.Error error =
+                Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong)) == 0 ?
+                Interop.Error.SUCCESS :
                 Interop.Sys.GetLastErrorInfo();
 
             return error;

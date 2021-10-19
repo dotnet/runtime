@@ -87,10 +87,12 @@ namespace System.IO.Tests
             // Only testing with utc because it would be hard to check if lastwrite utc was the
             // same type of method as lastwrite local since their .Getter fields are different.
             // This test is required as some apis change more dates than would be desired (eg.
-            // utimes()/utimensat() set creation time too). There were issues related to the
-            // order in which the dates are set, so this test should almost fully eliminate any
-            // possibilities of that in the future by having a proper test for it. Also, it should
-            // be noted that the combination (A, B, false) is not the same as (B, A, true).
+            // utimes()/utimensat() set the write and access times, but as a side effect of
+            // the implementation, it sets creation time too when the write time is less than
+            // the creation time). There were issues related to the order in which the dates are
+            // set, so this test should almost fully eliminate any possibilities of that in the
+            // future by having a proper test for it. Also, it should be noted that the
+            // combination (A, B, false) is not the same as (B, A, true).
 
             // The order that these LINQ expression creates is (when all 3 are available):
             // [0] = (creation, access, False), [1] = (creation, access, True),  [2] = (creation, write, False),
