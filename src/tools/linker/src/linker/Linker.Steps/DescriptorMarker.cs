@@ -9,8 +9,6 @@ using System.Xml.XPath;
 
 using Mono.Cecil;
 
-#nullable enable
-
 namespace Mono.Linker.Steps
 {
 	public class DescriptorMarker : ProcessLinkerXmlBase

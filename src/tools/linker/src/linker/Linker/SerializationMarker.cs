@@ -55,7 +55,7 @@ namespace Mono.Linker
 
 		SerializerKind ActiveSerializers { get; set; }
 
-		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> _trackedRoots;
+		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>>? _trackedRoots;
 		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> TrackedRoots {
 			get {
 				if (_trackedRoots == null)
@@ -65,7 +65,7 @@ namespace Mono.Linker
 			}
 		}
 
-		HashSet<TypeDefinition> _recursiveTypes;
+		HashSet<TypeDefinition>? _recursiveTypes;
 		HashSet<TypeDefinition> RecursiveTypes {
 			get {
 				if (_recursiveTypes == null)
@@ -185,7 +185,7 @@ namespace Mono.Linker
 			// This doesn't handle other TypeSpecs. We are only matching what xamarin-android used to do.
 			// Arrays will still work because Resolve returns the array element type.
 
-			TypeDefinition type = _context.TryResolve (typeRef);
+			TypeDefinition? type = _context.TryResolve (typeRef);
 			if (type == null)
 				return;
 

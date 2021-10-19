@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -10,13 +11,13 @@ namespace Mono.Linker
 	public class CustomAttributeSource
 	{
 		public AttributeInfo PrimaryAttributeInfo { get; }
-		private readonly Dictionary<AssemblyDefinition, AttributeInfo> _embeddedXmlInfos;
+		private readonly Dictionary<AssemblyDefinition, AttributeInfo?> _embeddedXmlInfos;
 		readonly LinkContext _context;
 
 		public CustomAttributeSource (LinkContext context)
 		{
 			PrimaryAttributeInfo = new AttributeInfo ();
-			_embeddedXmlInfos = new Dictionary<AssemblyDefinition, AttributeInfo> ();
+			_embeddedXmlInfos = new Dictionary<AssemblyDefinition, AttributeInfo?> ();
 			_context = context;
 		}
 
@@ -34,7 +35,7 @@ namespace Mono.Linker
 			};
 		}
 
-		public bool TryGetEmbeddedXmlInfo (ICustomAttributeProvider provider, out AttributeInfo xmlInfo)
+		public bool TryGetEmbeddedXmlInfo (ICustomAttributeProvider provider, [NotNullWhen (true)] out AttributeInfo? xmlInfo)
 		{
 			var assembly = GetAssemblyFromCustomAttributeProvider (provider);
 

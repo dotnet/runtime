@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Linker.Dataflow;
@@ -16,7 +17,13 @@ namespace Mono.Linker.Steps
 	// - this will discover types in non-"link" assemblies as well
 	public class DiscoverSerializationHandler : IMarkHandler
 	{
-		LinkContext _context;
+		LinkContext? _context;
+		LinkContext Context {
+			get {
+				Debug.Assert (_context != null);
+				return _context;
+			}
+		}
 
 		public void Initialize (LinkContext context, MarkContext markContext)
 		{
@@ -29,20 +36,20 @@ namespace Mono.Linker.Steps
 		{
 			var type = method.DeclaringType;
 
-			if (!_context.SerializationMarker.IsActive (SerializerKind.DataContractSerializer) &&
+			if (!Context.SerializationMarker.IsActive (SerializerKind.DataContractSerializer) &&
 				method.IsConstructor && !method.IsStatic &&
 				((type.Namespace == "System.Runtime.Serialization" && type.Name == "DataContractSerializer") ||
 				(type.Namespace == "System.Runtime.Serialization.Json" && type.Name == "DataContractJsonSerializer"))) {
 
-				_context.SerializationMarker.Activate (SerializerKind.DataContractSerializer);
+				Context.SerializationMarker.Activate (SerializerKind.DataContractSerializer);
 			}
 
-			if (!_context.SerializationMarker.IsActive (SerializerKind.XmlSerializer) &&
+			if (!Context.SerializationMarker.IsActive (SerializerKind.XmlSerializer) &&
 				method.IsConstructor && !method.IsStatic &&
 				type.Namespace == "System.Xml.Serialization" &&
 				type.Name == "XmlSerializer") {
 
-				_context.SerializationMarker.Activate (SerializerKind.XmlSerializer);
+				Context.SerializationMarker.Activate (SerializerKind.XmlSerializer);
 			}
 		}
 
@@ -88,9 +95,9 @@ namespace Mono.Linker.Steps
 				return;
 
 			if (serializedFor.HasFlag (SerializerKind.DataContractSerializer))
-				_context.SerializationMarker.TrackForSerialization (provider, SerializerKind.DataContractSerializer);
+				Context.SerializationMarker.TrackForSerialization (provider, SerializerKind.DataContractSerializer);
 			if (serializedFor.HasFlag (SerializerKind.XmlSerializer))
-				_context.SerializationMarker.TrackForSerialization (provider, SerializerKind.XmlSerializer);
+				Context.SerializationMarker.TrackForSerialization (provider, SerializerKind.XmlSerializer);
 		}
 
 		static bool IsPreservedSerializationAttribute (ICustomAttributeProvider provider, CustomAttribute attribute, out SerializerKind serializerKind)
