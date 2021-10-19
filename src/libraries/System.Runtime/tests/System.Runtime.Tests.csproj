@@ -113,9 +113,6 @@
     <Compile Include="System\RangeTests.cs" />
     <Compile Include="System\RankExceptionTests.cs" />
     <Compile Include="System\Reflection\NullabilityInfoContextTests.cs" />
-    <Compile Include="System\Runtime\Intrinsics\Vector128Tests.cs" />
-    <Compile Include="System\Runtime\Intrinsics\Vector256Tests.cs" />
-    <Compile Include="System\Runtime\Intrinsics\Vector64Tests.cs" />
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
