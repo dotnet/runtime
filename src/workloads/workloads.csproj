@@ -48,7 +48,7 @@
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
 
-  <Target Name="Build" DependsOnTargets="GenerateVersions">
+  <Target Name="Build" DependsOnTargets="_GenerateMsiVersionString">
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
@@ -193,30 +193,5 @@
     </ItemGroup>
 
     <MSBuild Projects="@(VisualStudioManifestProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
-  </Target>
-
-  <Target Name="GenerateVersions" DependsOnTargets="GetAssemblyVersion">
-    <Exec Command="git rev-list --count HEAD"
-          ConsoleToMSBuild="true"
-          Condition=" '$(GitCommitCount)' == '' ">
-      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitCount" />
-    </Exec>
-
-    <Error Condition=" '$(OfficialBuild)' == 'true' And '$(_PatchNumber)' == '' "
-           Text="_PatchNumber should not be empty in an official build. Check if there were changes in Arcade." />
-
-    <PropertyGroup>
-      <GitCommitCount>$(GitCommitCount.PadLeft(6,'0'))</GitCommitCount>
-
-      <!-- This number comes from arcade and combines the date based build number id and the revision (incremental number per day) -->
-      <CombinedBuildNumberAndRevision>$(_PatchNumber)</CombinedBuildNumberAndRevision>
-      <!-- Fallback to commit count when patch number is not set. This happens only during CI. -->
-      <CombinedBuildNumberAndRevision Condition=" '$(CombinedBuildNumberAndRevision)' == '' ">$(GitCommitCount)</CombinedBuildNumberAndRevision>
-
-      <!-- This number comes from arcade and combines the date based build number id and the revision (incremental number per day) -->
-      <SDKBundleVersion>$(FileVersion)</SDKBundleVersion>
-      <!-- Fallback to commit count when patch number is not set. This happens only during CI. -->
-      <SDKBundleVersion Condition=" '$(SDKBundleVersion)' == '' ">$(VersionPrefix).$(CombinedBuildNumberAndRevision)</SDKBundleVersion>
-    </PropertyGroup>
   </Target>
 </Project>
