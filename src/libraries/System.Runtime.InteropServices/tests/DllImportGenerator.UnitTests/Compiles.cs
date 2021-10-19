@@ -388,7 +388,7 @@ namespace DllImportGenerator.UnitTests
             Assert.NotNull(method.GetDllImportData());
         }
 
-    public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
+        public static IEnumerable<object[]> CodeSnippetsToCompileWithMarshalType()
         {
             yield break;
         }
