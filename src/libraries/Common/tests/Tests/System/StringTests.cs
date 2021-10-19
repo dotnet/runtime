@@ -5127,6 +5127,8 @@ namespace System.Tests
         {
             List<Tuple<char, char, CultureInfo>> tuples = new List<Tuple<char, char, CultureInfo>>();
 
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
             if (!PlatformDetection.IsAndroid)
             {
                 tuples.Add(Tuple.Create('\u0049', '\u0131', new CultureInfo("tr-TR")));
