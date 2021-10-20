@@ -127,8 +127,8 @@ namespace CoreclrTestLib
                             // 86 - PACKAGE_INSTALLATION_TIMEOUT
                             if (action == "install" && (exitCode == 78 || exitCode == 81|| exitCode == 85|| exitCode == 86))
                             {
-                                CreateRetryFile($"{testBinaryBase}/.retry", exitCode);
-                                CreateRetryFile($"{testBinaryBase}/.reboot", exitCode);
+                                CreateRetryFile($"{testBinaryBase}/.retry", category, exitCode);
+                                CreateRetryFile($"{testBinaryBase}/.reboot", category, exitCode);
                                 return exitCode;
                             }
 
@@ -180,11 +180,11 @@ namespace CoreclrTestLib
             return $"{cmdPrefix} \"{cmd}\"";
         }
 
-        private static void CreateRetryFile(string fileName, int exitCode)
+        private static void CreateRetryFile(string fileName, int exitCode, string appName)
         {
             using (StreamWriter writer = new StreamWriter(fileName))  
             {
-                writer.WriteLine(exitCode); 
+                writer.WriteLine($"appName: {appName}; exitCode: {exitCode}"); 
             }
         }
     }
