@@ -1230,7 +1230,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
             SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
-            SdbHelper.SetStore(store);
+            SdbHelper.ResetStore(store);
             return store;
         }
 

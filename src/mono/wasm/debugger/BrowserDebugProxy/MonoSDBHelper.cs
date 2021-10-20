@@ -379,7 +379,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal class MonoBinaryReader : BinaryReader
     {
-        public MonoBinaryReader(Stream stream) : base(stream) {}
+        public bool HasError { get; }
+        public MonoBinaryReader(Stream stream, bool hasError = false) : base(stream)
+        {
+            HasError = hasError;
+        }
 
         internal static unsafe void PutBytesBE (byte *dest, byte *src, int count)
         {
@@ -656,9 +660,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
-        private Dictionary<int, MethodInfoWithDebugInformation> methods = new();
-        private Dictionary<int, AssemblyInfo> assemblies = new();
-        private Dictionary<int, TypeInfoWithDebugInformation> types = new();
+        private Dictionary<int, MethodInfoWithDebugInformation> methods;
+        private Dictionary<int, AssemblyInfo> assemblies;
+        private Dictionary<int, TypeInfoWithDebugInformation> types;
 
         internal Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
         internal Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
@@ -673,15 +677,16 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.proxy = proxy;
             this.logger = logger;
-            this.store = null;
+            ResetStore(null);
         }
 
-        public void SetStore(DebugStore store)
+        public void ResetStore(DebugStore store)
         {
             this.store = store;
             this.methods = new();
             this.assemblies = new();
             this.types = new();
+            ClearCache();
         }
 
         public async Task<AssemblyInfo> GetAssemblyInfo(SessionId sessionId, int assemblyId, CancellationToken token)
@@ -824,7 +829,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
             var retDebuggerCmd = new MemoryStream(newBytes);
-            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd, res.IsErr);
             return retDebuggerCmdReader;
         }
 
@@ -862,7 +867,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
             var retDebuggerCmd = new MemoryStream(newBytes);
-            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
+            var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd, res.IsErr);
             return retDebuggerCmdReader;
         }
 
@@ -2533,15 +2538,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             JArray locals = new JArray();
             retDebuggerCmdReader = await SendDebuggerAgentCommand<CmdFrame>(sessionId, CmdFrame.GetValues, commandParams, token);
             int etype = retDebuggerCmdReader.ReadByte();
-            try
-            {
-                retDebuggerCmdReader = await SendDebuggerAgentCommandWithParms<CmdFrame>(sessionId, CmdFrame.SetValues, commandParams, etype, newValue, token);
-            }
-            catch (Exception)
-            {
+            retDebuggerCmdReader = await SendDebuggerAgentCommandWithParms<CmdFrame>(sessionId, CmdFrame.SetValues, commandParams, etype, newValue, token);
+            if (retDebuggerCmdReader.HasError)
                 return false;
-            }
-
             return true;
         }
     }
