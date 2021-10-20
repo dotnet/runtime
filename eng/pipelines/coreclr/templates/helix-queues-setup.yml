@@ -32,7 +32,7 @@ jobs:
       - OSX.1015.Amd64.Open
 
     # Android arm64
-    - ${{ if in(parameters.platform, 'Android_arm64') }}:
+    - ${{ if in(parameters.platform, 'Android_arm64', 'Android_arm') }}:
       - Windows.10.Amd64.Android.Open
 
     # Android x64
