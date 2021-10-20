@@ -4887,7 +4887,7 @@ HCIMPLEND
 // Currently, counter is a pointer into the Tier0 method stack
 // frame so we have exclusive access.
 
-void JIT_Patchpoint(int* counter, int ilOffset)
+void DISABLE_ASAN JIT_Patchpoint(int* counter, int ilOffset)
 {
     // This method may not return normally
     STATIC_CONTRACT_GC_NOTRIGGER;
