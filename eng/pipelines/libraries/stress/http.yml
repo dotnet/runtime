@@ -30,7 +30,7 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore1ESPool-Public-Int
     demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
   steps:
@@ -90,7 +90,7 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore1ESPool-Public-Int
     demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
 
   steps:

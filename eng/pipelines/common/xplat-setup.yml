@@ -115,12 +115,12 @@ jobs:
       pool:
         # Public Linux Build Pool
         ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Android', 'Tizen'), eq(parameters.hostedOs, 'Linux')), eq(variables['System.TeamProject'], 'public')) }}:
-          name:  NetCore1ESPool-Public
+          name:  NetCore1ESPool-Public-Int
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
         # Official Build Linux Pool
         ${{ if and(or(in(parameters.osGroup, 'Linux', 'FreeBSD', 'Browser', 'Android', 'Tizen'), eq(parameters.hostedOs, 'Linux')), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Internal
+          name: NetCore1ESPool-Internal-Int
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
@@ -129,12 +129,12 @@ jobs:
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Internal
+          name: NetCore1ESPool-Internal-Int
           demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
-          name: NetCore1ESPool-Public
+          name: NetCore1ESPool-Public-Int
           demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019.Open
 
 
