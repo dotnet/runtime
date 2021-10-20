@@ -7208,7 +7208,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean direct_icall; direct_icall = FALSE;
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
+#ifdef TARGET_WASM
 			gboolean needs_stack_walk; needs_stack_walk = FALSE;
+#endif
 
 			// Variables shared by CEE_CALLI and CEE_CALL/CEE_CALLVIRT.
 			common_call = FALSE;
@@ -7237,7 +7239,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				printf ("cmethod = %s\n", mono_method_get_full_name (cmethod));
 
 			MonoMethod *cil_method; cil_method = cmethod;
-				
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class))
 					// FIXME:
@@ -7255,7 +7256,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					g_assert (cmethod);
 				}
 			}
-					
+
 			if (!dont_verify && !cfg->skip_visibility) {
 				MonoMethod *target_method = cil_method;
 				if (method->is_inflated) {
@@ -7274,9 +7275,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* Use the interpreter instead */
 					cfg->exception_message = g_strdup ("stack walk");
 					cfg->disable_llvm = TRUE;
-				} else {
+				}
+#ifdef TARGET_WASM
+				else {
 					needs_stack_walk = TRUE;
 				}
+#endif
 			}
 
 			if (!virtual_ && (cmethod->flags & METHOD_ATTRIBUTE_ABSTRACT)) {

@@ -6,6 +6,7 @@ include(CheckTypeSize)
 include(CheckStructHasMember)
 include(CheckSymbolExists)
 include(CheckCCompilerFlag)
+include(CheckCSourceCompiles)
 
 # Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
 # the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
@@ -123,6 +124,19 @@ check_type_size("void*" SIZEOF_VOID_P)
 check_type_size("long" SIZEOF_LONG)
 check_type_size("long long" SIZEOF_LONG_LONG)
 check_type_size("size_t" SIZEOF_SIZE_T)
+
+set(CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+check_c_source_compiles(
+    "
+    #include <string.h>
+    int main(void)
+    {
+        char buffer[1];
+        char c = *strerror_r(0, buffer, 0);
+        return 0;
+    }
+    "
+    HAVE_GNU_STRERROR_R)
 
 # ICONV
 set(ICONV_LIB)
