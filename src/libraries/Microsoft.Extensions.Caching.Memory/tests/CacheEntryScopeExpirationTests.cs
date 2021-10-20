@@ -340,7 +340,7 @@ namespace Microsoft.Extensions.Caching.Memory
             string key = "myKey";
             string key1 = "myKey1";
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
             ICacheEntry entry;
             using (entry = cache.CreateEntry(key))
@@ -351,7 +351,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 cache.Set(key1, obj, new MemoryCacheEntryOptions().AddExpirationToken(expirationToken));
             }
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
             Assert.Equal(trackLinkedCacheEntries ? 1 : 0, entry.ExpirationTokens.Count);
             Assert.Null(entry.AbsoluteExpiration);
@@ -367,7 +367,7 @@ namespace Microsoft.Extensions.Caching.Memory
             string key = "myKey";
             string key1 = "myKey1";
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
             ICacheEntry entry;
             ICacheEntry entry1;
@@ -387,7 +387,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 VerifyCurrentEntry(trackLinkedCacheEntries, entry);
             }
 
-            Assert.Null(CacheEntryHelper.Current);
+            Assert.Null(CacheEntry.Current);
 
             Assert.Single(entry1.ExpirationTokens);
             Assert.Null(entry1.AbsoluteExpiration);
@@ -543,11 +543,11 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (trackLinkedCacheEntries)
             {
-                Assert.Same(entry, CacheEntryHelper.Current);
+                Assert.Same(entry, CacheEntry.Current);
             }
             else
             {
-                Assert.Null(CacheEntryHelper.Current);
+                Assert.Null(CacheEntry.Current);
             }
         }
     }

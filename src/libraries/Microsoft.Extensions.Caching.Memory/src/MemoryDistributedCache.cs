@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Caching.Distributed
 {
     public class MemoryDistributedCache : IDistributedCache
     {
-        private readonly IMemoryCache _memCache;
+        private readonly MemoryCache _memCache;
 
         public MemoryDistributedCache(IOptions<MemoryDistributedCacheOptions> optionsAccessor)
             : this(optionsAccessor, NullLoggerFactory.Instance) { }

@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public int Count => _entries.Count;
 
         // internal for testing
-        internal long Size { get => Interlocked.Read(ref _cacheSize); }
+        internal long Size => Volatile.Read(ref _cacheSize);
 
         internal bool TrackLinkedCacheEntries { get; }
 
@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 return;
             }
 
-            if (_options.SizeLimit.HasValue && entry.Size < 0)
+            if (_options.HasSizeLimit && entry.Size < 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
@@ -147,7 +147,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     if (entryAdded)
                     {
-                        if (_options.SizeLimit.HasValue)
+                        if (_options.HasSizeLimit)
                         {
                             // The prior entry was removed, decrease the by the prior entry's size
                             Interlocked.Add(ref _cacheSize, -priorEntry.Size);
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
                 else
                 {
-                    if (_options.SizeLimit.HasValue)
+                    if (_options.HasSizeLimit)
                     {
                         // Entry could not be added, reset cache size
                         Interlocked.Add(ref _cacheSize, -entry.Size);
@@ -201,8 +201,9 @@ namespace Microsoft.Extensions.Caching.Memory
 
             DateTime utcNow = UtcNow;
 
-            if (_entries.TryGetValue(key, out CacheEntry entry))
+            if (_entries.TryGetValue(key, out CacheEntry tmp))
             {
+                CacheEntry entry = tmp;
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
                 if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
@@ -210,11 +211,11 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
-                    if (TrackLinkedCacheEntries && entry.CanPropagateOptions())
+                    if (TrackLinkedCacheEntries && (entry.CanPropagateTokens() || entry.HasAbsoluteExpiration))
                     {
                         // When this entry is retrieved in the scope of creating another entry,
                         // that entry needs a copy of these expiration tokens.
-                        entry.PropagateOptions(CacheEntryHelper.Current);
+                        entry.PropagateOptionsToCurrent();
                     }
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
@@ -242,7 +243,7 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
             if (_entries.TryRemove(key, out CacheEntry entry))
             {
-                if (_options.SizeLimit.HasValue)
+                if (_options.HasSizeLimit)
                 {
                     Interlocked.Add(ref _cacheSize, -entry.Size);
                 }
@@ -258,7 +259,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (EntriesCollection.Remove(new KeyValuePair<object, CacheEntry>(entry.Key, entry)))
             {
-                if (_options.SizeLimit.HasValue)
+                if (_options.HasSizeLimit)
                 {
                     Interlocked.Add(ref _cacheSize, -entry.Size);
                 }
@@ -308,26 +309,29 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry)
         {
-            if (!_options.SizeLimit.HasValue)
+            long sizeLimit = _options.SizeLimitValue;
+            if (sizeLimit < 0)
             {
                 return false;
             }
 
+            long sizeRead = Volatile.Read(ref _cacheSize);
             for (int i = 0; i < 100; i++)
             {
-                long sizeRead = Interlocked.Read(ref _cacheSize);
                 long newSize = sizeRead + entry.Size;
 
-                if (newSize < 0 || newSize > _options.SizeLimit)
+                if ((ulong)newSize > (ulong)sizeLimit)
                 {
                     // Overflow occurred, return true without updating the cache size
                     return true;
                 }
 
-                if (sizeRead == Interlocked.CompareExchange(ref _cacheSize, newSize, sizeRead))
+                long original = Interlocked.CompareExchange(ref _cacheSize, newSize, sizeRead);
+                if (sizeRead == original)
                 {
                     return false;
                 }
+                sizeRead = original;
             }
 
             return true;
@@ -344,19 +348,23 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void OvercapacityCompaction()
         {
-            long currentSize = Interlocked.Read(ref _cacheSize);
+            long currentSize = Volatile.Read(ref _cacheSize);
 
             if (_logger.IsEnabled(LogLevel.Debug))
                 _logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
 
-            double? lowWatermark = _options.SizeLimit * (1 - _options.CompactionPercentage);
-            if (currentSize > lowWatermark)
+            long sizeLimit = _options.SizeLimitValue;
+            if (sizeLimit >= 0)
             {
-                Compact(currentSize - (long)lowWatermark, entry => entry.Size);
+                long lowWatermark = sizeLimit - (long)(sizeLimit * _options.CompactionPercentage);
+                if (currentSize > lowWatermark)
+                {
+                    Compact(currentSize - lowWatermark, entry => entry.Size);
+                }
             }
 
             if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug($"Overcapacity compaction executed. New size {Interlocked.Read(ref _cacheSize)}");
+                _logger.LogDebug($"Overcapacity compaction executed. New size {Volatile.Read(ref _cacheSize)}");
         }
 
         /// Remove at least the given percentage (0.10 for 10%) of the total entries (or estimated memory?), according to the following policy:

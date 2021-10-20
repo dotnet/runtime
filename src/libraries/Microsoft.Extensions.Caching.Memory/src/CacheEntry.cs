@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Caching.Memory
     internal sealed partial class CacheEntry : ICacheEntry
     {
         private static readonly Action<object> ExpirationCallback = ExpirationTokensExpired;
+        private static readonly AsyncLocal<CacheEntry> _current = new AsyncLocal<CacheEntry>();
 
         private readonly MemoryCache _cache;
 
@@ -29,17 +30,26 @@ namespace Microsoft.Extensions.Caching.Memory
         private bool _isExpired;
         private bool _isValueSet;
         private byte _evictionReason;
-        private byte _priority;
+        private byte _priority = (byte)CacheItemPriority.Normal;
 
         internal CacheEntry(object key, MemoryCache memoryCache)
         {
             Key = key ?? throw new ArgumentNullException(nameof(key));
             _cache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
-            _previous = memoryCache.TrackLinkedCacheEntries ? CacheEntryHelper.EnterScope(this) : null;
-            _priority = (byte)CacheItemPriority.Normal;
+            if (memoryCache.TrackLinkedCacheEntries)
+            {
+                var holder = _current;
+                _previous = holder.Value;
+                holder.Value = this;
+            }
         }
 
-        internal bool HasAbsoluteExpiration => Unsafe.As<DateTime, long>(ref _absoluteExpiration) != 0;
+        // internal for testing
+        internal static CacheEntry Current => _current.Value;
+
+        private ref ulong RawAbsoluteExpiration => ref Unsafe.As<DateTime, ulong>(ref _absoluteExpiration);
+
+        internal bool HasAbsoluteExpiration => RawAbsoluteExpiration != 0;
 
         internal DateTime AbsoluteExpiration => _absoluteExpiration;
 
@@ -69,8 +79,9 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
                 else
                 {
-                    _absoluteExpiration = value.GetValueOrDefault().UtcDateTime;
-                    _absoluteExpirationOffsetMinutes = (short)(value.GetValueOrDefault().Offset.Ticks / TimeSpan.TicksPerMinute);
+                    DateTimeOffset expiration = value.GetValueOrDefault();
+                    _absoluteExpiration = expiration.UtcDateTime;
+                    _absoluteExpirationOffsetMinutes = (short)(expiration.Offset.Ticks / TimeSpan.TicksPerMinute);
                 }
             }
         }
@@ -154,7 +165,7 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        public object Key { get; private set; }
+        public object Key { get; }
 
         public object Value
         {
@@ -178,7 +189,8 @@ namespace Microsoft.Extensions.Caching.Memory
 
                 if (_cache.TrackLinkedCacheEntries)
                 {
-                    CacheEntryHelper.ExitScope(this, _previous);
+                    Debug.Assert(_current.Value == this, "Entries disposed in invalid order");
+                    _current.Value = _previous;
                 }
 
                 // Don't commit or propagate options if the CacheEntry Value was never set.
@@ -188,9 +200,15 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     _cache.SetEntry(this);
 
-                    if (_previous != null && CanPropagateOptions())
+                    CacheEntry parent = _previous;
+                    if (parent != null)
                     {
-                        PropagateOptions(_previous);
+                        if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || RawAbsoluteExpiration < parent.RawAbsoluteExpiration))
+                        {
+                            parent._absoluteExpiration = _absoluteExpiration;
+                            parent._absoluteExpirationOffsetMinutes = _absoluteExpirationOffsetMinutes;
+                        }
+                        _tokens?.PropagateTokens(parent);
                     }
                 }
 
@@ -258,12 +276,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal void InvokeEvictionCallbacks() => _tokens?.InvokeEvictionCallbacks(this);
 
-        // this simple check very often allows us to avoid expensive call to PropagateOptions(CacheEntryHelper.Current)
-        [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
-        internal bool CanPropagateOptions() => (_tokens != null && _tokens.CanPropagateTokens()) || HasAbsoluteExpiration;
+        internal bool CanPropagateTokens() => _tokens != null && _tokens.CanPropagateTokens();
 
-        internal void PropagateOptions(CacheEntry parent)
+        internal void PropagateOptionsToCurrent()
         {
+            CacheEntry parent = _current.Value;
             if (parent == null)
             {
                 return;
@@ -271,13 +288,13 @@ namespace Microsoft.Extensions.Caching.Memory
 
             // Copy expiration tokens and AbsoluteExpiration to the cache entries hierarchy.
             // We do this regardless of it gets cached because the tokens are associated with the value we'll return.
-            _tokens?.PropagateTokens(parent);
-
-            if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || _absoluteExpiration < parent._absoluteExpiration))
+            if (HasAbsoluteExpiration && (!parent.HasAbsoluteExpiration || RawAbsoluteExpiration < parent.RawAbsoluteExpiration))
             {
                 parent._absoluteExpiration = _absoluteExpiration;
                 parent._absoluteExpirationOffsetMinutes = _absoluteExpirationOffsetMinutes;
             }
+
+            _tokens?.PropagateTokens(parent);
         }
 
         private CacheEntryTokens GetOrCreateTokens()
