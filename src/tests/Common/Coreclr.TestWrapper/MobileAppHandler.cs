@@ -127,8 +127,8 @@ namespace CoreclrTestLib
                             // 86 - PACKAGE_INSTALLATION_TIMEOUT
                             if (action == "install" && (exitCode == 78 || exitCode == 81|| exitCode == 85|| exitCode == 86))
                             {
-                                CreateRetryFile($"{testBinaryBase}/.retry", category, exitCode);
-                                CreateRetryFile($"{testBinaryBase}/.reboot", category, exitCode);
+                                CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
+                                CreateRetryFile($"{testBinaryBase}/.reboot", exitCode, category);
                                 return exitCode;
                             }
 
