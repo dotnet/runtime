@@ -47,7 +47,7 @@ namespace System.IO
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
             Interop.Error error =
-                Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), default(CULong)) == 0 ?
+                Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW)) == 0 ?
                 Interop.Error.SUCCESS :
                 Interop.Sys.GetLastErrorInfo().Error;
 

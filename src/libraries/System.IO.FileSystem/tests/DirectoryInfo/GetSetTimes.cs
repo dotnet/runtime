@@ -57,5 +57,7 @@ namespace System.IO.Tests
                 ((testDir) => testDir.LastWriteTimeUtc),
                 DateTimeKind.Utc);
         }
+
+        public DirectoryInfo CreateSymlinkToItem(DirectoryInfo item) => (DirectoryInfo)Directory.CreateSymbolicLink(item.FullName + ".link", item.FullName);
     }
 }
