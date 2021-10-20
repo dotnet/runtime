@@ -857,10 +857,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandWithParmsInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, int type, string extraParm, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommandWithParms(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray()), parms.ToArray().Length, type, extraParm), token);
-            if (res.IsErr) {
-                throw new Exception("SendDebuggerAgentCommandWithParms Error");
+            byte[] newBytes = Array.Empty<byte>();
+            if (!res.IsErr) {
+                newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var retDebuggerCmd = new MemoryStream(newBytes);
             var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
             return retDebuggerCmdReader;
