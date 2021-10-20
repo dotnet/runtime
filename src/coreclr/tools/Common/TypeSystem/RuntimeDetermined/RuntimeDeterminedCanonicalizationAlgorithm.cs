@@ -127,6 +127,12 @@ namespace Internal.TypeSystem
                 }
                 else if (typeToConvert.IsArray)
                 {
+                    TypeDesc elementType = ((ArrayType)typeToConvert).ElementType;
+                    if (elementType.IsObject)
+                    {
+                        return typeToConvert;
+                    }
+
                     return context.CanonType;
                 }
                 else
