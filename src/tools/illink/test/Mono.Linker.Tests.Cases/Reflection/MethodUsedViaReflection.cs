@@ -37,7 +37,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			DerivedAndBase.TestMethodInBaseType ();
 			IgnoreCaseBindingFlags.TestIgnoreCaseBindingFlags ();
 			FailIgnoreCaseBindingFlags.TestFailIgnoreCaseBindingFlags ();
-			IgnorableBindingFlags.TestIgnorableBindingFlags ();
 			UnsupportedBindingFlags.TestUnsupportedBindingFlags ();
 		}
 
@@ -733,28 +732,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		class IgnorableBindingFlags
-		{
-			[Kept]
-			public int OnlyCalledViaReflection ()
-			{
-				return 54;
-			}
-
-			private bool Unmarked ()
-			{
-				return true;
-			}
-
-			[Kept]
-			public static void TestIgnorableBindingFlags ()
-			{
-				var method = typeof (IgnorableBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public | BindingFlags.InvokeMethod);
-				method.Invoke (null, new object[] { });
-			}
-		}
-
-		[Kept]
 		class UnsupportedBindingFlags
 		{
 			[Kept]
@@ -764,7 +741,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			}
 
 			[Kept]
-			private bool MarkedDueToChangeType ()
+			private bool MarkedDueToInvokeMethod ()
 			{
 				return true;
 			}
@@ -772,7 +749,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestUnsupportedBindingFlags ()
 			{
-				var method = typeof (UnsupportedBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.Public | BindingFlags.SuppressChangeType);
+				var method = typeof (UnsupportedBindingFlags).GetMethod ("OnlyCalledViaReflection", BindingFlags.InvokeMethod);
 				method.Invoke (null, new object[] { });
 			}
 		}
