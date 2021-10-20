@@ -679,6 +679,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         public void SetStore(DebugStore store)
         {
             this.store = store;
+            this.methods = new();
+            this.assemblies = new();
+            this.types = new();
         }
 
         public async Task<AssemblyInfo> GetAssemblyInfo(SessionId sessionId, int assemblyId, CancellationToken token)
@@ -816,10 +819,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal async Task<MonoBinaryReader> SendDebuggerAgentCommandInternal(SessionId sessionId, int command_set, int command, MemoryStream parms, CancellationToken token)
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(GetId(), command_set, command, Convert.ToBase64String(parms.ToArray())), token);
-            if (res.IsErr) {
-                throw new Exception($"SendDebuggerAgentCommand Error - {(CommandSet)command_set} - {command}");
+            byte[] newBytes = Array.Empty<byte>();
+            if (!res.IsErr) {
+                newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             }
-            byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var retDebuggerCmd = new MemoryStream(newBytes);
             var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
             return retDebuggerCmdReader;
