@@ -1968,6 +1968,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     // loaded in the default ALC, which causes problems for this test.
     [SkipOnPlatform(TestPlatforms.Browser, "AssemblyDependencyResolver not supported in wasm")]
 #endif
+    [ActiveIssue("34072", TestRuntimes.Mono)]
     public static void Xml_TypeInCollectibleALC()
     {
         ExecuteAndUnload("SerializableAssembly.dll", "SerializationTypes.SimpleType", out var weakRef);
