@@ -849,6 +849,10 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/CoreMangLib/system/valuearray/**">
+          <Issue>ValueArray NYI on mono</Issue>
+        </ExcludeList>
+      
         <ExcludeList Include = "$(XunitTestBinBase)/reflection/GenericAttribute/**">
             <Issue>https://github.com/dotnet/runtime/issues/56887</Issue>
         </ExcludeList>
