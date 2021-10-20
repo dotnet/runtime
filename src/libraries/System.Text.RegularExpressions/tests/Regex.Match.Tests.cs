@@ -182,7 +182,7 @@ namespace System.Text.RegularExpressions.Tests
                 // Nested loops
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, "a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa" };
+                    yield return ("a*(?:a[ab]*)*", "aaaababbbbbbabababababaaabbb", RegexOptions.None, 0, 28, true, "aaaa");
                 }
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"

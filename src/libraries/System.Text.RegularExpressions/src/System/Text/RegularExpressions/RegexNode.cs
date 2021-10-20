@@ -1589,12 +1589,6 @@ namespace System.Text.RegularExpressions
         /// <returns>The found node that should be explored further for auto-atomicity; null if it doesn't exist.</returns>
         private RegexNode? FindLastExpressionInLoopForAutoAtomic()
         {
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
-            {
-                // If we can't recur further, just stop optimizing.
-                return null;
-            }
-
             RegexNode node = this;
 
             Debug.Assert(node.Type == Loop);

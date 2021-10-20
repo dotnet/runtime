@@ -1296,23 +1296,18 @@ namespace System.Text.RegularExpressions.Generator
 
                 static bool NodesWithCrossScopeLabels(RegexNode node, HashSet<RegexNode> results)
                 {
+                    if (!StackHelper.TryEnsureSufficientExecutionStack())
+                    {
+                        return StackHelper.CallOnEmptyStack(NodesWithCrossScopeLabels, node, results);
+                    }
+
                     // Nodes that trigger backtracking and thus may emit labels that need to be reached by non-descendants.
                     bool contains = node.InstigatesBacktracking;
 
-                    if (!contains)
+                    int childcount = node.ChildCount();
+                    for (int i = 0; i < childcount; i++)
                     {
-                        if (!StackHelper.TryEnsureSufficientExecutionStack())
-                        {
-                            // Rather than forking to another thread, just say this has cross-scope labels.
-                            // The effect is simply more faux scopes output.
-                            return true;
-                        }
-
-                        int childcount = node.ChildCount();
-                        for (int i = 0; i < childcount; i++)
-                        {
-                            contains |= NodesWithCrossScopeLabels(node.Child(i), results);
-                        }
+                        contains |= NodesWithCrossScopeLabels(node.Child(i), results);
                     }
 
                     if (contains)
