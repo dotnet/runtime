@@ -25,14 +25,12 @@ namespace Microsoft.Workload.Build.Tasks
         public string?        VersionBand        { get; set; }
 
         [Required, NotNull]
-        public string?        LocalNuGetsPath    { get; set; }
+        public string?        NuGetConfigFile    { get; set; }
 
         [Required, NotNull]
         public string?        SdkDir             { get; set; }
 
         public bool           OnlyUpdateManifests{ get; set; }
-
-        public ITaskItem[]    ExtraNuGetSources  { get; set; } = Array.Empty<ITaskItem>();
 
         public override bool Execute()
         {
@@ -45,6 +43,12 @@ namespace Microsoft.Workload.Build.Tasks
             if (!Directory.Exists(SdkDir))
             {
                 Log.LogError($"Cannot find SdkDir={SdkDir}");
+                return false;
+            }
+
+            if (!File.Exists(NuGetConfigFile))
+            {
+                Log.LogError($"Cannot find NuGetConfigFile={NuGetConfigFile}");
                 return false;
             }
 
@@ -84,28 +88,7 @@ namespace Microsoft.Workload.Build.Tasks
             return !Log.HasLoggedErrors;
         }
 
-        private string GetNuGetConfig()
-        {
-            StringBuilder nugetConfigBuilder = new();
-            nugetConfigBuilder.AppendLine($"<configuration>{Environment.NewLine}<packageSources>");
-
-            nugetConfigBuilder.AppendLine($@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
-            foreach (ITaskItem source in ExtraNuGetSources)
-            {
-                string key = source.ItemSpec;
-                string value = source.GetMetadata("Value");
-                if (string.IsNullOrEmpty(value))
-                {
-                    Log.LogWarning($"ExtraNuGetSource {key} is missing Value metadata");
-                    continue;
-                }
-
-                nugetConfigBuilder.AppendLine($@"<add key=""{key}"" value=""{value}"" />");
-            }
-
-            nugetConfigBuilder.AppendLine($"</packageSources>{Environment.NewLine}</configuration>");
-            return nugetConfigBuilder.ToString();
-        }
+        private string GetNuGetConfig() => File.ReadAllText(NuGetConfigFile);
 
         private bool InstallWorkloadManifest(string name, string version, string nugetConfigContents, bool stopOnMissing)
         {
