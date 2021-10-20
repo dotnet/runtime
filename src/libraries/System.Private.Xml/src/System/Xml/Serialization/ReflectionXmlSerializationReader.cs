@@ -627,7 +627,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static readonly ConditionalWeakTable<Type, ConcurrentDictionary<string, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>> s_setMemberValueDelegateCache = new ConditionalWeakTable<Type, ConcurrentDictionary<string, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>>();
+        private static readonly ConditionalWeakTable<Type, Hashtable> s_setMemberValueDelegateCache = new ConditionalWeakTable<Type, Hashtable>();
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
@@ -635,33 +635,40 @@ namespace System.Xml.Serialization
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
             Type type = o.GetType();
-            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type);
-            if (!delegateCacheForType.TryGetValue(memberName, out var result))
+            var delegateCacheForType = s_setMemberValueDelegateCache.GetValue(type, _ => new Hashtable());
+            var result = delegateCacheForType[memberName];
+            if (result == null)
             {
-                MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
-                Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
-                Type memberType;
-                if (memberInfo is PropertyInfo propInfo)
+                lock (delegateCacheForType)
                 {
-                    memberType = propInfo.PropertyType;
-                }
-                else if (memberInfo is FieldInfo fieldInfo)
-                {
-                    memberType = fieldInfo.FieldType;
-                }
-                else
-                {
-                    throw new InvalidOperationException(SR.XmlInternalError);
-                }
+                    if ((result = delegateCacheForType[memberName]) == null)
+                    {
+                        MemberInfo memberInfo = ReflectionXmlSerializationHelper.GetEffectiveSetInfo(o.GetType(), memberName);
+                        Debug.Assert(memberInfo != null, "memberInfo could not be retrieved");
+                        Type memberType;
+                        if (memberInfo is PropertyInfo propInfo)
+                        {
+                            memberType = propInfo.PropertyType;
+                        }
+                        else if (memberInfo is FieldInfo fieldInfo)
+                        {
+                            memberType = fieldInfo.FieldType;
+                        }
+                        else
+                        {
+                            throw new InvalidOperationException(SR.XmlInternalError);
+                        }
 
-                MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
-                MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
-                var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
-                result = getSetMemberValueDelegateWithType(memberInfo);
-                delegateCacheForType.TryAdd(memberName, result);
+                        MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public)!;
+                        MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
+                        var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
+                        result = getSetMemberValueDelegateWithType(memberInfo);
+                        delegateCacheForType[memberName] = result;
+                    }
+                }
             }
 
-            return result;
+            return (ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate)result;
         }
 
         private object? GetMemberValue(object o, MemberInfo memberInfo)
