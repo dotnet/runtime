@@ -319,6 +319,7 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => t.MakeArrayType(rank));
         }
 
+        [ActiveIssue("HACKATHON: right now this works on a special version of CoreCLR only")]
         [Theory]
         [InlineData(33)]
         [InlineData(256)]

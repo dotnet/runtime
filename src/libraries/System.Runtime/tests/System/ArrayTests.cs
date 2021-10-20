@@ -2010,7 +2010,9 @@ namespace System.Tests
         {
             var lengths = new int[length];
             var lowerBounds = new int[length];
-            Assert.Throws<TypeLoadException>(() => Array.CreateInstance(typeof(int), lengths, lowerBounds));
+
+            // does not throw
+            Array.CreateInstance(typeof(int), lengths, lowerBounds);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
