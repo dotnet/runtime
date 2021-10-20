@@ -312,7 +312,7 @@
     </ItemGroup>
   </Target>
 
-  <Import Condition="'$(TestUsingWorkloads)' == 'true'" Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
 
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
