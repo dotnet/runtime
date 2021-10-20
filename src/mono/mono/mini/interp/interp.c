@@ -1619,7 +1619,7 @@ exit_pinvoke:
  *   Initialize del->interp_method.
  */
 static void
-interp_init_delegate (MonoDelegate *del, MonoError *error)
+interp_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **out_info, MonoError *error)
 {
 	MonoMethod *method;
 
@@ -1668,6 +1668,25 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 		/* Return any errors from method compilation */
 		mono_interp_transform_method ((InterpMethod *) del->interp_method, get_context (), error);
 		return_if_nok (error);
+	}
+
+	/*
+	 * Compute a MonoDelegateTrampInfo for this delegate if possible and pass it back to
+	 * the caller.
+	 * Keep a 1 element cache in imethod->del_info. This should be good enough since most methods
+	 * are only associated with one delegate type.
+	 */
+	if (out_info)
+		*out_info = NULL;
+	if (mono_llvm_only) {
+		InterpMethod *imethod = del->interp_method;
+		method = imethod->method;
+		if (imethod->del_info && imethod->del_info->klass == del->object.vtable->klass) {
+			*out_info = imethod->del_info;
+		} else if (!imethod->del_info) {
+			imethod->del_info = mono_create_delegate_trampoline_info (del->object.vtable->klass, method);
+			*out_info = imethod->del_info;
+		}
 	}
 }
 

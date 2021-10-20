@@ -3887,7 +3887,7 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	MonoDelegateTrampInfo *info = NULL;
 
 	if (mono_use_interpreter) {
-		mini_get_interp_callbacks ()->init_delegate (del, error);
+		mini_get_interp_callbacks ()->init_delegate (del, &info, error);
 		return_if_nok (error);
 	}
 
