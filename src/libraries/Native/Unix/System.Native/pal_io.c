@@ -1171,21 +1171,25 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     // Get the stats on the source file.
     int ret;
     bool copied = false;
+
+    // Certain files (e.g. procfs) may return a size of 0 even though reading from then will
+    // produce data.  We use plain read/write for those.
 #ifdef FICLONE
-    // Try copying data using a copy-on-write clone. This shares storage between the files.
-    while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
-    copied = ret == 0;
-    if (!copied && errno != EOPNOTSUPP // not supported
-                && errno != EXDEV      // not same file system
-                && errno != ETXTBSY)   // swapfiles can't be reflinked
+    if (sourceLength != 0)
     {
-        return -1;
+        // Try copying data using a copy-on-write clone. This shares storage between the files.
+        while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
+        copied = ret == 0;
+        if (!copied && errno != EOPNOTSUPP // not supported
+                    && errno != EXDEV      // not same file system
+                    && errno != ETXTBSY)   // swapfiles can't be reflinked
+        {
+            return -1;
+        }
     }
 #endif
 #if HAVE_SENDFILE_4
     // Try copying the data using sendfile.
-    // Certain files (e.g. procfs) may return a size of 0 even though reading from then will
-    // produce data.  We avoid using sendfile with the queried size if the size is reported as 0.
     if (!copied && sourceLength != 0)
     {
         // Note that per man page for large files, you have to iterate until the
@@ -1213,7 +1217,6 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
 
         copied = true;
     }
-
 #endif // HAVE_SENDFILE_4
 
     // Perform a manual copy.
