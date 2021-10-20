@@ -5616,6 +5616,8 @@ namespace System.Tests
 
         public static IEnumerable<object[]> ToUpper_Culture_TestData()
         {
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
             if (!PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
