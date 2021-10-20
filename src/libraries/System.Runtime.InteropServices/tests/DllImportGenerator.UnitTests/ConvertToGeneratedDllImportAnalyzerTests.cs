@@ -38,6 +38,7 @@ namespace DllImportGenerator.UnitTests
 
         [Theory]
         [MemberData(nameof(MarshallingRequiredTypes))]
+        [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
@@ -95,14 +96,17 @@ partial class Test
     public static extern void {{|#0:Method1|}}();
 
     [DllImport(""DoesNotExist"", PreserveSig = true)]
-    public static extern void Method2();
+    public static extern void {{|#1:Method2|}}();
 }}
 ";
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(0)
-                    .WithArguments("Method1"));
+                    .WithArguments("Method1"),
+                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                    .WithLocation(1)
+                    .WithArguments("Method2"));
         }
 
         [Fact]
@@ -113,25 +117,20 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
     [DllImport(""DoesNotExist"", SetLastError = false)]
-    public static extern void Method1();
+    public static extern void {{|#0:Method1|}}();
 
     [DllImport(""DoesNotExist"", SetLastError = true)]
-    public static extern void {{|#0:Method2|}}();
+    public static extern void {{|#1:Method2|}}();
 }}
 ";
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(0)
+                    .WithArguments("Method1"),
+                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                    .WithLocation(1)
                     .WithArguments("Method2"));
-        }
-
-        [Theory]
-        [MemberData(nameof(NoMarshallingRequiredTypes))]
-        public async Task BlittablePrimitive_NoDiagnostic(Type type)
-        {
-            string source = DllImportWithType(type.FullName!);
-            await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [Fact]

@@ -256,6 +256,13 @@ namespace Microsoft.Interop
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
                 .WithBody(stubCode);
 
+            MemberDeclarationSyntax toPrint = WrapMethodInContainingScopes(stub, stubMethod);
+
+            return toPrint;
+        }
+
+        private static MemberDeclarationSyntax WrapMethodInContainingScopes(DllImportStubContext stub, MethodDeclarationSyntax stubMethod)
+        {
             // Stub should have at least one containing type
             Debug.Assert(stub.StubContainingTypes.Any());
 
@@ -453,6 +460,11 @@ namespace Microsoft.Interop
             MethodDeclarationSyntax originalSyntax,
             DllImportGeneratorOptions options)
         {
+            if (options.GenerateForwarders)
+            {
+                return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics);
+            }
+
             var diagnostics = new GeneratorDiagnostics();
 
             // Generate stub code
@@ -461,6 +473,11 @@ namespace Microsoft.Interop
                 dllImportStub.DllImportData.SetLastError && !options.GenerateForwarders,
                 (elementInfo, ex) => diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails),
                 dllImportStub.StubContext.GeneratorFactory);
+
+            if (stubGenerator.StubIsBasicForwarder)
+            {
+                return (PrintForwarderStub(originalSyntax, dllImportStub), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+            }
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = dllImportStub.ForwardedAttributes;
 
@@ -485,6 +502,29 @@ namespace Microsoft.Interop
             return (PrintGeneratedSource(originalSyntax, dllImportStub.StubContext, code), dllImportStub.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
+        private MemberDeclarationSyntax PrintForwarderStub(MethodDeclarationSyntax userDeclaredMethod, IncrementalStubGenerationContext stub)
+        {
+            SyntaxTokenList modifiers = StripTriviaFromModifiers(userDeclaredMethod.Modifiers);
+            modifiers = modifiers.Insert(modifiers.IndexOf(SyntaxKind.PartialKeyword), Token(SyntaxKind.ExternKeyword));
+            // Create stub function
+            MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.StubContext.StubReturnType, userDeclaredMethod.Identifier)
+                .WithModifiers(modifiers)
+                .WithParameterList(ParameterList(SeparatedList(stub.StubContext.StubParameters)))
+                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
+                .AddModifiers()
+                .AddAttributeLists(
+                    AttributeList(
+                        SingletonSeparatedList(
+                            CreateDllImportAttributeForTarget(
+                                GetTargetDllImportDataFromStubData(
+                                    stub.DllImportData,
+                                    userDeclaredMethod.Identifier.ValueText,
+                                    forwardAll: true)))));
+
+            MemberDeclarationSyntax toPrint = WrapMethodInContainingScopes(stub.StubContext, stubMethod);
+
+            return toPrint;
+        }
 
         private static LocalFunctionStatementSyntax CreateTargetFunctionAsLocalStatement(
             PInvokeStubCodeGenerator stubGenerator,

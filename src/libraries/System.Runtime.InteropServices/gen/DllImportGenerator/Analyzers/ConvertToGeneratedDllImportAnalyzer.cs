@@ -64,55 +64,7 @@ namespace Microsoft.Interop.Analyzers
             if (dllImportData.ModuleName == "QCall")
                 return;
 
-            if (RequiresMarshalling(method, dllImportData, dllImportAttrType))
-            {
-                context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, method.Name));
-            }
-        }
-
-        private static bool RequiresMarshalling(IMethodSymbol method, DllImportData dllImportData, INamedTypeSymbol dllImportAttrType)
-        {
-            // SetLastError=true requires marshalling
-            if (dllImportData.SetLastError)
-                return true;
-
-            // Check if return value requires marshalling
-            if (!method.ReturnsVoid && !method.ReturnType.IsConsideredBlittable())
-                return true;
-
-            // Check if parameters require marshalling
-            foreach (IParameterSymbol paramType in method.Parameters)
-            {
-                if (paramType.RefKind != RefKind.None)
-                    return true;
-
-                if (!paramType.Type.IsConsideredBlittable())
-                    return true;
-            }
-
-            // DllImportData does not expose all information (e.g. PreserveSig), so we still need to get the attribute data
-            AttributeData? dllImportAttr = null;
-            foreach (AttributeData attr in method.GetAttributes())
-            {
-                if (!SymbolEqualityComparer.Default.Equals(attr.AttributeClass, dllImportAttrType))
-                    continue;
-
-                dllImportAttr = attr;
-                break;
-            }
-
-            Debug.Assert(dllImportAttr != null);
-            foreach (KeyValuePair<string, TypedConstant> namedArg in dllImportAttr!.NamedArguments)
-            {
-                if (namedArg.Key != nameof(DllImportAttribute.PreserveSig))
-                    continue;
-
-                // PreserveSig=false requires marshalling
-                if (!(bool)namedArg.Value.Value!)
-                    return true;
-            }
-
-            return false;
+            context.ReportDiagnostic(method.CreateDiagnostic(ConvertToGeneratedDllImport, method.Name));
         }
     }
 }
