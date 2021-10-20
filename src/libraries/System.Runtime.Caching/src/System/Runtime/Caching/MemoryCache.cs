@@ -38,7 +38,6 @@ namespace System.Runtime.Caching
         private readonly bool _configLess;
         private bool _useMemoryCacheManager = true;
         private bool _throwOnDisposed;
-        private readonly string _disposedName;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
 #if NET5_0_OR_GREATER
@@ -346,7 +345,6 @@ namespace System.Runtime.Caching
         private MemoryCache()
         {
             _name = "Default";
-            _disposedName = typeof(MemoryCache).FullName + $"({_name})";
             Init(null);
         }
 
@@ -365,7 +363,6 @@ namespace System.Runtime.Caching
                 throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
             _name = name;
-            _disposedName = typeof(MemoryCache).FullName + $"({_name})";
             Init(config);
         }
 
@@ -386,7 +383,6 @@ namespace System.Runtime.Caching
                 throw new ArgumentException(SR.Default_is_reserved, nameof(name));
             }
             _name = name;
-            _disposedName = typeof(MemoryCache).FullName + $"({_name})";
             _configLess = ignoreConfigSection;
             Init(config);
         }
@@ -440,10 +436,7 @@ namespace System.Runtime.Caching
                     }
                 }
 
-                if (_throwOnDisposed)
-                {
-                    throw new ObjectDisposedException(_disposedName);
-                }
+                IsDisposedOrThrow();
 
                 return null;
             }
@@ -541,13 +534,8 @@ namespace System.Runtime.Caching
 
         internal MemoryCacheEntry GetEntry(string key)
         {
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
-                if (_throwOnDisposed)
-                {
-                    throw new ObjectDisposedException(_disposedName);
-                }
-
                 return null;
             }
             MemoryCacheKey cacheKey = new MemoryCacheKey(key);
@@ -559,12 +547,7 @@ namespace System.Runtime.Caching
         {
             Hashtable h = new Hashtable();
 
-            if (IsDisposed && _throwOnDisposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
-
-            if (!IsDisposed)
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -578,12 +561,7 @@ namespace System.Runtime.Caching
         {
             Dictionary<string, object> h = new Dictionary<string, object>();
 
-            if (IsDisposed && _throwOnDisposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
-
-            if (!IsDisposed)
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -602,17 +580,13 @@ namespace System.Runtime.Caching
 
         public long Trim(int percent)
         {
-            if (IsDisposed && _throwOnDisposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
-
+            long trimmed = 0;
             if (percent > 100)
             {
                 percent = 100;
             }
-            long trimmed = 0;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -749,10 +723,7 @@ namespace System.Runtime.Caching
                     }
                 }
 
-                if (_throwOnDisposed)
-                {
-                    throw new ObjectDisposedException(_disposedName);
-                }
+                IsDisposedOrThrow();
 
                 return;
             }
@@ -795,10 +766,7 @@ namespace System.Runtime.Caching
                     }
                 }
 
-                if (_throwOnDisposed)
-                {
-                    throw new ObjectDisposedException(_disposedName);
-                }
+                IsDisposedOrThrow();
 
                 return;
             }
@@ -854,13 +822,8 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (IsDisposed)
+            if (IsDisposedOrThrow())
             {
-                if (_throwOnDisposed)
-                {
-                    throw new ObjectDisposedException(_disposedName);
-                }
-
                 return null;
             }
             MemoryCacheEntry entry = RemoveEntry(key, null, reason);
@@ -874,13 +837,9 @@ namespace System.Runtime.Caching
                 throw new NotSupportedException(SR.RegionName_not_supported);
             }
 
-            if (IsDisposed && _throwOnDisposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
-
             long count = 0;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (var storeRef in _storeRefs)
                 {
@@ -910,13 +869,10 @@ namespace System.Runtime.Caching
             {
                 throw new ArgumentNullException(nameof(keys));
             }
-            if (IsDisposed && _throwOnDisposed)
-            {
-                throw new ObjectDisposedException(_disposedName);
-            }
 
             Dictionary<string, object> values = null;
-            if (!IsDisposed)
+
+            if (!IsDisposedOrThrow())
             {
                 foreach (string key in keys)
                 {
@@ -951,6 +907,20 @@ namespace System.Runtime.Caching
             {
                 _stats.UpdateConfig(config);
             }
+        }
+
+        private bool IsDisposedOrThrow()
+        {
+            if (!IsDisposed)
+                return false;
+
+            if (_throwOnDisposed)
+            {
+                string cacheName = this.GetType().FullName + $"({_name})";
+                throw new ObjectDisposedException(cacheName);
+            }
+
+            return true;
         }
     }
 }
