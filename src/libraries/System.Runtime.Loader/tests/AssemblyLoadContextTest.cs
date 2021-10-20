@@ -220,5 +220,18 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains(alc, AssemblyLoadContext.All);
             Assert.Empty(alc.Assemblies);
         }
+
+        [Fact]
+        public static void SubclassAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = new ResourceAssemblyLoadContext();
+
+            Assert.False(alc.IsCollectible);
+            Assert.Null(alc.Name);
+            Assert.Contains("\"\"", alc.ToString());
+            Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
     }
 }
