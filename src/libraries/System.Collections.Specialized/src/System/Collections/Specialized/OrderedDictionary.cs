@@ -551,21 +551,20 @@ namespace System.Collections.Specialized
             private readonly ArrayList _objects;
             private readonly Hashtable? _objectsTable;
             private readonly IEqualityComparer? _comparer;
-            private readonly bool _isKeys;
 
             public OrderedDictionaryKeyValueCollection(ArrayList array, Hashtable objectsTable, IEqualityComparer? comparer)
             {
                 _objects = array;
                 _objectsTable = objectsTable;
                 _comparer = comparer;
-                _isKeys = true;
             }
 
             public OrderedDictionaryKeyValueCollection(ArrayList array)
             {
                 _objects = array;
-                _isKeys = false;
             }
+
+            private bool IsKeys => _objectsTable is not null;
 
             void ICollection.CopyTo(Array array, int index)
             {
@@ -576,7 +575,7 @@ namespace System.Collections.Specialized
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);
-                    array.SetValue(_isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
+                    array.SetValue(IsKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
                     index++;
                 }
             }
@@ -589,12 +588,12 @@ namespace System.Collections.Specialized
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                return new OrderedDictionaryEnumerator(_objects, _isKeys == true ? OrderedDictionaryEnumerator.Keys : OrderedDictionaryEnumerator.Values);
+                return new OrderedDictionaryEnumerator(_objects, IsKeys ? OrderedDictionaryEnumerator.Keys : OrderedDictionaryEnumerator.Values);
             }
 
             bool IList.Contains(object? value)
             {
-                if (_isKeys)
+                if (IsKeys)
                 {
                     Debug.Assert(_objectsTable is not null);
                     return value != null && _objectsTable.ContainsKey(value);
@@ -616,7 +615,7 @@ namespace System.Collections.Specialized
             {
                 for (int i = 0; i < _objects.Count; i++)
                 {
-                    if (_isKeys)
+                    if (IsKeys)
                     {
                         object entryKey = ((DictionaryEntry)_objects[i]!).Key;
                         if (_comparer != null)
@@ -648,7 +647,7 @@ namespace System.Collections.Specialized
                 get
                 {
                     DictionaryEntry entry = (DictionaryEntry)_objects[index]!;
-                    return _isKeys ? entry.Key : entry.Value;
+                    return IsKeys ? entry.Key : entry.Value;
                 }
                 set => throw new NotSupportedException(GetNotSupportedErrorMessage());
             }
@@ -680,7 +679,7 @@ namespace System.Collections.Specialized
 
             private string GetNotSupportedErrorMessage()
             {
-                return _isKeys ? SR.NotSupported_KeyCollectionSet : SR.NotSupported_ValueCollectionSet;
+                return IsKeys ? SR.NotSupported_KeyCollectionSet : SR.NotSupported_ValueCollectionSet;
             }
         }
     }
