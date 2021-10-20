@@ -46132,7 +46132,7 @@ CFinalize::GrowArray()
     {
         m_FillPointers [i] += (newArray - m_Array);
     }
-    delete m_Array;
+    delete[] m_Array;
     m_Array = newArray;
     m_EndArray = &m_Array [newArraySize];
 
