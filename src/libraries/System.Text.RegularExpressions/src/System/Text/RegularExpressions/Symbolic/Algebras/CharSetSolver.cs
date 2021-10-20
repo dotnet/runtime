@@ -198,16 +198,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 return ".";
 
             // try to optimize representation involving common direct use of \d \w and \s to avoid blowup of ranges
-            BDD digit = SymbolicRegexRunner.s_unicode.CategoryCondition(8);
-            if (pred == SymbolicRegexRunner.s_unicode.WordLetterCondition)
+            BDD digit = SymbolicRegexRunnerFactory.s_unicode.CategoryCondition(8);
+            if (pred == SymbolicRegexRunnerFactory.s_unicode.WordLetterCondition)
                 return @"\w";
-            if (pred == SymbolicRegexRunner.s_unicode.WhiteSpaceCondition)
+            if (pred == SymbolicRegexRunnerFactory.s_unicode.WhiteSpaceCondition)
                 return @"\s";
             if (pred == digit)
                 return @"\d";
-            if (pred == Not(SymbolicRegexRunner.s_unicode.WordLetterCondition))
+            if (pred == Not(SymbolicRegexRunnerFactory.s_unicode.WordLetterCondition))
                 return @"\W";
-            if (pred == Not(SymbolicRegexRunner.s_unicode.WhiteSpaceCondition))
+            if (pred == Not(SymbolicRegexRunnerFactory.s_unicode.WhiteSpaceCondition))
                 return @"\S";
             if (pred == Not(digit))
                 return @"\D";
@@ -218,15 +218,15 @@ namespace System.Text.RegularExpressions.Symbolic
                 return Escape((char)ranges[0].Item1);
 
             #region if too many ranges try to optimize the representation using \d \w etc.
-            if (SymbolicRegexRunner.s_unicode != null && ranges.Length > 10)
+            if (SymbolicRegexRunnerFactory.s_unicode != null && ranges.Length > 10)
             {
-                BDD w = SymbolicRegexRunner.s_unicode.WordLetterCondition;
+                BDD w = SymbolicRegexRunnerFactory.s_unicode.WordLetterCondition;
                 BDD W = Not(w);
-                BDD d = SymbolicRegexRunner.s_unicode.CategoryCondition(8);
+                BDD d = SymbolicRegexRunnerFactory.s_unicode.CategoryCondition(8);
                 BDD D = Not(d);
                 BDD asciiDigit = CreateCharSetFromRange('0', '9');
                 BDD nonasciiDigit = And(d, Not(asciiDigit));
-                BDD s = SymbolicRegexRunner.s_unicode.WhiteSpaceCondition;
+                BDD s = SymbolicRegexRunnerFactory.s_unicode.WhiteSpaceCondition;
                 BDD S = Not(s);
                 BDD wD = And(w, D);
                 BDD SW = And(S, W);
