@@ -174,7 +174,7 @@
       <Compile Include="$(BclSourcesRoot)\System\String.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Type.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeIdentifier.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\TypedReference.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
       <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
