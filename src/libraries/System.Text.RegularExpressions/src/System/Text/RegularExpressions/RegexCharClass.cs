@@ -35,7 +35,7 @@ namespace System.Text.RegularExpressions
 
         private const string NullCharString = "\0";
         private const char NullChar = '\0';
-        private const char LastChar = '\uFFFF';
+        internal const char LastChar = '\uFFFF';
 
         private const short SpaceConst = 100;
         private const short NotSpaceConst = -100;
@@ -518,7 +518,7 @@ namespace System.Text.RegularExpressions
         {
             if (ecma)
             {
-                AddSet(negate ? NotECMAWordSet : ECMAWordSet);
+                AddSet((negate ? NotECMAWordSet : ECMAWordSet).AsSpan());
             }
             else
             {
@@ -530,7 +530,7 @@ namespace System.Text.RegularExpressions
         {
             if (ecma)
             {
-                AddSet(negate ? NotECMASpaceSet : ECMASpaceSet);
+                AddSet((negate ? NotECMASpaceSet : ECMASpaceSet).AsSpan());
             }
             else
             {
@@ -542,7 +542,7 @@ namespace System.Text.RegularExpressions
         {
             if (ecma)
             {
-                AddSet(negate ? NotECMADigitSet : ECMADigitSet);
+                AddSet((negate ? NotECMADigitSet : ECMADigitSet).AsSpan());
             }
             else
             {
@@ -559,7 +559,12 @@ namespace System.Text.RegularExpressions
                 strLength -= 2;
             }
 
-            return string.Create(strLength, (set, category, startsWithNulls), static (span, state) =>
+#if REGEXGENERATOR
+            return StringExtensions.Create
+#else
+            return string.Create
+#endif
+                (strLength, (set, category, startsWithNulls), static (span, state) =>
             {
                 int index;
 
@@ -576,11 +581,11 @@ namespace System.Text.RegularExpressions
                     span[FlagsIndex] = '\0';
                     span[SetLengthIndex] = (char)state.set.Length;
                     span[CategoryLengthIndex] = (char)state.category.Length;
-                    state.set.CopyTo(span.Slice(SetStartIndex));
+                    state.set.AsSpan().CopyTo(span.Slice(SetStartIndex));
                     index = SetStartIndex + state.set.Length;
                 }
 
-                state.category.CopyTo(span.Slice(index));
+                state.category.AsSpan().CopyTo(span.Slice(index));
             });
         }
 
@@ -832,6 +837,43 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Gets whether the specified character participates in case conversion.</summary>
+        /// <remarks>
+        /// This method is used to perform operations as if they were case-sensitive even if they're
+        /// specified as being case-insensitive.  Such a reduction can be applied when the only character
+        /// that would lower-case to the one being searched for / compared against is that character itself.
+        /// </remarks>
+        public static bool ParticipatesInCaseConversion(int comparison)
+        {
+            Debug.Assert((uint)comparison <= char.MaxValue);
+
+            switch (char.GetUnicodeCategory((char)comparison))
+            {
+                case UnicodeCategory.ClosePunctuation:
+                case UnicodeCategory.ConnectorPunctuation:
+                case UnicodeCategory.Control:
+                case UnicodeCategory.DashPunctuation:
+                case UnicodeCategory.DecimalDigitNumber:
+                case UnicodeCategory.FinalQuotePunctuation:
+                case UnicodeCategory.InitialQuotePunctuation:
+                case UnicodeCategory.LineSeparator:
+                case UnicodeCategory.OpenPunctuation:
+                case UnicodeCategory.OtherNumber:
+                case UnicodeCategory.OtherPunctuation:
+                case UnicodeCategory.ParagraphSeparator:
+                case UnicodeCategory.SpaceSeparator:
+                    // All chars in these categories meet the criteria that the only way
+                    // `char.ToLower(toTest, AnyCulture) == charInAboveCategory` is when
+                    // toTest == charInAboveCategory.
+                    return false;
+
+                default:
+                    // We don't know (without testing the character against every other
+                    // character), so assume it does.
+                    return true;
+            }
+        }
+
         /// <summary>Gets whether we can iterate through the set list pairs in order to completely enumerate the set's contents.</summary>
         private static bool CanEasilyEnumerateSetContents(string set) =>
             set.Length > SetStartIndex &&
@@ -877,7 +919,7 @@ namespace System.Text.RegularExpressions
                 // everything ASCII is included.
                 return new CharClassAnalysisResults
                 {
-                    AllNonAsciiContained = set[^1] < 128,
+                    AllNonAsciiContained = set[set.Length - 1] < 128,
                     AllAsciiContained = set[SetStartIndex] >= 128,
                     ContainsNoAscii = false,
                     ContainsOnlyAscii = false
@@ -890,7 +932,7 @@ namespace System.Text.RegularExpressions
             {
                 AllNonAsciiContained = false,
                 AllAsciiContained = false,
-                ContainsOnlyAscii = set[^1] <= 128,
+                ContainsOnlyAscii = set[set.Length - 1] <= 128,
                 ContainsNoAscii = set[SetStartIndex] >= 128,
             };
         }
@@ -997,7 +1039,11 @@ namespace System.Text.RegularExpressions
                 {
                     bitsToSet |= valueBit;
                 }
+#if REGEXGENERATOR
+                InterlockedExtensions.Or(ref slot, bitsToSet);
+#else
                 Interlocked.Or(ref slot, bitsToSet);
+#endif
 
                 // Return the computed value.
                 return isInClass;
@@ -1221,16 +1267,17 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Constructs the string representation of the class.
         /// </summary>
-        public string ToStringClass()
+        public string ToStringClass(RegexOptions options = RegexOptions.None)
         {
+            bool isNonBacktracking = (options & RegexOptions.NonBacktracking) != 0;
             var vsb = new ValueStringBuilder(stackalloc char[256]);
-            ToStringClass(ref vsb);
+            ToStringClass(isNonBacktracking, ref vsb);
             return vsb.ToString();
         }
 
-        private void ToStringClass(ref ValueStringBuilder vsb)
+        private void ToStringClass(bool isNonBacktracking, ref ValueStringBuilder vsb)
         {
-            Canonicalize();
+            Canonicalize(isNonBacktracking);
 
             int initialLength = vsb.Length;
             int categoriesLength = _categories?.Length ?? 0;
@@ -1256,7 +1303,7 @@ namespace System.Text.RegularExpressions
 
             // Update the range length.  The ValueStringBuilder may have already had some
             // contents (if this is a subtactor), so we need to offset by the initial length.
-            vsb[initialLength + SetLengthIndex] = (char)((vsb.Length - initialLength) - SetStartIndex);
+            vsb[initialLength + SetLengthIndex] = (char)(vsb.Length - initialLength - SetStartIndex);
 
             // Append categories
             if (categoriesLength != 0)
@@ -1268,13 +1315,13 @@ namespace System.Text.RegularExpressions
             }
 
             // Append a subtractor if there is one.
-            _subtractor?.ToStringClass(ref vsb);
+            _subtractor?.ToStringClass(isNonBacktracking, ref vsb);
         }
 
         /// <summary>
         /// Logic to reduce a character class to a unique, sorted form.
         /// </summary>
-        private void Canonicalize()
+        private void Canonicalize(bool isNonBacktracking)
         {
             List<SingleRange>? rangelist = _rangelist;
             if (rangelist != null)
@@ -1330,7 +1377,10 @@ namespace System.Text.RegularExpressions
 
                 // If the class now represents a single negated character, but does so by including every
                 // other character, invert it to produce a normalized form recognized by IsSingletonInverse.
-                if (!_negate && _subtractor is null && (_categories is null || _categories.Length == 0))
+                if (!isNonBacktracking && // do not produce the IsSingletonInverse transformation in NonBacktracking mode
+                    !_negate &&
+                    _subtractor is null &&
+                    (_categories is null || _categories.Length == 0))
                 {
                     if (rangelist.Count == 2)
                     {
@@ -1391,9 +1441,9 @@ namespace System.Text.RegularExpressions
                     string set = s_propTable[mid][1];
                     Debug.Assert(!string.IsNullOrEmpty(set), "Found a null/empty element in RegexCharClass prop table");
                     return
-                        !invert ? set :
+                        !invert ? set.AsSpan() :
                         set[0] == NullChar ? set.AsSpan(1) :
-                        NullCharString + set;
+                        (NullCharString + set).AsSpan();
                 }
             }
 
@@ -1401,7 +1451,6 @@ namespace System.Text.RegularExpressions
                 SR.Format(SR.MakeException, pattern, currentPos, SR.Format(SR.UnrecognizedUnicodeProperty, capname)));
         }
 
-#if DEBUG
         public static readonly string[] CategoryIdToName = PopulateCategoryIdToName();
 
         private static string[] PopulateCategoryIdToName()
@@ -1417,7 +1466,7 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         public static string SetDescription(string set)
         {
             int setLength = set[SetLengthIndex];
@@ -1467,35 +1516,38 @@ namespace System.Text.RegularExpressions
 
                     const char GroupChar = (char)0;
                     int lastindex = set.IndexOf(GroupChar, index + 1);
-                    string group = set.Substring(index, lastindex - index + 1);
-
-                    foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                    if (lastindex != -1)
                     {
-                        if (group.Equals(kvp.Value))
-                        {
-                            desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
-                            found = true;
-                            break;
-                        }
-                    }
+                        string group = set.Substring(index, lastindex - index + 1);
 
-                    if (!found)
-                    {
-                        if (group.Equals(Word))
+                        foreach (KeyValuePair<string, string> kvp in s_definedCategories)
                         {
-                            desc.Append("\\w");
+                            if (group.Equals(kvp.Value))
+                            {
+                                desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
+                                found = true;
+                                break;
+                            }
                         }
-                        else if (group.Equals(NotWord))
-                        {
-                            desc.Append("\\W");
-                        }
-                        else
-                        {
-                            Debug.Fail($"Couldn't find a group to match '{group}'");
-                        }
-                    }
 
-                    index = lastindex;
+                        if (!found)
+                        {
+                            if (group.Equals(Word))
+                            {
+                                desc.Append("\\w");
+                            }
+                            else if (group.Equals(NotWord))
+                            {
+                                desc.Append("\\W");
+                            }
+                            else
+                            {
+                                // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
+                            }
+                        }
+
+                        index = lastindex;
+                    }
                 }
                 else
                 {
@@ -1513,46 +1565,24 @@ namespace System.Text.RegularExpressions
             return desc.Append(']').ToString();
         }
 
-        /// <summary>
-        /// Produces a human-readable description for a single character.
-        /// </summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        public static string CharDescription(char ch)
-        {
-            if (ch == '\\')
+        /// <summary>Produces a human-readable description for a single character.</summary>
+        [ExcludeFromCodeCoverage]
+        public static string CharDescription(char ch) =>
+            ch switch
             {
-                return "\\\\";
-            }
+                '\a' => "\\a",
+                '\b' => "\\b",
+                '\t' => "\\t",
+                '\r' => "\\r",
+                '\v' => "\\v",
+                '\f' => "\\f",
+                '\n' => "\\n",
+                '\\' => "\\\\",
+                >= ' ' and <= '~' => ch.ToString(),
+                _ => $"\\u{(uint)ch:X4}"
+            };
 
-            if (ch >= ' ' && ch <= '~')
-            {
-                return ch.ToString();
-            }
-
-            var sb = new StringBuilder();
-            int shift;
-
-            if (ch < 256)
-            {
-                sb.Append("\\x");
-                shift = 8;
-            }
-            else
-            {
-                sb.Append("\\u");
-                shift = 16;
-            }
-
-            while (shift > 0)
-            {
-                shift -= 4;
-                sb.Append(HexConverter.ToCharLower(ch >> shift));
-            }
-
-            return sb.ToString();
-        }
-
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
+        [ExcludeFromCodeCoverage]
         private static string CategoryDescription(char ch)
         {
             if (ch == SpaceConst)
@@ -1572,7 +1602,6 @@ namespace System.Text.RegularExpressions
 
             return "\\p{" + CategoryIdToName[(ch - 1)] + "}";
         }
-#endif
 
         /// <summary>
         /// A first/last pair representing a single range of characters.

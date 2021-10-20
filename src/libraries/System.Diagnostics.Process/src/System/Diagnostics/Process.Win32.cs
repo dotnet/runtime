@@ -136,7 +136,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal unsafe class ShellExecuteHelper
+        internal sealed unsafe class ShellExecuteHelper
         {
             private readonly Interop.Shell32.SHELLEXECUTEINFO* _executeInfo;
             private bool _succeeded;
@@ -290,7 +290,10 @@ namespace System.Diagnostics
             }
 
             IntPtr result;
-            return Interop.User32.SendMessageTimeout(mainWindow, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, out result) != (IntPtr)0;
+            unsafe
+            {
+                return Interop.User32.SendMessageTimeout(mainWindow, WM_NULL, IntPtr.Zero, IntPtr.Zero, SMTO_ABORTIFHUNG, 5000, &result) != (IntPtr)0;
+            }
         }
 
         public bool Responding

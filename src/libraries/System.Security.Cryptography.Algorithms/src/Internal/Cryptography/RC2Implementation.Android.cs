@@ -13,8 +13,20 @@ namespace Internal.Cryptography
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
-            int effectiveKeyLength,
             byte[]? iv,
+            int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
+            bool encrypting)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+        }
+
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> iv,
             int blockSize,
             int feedbackSizeInBytes,
             int paddingSize,

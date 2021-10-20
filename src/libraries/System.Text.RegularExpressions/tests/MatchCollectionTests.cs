@@ -2,16 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public static partial class MatchCollectionTests
     {
-        [Fact]
-        public static void GetEnumerator()
+        public static IEnumerable<object[]> NoneCompiledBacktracking()
         {
-            Regex regex = new Regex("e");
+            yield return new object[] { RegexOptions.None };
+            yield return new object[] { RegexOptions.Compiled };
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return new object[] { RegexHelpers.RegexOptionNonBacktracking };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NoneCompiledBacktracking))]
+        public static void GetEnumerator(RegexOptions options)
+        {
+            Regex regex = new Regex("e", options);
             MatchCollection matches = regex.Matches("dotnet");
             IEnumerator enumerator = matches.GetEnumerator();
             for (int i = 0; i < 2; i++)
@@ -28,10 +40,11 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        [Fact]
-        public static void GetEnumerator_Invalid()
+        [Theory]
+        [MemberData(nameof(NoneCompiledBacktracking))]
+        public static void GetEnumerator_Invalid(RegexOptions options)
         {
-            Regex regex = new Regex("e");
+            Regex regex = new Regex("e", options);
             MatchCollection matches = regex.Matches("dotnet");
             IEnumerator enumerator = matches.GetEnumerator();
 
@@ -54,19 +67,21 @@ namespace System.Text.RegularExpressions.Tests
             Assert.Equal("t", collection[1].ToString());
         }
 
-        [Fact]
-        public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException()
+        [Theory]
+        [MemberData(nameof(NoneCompiledBacktracking))]
+        public static void Item_Get_InvalidIndex_ThrowsArgumentOutOfRangeException(RegexOptions options)
         {
-            Regex regex = new Regex("e");
+            Regex regex = new Regex("e", options);
             MatchCollection matches = regex.Matches("dotnet");
             AssertExtensions.Throws<ArgumentOutOfRangeException>("i", () => matches[-1]);
             AssertExtensions.Throws<ArgumentOutOfRangeException>("i", () => matches[matches.Count]);
         }
 
-        [Fact]
-        public static void ICollection_Properties()
+        [Theory]
+        [MemberData(nameof(NoneCompiledBacktracking))]
+        public static void ICollection_Properties(RegexOptions options)
         {
-            Regex regex = new Regex("e");
+            Regex regex = new Regex("e", options);
             MatchCollection matches = regex.Matches("dotnet");
             ICollection collection = matches;
 
@@ -76,31 +91,34 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [InlineData(0)]
-        [InlineData(5)]
-        public static void ICollection_CopyTo(int index)
+        [MemberData(nameof(NoneCompiledBacktracking))]
+        public static void ICollection_CopyTo(RegexOptions options)
         {
-            Regex regex = new Regex("e");
-            MatchCollection matches = regex.Matches("dotnet");
-            ICollection collection = matches;
-
-            Match[] copy = new Match[collection.Count + index];
-            collection.CopyTo(copy, index);
-
-            for (int i = 0; i < index; i++)
+            foreach (int index in new[] { 0, 5 })
             {
-                Assert.Null(copy[i]);
-            }
-            for (int i = index; i < copy.Length; i++)
-            {
-                Assert.Same(matches[i - index], copy[i]);
+                Regex regex = new Regex("e", options);
+                MatchCollection matches = regex.Matches("dotnet");
+                ICollection collection = matches;
+
+                Match[] copy = new Match[collection.Count + index];
+                collection.CopyTo(copy, index);
+
+                for (int i = 0; i < index; i++)
+                {
+                    Assert.Null(copy[i]);
+                }
+                for (int i = index; i < copy.Length; i++)
+                {
+                    Assert.Same(matches[i - index], copy[i]);
+                }
             }
         }
 
-        [Fact]
-        public static void ICollection_CopyTo_Invalid()
+        [Theory]
+        [MemberData(nameof(NoneCompiledBacktracking))]
+        public static void ICollection_CopyTo_Invalid(RegexOptions options)
         {
-            Regex regex = new Regex("e");
+            Regex regex = new Regex("e", options);
             ICollection collection = regex.Matches("dotnet");
 
             // Array is null

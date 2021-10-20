@@ -14,7 +14,7 @@
 #include "typestring.h"
 #include "typedesc.h"
 #include "typekey.h"
-#include "ngenhash.inl"
+#include "dacenumerablehash.inl"
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -558,15 +558,6 @@ VOID EETypeHashTable::InsertValue(TypeHandle data)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifdef DACCESS_COMPILE
-
-void
-EETypeHashTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    BaseEnumMemoryRegions(flags);
-}
-
 void EETypeHashTable::EnumMemoryRegionsForEntry(EETypeHashEntry_t *pEntry, CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;

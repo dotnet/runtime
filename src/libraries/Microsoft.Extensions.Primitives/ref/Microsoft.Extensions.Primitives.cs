@@ -61,8 +61,8 @@ namespace Microsoft.Extensions.Primitives
         public static bool Equals(Microsoft.Extensions.Primitives.StringSegment a, Microsoft.Extensions.Primitives.StringSegment b, System.StringComparison comparisonType) { throw null; }
         public bool Equals(Microsoft.Extensions.Primitives.StringSegment other, System.StringComparison comparisonType) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) { throw null; }
-        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? text) { throw null; }
-        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] string? text, System.StringComparison comparisonType) { throw null; }
+        public bool Equals(string? text) { throw null; }
+        public bool Equals(string? text, System.StringComparison comparisonType) { throw null; }
         public override int GetHashCode() { throw null; }
         public int IndexOf(char c) { throw null; }
         public int IndexOf(char c, int start) { throw null; }

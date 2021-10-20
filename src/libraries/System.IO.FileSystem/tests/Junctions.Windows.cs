@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace System.IO.Tests
@@ -10,7 +8,7 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public class Junctions : BaseSymbolicLinks
     {
-        protected DirectoryInfo CreateJunction(string junctionPath, string targetPath)
+        private DirectoryInfo CreateJunction(string junctionPath, string targetPath)
         {
             Assert.True(MountHelper.CreateJunction(junctionPath, targetPath));
             DirectoryInfo junctionInfo = new(junctionPath);
@@ -66,6 +64,44 @@ namespace System.IO.Tests
 
             Assert.Equal(expectedTargetPath, targetFromDirectoryInfo.FullName);
             Assert.Equal(expectedTargetPath, targetFromDirectory.FullName);
+        }
+
+        [Theory]
+        [MemberData(nameof(Junction_ResolveLinkTarget_PathToTarget_Data))]
+        public void Junction_ResolveLinkTarget_Succeeds(string pathToTarget, bool returnFinalTarget)
+        {
+            string linkPath = GetRandomLinkPath();
+            FileSystemInfo linkInfo = CreateJunction(linkPath, pathToTarget);
+
+            // Junctions are always created with absolute targets, even if a relative path is passed.
+            string expectedTarget = Path.GetFullPath(pathToTarget);
+
+            Assert.True(linkInfo.Exists);
+            Assert.IsType<DirectoryInfo>(linkInfo);
+            Assert.True(linkInfo.Attributes.HasFlag(FileAttributes.Directory));
+            Assert.Equal(expectedTarget, linkInfo.LinkTarget);
+
+            FileSystemInfo? targetFromDirectoryInfo = linkInfo.ResolveLinkTarget(returnFinalTarget);
+            FileSystemInfo? targetFromDirectory = Directory.ResolveLinkTarget(linkPath, returnFinalTarget);
+
+            Assert.NotNull(targetFromDirectoryInfo);
+            Assert.NotNull(targetFromDirectory);
+
+            Assert.False(targetFromDirectoryInfo.Exists);
+            Assert.False(targetFromDirectory.Exists);
+
+
+            Assert.Equal(expectedTarget, targetFromDirectoryInfo.FullName);
+            Assert.Equal(expectedTarget, targetFromDirectory.FullName);
+        }
+
+        [Theory]
+        [MemberData(nameof(Junction_LinkTarget_PathToTarget_Data))]
+        public void Junction_LinkTarget_Succeeds(string pathToTarget)
+        {
+            FileSystemInfo linkInfo = CreateJunction(GetRandomLinkPath(), pathToTarget);
+            Assert.True(linkInfo.Exists);
+            Assert.Equal(Path.GetFullPath(pathToTarget), linkInfo.LinkTarget);
         }
     }
 }

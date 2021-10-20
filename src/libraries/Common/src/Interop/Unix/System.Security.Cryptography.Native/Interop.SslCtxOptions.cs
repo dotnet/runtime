@@ -11,25 +11,28 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUseCertificate")]
-        internal static extern int SslCtxUseCertificate(SafeSslContextHandle ctx, SafeX509Handle certPtr);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxAddExtraChainCert")]
+        internal static partial bool SslCtxAddExtraChainCert(SafeSslContextHandle ctx, SafeX509Handle x509);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUsePrivateKey")]
-        internal static extern int SslCtxUsePrivateKey(SafeSslContextHandle ctx, SafeEvpPKeyHandle keyPtr);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUseCertificate")]
+        internal static partial int SslCtxUseCertificate(SafeSslContextHandle ctx, SafeX509Handle certPtr);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCheckPrivateKey")]
-        internal static extern int SslCtxCheckPrivateKey(SafeSslContextHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxUsePrivateKey")]
+        internal static partial int SslCtxUsePrivateKey(SafeSslContextHandle ctx, SafeEvpPKeyHandle keyPtr);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetQuietShutdown")]
-        internal static extern void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxCheckPrivateKey")]
+        internal static partial int SslCtxCheckPrivateKey(SafeSslContextHandle ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetVerify")]
-        internal static extern unsafe void SslCtxSetVerify(SafeSslContextHandle ctx, delegate* unmanaged<int, IntPtr, int> callback);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetQuietShutdown")]
+        internal static partial void SslCtxSetQuietShutdown(SafeSslContextHandle ctx);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
-        internal static extern unsafe bool SetCiphers(SafeSslContextHandle ctx, byte* cipherList, byte* cipherSuites);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetVerify")]
+        internal static unsafe partial void SslCtxSetVerify(SafeSslContextHandle ctx, delegate* unmanaged<int, IntPtr, int> callback);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetEncryptionPolicy")]
-        internal static extern bool SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCiphers")]
+        internal static unsafe partial bool SslCtxSetCiphers(SafeSslContextHandle ctx, byte* cipherList, byte* cipherSuites);
+
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetEncryptionPolicy")]
+        internal static partial bool SetEncryptionPolicy(SafeSslContextHandle ctx, EncryptionPolicy policy);
     }
 }

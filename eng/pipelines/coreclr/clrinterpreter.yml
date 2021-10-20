@@ -1,12 +1,13 @@
 trigger: none
 
-schedules:
-- cron: "0 19 * * 6,0"
-  displayName: Sat and Sun at 11:00 AM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
+# Don't schedule the interpreter pipeline unless we commit to making it clean and monitoring the results.
+#schedules:
+#- cron: "0 19 * * 6,0"
+#  displayName: Sat and Sun at 11:00 AM (UTC-8:00)
+#  branches:
+#    include:
+#    - main
+#  always: true
 
 jobs:
 

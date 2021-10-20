@@ -55,7 +55,12 @@ namespace System
 
         private static int GetSystemPageSize()
         {
-            Interop.Kernel32.GetSystemInfo(out Interop.Kernel32.SYSTEM_INFO info);
+            Interop.Kernel32.SYSTEM_INFO info;
+            unsafe
+            {
+                Interop.Kernel32.GetSystemInfo(&info);
+            }
+
             return info.dwPageSize;
         }
 

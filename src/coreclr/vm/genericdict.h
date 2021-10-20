@@ -285,10 +285,6 @@ public:
                                          DWORD dictionaryIndexAndSlot = -1,
                                          Module * pModule = NULL);
 
-    void PrepopulateDictionary(MethodDesc * pMD,
-                               MethodTable * pMT,
-                               BOOL nonExpansive);
-
 private:
     static Dictionary* GetTypeDictionaryWithSizeCheck(MethodTable* pMT, ULONG slotIndex);
     static Dictionary* GetMethodDictionaryWithSizeCheck(MethodDesc* pMD, ULONG slotIndex);

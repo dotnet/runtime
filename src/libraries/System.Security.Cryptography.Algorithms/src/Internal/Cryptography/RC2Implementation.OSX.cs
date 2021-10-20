@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Security.Cryptography;
 
 namespace Internal.Cryptography
@@ -11,7 +12,6 @@ namespace Internal.Cryptography
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
-            int effectiveKeyLength,
             byte[]? iv,
             int blockSize,
             int feedbackSizeInBytes,
@@ -29,6 +29,27 @@ namespace Internal.Cryptography
                 paddingSize);
 
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
+        }
+
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> iv,
+            int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
+            bool encrypting)
+        {
+            return new AppleCCCryptorLite(
+                Interop.AppleCrypto.PAL_SymmetricAlgorithm.RC2,
+                cipherMode,
+                blockSize,
+                key,
+                iv,
+                encrypting,
+                feedbackSizeInBytes,
+                paddingSize);
         }
     }
 }

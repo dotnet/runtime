@@ -392,11 +392,14 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
     bool dir_found = false;
     if (pal::get_dotnet_self_registered_dir(&custom_dir))
     {
+        remove_trailing_dir_seperator(&custom_dir);
         dirs->push_back(custom_dir);
         dir_found = true;
     }
     if (get_default_installation_dir(&default_dir))
     {
+        remove_trailing_dir_seperator(&default_dir);
+
         // Avoid duplicate global dirs.
         if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
         {
@@ -573,6 +576,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
 {
     if (!get_extraction_base_parent_directory(extraction_dir))
     {
+        trace::error(_X("Failed to determine default extraction location. Check if 'TMP' or 'TEMP' points to existing path."));
         return false;
     }
 
@@ -588,6 +592,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
         GetLastError() != ERROR_ALREADY_EXISTS)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno), GetLastError());
         return false;
     }
 

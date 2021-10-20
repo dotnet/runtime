@@ -82,7 +82,7 @@ namespace System.Reflection.Emit
 
         public int GetTokenFor(RuntimeTypeHandle type)
         {
-            Type t = Type.GetTypeFromHandle(type);
+            Type t = Type.GetTypeFromHandle(type)!;
             return this.method.GetILGenerator().TokenGenerator.GetToken(t, false);
         }
 

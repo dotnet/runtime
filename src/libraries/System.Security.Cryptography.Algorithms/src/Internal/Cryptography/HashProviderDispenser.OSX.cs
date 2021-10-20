@@ -45,6 +45,7 @@ namespace Internal.Cryptography
                 fixed (byte* pSource = source)
                 fixed (byte* pDestination = destination)
                 {
+                    int digestSize;
                     int ret = Interop.AppleCrypto.HmacOneShot(
                         algorithm,
                         pKey,
@@ -53,7 +54,7 @@ namespace Internal.Cryptography
                         source.Length,
                         pDestination,
                         destination.Length,
-                        out int digestSize);
+                        &digestSize);
 
                     if (ret != 1)
                     {
@@ -74,13 +75,14 @@ namespace Internal.Cryptography
                 fixed (byte* pSource = source)
                 fixed (byte* pDestination = destination)
                 {
+                    int digestSize;
                     int ret = Interop.AppleCrypto.DigestOneShot(
                         algorithm,
                         pSource,
                         source.Length,
                         pDestination,
                         destination.Length,
-                        out int digestSize);
+                        &digestSize);
 
                     if (ret != 1)
                     {

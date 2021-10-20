@@ -11518,8 +11518,9 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(__in_z const ch
         msgStr += W(")");
     }
 #endif
-
     ThrowHR(COR_E_BADIMAGEFORMAT, msgStr);
+#else // DACCESS_COMPILE
+    ThrowHR(COR_E_BADIMAGEFORMAT);
 #endif // #ifndef DACCESS_COMPILE
 }
 

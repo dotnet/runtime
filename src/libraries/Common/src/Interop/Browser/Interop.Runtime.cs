@@ -46,6 +46,18 @@ internal static partial class Interop
         internal static extern string? AddEventListener(int jsHandle, string name, int gcHandle, int optionsJsHandle);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string? RemoveEventListener(int jsHandle, string name, int gcHandle, bool capture);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern object WebSocketSend(int webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out int promiseJSHandle, out int exceptionalResult);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern object WebSocketReceive(int webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out int promiseJSHandle, out int exceptionalResult);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern object WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern string WebSocketAbort(int webSocketJSHandle, out int exceptionalResult);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern object WebSocketClose(int webSocketJSHandle, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle, out int exceptionalResult);
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern string CancelPromise(int promiseJSHandle, out int exceptionalResult);
 
         // / <summary>
         // / Execute the provided string in the JavaScript context
@@ -86,7 +98,7 @@ internal static partial class Interop
         {
         }
 
-        // Called by the AOT profiler to save profile data into Module.aot_profile_data
+        // Called by the AOT profiler to save profile data into INTERNAL.aot_profile_data
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {

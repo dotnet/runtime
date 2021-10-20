@@ -4,7 +4,7 @@ parameters:
   osSubgroup: ''
   archType: ''
   targetRid: ''
-  framework: 'net6.0'
+  framework: 'net7.0'
   isOfficialBuild: false
   liveRuntimeBuildConfig: ''
   runtimeFlavor: 'coreclr'
@@ -15,9 +15,6 @@ parameters:
   runtimeVariant: ''
   testScope: ''
   helixQueues: []
-  dependsOnTestBuildConfiguration: Debug
-  dependsOnTestArchitecture: x64
-  dependsOnTestOsSubgroup: ''
   dependOnEvaluatePaths: false
   condition: true
   shouldContinueOnError: false
@@ -55,12 +52,7 @@ jobs:
         testDisplayName: ${{ parameters.runtimeFlavor }}_interpreter_${{ parameters.liveRuntimeBuildConfig }}
 
       # To run the tests we just send to helix and wait, use ubuntu hosted pools for faster providing and to not back up our build pools
-      ${{ if startsWith(parameters.pool.queue, 'BuildPool.Ubuntu') }}:
-        pool:
-          vmImage: 'ubuntu-latest'
-      
-      ${{ if not(startsWith(parameters.pool.queue, 'BuildPool.Ubuntu')) }}:
-        pool: ${{ parameters.pool }}
+      pool: ${{ parameters.pool }}
 
       dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
       dependsOn:
@@ -69,14 +61,11 @@ jobs:
       - ${{ if eq(parameters.dependsOn[0], '') }}:
         - ${{ if notIn(parameters.framework, 'allConfigurations', 'net48') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
-          # tests are built as part of product build
-          - ${{ if or(ne(parameters.archType, parameters.dependsOnTestArchitecture), ne(parameters.buildConfig, parameters.dependsOnTestBuildConfiguration), ne(parameters.osSubgroup, parameters.dependsOnTestOsSubgroup)) }}:
-            - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.dependsOnTestOsSubgroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
         - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
-        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.dependsOnTestArchitecture, parameters.dependsOnTestBuildConfiguration) }}
+        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - _archiveTestsParameter: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
@@ -199,4 +188,7 @@ jobs:
               - defaultpgo
               - dynamicpgo
               - fullpgo
+              - fullpgo_random_gdv
+              - fullpgo_random_edge
+              - fullpgo_random_gdv_edge
 

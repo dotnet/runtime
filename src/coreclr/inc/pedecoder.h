@@ -151,7 +151,6 @@ class PEDecoder
     CHECK CheckCORFormat() const;     // Check a COR image (IL or native)
     CHECK CheckILFormat() const;      // Check a managed image
     CHECK CheckILOnlyFormat() const;  // Check an IL only image
-    CHECK CheckNativeFormat() const;  // Check a native image
 
     // NT header access
 
@@ -282,9 +281,6 @@ class PEDecoder
     ULONG GetEntryPointToken() const;
     IMAGE_COR_VTABLEFIXUP *GetVTableFixups(COUNT_T *pCount = NULL) const;
 
-    // Native header access
-    BOOL HasNativeHeader() const;
-    CHECK CheckNativeHeader() const;
     BOOL IsNativeMachineFormat() const;
     BOOL IsI386() const;
 

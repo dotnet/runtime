@@ -479,6 +479,29 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     {
         m_mapSelectBudget = DEFAULT_MAP_SELECT_BUDGET;
     }
+
+#ifdef DEBUG
+    if (comp->compStressCompile(Compiler::STRESS_VN_BUDGET, 50))
+    {
+        // Bias toward smaller budgets as we want to stress returning
+        // unexpectedly opaque results.
+        //
+        CLRRandom* random = comp->m_inlineStrategy->GetRandom(comp->info.compMethodHash());
+        double     p      = random->NextDouble();
+
+        if (p <= 0.5)
+        {
+            m_mapSelectBudget = random->Next(0, 5);
+        }
+        else
+        {
+            int limit         = random->Next(1, DEFAULT_MAP_SELECT_BUDGET + 1);
+            m_mapSelectBudget = random->Next(0, limit);
+        }
+
+        JITDUMP("VN Stress: setting select budget to %u\n", m_mapSelectBudget);
+    }
+#endif
 }
 
 //
@@ -1708,8 +1731,7 @@ ValueNum ValueNumStore::VNForByrefCon(target_size_t cnsVal)
     return VnForConst(cnsVal, GetByrefCnsMap(), TYP_BYREF);
 }
 
-ValueNum ValueNumStore::VNForCastOper(var_types castToType,
-                                      bool srcIsUnsigned /*=false*/ DEBUGARG(bool printResult /*=true*/))
+ValueNum ValueNumStore::VNForCastOper(var_types castToType, bool srcIsUnsigned)
 {
     assert(castToType != TYP_STRUCT);
     INT32 cnsVal = INT32(castToType) << INT32(VCA_BitCount);
@@ -1721,14 +1743,6 @@ ValueNum ValueNumStore::VNForCastOper(var_types castToType,
         cnsVal |= INT32(VCA_UnsignedSrc);
     }
     ValueNum result = VNForIntCon(cnsVal);
-
-#ifdef DEBUG
-    if (printResult && m_pComp->verbose)
-    {
-        printf("    VNForCastOper(%s%s) is " FMT_VN "\n", varTypeName(castToType), srcIsUnsigned ? ", unsignedSrc" : "",
-               result);
-    }
-#endif
 
     return result;
 }
@@ -1745,7 +1759,7 @@ void ValueNumStore::GetCastOperFromVN(ValueNum vn, var_types* pCastToType, bool*
     *pSrcIsUnsigned = (value & INT32(VCA_UnsignedSrc)) != 0;
     *pCastToType    = var_types(value >> INT32(VCA_BitCount));
 
-    assert(VNForCastOper(*pCastToType, *pSrcIsUnsigned DEBUGARG(/*printResult*/ false)) == vn);
+    assert(VNForCastOper(*pCastToType, *pSrcIsUnsigned) == vn);
 }
 
 ValueNum ValueNumStore::VNForHandle(ssize_t cnsVal, GenTreeFlags handleFlags)
@@ -4242,11 +4256,12 @@ ValueNum Compiler::fgValueNumberArrIndexVal(GenTree*             tree,
     var_types elemTyp = DecodeElemType(elemTypeEq);
     var_types indType = (tree == nullptr) ? elemTyp : tree->TypeGet();
     ValueNum  selectedElem;
+    unsigned  elemWidth = elemTyp == TYP_STRUCT ? info.compCompHnd->getClassSize(elemTypeEq) : genTypeSize(elemTyp);
 
-    if (fldSeq == FieldSeqStore::NotAField())
+    if ((fldSeq == FieldSeqStore::NotAField()) || (genTypeSize(indType) > elemWidth))
     {
         // This doesn't represent a proper array access
-        JITDUMP("    *** NotAField sequence encountered in fgValueNumberArrIndexVal\n");
+        JITDUMP("    *** Not a proper arrray access encountered in fgValueNumberArrIndexVal\n");
 
         // a new unique value number
         selectedElem = vnStore->VNForExpr(compCurBB, elemTyp);
@@ -5584,6 +5599,10 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 vnDumpSimdType(comp, &funcApp);
                 break;
 #endif // FEATURE_SIMD
+            case VNF_Cast:
+            case VNF_CastOvf:
+                vnDumpCast(comp, vn);
+                break;
 
             default:
                 printf("%s(", VNFuncName(funcApp.m_func));
@@ -5775,6 +5794,36 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
 }
 #endif // FEATURE_SIMD
 
+void ValueNumStore::vnDumpCast(Compiler* comp, ValueNum castVN)
+{
+    VNFuncApp cast;
+    bool      castFound = GetVNFunc(castVN, &cast);
+    assert(castFound && ((cast.m_func == VNF_Cast) || (cast.m_func == VNF_CastOvf)));
+
+    var_types castToType;
+    bool      srcIsUnsigned;
+    GetCastOperFromVN(cast.m_args[1], &castToType, &srcIsUnsigned);
+
+    var_types castFromType = TypeOfVN(cast.m_args[0]);
+    var_types resultType   = TypeOfVN(castVN);
+    if (srcIsUnsigned)
+    {
+        castFromType = varTypeToUnsigned(castFromType);
+    }
+
+    comp->vnPrint(cast.m_args[0], 0);
+
+    printf(", ");
+    if ((resultType != castToType) && (castToType != castFromType))
+    {
+        printf("%s <- %s <- %s", varTypeName(resultType), varTypeName(castToType), varTypeName(castFromType));
+    }
+    else
+    {
+        printf("%s <- %s", varTypeName(resultType), varTypeName(castFromType));
+    }
+}
+
 #endif // DEBUG
 
 // Static fields, methods.
@@ -5786,6 +5835,12 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ADDR, GT_ARR_BOUNDS_CHECK,
+#ifdef FEATURE_SIMD
+                                                 GT_SIMD_CHK,
+#endif
+#ifdef FEATURE_HW_INTRINSICS
+                                                 GT_HW_INTRINSIC_CHK,
+#endif
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -5814,11 +5869,7 @@ void ValueNumStore::InitValueNumStoreStatics()
         {
             arity = 2;
         }
-        // Since GT_ARR_BOUNDS_CHECK is not currently GTK_BINOP
-        else if (gtOper == GT_ARR_BOUNDS_CHECK)
-        {
-            arity = 2;
-        }
+
         vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
 
         if (GenTree::OperIsCommutative(gtOper))
@@ -8873,6 +8924,39 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
+                    case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+                    case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+                    case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
+                    {
+                        ValueNumPair vnpIndex  = tree->AsBoundsChk()->GetIndex()->gtVNPair;
+                        ValueNumPair vnpArrLen = tree->AsBoundsChk()->GetArrayLength()->gtVNPair;
+
+                        ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+
+                        // And collect the exceptions  from Index and ArrLen
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
+
+                        // A bounds check node has no value, but may throw exceptions.
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
+
+                        // next add the bounds check exception set for the current tree node
+                        fgValueNumberAddExceptionSet(tree);
+
+                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
+                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum lengthVN = tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative();
+                        if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(lengthVN);
+                        }
+                    }
+                    break;
+
                     case GT_NULLCHECK:
                     {
                         // An Explicit null check, produces no value
@@ -8953,39 +9037,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_CALL:
                 fgValueNumberCall(tree->AsCall());
                 break;
-
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            {
-                ValueNumPair vnpIndex  = tree->AsBoundsChk()->gtIndex->gtVNPair;
-                ValueNumPair vnpArrLen = tree->AsBoundsChk()->gtArrLen->gtVNPair;
-
-                ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
-
-                // And collect the exceptions  from Index and ArrLen
-                vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
-
-                // A bounds check node has no value, but may throw exceptions.
-                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
-
-                // next add the bounds check exception set for the current tree node
-                fgValueNumberAddExceptionSet(tree);
-
-                // Record non-constant value numbers that are used as the length argument to bounds checks, so that
-                // assertion prop will know that comparisons against them are worth analyzing.
-                ValueNum lengthVN = tree->AsBoundsChk()->gtArrLen->gtVNPair.GetConservative();
-                if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
-                {
-                    vnStore->SetVNIsCheckedBound(lengthVN);
-                }
-            }
-            break;
 
             case GT_CMPXCHG: // Specialop
             {
@@ -9394,38 +9445,41 @@ void Compiler::fgValueNumberCastTree(GenTree* tree)
     tree->gtVNPair = vnStore->VNPairForCast(srcVNPair, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 }
 
-// Compute the normal ValueNumber for a cast operation with no exceptions
+// Compute the ValueNumber for a cast operation
 ValueNum ValueNumStore::VNForCast(ValueNum  srcVN,
                                   var_types castToType,
                                   var_types castFromType,
-                                  bool      srcIsUnsigned /* = false */)
+                                  bool      srcIsUnsigned,    /* = false */
+                                  bool      hasOverflowCheck) /* = false */
 {
-    // The resulting type after performingthe cast is always widened to a supported IL stack size
+    // The resulting type after performing the cast is always widened to a supported IL stack size
     var_types resultType = genActualType(castToType);
 
-    // When we're considering actual value returned by a non-checking cast whether or not the source is
-    // unsigned does *not* matter for non-widening casts.  That is, if we cast an int or a uint to short,
-    // we just extract the first two bytes from the source bit pattern, not worrying about the interpretation.
-    // The same is true in casting between signed/unsigned types of the same width.  Only when we're doing
-    // a widening cast do we care about whether the source was unsigned,so we know whether to sign or zero extend it.
-    //
-    bool srcIsUnsignedNorm = srcIsUnsigned;
-    if (genTypeSize(castToType) <= genTypeSize(castFromType))
+    // For integral unchecked casts, only the "int -> long" upcasts use
+    // "srcIsUnsigned", to decide whether to use sign or zero extension.
+    if (!hasOverflowCheck && !varTypeIsFloating(castToType) && (genTypeSize(castToType) <= genTypeSize(castFromType)))
     {
-        srcIsUnsignedNorm = false;
+        srcIsUnsigned = false;
     }
 
-    ValueNum castTypeVN = VNForCastOper(castToType, srcIsUnsigned);
-    ValueNum resultVN   = VNForFunc(resultType, VNF_Cast, srcVN, castTypeVN);
+    ValueNum srcExcVN;
+    ValueNum srcNormVN;
+    VNUnpackExc(srcVN, &srcNormVN, &srcExcVN);
 
-#ifdef DEBUG
-    if (m_pComp->verbose)
+    VNFunc   castFunc     = hasOverflowCheck ? VNF_CastOvf : VNF_Cast;
+    ValueNum castTypeVN   = VNForCastOper(castToType, srcIsUnsigned);
+    ValueNum resultNormVN = VNForFunc(resultType, castFunc, srcNormVN, castTypeVN);
+    ValueNum resultExcVN  = srcExcVN;
+
+    // Add an exception, except if folding took place.
+    // We only fold checked casts that do not overflow.
+    if (hasOverflowCheck && !IsVNConstant(resultNormVN))
     {
-        printf("    VNForCast(" FMT_VN ", " FMT_VN ") returns ", srcVN, castTypeVN);
-        m_pComp->vnPrint(resultVN, 1);
-        printf("\n");
+        ValueNum ovfChk = VNForFunc(TYP_REF, VNF_ConvOverflowExc, srcNormVN, castTypeVN);
+        resultExcVN     = VNExcSetUnion(VNExcSetSingleton(ovfChk), srcExcVN);
     }
-#endif
+
+    ValueNum resultVN = VNWithExc(resultNormVN, resultExcVN);
 
     return resultVN;
 }
@@ -9437,60 +9491,12 @@ ValueNumPair ValueNumStore::VNPairForCast(ValueNumPair srcVNPair,
                                           bool         srcIsUnsigned,    /* = false */
                                           bool         hasOverflowCheck) /* = false */
 {
-    // The resulting type after performingthe cast is always widened to a supported IL stack size
-    var_types resultType = genActualType(castToType);
+    ValueNum srcLibVN  = srcVNPair.GetLiberal();
+    ValueNum srcConVN  = srcVNPair.GetConservative();
+    ValueNum castLibVN = VNForCast(srcLibVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+    ValueNum castConVN = VNForCast(srcConVN, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
 
-    ValueNumPair castArgVNP;
-    ValueNumPair castArgxVNP;
-    VNPUnpackExc(srcVNPair, &castArgVNP, &castArgxVNP);
-
-    // When we're considering actual value returned by a non-checking cast, (hasOverflowCheck is false)
-    // whether or not the source is unsigned does *not* matter for non-widening casts.
-    // That is, if we cast an int or a uint to short, we just extract the first two bytes from the source
-    // bit pattern, not worrying about the interpretation.  The same is true in casting between signed/unsigned
-    // types of the same width.  Only when we're doing a widening cast do we care about whether the source
-    // was unsigned, so we know whether to sign or zero extend it.
-    //
-    // Important: Casts to floating point cannot be optimized in this fashion. (bug 946768)
-    //
-    bool srcIsUnsignedNorm = srcIsUnsigned;
-    if (!hasOverflowCheck && !varTypeIsFloating(castToType) && (genTypeSize(castToType) <= genTypeSize(castFromType)))
-    {
-        srcIsUnsignedNorm = false;
-    }
-
-    VNFunc       vnFunc     = hasOverflowCheck ? VNF_CastOvf : VNF_Cast;
-    ValueNum     castTypeVN = VNForCastOper(castToType, srcIsUnsignedNorm);
-    ValueNumPair castTypeVNPair(castTypeVN, castTypeVN);
-    ValueNumPair castNormRes = VNPairForFunc(resultType, vnFunc, castArgVNP, castTypeVNPair);
-
-    ValueNumPair resultVNP = VNPWithExc(castNormRes, castArgxVNP);
-
-    // If we have a check for overflow, add the exception information.
-    if (hasOverflowCheck)
-    {
-        ValueNumPair excSet = ValueNumStore::VNPForEmptyExcSet();
-
-        ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
-        for (ValueNumKind vnKind : vnKinds)
-        {
-            // Do not add exceptions for folded casts.
-            // We only fold checked casts that do not overflow.
-            if (IsVNConstant(castNormRes.Get(vnKind)))
-            {
-                continue;
-            }
-
-            ValueNum ovfChk =
-                VNForFunc(TYP_REF, VNF_ConvOverflowExc, castArgVNP.Get(vnKind), castTypeVNPair.Get(vnKind));
-            excSet.Set(vnKind, VNExcSetSingleton(ovfChk));
-        }
-
-        excSet    = VNPExcSetUnion(excSet, castArgxVNP);
-        resultVNP = VNPWithExc(castNormRes, excSet);
-    }
-
-    return resultVNP;
+    return {castLibVN, castConVN};
 }
 
 void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc)
@@ -9765,6 +9771,81 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     }
 }
 
+void Compiler::fgValueNumberCastHelper(GenTreeCall* call)
+{
+    CorInfoHelpFunc helpFunc         = eeGetHelperNum(call->gtCallMethHnd);
+    var_types       castToType       = TYP_UNDEF;
+    var_types       castFromType     = TYP_UNDEF;
+    bool            srcIsUnsigned    = false;
+    bool            hasOverflowCheck = false;
+
+    switch (helpFunc)
+    {
+        case CORINFO_HELP_LNG2DBL:
+            castToType   = TYP_DOUBLE;
+            castFromType = TYP_LONG;
+            break;
+
+        case CORINFO_HELP_ULNG2DBL:
+            castToType    = TYP_DOUBLE;
+            castFromType  = TYP_LONG;
+            srcIsUnsigned = true;
+            break;
+
+        case CORINFO_HELP_DBL2INT:
+            castToType   = TYP_INT;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2INT_OVF:
+            castToType       = TYP_INT;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        case CORINFO_HELP_DBL2LNG:
+            castToType   = TYP_LONG;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2LNG_OVF:
+            castToType       = TYP_LONG;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        case CORINFO_HELP_DBL2UINT:
+            castToType   = TYP_UINT;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2UINT_OVF:
+            castToType       = TYP_UINT;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        case CORINFO_HELP_DBL2ULNG:
+            castToType   = TYP_ULONG;
+            castFromType = TYP_DOUBLE;
+            break;
+
+        case CORINFO_HELP_DBL2ULNG_OVF:
+            castToType       = TYP_ULONG;
+            castFromType     = TYP_DOUBLE;
+            hasOverflowCheck = true;
+            break;
+
+        default:
+            unreached();
+    }
+
+    ValueNumPair argVNP  = call->gtCallArgs->GetNode()->gtVNPair;
+    ValueNumPair castVNP = vnStore->VNPairForCast(argVNP, castToType, castFromType, srcIsUnsigned, hasOverflowCheck);
+
+    call->SetVNs(castVNP);
+}
+
 VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 {
     assert(s_helperCallProperties.IsPure(helpFunc) || s_helperCallProperties.IsAllocator(helpFunc));
@@ -9795,12 +9876,14 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             vnf = VNFunc(GT_RSZ);
             break;
         case CORINFO_HELP_LMUL:
-        case CORINFO_HELP_LMUL_OVF:
             vnf = VNFunc(GT_MUL);
             break;
+        case CORINFO_HELP_LMUL_OVF:
+            vnf = VNF_MUL_OVF;
+            break;
         case CORINFO_HELP_ULMUL_OVF:
-            vnf = VNFunc(GT_MUL);
-            break; // Is this the right thing?
+            vnf = VNF_MUL_UN_OVF;
+            break;
         case CORINFO_HELP_LDIV:
             vnf = VNFunc(GT_DIV);
             break;
@@ -9812,37 +9895,6 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
             break;
         case CORINFO_HELP_ULMOD:
             vnf = VNFunc(GT_UMOD);
-            break;
-
-        case CORINFO_HELP_LNG2DBL:
-            vnf = VNF_Lng2Dbl;
-            break;
-        case CORINFO_HELP_ULNG2DBL:
-            vnf = VNF_ULng2Dbl;
-            break;
-        case CORINFO_HELP_DBL2INT:
-            vnf = VNF_Dbl2Int;
-            break;
-        case CORINFO_HELP_DBL2INT_OVF:
-            vnf = VNF_Dbl2Int;
-            break;
-        case CORINFO_HELP_DBL2LNG:
-            vnf = VNF_Dbl2Lng;
-            break;
-        case CORINFO_HELP_DBL2LNG_OVF:
-            vnf = VNF_Dbl2Lng;
-            break;
-        case CORINFO_HELP_DBL2UINT:
-            vnf = VNF_Dbl2UInt;
-            break;
-        case CORINFO_HELP_DBL2UINT_OVF:
-            vnf = VNF_Dbl2UInt;
-            break;
-        case CORINFO_HELP_DBL2ULNG:
-            vnf = VNF_Dbl2ULng;
-            break;
-        case CORINFO_HELP_DBL2ULNG_OVF:
-            vnf = VNF_Dbl2ULng;
             break;
         case CORINFO_HELP_FLTREM:
             vnf = VNFunc(GT_MOD);
@@ -10048,12 +10100,32 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
 
 bool Compiler::fgValueNumberHelperCall(GenTreeCall* call)
 {
-    CorInfoHelpFunc helpFunc    = eeGetHelperNum(call->gtCallMethHnd);
-    bool            pure        = s_helperCallProperties.IsPure(helpFunc);
-    bool            isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
-    bool            modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
-    bool            mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
-    bool            noThrow     = s_helperCallProperties.NoThrow(helpFunc);
+    CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+
+    switch (helpFunc)
+    {
+        case CORINFO_HELP_LNG2DBL:
+        case CORINFO_HELP_ULNG2DBL:
+        case CORINFO_HELP_DBL2INT:
+        case CORINFO_HELP_DBL2INT_OVF:
+        case CORINFO_HELP_DBL2LNG:
+        case CORINFO_HELP_DBL2LNG_OVF:
+        case CORINFO_HELP_DBL2UINT:
+        case CORINFO_HELP_DBL2UINT_OVF:
+        case CORINFO_HELP_DBL2ULNG:
+        case CORINFO_HELP_DBL2ULNG_OVF:
+            fgValueNumberCastHelper(call);
+            return false;
+
+        default:
+            break;
+    }
+
+    bool pure        = s_helperCallProperties.IsPure(helpFunc);
+    bool isAlloc     = s_helperCallProperties.IsAllocator(helpFunc);
+    bool modHeap     = s_helperCallProperties.MutatesHeap(helpFunc);
+    bool mayRunCctor = s_helperCallProperties.MayRunCctor(helpFunc);
+    bool noThrow     = s_helperCallProperties.NoThrow(helpFunc);
 
     ValueNumPair vnpExc = ValueNumStore::VNPForEmptyExcSet();
 
@@ -10517,8 +10589,8 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
     GenTreeBoundsChk* node = tree->AsBoundsChk();
     assert(node != nullptr);
 
-    ValueNumPair vnpIndex  = node->gtIndex->gtVNPair;
-    ValueNumPair vnpArrLen = node->gtArrLen->gtVNPair;
+    ValueNumPair vnpIndex  = node->GetIndex()->gtVNPair;
+    ValueNumPair vnpArrLen = node->GetArrayLength()->gtVNPair;
 
     // Unpack, Norm,Exc for the tree's VN
     //
@@ -10819,7 +10891,6 @@ void Compiler::vnpPrint(ValueNumPair vnp, unsigned level)
 
 void Compiler::vnPrint(ValueNum vn, unsigned level)
 {
-
     if (ValueNumStore::isReservedVN(vn))
     {
         printf(ValueNumStore::reservedName(vn));
