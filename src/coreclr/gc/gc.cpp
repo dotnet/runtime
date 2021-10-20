@@ -2471,6 +2471,12 @@ size_t      gc_heap::mark_stack_array_length = 0;
 
 mark*       gc_heap::mark_stack_array = 0;
 
+size_t      gc_heap::saved_mark_stack_array_length = 0;
+
+size_t      gc_heap::saved_mark_stack_tos = 0;
+
+mark*       gc_heap::saved_mark_stack_array = 0;
+
 #if defined (_DEBUG) && defined (VERIFY_HEAP)
 BOOL        gc_heap::verify_pinned_queue_p = FALSE;
 #endif //_DEBUG && VERIFY_HEAP
@@ -7808,6 +7814,9 @@ void gc_heap::make_mark_stack (mark* arr)
 #ifdef MH_SC_MARK
     mark_stack_busy() = 0;
 #endif //MH_SC_MARK
+    saved_mark_stack_array = nullptr;
+    saved_mark_stack_array_length = 0;
+    saved_mark_stack_tos = 0;
 }
 
 #ifdef BACKGROUND_GC
@@ -32090,6 +32099,29 @@ size_t gc_heap::recover_saved_pinned_info()
     return total_recovered_sweep_size;
 }
 
+void gc_heap::save_pinned_queue()
+{
+    if (saved_mark_stack_array_length < mark_stack_array_length)
+    {
+        if (saved_mark_stack_array != nullptr)
+        {
+            delete[] saved_mark_stack_array;
+            saved_mark_stack_array = nullptr;
+        }
+        saved_mark_stack_array = new (nothrow) mark[mark_stack_array_length];
+        if (saved_mark_stack_array == nullptr)
+        {
+            saved_mark_stack_array_length = 0;
+            saved_mark_stack_tos = 0;
+            return;
+        }
+        saved_mark_stack_array_length = mark_stack_array_length;
+    }
+    assert (saved_mark_stack_array_length >= mark_stack_array_length);
+    memcpy (saved_mark_stack_array, mark_stack_array, sizeof(saved_mark_stack_array[0])*mark_stack_tos);
+    saved_mark_stack_tos = mark_stack_tos;
+}
+
 void gc_heap::compact_phase (int condemned_gen_number,
                              uint8_t*  first_condemned_address,
                              BOOL clear_cards)
@@ -32125,6 +32157,8 @@ void gc_heap::compact_phase (int condemned_gen_number,
 #endif //FEATURE_LOH_COMPACTION
 
     reset_pinned_queue_bos();
+    if (condemned_gen_number == 1)
+        save_pinned_queue();
     update_oldest_pinned_plug();
     BOOL reused_seg = expand_reused_seg_p();
     if (reused_seg)
@@ -44300,7 +44334,7 @@ void gc_heap::do_pre_gc()
 #ifdef TRACE_GC
     size_t total_allocated_since_last_gc = get_total_allocated_since_last_gc();
 #ifdef BACKGROUND_GC
-    dprintf (1, (ThreadStressLog::gcDetailedStartMsg(),
+    dprintf (5555, (ThreadStressLog::gcDetailedStartMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count (hp->dynamic_data_of (0)),
         settings.condemned_generation,
@@ -44308,7 +44342,7 @@ void gc_heap::do_pre_gc()
         (settings.concurrent ? "BGC" : (gc_heap::background_running_p() ? "FGC" : "NGC")),
         settings.b_state));
 #else
-    dprintf (1, ("*GC* %d(gen0:%d)(%d)(alloc: %Id)",
+    dprintf (5555, ("*GC* %d(gen0:%d)(%d)(alloc: %Id)",
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         settings.condemned_generation,
@@ -44319,7 +44353,7 @@ void gc_heap::do_pre_gc()
     {
         size_t total_heap_committed = get_total_committed_size();
         size_t total_heap_committed_recorded = current_total_committed - current_total_committed_bookkeeping;
-        dprintf (1, ("(%d)GC commit BEG #%Id: %Id (recorded: %Id = %Id-%Id)",
+        dprintf (5555, ("(%d)GC commit BEG #%Id: %Id (recorded: %Id = %Id-%Id)",
             settings.condemned_generation,
             (size_t)settings.gc_index, total_heap_committed, total_heap_committed_recorded,
             current_total_committed, current_total_committed_bookkeeping));
@@ -44719,7 +44753,7 @@ void gc_heap::do_post_gc()
     }
 #endif //BGC_SERVO_TUNING
 
-    dprintf (1, (ThreadStressLog::gcDetailedEndMsg(),
+    dprintf (5555, (ThreadStressLog::gcDetailedEndMsg(),
         VolatileLoad(&settings.gc_index),
         dd_collection_count(hp->dynamic_data_of(0)),
         (size_t)(GetHighPrecisionTimeStamp() / 1000),

@@ -261,7 +261,7 @@ void GCLog (const char *fmt, ... );
 // wanting to inspect GC logs on unmodified builds, we can use this define here
 // to do so.
 //#define dprintf(l, x)
-#define dprintf(l,x) {if ((l == 1) || (l == 5555)) {STRESS_LOG_VA(l,x);}}
+#define dprintf(l,x) {if (l == 5555) {STRESS_LOG_VA(l,x);}}
 
 #endif //SIMPLE_DPRINTF
 
@@ -2310,6 +2310,8 @@ protected:
     PER_HEAP
     void reset_pinned_queue_bos();
     PER_HEAP
+    void save_pinned_queue();
+    PER_HEAP
     void set_allocator_next_pin (generation* gen);
     PER_HEAP
     void enque_pinned_plug (generation* gen, uint8_t* plug, size_t len);
@@ -4069,6 +4071,15 @@ protected:
 
     PER_HEAP
     mark*       mark_stack_array;
+
+    PER_HEAP
+    size_t      saved_mark_stack_array_length;
+
+    PER_HEAP
+    size_t      saved_mark_stack_tos;
+
+    PER_HEAP
+    mark*       saved_mark_stack_array;
 
 #if defined (_DEBUG) && defined (VERIFY_HEAP)
     PER_HEAP
