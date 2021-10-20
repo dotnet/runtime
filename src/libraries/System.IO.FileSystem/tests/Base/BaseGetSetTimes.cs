@@ -72,11 +72,9 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as there is only 1 effective time store.
         public void SettingUpdatesPropertiesAfterAnother()
         {
-            // Browser is excluded as there is only 1 effective time store.
-
             T item = GetExistingItem();
 
             // These linq calls make an IEnumerable of pairs of functions that are not identical
@@ -104,12 +102,12 @@ namespace System.IO.Tests
             // [2] = (write, access, False),    [3] = (write, access, True)
 
             IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
-            var booleanArray = new bool[] { false, true };
+            bool[] booleanArray = new bool[] { false, true };
             Assert.All(timeFunctionsUtc.SelectMany((x) => timeFunctionsUtc.SelectMany((y) => booleanArray.Select((reverse) => (x, y, reverse)))).Where((fs) => fs.x.Getter != fs.y.Getter), (functions) =>
             {
-                var function1 = functions.x;
-                var function2 = functions.y;
-                var reverse = functions.reverse;
+                TimeFunction function1 = functions.x;
+                TimeFunction function2 = functions.y;
+                bool reverse = functions.reverse;
                 
                 // Checking that milliseconds are not dropped after setter.
                 DateTime dt1 = new DateTime(2002, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, DateTimeKind.Utc);
