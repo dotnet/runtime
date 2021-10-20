@@ -14,7 +14,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         /// <summary>The matching engine.</summary>
         internal readonly SymbolicRegexMatcher _matcher;
-        
         /// <summary>Minimum length computed</summary>
         private readonly int _minRequiredLength;
 
