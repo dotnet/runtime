@@ -17,7 +17,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestNameBindingFlags ();
 			TestNameWrongBindingFlags ();
 			TestNameUnknownBindingFlags (BindingFlags.Public);
-			TestNameUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -70,13 +69,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Since the binding flags are not known linker should mark all events on the type
 			var eventInfo = typeof (UnknownBindingFlags).GetEvent ("PrivateEvent", bindingFlags);
-		}
-
-		[Kept]
-		static void TestNameUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
-		{
-			// Since the binding flags are not known linker should mark all events on the type
-			var eventInfo = typeof (UnknownBindingFlagsAndName).GetEvent (name, bindingFlags);
 		}
 
 		[Kept]
@@ -206,30 +198,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		class UnknownBindingFlags
-		{
-			[Kept]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified]
-			internal event EventHandler<EventArgs> InternalEvent;
-			[Kept]
-			[KeptBackingField]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
-			static event EventHandler<EventArgs> Static;
-			[Kept]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified]
-			private event EventHandler<EventArgs> PrivateEvent;
-			[Kept]
-			[KeptEventAddMethod]
-			[KeptEventRemoveMethod]
-			[method: ExpectBodyModified]
-			public event EventHandler<EventArgs> PublicEvent;
-		}
-
-		class UnknownBindingFlagsAndName
 		{
 			[Kept]
 			[KeptEventAddMethod]

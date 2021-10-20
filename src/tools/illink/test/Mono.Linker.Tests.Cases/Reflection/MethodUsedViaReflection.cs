@@ -17,7 +17,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			GetMethod_Name_Types.TestNameAndType ();
 			GetMethod_Name_BindingAttr.TestExplicitBindingFlags ();
 			GetMethod_Name_BindingAttr.TestUnknownBindingFlags (BindingFlags.Public);
-			GetMethod_Name_BindingAttr.TestUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			GetMethod_Name_BindingAttr.TestUnknownNullBindingFlags (BindingFlags.Public);
 			GetMethod_Name_BindingAttr_Binder_Types_Modifiers.TestNameBindingFlagsAndParameterModifier ();
 			GetMethod_Name_BindingAttr_Binder_CallConvention_Types_Modifiers.TestNameBindingFlagsCallingConventionParameterModifier ();
@@ -198,25 +197,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			{
 				// Since the binding flags are not known linker should mark all methods on the type
 				var method = typeof (UnknownBindingFlags).GetMethod ("OnlyCalledViaReflection", bindingFlags);
-				method.Invoke (null, new object[] { });
-			}
-
-			[Kept]
-			class UnknownBindingFlagsAndName
-			{
-				[Kept]
-				private static int OnlyCalledViaReflection ()
-				{
-					return 42;
-				}
-			}
-
-			[Kept]
-			[RecognizedReflectionAccessPattern]
-			public static void TestUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
-			{
-				// Since the binding flags and name are not known linker should mark all methods on the type
-				var method = typeof (UnknownBindingFlagsAndName).GetMethod (name, bindingFlags);
 				method.Invoke (null, new object[] { });
 			}
 
