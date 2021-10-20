@@ -26,15 +26,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		private readonly SyntaxNode MemberSyntax;
 
-		private readonly string TestingAnalyzerName;
-
 		public TestChecker (MemberDeclarationSyntax memberSyntax, (CompilationWithAnalyzers Compilation, SemanticModel SemanticModel) compilationResult)
 		{
 			Compilation = compilationResult.Compilation;
 			SemanticModel = compilationResult.SemanticModel;
-
-			// Currently, tests are only run using a single analyzer.
-			TestingAnalyzerName = Compilation.Analyzers.Single ().GetType ().Name;
 			DiagnosticMessages = Compilation.GetAnalyzerDiagnosticsAsync ().Result
 				.Where (d => {
 					// Filter down to diagnostics which originate from this member.
@@ -75,7 +70,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 				var args = TestCaseUtils.GetAttributeArguments (attribute);
 				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
 					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
-					return GetProducedBy (producedBy).HasFlag (Enum.Parse<ProducedBy> (TestingAnalyzerName));
+					return GetProducedBy (producedBy).HasFlag (ProducedBy.Analyzer);
 				}
 
 				return true;

@@ -75,9 +75,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var testDependenciesSource = GetTestDependencies (testSyntaxTree)
 				.Select (testDependency => CSharpSyntaxTree.ParseText (File.ReadAllText (testDependency)));
 
-			var test = new TestChecker (m, CSharpAnalyzerVerifier<TAnalyzer>
-				.CreateCompilation (testSyntaxTree, MSBuildProperties, additionalSources: testDependenciesSource).Result);
-
+			var compilation = TestCaseCompilation.CreateCompilation (testSyntaxTree, MSBuildProperties, additionalSources: testDependenciesSource);
+			var test = new TestChecker (m, compilation.Result);
 			test.ValidateAttributes (attrs);
 		}
 
