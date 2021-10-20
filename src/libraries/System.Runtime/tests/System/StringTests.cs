@@ -828,6 +828,8 @@ namespace System.Tests
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", false, CultureInfo.InvariantCulture, "def" };
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", true, CultureInfo.InvariantCulture, "def" };
 
+                // Android has different results w/ tr-TR
+                // See https://github.com/dotnet/runtime/issues/60568
                 if (!PlatformDetection.IsAndroid)
                 {
                     yield return new object[] { "\u0069\u0130", "\u0069", "a", false, new CultureInfo("tr-TR"), "a\u0130" };

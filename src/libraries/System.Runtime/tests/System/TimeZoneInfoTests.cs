@@ -2410,6 +2410,7 @@ namespace System.Tests
                 Assert.False(string.IsNullOrWhiteSpace(timeZone.DisplayName), $"Id: \"{timeZone.Id}\", DisplayName should not have been empty.");
                 Assert.False(string.IsNullOrWhiteSpace(timeZone.StandardName), $"Id: \"{timeZone.Id}\", StandardName should not have been empty.");
 
+                // GMT* on Android does sets daylight savings time to false, so there will be no DaylightName
                 if (!PlatformDetection.IsAndroid || (PlatformDetection.IsAndroid && !timeZone.Id.StartsWith("GMT")))
                 {
                     Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");

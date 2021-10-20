@@ -6786,6 +6786,8 @@ namespace System.Tests
             yield return new object[] { "",                 null,         "en-us",    true,         1  };
             yield return new object[] { "",                 null,         null,       true,         1  };
 
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
             if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    false,        1  };
@@ -6806,7 +6808,8 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
-                // tr-TR not what we expect on Android
+                // Android has different results w/ tr-TR
+                // See https://github.com/dotnet/runtime/issues/60568
                 if (!PlatformDetection.IsAndroid)
                 {
                     yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
@@ -6826,6 +6829,8 @@ namespace System.Tests
             yield return new object[] { "ABcd",                  "ab",      "CD",   "en-US",    false,       false  };
             yield return new object[] { "abcd",                  "AB",      "CD",   "en-US",    true,        true   };
 
+            // Android has different results w/ tr-TR
+            // See https://github.com/dotnet/runtime/issues/60568
             if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
             {
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    false,       false  };
