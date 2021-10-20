@@ -11,8 +11,8 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
-        private static extern int EcKeyCreateByKeyParameters(
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
+        private static partial int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,
             string oid,
             byte[]? qx, int qxLength,
@@ -37,8 +37,8 @@ internal static partial class Interop
             return key;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
-        internal static extern SafeEcKeyHandle EcKeyCreateByExplicitParameters(
+        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByExplicitParameters")]
+        internal static partial SafeEcKeyHandle EcKeyCreateByExplicitParameters(
             ECCurve.ECCurveType curveType,
             byte[]? qx, int qxLength,
             byte[]? qy, int qyLength,
@@ -97,8 +97,8 @@ internal static partial class Interop
         }
 
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_GetECKeyParameters(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_GetECKeyParameters(
             SafeEcKeyHandle key,
             bool includePrivate,
             out SafeBignumHandle qx_bn, out int x_cb,
@@ -166,8 +166,8 @@ internal static partial class Interop
             return parameters;
         }
 
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_GetECCurveParameters(
+        [GeneratedDllImport(Libraries.CryptoNative)]
+        private static partial int CryptoNative_GetECCurveParameters(
             SafeEcKeyHandle key,
             bool includePrivate,
             out ECCurve.ECCurveType curveType,

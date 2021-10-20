@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Tests;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -12,8 +13,9 @@ namespace System.Text.RegularExpressions.Tests
     {
         private const int MaxUnicodeRange = 2 << 15;
 
-        [Fact]
-        public void RegexUnicodeChar()
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task RegexUnicodeChar(RegexEngine engine)
         {
             // Regex engine is Unicode aware now for the \w and \d character classes
             // \s is not - i.e. it still only recognizes the ASCII space separators, not Unicode ones
@@ -48,7 +50,7 @@ namespace System.Text.RegularExpressions.Tests
             // \w - we will create strings from valid characters that form \w and make sure that the regex engine catches this.
             // Build a random string with valid characters followed by invalid characters
             Random random = new Random(-55);
-            Regex regex = new Regex(@"\w*");
+            Regex regex = await RegexHelpers.GetRegexAsync(engine, @"\w*");
 
             int validCharLength = 10;
             int invalidCharLength = 15;
@@ -91,7 +93,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // Build a random string with invalid characters followed by valid characters and then again invalid
             random = new Random(-55);
-            regex = new Regex(@"\w+");
+            regex = await RegexHelpers.GetRegexAsync(engine, @"\w+");
 
             validCharLength = 10;
             invalidCharLength = 15;
@@ -148,7 +150,7 @@ namespace System.Text.RegularExpressions.Tests
 
             // \d - we will create strings from valid characters that form \d and make sure that the regex engine catches this.
             // Build a random string with valid characters and then again invalid
-            regex = new Regex(@"\d+");
+            regex = await RegexHelpers.GetRegexAsync(engine, @"\d+");
 
             validCharLength = 10;
             invalidCharLength = 15;
@@ -183,7 +185,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             // Build a random string with invalid characters, valid and then again invalid
-            regex = new Regex(@"\d+");
+            regex = await RegexHelpers.GetRegexAsync(engine, @"\d+");
 
             validCharLength = 10;
             invalidCharLength = 15;
@@ -277,6 +279,28 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task WideLatin(RegexEngine engine)
+        {
+            const string OrigPattern = @"abc";
+
+            //shift each char in the pattern to the Wide-Latin alphabet of Unicode
+            string pattern_WL = new string(Array.ConvertAll(OrigPattern.ToCharArray(), c => (char)((int)c + 0xFF00 - 32)));
+            string pattern = $"({OrigPattern}==={pattern_WL})+";
+
+            var re = await RegexHelpers.GetRegexAsync(engine, pattern, RegexOptions.IgnoreCase);
+            string input = $"====={OrigPattern.ToUpper()}==={pattern_WL}{OrigPattern}==={pattern_WL.ToUpper()}==={OrigPattern}==={OrigPattern}";
+
+            var match1 = re.Match(input);
+            Assert.True(match1.Success);
+            Assert.Equal(5, match1.Index);
+            Assert.Equal(2 * (OrigPattern.Length + 3 + pattern_WL.Length), match1.Length);
+
+            var match2 = match1.NextMatch();
+            Assert.False(match2.Success);
         }
     }
 }

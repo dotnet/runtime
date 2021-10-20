@@ -2768,64 +2768,6 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
     }
 }
 
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert an alignment instruction here to ensure that
-//  we can properly align the code.
-//
-void emitter::emitLoopAlign(unsigned short paddingBytes)
-{
-    /* Insert a pseudo-instruction to ensure that we align
-       the next instruction properly */
-
-    assert(paddingBytes <= MAX_ENCODED_SIZE);
-    paddingBytes       = min(paddingBytes, MAX_ENCODED_SIZE); // We may need to skip up to 15 bytes of code
-    instrDescAlign* id = emitNewInstrAlign();
-    id->idCodeSize(paddingBytes);
-    id->idaIG = emitCurIG;
-
-    /* Append this instruction to this IG's alignment list */
-    id->idaNext = emitCurIGAlignList;
-
-    emitCurIGsize += paddingBytes;
-    emitCurIGAlignList = id;
-}
-
-//-----------------------------------------------------------------------------
-//
-//  The next instruction will be a loop head entry point
-//  So insert alignment instruction(s) here to ensure that
-//  we can properly align the code.
-//
-//  This emits more than one `INS_align` instruction depending on the
-//  alignmentBoundary parameter.
-//
-void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
-{
-    unsigned short nPaddingBytes    = alignmentBoundary - 1;
-    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-    unsigned short instrDescSize    = nAlignInstr * sizeof(instrDescAlign);
-    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
-    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
-
-    // Ensure that all align instructions fall in same IG.
-    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
-    {
-        emitForceNewIG = true;
-    }
-
-    /* Insert a pseudo-instruction to ensure that we align
-    the next instruction properly */
-
-    while (insAlignCount)
-    {
-        emitLoopAlign(MAX_ENCODED_SIZE);
-        insAlignCount--;
-    }
-    emitLoopAlign(lastInsAlignSize);
-}
-
 /*****************************************************************************
  *
  *  Add a NOP instruction of the given size.
@@ -8846,7 +8788,12 @@ void emitter::emitDispIns(
             }
             else
             {
-                printf("%s", sstr);
+                // GC ref bit is for the return value for calls, do not print it before the address mode
+                if ((ins != INS_call) && (ins != INS_tail_i_jmp))
+                {
+                    printf("%s", sstr);
+                }
+
                 emitDispAddrMode(id, isNew);
                 emitDispShift(ins);
             }
@@ -10292,7 +10239,7 @@ GOT_DSP:
                     noway_assert((int)dsp == dsp);
 
                     // This requires, specifying a SIB byte after ModRM byte.
-                    if (EncodedBySSE38orSSE3A(ins))
+                    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
                     {
                         dst += emitOutputByte(dst, code | 0x04);
                     }

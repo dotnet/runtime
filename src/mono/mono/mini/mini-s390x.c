@@ -1219,7 +1219,7 @@ enum_retvalue:
 			add_general (&gr, sz, &cinfo->sigCookie);
 		}
 
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			add_general (&gr, sz, cinfo->args+nParm);
 			cinfo->args[nParm].size = sizeof(gpointer);
 			nParm++;
@@ -1869,11 +1869,11 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			break;
 		}
 		case RegTypeBase :
-			if (!t->byref && t->type == MONO_TYPE_R4) {
+			if (!m_type_is_byref (t) && t->type == MONO_TYPE_R4) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, 
 							     STK_BASE, ainfo->offset + 4,
 						  	     in->dreg);
-			} else if (!t->byref && (t->type == MONO_TYPE_R8)) {
+			} else if (!m_type_is_byref (t) && (t->type == MONO_TYPE_R8)) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, 
 						  	     STK_BASE, ainfo->offset,
 							     in->dreg);
@@ -2000,7 +2000,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
 			MONO_EMIT_NEW_UNALU (cfg, OP_S390_SETF4RET, s390_f0, val->dreg);
 			return;

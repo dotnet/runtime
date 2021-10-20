@@ -1508,55 +1508,85 @@ void Compiler::compShutdown()
 #if COUNT_AST_OPERS
 
     // Add up all the counts so that we can show percentages of total
-    unsigned gtc = 0;
+    unsigned totalCount = 0;
     for (unsigned op = 0; op < GT_COUNT; op++)
-        gtc += GenTree::s_gtNodeCounts[op];
-
-    if (gtc > 0)
     {
-        unsigned rem_total = gtc;
-        unsigned rem_large = 0;
-        unsigned rem_small = 0;
+        totalCount += GenTree::s_gtNodeCounts[op];
+    }
 
-        unsigned tot_large = 0;
-        unsigned tot_small = 0;
+    if (totalCount > 0)
+    {
+        struct OperInfo
+        {
+            unsigned   Count;
+            unsigned   Size;
+            genTreeOps Oper;
+        };
+
+        OperInfo opers[GT_COUNT];
+        for (unsigned op = 0; op < GT_COUNT; op++)
+        {
+            opers[op] = {GenTree::s_gtNodeCounts[op], GenTree::s_gtTrueSizes[op], static_cast<genTreeOps>(op)};
+        }
+
+        jitstd::sort(opers, opers + ArrLen(opers), [](const OperInfo& l, const OperInfo& r) {
+            // We'll be sorting in descending order.
+            return l.Count >= r.Count;
+        });
+
+        unsigned remainingCount      = totalCount;
+        unsigned remainingCountLarge = 0;
+        unsigned remainingCountSmall = 0;
+
+        unsigned countLarge = 0;
+        unsigned countSmall = 0;
 
         fprintf(fout, "\nGenTree operator counts (approximate):\n\n");
 
-        for (unsigned op = 0; op < GT_COUNT; op++)
+        for (OperInfo oper : opers)
         {
-            unsigned siz = GenTree::s_gtTrueSizes[op];
-            unsigned cnt = GenTree::s_gtNodeCounts[op];
-            double   pct = 100.0 * cnt / gtc;
+            unsigned size       = oper.Size;
+            unsigned count      = oper.Count;
+            double   percentage = 100.0 * count / totalCount;
 
-            if (siz > TREE_NODE_SZ_SMALL)
-                tot_large += cnt;
+            if (size > TREE_NODE_SZ_SMALL)
+            {
+                countLarge += count;
+            }
             else
-                tot_small += cnt;
+            {
+                countSmall += count;
+            }
 
             // Let's not show anything below a threshold
-            if (pct >= 0.5)
+            if (percentage >= 0.5)
             {
-                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName((genTreeOps)op), cnt,
-                        pct, siz);
-                rem_total -= cnt;
+                fprintf(fout, "    GT_%-17s   %7u (%4.1lf%%) %3u bytes each\n", GenTree::OpName(oper.Oper), count,
+                        percentage, size);
+                remainingCount -= count;
             }
             else
             {
-                if (siz > TREE_NODE_SZ_SMALL)
-                    rem_large += cnt;
+                if (size > TREE_NODE_SZ_SMALL)
+                {
+                    remainingCountLarge += count;
+                }
                 else
-                    rem_small += cnt;
+                {
+                    remainingCountSmall += count;
+                }
             }
         }
-        if (rem_total > 0)
+
+        if (remainingCount > 0)
         {
-            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n", rem_total,
-                    100.0 * rem_total / gtc, 100.0 * rem_small / gtc, 100.0 * rem_large / gtc);
+            fprintf(fout, "    All other GT_xxx ...   %7u (%4.1lf%%) ... %4.1lf%% small + %4.1lf%% large\n",
+                    remainingCount, 100.0 * remainingCount / totalCount, 100.0 * remainingCountSmall / totalCount,
+                    100.0 * remainingCountLarge / totalCount);
         }
         fprintf(fout, "    -----------------------------------------------------\n");
-        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", gtc,
-                100.0 * tot_small / gtc, 100.0 * tot_large / gtc);
+        fprintf(fout, "    Total    .......   %11u --ALL-- ... %4.1lf%% small + %4.1lf%% large\n", totalCount,
+                100.0 * countSmall / totalCount, 100.0 * countLarge / totalCount);
         fprintf(fout, "\n");
     }
 
@@ -2647,16 +2677,38 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize    = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
 #endif
 
+#ifdef TARGET_XARCH
     if (opts.compJitAlignLoopAdaptive)
     {
+        // For adaptive alignment, padding limit is equal to the max instruction encoding
+        // size which is 15 bytes. Hence (32 >> 1) - 1 = 15 bytes.
         opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1) - 1;
     }
     else
     {
+        // For non-adaptive alignment, padding limit is 1 less than the alignment boundary
+        // specified.
         opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary - 1;
     }
+#elif TARGET_ARM64
+    if (opts.compJitAlignLoopAdaptive)
+    {
+        // For adaptive alignment, padding limit is same as specified by the alignment
+        // boundary because all instructions are 4 bytes long. Hence (32 >> 1) = 16 bytes.
+        opts.compJitAlignPaddingLimit = (opts.compJitAlignLoopBoundary >> 1);
+    }
+    else
+    {
+        // For non-adaptive, padding limit is same as specified by the alignment.
+        opts.compJitAlignPaddingLimit = opts.compJitAlignLoopBoundary;
+    }
+#endif
 
     assert(isPow2(opts.compJitAlignLoopBoundary));
+#ifdef TARGET_ARM64
+    // The minimum encoding size for Arm64 is 4 bytes.
+    assert(opts.compJitAlignLoopBoundary >= 4);
+#endif
 
 #if REGEN_SHORTCUTS || REGEN_CALLPAT
     // We never want to have debugging enabled when regenerating GC encoding patterns

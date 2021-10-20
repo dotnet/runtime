@@ -100,7 +100,6 @@ namespace System.Security.Cryptography
                 Mode,
                 BlockSize / BitsPerByte,
                 rgbKey,
-                effectiveKeyLength: 0,
                 addNoSaltFlag: false,
                 rgbIV,
                 encrypting,

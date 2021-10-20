@@ -1421,10 +1421,10 @@ vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, M
 static gboolean
 is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
 {
-	if (type_impl->byref ^ type_decl->byref)
+	if (m_type_is_byref (type_impl) ^ m_type_is_byref (type_decl))
 		return FALSE;
 
-	if (type_impl->byref) {
+	if (m_type_is_byref (type_impl)) {
 		return mono_byref_type_is_assignable_from (type_decl, type_impl, TRUE);
 	}
 

@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern bool SetProcessWorkingSetSizeEx(SafeProcessHandle handle, IntPtr min, IntPtr max, int flags);
+        [GeneratedDllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial bool SetProcessWorkingSetSizeEx(SafeProcessHandle handle, IntPtr min, IntPtr max, int flags);
     }
 }

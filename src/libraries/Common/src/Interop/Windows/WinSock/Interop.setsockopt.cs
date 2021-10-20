@@ -9,53 +9,53 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
-        internal static extern SocketError setsockopt(
-            [In] IntPtr handle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [In] ref Linger linger,
-            [In] int optionLength);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
+        internal static partial SocketError setsockopt(
+            IntPtr handle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            ref Linger linger,
+            int optionLength);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError setsockopt(
-            [In] SafeSocketHandle socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [In] ref int optionValue,
-            [In] int optionLength);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError setsockopt(
+            SafeSocketHandle socketHandle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            ref int optionValue,
+            int optionLength);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe extern SocketError setsockopt(
-            [In] SafeSocketHandle socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [In] byte* optionValue,
-            [In] int optionLength);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static unsafe partial SocketError setsockopt(
+            SafeSocketHandle socketHandle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            byte* optionValue,
+            int optionLength);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError setsockopt(
-            [In] SafeSocketHandle socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [In] ref IntPtr pointer,
-            [In] int optionLength);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError setsockopt(
+            SafeSocketHandle socketHandle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            ref IntPtr pointer,
+            int optionLength);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError setsockopt(
-            [In] SafeSocketHandle socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [In] ref Linger linger,
-            [In] int optionLength);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError setsockopt(
+            SafeSocketHandle socketHandle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            ref Linger linger,
+            int optionLength);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError setsockopt(
-            [In] SafeSocketHandle socketHandle,
-            [In] SocketOptionLevel optionLevel,
-            [In] SocketOptionName optionName,
-            [In] ref IPMulticastRequest mreq,
-            [In] int optionLength);
+        [GeneratedDllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static partial SocketError setsockopt(
+            SafeSocketHandle socketHandle,
+            SocketOptionLevel optionLevel,
+            SocketOptionName optionName,
+            ref IPMulticastRequest mreq,
+            int optionLength);
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError setsockopt(

@@ -131,7 +131,7 @@ calculate_sizes (MonoMethodSignature *sig, size_data *sz,
 	/* area that the callee will use.			    */
 	/*----------------------------------------------------------*/
 
-	if (sig->ret->byref || string_ctor) {
+	if (m_type_is_byref (sig->ret) || string_ctor) {
 		sz->code_size += 8;
 	} else {
 		simpletype = sig->ret->type;
@@ -204,7 +204,7 @@ enum_retvalue:
 	/*----------------------------------------------------------*/
 
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			add_general (&gr, sz, TRUE);
 			continue;
 		}
@@ -379,8 +379,8 @@ emit_save_parameters (guint8 *p, MonoMethodSignature *sig, size_data *sz)
 
 	act_strs = 0;
 	for (i = 0; i < sig->param_count; ++i) {
-		DEBUG(printf("par: %d type: %d ref: %d\n",i,sig->params[i]->type,sig->params[i]->byref));
-		if (sig->params [i]->byref) {
+		DEBUG(printf("par: %d type: %d ref: %d\n",i,sig->params[i]->type,m_type_is_byref (sig->params[i])));
+		if (m_type_is_byref (sig->params [i])) {
 			if (gr < GENERAL_REGS) {
 				s390_lg (p, s390_r2 + gr, 0, ARG_BASE, STKARG);
 				gr ++;
@@ -584,7 +584,7 @@ emit_call_and_store_retval (guint8 *p, MonoMethodSignature *sig,
 	s390_basr (p, s390_r14, s390_r9); 
 
 	/* get return value */
-	if (sig->ret->byref || string_ctor) {
+	if (m_type_is_byref (sig->ret) || string_ctor) {
 		s390_stg(p, s390_r2, 0, s390_r8, 0);
 	} else {
 		simpletype = sig->ret->type;
@@ -897,7 +897,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *type = sig->params [i];
 		vtbuf [i] = -1;
-		DEBUG(printf("par: %d type: %d ref: %d\n",i,type->type,type->byref));
+		DEBUG(printf("par: %d type: %d ref: %d\n",i,type->type,m_type_is_byref (type)));
 		if (type->type == MONO_TYPE_VALUETYPE) {
 			MonoClass *klass = type->data.klass;
 			gint size;
@@ -927,7 +927,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/* add stackval arguments 				    */	
 	/*----------------------------------------------------------*/ 
 	for (i = 0; i < sig->param_count; ++i) {
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
 			ADD_ISTACK_PARM(0, 1);
 		} else {
 			simple_type = sig->params [i]->type;
@@ -1009,7 +1009,7 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/*----------------------------------------------------------*/ 
 	s390_la (p, s390_r10, 0, STK_BASE, stackval_arg_pos);
 	s390_stg(p, s390_r10, 0, STK_BASE, (MINV_POS + G_STRUCT_OFFSET (MonoInvocation, retval)));
-	if (sig->ret->type == MONO_TYPE_VALUETYPE && !sig->ret->byref) {
+	if (sig->ret->type == MONO_TYPE_VALUETYPE && !m_type_is_byref (sig->ret)) {
 		MonoClass *klass  = sig->ret->data.klass;
 		if (!klass->enumtype) {
 			s390_la (p, s390_r9, 0, s390_r10, sizeof(stackval));
@@ -1030,8 +1030,8 @@ mono_arch_create_method_pointer (MonoMethod *method)
 	/*----------------------------------------------------------*/ 
 	/* move retval from stackval to proper place (r3/r4/...)    */
 	/*----------------------------------------------------------*/ 
-	DEBUG(printf("retType: %d byRef: %d\n",sig->ret->type,sig->ret->byref));
-	if (sig->ret->byref) {
+	DEBUG(printf("retType: %d byRef: %d\n",sig->ret->type,m_type_is_byref (sig->ret)));
+	if (m_type_is_byref (sig->ret)) {
 		DEBUG (printf ("ret by ref\n"));
 		s390_stg(p, s390_r2, 0, s390_r10, 0);
 	} else {

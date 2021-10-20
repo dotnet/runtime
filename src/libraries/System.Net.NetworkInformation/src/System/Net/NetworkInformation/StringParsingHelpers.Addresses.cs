@@ -8,7 +8,6 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
-        private static char[] s_delimiter = new char[1] { ' ' };
         // /proc/net/route contains some information about gateway addresses,
         // and separates the information about by each interface.
         internal static List<GatewayIPAddressInformation> ParseIPv4GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string[] fileLines, string interfaceName)
@@ -58,7 +57,7 @@ namespace System.Net.NetworkInformation
             {
                 if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
-                   string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
+                   string[] token = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
                    {
                         if (!string.IsNullOrEmpty(interfaceName) && interfaceName != token[9])

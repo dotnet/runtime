@@ -17,7 +17,7 @@ internal static partial class Interop
         /// Returns the number of bytes read on success; otherwise, -1 is returned
         /// Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
         /// </returns>
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Read", SetLastError = true)]
-        internal static extern unsafe int Read(SafeHandle fd, byte* buffer, int count);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Read", SetLastError = true)]
+        internal static unsafe partial int Read(SafeHandle fd, byte* buffer, int count);
     }
 }

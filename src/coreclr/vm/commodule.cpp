@@ -651,26 +651,13 @@ void QCALLTYPE COMModule::GetScopeName(QCall::ModuleHandle pModule, QCall::Strin
 
     BEGIN_QCALL;
 
+    if (!pModule->GetMDImport()->IsValidToken(pModule->GetMDImport()->GetModuleFromScope()))
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT);
+    }
+
     LPCSTR    szName = NULL;
-
-    if (pModule->IsResource())
-    {
-        IfFailThrow(pModule->GetAssembly()->GetManifestImport()->GetFileProps(
-            pModule->GetModuleRef(),
-            &szName,
-            NULL,
-            NULL,
-            NULL));
-    }
-    else
-    {
-        if (!pModule->GetMDImport()->IsValidToken(pModule->GetMDImport()->GetModuleFromScope()))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        IfFailThrow(pModule->GetMDImport()->GetScopeProps(&szName, 0));
-    }
-
+    IfFailThrow(pModule->GetMDImport()->GetScopeProps(&szName, 0));
     retString.Set(szName);
 
     END_QCALL;
@@ -734,10 +721,10 @@ HINSTANCE QCALLTYPE COMModule::GetHINSTANCE(QCall::ModuleHandle pModule)
 
     // This returns the base address
     // Other modules should have zero base
-    PEFile *pPEFile = pModule->GetFile();
-    if (!pPEFile->IsDynamic() && !pPEFile->IsResource())
+    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
+    if (!pPEAssembly->IsDynamic())
     {
-        hMod = (HMODULE) pModule->GetFile()->GetManagedFileContents();
+        hMod = (HMODULE) pModule->GetPEAssembly()->GetManagedFileContents();
     }
 
     //If we don't have an hMod, set it to -1 so that they know that there's none
@@ -800,12 +787,6 @@ Object* GetTypesInner(Module* pModule)
     bool            bSystemAssembly;    // Don't expose transparent proxy
     int             AllocSize = 0;
     MethodTable* pMT = NULL;
-
-    if (pModule->IsResource())
-    {
-        refArrClasses = (PTRARRAYREF) AllocateObjectArray(0, CoreLibBinder::GetClass(CLASS__CLASS));
-        RETURN(OBJECTREFToObject(refArrClasses));
-    }
 
     GCPROTECT_BEGIN(refArrClasses);
     GCPROTECT_BEGIN(xcept);
@@ -890,15 +871,3 @@ Object* GetTypesInner(Module* pModule)
 
     RETURN(OBJECTREFToObject(refArrClasses));
 }
-
-
-FCIMPL1(FC_BOOL_RET, COMModule::IsResource, ReflectModuleBaseObject* pModuleUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    if (pModuleUNSAFE == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(pModuleUNSAFE->GetModule()->IsResource());
-}
-FCIMPLEND

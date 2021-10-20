@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/57363", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
     public class CSharpCodeGeneratorTests
     {
         private static IEnumerable<string> Identifier_TestData()

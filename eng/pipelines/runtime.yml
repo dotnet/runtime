@@ -79,6 +79,7 @@ jobs:
     - Linux_musl_arm64
     - Linux_musl_x64
     - OSX_arm64
+    - Tizen_armel
     - windows_x86
     - windows_x64
     - windows_arm
@@ -1079,7 +1080,8 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - Linux_x64
-    - Linux_arm64
+    # Disabled pending outcome of https://github.com/dotnet/runtime/issues/60234 investigation
+    #- Linux_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

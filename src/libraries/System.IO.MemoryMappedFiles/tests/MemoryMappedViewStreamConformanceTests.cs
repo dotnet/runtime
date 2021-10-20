@@ -45,7 +45,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class AnonymousMemoryMappedViewStreamConformanceTests : MemoryMappedViewStreamConformanceTests
     {
         protected override MemoryMappedFile CreateFile(int length) =>

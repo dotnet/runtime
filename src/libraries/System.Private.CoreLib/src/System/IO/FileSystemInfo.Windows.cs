@@ -4,16 +4,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-
-#if MS_IO_REDIST
-using Microsoft.IO.Enumeration;
-
-namespace Microsoft.IO
-#else
 using System.IO.Enumeration;
 
 namespace System.IO
-#endif
 {
     public partial class FileSystemInfo
     {
