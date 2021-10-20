@@ -219,7 +219,11 @@ enum insOpts : unsigned
     INS_OPTS_H_TO_D,      // Half to Double
 
     INS_OPTS_S_TO_H,      // Single to Half
-    INS_OPTS_D_TO_H,      // Double to Half
+    INS_OPTS_D_TO_H       // Double to Half
+
+#if FEATURE_LOOP_ALIGN
+    , INS_OPTS_ALIGN      // Align instruction
+#endif
 };
 
 enum insCond : unsigned

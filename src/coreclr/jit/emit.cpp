@@ -4797,6 +4797,81 @@ AGAIN:
 #if FEATURE_LOOP_ALIGN
 
 //-----------------------------------------------------------------------------
+//
+//  The next instruction will be a loop head entry point
+//  So insert an alignment instruction here to ensure that
+//  we can properly align the code.
+//
+void emitter::emitLoopAlign(unsigned short paddingBytes)
+{
+    /* Insert a pseudo-instruction to ensure that we align
+       the next instruction properly */
+    instrDescAlign* id = emitNewInstrAlign();
+
+#if defined(TARGET_XARCH)
+    assert(paddingBytes <= MAX_ENCODED_SIZE);
+    id->idCodeSize(paddingBytes);
+#elif defined(TARGET_ARM64)
+    assert(paddingBytes == INSTR_ENCODED_SIZE);
+#endif
+
+    id->idaIG = emitCurIG;
+
+    /* Append this instruction to this IG's alignment list */
+    id->idaNext = emitCurIGAlignList;
+
+    emitCurIGsize += paddingBytes;
+
+    dispIns(id);
+    emitCurIGAlignList = id;
+}
+
+//-----------------------------------------------------------------------------
+//
+//  The next instruction will be a loop head entry point
+//  So insert alignment instruction(s) here to ensure that
+//  we can properly align the code.
+//
+//  This emits more than one `INS_align` instruction depending on the
+//  alignmentBoundary parameter.
+//
+void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
+{
+#if defined(TARGET_XARCH)
+    unsigned short nPaddingBytes    = alignmentBoundary - 1;
+    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
+    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
+    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
+    unsigned short paddingBytes     = MAX_ENCODED_SIZE;
+#elif defined(TARGET_ARM64)
+    unsigned short nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
+    unsigned short insAlignCount = nAlignInstr;
+    unsigned short paddingBytes  = INSTR_ENCODED_SIZE;
+#endif
+
+    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+
+    // Ensure that all align instructions fall in same IG.
+    if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
+    {
+        emitForceNewIG = true;
+    }
+
+    /* Insert a pseudo-instruction to ensure that we align
+    the next instruction properly */
+
+    while (insAlignCount)
+    {
+        emitLoopAlign(paddingBytes);
+        insAlignCount--;
+    }
+
+#if defined(TARGET_XARCH)
+    emitLoopAlign(lastInsAlignSize);
+#endif
+}
+
+//-----------------------------------------------------------------------------
 // emitLoopAlignment: Insert an align instruction at the end of emitCurIG and
 //                    mark it as IGF_LOOP_ALIGN to indicate that next IG  is a
 //                    loop needing alignment.
@@ -4805,6 +4880,9 @@ void emitter::emitLoopAlignment()
 {
     unsigned short paddingBytes;
 
+#if defined(TARGET_XARCH)
+    // For xarch, each align instruction can be maximum of MAX_ENCODED_SIZE bytes and if
+    // more padding is needed, multiple MAX_ENCODED_SIZE bytes instructions are added.
     if ((emitComp->opts.compJitAlignLoopBoundary > 16) && (!emitComp->opts.compJitAlignLoopAdaptive))
     {
         paddingBytes = emitComp->opts.compJitAlignLoopBoundary;
@@ -4815,6 +4893,19 @@ void emitter::emitLoopAlignment()
         paddingBytes = MAX_ENCODED_SIZE;
         emitLoopAlign(paddingBytes);
     }
+#elif defined(TARGET_ARM64)
+    // For Arm64, each align instruction is 4-bytes long because of fixed-length encoding.
+    // The padding added will be always be in multiple of 4-bytes.
+    if (emitComp->opts.compJitAlignLoopAdaptive)
+    {
+        paddingBytes = emitComp->opts.compJitAlignLoopBoundary >> 1;
+    }
+    else
+    {
+        paddingBytes = emitComp->opts.compJitAlignLoopBoundary;
+    }
+    emitLongLoopAlign(paddingBytes);
+#endif
 
     // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
     // all IGs that follows this IG and participate in a loop.
@@ -5042,6 +5133,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 {
                     assert(!markedLastLoop);
                     assert(alignInstr->idaIG->isLoopAlign());
+
                     alignInstr->idaIG->igFlags &= ~IGF_LOOP_ALIGN;
                     markedLastLoop = true;
                     JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
@@ -5052,6 +5144,20 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 if (markedLastLoop && markedCurrLoop)
                 {
                     break;
+                }
+
+#if defined(TARGET_XARCH)
+                if (!emitComp->opts.compJitAlignLoopAdaptive)
+#endif
+                {
+                    // If there are multiple align instructions, skip the align instructions after
+                    // the first align instruction and fast forward to the next IG
+                    insGroup* alignIG = alignInstr->idaIG;
+                    while ((alignInstr != nullptr) && (alignInstr->idaNext != nullptr) &&
+                           (alignInstr->idaNext->idaIG == alignIG))
+                    {
+                        alignInstr = alignInstr->idaNext;
+                    }
                 }
 
                 alignInstr = alignInstr->idaNext;
@@ -5126,26 +5232,45 @@ void emitter::emitLoopAlignAdjustments()
                 alignIG->igFlags &= ~IGF_LOOP_ALIGN;
             }
 
+#ifdef TARGET_XARCH
             if (emitComp->opts.compJitAlignLoopAdaptive)
             {
                 assert(actualPaddingNeeded < MAX_ENCODED_SIZE);
                 alignInstr->idCodeSize(actualPaddingNeeded);
             }
             else
+#endif
             {
                 unsigned paddingToAdj = actualPaddingNeeded;
 
 #ifdef DEBUG
+#if defined(TARGET_XARCH)
                 int instrAdjusted =
                     (emitComp->opts.compJitAlignLoopBoundary + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-#endif
+#elif defined(TARGET_ARM64)
+                unsigned short instrAdjusted = (emitComp->opts.compJitAlignLoopBoundary >> 1) / INSTR_ENCODED_SIZE;
+                if (!emitComp->opts.compJitAlignLoopAdaptive)
+                {
+                    instrAdjusted = emitComp->opts.compJitAlignLoopBoundary / INSTR_ENCODED_SIZE;
+                }
+#endif // TARGET_XARCH & TARGET_ARM64
+#endif // DEBUG
                 // Adjust the padding amount in all align instructions in this IG
                 instrDescAlign *alignInstrToAdj = alignInstr, *prevAlignInstr = nullptr;
                 for (; alignInstrToAdj != nullptr && alignInstrToAdj->idaIG == alignInstr->idaIG;
                      alignInstrToAdj = alignInstrToAdj->idaNext)
                 {
+
+#if defined(TARGET_XARCH)
                     unsigned newPadding = min(paddingToAdj, MAX_ENCODED_SIZE);
                     alignInstrToAdj->idCodeSize(newPadding);
+#elif defined(TARGET_ARM64)
+                    unsigned newPadding = min(paddingToAdj, INSTR_ENCODED_SIZE);
+                    if (newPadding == 0)
+                    {
+                        alignInstrToAdj->idInsOpt(INS_OPTS_NONE);
+                    }
+#endif
                     paddingToAdj -= newPadding;
                     prevAlignInstr = alignInstrToAdj;
 #ifdef DEBUG
@@ -5191,7 +5316,7 @@ void emitter::emitLoopAlignAdjustments()
 }
 
 //-----------------------------------------------------------------------------
-//  emitCalculatePaddingForLoopAlignment: Calculate the padding to insert at the
+//  emitCalculatePaddingForLoopAlignment: Calculate the padding amount to insert at the
 //    end of 'ig' so the loop that starts after 'ig' is aligned.
 //
 //  Arguments:
@@ -5268,16 +5393,25 @@ unsigned emitter::emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offs
     if (emitComp->opts.compJitAlignLoopAdaptive)
     {
         // adaptive loop alignment
-        unsigned nMaxPaddingBytes = (1 << (maxLoopBlocksAllowed - minBlocksNeededForLoop + 1)) - 1;
-        unsigned nPaddingBytes    = (-(int)(size_t)offset) & (alignmentBoundary - 1);
+        unsigned nMaxPaddingBytes = (1 << (maxLoopBlocksAllowed - minBlocksNeededForLoop + 1));
+#ifdef TARGET_XARCH
+        // Max padding for adaptive alignment has alignmentBoundary of 32 bytes with
+        // max padding limit of 15 bytes ((alignmentBoundary >> 1) - 1)
+        nMaxPaddingBytes -= 1;
+#endif
+        unsigned nPaddingBytes = (-(int)(size_t)offset) & (alignmentBoundary - 1);
 
         // Check if the alignment exceeds maxPadding limit
         if (nPaddingBytes > nMaxPaddingBytes)
         {
+#ifdef TARGET_XARCH
             // Cannot align to 32B, so try to align to 16B boundary.
+            // Only applicable for xarch. For arm64, it is recommended to align
+            // at 32B only.
             alignmentBoundary >>= 1;
             nMaxPaddingBytes = 1 << (maxLoopBlocksAllowed - minBlocksNeededForLoop + 1);
             nPaddingBytes    = (-(int)(size_t)offset) & (alignmentBoundary - 1);
+#endif
 
             // Check if the loop is already at new alignment boundary
             if (nPaddingBytes == 0)
