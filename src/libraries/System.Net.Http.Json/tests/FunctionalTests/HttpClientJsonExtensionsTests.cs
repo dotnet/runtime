@@ -175,6 +175,57 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
+        public async Task TestPatchAsJsonAsync()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        Person person = Person.Create();
+                        Type typePerson = typeof(Person);
+
+                        using HttpResponseMessage response = await client.PatchAsJsonAsync(uri.ToString(), person);
+                        Assert.True(response.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response2 = await client.PatchAsJsonAsync(uri, person);
+                        Assert.True(response2.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response3 = await client.PatchAsJsonAsync(uri.ToString(), person, CancellationToken.None);
+                        Assert.True(response3.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response4 = await client.PatchAsJsonAsync(uri, person, CancellationToken.None);
+                        Assert.True(response4.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response5 = await client.PatchAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person);
+                        Assert.True(response5.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response6 = await client.PatchAsJsonAsync(uri, person, JsonContext.Default.Person);
+                        Assert.True(response6.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response7 = await client.PatchAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response7.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response8 = await client.PatchAsJsonAsync(uri, person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response8.StatusCode == HttpStatusCode.OK);
+                    }
+                },
+                async server => {
+                    HttpRequestData request = await server.HandleRequestAsync();
+                    ValidateRequest(request);
+
+                    byte[] json = request.Body;
+
+                    Person obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions);
+                    obj.Validate();
+
+                    // Assert numbers are not written as strings - JsonException would be thrown here if written as strings.
+                    obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions_StrictNumberHandling);
+                    obj.Validate();
+                });
+        }
+
+        [Fact]
         public void TestHttpClientIsNullAsync()
         {
             const string uriString = "http://example.com";
