@@ -36,8 +36,6 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/exception.h>
-#include <mono/metadata/security-manager.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/attrdefs.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-debug.h>
@@ -285,7 +283,7 @@ _mono_type_get_assembly_name (MonoClass *klass, GString *str)
 static void
 mono_type_name_check_byref (MonoType *type, GString *str)
 {
-	if (type->byref)
+	if (m_type_is_byref (type))
 		g_string_append_c (str, '&');
 }
 
@@ -577,9 +575,9 @@ mono_type_get_name (MonoType *type)
 MonoType*
 mono_type_get_underlying_type (MonoType *type)
 {
-	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !type->byref)
+	if (type->type == MONO_TYPE_VALUETYPE && m_class_is_enumtype (type->data.klass) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.klass);
-	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !type->byref)
+	if (type->type == MONO_TYPE_GENERICINST && m_class_is_enumtype (type->data.generic_class->container_class) && !m_type_is_byref (type))
 		return mono_class_enum_basetype_internal (type->data.generic_class->container_class);
 	return type;
 }
@@ -707,10 +705,10 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 		/*
 		 * Note that the VAR/MVAR cases are different from the rest.  The other cases duplicate @type,
 		 * while the VAR/MVAR duplicates a type from the context.  So, we need to ensure that the
-		 * ->byref and ->attrs from @type are propagated to the returned type.
+		 * ->byref__ and ->attrs from @type are propagated to the returned type.
 		 */
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref = type->byref;
+		nt->byref__ = type->byref__;
 		nt->attrs = type->attrs;
 		return nt;
 	}
@@ -752,7 +750,7 @@ inflate_generic_type (MonoImage *image, MonoType *type, MonoGenericContext *cont
 #endif
 
 		nt = mono_metadata_type_dup_with_cmods (image, inst->type_argv [num], type);
-		nt->byref = type->byref || inst->type_argv[num]->byref;
+		nt->byref__ = type->byref__ || inst->type_argv[num]->byref__;
 		nt->attrs = type->attrs;
 #ifdef DEBUG_INFLATE_CMODS
 		if (append_cmods) {
@@ -1693,7 +1691,7 @@ MonoType*
 mono_type_get_basic_type_from_generic (MonoType *type)
 {
 	/* When we do generic sharing we let type variables stand for reference/primitive types. */
-	if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
+	if (!m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR) &&
 		(!type->data.generic_param->gshared_constraint || type->data.generic_param->gshared_constraint->type == MONO_TYPE_OBJECT))
 		return mono_get_object_type ();
 	return type;
@@ -2965,9 +2963,12 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
 {
+	MonoClass *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoClass *result = mono_class_get_checked (image, type_token, error);
+	result = mono_class_get_checked (image, type_token, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -3523,8 +3524,10 @@ mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	/* FIXME test for interfaces with variant generic arguments */
-	mono_class_init_internal (klass);
-	mono_class_init_internal (klassc);
+	if (check_interfaces) {
+		mono_class_init_internal (klass);
+		mono_class_init_internal (klassc);
+	}
 	
 	if (check_interfaces && MONO_CLASS_IS_INTERFACE_INTERNAL (klassc) && !MONO_CLASS_IS_INTERFACE_INTERNAL (klass)) {
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, m_class_get_interface_id (klassc)))
@@ -3779,8 +3782,8 @@ mono_type_get_underlying_type_ignore_byref (MonoType *type)
 gboolean
 mono_byref_type_is_assignable_from (MonoType *type, MonoType *ctype, gboolean signature_assignment)
 {
-	g_assert (type->byref);
-	g_assert (ctype->byref);
+	g_assert (m_type_is_byref (type));
+	g_assert (m_type_is_byref (ctype));
 	MonoType *t = mono_type_get_underlying_type_ignore_byref (type);
 	MonoType *ot = mono_type_get_underlying_type_ignore_byref (ctype);
 
@@ -4583,9 +4586,12 @@ gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	      MonoGenericContext *context)
 {
+	gpointer res;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	gpointer res = mono_ldtoken_checked (image, token, handle_class, context, error);
+	res = mono_ldtoken_checked (image, token, handle_class, context, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	return res;
 }
 
@@ -5281,7 +5287,11 @@ mono_class_is_delegate (MonoClass *klass)
 mono_bool
 mono_class_implements_interface (MonoClass* klass, MonoClass* iface)
 {
-	return mono_class_is_assignable_from_internal (iface, klass);
+	mono_bool result;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_is_assignable_from_internal (iface, klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 static mono_bool

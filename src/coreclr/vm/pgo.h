@@ -22,7 +22,7 @@ public:
 
 public:
 
-    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedDatapAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData);
+    static HRESULT getPgoInstrumentationResults(MethodDesc* pMD, BYTE **pAllocatedDatapAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource);
     static HRESULT allocPgoInstrumentationBySchema(MethodDesc* pMD, ICorJitInfo::PgoInstrumentationSchema* pSchema, UINT32 countSchemaItems, BYTE** pInstrumentationData);
     static HRESULT getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pReadyToRunInfo,
                                                              Module* pModule,
@@ -147,7 +147,8 @@ protected:
                                                  BYTE** pAllocatedData,
                                                  ICorJitInfo::PgoInstrumentationSchema** ppSchema,
                                                  UINT32 *pCountSchemaItems,
-                                                 BYTE**pInstrumentationData);
+                                                 BYTE**pInstrumentationData,
+                                                 ICorJitInfo::PgoSource* pPgoSource);
 
     HRESULT allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
                                                     ICorJitInfo::PgoInstrumentationSchema* pSchema,

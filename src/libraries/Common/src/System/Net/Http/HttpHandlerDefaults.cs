@@ -25,7 +25,7 @@ namespace System.Net.Http
         public const bool DefaultUseDefaultCredentials = false;
         public const bool DefaultCheckCertificateRevocationList = false;
         public static readonly TimeSpan DefaultPooledConnectionLifetime = Timeout.InfiniteTimeSpan;
-        public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(2);
+        public static readonly TimeSpan DefaultPooledConnectionIdleTimeout = TimeSpan.FromMinutes(1);
         public static readonly TimeSpan DefaultExpect100ContinueTimeout = TimeSpan.FromSeconds(1);
         public static readonly TimeSpan DefaultConnectTimeout = Timeout.InfiniteTimeSpan;
     }

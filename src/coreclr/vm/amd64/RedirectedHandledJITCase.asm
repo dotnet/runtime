@@ -232,5 +232,36 @@ NESTED_END NakedThrowHelper2, _TEXT
 GenerateRedirectedStubWithFrame NakedThrowHelper, FixContextHandler, NakedThrowHelper2
 
 
-        end
+ifdef FEATURE_SPECIAL_USER_MODE_APC
 
+extern ?ApcActivationCallback@Thread@@CAX_K@Z:proc
+
+; extern "C" void NTAPI ApcActivationCallbackStub(ULONG_PTR Parameter);
+NESTED_ENTRY ApcActivationCallbackStub, _TEXT, FixRedirectContextHandler
+
+        push_nonvol_reg rbp
+        alloc_stack     30h ; padding for alignment, CONTEXT *, callee scratch area
+        set_frame       rbp, 0
+    .errnz REDIRECTSTUB_ESTABLISHER_OFFSET_RBP, REDIRECTSTUB_ESTABLISHER_OFFSET_RBP has changed - update asm stubs
+        END_PROLOGUE
+
+        ; Save the pointer to the interrupted context on the stack for the stack walker
+        mov             rax, [rcx + OFFSETOF__APC_CALLBACK_DATA__ContextRecord]
+        mov             [rbp + 20h], rax
+    .errnz REDIRECTSTUB_RBP_OFFSET_CONTEXT - 20h, REDIRECTSTUB_RBP_OFFSET_CONTEXT has changed - update asm stubs
+
+        call            ?ApcActivationCallback@Thread@@CAX_K@Z
+
+        add             rsp, 30h
+        pop             rbp
+        ret
+
+        ; Put a label here to tell the debugger where the end of this function is.
+    PATCH_LABEL ApcActivationCallbackStubEnd
+
+NESTED_END ApcActivationCallbackStub, _TEXT
+
+endif ; FEATURE_SPECIAL_USER_MODE_APC
+
+
+        end

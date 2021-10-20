@@ -11,12 +11,12 @@ internal static partial class Interop
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff556633.aspx
         // https://msdn.microsoft.com/en-us/library/windows/hardware/ff567047.aspx
         [DllImport(Libraries.NtDll, CharSet = CharSet.Unicode, ExactSpelling = true)]
-        public static extern unsafe int NtQueryDirectoryFile(
+        public static unsafe extern int NtQueryDirectoryFile(
             IntPtr FileHandle,
             IntPtr Event,
             IntPtr ApcRoutine,
             IntPtr ApcContext,
-            out IO_STATUS_BLOCK IoStatusBlock,
+            IO_STATUS_BLOCK* IoStatusBlock,
             IntPtr FileInformation,
             uint Length,
             FILE_INFORMATION_CLASS FileInformationClass,

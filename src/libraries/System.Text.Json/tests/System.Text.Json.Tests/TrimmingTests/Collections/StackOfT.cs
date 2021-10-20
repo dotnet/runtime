@@ -13,12 +13,14 @@ namespace SerializerTrimmingTest
     {
         static int Main(string[] args)
         {
-            string json = "[1]";
-            object obj = JsonSerializer.Deserialize(json, typeof(Stack<int>));
-            if (!(TestHelper.AssertCollectionAndSerialize<Stack<int>>(obj, json)))
-            {
-                return -1;
-            }
+            // Test is currently disabled until issue #53393 is addressed.
+
+            //string json = "[1]";
+            //object obj = JsonSerializer.Deserialize(json, typeof(Stack<int>));
+            //if (!(TestHelper.AssertCollectionAndSerialize<Stack<int>>(obj, json)))
+            //{
+            //    return -1;
+            //}
 
             return 100;
         }

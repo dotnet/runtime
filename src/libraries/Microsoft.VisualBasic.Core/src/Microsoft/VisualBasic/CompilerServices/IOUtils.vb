@@ -9,8 +9,8 @@ Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
-    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)> _
-    Class IOUtils
+    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
+    NotInheritable Class IOUtils
         ' Prevent creation.
         Private Sub New()
         End Sub

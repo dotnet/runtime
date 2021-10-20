@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.Runtime
             _namespaceUri = namespaceUri;
             _ebType = ebType;
             _constrInfo = ebType.GetConstructor(Type.EmptyTypes);
-            Debug.Assert(_constrInfo != null, "The early bound object type " + ebType.FullName + " must have a public default constructor");
+            Debug.Assert(_constrInfo != null, $"The early bound object type {ebType.FullName} must have a public default constructor");
         }
 
         /// <summary>

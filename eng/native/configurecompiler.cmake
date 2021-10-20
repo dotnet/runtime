@@ -8,6 +8,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
@@ -43,11 +44,12 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "")
 
-add_compile_definitions("$<$<OR:$<CONFIG:DEBUG>,$<CONFIG:CHECKED>>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
+add_compile_definitions("$<$<CONFIG:DEBUG>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Debug;BUILDENV_DEBUG=1>")
+add_compile_definitions("$<$<CONFIG:CHECKED>:DEBUG;_DEBUG;_DBG;URTBLDENV_FRIENDLY=Checked;BUILDENV_CHECKED=1>")
 add_compile_definitions("$<$<OR:$<CONFIG:RELEASE>,$<CONFIG:RELWITHDEBINFO>>:NDEBUG;URTBLDENV_FRIENDLY=Retail>")
 
 if (MSVC)
-  add_linker_flag(/GUARD:CF)
+  add_linker_flag(/guard:cf)
 
   # Linker flags
   #
@@ -161,6 +163,13 @@ elseif (CLR_CMAKE_HOST_UNIX)
       add_linker_flag("-Wl,--gc-sections" DEBUG CHECKED)
     endif ()
   endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
+
+  if(CLR_CMAKE_HOST_BROWSER)
+    # The emscripten build has additional warnings so -Werror breaks
+    add_compile_options(-Wno-unused-parameter)
+    add_compile_options(-Wno-alloca)
+    add_compile_options(-Wno-implicit-int-float-conversion)
+  endif()
 endif(MSVC)
 
 # CLR_ADDITIONAL_LINKER_FLAGS - used for passing additional arguments to linker
@@ -186,9 +195,10 @@ elseif(CLR_CMAKE_HOST_SUNOS)
   add_compile_options($<$<COMPILE_LANGUAGE:ASM>:-Wa,--noexecstack>)
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")
-  add_definitions(-D__EXTENSIONS__)
-elseif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
+  add_definitions(-D__EXTENSIONS__ -D_XPG4_2 -D_POSIX_PTHREAD_SEMANTICS)
+elseif(CLR_CMAKE_HOST_OSX AND NOT CLR_CMAKE_HOST_IOS AND NOT CLR_CMAKE_HOST_TVOS)
   add_definitions(-D_XOPEN_SOURCE)
+  add_linker_flag("-Wl,-bind_at_load")
 endif()
 
 #------------------------------------
@@ -196,8 +206,7 @@ endif()
 #-----------------------------------
 if (CLR_CMAKE_HOST_ARCH_AMD64)
   set(ARCH_HOST_NAME x64)
-  add_definitions(-DHOST_AMD64)
-  add_definitions(-DHOST_64BIT)
+  add_definitions(-DHOST_AMD64 -DHOST_64BIT)
 elseif (CLR_CMAKE_HOST_ARCH_I386)
   set(ARCH_HOST_NAME x86)
   add_definitions(-DHOST_X86)
@@ -206,8 +215,16 @@ elseif (CLR_CMAKE_HOST_ARCH_ARM)
   add_definitions(-DHOST_ARM)
 elseif (CLR_CMAKE_HOST_ARCH_ARM64)
   set(ARCH_HOST_NAME arm64)
-  add_definitions(-DHOST_ARM64)
-  add_definitions(-DHOST_64BIT)
+  add_definitions(-DHOST_ARM64 -DHOST_64BIT)
+elseif (CLR_CMAKE_HOST_ARCH_S390X)
+  set(ARCH_HOST_NAME s390x)
+  add_definitions(-DHOST_S390X -DHOST_64BIT -DBIGENDIAN)
+elseif (CLR_CMAKE_HOST_ARCH_WASM)
+  set(ARCH_HOST_NAME wasm)
+  add_definitions(-DHOST_WASM -DHOST_32BIT=1)
+elseif (CLR_CMAKE_HOST_ARCH_MIPS64)
+  set(ARCH_HOST_NAME mips64)
+  add_definitions(-DHOST_MIPS64 -DHOST_64BIT=1)
 else ()
   clr_unknown_arch()
 endif ()
@@ -222,6 +239,8 @@ if (CLR_CMAKE_HOST_UNIX)
       message("Detected Linux ARM64")
     elseif(CLR_CMAKE_HOST_UNIX_X86)
       message("Detected Linux i686")
+    elseif(CLR_CMAKE_HOST_UNIX_S390X)
+      message("Detected Linux s390x")
     else()
       clr_unknown_arch()
     endif()
@@ -258,6 +277,9 @@ if (CLR_CMAKE_HOST_WIN32)
   set(STATIC_MT_CPP_LIB  "libcpmt$<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:d>.lib")
 endif(CLR_CMAKE_HOST_WIN32)
 
+# Unconditionally define _FILE_OFFSET_BITS as 64 on all platforms.
+add_definitions(-D_FILE_OFFSET_BITS=64)
+
 # Architecture specific files folder name
 if (CLR_CMAKE_TARGET_ARCH_AMD64)
     set(ARCH_SOURCES_DIR amd64)
@@ -273,10 +295,27 @@ elseif (CLR_CMAKE_TARGET_ARCH_ARM)
     set(ARCH_SOURCES_DIR arm)
     set(ARCH_TARGET_NAME arm)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_ARM>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
 elseif (CLR_CMAKE_TARGET_ARCH_I386)
     set(ARCH_TARGET_NAME x86)
     set(ARCH_SOURCES_DIR i386)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_X86>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_S390X)
+    set(ARCH_TARGET_NAME s390x)
+    set(ARCH_SOURCES_DIR s390x)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_S390X>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_WASM)
+    set(ARCH_TARGET_NAME wasm)
+    set(ARCH_SOURCES_DIR wasm)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_WASM>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_32BIT>)
+elseif (CLR_CMAKE_TARGET_ARCH_MIPS64)
+    set(ARCH_TARGET_NAME mips64)
+    set(ARCH_SOURCES_DIR mips64)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_MIPS64>)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:TARGET_64BIT>)
 else ()
     clr_unknown_arch()
 endif ()
@@ -300,8 +339,8 @@ if (CLR_CMAKE_HOST_UNIX)
   if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
     # We cannot enable "stack-protector-strong" on OS X due to a bug in clang compiler (current version 7.0.2)
     add_compile_options(-fstack-protector)
-  else()
-    check_cxx_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
+  elseif(NOT CLR_CMAKE_HOST_BROWSER)
+    check_c_compiler_flag(-fstack-protector-strong COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
     if (COMPILER_SUPPORTS_F_STACK_PROTECTOR_STRONG)
       add_compile_options(-fstack-protector-strong)
     endif()
@@ -317,8 +356,10 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-Wno-unused-value)
   add_compile_options(-Wno-unused-function)
   add_compile_options(-Wno-tautological-compare)
+  add_compile_options(-Wno-unknown-pragmas)
 
-  check_cxx_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
+  # Explicitly enabled warnings
+  check_c_compiler_flag(-Wimplicit-fallthrough COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
   if (COMPILER_SUPPORTS_W_IMPLICIT_FALLTHROUGH)
     add_compile_options(-Wimplicit-fallthrough)
   endif()
@@ -326,15 +367,17 @@ if (CLR_CMAKE_HOST_UNIX)
   #These seem to indicate real issues
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 
-  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wno-unused-but-set-variable)
+
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-Wno-unknown-warning-option)
+
     # The -ferror-limit is helpful during the porting, it makes sure the compiler doesn't stop
     # after hitting just about 20 errors.
     add_compile_options(-ferror-limit=4096)
 
     # Disabled warnings
     add_compile_options(-Wno-unused-private-field)
-    # Explicit constructor calls are not supported by clang (this->ClassName::ClassName())
-    add_compile_options(-Wno-microsoft)
     # There are constants of type BOOL used in a condition. But BOOL is defined as int
     # and so the compiler thinks that there is a mistake.
     add_compile_options(-Wno-constant-logical-operand)
@@ -343,25 +386,27 @@ if (CLR_CMAKE_HOST_UNIX)
     # a header file.
     add_compile_options(-Wno-pragma-pack)
 
-    add_compile_options(-Wno-unknown-warning-option)
-
     # The following warning indicates that an attribute __attribute__((__ms_struct__)) was applied
     # to a struct or a class that has virtual members or a base class. In that case, clang
     # may not generate the same object layout as MSVC.
     add_compile_options(-Wno-incompatible-ms-struct)
+
+    add_compile_options(-Wno-reserved-identifier)
   else()
-    add_compile_options(-Wno-unused-but-set-variable)
-    add_compile_options(-Wno-unknown-pragmas)
     add_compile_options(-Wno-uninitialized)
     add_compile_options(-Wno-strict-aliasing)
     add_compile_options(-Wno-array-bounds)
-    check_cxx_compiler_flag(-Wclass-memaccess COMPILER_SUPPORTS_W_CLASS_MEMACCESS)
-    if (COMPILER_SUPPORTS_W_CLASS_MEMACCESS)
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
-    endif()
-    check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
-    if (COMPILER_SUPPORTS_F_ALIGNED_NEW)
-      add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-faligned-new>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-class-memaccess>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-misleading-indentation>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-overflow>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-stringop-truncation>)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-placement-new>)
+
+    if (CMAKE_CXX_COMPILER_ID)
+      check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
+      if (COMPILER_SUPPORTS_F_ALIGNED_NEW)
+        add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-faligned-new>)
+      endif()
     endif()
   endif()
 
@@ -373,40 +418,41 @@ if (CLR_CMAKE_HOST_UNIX)
   add_compile_options(-fvisibility=hidden)
 
   # Specify the minimum supported version of macOS
-  if(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
-    # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
-    if(CLR_CMAKE_TARGET_MACCATALYST)
-      # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
-      # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
-      # replaced with a default value, and always gets expanded to an OS version.
-      # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
-      # We need to disable the warning that -tagret replaces -mmacosx-version-min
-      add_compile_options(-Wno-overriding-t-option)
-      add_link_options(-Wno-overriding-t-option)
-      if(CLR_CMAKE_HOST_ARCH_ARM64)
-        add_compile_options(-target arm64-apple-ios14.2-macabi)
-        add_link_options(-target arm64-apple-ios14.2-macabi)
-      elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        add_compile_options(-target x86_64-apple-ios13.5-macabi)
-        add_link_options(-target x86_64-apple-ios13.5-macabi)
-      else()
-        clr_unknown_arch()
-      endif()
+  # Mac Catalyst needs a special CFLAG, exclusive with mmacosx-version-min
+  if(CLR_CMAKE_HOST_MACCATALYST)
+    # Somewhere between CMake 3.17 and 3.19.4, it became impossible to not pass
+    # a value for mmacosx-version-min (blank CMAKE_OSX_DEPLOYMENT_TARGET gets
+    # replaced with a default value, and always gets expanded to an OS version.
+    # https://gitlab.kitware.com/cmake/cmake/-/issues/20132
+    # We need to disable the warning that -tagret replaces -mmacosx-version-min
+    set(DISABLE_OVERRIDING_MIN_VERSION_ERROR -Wno-overriding-t-option)
+    add_link_options(-Wno-overriding-t-option)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      set(MACOS_VERSION_MIN_FLAGS "-target arm64-apple-ios14.2-macabi")
+      add_link_options(-target arm64-apple-ios14.2-macabi)
+    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+      set(MACOS_VERSION_MIN_FLAGS "-target x86_64-apple-ios13.5-macabi")
+      add_link_options(-target x86_64-apple-ios13.5-macabi)
     else()
-      if(CLR_CMAKE_HOST_ARCH_ARM64)
-        # 'pthread_jit_write_protect_np' is only available on macOS 11.0 or newer
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=11.0)
-        add_compile_options(-arch arm64)
-      elseif(CLR_CMAKE_HOST_ARCH_AMD64)
-        set(MACOS_VERSION_MIN_FLAGS -mmacosx-version-min=10.13)
-        add_compile_options(-arch x86_64)
-      else()
-        clr_unknown_arch()
-      endif()
-      add_compile_options(${MACOS_VERSION_MIN_FLAGS})
-      add_linker_flag(${MACOS_VERSION_MIN_FLAGS})
-    endif(CLR_CMAKE_TARGET_MACCATALYST)
-  endif(CLR_CMAKE_HOST_OSX OR CLR_CMAKE_HOST_MACCATALYST)
+      clr_unknown_arch()
+    endif()
+    # These options are intentionally set using the CMAKE_XXX_FLAGS instead of
+    # add_compile_options so that they take effect on the configuration functions
+    # in various configure.cmake files.
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+    set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${MACOS_VERSION_MIN_FLAGS} ${DISABLE_OVERRIDING_MIN_VERSION_ERROR}")
+  elseif(CLR_CMAKE_HOST_OSX)
+    if(CLR_CMAKE_HOST_ARCH_ARM64)
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+      add_compile_options(-arch arm64)
+    elseif(CLR_CMAKE_HOST_ARCH_AMD64)
+      set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+      add_compile_options(-arch x86_64)
+    else()
+      clr_unknown_arch()
+    endif()
+  endif(CLR_CMAKE_HOST_MACCATALYST)
 
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -414,18 +460,18 @@ if(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_UNIX>)
   # Contracts are disabled on UNIX.
   add_definitions(-DDISABLE_CONTRACTS)
-  if(CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
+  if(CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_OSX>)
   elseif(CLR_CMAKE_TARGET_FREEBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_FREEBSD>)
+  elseif(CLR_CMAKE_TARGET_ANDROID)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   elseif(CLR_CMAKE_TARGET_LINUX)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_LINUX>)
   elseif(CLR_CMAKE_TARGET_NETBSD)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_NETBSD>)
   elseif(CLR_CMAKE_TARGET_SUNOS)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_SUNOS>)
-  elseif(CLR_CMAKE_TARGET_ANDROID)
-    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_ANDROID>)
   endif()
 else(CLR_CMAKE_TARGET_UNIX)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WINDOWS>)
@@ -550,6 +596,16 @@ if (MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:cf")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:cf")
 
+  # Enable EH-continuation table and CET-compatibility for native components for amd64 builds except for components of the Mono
+  # runtime. Added some switches using variables instead of add_compile_options to let individual projects override it.
+  if (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /guard:ehcont")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /guard:ehcont")
+    set(CMAKE_ASM_MASM_FLAGS "${CMAKE_ASM_MASM_FLAGS} /guard:ehcont")
+    add_linker_flag(/guard:ehcont)
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /CETCOMPAT")
+  endif (CLR_CMAKE_HOST_ARCH_AMD64 AND NOT CLR_CMAKE_RUNTIME_MONO)
+
   # Statically linked CRT (libcmt[d].lib, libvcruntime[d].lib and libucrt[d].lib) by default. This is done to avoid
   # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
   #
@@ -639,7 +695,7 @@ if (CLR_CMAKE_HOST_WIN32)
         message(FATAL_ERROR "MC not found")
     endif()
 
-else (CLR_CMAKE_HOST_WIN32)
+elseif (NOT CLR_CMAKE_HOST_BROWSER)
     enable_language(ASM)
 
 endif(CLR_CMAKE_HOST_WIN32)

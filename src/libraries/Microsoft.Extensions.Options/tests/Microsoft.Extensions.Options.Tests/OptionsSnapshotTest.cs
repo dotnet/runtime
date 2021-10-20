@@ -5,12 +5,12 @@ using System;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
 namespace Microsoft.Extensions.Options.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class OptionsSnapshotTest
     {
         [Fact]
@@ -199,6 +199,48 @@ namespace Microsoft.Extensions.Options.Tests
         private void CheckLifetime(IServiceCollection services, Type serviceType, ServiceLifetime lifetime)
         {
             Assert.NotNull(services.Where(s => s.ServiceType == serviceType && s.Lifetime == lifetime).SingleOrDefault());
+        }
+
+        /// <summary>
+        /// Duplicates an aspnetcore test to ensure when an IOptionsSnapshot is resolved both in
+        /// the root scope and a created scope, that dependent services are created both times.
+        /// </summary>
+        [Fact]
+        public void RecreateAspNetCore_AddOidc_CustomStateAndAccount_SetsUpConfiguration()
+        {
+            var services = new ServiceCollection().AddOptions();
+
+            int calls = 0;
+
+            services.TryAddEnumerable(ServiceDescriptor.Scoped<IPostConfigureOptions<RemoteAuthenticationOptions<OidcProviderOptions>>, DefaultOidcOptionsConfiguration>());
+            services.Replace(ServiceDescriptor.Scoped(typeof(NavigationManager), _ =>
+            {
+                calls++;
+                return new NavigationManager();
+            }));
+
+            using ServiceProvider provider = services.BuildServiceProvider();
+
+            using IServiceScope scope = provider.CreateScope();
+
+            // from the root scope.
+            var rootOptions = provider.GetRequiredService<IOptionsSnapshot<RemoteAuthenticationOptions<OidcProviderOptions>>>();
+
+            // from the created scope
+            var scopedOptions = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<RemoteAuthenticationOptions<OidcProviderOptions>>>();
+
+            // we should have 2 navigation managers. One in the root scope, and one in the created scope.
+            Assert.Equal(2, calls);
+        }
+
+        private class OidcProviderOptions { }
+        private class RemoteAuthenticationOptions<TRemoteAuthenticationProviderOptions> where TRemoteAuthenticationProviderOptions : new() { }
+        private class NavigationManager { }
+
+        private class DefaultOidcOptionsConfiguration : IPostConfigureOptions<RemoteAuthenticationOptions<OidcProviderOptions>>
+        {
+            public DefaultOidcOptionsConfiguration(NavigationManager navigationManager) { }
+            public void PostConfigure(string name, RemoteAuthenticationOptions<OidcProviderOptions> options) { }
         }
     }
 }

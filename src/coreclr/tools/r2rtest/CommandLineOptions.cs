@@ -41,8 +41,6 @@ namespace R2RTest
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        Crossgen(),
-                        CrossgenPath(),
                         Crossgen2Path(),
                         TargetArch(),
                         VerifyTypeAndFieldLayout(),
@@ -54,8 +52,11 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         Sequential(),
+                        Iterations(),
                         Framework(),
                         UseFramework(),
                         Release(),
@@ -80,8 +81,6 @@ namespace R2RTest
                     {
                         InputDirectory(),
                         OutputDirectory(),
-                        Crossgen(),
-                        CrossgenPath(),
                         Crossgen2Path(),
                         TargetArch(),
                         VerifyTypeAndFieldLayout(),
@@ -93,8 +92,11 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         Sequential(),
+                        Iterations(),
                         Framework(),
                         UseFramework(),
                         Release(),
@@ -116,8 +118,6 @@ namespace R2RTest
                 CreateCommand("compile-framework", "Compile managed framework assemblies in Core_Root",
                     new Option[]
                     {
-                        Crossgen(),
-                        CrossgenPath(),
                         Crossgen2Path(),
                         TargetArch(),
                         VerifyTypeAndFieldLayout(),
@@ -125,10 +125,13 @@ namespace R2RTest
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         Crossgen2Parallelism(),
                         Crossgen2JitPath(),
                         DegreeOfParallelism(),
                         Sequential(),
+                        Iterations(),
                         Release(),
                         LargeBubble(),
                         Composite(),
@@ -151,10 +154,11 @@ namespace R2RTest
                         InputDirectory(),
                         OutputDirectory(),
                         PackageList(),
-                        Crossgen(),
                         NoCleanup(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         DegreeOfParallelism(),
                         CompilationTimeoutMinutes(),
                         ExecutionTimeoutMinutes(),
@@ -172,6 +176,8 @@ namespace R2RTest
                         Composite(),
                         Map(),
                         Pdb(),
+                        Perfmap(),
+                        PerfmapFormatVersion(),
                         CompilationTimeoutMinutes(),
                         Crossgen2Path(),
                         MibcPath(),
@@ -204,12 +210,6 @@ namespace R2RTest
                 new Option<FileInfo[]>(new[] { "--mibc-path", "-m" }, "Mibc files to use in compilation")
                 { Argument = new Argument<FileInfo[]>() { Arity = ArgumentArity.ZeroOrMore }.ExistingOnly() };
 
-            Option Crossgen() =>
-                new Option<bool>(new[] { "--crossgen" }, "Compile the apps using Crossgen in the CORE_ROOT folder");
-
-            Option CrossgenPath() =>
-                new Option<FileInfo>(new[] { "--crossgen-path", "-cp" }, "Explicit Crossgen path (useful for cross-targeting)").ExistingOnly();
-
             Option Crossgen2Path() =>
                 new Option<FileInfo>(new[] { "--crossgen2-path", "-c2p" }, "Explicit Crossgen2 path (useful for cross-targeting)").ExistingOnly();
 
@@ -240,11 +240,20 @@ namespace R2RTest
             Option Pdb() =>
                 new Option<bool>(new[] { "--pdb" }, "Generate PDB symbol information (Crossgen2 / Windows only)");
 
+            Option Perfmap() =>
+                new Option<bool>(new[] { "--perfmap" }, "Generate perfmap symbol information");
+
+            Option PerfmapFormatVersion() =>
+                new Option<int>(new[] { "--perfmap-format-version" }, "Perfmap format version to generate");
+
             Option DegreeOfParallelism() =>
                 new Option<int>(new[] { "--degree-of-parallelism", "-dop" }, "Override default compilation / execution DOP (default = logical processor count)");
 
             Option Sequential() =>
                 new Option<bool>(new[] { "--sequential" }, "Run tests sequentially");
+
+            Option Iterations() =>
+                new Option<int>(new[] { "--iterations" }, "Number of iterations for each test execution");
 
             Option Framework() =>
                 new Option<bool>(new[] { "--framework" }, "Precompile and use native framework");
@@ -278,7 +287,7 @@ namespace R2RTest
                 new Option<int>(new[] { "--execution-timeout-minutes", "-et" }, "Execution timeout (minutes)");
 
             Option R2RDumpPath() =>
-                new Option<FileInfo>(new[] { "--r2r-dump-path", "-r2r" }, "Path to R2RDump.exe/dll").ExistingOnly();
+                new Option<FileInfo>(new[] { "--r2r-dump-path" }, "Path to R2RDump.exe/dll").ExistingOnly();
 
             Option MeasurePerf() =>
                 new Option<bool>(new[] { "--measure-perf" }, "Print out compilation time");

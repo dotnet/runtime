@@ -17,6 +17,7 @@ namespace System.Net.NetworkInformation
     {
         private static bool SendIpHeader => true;
         private static bool NeedsConnect => false;
+        private static bool SupportsDualMode => false;
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions? options)
             => SendIcmpEchoRequestOverRawSocket(address, buffer, timeout, options);

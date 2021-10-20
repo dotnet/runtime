@@ -119,7 +119,7 @@ namespace System.Data
 
         // Case-sensitive smart search: it will look for a table using the ns only if required to
         // resolve a conflict
-        internal DataTable? GetTableSmart(string name, string ns)
+        internal DataTable? GetTableSmart(string name, string? ns)
         {
             int fCount = 0;
             DataTable? fTable = null;

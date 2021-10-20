@@ -28,8 +28,7 @@ namespace System.IO.Compression
         /// and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
+        /// <exception cref="IOException">An I/O error has occurred. -or- An archive entry's name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -61,8 +60,7 @@ namespace System.IO.Compression
         /// and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
+        /// <exception cref="IOException">An I/O error has occurred. -or- An archive entry's name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -95,8 +93,7 @@ namespace System.IO.Compression
         /// and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
+        /// <exception cref="IOException">An I/O error has occurred. -or- An archive entry's name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>
@@ -150,8 +147,7 @@ namespace System.IO.Compression
         /// and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The path specified by sourceArchive or destinationDirectoryName is invalid,
         /// (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">The directory specified by destinationDirectoryName already exists.
-        /// -or- An I/O error has occurred. -or- An archive entry?s name is zero-length, contains only whitespace, or contains one or
+        /// <exception cref="IOException">An I/O error has occurred. -or- An archive entry's name is zero-length, contains only whitespace, or contains one or
         /// more invalid characters as defined by InvalidPathChars. -or- Extracting an archive entry would result in a file destination that is outside the destination directory (for example, because of parent directory accessors). -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
         /// <exception cref="NotSupportedException">sourceArchive or destinationDirectoryName is in an invalid format. </exception>

@@ -29,48 +29,6 @@
 #pragma optimize("tgy", on)
 #endif
 
-
-/*==================================GETCHARAT===================================
-**Returns the character at position index.  Thows IndexOutOfRangeException as
-**appropriate.
-**This method is not actually used. JIT will generate code for indexer method on string class.
-**
-==============================================================================*/
-FCIMPL2(FC_CHAR_RET, COMString::GetCharAt, StringObject* str, INT32 index) {
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
-    VALIDATEOBJECT(str);
-    if (str == NULL) {
-        FCThrow(kNullReferenceException);
-    }
-    _ASSERTE(str->GetMethodTable() == g_pStringClass);
-
-    if (index >=0 && index < (INT32)str->GetStringLength()) {
-        //Return the appropriate character.
-        return str->GetBuffer()[index];
-    }
-
-    FCThrow(kIndexOutOfRangeException);
-}
-FCIMPLEND
-
-
-/*==================================LENGTH=================================== */
-
-FCIMPL1(INT32, COMString::Length, StringObject* str) {
-    FCALL_CONTRACT;
-
-    FC_GC_POLL_NOT_NEEDED();
-    if (str == NULL)
-        FCThrow(kNullReferenceException);
-
-    FCUnique(0x11);
-    return str->GetStringLength();
-}
-FCIMPLEND
-
-
 FCIMPL2(FC_BOOL_RET, COMString::FCTryGetTrailByte, StringObject* thisRefUNSAFE, UINT8 *pbData)
 {
     FCALL_CONTRACT;

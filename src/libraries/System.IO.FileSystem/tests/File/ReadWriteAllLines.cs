@@ -12,6 +12,8 @@ namespace System.IO.Tests
     {
         #region Utilities
 
+        protected virtual bool IsAppend { get; }
+
         protected virtual void Write(string path, string[] content)
         {
             File.WriteAllLines(path, (IEnumerable<string>)content);
@@ -66,19 +68,31 @@ namespace System.IO.Tests
             Assert.Equal(lines, Read(path));
         }
 
-        [Fact]
-        public virtual void Overwrite()
+        [Theory]
+        [InlineData(200, 100)]
+        [InlineData(50_000, 40_000)] // tests a different code path than the line above
+        public void AppendOrOverwrite(int linesSizeLength, int overwriteLinesLength)
         {
             string path = GetTestFilePath();
-            string[] lines = new string[] { new string('c', 200) };
-            string[] overwriteLines = new string[] { new string('b', 100) };
+            string[] lines = new string[] { new string('c', linesSizeLength) };
+            string[] overwriteLines = new string[] { new string('b', overwriteLinesLength) };
+
             Write(path, lines);
             Write(path, overwriteLines);
-            Assert.Equal(overwriteLines, Read(path));
+
+            if (IsAppend)
+            {
+                Assert.Equal(new string[] { lines[0], overwriteLines[0] }, Read(path));
+            }
+            else
+            {
+                Assert.DoesNotContain("Append", GetType().Name); // ensure that all "Append" types override this property
+
+                Assert.Equal(overwriteLines, Read(path));
+            }
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -104,6 +118,7 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile()
         {
             string path = GetTestFilePath();
@@ -266,8 +281,7 @@ namespace System.IO.Tests
             Assert.Equal(overwriteLines, Read(path));
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40065", TestPlatforms.Browser)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
         public void OpenFile_ThrowsIOException()
         {
             string path = GetTestFilePath();
@@ -293,6 +307,7 @@ namespace System.IO.Tests
         /// file is allowed.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/53021", TestPlatforms.Browser)]
         public void WriteToReadOnlyFile()
         {
             string path = GetTestFilePath();

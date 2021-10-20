@@ -2384,6 +2384,38 @@ public static partial class DataContractJsonSerializerTests
         }
     }
 
+    [Fact]
+    public static void DCJS_ExtensionDataObjectTest2()
+    {
+        SerializeThenDeserialize(new ContractExtended { Item = new Item { Id = 1, Code = 2 } });
+        SerializeThenDeserialize(new ContractExtended { Item = new Item { Id = 1 } });
+    }
+
+    private static void SerializeThenDeserialize(ContractExtended extendedData)
+    {
+        string extendedContractJson;
+        using (var memoryStream = new MemoryStream())
+        {
+            new DataContractJsonSerializer(typeof(ContractExtended)).WriteObject(memoryStream, extendedData);
+            extendedContractJson = Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+
+        ContractGeneric reducedData;
+        using (var memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(extendedContractJson)))
+        {
+            reducedData = (ContractGeneric)new DataContractJsonSerializer(typeof(ContractGeneric)).ReadObject(memoryStream);
+        }
+
+        string reducedContractJson;
+        using (var memoryStream = new MemoryStream())
+        {
+            new DataContractJsonSerializer(typeof(ContractGeneric)).WriteObject(memoryStream, reducedData);
+            reducedContractJson = Encoding.UTF8.GetString(memoryStream.ToArray());
+        }
+
+        Assert.Equal(extendedContractJson, reducedContractJson);
+    }
+
     private static string ConstructorWithRootNameTestHelper(TypeForRootNameTest value, DataContractJsonSerializer serializer)
     {
         using (var ms = new MemoryStream())

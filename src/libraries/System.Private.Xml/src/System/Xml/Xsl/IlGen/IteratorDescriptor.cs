@@ -109,7 +109,7 @@ namespace System.Xml.Xsl.IlGen
         public static StorageDescriptor Current(LocalBuilder locIter, MethodInfo currentMethod, Type itemStorageType)
         {
             Debug.Assert(currentMethod.ReturnType == itemStorageType,
-                         "Type " + itemStorageType + " does not match type of Current property.");
+                         $"Type {itemStorageType} does not match type of Current property.");
 
             StorageDescriptor storage = default;
             storage._location = ItemLocation.Current;

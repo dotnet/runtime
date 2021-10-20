@@ -79,20 +79,29 @@ def parse_mini_ops (target_define):
                 for d in enabled:
                     if d == define:
                         is_enabled = True
-        elif line == "#endif":
+        elif line.startswith ("#endif"):
             is_enabled = True
+        elif line.startswith ("#"):
+            print ("Unhandled preprocessor conditional: " + line)
+            exit (1)
         else:
             if is_enabled and line.startswith ("MINI_OP"):
                 m = re.search (r"MINI_OP\(\w+\s*\,\s*\"([^\"]+)\", (\w+), (\w+), (\w+)\)", line)
+                opdef = None
                 if m != None:
-                    opcodes [m.group (1)] = OpDef(opcode_id, m.group (1), m.group (2), m.group (3), m.group (4))
+                    opdef = OpDef(opcode_id, m.group (1), m.group (2), m.group (3), m.group (4))
                 else:
                     m = re.search (r"MINI_OP3\(\w+\s*\,\s*\"([^\"]+)\", (\w+), (\w+), (\w+), (\w+)\)", line)
                     if m != None:
-                        opcodes [m.group (1)] = OpDef(opcode_id, m.group (1), m.group (2), m.group (3), m.group (4))
+                        opdef = OpDef(opcode_id, m.group (1), m.group (2), m.group (3), m.group (4))
                     else:
                         print ("Unable to parse line: '{0}'".format (line))
                         exit (1)
+                name = m.group (1)
+                if name in opcodes:
+                    print ("Duplicate opcode name: " + name)
+                    exit (1)
+                opcodes [name] = opdef
                 opcode_id += 1
     opcode_file.close ()
     return opcodes
@@ -204,6 +213,7 @@ def gen_output(f, opcodes):
             f.write ("  0,  // {0}\n".format (op.name))
         else:
             f.write ("  {0}, // {1}\n".format (op.desc_idx, op.name))
+    f.write ("  0xffff,\n")
     f.write ("};\n\n")
 
 #

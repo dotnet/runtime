@@ -19,7 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #error "This should be included only for x86"
 #endif // TARGET_X86
 
-#if defined(TARGET_UNIX)
+#if defined(FEATURE_CFI_SUPPORT)
 short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
     short dwarfReg = DWARF_REG_ILLEGAL;
@@ -28,7 +28,7 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
 
     return dwarfReg;
 }
-#endif // TARGET_UNIX
+#endif // FEATURE_CFI_SUPPORT
 
 void Compiler::unwindBegProlog()
 {
@@ -131,8 +131,8 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
 //
 void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 {
-    BOOL isFunclet  = (func->funKind != FUNC_ROOT);
-    BOOL isColdCode = isHotCode ? FALSE : TRUE;
+    bool isFunclet  = (func->funKind != FUNC_ROOT);
+    bool isColdCode = !isHotCode;
 
     eeReserveUnwindInfo(isFunclet, isColdCode, sizeof(UNWIND_INFO));
 }

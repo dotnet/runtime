@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // Rename
             File.Move(fileName, changeFile);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
                     .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
             }
-            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if(OperatingSystem.IsMacOS())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             File.Move(fileName, changeFile);
             File.Move(component.DepsJson, changeDepsFile);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
@@ -141,7 +141,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
                     .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
             }
-            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if(OperatingSystem.IsMacOS())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
@@ -189,7 +189,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             // Delete deps
             File.Delete(component.DepsJson);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()
@@ -199,7 +199,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                     .And.HaveStdErrContaining($"deps='{component.DepsJson}'")
                     .And.HaveStdErrContaining($"mgd_app='{component.AppDll}'");
             }
-            else if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            else if(OperatingSystem.IsMacOS())
             {
                 sharedTestState.RunComponentResolutionTest(component)
                     .Should().Pass()

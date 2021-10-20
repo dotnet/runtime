@@ -19,7 +19,7 @@ namespace System.Drawing.Printing
         /// Determines if a converter can convert an object of the given source
         /// type to the native type of the converter.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             if (sourceType == typeof(string))
             {
@@ -64,11 +64,11 @@ namespace System.Drawing.Printing
                     char sep = culture.TextInfo.ListSeparator[0];
                     string[] tokens = text.Split(sep);
                     int[] values = new int[tokens.Length];
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
+                    TypeConverter intConverter = GetIntConverter();
                     for (int i = 0; i < values.Length; i++)
                     {
                         // Note: ConvertFromString will raise exception if value cannot be converted.
-                        values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i]);
+                        values[i] = (int)intConverter.ConvertFromString(context, culture, tokens[i])!;
                     }
                     if (values.Length != 4)
                     {
@@ -80,6 +80,10 @@ namespace System.Drawing.Printing
             return base.ConvertFrom(context, culture, value);
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "TypeDescriptor.GetConverter is safe for primitive types.")]
+        private static TypeConverter GetIntConverter() => TypeDescriptor.GetConverter(typeof(int));
+
         /// <summary>
         /// Converts the given object to another type. The most common types to convert
         /// are to and from a string object. The default implementation will make a call
@@ -87,7 +91,7 @@ namespace System.Drawing.Printing
         /// type is string. If this cannot convert to the desitnation type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == null)
             {
@@ -102,8 +106,8 @@ namespace System.Drawing.Printing
                         culture = CultureInfo.CurrentCulture;
                     }
                     string sep = culture.TextInfo.ListSeparator + " ";
-                    TypeConverter intConverter = TypeDescriptor.GetConverter(typeof(int));
-                    string[] args = new string[4];
+                    TypeConverter intConverter = GetIntConverter();
+                    string?[] args = new string[4];
                     int nArg = 0;
 
                     // Note: ConvertToString will raise exception if value cannot be converted.

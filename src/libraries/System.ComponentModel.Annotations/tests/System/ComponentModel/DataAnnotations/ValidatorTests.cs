@@ -231,6 +231,108 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Contains("Required", Assert.Single(results).ErrorMessage);
         }
 
+        [Fact]
+        public static void TryValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_required_attribute_fails_validation()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Valid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+            Assert.Equal("The SecondPropertyToBeTested field is required.", validationResults[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static void TryValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_attribute_fails_validation()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Valid Value",
+                SecondPropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(1, validationResults.Count);
+            Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", validationResults[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static void TryValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_has_unmatched_property_name()
+        {
+            var objectToBeValidated = new HasMetadataTypeWithUnmatchedProperties()
+            {
+                PropertyToBeTested = "Valid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithUnmatchedProperties), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithUnmatchedProperties));
+
+            var validationResults = new List<ValidationResult>();
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal("The associated metadata type for type 'System.ComponentModel.DataAnnotations.Tests.ValidatorTests+HasMetadataTypeWithUnmatchedProperties' contains the following unknown properties or fields: SecondPropertyToBeTested. Please make sure that the names of these members match the names of the properties on the main type.",
+                exception.Message);
+        }
+
+        [Fact]
+        public static void TryValidateObject_returns_false_if_property_attribute_is_not_removed_by_metadatatype_class()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(2, validationResults.Count);
+            Assert.Contains(validationResults, x => x.ErrorMessage == "ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value");
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is required.");
+        }
+
+        [Fact]
+        public static void TryValidateObject_returns_false_if_property_has_attributes_from_base_and_metadatatype_classes()
+        {
+            var objectToBeValidated = new HasMetadataTypeWithComplementaryRequirements()
+            {
+                SecondPropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithComplementaryRequirements), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithComplementaryRequirements));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(2, validationResults.Count);
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is not a valid phone number.");
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.");
+        }
+
+        [Fact]
+        public static void TryValidateObject_returns_false_if_validation_fails_when_class_references_itself_as_a_metadatatype()
+        {
+            var objectToBeValidated = new SelfMetadataType()
+            {
+                PropertyToBeTested = "Invalid Value",
+                SecondPropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SelfMetadataType), typeof(SelfMetadataType)), typeof(SelfMetadataType));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateObject(objectToBeValidated, validationContext, validationResults, true));
+            Assert.Equal(2, validationResults.Count);
+            Assert.Contains(validationResults, x => x.ErrorMessage == "ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value");
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is not a valid phone number.");
+        }
+
         public class RequiredFailure
         {
             [Required]
@@ -365,6 +467,141 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             Validator.ValidateObject(instance, context);
         }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_required_attribute_fails_validation()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Valid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The SecondPropertyToBeTested field is required.", exception.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_attribute_fails_validation()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Valid Value",
+                SecondPropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", exception.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_type_attribute_fails_validation()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Valid Value",
+                SecondPropertyToBeTested = "TypeInvalid"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The SecondPropertyToBeTested field mustn't be \"TypeInvalid\".", exception.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_all_properties_are_valid_but_metadatatype_class_has_unmatched_property_name()
+        {
+            var objectToBeValidated = new HasMetadataTypeWithUnmatchedProperties()
+            {
+                PropertyToBeTested = "Valid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithUnmatchedProperties), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithUnmatchedProperties));
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The associated metadata type for type 'System.ComponentModel.DataAnnotations.Tests.ValidatorTests+HasMetadataTypeWithUnmatchedProperties' contains the following unknown properties or fields: SecondPropertyToBeTested. Please make sure that the names of these members match the names of the properties on the main type.",
+                exception.Message);
+        }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_property_attribute_is_not_removed_by_metadatatype_class()
+        {
+            var objectToBeValidated = new HasMetadataTypeToBeValidated()
+            {
+                PropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value",
+                exception.Message);
+        }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_property_has_attributes_from_base_and_metadatatype_classes()
+        {
+            var objectToBeValidated = new HasMetadataTypeWithComplementaryRequirements()
+            {
+                PropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithComplementaryRequirements), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithComplementaryRequirements));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value",
+                exception.Message);
+
+            objectToBeValidated.PropertyToBeTested = null;
+            objectToBeValidated.SecondPropertyToBeTested = "Not Phone #";
+
+            exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.",
+                exception.Message);
+
+            objectToBeValidated.SecondPropertyToBeTested = "0800123456789";
+
+            exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.",
+                exception.Message);
+        }
+
+        [Fact]
+        public static void ValidateObject_returns_false_if_validation_fails_when_class_references_itself_as_a_metadatatype()
+        {
+            var objectToBeValidated = new SelfMetadataType()
+            {
+                PropertyToBeTested = "Invalid Value"
+            };
+            var validationContext = new ValidationContext(objectToBeValidated);
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SelfMetadataType), typeof(SelfMetadataType)), typeof(SelfMetadataType));
+
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value",
+                exception.Message);
+
+            objectToBeValidated.PropertyToBeTested = null;
+            objectToBeValidated.SecondPropertyToBeTested = "Not Phone #";
+
+            exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateObject(objectToBeValidated, validationContext, true));
+            Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.",
+                exception.Message);
+        }
+
         #endregion ValidateObject
 
         #region TryValidateProperty
@@ -521,6 +758,84 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(0, validationResults.Count);
         }
 
+        [Fact]
+        public static void TryValidateProperty_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_required_attribute_fails_validation()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeToBeValidated());
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+            Assert.False(Validator.TryValidateProperty(null, validationContext, null));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateProperty(null, validationContext, validationResults));
+            Assert.Equal(1, validationResults.Count);
+            Assert.Equal("The SecondPropertyToBeTested field is required.", validationResults[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static void TryValidateProperty_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_attribute_fails_validation()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeToBeValidated());
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, null));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, validationResults));
+            Assert.Equal(1, validationResults.Count);
+            Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", validationResults[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static void TryValidateProperty_returns_true_if_property_attribute_is_not_removed_by_metadatatype_class()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeToBeValidated());
+            validationContext.MemberName = "PropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, null));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, validationResults));
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", validationResults[0].ErrorMessage);
+        }
+
+        [Fact]
+        public static void TryValidateProperty_returns_true_if_property_has_attributes_from_base_and_metadatatype_classes()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeWithComplementaryRequirements());
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithComplementaryRequirements), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithComplementaryRequirements));
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, null));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, validationResults));
+            Assert.Equal(2, validationResults.Count);
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is not a valid phone number.");
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.");
+        }
+
+        [Fact]
+        public static void TryValidateProperty_returns_false_if_validation_fails_when_class_references_itself_as_a_metadatatype()
+        {
+            var validationContext = new ValidationContext(new SelfMetadataType());
+            validationContext.MemberName = "PropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SelfMetadataType), typeof(SelfMetadataType)), typeof(SelfMetadataType));
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, null));
+
+            var validationResults = new List<ValidationResult>();
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, validationResults));
+            Assert.Equal(1, validationResults.Count);
+            Assert.Contains(validationResults, x => x.ErrorMessage == "ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value");
+
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, null));
+
+            validationResults.Clear();
+            Assert.False(Validator.TryValidateProperty("Invalid Value", validationContext, validationResults));
+            //Assert.Equal(1, validationResults.Count);
+            Assert.Contains(validationResults, x => x.ErrorMessage == "The SecondPropertyToBeTested field is not a valid phone number.");
+        }
+
         #endregion TryValidateProperty
 
         #region ValidateProperty
@@ -651,6 +966,89 @@ namespace System.ComponentModel.DataAnnotations.Tests
             var validationContext = new ValidationContext(new ToBeValidated());
             validationContext.MemberName = "PropertyWithRequiredAttribute";
             Validator.ValidateProperty("Valid Value", validationContext);
+        }
+
+        [Fact]
+        public static void ValidateProperty_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_required_attribute_fails_validation()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeToBeValidated());
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty(null, validationContext));
+            Assert.IsType<RequiredAttribute>(exception.ValidationAttribute);
+            Assert.Null(exception.Value);
+        }
+
+        [Fact]
+        public static void ValidateProperty_returns_false_if_all_properties_are_valid_but_metadatatype_class_property_attribute_fails_validation()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeToBeValidated());
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("Invalid Value", validationContext));
+            Assert.IsType<MaxLengthAttribute>(exception.ValidationAttribute);
+            Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", exception.ValidationResult.ErrorMessage);
+        }
+
+        [Fact]
+        public static void ValidateProperty_returns_false_if_property_attribute_is_not_removed_by_metadatatype_class()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeToBeValidated());
+            validationContext.MemberName = "PropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeToBeValidated), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeToBeValidated));
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("Invalid Value", validationContext));
+            Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
+            Assert.Equal("Invalid Value", exception.Value);
+        }
+
+        [Fact]
+        public static void ValidateProperty_returns_false_if_property_has_attributes_from_base_and_metadatatype_classes()
+        {
+            var validationContext = new ValidationContext(new HasMetadataTypeWithComplementaryRequirements());
+            validationContext.MemberName = "PropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(HasMetadataTypeWithComplementaryRequirements), typeof(MetadataTypeToAddValidationAttributes)), typeof(HasMetadataTypeWithComplementaryRequirements));
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("Invalid Value", validationContext));
+            Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
+            Assert.Equal("Invalid Value", exception.Value);
+
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("Not Phone #", validationContext));
+            Assert.IsType<PhoneAttribute>(exception.ValidationAttribute);
+            Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.", exception.ValidationResult.ErrorMessage);
+            Assert.Equal("Not Phone #", exception.Value);
+
+            exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("0800123456789", validationContext));
+            Assert.IsType<MaxLengthAttribute>(exception.ValidationAttribute);
+            Assert.Equal("The field SecondPropertyToBeTested must be a string or array type with a maximum length of '11'.", exception.ValidationResult.ErrorMessage);
+            Assert.Equal("0800123456789", exception.Value);
+        }
+
+        [Fact]
+        public static void ValidateProperty_returns_false_if_validation_fails_when_class_references_itself_as_a_metadatatype()
+        {
+            var validationContext = new ValidationContext(new SelfMetadataType());
+            validationContext.MemberName = "PropertyToBeTested";
+            TypeDescriptor.AddProviderTransparent(new AssociatedMetadataTypeTypeDescriptionProvider(typeof(SelfMetadataType), typeof(SelfMetadataType)), typeof(SelfMetadataType));
+            var exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("Invalid Value", validationContext));
+            Assert.IsType<ValidValueStringPropertyAttribute>(exception.ValidationAttribute);
+            Assert.Equal("ValidValueStringPropertyAttribute.IsValid failed for value Invalid Value", exception.ValidationResult.ErrorMessage);
+            Assert.Equal("Invalid Value", exception.Value);
+
+            validationContext.MemberName = "SecondPropertyToBeTested";
+            exception = Assert.Throws<ValidationException>(
+                () => Validator.ValidateProperty("Invalid Value", validationContext));
+            Assert.IsType<PhoneAttribute>(exception.ValidationAttribute);
+            Assert.Equal("The SecondPropertyToBeTested field is not a valid phone number.", exception.ValidationResult.ErrorMessage);
+            Assert.Equal("Invalid Value", exception.Value);
         }
 
         #endregion ValidateProperty
@@ -996,6 +1394,53 @@ namespace System.ComponentModel.DataAnnotations.Tests
             [Required]
             [ValidValueStringProperty]
             public string PropertyWithRequiredAttribute { get; set; }
+        }
+
+        public class HasMetadataTypeToBeValidated
+        {
+            [ValidValueStringProperty]
+            public string PropertyToBeTested { get; set; }
+
+            public string SecondPropertyToBeTested { get; set; }
+        }
+
+        public class HasMetadataTypeWithUnmatchedProperties
+        {
+            [ValidValueStringProperty]
+            public string PropertyToBeTested { get; set; }
+
+            public string MismatchedNameProperty { get; set; }
+        }
+
+        public class HasMetadataTypeWithComplementaryRequirements
+        {
+            [ValidValueStringProperty]
+            public string PropertyToBeTested { get; set; }
+
+            [Phone]
+            public string SecondPropertyToBeTested { get; set; }
+        }
+
+        public class SelfMetadataType
+        {
+            [ValidValueStringProperty]
+            public string PropertyToBeTested { get; set; }
+
+            [Phone]
+            public string SecondPropertyToBeTested { get; set; }
+        }
+
+        [CustomValidation(typeof(MetadataTypeToAddValidationAttributes), nameof(Validate))]
+        public class MetadataTypeToAddValidationAttributes
+        {
+            [Required]
+            [MaxLength(11)]
+            public string SecondPropertyToBeTested { get; set; }
+
+            public static ValidationResult Validate(HasMetadataTypeToBeValidated value)
+                => value.SecondPropertyToBeTested == "TypeInvalid"
+                    ? new ValidationResult("The SecondPropertyToBeTested field mustn't be \"TypeInvalid\".")
+                    : ValidationResult.Success;
         }
     }
 }

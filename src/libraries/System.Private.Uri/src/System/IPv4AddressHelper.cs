@@ -41,10 +41,11 @@ namespace System
         {
             fixed (char* ipString = name)
             {
+                // end includes ports, so changedEnd may be different from end
                 int changedEnd = end;
                 long result = IPv4AddressHelper.ParseNonCanonical(ipString, start, ref changedEnd, true);
-                // end includes ports, so changedEnd may be different from end
-                Debug.Assert(result != Invalid, "Failed to parse after already validated: " + name);
+
+                Debug.Assert(result != Invalid, $"Failed to parse after already validated: {name}");
 
                 unchecked
                 {

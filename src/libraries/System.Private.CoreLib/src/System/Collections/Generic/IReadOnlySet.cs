@@ -47,7 +47,7 @@ namespace System.Collections.Generic
         /// Determines whether the current set overlaps with the specified collection.
         /// </summary>
         /// <param name="other">The collection to compare to the current set.</param>
-        /// <returns><see langword="true" />if the current set and other share at least one common element; otherwise, <see langword="false" />.</returns>
+        /// <returns><see langword="true" /> if the current set and other share at least one common element; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentNullException">other is <see langword="null" />.</exception>
         bool Overlaps(IEnumerable<T> other);
         /// <summary>

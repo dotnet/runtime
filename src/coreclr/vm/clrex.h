@@ -18,7 +18,6 @@
 
 class BaseBind;
 class AssemblySpec;
-class PEFile;
 class PEAssembly;
 
 enum StackTraceElementFlags
@@ -678,7 +677,7 @@ class EEFileLoadException : public EEException
 
     static RuntimeExceptionKind GetFileLoadKind(HRESULT hr);
     static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, Exception *pInnerException = NULL);
-    static void DECLSPEC_NORETURN Throw(PEFile *pFile, HRESULT hr, Exception *pInnerException = NULL);
+    static void DECLSPEC_NORETURN Throw(PEAssembly *pPEAssembly, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(LPCWSTR path, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *parent, const void *memory, COUNT_T size, HRESULT hr, Exception *pInnerException = NULL);
     static BOOL CheckType(Exception* ex); // typeof(EEFileLoadException)
@@ -722,7 +721,7 @@ class EEFileLoadException : public EEException
 // We're not actually running in the CLR, but we may need access to some CLR-exception
 // related data structures elsewhere in this header file in order to analyze CLR
 // exceptions that occurred in the target.
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
 
 #define GET_THROWABLE() CLRException::GetThrowableFromException(GET_EXCEPTION())
 
@@ -857,7 +856,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     }                                                                           \
     EX_END_CATCH(SwallowAllExceptions)
 
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
+#endif // !DACCESS_COMPILE
 
 // When collecting dumps, we need to ignore errors unless the user cancels.
 #define EX_CATCH_RETHROW_ONLY_COR_E_OPERATIONCANCELLED                          \

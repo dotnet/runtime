@@ -10,7 +10,8 @@ namespace System.Net.Http
 {
     public class HttpResponseMessage : IDisposable
     {
-        private const HttpStatusCode defaultStatusCode = HttpStatusCode.OK;
+        private const HttpStatusCode DefaultStatusCode = HttpStatusCode.OK;
+        private static Version DefaultResponseVersion => HttpVersion.Version11;
 
         private HttpStatusCode _statusCode;
         private HttpResponseHeaders? _headers;
@@ -149,7 +150,7 @@ namespace System.Net.Http
         }
 
         public HttpResponseMessage()
-            : this(defaultStatusCode)
+            : this(DefaultStatusCode)
         {
         }
 
@@ -161,7 +162,7 @@ namespace System.Net.Http
             }
 
             _statusCode = statusCode;
-            _version = HttpUtilities.DefaultResponseVersion;
+            _version = DefaultResponseVersion;
         }
 
         public HttpResponseMessage EnsureSuccessStatusCode()

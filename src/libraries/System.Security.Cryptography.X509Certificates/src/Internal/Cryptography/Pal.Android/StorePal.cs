@@ -23,9 +23,11 @@ namespace Internal.Cryptography.Pal
             Debug.Assert(password != null);
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
+            bool ephemeralSpecified = keyStorageFlags.HasFlag(X509KeyStorageFlags.EphemeralKeySet);
+
             if (contentType == X509ContentType.Pkcs12)
             {
-                ICertificatePal[] certPals = ReadPkcs12Collection(rawData, password);
+                ICertificatePal[] certPals = ReadPkcs12Collection(rawData, password, ephemeralSpecified);
                 return new AndroidCertLoader(certPals);
             }
             else
@@ -108,11 +110,14 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException(message, new PlatformNotSupportedException(message));
         }
 
-        private static ICertificatePal[] ReadPkcs12Collection(ReadOnlySpan<byte> rawData, SafePasswordHandle password)
+        private static ICertificatePal[] ReadPkcs12Collection(
+            ReadOnlySpan<byte> rawData,
+            SafePasswordHandle password,
+            bool ephemeralSpecified)
         {
             using (var reader = new AndroidPkcs12Reader(rawData))
             {
-                reader.Decrypt(password);
+                reader.Decrypt(password, ephemeralSpecified);
 
                 ICertificatePal[] certs = new ICertificatePal[reader.GetCertCount()];
                 int idx = 0;

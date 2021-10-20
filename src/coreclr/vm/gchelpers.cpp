@@ -205,8 +205,6 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-    _ASSERTE(!NingenEnabled() && "You cannot allocate managed objects inside the ngen compilation process.");
-
 #ifdef _DEBUG
     if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
     {
@@ -324,7 +322,8 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
     // Notify the profiler of the allocation
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() ||
-        (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP))
+        (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP) ||
+		(TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);
@@ -930,15 +929,25 @@ OBJECTREF AllocateObject(MethodTable *pMT
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     if (fHandleCom && pMT->IsComObjectType())
     {
+        if (!g_pConfig->IsBuiltInCOMSupported())
+        {
+            COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
+        }
+
         // Create a instance of __ComObject here is not allowed as we don't know what COM object to create
         if (pMT == g_pBaseCOMObject)
             COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
 
         oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(AllocateComObject_ForManaged(pMT));
     }
-    else
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+#else  // FEATURE_COMINTEROP
+    if (pMT->IsComObjectType())
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_ERROR_COM);
+    }
 #endif // FEATURE_COMINTEROP
+    else
     {
         GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS;
         if (pMT->ContainsPointers())

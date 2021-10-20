@@ -5,6 +5,7 @@ using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing.Text;
 using System.Globalization;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace System.Drawing
     {
         private const string StylePrefix = "style=";
 
-        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -26,7 +27,7 @@ namespace System.Drawing
             return (destinationType == typeof(string)) || (destinationType == typeof(InstanceDescriptor));
         }
 
-        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (value is Font font)
             {
@@ -39,7 +40,8 @@ namespace System.Drawing
 
                     ValueStringBuilder sb = default;
                     sb.Append(font.Name);
-                    sb.Append(culture.TextInfo.ListSeparator[0] + " ");
+                    sb.Append(culture.TextInfo.ListSeparator[0]);
+                    sb.Append(" ");
                     sb.Append(font.Size.ToString(culture.NumberFormat));
 
                     switch (font.Unit)
@@ -78,7 +80,8 @@ namespace System.Drawing
 
                     if (font.Style != FontStyle.Regular)
                     {
-                        sb.Append(culture.TextInfo.ListSeparator[0] + " style=");
+                        sb.Append(culture.TextInfo.ListSeparator[0]);
+                        sb.Append(" style=");
                         sb.Append(font.Style.ToString());
                     }
 
@@ -168,7 +171,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        fontSize = (float)TypeDescriptor.GetConverter(typeof(float)).ConvertFromString(context, culture, unitTokens.size);
+                        fontSize = (float)GetFloatConverter().ConvertFromString(context, culture, unitTokens.size)!;
                     }
                     catch
                     {
@@ -207,6 +210,10 @@ namespace System.Drawing
             }
 
             return new Font(fontName, fontSize, fontStyle, units);
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "TypeDescriptor.GetConverter is safe for primitive types.")]
+            static TypeConverter GetFloatConverter() => TypeDescriptor.GetConverter(typeof(float));
         }
 
         private (string?, string?) ParseSizeTokens(string text, char separator)
@@ -360,9 +367,10 @@ namespace System.Drawing
 
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext? context) => true;
 
-        public override PropertyDescriptorCollection GetProperties(
+        [RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        public override PropertyDescriptorCollection? GetProperties(
             ITypeDescriptorContext? context,
-            object? value,
+            object value,
             Attribute[]? attributes)
         {
             if (value is not Font)
@@ -372,7 +380,7 @@ namespace System.Drawing
             return props.Sort(new string[] { nameof(Font.Name), nameof(Font.Size), nameof(Font.Unit) });
         }
 
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+        public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
         public sealed class FontNameConverter : TypeConverter, IDisposable
         {
@@ -387,12 +395,12 @@ namespace System.Drawing
             {
             }
 
-            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
             {
                 return sourceType == typeof(string) ? true : base.CanConvertFrom(context, sourceType);
             }
 
-            public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
+            public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
             {
                 return value is string strValue ? MatchFontName(strValue, context) : base.ConvertFrom(context, culture, value);
             }

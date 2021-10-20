@@ -738,11 +738,9 @@ public:
     void Cleanup();
 
 protected :
-#ifndef CROSSGEN_COMPILE
     //-------------------------------------------------------------
     // Create instance. Overridable from child classes
     virtual IUnknown *CreateInstanceInternal(IUnknown *pOuter, BOOL *pfDidContainment);
-#endif
     //-------------------------------------------------------------
     // Throw exception message
     void ThrowHRMsg(HRESULT hr, DWORD dwMsgResID);

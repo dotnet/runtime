@@ -18,7 +18,7 @@ int32_t CryptoNative_GetRandomBytes(uint8_t* buff, int32_t len)
     jobject randObj = (*env)->NewObject(env, g_randClass, g_randCtor);
     abort_unless(randObj != NULL,"Unable to create an instance of java/security/SecureRandom");
 
-    jbyteArray buffArray = (*env)->NewByteArray(env, len);
+    jbyteArray buffArray = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);
     (*env)->CallVoidMethod(env, randObj, g_randNextBytesMethod, buffArray);
     (*env)->GetByteArrayRegion(env, buffArray, 0, len, (jbyte*)buff);

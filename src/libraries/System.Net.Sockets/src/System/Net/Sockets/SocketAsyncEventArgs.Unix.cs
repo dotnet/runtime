@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -51,7 +51,7 @@ namespace System.Net.Sockets
             _acceptAddressBufferCount = socketAddressSize;
         }
 
-        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle? acceptHandle)
+        internal unsafe SocketError DoOperationAccept(Socket socket, SafeSocketHandle handle, SafeSocketHandle? acceptHandle, CancellationToken cancellationToken)
         {
             if (!_buffer.Equals(default))
             {
@@ -64,7 +64,7 @@ namespace System.Net.Sockets
 
             IntPtr acceptedFd;
             int socketAddressLen = _acceptAddressBufferCount / 2;
-            SocketError socketError = handle.AsyncContext.AcceptAsync(_acceptBuffer!, ref socketAddressLen, out acceptedFd, AcceptCompletionCallback);
+            SocketError socketError = handle.AsyncContext.AcceptAsync(_acceptBuffer!, ref socketAddressLen, out acceptedFd, AcceptCompletionCallback, cancellationToken);
 
             if (socketError != SocketError.IOPending)
             {
@@ -244,11 +244,11 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        internal SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle)
+        internal SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             Debug.Assert(_sendPacketsElements != null);
             SendPacketsElement[] elements = (SendPacketsElement[])_sendPacketsElements.Clone();
-            FileStream[] files = new FileStream[elements.Length];
+            SafeFileHandle[] fileHandles = new SafeFileHandle[elements.Length];
 
             // Open all files synchronously ahead of time so that any exceptions are propagated
             // to the caller, to match Windows behavior.
@@ -259,14 +259,14 @@ namespace System.Net.Sockets
                     string? path = elements[i]?.FilePath;
                     if (path != null)
                     {
-                        files[i] = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, useAsync: true);
+                        fileHandles[i] = File.OpenHandle(path, FileMode.Open, FileAccess.Read, FileShare.Read, FileOptions.Asynchronous);
                     }
                 }
             }
             catch (Exception exc)
             {
                 // Clean up any files that were already opened.
-                foreach (FileStream s in files)
+                foreach (SafeFileHandle s in fileHandles)
                 {
                     s?.Dispose();
                 }
@@ -288,7 +288,7 @@ namespace System.Net.Sockets
                 throw;
             }
 
-            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, files, (bytesTransferred, error) =>
+            _ = SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, fileHandles, cancellationToken, (bytesTransferred, error) =>
             {
                 if (error == SocketError.Success)
                 {

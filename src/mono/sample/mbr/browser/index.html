@@ -18,18 +18,17 @@
         init: function () {
 	  var outElement = document.getElementById("out");
           document.getElementById("update").addEventListener("click", function () {
-	    BINDING.call_static_method("[WasmDelta] Sample.Test:Update", []);
+	    INTERNAL.call_static_method("[WasmDelta] Sample.Test:Update", []);
 	    console.log ("applied update");
-	    var ret = BINDING.call_static_method("[WasmDelta] Sample.Test:TestMeaning", []);
+	    var ret = INTERNAL.call_static_method("[WasmDelta] Sample.Test:TestMeaning", []);
 	    outElement.innerHTML = ret;
 	  })
-          var ret = BINDING.call_static_method("[WasmDelta] Sample.Test:TestMeaning", []);
+          var ret = INTERNAL.call_static_method("[WasmDelta] Sample.Test:TestMeaning", []);
 	  outElement.innerHTML = ret;
           console.log ("ready");
         },
       };
     </script>
-    <script type="text/javascript" src="mono-config.js"></script>
     <script type="text/javascript" src="runtime.js"></script>
 
     <script defer src="dotnet.js"></script>

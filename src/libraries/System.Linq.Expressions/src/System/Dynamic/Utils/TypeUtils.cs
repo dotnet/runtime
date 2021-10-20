@@ -16,6 +16,8 @@ namespace System.Dynamic.Utils
             .Select(i => i.GetGenericTypeDefinition())
             .ToArray();
 
+        private static readonly ConstructorInfo s_nullableConstructor = typeof(Nullable<>).GetConstructor(typeof(Nullable<>).GetGenericArguments())!;
+
         public static Type GetNonNullableType(this Type type) => IsNullableType(type) ? type.GetGenericArguments()[0] : type;
 
         public static Type GetNullableType(this Type type)
@@ -29,15 +31,11 @@ namespace System.Dynamic.Utils
             return type;
         }
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Nullable<>))]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "The Nullable<T> ctor will be preserved by the DynamicDependency.")]
-        public static ConstructorInfo GetNullableConstructor(Type nullableType, Type nonNullableType)
+        public static ConstructorInfo GetNullableConstructor(Type nullableType)
         {
             Debug.Assert(nullableType.IsNullableType());
-            Debug.Assert(!nonNullableType.IsNullableType() && nonNullableType.IsValueType);
 
-            return nullableType.GetConstructor(new Type[] { nonNullableType })!;
+            return (ConstructorInfo)nullableType.GetMemberWithSameMetadataDefinitionAs(s_nullableConstructor);
         }
 
         public static bool IsNullableType(this Type type) => type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
@@ -208,7 +206,14 @@ namespace System.Dynamic.Utils
                 // been boxed or not.
                 if (targetType.IsInterface)
                 {
-                    foreach (Type interfaceType in instanceType.GetInterfaces())
+                    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                        Justification = "The targetType must be preserved (since we have an instance of it here)," +
+                            "So if it's an interface that interface will be preserved everywhere" +
+                            "So if it was implemented by the instanceType, it will be kept even after trimming." +
+                            "The fact that GetInterfaces may return fewer interfaces doesn't matter as long" +
+                            "as it returns the one we're looking for.")]
+                    static Type[] GetTypeInterfaces(Type instanceType) => instanceType.GetInterfaces();
+                    foreach (Type interfaceType in GetTypeInterfaces(instanceType))
                     {
                         if (AreReferenceAssignable(targetType, interfaceType))
                         {
@@ -618,7 +623,8 @@ namespace System.Dynamic.Utils
             || IsImplicitBoxingConversion(source, destination)
             || IsImplicitNullableConversion(source, destination);
 
-        [RequiresUnreferencedCode(Expression.ExpressionRequiresUnreferencedCode)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         public static MethodInfo? GetUserDefinedCoercionMethod(Type convertFrom, Type convertToType)
         {
             Type nnExprType = GetNonNullableType(convertFrom);
@@ -799,23 +805,14 @@ namespace System.Dynamic.Utils
 
         public static Type? FindGenericType(Type definition, Type? type)
         {
+            // For now this helper doesn't support interfaces
+            Debug.Assert(!definition.IsInterface);
+
             while (type is not null && type != typeof(object))
             {
                 if (type.IsConstructedGenericType && AreEquivalent(type.GetGenericTypeDefinition(), definition))
                 {
                     return type;
-                }
-
-                if (definition.IsInterface)
-                {
-                    foreach (Type itype in type.GetInterfaces())
-                    {
-                        Type? found = FindGenericType(definition, itype);
-                        if (found != null)
-                        {
-                            return found;
-                        }
-                    }
                 }
 
                 type = type.BaseType;
@@ -833,8 +830,12 @@ namespace System.Dynamic.Utils
         /// op_False, because we have to do runtime lookup for those. It may
         /// not work right for unary operators in general.
         /// </summary>
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
+            Justification = "The trimmer doesn't remove operators when System.Linq.Expressions is used. See https://github.com/mono/linker/pull/2125.")]
         public static MethodInfo? GetBooleanOperator(Type type, string name)
         {
+            Debug.Assert(name == "op_False" || name == "op_True");
+
             do
             {
                 MethodInfo? result = type.GetAnyStaticMethodValidated(name, new[] { type });

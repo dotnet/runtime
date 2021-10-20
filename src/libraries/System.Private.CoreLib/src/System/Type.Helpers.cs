@@ -18,7 +18,7 @@ namespace System
                     return true;
 
                 Type? underlyingType = UnderlyingSystemType;
-                if (underlyingType.IsRuntimeImplemented())
+                if (underlyingType is RuntimeType)
                 {
                     do
                     {
@@ -114,6 +114,7 @@ namespace System
             }
         }
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public virtual Type[] FindInterfaces(TypeFilter filter, object? filterCriteria)
         {
             if (filter == null)
@@ -344,7 +345,7 @@ namespace System
             // For backward-compatibility, we need to special case for the types
             // whose UnderlyingSystemType are runtime implemented.
             Type toType = this.UnderlyingSystemType;
-            if (toType?.IsRuntimeImplemented() == true)
+            if (toType is RuntimeType)
                 return toType.IsAssignableFrom(c);
 
             // If c is a subclass of this class, then c can be cast to this type.
@@ -368,6 +369,10 @@ namespace System
             return false;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
+            Justification = "The GetInterfaces technically requires all interfaces to be preserved" +
+                "But this method only compares the result against the passed in ifaceType." +
+                "So if ifaceType exists, then trimming should have kept it implemented on any type.")]
         internal bool ImplementInterface(Type ifaceType)
         {
             Type? t = this;

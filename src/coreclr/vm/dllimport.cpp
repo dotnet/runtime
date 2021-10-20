@@ -36,6 +36,7 @@
 #include "fieldmarshaler.h"
 #include "pinvokeoverride.h"
 #include "nativelibrary.h"
+#include "interoplibinterface.h"
 
 #include <formattype.h>
 #include "../md/compiler/custattr.h"
@@ -44,10 +45,6 @@
 #include "runtimecallablewrapper.h"
 #include "clrtocomcall.h"
 #endif // FEATURE_COMINTEROP
-
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif // FEATURE_PREJIT
 
 #include "eventtrace.h"
 
@@ -654,7 +651,7 @@ public:
         DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
-        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && (CORProfilerTrackTransitions() || (!IsReadyToRunCompilation() && SF_IsNGENedStubForProfiling(m_dwStubFlags))))
+        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -725,7 +722,7 @@ public:
                 ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
 
                 pcsDispatch->EmitDUP();
-                pcsDispatch->EmitLDC(0);
+                pcsDispatch->EmitLDC(0); // Compare against S_OK (i.e. 0).
                 pcsDispatch->EmitBGE(pSkipThrowLabel);
 
 #ifdef FEATURE_COMINTEROP
@@ -747,6 +744,20 @@ public:
                 pcsDispatch->EmitLabel(pSkipThrowLabel);
                 pcsDispatch->EmitPOP();
             }
+        }
+
+        if (SF_IsCheckPendingException(m_dwStubFlags)
+            && SF_IsForwardStub(m_dwStubFlags))
+        {
+            ILCodeLabel* pSkipThrowLabel = pcsDispatch->NewCodeLabel();
+
+            pcsDispatch->EmitCALL(METHOD__STUBHELPERS__GET_PENDING_EXCEPTION_OBJECT, 0, 1);
+            pcsDispatch->EmitDUP();
+            pcsDispatch->EmitBRFALSE(pSkipThrowLabel);
+            pcsDispatch->EmitTHROW();
+            pcsDispatch->EmitLDC(0);   // keep the IL stack balanced across the branch and the fall-through
+            pcsDispatch->EmitLabel(pSkipThrowLabel);
+            pcsDispatch->EmitPOP();
         }
 
         m_slIL.End(m_dwStubFlags);
@@ -1032,8 +1043,6 @@ public:
         if (m_dwStubFlags & NDIRECTSTUB_FL_COM)
             dwFlags |= ETW_IL_STUB_FLAGS_COM_INTEROP;
 #endif // FEATURE_COMINTEROP
-        if (m_dwStubFlags & NDIRECTSTUB_FL_NGENEDSTUB)
-            dwFlags |= ETW_IL_STUB_FLAGS_NGENED_STUB;
         if (m_dwStubFlags & NDIRECTSTUB_FL_DELEGATE)
             dwFlags |= ETW_IL_STUB_FLAGS_DELEGATE;
         if (m_dwStubFlags & NDIRECTSTUB_FL_CONVSIGASVARARG)
@@ -1096,7 +1105,6 @@ public:
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_CONVSIGASVARARG,         "   NDIRECTSTUB_FL_CONVSIGASVARARG\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_BESTFIT,                 "   NDIRECTSTUB_FL_BESTFIT\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR,   "   NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_NGENEDSTUB,              "   NDIRECTSTUB_FL_NGENEDSTUB\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_DELEGATE,                "   NDIRECTSTUB_FL_DELEGATE\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_DOHRESULTSWAPPING,       "   NDIRECTSTUB_FL_DOHRESULTSWAPPING\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_REVERSE_INTEROP,         "   NDIRECTSTUB_FL_REVERSE_INTEROP\n", facility, level);
@@ -1104,10 +1112,8 @@ public:
 #ifdef FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_COM,                     "   NDIRECTSTUB_FL_COM\n", facility, level);
 #endif // FEATURE_COMINTEROP
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING,  "   NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL,    "   NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_UNMANAGED_CALLI,         "   NDIRECTSTUB_FL_UNMANAGED_CALLI\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_TRIGGERCCTOR,            "   NDIRECTSTUB_FL_TRIGGERCCTOR\n", facility, level);
 #ifdef FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDGETTER,             "   NDIRECTSTUB_FL_FIELDGETTER\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_FIELDSETTER,             "   NDIRECTSTUB_FL_FIELDSETTER\n", facility, level);
@@ -1123,15 +1129,12 @@ public:
             NDIRECTSTUB_FL_CONVSIGASVARARG          |
             NDIRECTSTUB_FL_BESTFIT                  |
             NDIRECTSTUB_FL_THROWONUNMAPPABLECHAR    |
-            NDIRECTSTUB_FL_NGENEDSTUB               |
             NDIRECTSTUB_FL_DELEGATE                 |
             NDIRECTSTUB_FL_DOHRESULTSWAPPING        |
             NDIRECTSTUB_FL_REVERSE_INTEROP          |
-            NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING   |
             NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     |
             NDIRECTSTUB_FL_UNMANAGED_CALLI          |
             NDIRECTSTUB_FL_STRUCT_MARSHAL           |
-            NDIRECTSTUB_FL_TRIGGERCCTOR             |
 #ifdef FEATURE_COMINTEROP
             NDIRECTSTUB_FL_COM                      |
             NDIRECTSTUB_FL_COMLATEBOUND             |   // internal
@@ -1356,9 +1359,14 @@ private:
         {
             dwStubFlags |= NDIRECTSTUB_FL_STUB_HAS_THIS;
         }
-        if (TargetSuppressGCTransition(dwStubFlags, pTargetMD))
+        if ((dwStubFlags & NDIRECTSTUB_FL_SUPPRESSGCTRANSITION) == 0
+            && TargetSuppressGCTransition(dwStubFlags, pTargetMD))
         {
             dwStubFlags |= NDIRECTSTUB_FL_SUPPRESSGCTRANSITION;
+        }
+        if (HasCheckForPendingException(pTargetMD))
+        {
+            dwStubFlags |= NDIRECTSTUB_FL_CHECK_PENDING_EXCEPTION;
         }
         return dwStubFlags;
     }
@@ -1385,6 +1393,18 @@ private:
     static BOOL TargetSuppressGCTransition(DWORD dwStubFlags, MethodDesc* pTargetMD)
     {
         return SF_IsForwardStub(dwStubFlags) && pTargetMD && pTargetMD->ShouldSuppressGCTransition();
+    }
+
+    static BOOL HasCheckForPendingException(MethodDesc* pTargetMD)
+    {
+        if (pTargetMD == NULL || !pTargetMD->IsNDirect())
+            return FALSE;
+
+        auto pNMD = (NDirectMethodDesc*)pTargetMD;
+        if (!Interop::ShouldCheckForPendingException(pNMD))
+            return FALSE;
+
+        return TRUE;
     }
 };
 
@@ -1923,16 +1943,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
 {
     STANDARD_VM_CONTRACT;
 
-    if (SF_IsForwardStub(dwStubFlags))
-    {
-
-        if (SF_IsStubWithCctorTrigger(dwStubFlags))
-        {
-            EmitLoadStubContext(m_pcsSetup, dwStubFlags);
-            m_pcsSetup->EmitCALL(METHOD__STUBHELPERS__INIT_DECLARING_TYPE, 1, 0);
-        }
-    }
-    else
+    if (!SF_IsForwardStub(dwStubFlags))
     {
         if (SF_IsDelegateStub(dwStubFlags))
         {
@@ -2085,9 +2096,6 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
         {
             if (SF_IsCALLIStub(dwStubFlags)) // unmanaged CALLI
             {
-                // if we ever NGEN CALLI stubs, this would have to be done differently
-                _ASSERTE(!SF_IsNGENedStub(dwStubFlags));
-
                 // for managed-to-unmanaged CALLI that requires marshaling, the target is passed
                 // as the secret argument to the stub by GenericPInvokeCalliHelper (asmhelpers.asm)
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
@@ -2114,17 +2122,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // _DEBUG
                 pcsEmit->EmitADD();
 
-                if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-                {
-                    pcsEmit->EmitDUP();
-                }
-
                 pcsEmit->EmitLDIND_I();
-
-                if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-                {
-                    pcsEmit->EmitADD();
-                }
 
                 pcsEmit->EmitLDIND_I();
             }
@@ -2613,7 +2611,6 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
     CONTRACTL_END;
 
     PreInit(pMD->GetModule(), pMD->GetMethodTable());
-    SetIsStatic (pMD->IsStatic());
     m_sig = pMD->GetSignature();
     if (pMD->IsEEImpl())
     {
@@ -2623,7 +2620,9 @@ void PInvokeStaticSigInfo::PreInit(MethodDesc* pMD)
 }
 
 PInvokeStaticSigInfo::PInvokeStaticSigInfo(
-    _In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *pLibName, _Outptr_opt_ LPCUTF8 *pEntryPointName)
+    _In_ MethodDesc* pMD,
+    _Outptr_opt_ LPCUTF8* pLibName,
+    _Outptr_opt_ LPCUTF8* pEntryPointName)
 {
     CONTRACTL
     {
@@ -2718,11 +2717,13 @@ PInvokeStaticSigInfo::PInvokeStaticSigInfo(
 
     PreInit(pModule, NULL);
     m_sig = sig;
-    SetIsStatic(!(MetaSig::GetCallingConvention(sig) & IMAGE_CEE_CS_CALLCONV_HASTHIS));
     InitCallConv(CallConvWinApiSentinel, FALSE);
 }
 
-void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCUTF8 *ppLibName, _Outptr_opt_ LPCUTF8 *ppEntryPointName)
+void PInvokeStaticSigInfo::DllImportInit(
+    _In_ MethodDesc* pMD,
+    _Outptr_opt_ LPCUTF8* ppLibName,
+    _Outptr_opt_ LPCUTF8* ppEntryPointName)
 {
     CONTRACTL
     {
@@ -2747,11 +2748,10 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     mdModuleRef modref = mdModuleRefNil;
     if (FAILED(pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, ppEntryPointName, &modref)))
     {
-        InitCallConv(CallConvWinApiSentinel, pMD->IsVarArg());
+        InitCallConv(CallConvWinApiSentinel, pMD);
         return;
     }
 
-    // out parameter pEntryPointName
     if (ppEntryPointName && *ppEntryPointName == NULL)
         *ppEntryPointName = pMD->GetName();
 
@@ -2765,7 +2765,7 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     }
 
     // m_callConv
-    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD->IsVarArg());
+    InitCallConv(GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask)), pMD);
 
     // m_bestFit
     CorPinvokeMap bestFitMask = (CorPinvokeMap)(mappingFlags & pmBestFitMask);
@@ -2813,7 +2813,6 @@ void PInvokeStaticSigInfo::DllImportInit(_In_ MethodDesc* pMD, _Outptr_opt_ LPCU
     SetCharSet(nlt);
 }
 
-#if !defined(CROSSGEN_COMPILE) // IJW
 
 // This function would work, but be unused on Unix. Ifdefing out to avoid build errors due to the unused function.
 #if !defined (TARGET_UNIX)
@@ -2914,11 +2913,46 @@ DWORD STDMETHODCALLTYPE FalseGetLastError()
     return GetThread()->m_dwLastError;
 }
 
-#endif // !CROSSGEN_COMPILE
 
 CorInfoCallConvExtension GetDefaultCallConv(BOOL bIsVarArg)
 {
     return bIsVarArg ? CorInfoCallConvExtension::C : CallConv::GetDefaultUnmanagedCallingConvention();
+}
+
+void PInvokeStaticSigInfo::InitCallConv(_In_ CorInfoCallConvExtension callConv, _In_ MethodDesc *pMD)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+
+    // If the calling convention has not been determined yet, check the UnmanagedCallConv attribute
+    if (callConv == CallConvWinApiSentinel)
+    {
+        CallConvBuilder builder;
+        UINT errorResID = 0;
+
+        // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+        HRESULT hr = CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &builder, &errorResID);
+        if (FAILED(hr))
+        {
+            // Use a generic error message for P/Invokes or UnmanagedFunction if no specific one was provided
+            ThrowError(errorResID == 0 ? IDS_EE_NDIRECT_BADNATL : errorResID);
+        }
+
+        if (hr == S_OK)
+        {
+            callConv = builder.GetCurrentCallConv();
+            if (builder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION))
+            {
+                SetShouldSuppressGCTransition(TRUE);
+            }
+        }
+    }
+
+    InitCallConv(callConv, pMD->IsVarArg());
 }
 
 void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL bIsVarArg)
@@ -2970,62 +3004,168 @@ void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
     COMPlusThrow(kTypeLoadException, errorResourceID);
 }
 
-CorInfoCallConvExtension NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD)
+namespace
+{
+    bool HasSuppressGCTransitionAttribute(_In_ MethodDesc* pMD)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        HRESULT hr = pMD->GetCustomAttribute(
+            WellKnownAttribute::SuppressGCTransition,
+            nullptr,
+            nullptr);
+        return hr == S_OK;
+    }
+
+    bool TryGetCallingConventionFromPInvokeMetadata(_In_ MethodDesc* pMD, _Out_ CorInfoCallConvExtension* callConv)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(pMD != NULL);
+            PRECONDITION(pMD->IsNDirect());
+            PRECONDITION(callConv != NULL);
+        }
+        CONTRACTL_END;
+
+        CorInfoCallConvExtension callConvLocal;
+        IMDInternalImport* pInternalImport = pMD->GetMDImport();
+        CorPinvokeMap mappingFlags = pmMaxValue;
+        HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
+        if (FAILED(hr))
+            return false;
+
+        callConvLocal = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask));
+        if (callConvLocal != CallConvWinApiSentinel)
+        {
+            *callConv = callConvLocal;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool TryGetCallingConventionFromUnmanagedFunctionPointer(_In_ MethodTable* pMT, _Out_ CorInfoCallConvExtension* callConv)
+    {
+        CONTRACTL
+        {
+            STANDARD_VM_CHECK;
+            PRECONDITION(pMT != NULL);
+            PRECONDITION(pMT->IsDelegate());
+            PRECONDITION(callConv != NULL);
+        }
+        CONTRACTL_END;
+
+        BYTE* pData = NULL;
+        LONG cData = 0;
+        HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
+        if (hr != S_OK)
+            return false;
+
+        _ASSERTE(cData > 0);
+        CustomAttributeParser ca(pData, cData);
+        CorInfoCallConvExtension callConvLocal;
+        hr = ParseCallingConventionFromAttributeConstructor(ca, &callConvLocal);
+        if (SUCCEEDED(hr) && callConvLocal != CallConvWinApiSentinel)
+        {
+            *callConv = callConvLocal;
+            return true;
+        }
+
+        return false;
+    }
+}
+
+void NDirect::GetCallingConvention_IgnoreErrors(_In_ MethodDesc* pMD, _Out_opt_ CorInfoCallConvExtension* callConv, _Out_opt_ bool* suppressGCTransition)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(pMD != NULL);
         PRECONDITION(pMD->IsNDirect());
+        PRECONDITION(callConv != NULL || suppressGCTransition != NULL);
     }
     CONTRACTL_END;
+
+    if (suppressGCTransition != NULL)
+    {
+        *suppressGCTransition = HasSuppressGCTransitionAttribute(pMD);
+
+        // Caller only cares about SuppressGCTransition and we have already determined it is true.
+        if (callConv == NULL && *suppressGCTransition)
+            return;
+    }
 
     // This method intentionally does not check that any calling convention specified through
     // attributes match that in the signature. We just return once a non-sentinel calling
     // convention is found.
-    CorInfoCallConvExtension callConv;
+    CorInfoCallConvExtension callConvLocal;
     MethodTable* pMT = pMD->GetMethodTable();
     if (pMT->IsDelegate())
     {
+        if (callConv == NULL)
+            return;
+
         // System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute
-        BYTE* pData = NULL;
-        LONG cData = 0;
-        HRESULT hr = pMT->GetCustomAttribute(WellKnownAttribute::UnmanagedFunctionPointer, (const VOID **)(&pData), (ULONG *)&cData);
-        if (hr == S_OK)
+        if (TryGetCallingConventionFromUnmanagedFunctionPointer(pMT, &callConvLocal))
         {
-            _ASSERTE(cData > 0);
-            CustomAttributeParser ca(pData, cData);
-            hr = ParseCallingConventionFromAttributeConstructor(ca, &callConv);
-            if (SUCCEEDED(hr) && callConv != CallConvWinApiSentinel)
-                return callConv;
+            *callConv = callConvLocal;
+            return;
         }
     }
     else
     {
         // P/Invoke metadata
-        IMDInternalImport* pInternalImport = pMD->GetMDImport();
-        CorPinvokeMap mappingFlags = pmMaxValue;
-        HRESULT hr = pInternalImport->GetPinvokeMap(pMD->GetMemberDef(), (DWORD*)&mappingFlags, NULL /*pszImportName*/, NULL /*pmrImportDLL*/);
-        if (SUCCEEDED(hr))
+        if (TryGetCallingConventionFromPInvokeMetadata(pMD, &callConvLocal))
         {
-            callConv = GetCallConvValueForPInvokeCallConv((CorPinvokeMap)(mappingFlags & pmCallConvMask));
-            if (callConv != CallConvWinApiSentinel)
-                return callConv;
+            if (callConv != NULL)
+                *callConv = callConvLocal;
+
+            return;
         }
+
+        // System.Runtime.InteropServices.UnmanagedCallConvAttribute
+        CallConvBuilder unmanagedCallConvBuilder;
+        if (CallConv::TryGetCallingConventionFromUnmanagedCallConv(pMD, &unmanagedCallConvBuilder, NULL /*errorResID*/) == S_OK)
+        {
+            if (suppressGCTransition != NULL)
+            {
+                (*suppressGCTransition) |= unmanagedCallConvBuilder.IsCurrentCallConvModSet(CallConvBuilder::CALL_CONV_MOD_SUPPRESSGCTRANSITION);
+            }
+
+            callConvLocal = unmanagedCallConvBuilder.GetCurrentCallConv();
+            if (callConvLocal != CallConvWinApiSentinel)
+            {
+                if (callConv != NULL)
+                    *callConv = callConvLocal;
+
+                return;
+            }
+        }
+
+        // Caller only cares about SuppressGCTransition - we have checked SuppressGCTransition and UnmanagedCallConv
+        if (callConv == NULL)
+            return;
     }
+
+    _ASSERTE(callConv != NULL);
 
     const Signature& sig = pMD->GetSignature();
     Module* module = pMD->GetModule();
 
-    // modopts
     CallConvBuilder builder;
     UINT errorResID;
-    (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
-    callConv = builder.GetCurrentCallConv();
-    if (callConv != CallConvWinApiSentinel)
-        return callConv;
 
-    return GetDefaultCallConv(pMD->IsVarArg());
+    // modopts
+    (void)CallConv::TryGetUnmanagedCallingConventionFromModOpt(GetScopeHandle(module), sig.GetRawSig(), sig.GetRawSigLen(), &builder, &errorResID);
+    callConvLocal = builder.GetCurrentCallConv();
+    if (callConvLocal != CallConvWinApiSentinel)
+    {
+        *callConv = callConvLocal;
+        return;
+    }
+
+    *callConv = GetDefaultCallConv(pMD->IsVarArg());
 }
 
 //---------------------------------------------------------
@@ -3088,23 +3228,19 @@ BOOL NDirect::MarshalingRequired(
 
     if (pMD != NULL)
     {
+        // HRESULT swapping is handled by stub
         if (pMD->IsNDirect() || pMD->IsComPlusCall())
         {
-            // HRESULT swapping is handled by stub
-            if ((pMD->GetImplAttrs() & miPreserveSig) == 0)
+            if (!IsMiPreserveSig(pMD->GetImplAttrs()))
                 return TRUE;
         }
 
-        // SetLastError is handled by stub
-        PInvokeStaticSigInfo sigInfo(pMD);
-        if (sigInfo.GetLinkFlags() & nlfLastError)
-            return TRUE;
-
-        // LCID argument is handled by stub
-        if (GetLCIDParameterIndex(pMD) != -1)
-            return TRUE;
-
-        if (pMD->IsNDirect())
+        PInvokeStaticSigInfo sigInfo;
+        if (!pMD->IsNDirect())
+        {
+            new (&sigInfo) PInvokeStaticSigInfo(pMD);
+        }
+        else
         {
             // A P/Invoke marked with UnmanagedCallersOnlyAttribute
             // doesn't technically require marshalling. However, we
@@ -3117,10 +3253,20 @@ BOOL NDirect::MarshalingRequired(
                 return TRUE;
 
             NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-            // Make sure running cctor can be handled by stub
-            if (pNMD->IsClassConstructorTriggeredByILStub())
+            InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
+
+            // Pending exceptions are handled by stub
+            if (Interop::ShouldCheckForPendingException(pNMD))
                 return TRUE;
         }
+
+        // SetLastError is handled by stub
+        if (sigInfo.GetLinkFlags() & nlfLastError)
+            return TRUE;
+
+        // LCID argument is handled by stub
+        if (GetLCIDParameterIndex(pMD) != -1)
+            return TRUE;
 
         callConv = sigInfo.GetCallConv();
     }
@@ -3203,13 +3349,6 @@ BOOL NDirect::MarshalingRequired(
                     return TRUE;
                 }
 
-#ifdef FEATURE_READYTORUN_COMPILER
-                if (IsReadyToRunCompilation())
-                {
-                    if (!hndArgType.AsMethodTable()->IsLayoutInCurrentVersionBubble())
-                        return TRUE;
-                }
-#endif
                 if (i > 0)
                 {
                     const bool isValueType = true;
@@ -3929,12 +4068,6 @@ namespace
 
         pBlob->m_pModule                = NULL;
 
-        if (SF_IsNGENedStub(pParams->m_dwStubFlags))
-        {
-            // don't share across modules if we are ngening the stub
-            pBlob->m_pModule = pParams->m_pModule;
-        }
-
         pBlob->m_pMT = pParams->m_pMT;
         pBlob->m_cbSizeOfBlob           = cbSizeOfBlob.Value();
         pBlob->m_unmgdCallConv          = static_cast<WORD>(pParams->m_unmgdCallConv);
@@ -4186,7 +4319,11 @@ static void CreateNDirectStubAccessMetadata(
 
 namespace
 {
-    void PopulateNDirectMethodDescImpl(_Inout_ NDirectMethodDesc* pNMD, _In_ const PInvokeStaticSigInfo& sigInfo, _In_opt_z_ LPCUTF8 libName, _In_opt_z_ LPCUTF8 entryPointName)
+    void PopulateNDirectMethodDescImpl(
+        _Inout_ NDirectMethodDesc* pNMD,
+        _In_ const PInvokeStaticSigInfo& sigInfo,
+        _In_opt_z_ LPCUTF8 libName,
+        _In_opt_z_ LPCUTF8 entryPointName)
     {
         CONTRACTL
         {
@@ -4220,13 +4357,12 @@ namespace
         }
         else
         {
-            pNMD->ndirect.m_pszLibName.SetValueMaybeNull(libName);
-            pNMD->ndirect.m_pszEntrypointName.SetValueMaybeNull(entryPointName);
+            pNMD->ndirect.m_pszLibName = libName;
+            pNMD->ndirect.m_pszEntrypointName = entryPointName;
         }
 
-        // Call this exactly ONCE per thread. Do not publish incomplete prestub flags
-        // or you will introduce a race condition.
-        pNMD->InterlockedSetNDirectFlags(ndirectflags);
+        // Do not publish incomplete prestub flags or you will introduce a race condition.
+        pNMD->InterlockedSetNDirectFlags(ndirectflags | NDirectMethodDesc::kNDirectPopulated);
     }
 }
 
@@ -4241,6 +4377,9 @@ void NDirect::PopulateNDirectMethodDesc(_Inout_ NDirectMethodDesc* pNMD)
 
     if (pNMD->IsSynchronized())
         COMPlusThrow(kTypeLoadException, IDS_EE_NOSYNCHRONIZED);
+
+    if (pNMD->IsPopulated())
+        return;
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
     PInvokeStaticSigInfo sigInfo(pNMD, &szLibName, &szEntryPointName);
@@ -4262,6 +4401,9 @@ void NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(_Inout_ NDirectMetho
 
     LPCUTF8 szLibName = NULL, szEntryPointName = NULL;
     new (pSigInfo) PInvokeStaticSigInfo(pNMD, &szLibName, &szEntryPointName);
+
+    if (pNMD->IsPopulated())
+        return;
 
     PopulateNDirectMethodDescImpl(pNMD, *pSigInfo, szLibName, szEntryPointName);
 }
@@ -4687,15 +4829,10 @@ namespace
         //
         if (pTargetMD && SUCCEEDED(FindPredefinedILStubMethod(pTargetMD, dwStubFlags, &pStubMD)))
         {
-#ifndef CROSSGEN_COMPILE
             // We are about to execute method in pStubMD which could be in another module.
             // Call EnsureActive before make the call
             // This cannot be done during NGEN/PEVerify (in PASSIVE_DOMAIN) so I've moved it here
             pStubMD->EnsureActive();
-
-            if (pStubMD->IsPreImplemented())
-                RestoreNGENedStub(pStubMD);
-#endif
 
             RETURN pStubMD;
         }
@@ -5116,12 +5253,6 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     }
     CONTRACT_END;
 
-    if (IsReadyToRunCompilation())
-    {
-        // We don't support emitting struct marshalling IL stubs into R2R images.
-        ThrowHR(E_FAIL);
-    }
-
     DWORD dwStubFlags = NDIRECTSTUB_FL_STRUCT_MARSHAL;
 
     BOOL bestFit, throwOnUnmappableChar;
@@ -5262,11 +5393,6 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     if (!pNMD->IsVarArgs() || SF_IsForNumParamBytes(dwStubFlags))
     {
-        if (pNMD->IsClassConstructorTriggeredByILStub())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_TRIGGERCCTOR;
-        }
-
         pStubMD = CreateCLRToNativeILStub(
             pSigInfo,
             dwStubFlags & ~NDIRECTSTUB_FL_FOR_NUMPARAMBYTES,
@@ -5275,60 +5401,6 @@ MethodDesc* NDirect::GetILStubMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticS
 
     return pStubMD;
 }
-
-MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_COMINTEROP
-    if (SF_IsReverseCOMStub(dwStubFlags))
-    {
-#ifdef FEATURE_PREJIT
-        // reverse COM stubs live in a hash table
-        StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
-        return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
-#else
-        return NULL;
-#endif
-    }
-    else
-#endif // FEATURE_COMINTEROP
-    if (pMD->IsNDirect())
-    {
-        NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
-        return pNMD->ndirect.m_pStubMD.GetValueMaybeNull();
-    }
-#ifdef FEATURE_COMINTEROP
-    else if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
-    {
-        ComPlusCallInfo *pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-        return (pComInfo == NULL ? NULL : pComInfo->m_pStubMD.GetValueMaybeNull());
-    }
-#endif // FEATURE_COMINTEROP
-    else if (pMD->IsEEImpl())
-    {
-        DelegateEEClass *pClass = (DelegateEEClass *)pMD->GetClass();
-        if (SF_IsReverseStub(dwStubFlags))
-        {
-            return pClass->m_pReverseStubMD;
-        }
-        else
-        {
-            return pClass->m_pForwardStubMD;
-        }
-    }
-    else if (pMD->IsIL())
-    {
-        // these are currently only created at runtime, not at NGEN time
-        return NULL;
-    }
-    else
-    {
-        UNREACHABLE_MSG("unexpected type of MethodDesc");
-    }
-}
-
-#ifndef CROSSGEN_COMPILE
 
 namespace
 {
@@ -5437,14 +5509,10 @@ PCODE NDirect::GetStubForILStub(MethodDesc* pManagedMD, MethodDesc** ppStubMD, D
     }
     CONTRACT_END;
 
-    // pStubMD, if provided, must be preimplemented.
-    CONSISTENCY_CHECK( (*ppStubMD == NULL) || (*ppStubMD)->IsPreImplemented() );
+    CONSISTENCY_CHECK(*ppStubMD == NULL);
 
-    if (NULL == *ppStubMD)
-    {
-        PInvokeStaticSigInfo sigInfo(pManagedMD);
-        *ppStubMD = NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pManagedMD);
-    }
+    PInvokeStaticSigInfo sigInfo(pManagedMD);
+    *ppStubMD = NDirect::CreateCLRToNativeILStub(&sigInfo, dwStubFlags, pManagedMD);
 
     RETURN JitILStub(*ppStubMD);
 }
@@ -5455,16 +5523,12 @@ PCODE NDirect::GetStubForILStub(NDirectMethodDesc* pNMD, MethodDesc** ppStubMD, 
 
     PCODE pStub = NULL;
 
-    // pStubMD, if provided, must be preimplemented.
-    CONSISTENCY_CHECK( (*ppStubMD == NULL) || (*ppStubMD)->IsPreImplemented() );
+    CONSISTENCY_CHECK(*ppStubMD == NULL);
 
-    if (NULL == *ppStubMD)
-    {
-        PInvokeStaticSigInfo sigInfo;
-        NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
+    PInvokeStaticSigInfo sigInfo;
+    NDirect::InitializeSigInfoAndPopulateNDirectMethodDesc(pNMD, &sigInfo);
 
-        *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
-    }
+    *ppStubMD = NDirect::GetILStubMethodDesc(pNMD, &sigInfo, dwStubFlags);
 
     if (SF_IsForNumParamBytes(dwStubFlags))
         return NULL;
@@ -5556,50 +5620,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
     return pCode;
 }
 
-MethodDesc* RestoreNGENedStub(MethodDesc* pStubMD)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(pStubMD));
-    }
-    CONTRACTL_END;
-
-#ifdef FEATURE_PREJIT
-    pStubMD->CheckRestore();
-
-    PCODE pCode = pStubMD->GetPreImplementedCode();
-    if (pCode != NULL)
-    {
-        TADDR pFixupList = pStubMD->GetFixupList();
-        if (pFixupList != NULL)
-        {
-            Module* pZapModule = pStubMD->GetZapModule();
-            _ASSERTE(pZapModule != NULL);
-            if (!pZapModule->FixupDelayList(pFixupList))
-            {
-                _ASSERTE(!"FixupDelayList failed");
-                ThrowHR(COR_E_BADIMAGEFORMAT);
-            }
-        }
-
-#if defined(HAVE_GCCOVER)
-        if (GCStress<cfg_instr_ngen>::IsEnabled())
-            SetupGcCoverage(NativeCodeVersion(pStubMD), (BYTE*)pCode);
-#endif // HAVE_GCCOVER
-
-    }
-    else
-    {
-        // We only pass a non-NULL pStubMD to GetStubForILStub() below if pStubMD is preimplemeneted.
-        pStubMD = NULL;
-    }
-#endif // FEATURE_PREJIT
-
-    return pStubMD;
-}
-
-PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **ppStubMD)
+PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags)
 {
     CONTRACT(PCODE)
     {
@@ -5613,19 +5634,6 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **p
     PCODE                   pStub = NULL;
     MethodDesc*             pStubMD = NULL;
 
-    pStubMD = GetStubMethodDescFromInteropMethodDesc(pMD, dwStubFlags);
-    if (pStubMD != NULL)
-    {
-        pStubMD = RestoreNGENedStub(pStubMD);
-    }
-
-    if ((NULL == pStubMD) && (SF_IsNGENedStub(dwStubFlags)))
-    {
-        // Return NULL -- the caller asked only for an ngened stub and
-        // one does not exist, so don't do any more work.
-        CONSISTENCY_CHECK(pStub == NULL);
-    }
-    else
     if (pMD->IsNDirect())
     {
         NDirectMethodDesc* pNMD = (NDirectMethodDesc*)pMD;
@@ -5661,9 +5669,6 @@ PCODE GetStubForInteropMethod(MethodDesc* pMD, DWORD dwStubFlags, MethodDesc **p
         // the stub uses COM so make sure that it is started
         EnsureComStarted();
     }
-
-    if (ppStubMD != NULL)
-        *ppStubMD = pStubMD;
 
     RETURN pStub;
 }
@@ -5822,12 +5827,9 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
 
     if (pMD->IsEarlyBound())
     {
-        if (!pMD->IsZapped())
-        {
-            // we need the MD to be populated in case we decide to build an intercept
-            // stub to wrap the target in InitEarlyBoundNDirectTarget
-            NDirect::PopulateNDirectMethodDesc(pMD);
-        }
+        // we need the MD to be populated in case we decide to build an intercept
+        // stub to wrap the target in InitEarlyBoundNDirectTarget
+        NDirect::PopulateNDirectMethodDesc(pMD);
 
         pMD->InitEarlyBoundNDirectTarget();
     }
@@ -5838,24 +5840,15 @@ EXTERN_C LPVOID STDCALL NDirectImportWorker(NDirectMethodDesc* pMD)
         //
         INDEBUG(Thread *pThread = GetThread());
         {
-            _ASSERTE(pMD->ShouldSuppressGCTransition()
-                || pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr());
+            _ASSERTE(pThread->GetFrame()->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()
+                || pMD->ShouldSuppressGCTransition());
 
             CONSISTENCY_CHECK(pMD->IsNDirect());
             //
             // With IL stubs, we don't have to do anything but ensure the DLL is loaded.
             //
 
-            if (!pMD->IsZapped())
-            {
-                NDirect::PopulateNDirectMethodDesc(pMD);
-            }
-            else
-            {
-                // must have been populated at NGEN time
-                _ASSERTE(pMD->GetLibName() != NULL);
-            }
-
+            NDirect::PopulateNDirectMethodDesc(pMD);
             pMD->CheckRestore();
 
             NDirectLink(pMD);
@@ -6019,11 +6012,6 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
 
         // vararg P/Invoke must be cdecl
         unmgdCallConv = CorInfoCallConvExtension::C;
-
-        if (((NDirectMethodDesc *)pMD)->IsClassConstructorTriggeredByILStub())
-        {
-            dwStubFlags |= NDIRECTSTUB_FL_TRIGGERCCTOR;
-        }
     }
 
     mdMethodDef md;
@@ -6065,6 +6053,5 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
     RETURN pVASigCookie->pNDirectILStub;
 }
 
-#endif // CROSSGEN_COMPILE
 
 #endif // #ifndef DACCESS_COMPILE

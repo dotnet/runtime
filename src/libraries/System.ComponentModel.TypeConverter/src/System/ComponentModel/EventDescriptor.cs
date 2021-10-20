@@ -14,7 +14,7 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EventDescriptor'/> class with the
         /// specified name and attribute array.
         /// </summary>
-        protected EventDescriptor(string name, Attribute[] attrs) : base(name, attrs)
+        protected EventDescriptor(string name, Attribute[]? attrs) : base(name, attrs)
         {
         }
 
@@ -31,7 +31,7 @@ namespace System.ComponentModel
         /// the name in the specified <see cref='System.ComponentModel.MemberDescriptor'/> and the
         /// attributes in both the <see cref='System.ComponentModel.MemberDescriptor'/> and the <see cref='System.Attribute'/> array.
         /// </summary>
-        protected EventDescriptor(MemberDescriptor descr, Attribute[] attrs) : base(descr, attrs)
+        protected EventDescriptor(MemberDescriptor descr, Attribute[]? attrs) : base(descr, attrs)
         {
         }
 

@@ -48,14 +48,8 @@ set(utils_common_sources
     mono-log-android.c
     mono-log-darwin.c
     mono-log-flight-recorder.c
-    mono-merp.c
-    mono-merp.h
-    mono-state.h
-    mono-state.c
     mono-internal-hash.c
     mono-internal-hash.h
-    mono-io-portability.c
-    mono-io-portability.h
     monobitset.c
     mono-filemap.c
     mono-math-c.c
@@ -231,6 +225,8 @@ elseif(TARGET_ARM64)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm64.c")
 elseif(TARGET_ARM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-arm.c")
+elseif(TARGET_S390X)
+set(utils_arch_sources "${utils_arch_sources};mono-hwcap-s390x.c")
 elseif(TARGET_WASM)
 set(utils_arch_sources "${utils_arch_sources};mono-hwcap-wasm.c;mono-mmap-wasm.c")
 else()

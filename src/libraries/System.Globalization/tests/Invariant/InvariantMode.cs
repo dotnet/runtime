@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Reflection;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +14,23 @@ namespace System.Globalization.Tests
 {
     public class InvariantModeTests
     {
+        private static bool PredefinedCulturesOnlyIsDisabled { get; } = !PredefinedCulturesOnly();
+        private static bool PredefinedCulturesOnly()
+        {
+            bool ret;
+
+            try
+            {
+                ret = (bool) typeof(object).Assembly.GetType("System.Globalization.GlobalizationMode").GetProperty("PredefinedCulturesOnly", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            }
+            catch
+            {
+                ret = false;
+            }
+
+            return ret;
+        }
+
         public static IEnumerable<object[]> Cultures_TestData()
         {
             yield return new object[] { "en-US" };
@@ -34,6 +52,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "Hello", "l", 0, 5, CompareOptions.OrdinalIgnoreCase, 2 };
             yield return new object[] { "Hello", "L", 0, 5, CompareOptions.OrdinalIgnoreCase, 2 };
             yield return new object[] { "Hello", "h", 0, 5, CompareOptions.OrdinalIgnoreCase, 0 };
+
+            yield return new object[] { "Hello\u00D3\u00D4", "\u00F3\u00F4", 0, 7, CompareOptions.OrdinalIgnoreCase, 5 };
+            yield return new object[] { "Hello\u00D3\u00D4", "\u00F3\u00F5", 0, 7, CompareOptions.OrdinalIgnoreCase, -1 };
+
+            yield return new object[] { "Hello\U00010400", "\U00010428", 0, 7, CompareOptions.OrdinalIgnoreCase, 5 };
+
 
             // Long strings
             yield return new object[] { new string('b', 100) + new string('a', 5555), "aaaaaaaaaaaaaaa", 0, 5655, CompareOptions.None, 100 };
@@ -141,6 +165,12 @@ namespace System.Globalization.Tests
             yield return new object[] { "Hello", "L", 4, 5, CompareOptions.OrdinalIgnoreCase, 3 };
             yield return new object[] { "Hello", "h", 4, 5, CompareOptions.OrdinalIgnoreCase, 0 };
 
+
+            yield return new object[] { "Hello\u00D3\u00D4\u00D3\u00D4", "\u00F3\u00F4", 8, 9, CompareOptions.OrdinalIgnoreCase, 7 };
+            yield return new object[] { "Hello\u00D3\u00D4\u00D3\u00D4", "\u00F3\u00F5", 8, 9, CompareOptions.OrdinalIgnoreCase, -1 };
+
+            yield return new object[] { "Hello\U00010400\U00010400", "\U00010428", 8, 9, CompareOptions.OrdinalIgnoreCase, 7 };
+
             // Long strings
             yield return new object[] { new string('a', 5555) + new string('b', 100), "aaaaaaaaaaaaaaa", 5654, 5655, CompareOptions.None, 5540 };
             yield return new object[] { new string('b', 101) + new string('a', 5555), new string('a', 5000), 5655, 5656, CompareOptions.None, 656 };
@@ -219,6 +249,10 @@ namespace System.Globalization.Tests
             yield return new object[] { "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false };
             yield return new object[] { "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, false };
 
+            yield return new object[] { "\u00D3\u00D4\u00D3\u00D4Hello", "\u00F3\u00F4", CompareOptions.OrdinalIgnoreCase, true };
+            yield return new object[] { "\u00D3\u00D4Hello\u00D3\u00D4", "\u00F3\u00F5", CompareOptions.OrdinalIgnoreCase, false };
+            yield return new object[] { "\U00010400\U00010400Hello", "\U00010428", CompareOptions.OrdinalIgnoreCase, true };
+
             // Ignore symbols
             yield return new object[] { "Test's can be interesting", "Tests", CompareOptions.IgnoreSymbols, false };
             yield return new object[] { "Test's can be interesting", "Tests", CompareOptions.None, false };
@@ -258,6 +292,11 @@ namespace System.Globalization.Tests
             yield return new object[] { "Exhibit \u00C0", "a\u0300", CompareOptions.OrdinalIgnoreCase, false };
             yield return new object[] { "FooBar", "Foo\u0400Bar", CompareOptions.Ordinal, false };
             yield return new object[] { "FooBA\u0300R", "FooB\u00C0R", CompareOptions.IgnoreNonSpace, false };
+
+            yield return new object[] { "\u00D3\u00D4\u00D3\u00D4Hello", "\u00F3\u00F4", CompareOptions.OrdinalIgnoreCase, false };
+            yield return new object[] { "\u00D3\u00D4Hello\u00D3\u00D4", "\u00F3\u00F4", CompareOptions.OrdinalIgnoreCase, true };
+            yield return new object[] { "\U00010400\U00010400Hello", "\U00010428", CompareOptions.OrdinalIgnoreCase, false };
+            yield return new object[] { "Hello\U00010400", "\U00010428", CompareOptions.OrdinalIgnoreCase, true };
 
             // Weightless characters
             yield return new object[] { "", "\u200d", CompareOptions.None, false };
@@ -309,6 +348,21 @@ namespace System.Globalization.Tests
 
             yield return new object[] { "", "'", CompareOptions.None, -1 };
 
+            yield return new object[] { "\u00D3\u00D4", "\u00F3\u00F4", CompareOptions.OrdinalIgnoreCase, 0 };
+            yield return new object[] { "\U00010400", "\U00010428", CompareOptions.OrdinalIgnoreCase, 0 };
+            yield return new object[] { "\u00D3\u00D4", "\u00F3\u00F4", CompareOptions.IgnoreCase, 0 };
+            yield return new object[] { "\U00010400", "\U00010428", CompareOptions.IgnoreCase, 0 };
+
+            yield return new object[] { "\u00D3\u00D4G", "\u00F3\u00F4", CompareOptions.OrdinalIgnoreCase, 1 };
+            yield return new object[] { "\U00010400G", "\U00010428", CompareOptions.OrdinalIgnoreCase, 1 };
+            yield return new object[] { "\u00D3\u00D4G", "\u00F3\u00F4", CompareOptions.IgnoreCase, 1 };
+            yield return new object[] { "\U00010400G", "\U00010428", CompareOptions.IgnoreCase, 1 };
+
+            yield return new object[] { "\u00D3\u00D4", "\u00F3\u00F4G", CompareOptions.OrdinalIgnoreCase, -1 };
+            yield return new object[] { "\U00010400", "\U00010428G", CompareOptions.OrdinalIgnoreCase, -1 };
+            yield return new object[] { "\u00D3\u00D4", "\u00F3\u00F4G", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { "\U00010400", "\U00010428G", CompareOptions.IgnoreCase, -1 };
+
             // Hungarian
             yield return new object[] { "dzsdzs", "ddzs", CompareOptions.Ordinal, 1 };
             yield return new object[] { "dzsdzs", "ddzs", CompareOptions.None, 1 };
@@ -331,6 +385,14 @@ namespace System.Globalization.Tests
             yield return new object[] { "llegar", "lugar", CompareOptions.None, -1 };
 
             yield return new object[] { "\u3042", "\u30A1", CompareOptions.IgnoreKanaType | CompareOptions.IgnoreWidth | CompareOptions.IgnoreCase, -1 };
+
+            // Surrogates
+
+            yield return new object[] { "Hello\uFE6A", "Hello\U0001F601", CompareOptions.IgnoreCase, -1 };
+            yield return new object[] { "Hello\U0001F601", "Hello\uFE6A", CompareOptions.IgnoreCase,  1 };
+            yield return new object[] { "\uDBFF", "\uD800\uDC00", CompareOptions.IgnoreCase,  -1 };
+            yield return new object[] { "\uD800\uDC00", "\uDBFF", CompareOptions.IgnoreCase,   1 };
+            yield return new object[] { "abcdefg\uDBFF", "abcdefg\uD800\uDC00", CompareOptions.IgnoreCase,  -1 };
         }
 
         public static IEnumerable<object[]> ToLower_TestData()
@@ -357,7 +419,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "EMBEDDED\0NuLL\0Byte\0", "embedded\0null\0byte\0", true };
 
             // LATIN CAPITAL LETTER O WITH ACUTE, which has a lower case variant.
-            yield return new object[] { "\u00D3", "\u00F3", false };
+            yield return new object[] { "\u00D3", "\u00F3", true };
 
             // SNOWMAN, which does not have a lower case variant.
             yield return new object[] { "\u2603", "\u2603", true };
@@ -365,13 +427,16 @@ namespace System.Globalization.Tests
             // RAINBOW (outside the BMP and does not case)
             yield return new object[] { "\U0001F308", "\U0001F308", true };
 
+            // Surrogate casing
+            yield return new object[] { "\U00010400", "\U00010428", true };
+
             // Unicode defines some codepoints which expand into multiple codepoints
             // when cased (see SpecialCasing.txt from UNIDATA for some examples). We have never done
             // these sorts of expansions, since it would cause string lengths to change when cased,
             // which is non-intuitive. In addition, there are some context sensitive mappings which
             // we also don't preform.
             // Greek Capital Letter Sigma (does not to case to U+03C2 with "final sigma" rule).
-            yield return new object[] { "\u03A3", "\u03C3", false };
+            yield return new object[] { "\u03A3", "\u03C3", true };
         }
 
         public static IEnumerable<object[]> ToUpper_TestData()
@@ -397,14 +462,17 @@ namespace System.Globalization.Tests
 
             yield return new object[] { "embedded\0NuLL\0Byte\0", "EMBEDDED\0NULL\0BYTE\0", true };
 
-            // LATIN SMALL LETTER O WITH ACUTE, which has an upper case variant.
-            yield return new object[] { "\u00F3", "\u00D3", false };
+            // LATIN SMALL LETTER O WITH ACUTE, mapped to LATIN CAPITAL LETTER O WITH ACUTE.
+            yield return new object[] { "\u00F3", "\u00D3", true };
 
             // SNOWMAN, which does not have an upper case variant.
             yield return new object[] { "\u2603", "\u2603", true };
 
             // RAINBOW (outside the BMP and does not case)
             yield return new object[] { "\U0001F308", "\U0001F308", true };
+
+            // Surrogate casing
+            yield return new object[] { "\U00010428", "\U00010400", true };
 
             // Unicode defines some codepoints which expand into multiple codepoints
             // when cased (see SpecialCasing.txt from UNIDATA for some examples). We have never done
@@ -421,7 +489,7 @@ namespace System.Globalization.Tests
             // as part of casing.
             yield return new object[] { "\u0149", "\u0149", true };
 
-            yield return new object[] { "\u03C3", "\u03A3", false };
+            yield return new object[] { "\u03C3", "\u03A3", true };
         }
 
         public static IEnumerable<object[]> GetAscii_TestData()
@@ -490,13 +558,13 @@ namespace System.Globalization.Tests
             yield return new object[] { "xn--de-jg4avhby1noc0d", 0, 21, "\u30D1\u30D5\u30A3\u30FC\u0064\u0065\u30EB\u30F3\u30D0" };
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
         public static void IcuShouldNotBeLoaded()
         {
             Assert.False(PlatformDetection.IsIcuGlobalization);
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Cultures_TestData))]
         public void TestCultureData(string cultureName)
         {
@@ -636,7 +704,7 @@ namespace System.Globalization.Tests
             Assert.True(cultureName.Equals(ci.CompareInfo.Name, StringComparison.OrdinalIgnoreCase));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Cultures_TestData))]
         public void SetCultureData(string cultureName)
         {
@@ -652,13 +720,13 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => ci.DateTimeFormat.Calendar = new TaiwanCalendar());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestEnum()
         {
             Assert.Equal(new CultureInfo[1] { CultureInfo.InvariantCulture }, CultureInfo.GetCultures(CultureTypes.AllCultures));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Cultures_TestData))]
         public void TestSortVersion(string cultureName)
         {
@@ -670,7 +738,7 @@ namespace System.Globalization.Tests
             Assert.Equal(version, new CultureInfo(cultureName).CompareInfo.Version);
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData(0, 0)]
         [InlineData(1, 2)]
         [InlineData(100_000, 200_000)]
@@ -683,7 +751,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedSortKeyLength, CultureInfo.InvariantCulture.CompareInfo.GetSortKeyLength(dummySpan));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData(0x4000_0000)]
         [InlineData(int.MaxValue)]
         public unsafe void TestGetSortKeyLength_OverlongArgument(int inputLength)
@@ -698,13 +766,13 @@ namespace System.Globalization.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("Hello", CompareOptions.None, "Hello")]
         [InlineData("Hello", CompareOptions.IgnoreWidth, "Hello")]
         [InlineData("Hello", CompareOptions.IgnoreCase, "HELLO")]
         [InlineData("Hello", CompareOptions.IgnoreCase | CompareOptions.IgnoreWidth, "HELLO")]
         [InlineData("Hell\u00F6", CompareOptions.None, "Hell\u00F6")] // U+00F6 = LATIN SMALL LETTER O WITH DIAERESIS
-        [InlineData("Hell\u00F6", CompareOptions.IgnoreCase, "HELL\u00F6")] // note the final "o with diaeresis" isn't capitalized
+        [InlineData("Hell\u00F6", CompareOptions.IgnoreCase, "HELL\u00D6")]
         public unsafe void TestSortKey_FromSpan(string input, CompareOptions options, string expected)
         {
             byte[] expectedOutputBytes = GetExpectedInvariantOrdinalSortKey(expected);
@@ -741,7 +809,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestSortKey_ZeroWeightCodePoints()
         {
             // In the invariant globalization mode, there's no such thing as a zero-weight code point,
@@ -753,7 +821,7 @@ namespace System.Globalization.Tests
             Assert.NotEqual(0, SortKey.Compare(sortKeyForEmptyString, sortKeyForZeroWidthJoiner));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("", "", 0)]
         [InlineData("", "not-empty", -1)]
         [InlineData("not-empty", "", 1)]
@@ -794,7 +862,7 @@ namespace System.Globalization.Tests
             return sc;
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IndexOf_TestData))]
         public void TestIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
@@ -841,7 +909,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(LastIndexOf_TestData))]
         public void TestLastIndexOf(string source, string value, int startIndex, int count, CompareOptions options, int result)
         {
@@ -901,7 +969,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IsPrefix_TestData))]
         public void TestIsPrefix(string source, string value, CompareOptions options, bool result)
         {
@@ -936,7 +1004,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(IsSuffix_TestData))]
         public void TestIsSuffix(string source, string value, CompareOptions options, bool result)
         {
@@ -971,7 +1039,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("", false)]
         [InlineData('x', true)]
         [InlineData('\ud800', true)] // standalone high surrogate
@@ -988,7 +1056,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(Compare_TestData))]
         public void TestCompare(string source, string value, CompareOptions options, int result)
         {
@@ -1019,7 +1087,7 @@ namespace System.Globalization.Tests
         }
 
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(ToLower_TestData))]
         public void TestToLower(string upper, string lower, bool result)
         {
@@ -1030,7 +1098,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(ToUpper_TestData))]
         public void TestToUpper(string lower, string upper, bool result)
         {
@@ -1041,7 +1109,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData("", NormalizationForm.FormC)]
         [InlineData("\uFB01", NormalizationForm.FormC)]
         [InlineData("\uFB01", NormalizationForm.FormD)]
@@ -1063,7 +1131,7 @@ namespace System.Globalization.Tests
             Assert.Equal(s, s.Normalize(form));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(GetAscii_TestData))]
         public void GetAscii(string unicode, int index, int count, string expected)
         {
@@ -1078,7 +1146,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetAscii(unicode, index, count));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [MemberData(nameof(GetUnicode_TestData))]
         public void GetUnicode(string ascii, int index, int count, string expected)
         {
@@ -1093,7 +1161,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, new IdnMapping().GetUnicode(ascii, index, count));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestHashing()
         {
             StringComparer cultureComparer = StringComparer.Create(CultureInfo.GetCultureInfo("tr-TR"), true);
@@ -1102,13 +1170,14 @@ namespace System.Globalization.Tests
             Assert.Equal(ordinalComparer.GetHashCode(turkishString), cultureComparer.GetHashCode(turkishString));
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PredefinedCulturesOnlyIsDisabled))]
         [InlineData('a', 'A', 'a')]
         [InlineData('A', 'A', 'a')]
         [InlineData('i', 'I', 'i')] // to verify that we don't special-case the Turkish I in the invariant globalization mode
         [InlineData('I', 'I', 'i')]
-        [InlineData(0x00C1, 0x00C1, 0x00C1)] // U+00C1 LATIN CAPITAL LETTER A WITH ACUTE
-        [InlineData(0x00E1, 0x00E1, 0x00E1)] // U+00E1 LATIN SMALL LETTER A WITH ACUTE
+        [InlineData('\u017f', '\u017f', '\u017f')] // Latin small letter long S shouldn't be case mapped in the invariant mode.
+        [InlineData(0x00C1, 0x00C1, 0x00E1)] // U+00C1 LATIN CAPITAL LETTER A WITH ACUTE
+        [InlineData(0x00E1, 0x00C1, 0x00E1)] // U+00E1 LATIN SMALL LETTER A WITH ACUTE
         [InlineData(0x00D7, 0x00D7, 0x00D7)] // U+00D7 MULTIPLICATION SIGN
         public void TestRune(int original, int expectedToUpper, int expectedToLower)
         {
@@ -1121,7 +1190,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expectedToLower, Rune.ToLower(originalRune, CultureInfo.GetCultureInfo("tr-TR")).Value);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PredefinedCulturesOnlyIsDisabled))]
         public void TestGetCultureInfo_PredefinedOnly_ReturnsSame()
         {
             Assert.Equal(CultureInfo.GetCultureInfo("en-US"), CultureInfo.GetCultureInfo("en-US", predefinedOnly: true));

@@ -710,31 +710,19 @@ HRESULT PgoManager::allocPgoInstrumentationBySchemaInstance(MethodDesc* pMD,
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource *pPgoSource)
 {
     // Initialize our out params
     *pAllocatedData = NULL;
     *pInstrumentationData = NULL;
     *pCountSchemaItems = 0;
-
-    PgoManager *mgr;
-    if (!pMD->IsDynamicMethod())
-    {
-        mgr = pMD->GetLoaderAllocator()->GetPgoManager();
-    }
-    else
-    {
-        mgr = pMD->AsDynamicMethodDesc()->GetResolver()->GetDynamicPgoManager();
-    }
+    *pPgoSource = ICorJitInfo::PgoSource::Unknown;
 
     HRESULT hr = E_NOTIMPL;
-    if (mgr != NULL)
-    {
-        hr = mgr->getPgoInstrumentationResultsInstance(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData);
-    }
 
-    // If not found in the data from the current run, look in the data from the text file
-    if (FAILED(hr) && s_textFormatPgoData.GetCount() > 0)
+    // If there is text format PGO data, prefer that over any dynamic or static data.
+    //
+    if (s_textFormatPgoData.GetCount() > 0)
     {
         COUNT_T methodhash = pMD->GetStableHash();
         int codehash;
@@ -795,10 +783,12 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                         *pAllocatedData = new BYTE[schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema)];
                         memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema));
                         schemaArray.CloseRawBuffer();
-                        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)pAllocatedData;
+                        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)*pAllocatedData;
 
                         *pCountSchemaItems = schemaArray.GetCount();
                         *pInstrumentationData = found->GetData();
+                        *pPgoSource = ICorJitInfo::PgoSource::Text;
+
                         hr = S_OK;
                     }
                     EX_CATCH
@@ -813,6 +803,26 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                     hr = E_NOTIMPL;
                 }
             }
+        }
+    }
+
+    // If we didn't find any text format data, look for dynamic or static data.
+    //
+    if (FAILED(hr))
+    {
+        PgoManager *mgr;
+        if (!pMD->IsDynamicMethod())
+        {
+            mgr = pMD->GetLoaderAllocator()->GetPgoManager();
+        }
+        else
+        {
+            mgr = pMD->AsDynamicMethodDesc()->GetResolver()->GetDynamicPgoManager();
+        }
+
+        if (mgr != NULL)
+        {
+            hr = mgr->getPgoInstrumentationResultsInstance(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
         }
     }
 
@@ -951,12 +961,13 @@ HRESULT PgoManager::getPgoInstrumentationResultsFromR2RFormat(ReadyToRunInfo *pR
 }
 #endif // DACCESS_COMPILE
 
-HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData)
+HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE** pAllocatedData, ICorJitInfo::PgoInstrumentationSchema** ppSchema, UINT32 *pCountSchemaItems, BYTE**pInstrumentationData, ICorJitInfo::PgoSource* pPgoSource)
 {
     // Initialize our out params
     *pAllocatedData = NULL;
     *pInstrumentationData = NULL;
     *pCountSchemaItems = 0;
+    *pPgoSource = ICorJitInfo::PgoSource::Unknown;
 
     HeaderList *found;
 
@@ -977,6 +988,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         // Consider merging this data with the live data instead in the future
         if (pMD->GetModule()->IsReadyToRun() && pMD->GetModule()->GetReadyToRunInfo()->GetPgoInstrumentationData(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData))
         {
+            *pPgoSource = ICorJitInfo::PgoSource::Static;
             return S_OK;
         }
 
@@ -1010,6 +1022,7 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
         {
             *pInstrumentationDataDst = *pSrc;
         }
+        *pPgoSource = ICorJitInfo::PgoSource::Dynamic;
         return S_OK;
     }
     else

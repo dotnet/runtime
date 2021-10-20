@@ -11,6 +11,8 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         {
             return new RC2CryptoServiceProvider();
         }
+
+        public bool OneShotSupported => false;
     }
 
     public partial class RC2Factory

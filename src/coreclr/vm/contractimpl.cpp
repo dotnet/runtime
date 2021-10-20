@@ -18,10 +18,6 @@
 #include "virtualcallstub.h"
 #include "decodemd.h"
 
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
-
 #if defined(_DEBUG)
 DummyGlobalContract ___contract;
 #endif
@@ -135,8 +131,7 @@ UINT32 TypeIDMap::GetTypeID(PTR_MethodTable pMT)
         m_idMap.InsertValue((UPTR)id, (UPTR)pMT >> 1);
         m_mtMap.InsertValue((UPTR)pMT, (UPTR)id);
         m_entryCount++;
-        CONSISTENCY_CHECK(GetThread()->GetDomain()->IsCompilationDomain() ||
-                          (LookupType(id) == pMT));
+        CONSISTENCY_CHECK((LookupType(id) == pMT));
     }
 #else // DACCESS_COMPILE
     if (id == TypeIDProvider::INVALID_TYPE_ID)
@@ -486,37 +481,6 @@ DispatchMap::CreateEncodedMapping(
     }
 #endif //_DEBUG
 } // DispatchMap::CreateEncodedMapping
-
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-//------------------------------------------------------------------------
-void DispatchMap::Save(DataImage * image)
-{
-    STANDARD_VM_CONTRACT;
-
-    CONSISTENCY_CHECK(!image->IsStored(this));
-
-    UINT32 cbMap = GetMapSize();
-    UINT32 cbObj = GetObjectSize(cbMap);
-
-    image->StoreInternedStructure(
-        this,
-        cbObj,
-        DataImage::ITEM_DISPATCH_MAP,
-        sizeof(void *));
-
-#ifdef LOGGING
-    g_sdStats.m_cNGENDispatchMap++;
-    g_sdStats.m_cbNGENDispatchMap += cbObj;
-#endif //LOGGING
-}
-
-//------------------------------------------------------------------------
-void DispatchMap::Fixup(DataImage *image)
-{
-    STANDARD_VM_CONTRACT;
-}
-
-#endif //FEATURE_NATIVE_IMAGE_GENERATION
 
 #endif //!DACCESS_COMPILE
 

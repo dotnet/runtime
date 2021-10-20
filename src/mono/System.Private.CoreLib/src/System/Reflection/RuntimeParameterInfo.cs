@@ -181,14 +181,20 @@ namespace System.Reflection
         override
         object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
+            // It is documented that the inherit flag is ignored.
+            // Attribute.GetCustomAttributes is to be used to search
+            // inheritance chain.
+            return CustomAttribute.GetCustomAttributes(this, false);
         }
 
         public
         override
         object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            // It is documented that the inherit flag is ignored.
+            // Attribute.GetCustomAttributes is to be used to search
+            // inheritance chain.
+            return CustomAttribute.GetCustomAttributes(this, attributeType, false);
         }
 
         internal static object? GetDefaultValueImpl(ParameterInfo pinfo)
@@ -206,7 +212,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributes(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -266,15 +272,15 @@ namespace System.Reflection
             count = 0;
 
             if (IsIn)
-                attrsData[count++] = new CustomAttributeData((typeof(InAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(InAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (IsOut)
-                attrsData[count++] = new CustomAttributeData((typeof(OutAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(OutAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (IsOptional)
-                attrsData[count++] = new CustomAttributeData((typeof(OptionalAttribute)).GetConstructor(Type.EmptyTypes)!);
+                attrsData[count++] = new RuntimeCustomAttributeData((typeof(OptionalAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (marshalAs != null)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(UnmanagedType), marshalAs.Value) };
-                attrsData[count++] = new CustomAttributeData(
+                attrsData[count++] = new RuntimeCustomAttributeData(
                     (typeof(MarshalAsAttribute)).GetConstructor(new[] { typeof(UnmanagedType) })!,
                     ctorArgs,
                     Array.Empty<CustomAttributeNamedArgument>());//FIXME Get named params

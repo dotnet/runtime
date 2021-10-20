@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
     {
         private SafeEvpCipherCtxHandle _ctxHandle;
 
+        public static bool IsSupported { get; } = Interop.OpenSslNoInit.OpenSslIsAvailable;
+
         [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {

@@ -2143,7 +2143,7 @@ namespace System
             else
             {
                 ulong bits = NumberToDoubleFloatingPointBits(ref number, in FloatingPointInfo.Double);
-                result = BitConverter.Int64BitsToDouble((long)(bits));
+                result = BitConverter.UInt64BitsToDouble(bits);
             }
 
             return number.IsNegative ? -result : result;
@@ -2187,7 +2187,7 @@ namespace System
             else
             {
                 uint bits = NumberToSingleFloatingPointBits(ref number, in FloatingPointInfo.Single);
-                result = BitConverter.Int32BitsToSingle((int)(bits));
+                result = BitConverter.UInt32BitsToSingle(bits);
             }
 
             return number.IsNegative ? -result : result;

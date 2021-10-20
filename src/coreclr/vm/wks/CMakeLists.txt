@@ -76,3 +76,8 @@ add_library(cee_wks INTERFACE)
 target_sources(cee_wks INTERFACE $<TARGET_OBJECTS:cee_wks_obj> $<TARGET_OBJECTS:cee_wks_core> ${VM_WKS_ARCH_ASM_OBJECTS})
 add_library(cee_wks_mergeable INTERFACE)
 target_sources(cee_wks_mergeable INTERFACE $<TARGET_OBJECTS:cee_wks_mergeable_obj> $<TARGET_OBJECTS:cee_wks_core> ${VM_WKS_ARCH_ASM_OBJECTS})
+
+if (CLR_CMAKE_HOST_WIN32)
+    link_natvis_sources_for_target(cee_wks INTERFACE ../vm.natvis)
+    link_natvis_sources_for_target(cee_wks_mergeable INTERFACE ../vm.natvis)
+endif()

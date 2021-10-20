@@ -94,15 +94,25 @@ namespace System.IO.Compression.Tests
         /// when an attempt is made to extract them.
         /// </summary>
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/25099")]
-        [InlineData("WindowsInvalid_FromUnix", null)]
-        [InlineData("WindowsInvalid_FromWindows", null)]
-        [InlineData("NullCharFileName_FromWindows", "path")]
-        [InlineData("NullCharFileName_FromUnix", "path")]
+        [InlineData("NullCharFileName_FromWindows")]
+        [InlineData("NullCharFileName_FromUnix")]
         [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
-        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName, string paramName)
+        public void Windows_ZipWithInvalidFileNames_ThrowsArgumentException(string zipName)
         {
-            AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
+        }
+
+        /// <summary>
+        /// This test ensures that a zipfile with path names that are invalid to this OS will throw errors
+        /// when an attempt is made to extract them.
+        /// </summary>
+        [Theory]
+        [InlineData("WindowsInvalid_FromUnix")]
+        [InlineData("WindowsInvalid_FromWindows")]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
+        public void Windows_ZipWithInvalidFileNames_ThrowsIOException(string zipName)
+        {
+            AssertExtensions.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
         }
 
         [Theory]

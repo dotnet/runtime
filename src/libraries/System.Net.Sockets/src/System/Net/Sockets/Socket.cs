@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -12,6 +13,7 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Net.Sockets
 {
@@ -24,8 +26,11 @@ namespace System.Net.Sockets
 
         private SafeSocketHandle _handle;
 
-        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is any EndPoint of the
-        // correct type (IPEndPoint, etc).
+        // _rightEndPoint is null if the socket has not been bound.  Otherwise, it is an EndPoint of the
+        // correct type (IPEndPoint, etc). The Bind operation sets _rightEndPoint. Other operations must only set
+        // it when the value is still null.
+        // This enables tracking the file created by UnixDomainSocketEndPoint when the Socket is bound,
+        // and to delete that file when the Socket gets disposed.
         internal EndPoint? _rightEndPoint;
         internal EndPoint? _remoteEndPoint;
 
@@ -48,9 +53,9 @@ namespace System.Net.Sockets
         // to poll for the real state until we're done connecting.
         private bool _nonBlockingConnectInProgress;
 
-        // Keep track of the kind of endpoint used to do a non-blocking connect, so we can set
-        // it to _rightEndPoint when we discover we're connected.
-        private EndPoint? _nonBlockingConnectRightEndPoint;
+        // Keep track of the kind of endpoint used to do a connect, so we can set
+        // it to _rightEndPoint when we're connected.
+        private EndPoint? _pendingConnectRightEndPoint;
 
         // These are constants initialized by constructor.
         private AddressFamily _addressFamily;
@@ -238,9 +243,9 @@ namespace System.Net.Sockets
 
         // The CLR allows configuration of these properties, separately from whether the OS supports IPv4/6.  We
         // do not provide these config options, so SupportsIPvX === OSSupportsIPvX.
-        [Obsolete("SupportsIPv4 is obsoleted for this type, please use OSSupportsIPv4 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SupportsIPv4 has been deprecated. Use OSSupportsIPv4 instead.")]
         public static bool SupportsIPv4 => OSSupportsIPv4;
-        [Obsolete("SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("SupportsIPv6 has been deprecated. Use OSSupportsIPv6 instead.")]
         public static bool SupportsIPv6 => OSSupportsIPv6;
 
         public static bool OSSupportsIPv4 => SocketProtocolSupportPal.OSSupportsIPv4;
@@ -279,14 +284,7 @@ namespace System.Net.Sockets
             {
                 ThrowIfDisposed();
 
-                if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
-                {
-                    // Update the state if we've become connected after a non-blocking connect.
-                    _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    UpdateLocalEndPointOnConnect();
-                    _nonBlockingConnectInProgress = false;
-                }
+                CheckNonBlockingConnectCompleted();
 
                 if (_rightEndPoint == null)
                 {
@@ -326,14 +324,7 @@ namespace System.Net.Sockets
 
                 if (_remoteEndPoint == null)
                 {
-                    if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
-                    {
-                        // Update the state if we've become connected after a non-blocking connect.
-                        _isConnected = true;
-                        _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                        UpdateLocalEndPointOnConnect();
-                        _nonBlockingConnectInProgress = false;
-                    }
+                    CheckNonBlockingConnectCompleted();
 
                     if (_rightEndPoint == null || !_isConnected)
                     {
@@ -415,6 +406,8 @@ namespace System.Net.Sockets
         // allowing calls to DuplicateAndClose() even after performing asynchronous IO.
         // .NET (Core) Windows sockets are entirely IOCP-based, and the concept of "overlapped IO"
         // does not exist on other platforms, therefore UseOnlyOverlappedIO is a dummy, compat-only property.
+        [Obsolete("UseOnlyOverlappedIO has been deprecated and is not supported.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool UseOnlyOverlappedIO
         {
             get { return false; }
@@ -431,14 +424,7 @@ namespace System.Net.Sockets
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_isConnected:{_isConnected}");
 
-                if (_nonBlockingConnectInProgress && Poll(0, SelectMode.SelectWrite))
-                {
-                    // Update the state if we've become connected after a non-blocking connect.
-                    _isConnected = true;
-                    _rightEndPoint = _nonBlockingConnectRightEndPoint;
-                    UpdateLocalEndPointOnConnect();
-                    _nonBlockingConnectInProgress = false;
-                }
+                CheckNonBlockingConnectCompleted();
 
                 return _isConnected;
             }
@@ -796,11 +782,11 @@ namespace System.Net.Sockets
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            // For UnixDomainSocketEndPoint, track the file to delete on Dispose.
+            _rightEndPoint = endPointSnapshot is UnixDomainSocketEndPoint unixEndPoint ?
+                                unixEndPoint.CreateBoundEndPoint() :
+                                endPointSnapshot;
         }
 
         // Establishes a connection to a remote system.
@@ -850,12 +836,8 @@ namespace System.Net.Sockets
             ValidateForMultiConnect(isMultiEndpoint: false);
 
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
-
-            if (!Blocking)
-            {
-                _nonBlockingConnectRightEndPoint = remoteEP;
-                _nonBlockingConnectInProgress = true;
-            }
+            _pendingConnectRightEndPoint = remoteEP;
+            _nonBlockingConnectInProgress = !Blocking;
 
             DoConnect(remoteEP, socketAddress);
         }
@@ -1354,11 +1336,8 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
             }
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = remoteEP;
-            }
+            // Save a copy of the EndPoint so we can use it for Create().
+            _rightEndPoint ??= remoteEP;
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.DumpBuffer(this, buffer, offset, size);
             return bytesTransferred;
@@ -1636,11 +1615,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
@@ -1730,11 +1706,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, errorCode);
@@ -1793,11 +1766,8 @@ namespace System.Net.Sockets
                 catch
                 {
                 }
-                if (_rightEndPoint == null)
-                {
-                    // Save a copy of the EndPoint so we can use it for Create().
-                    _rightEndPoint = endPointSnapshot;
-                }
+                // Save a copy of the EndPoint so we can use it for Create().
+                _rightEndPoint ??= endPointSnapshot;
             }
 
             if (socketException != null)
@@ -1963,7 +1933,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2045,7 +2015,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2081,7 +2051,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return optionValue;
@@ -2106,7 +2076,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -2130,7 +2100,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             if (optionLength != realOptionLength)
@@ -2166,7 +2136,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return realOptionLength;
@@ -2653,7 +2623,9 @@ namespace System.Net.Sockets
         // Async methods
         //
 
-        public bool AcceptAsync(SocketAsyncEventArgs e)
+        public bool AcceptAsync(SocketAsyncEventArgs e) => AcceptAsync(e, CancellationToken.None);
+
+        private bool AcceptAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -2686,7 +2658,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationAccept(this, _handle, acceptHandle);
+                socketError = e.DoOperationAccept(this, _handle, acceptHandle, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -2772,12 +2744,10 @@ namespace System.Net.Sockets
                 }
 
                 e._socketAddress = Serialize(ref endPointSnapshot);
+                _pendingConnectRightEndPoint = endPointSnapshot;
+                _nonBlockingConnectInProgress = false;
 
                 WildcardBindForConnectIfNecessary(endPointSnapshot.AddressFamily);
-
-                // Save the old RightEndPoint and prep new RightEndPoint.
-                EndPoint? oldEndPoint = _rightEndPoint;
-                _rightEndPoint ??= endPointSnapshot;
 
                 if (SocketsTelemetry.Log.IsEnabled())
                 {
@@ -2805,7 +2775,6 @@ namespace System.Net.Sockets
                         SocketsTelemetry.Log.AfterConnect(SocketError.NotSocket, ex.Message);
                     }
 
-                    _rightEndPoint = oldEndPoint;
                     _localEndPoint = null;
 
                     // Clear in-use flag on event args object.
@@ -3057,7 +3026,9 @@ namespace System.Net.Sockets
             return socketError == SocketError.IOPending;
         }
 
-        public bool SendPacketsAsync(SocketAsyncEventArgs e)
+        public bool SendPacketsAsync(SocketAsyncEventArgs e) => SendPacketsAsync(e, default(CancellationToken));
+
+        private bool SendPacketsAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
@@ -3079,7 +3050,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSendPackets(this, _handle);
+                socketError = e.DoOperationSendPackets(this, _handle, cancellationToken);
             }
             catch (Exception)
             {
@@ -3114,10 +3085,7 @@ namespace System.Net.Sockets
             e.StartOperationCommon(this, SocketAsyncOperation.SendTo);
 
             EndPoint? oldEndPoint = _rightEndPoint;
-            if (_rightEndPoint == null)
-            {
-                _rightEndPoint = endPointSnapshot;
-            }
+            _rightEndPoint ??= endPointSnapshot;
 
             SocketError socketError;
             try
@@ -3126,7 +3094,7 @@ namespace System.Net.Sockets
             }
             catch
             {
-                _rightEndPoint = null;
+                _rightEndPoint = oldEndPoint;
                 _localEndPoint = null;
                 // Clear in-use flag on event args object.
                 e.Complete();
@@ -3222,15 +3190,11 @@ namespace System.Net.Sockets
 
             if (SocketsTelemetry.Log.IsEnabled()) SocketsTelemetry.Log.AfterConnect(SocketError.Success);
 
-            if (_rightEndPoint == null)
-            {
-                // Save a copy of the EndPoint so we can use it for Create().
-                _rightEndPoint = endPointSnapshot;
-            }
-
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"connection to:{endPointSnapshot}");
 
             // Update state and performance counters.
+            _pendingConnectRightEndPoint = endPointSnapshot;
+            _nonBlockingConnectInProgress = false;
             SetToConnected();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Connected(this, LocalEndPoint, RemoteEndPoint);
         }
@@ -3354,6 +3318,18 @@ namespace System.Net.Sockets
                     {
                     }
                 }
+
+                // Delete file of bound UnixDomainSocketEndPoint.
+                if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                    unixEndPoint.BoundFileName is not null)
+                {
+                    try
+                    {
+                        File.Delete(unixEndPoint.BoundFileName);
+                    }
+                    catch
+                    { }
+                }
             }
 
             // Clean up any cached data
@@ -3456,7 +3432,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3469,7 +3445,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3496,7 +3472,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
         }
 
@@ -3510,7 +3486,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return lingerOption;
@@ -3526,7 +3502,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return multicastOption;
@@ -3543,7 +3519,7 @@ namespace System.Net.Sockets
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+                UpdateStatusAfterSocketOptionErrorAndThrowException(errorCode);
             }
 
             return multicastOption;
@@ -3608,8 +3584,19 @@ namespace System.Net.Sockets
             socket._addressFamily = _addressFamily;
             socket._socketType = _socketType;
             socket._protocolType = _protocolType;
-            socket._rightEndPoint = _rightEndPoint;
             socket._remoteEndPoint = remoteEP;
+
+            // If the _rightEndpoint tracks a UnixDomainSocketEndPoint to delete
+            // then create a new EndPoint.
+            if (_rightEndPoint is UnixDomainSocketEndPoint unixEndPoint &&
+                     unixEndPoint.BoundFileName is not null)
+            {
+                socket._rightEndPoint = unixEndPoint.CreateUnboundEndPoint();
+            }
+            else
+            {
+                socket._rightEndPoint = _rightEndPoint;
+            }
 
             // If the listener socket was bound to a wildcard address, then the `accept` system call
             // will assign a specific address to the accept socket's local endpoint instead of a
@@ -3644,10 +3631,14 @@ namespace System.Net.Sockets
                 return;
             }
 
+            Debug.Assert(_nonBlockingConnectInProgress == false);
+
             // Update the status: this socket was indeed connected at
             // some point in time update the perf counter as well.
             _isConnected = true;
             _isDisconnected = false;
+            _rightEndPoint ??= _pendingConnectRightEndPoint;
+            _pendingConnectRightEndPoint = null;
             UpdateLocalEndPointOnConnect();
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "now connected");
         }
@@ -3699,11 +3690,19 @@ namespace System.Net.Sockets
             }
         }
 
-        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
+        private void UpdateStatusAfterSocketOptionErrorAndThrowException(SocketError error, [CallerMemberName] string? callerName = null)
+        {
+            // Don't disconnect socket for unknown options.
+            bool disconnectOnFailure = error != SocketError.ProtocolOption &&
+                                       error != SocketError.OperationNotSupported;
+            UpdateStatusAfterSocketErrorAndThrowException(error, disconnectOnFailure, callerName);
+        }
+
+        private void UpdateStatusAfterSocketErrorAndThrowException(SocketError error, bool disconnectOnFailure = true, [CallerMemberName] string? callerName = null)
         {
             // Update the internal state of this socket according to the error before throwing.
             var socketException = new SocketException((int)error);
-            UpdateStatusAfterSocketError(socketException);
+            UpdateStatusAfterSocketError(socketException, disconnectOnFailure);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException, memberName: callerName);
             throw socketException;
         }
@@ -3711,18 +3710,18 @@ namespace System.Net.Sockets
         // UpdateStatusAfterSocketError(socketException) - updates the status of a connected socket
         // on which a failure occurred. it'll go to winsock and check if the connection
         // is still open and if it needs to update our internal state.
-        internal void UpdateStatusAfterSocketError(SocketException socketException)
+        internal void UpdateStatusAfterSocketError(SocketException socketException, bool disconnectOnFailure = true)
         {
-            UpdateStatusAfterSocketError(socketException.SocketErrorCode);
+            UpdateStatusAfterSocketError(socketException.SocketErrorCode, disconnectOnFailure);
         }
 
-        internal void UpdateStatusAfterSocketError(SocketError errorCode)
+        internal void UpdateStatusAfterSocketError(SocketError errorCode, bool disconnectOnFailure = true)
         {
             // If we already know the socket is disconnected
             // we don't need to do anything else.
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"errorCode:{errorCode}, disconnectOnFailure:{disconnectOnFailure}");
 
-            if (_isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
+            if (disconnectOnFailure && _isConnected && (_handle.IsInvalid || (errorCode != SocketError.WouldBlock &&
                     errorCode != SocketError.IOPending && errorCode != SocketError.NoBufferSpaceAvailable &&
                     errorCode != SocketError.TimedOut)))
             {
@@ -3779,7 +3778,7 @@ namespace System.Net.Sockets
         partial void ValidateForMultiConnect(bool isMultiEndpoint);
 
         // Helper for SendFile implementations
-        private static FileStream? OpenFile(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenRead(name);
+        private static SafeFileHandle? OpenFileHandle(string? name) => string.IsNullOrEmpty(name) ? null : File.OpenHandle(name, FileMode.Open, FileAccess.Read);
 
         private void UpdateReceiveSocketErrorForDisposed(ref SocketError socketError, int bytesTransferred)
         {
@@ -3861,6 +3860,19 @@ namespace System.Net.Sockets
                 OperationCanceledException => SocketError.OperationAborted,
                 _ => SocketError.SocketError
             };
+        }
+
+        private void CheckNonBlockingConnectCompleted()
+        {
+            if (_nonBlockingConnectInProgress && SocketPal.HasNonBlockingConnectCompleted(_handle, out bool success))
+            {
+                _nonBlockingConnectInProgress = false;
+
+                if (success)
+                {
+                    SetToConnected();
+                }
+            }
         }
     }
 }

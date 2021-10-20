@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConfigureTerminalForChildProcess")]
-        internal static extern void ConfigureTerminalForChildProcess(bool childUsesTerminal);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConfigureTerminalForChildProcess")]
+        internal static partial void ConfigureTerminalForChildProcess(bool childUsesTerminal);
     }
 }

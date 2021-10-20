@@ -7,6 +7,8 @@ using Internal.Cryptography;
 namespace System.Security.Cryptography
 {
     [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
     public sealed partial class AesCcm : IDisposable
     {
         public static KeySizes NonceByteSizes { get; } = new KeySizes(7, 13, 1);
@@ -14,20 +16,22 @@ namespace System.Security.Cryptography
 
         public AesCcm(ReadOnlySpan<byte> key)
         {
+            ThrowIfNotSupported();
+
             AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
 
         public AesCcm(byte[] key)
         {
+            ThrowIfNotSupported();
+
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
             AesAEAD.CheckKeySize(key.Length);
             ImportKey(key);
         }
-
-        public static bool IsSupported => true;
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
@@ -77,6 +81,14 @@ namespace System.Security.Cryptography
 
             if (!tag.Length.IsLegalSize(TagByteSizes))
                 throw new ArgumentException(SR.Cryptography_InvalidTagLength, nameof(tag));
+        }
+
+        private static void ThrowIfNotSupported()
+        {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(AesCcm)));
+            }
         }
     }
 }

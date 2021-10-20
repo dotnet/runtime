@@ -9,10 +9,9 @@
 #include <mono/mini/aot-runtime.h>
 #include <mono/mini/seq-points.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/metadata/components.h>
 
-//XXX This is dirty, extend ee.h to support extracting info from MonoInterpFrameHandle
-#include <mono/mini/interp/interp-internals.h>
-
+static int mono_wasm_debug_level = 0;
 #ifndef DISABLE_JIT
 
 #include "ir-emit.h"
@@ -273,7 +272,7 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
-	if (!ret->byref) {
+	if (!m_type_is_byref (ret)) {
 		if (ret->type == MONO_TYPE_R4) {
 			MONO_EMIT_NEW_UNALU (cfg, cfg->r4fp ? OP_RMOVE : OP_FMOVE, cfg->ret->dreg, val->dreg);
 			return;
@@ -381,7 +380,7 @@ mono_arch_get_delegate_invoke_impl (MonoMethodSignature *sig, gboolean has_targe
 	g_error ("mono_arch_get_delegate_invoke_impl");
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 #include <emscripten.h>
 
@@ -396,7 +395,7 @@ G_END_DECLS
 
 void mono_background_exec (void);
 
-#endif // HOST_WASM
+#endif // HOST_BROWSER
 
 gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
@@ -494,7 +493,7 @@ mono_arch_context_get_int_reg_address (MonoContext *ctx, int reg)
 	return 0;
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 void
 mono_runtime_setup_stat_profiler (void)
@@ -564,7 +563,7 @@ mono_set_timeout_exec (int id)
 void
 mono_wasm_set_timeout (int timeout, int id)
 {
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 	mono_set_timeout (timeout, id);
 #endif
 }
@@ -597,7 +596,7 @@ tp_cb (void)
 	}
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 void
 mono_wasm_queue_tp_cb (void)
 {
@@ -608,7 +607,7 @@ mono_wasm_queue_tp_cb (void)
 void
 mono_arch_register_icall (void)
 {
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 	mono_add_internal_call_internal ("System.Threading.TimerQueue::SetTimeout", mono_wasm_set_timeout);
 	mono_add_internal_call_internal ("System.Threading.ThreadPool::QueueCallback", mono_wasm_queue_tp_cb);
 #endif
@@ -620,7 +619,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, guint8 *code, MonoJumpInfo *ji, gpoi
 	g_error ("mono_arch_patch_code_new");
 }
 
-#ifdef HOST_WASM
+#ifdef HOST_BROWSER
 
 G_BEGIN_DECLS
 
@@ -753,10 +752,22 @@ mono_wasm_print_stack_trace (void)
 		   );
 }
 
-#endif // HOST_WASM
+#endif // HOST_BROWSER
 
 gpointer
 mono_arch_load_function (MonoJitICallId jit_icall_id)
 {
 	return NULL;
+}
+
+MONO_API void 
+mono_wasm_enable_debugging (int log_level)
+{
+	mono_wasm_debug_level = log_level;
+}
+
+int
+mono_wasm_get_debug_level (void)
+{
+	return mono_wasm_debug_level;
 }

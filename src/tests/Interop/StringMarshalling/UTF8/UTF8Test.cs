@@ -151,7 +151,7 @@ class UTF8StructMarshalling
             utf8Struct.index = i;
             TestStructWithUtf8Field(utf8Struct);
         }
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
          CompareWithUTF8Encoding();
 
         string testString = "StructTestString\uD83D\uDE00";

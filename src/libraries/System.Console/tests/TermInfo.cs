@@ -7,8 +7,7 @@ using System.Linq;
 using System.Reflection;
 using Xunit;
 
-[SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
-[ActiveIssue("https://github.com/dotnet/runtime/issues/37465", TestPlatforms.Android)]
+[SkipOnPlatform(TestPlatforms.Android | TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Android, Browser, iOS, MacCatalyst, or tvOS.")]
 public class TermInfo
 {
     // Names of internal members accessed via reflection

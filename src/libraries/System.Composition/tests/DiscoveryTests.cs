@@ -56,7 +56,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void InstanceExportsOfIncompatibleContractsAreDetected()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(IncompatibleRule)));
@@ -64,7 +63,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void PropertyExportsOfIncompatibleContractsAreDetected()
         {
             var x = Assert.Throws<CompositionFailedException>(() => CreateContainer(typeof(IncompatibleRuleProperty)));
@@ -124,7 +122,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50919", TestPlatforms.Android)]
         public void MultipleImportAttributesAreDetected()
         {
             var c = new ContainerConfiguration()

@@ -207,11 +207,11 @@ namespace System.ComponentModel.DataAnnotations
 
                     TypeConverter converter = GetOperandTypeConverter();
                     IComparable min = (IComparable)(ParseLimitsInInvariantCulture
-                        ? converter.ConvertFromInvariantString((string)minimum)
-                        : converter.ConvertFromString((string)minimum));
+                        ? converter.ConvertFromInvariantString((string)minimum)!
+                        : converter.ConvertFromString((string)minimum))!;
                     IComparable max = (IComparable)(ParseLimitsInInvariantCulture
-                        ? converter.ConvertFromInvariantString((string)maximum)
-                        : converter.ConvertFromString((string)maximum));
+                        ? converter.ConvertFromInvariantString((string)maximum)!
+                        : converter.ConvertFromString((string)maximum))!;
 
                     Func<object, object?> conversion;
                     if (ConvertValueInInvariantCulture)

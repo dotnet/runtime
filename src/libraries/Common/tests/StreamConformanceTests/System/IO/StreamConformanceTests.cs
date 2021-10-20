@@ -711,6 +711,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ArgumentValidation_ThrowsExpectedException()
         {
             await foreach (Stream? stream in GetStreamsForValidation())
@@ -724,6 +725,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Disposed_ThrowsObjectDisposedException()
         {
             await foreach (Stream? stream in GetStreamsForValidation())
@@ -813,6 +815,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.AsyncArray)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Write_DataReadFromDesiredOffset(ReadWriteMode mode)
         {
             using Stream? stream = await CreateReadWriteStream();
@@ -1559,11 +1562,6 @@ namespace System.IO.Tests
         /// Gets whether the stream guarantees that all data written to it will be flushed as part of Flush{Async}.
         /// </summary>
         protected virtual bool FlushGuaranteesAllDataWritten => true;
-        /// <summary>
-        /// Gets whether a stream implements an aggressive read that tries to fill the supplied buffer and only
-        /// stops when it does so or hits EOF.
-        /// </summary>
-        protected virtual bool ReadsMayBlockUntilBufferFullOrEOF => false;
         /// <summary>Gets whether reads for a count of 0 bytes block if no bytes are available to read.</summary>
         protected virtual bool BlocksOnZeroByteReads => false;
         /// <summary>
@@ -1601,6 +1599,7 @@ namespace System.IO.Tests
             streams.Stream2.CanRead && streams.Stream2.CanWrite;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ArgumentValidation_ThrowsExpectedException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1612,6 +1611,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Disposed_ThrowsObjectDisposedException()
         {
             StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1624,6 +1624,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadWriteAsync_PrecanceledOperations_ThrowsCancellationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1635,6 +1636,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadAsync_CancelPendingTask_ThrowsCancellationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1644,6 +1646,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadAsync_CancelPendingValueTask_ThrowsCancellationException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1653,6 +1656,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadWriteByte_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1700,6 +1704,10 @@ namespace System.IO.Tests
             }
         }
 
+        public static IEnumerable<object[]> ReadWrite_Modes =>
+            from mode in Enum.GetValues<ReadWriteMode>()
+            select new object[] { mode };
+
         public static IEnumerable<object[]> ReadWrite_Success_MemberData() =>
             from mode in Enum.GetValues<ReadWriteMode>()
             from writeSize in new[] { 1, 42, 10 * 1024 }
@@ -1721,6 +1729,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(ReadWrite_Success_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush)
         {
             foreach (CancellationToken nonCanceledToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
@@ -1776,8 +1785,57 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ReadWrite_Modes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public virtual async Task ReadWrite_MessagesSmallerThanReadBuffer_Success(ReadWriteMode mode)
+        {
+            if (!FlushGuaranteesAllDataWritten)
+            {
+                return;
+            }
+
+            foreach (CancellationToken nonCanceledToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
+            {
+                using StreamPair streams = await CreateConnectedStreamsAsync();
+
+                foreach ((Stream writeable, Stream readable) in GetReadWritePairs(streams))
+                {
+                    byte[] writerBytes = RandomNumberGenerator.GetBytes(512);
+                    var readerBytes = new byte[writerBytes.Length * 2];
+
+                    // Repeatedly write then read a message smaller in size than the read buffer
+                    for (int i = 0; i < 5; i++)
+                    {
+                        Task writes = Task.Run(async () =>
+                        {
+                            await WriteAsync(mode, writeable, writerBytes, 0, writerBytes.Length, nonCanceledToken);
+                            if (FlushRequiredToWriteData)
+                            {
+                                await writeable.FlushAsync();
+                            }
+                        });
+
+                        int n = 0;
+                        while (n < writerBytes.Length)
+                        {
+                            int r = await ReadAsync(mode, readable, readerBytes, n, readerBytes.Length - n);
+                            Assert.InRange(r, 1, writerBytes.Length - n);
+                            n += r;
+                        }
+
+                        Assert.Equal(writerBytes.Length, n);
+                        AssertExtensions.SequenceEqual(writerBytes, readerBytes.AsSpan(0, writerBytes.Length));
+
+                        await writes;
+                    }
+                }
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(AllReadWriteModesAndValue), false)]
         [MemberData(nameof(AllReadWriteModesAndValue), true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Read_Eof_Returns0(ReadWriteMode mode, bool dataAvailableFirst)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1816,6 +1874,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.AsyncArray)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Read_DataStoredAtDesiredOffset(ReadWriteMode mode)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1845,6 +1904,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.SyncArray)]
         [InlineData(ReadWriteMode.AsyncArray)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Write_DataReadFromDesiredOffset(ReadWriteMode mode)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -1943,6 +2003,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadAsync_ContinuesOnCurrentSynchronizationContextIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
             await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
@@ -2025,6 +2086,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(ReadAsync_ContinuesOnCurrentContextIfDesired_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadAsync_ContinuesOnCurrentTaskSchedulerIfDesired(bool flowExecutionContext, bool? continueOnCapturedContext)
         {
             await default(JumpToThreadPoolAwaiter); // escape xunit sync ctx
@@ -2114,6 +2176,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.AsyncMemory)]
         [InlineData(ReadWriteMode.SyncAPM)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ZeroByteRead_BlocksUntilDataAvailableOrNops(ReadWriteMode mode)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2144,6 +2207,10 @@ namespace System.IO.Tests
                         });
                         Assert.Equal(0, await zeroByteRead);
 
+                        // Perform a second zero-byte read.
+                        await Task.Run(() => ReadAsync(mode, readable, Array.Empty<byte>(), 0, 0));
+
+                        // Now consume all the data.
                         var readBytes = new byte[5];
                         int count = 0;
                         while (count < readBytes.Length)
@@ -2176,6 +2243,7 @@ namespace System.IO.Tests
         [InlineData(ReadWriteMode.AsyncMemory)]
         [InlineData(ReadWriteMode.SyncAPM)]
         [InlineData(ReadWriteMode.AsyncAPM)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ZeroByteWrite_OtherDataReceivedSuccessfully(ReadWriteMode mode)
         {
             byte[][] buffers = new[] { Array.Empty<byte>(), Encoding.UTF8.GetBytes("hello"), Array.Empty<byte>(), Encoding.UTF8.GetBytes("world") };
@@ -2229,6 +2297,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadWrite_CustomMemoryManager_Success(bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2349,6 +2418,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2386,6 +2456,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Timeout_Roundtrips()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2420,6 +2491,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task ReadTimeout_Expires_Throws()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2554,6 +2626,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Flush_ValidOnWriteableStreamWithNoData_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2568,6 +2641,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Flush_ValidOnReadableStream_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2585,6 +2659,7 @@ namespace System.IO.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public virtual async Task Dispose_ClosesStream(int disposeMode)
         {
             if (!CansReturnFalseAfterDispose)
@@ -2660,7 +2735,7 @@ namespace System.IO.Tests
         [InlineData(true, true)]
         public virtual async Task Dispose_Flushes(bool useAsync, bool leaveOpen)
         {
-            if (leaveOpen && (!SupportsLeaveOpen || ReadsMayBlockUntilBufferFullOrEOF))
+            if (leaveOpen && !SupportsLeaveOpen)
             {
                 return;
             }

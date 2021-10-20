@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
 {
@@ -57,6 +59,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to the active stack frame.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackFrame()
         {
             InitMembers();
@@ -66,6 +69,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to the active stack frame.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackFrame(bool needFileInfo)
         {
             InitMembers();
@@ -75,6 +79,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to a calling stack frame.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackFrame(int skipFrames)
         {
             InitMembers();
@@ -84,6 +89,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Constructs a StackFrame corresponding to a calling stack frame.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackFrame(int skipFrames, bool needFileInfo)
         {
             InitMembers();
@@ -95,6 +101,7 @@ namespace System.Diagnostics
         /// name and line number.  Use when you don't want to use the
         /// debugger's line mapping logic.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackFrame(string? fileName, int lineNumber)
         {
             InitMembers();
@@ -109,9 +116,14 @@ namespace System.Diagnostics
         /// name, line number and column number.  Use when you don't want to
         /// use the debugger's line mapping logic.
         /// </summary>
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public StackFrame(string? fileName, int lineNumber, int colNumber)
-            : this(fileName, lineNumber)
         {
+            InitMembers();
+
+            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
+            _fileName = fileName;
+            _lineNumber = lineNumber;
             _columnNumber = colNumber;
         }
 
@@ -125,6 +137,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Returns the method the frame is executing
         /// </summary>
+        [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
         public virtual MethodBase? GetMethod()
         {
             return _method;

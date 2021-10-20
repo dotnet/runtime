@@ -19,7 +19,6 @@ using Xunit;
 namespace System.Runtime.Serialization.Formatters.Tests
 {
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49568", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public partial class BinaryFormatterTests : FileCleanupTestBase
     {
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.

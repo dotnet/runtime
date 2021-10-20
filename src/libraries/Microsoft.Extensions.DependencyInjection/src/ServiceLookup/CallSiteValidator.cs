@@ -78,7 +78,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override Type VisitScopeCache(ServiceCallSite scopedCallSite, CallSiteValidatorState state)
         {
             // We are fine with having ServiceScopeService requested by singletons
-            if (scopedCallSite is ServiceScopeFactoryCallSite)
+            if (scopedCallSite.ServiceType == typeof(IServiceScopeFactory))
             {
                 return null;
             }
@@ -99,8 +99,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override Type VisitConstant(ConstantCallSite constantCallSite, CallSiteValidatorState state) => null;
 
         protected override Type VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, CallSiteValidatorState state) => null;
-
-        protected override Type VisitServiceScopeFactory(ServiceScopeFactoryCallSite serviceScopeFactoryCallSite, CallSiteValidatorState state) => null;
 
         protected override Type VisitFactory(FactoryCallSite factoryCallSite, CallSiteValidatorState state) => null;
 

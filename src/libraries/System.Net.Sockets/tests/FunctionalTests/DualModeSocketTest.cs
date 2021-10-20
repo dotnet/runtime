@@ -154,7 +154,7 @@ namespace System.Net.Sockets.Tests
             Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     // On Unix, socket assignment is random (not incremental) and there is a small chance the
                     // listening socket was created in another test currently running. Try the test one more time.
@@ -245,7 +245,7 @@ namespace System.Net.Sockets.Tests
             Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnect_IPEndPointToHost_Helper(connectTo, listenOn, false);
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     // On Unix, socket assignment is random (not incremental) and there is a small chance the
                     // listening socket was created in another test currently running. Try the test one more time.
@@ -354,6 +354,7 @@ namespace System.Net.Sockets.Tests
         public Task BeginConnectV4IPAddressToV4Host_Success() => DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51392", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public Task BeginConnectV6IPAddressToV6Host_Success() => DualModeBeginConnect_IPAddressToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
 
         [Fact]
@@ -383,7 +384,7 @@ namespace System.Net.Sockets.Tests
             SocketException e = await Assert.ThrowsAnyAsync<SocketException>(async () =>
             {
                 await DualModeBeginConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     // On Unix, socket assignment is random (not incremental) and there is a small chance the
                     // listening socket was created in another test currently running. Try the test one more time.
@@ -494,42 +495,36 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void ConnectAsyncV4IPEndPointToV4Host_Success()
         {
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.Loopback, false);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void ConnectAsyncV6IPEndPointToV6Host_Success()
         {
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback, false);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void ConnectAsyncV4IPEndPointToV6Host_Fails()
         {
             DualModeConnectAsync_IPEndPointToHost_Fails_Helper(IPAddress.Loopback, IPAddress.IPv6Loopback);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void ConnectAsyncV6IPEndPointToV4Host_Fails()
         {
             DualModeConnectAsync_IPEndPointToHost_Fails_Helper(IPAddress.IPv6Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void ConnectAsyncV4IPEndPointToDualHost_Success()
         {
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.Loopback, IPAddress.IPv6Any, true);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void ConnectAsyncV6IPEndPointToDualHost_Success()
         {
             DualModeConnectAsync_IPEndPointToHost_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Any, true);
@@ -564,7 +559,7 @@ namespace System.Net.Sockets.Tests
             Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeConnectAsync_IPEndPointToHost_Helper(connectTo, listenOn, false);
-                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (!OperatingSystem.IsWindows())
                 {
                     // On Unix, socket assignment is random (not incremental) and there is a small chance the
                     // listening socket was created in another test currently running. Try the test one more time.
@@ -787,7 +782,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/45810", TestRuntimes.Mono)]
         public void BeginAcceptV4BoundToAnyV4_Success()
         {
             DualModeConnect_BeginAccept_Helper(IPAddress.Any, IPAddress.Loopback);
@@ -849,6 +843,13 @@ namespace System.Net.Sockets.Tests
                 serverSocket.Listen(1);
                 IAsyncResult async = serverSocket.BeginAccept(null, null);
                 SocketClient client = new SocketClient(_log, serverSocket, connectTo, port);
+                
+                Assert.True(
+                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
+                    "Timed out while waiting for connection");
+                Assert.True(
+                    async.AsyncWaitHandle.WaitOne(TestSettings.PassingTestTimeout),
+                    "Timed out while waiting to accept the client");
 
                 // Due to the nondeterministic nature of calling dispose on a Socket that is doing
                 // an EndAccept operation, we expect two types of exceptions to happen.
@@ -871,10 +872,6 @@ namespace System.Net.Sockets.Tests
                 catch (ObjectDisposedException) { }
                 catch (SocketException) { }
 
-                Assert.True(
-                    client.WaitHandle.WaitOne(TestSettings.PassingTestTimeout),
-                    "Timed out while waiting for connection");
-
                 if (client.Error != SocketError.Success)
                 {
                     throw new SocketException((int)client.Error);
@@ -888,21 +885,18 @@ namespace System.Net.Sockets.Tests
     public class DualModeAcceptAsync : DualModeBase
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void AcceptAsyncV4BoundToSpecificV4_Success()
         {
             DualModeConnect_AcceptAsync_Helper(IPAddress.Loopback, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void AcceptAsyncV4BoundToAnyV4_Success()
         {
             DualModeConnect_AcceptAsync_Helper(IPAddress.Any, IPAddress.Loopback);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void AcceptAsyncV6BoundToSpecificV6_Success()
         {
             DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Loopback, IPAddress.IPv6Loopback);
@@ -945,7 +939,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50568", TestPlatforms.Android)]
         public void AcceptAsyncV4BoundToAnyV6_Success()
         {
             DualModeConnect_AcceptAsync_Helper(IPAddress.IPv6Any, IPAddress.Loopback);
@@ -1238,11 +1231,11 @@ namespace System.Net.Sockets.Tests
                 bool async = socket.SendToAsync(args);
                 Assert.False(async);
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     Assert.Equal(SocketError.Fault, args.SocketError);
                 }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                else if (OperatingSystem.IsLinux())
                 {
                     // NOTE: on Linux, this API returns ENETUNREACH instead of EFAULT: this platform
                     //       checks the family of the provided socket address before checking its size
@@ -2014,7 +2007,7 @@ namespace System.Net.Sockets.Tests
 
                 serverSocket.ReceiveTimeout = TestSettings.FailingTestTimeout;
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (OperatingSystem.IsWindows())
                 {
                     Assert.Throws<SocketException>(() =>
                     {
@@ -2468,11 +2461,11 @@ namespace System.Net.Sockets.Tests
 
         protected static void AssertDualModeEnabled(Socket socket, IPAddress listenOn)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 Assert.True(socket.DualMode);
             }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
+            else if (OperatingSystem.IsFreeBSD())
             {
                 // This is not valid check on FreeBSD.
                 // Accepted socket is never DualMode and cannot be changed.

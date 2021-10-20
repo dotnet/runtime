@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 namespace Microsoft.DotNet.PlatformAbstractions
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
-    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is System.HashCode.")]
+    [Obsolete("HashCodeCombiner has been deprecated. Use System.HashCode instead.")]
     public struct HashCodeCombiner
     {
         private long _combinedHash64;
@@ -33,21 +33,21 @@ namespace Microsoft.DotNet.PlatformAbstractions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(string s)
+        public void Add(string? s)
         {
             int hashCode = (s != null) ? s.GetHashCode() : 0;
             Add(hashCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(object o)
+        public void Add(object? o)
         {
             int hashCode = (o != null) ? o.GetHashCode() : 0;
             Add(hashCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add<TValue>(TValue value, IEqualityComparer<TValue> comparer)
+        public void Add<TValue>(TValue? value, IEqualityComparer<TValue> comparer)
         {
             int hashCode = value != null ? comparer.GetHashCode(value) : 0;
             Add(hashCode);

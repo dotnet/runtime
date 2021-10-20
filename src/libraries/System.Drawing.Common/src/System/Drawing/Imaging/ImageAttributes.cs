@@ -94,7 +94,7 @@ namespace System.Drawing.Imaging
 #endif
                     Gdip.GdipDisposeImageAttributes(new HandleRef(this, nativeImageAttributes));
 #if DEBUG
-                    Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
+                    Debug.Assert(status == Gdip.Ok, $"GDI+ returned an error status: {status.ToString(CultureInfo.InvariantCulture)}");
 #endif
                 }
                 catch (Exception ex)

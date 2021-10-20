@@ -9,7 +9,8 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ChaCha20Poly1305
     {
-        public static bool IsSupported { get; } = Interop.Crypto.EvpChaCha20Poly1305() != IntPtr.Zero;
+        public static bool IsSupported { get; } = Interop.OpenSslNoInit.OpenSslIsAvailable &&
+            Interop.Crypto.EvpChaCha20Poly1305() != IntPtr.Zero;
 
         private SafeEvpCipherCtxHandle _ctxHandle;
 

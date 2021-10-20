@@ -65,7 +65,7 @@ namespace System.Diagnostics
 
         private static string ConvertTo8DigitHex(uint value)
         {
-            return value.ToString("X8", CultureInfo.InvariantCulture);
+            return value.ToString("X8");
         }
 
         private static Interop.Version.VS_FIXEDFILEINFO GetFixedFileInfo(IntPtr memPtr)
@@ -126,18 +126,20 @@ namespace System.Diagnostics
         //
         private bool GetVersionInfoForCodePage(IntPtr memIntPtr, string codepage)
         {
-            _companyName = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\CompanyName");
-            _fileDescription = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\FileDescription");
-            _fileVersion = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\FileVersion");
-            _internalName = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\InternalName");
-            _legalCopyright = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\LegalCopyright");
-            _originalFilename = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\OriginalFilename");
-            _productName = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\ProductName");
-            _productVersion = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\ProductVersion");
-            _comments = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\Comments");
-            _legalTrademarks = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\LegalTrademarks");
-            _privateBuild = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\PrivateBuild");
-            _specialBuild = GetFileVersionString(memIntPtr, $"\\\\StringFileInfo\\\\{codepage}\\\\SpecialBuild");
+            Span<char> stackBuffer = stackalloc char[256];
+
+            _companyName = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\CompanyName"));
+            _fileDescription = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\FileDescription"));
+            _fileVersion = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\FileVersion"));
+            _internalName = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\InternalName"));
+            _legalCopyright = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\LegalCopyright"));
+            _originalFilename = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\OriginalFilename"));
+            _productName = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\ProductName"));
+            _productVersion = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\ProductVersion"));
+            _comments = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\Comments"));
+            _legalTrademarks = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\LegalTrademarks"));
+            _privateBuild = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\PrivateBuild"));
+            _specialBuild = GetFileVersionString(memIntPtr, string.Create(null, stackBuffer, $"\\\\StringFileInfo\\\\{codepage}\\\\SpecialBuild"));
 
             _language = GetFileVersionLanguage(memIntPtr);
 

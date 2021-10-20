@@ -180,7 +180,7 @@ namespace System.Resources
 
         private unsafe int GetNameHash(int index)
         {
-            Debug.Assert(index >= 0 && index < _numResources, "Bad index into hash array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, $"Bad index into hash array.  index: {index}");
 
             if (_ums == null)
             {
@@ -196,7 +196,7 @@ namespace System.Resources
 
         private unsafe int GetNamePosition(int index)
         {
-            Debug.Assert(index >= 0 && index < _numResources, "Bad index into name position array.  index: " + index);
+            Debug.Assert(index >= 0 && index < _numResources, $"Bad index into name position array.  index: {index}");
             int r;
             if (_ums == null)
             {

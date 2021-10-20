@@ -23,7 +23,6 @@ namespace Internal.Cryptography
             Debug.Assert(offset >= 0 && offset <= data.Length - count);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-#if NET5_0_OR_GREATER
             ReadOnlySpan<byte> source = data.AsSpan(offset, count);
 
             return
@@ -33,12 +32,6 @@ namespace Internal.Cryptography
                 hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.HashData(source) :
                 hashAlgorithm == HashAlgorithmName.MD5 ? MD5.HashData(source) :
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
-#else
-            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hasher.ComputeHash(data, offset, count);
-            }
-#endif
         }
 
         public static byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -60,7 +53,6 @@ namespace Internal.Cryptography
             // The classes that call us are sealed and their base class has checked this already.
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
-#if NET5_0_OR_GREATER
             return
                 hashAlgorithm == HashAlgorithmName.SHA256 ? SHA256.TryHashData(source, destination, out bytesWritten) :
                 hashAlgorithm == HashAlgorithmName.SHA1 ? SHA1.TryHashData(source, destination, out bytesWritten) :
@@ -68,12 +60,6 @@ namespace Internal.Cryptography
                 hashAlgorithm == HashAlgorithmName.SHA384 ? SHA384.TryHashData(source, destination, out bytesWritten) :
                 hashAlgorithm == HashAlgorithmName.MD5 ? MD5.TryHashData(source, destination, out bytesWritten) :
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
-#else
-            using (HashAlgorithm hasher = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hasher.TryComputeHash(source, destination, out bytesWritten);
-            }
-#endif
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]

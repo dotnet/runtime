@@ -15,7 +15,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object in the given
         /// source type to a Unicode character object using the specified context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -23,7 +23,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given object to another type.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(string) && value is char charValue)
             {
@@ -39,7 +39,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given object to a Unicode character object.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {

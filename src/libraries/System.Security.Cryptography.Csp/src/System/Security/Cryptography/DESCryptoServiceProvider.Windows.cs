@@ -95,7 +95,16 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_InvalidIVSize);
             }
 
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_DES, Mode, BlockSize / BitsPerByte, rgbKey, 0, false, rgbIV, encrypting, FeedbackSize, this.GetPaddingSize());
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(
+                CapiHelper.CALG_DES,
+                Mode,
+                BlockSize / BitsPerByte,
+                rgbKey,
+                addNoSaltFlag: false,
+                rgbIV,
+                encrypting,
+                FeedbackSize,
+                this.GetPaddingSize(Mode, FeedbackSize));
             return UniversalCryptoTransform.Create(Padding, cipher, encrypting);
         }
     }

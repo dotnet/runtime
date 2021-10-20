@@ -6,7 +6,6 @@
     <GenerateRunScript>false</GenerateRunScript>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>
     <CLRTestPriority>0</CLRTestPriority>
-    <DefineConstants>$(DefineConstants);PROJECTK_BUILD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DetourHelpers.cs" />

@@ -2,6 +2,8 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
+    <!-- This is not a product assembly, nor is it a shipping package. It's only meant for testing consumption in upstack repos.-->    
+    <IsShipping>false</IsShipping>
     <PackageDescription>CoreCLR application host for test applications.</PackageDescription>
   </PropertyGroup>
 

@@ -163,6 +163,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60558", TestPlatforms.Android)]
         public void GetField()
         {
             FieldInfo testInt = TestModule.GetField("TestInt", BindingFlags.Public | BindingFlags.Static);
@@ -238,24 +239,24 @@ namespace System.Reflection.Tests
             AssertExtensions.SequenceEqual(new[]{ "TestMethodFoo", "TestMethodFoo" }, methodNames );
 
             methodNames = TestModule.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static).Select(m => m.Name).ToArray();
-            AssertExtensions.SequenceEqual(new[]{ "TestMethodFoo", "TestMethodFoo", "TestMethodBar" }, methodNames );
+            Array.Sort<string>(methodNames);
+            AssertExtensions.SequenceEqual(new[]{ "TestMethodBar", "TestMethodFoo", "TestMethodFoo" }, methodNames );
         }
 
-        public static IEnumerable<object[]> Types =>
-            Module.GetTypes().Select(t => new object[] { t });
+        public static IEnumerable<Type> Types => Module.GetTypes();
 
-        [Theory]
-        [MemberData(nameof(Types))]
-        public void ResolveType(Type t)
+        [Fact]
+        public void ResolveTypes()
         {
-            Assert.Equal(t, Module.ResolveType(t.MetadataToken));
+            foreach(Type t in Types)
+                Assert.Equal(t, Module.ResolveType(t.MetadataToken));
         }
 
         public static IEnumerable<object[]> BadResolveTypes =>
             new[]
             {
                 new object[] { 1234 },
-                new object[] { typeof(ModuleTests).GetMethod("ResolveType").MetadataToken },
+                new object[] { typeof(ModuleTests).GetMethod("ResolveTypes").MetadataToken },
             }
             .Union(NullTokens);
 
@@ -269,14 +270,14 @@ namespace System.Reflection.Tests
             });
         }
 
-        public static IEnumerable<object[]> Methods =>
-            typeof(ModuleTests).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(m => new object[] { m });
+        public static IEnumerable<MemberInfo> Methods =>
+            typeof(ModuleTests).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-        [Theory]
-        [MemberData(nameof(Methods))]
-        public void ResolveMethod(MethodInfo t)
+        [Fact]
+        public void ResolveMethodsByMethodInfo()
         {
-            Assert.Equal(t, Module.ResolveMethod(t.MetadataToken));
+            foreach(MethodInfo mi in Methods)
+                Assert.Equal(mi, Module.ResolveMethod(mi.MetadataToken));
         }
 
         public static IEnumerable<object[]> BadResolveMethods =>
@@ -298,14 +299,15 @@ namespace System.Reflection.Tests
             });
         }
 
-        public static IEnumerable<object[]> Fields =>
-            typeof(ModuleTests).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly).Select(f => new object[] { f });
+        public static IEnumerable<MemberInfo> Fields =>
+            typeof(ModuleTests).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
 
-        [Theory]
-        [MemberData(nameof(Fields))]
-        public void ResolveField(FieldInfo t)
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/52072", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void ResolveFieldsByFieldInfo()
         {
-            Assert.Equal(t, Module.ResolveField(t.MetadataToken));
+            foreach(FieldInfo fi in Fields)
+                Assert.Equal(fi, Module.ResolveField(fi.MetadataToken));
         }
 
         public static IEnumerable<object[]> BadResolveFields =>
@@ -346,13 +348,25 @@ namespace System.Reflection.Tests
             });
         }
 
-        [Theory]
-        [MemberData(nameof(Types))]
-        [MemberData(nameof(Methods))]
-        [MemberData(nameof(Fields))]
-        public void ResolveMember(MemberInfo member)
+        [Fact]
+        public void ResolveTypesByMemberInfo()
         {
-            Assert.Equal(member, Module.ResolveMember(member.MetadataToken));
+            foreach(MemberInfo mi in Types)
+                Assert.Equal(mi, Module.ResolveMember(mi.MetadataToken));
+        }
+
+        [Fact]
+        public void ResolveMethodsByMemberInfo()
+        {
+            foreach (MemberInfo mi in Methods)
+                Assert.Equal(mi, Module.ResolveMember(mi.MetadataToken));
+        }
+
+        [Fact]
+        public void ResolveFieldsByMemberInfo()
+        {
+            foreach (MemberInfo mi in Fields)
+                Assert.Equal(mi, Module.ResolveMember(mi.MetadataToken));
         }
 
         [Fact]

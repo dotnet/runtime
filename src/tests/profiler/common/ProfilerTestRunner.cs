@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 namespace Profiler.Tests
 {
+    public delegate void ProfilerCallback();
+
     [Flags]
     public enum ProfileeOptions
     {
@@ -26,12 +28,19 @@ namespace Profiler.Tests
                               Guid profilerClsid,
                               string profileeArguments = "",
                               ProfileeOptions profileeOptions = ProfileeOptions.None,
-                              string reverseServerName = null)
+                              Dictionary<string, string> envVars = null,
+                              string reverseServerName = null,
+                              bool loadAsNotification = false,
+                              int notificationCopies = 1)
         {
             string arguments;
             string program;
-            Dictionary<string, string> envVars = new Dictionary<string, string>();
             string profileeAppDir = Path.GetDirectoryName(profileePath);
+
+            if (envVars == null)
+            {
+                envVars = new Dictionary<string, string>();
+            }
 
             arguments = profileePath + " RunTest " + profileeArguments;
             program = GetCorerunPath();
@@ -39,8 +48,29 @@ namespace Profiler.Tests
             if (!profileeOptions.HasFlag(ProfileeOptions.NoStartupAttach))
             {
                 envVars.Add("CORECLR_ENABLE_PROFILING", "1");
-                envVars.Add("CORECLR_PROFILER_PATH", profilerPath);
-                envVars.Add("CORECLR_PROFILER", "{" + profilerClsid + "}");
+
+                if (loadAsNotification)
+                {
+                    StringBuilder builder = new StringBuilder();
+                    for(int i = 0; i < notificationCopies; ++i)
+                    {
+                        builder.Append(profilerPath);
+                        builder.Append("=");
+                        builder.Append("{");
+                        builder.Append(profilerClsid.ToString());
+                        builder.Append("}");
+                        builder.Append(";");
+                    }
+
+                    envVars.Add("CORECLR_ENABLE_NOTIFICATION_PROFILERS", "1");
+                    envVars.Add("CORECLR_NOTIFICATION_PROFILERS", builder.ToString());
+
+                }
+                else
+                {
+                    envVars.Add("CORECLR_PROFILER", "{" + profilerClsid + "}");
+                    envVars.Add("CORECLR_PROFILER_PATH", profilerPath);
+                }
             }
 
             if (profileeOptions.HasFlag(ProfileeOptions.OptimizationSensitive))
@@ -118,7 +148,7 @@ namespace Profiler.Tests
             return 100;
         }
 
-        private static string GetProfilerPath()
+        public static string GetProfilerPath()
         {
             string profilerName;
             if (TestLibrary.Utilities.IsWindows)

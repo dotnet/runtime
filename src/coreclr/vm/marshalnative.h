@@ -49,6 +49,11 @@ public:
     static FCDECL2(Object*, GetDelegateForFunctionPointerInternal, LPVOID FPtr, ReflectClassBaseObject* refTypeUNSAFE);
     static FCDECL1(LPVOID, GetFunctionPointerForDelegateInternal, Object* refDelegateUNSAFE);
 
+#ifdef _DEBUG
+    using IsInCooperativeGCMode_fn = BOOL(STDMETHODCALLTYPE*)(void);
+    static IsInCooperativeGCMode_fn QCALLTYPE GetIsInCooperativeGCModeFunctionPointer();
+#endif
+
 #ifdef FEATURE_COMINTEROP
     //====================================================================
     // return the IUnknown* for an Object
@@ -97,11 +102,6 @@ public:
     // Create an object and aggregate it, then return the inner unknown.
     //====================================================================
     static FCDECL2(IUnknown*, CreateAggregatedObjectNative, IUnknown* pOuter, Object* refObjUNSAFE);
-
-    //====================================================================
-    // check if the object is classic COM component
-    //====================================================================
-    static FCDECL1(FC_BOOL_RET, IsComObject, Object* objUNSAFE);
 
     //====================================================================
     // free the COM component and zombie this object

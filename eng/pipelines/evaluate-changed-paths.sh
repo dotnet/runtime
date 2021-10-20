@@ -73,12 +73,12 @@ while [[ $# > 0 ]]; do
       ;;
     -excludepaths)
       IFS='+' read -r -a tmp <<< $2
-      exclude_paths+=($tmp)
+      exclude_paths+=(${tmp[@]})
       shift
       ;;
     -includepaths)
       IFS='+' read -r -a tmp <<< $2
-      include_paths+=($tmp)
+      include_paths+=(${tmp[@]})
       shift
       ;;
     -subset)

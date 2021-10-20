@@ -20,7 +20,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingParameter.Attributes; }
         }
 
-        public override object DefaultValue
+        public override object? DefaultValue
         {
             get { return UnderlyingParameter.DefaultValue; }
         }
@@ -35,7 +35,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingParameter.MetadataToken; }
         }
 
-        public override string Name
+        public override string? Name
         {
             get { return UnderlyingParameter.Name; }
         }
@@ -50,7 +50,7 @@ namespace System.Reflection.Context.Delegation
             get { return UnderlyingParameter.Position; }
         }
 
-        public override object RawDefaultValue
+        public override object? RawDefaultValue
         {
             get { return UnderlyingParameter.RawDefaultValue; }
         }

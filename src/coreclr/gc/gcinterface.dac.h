@@ -46,9 +46,15 @@ public:
 // of a generation and its allocation context.
 class dac_generation {
 public:
-    gc_alloc_context allocation_context;
-    DPTR(dac_heap_segment) start_segment;
-    uint8_t* allocation_start;
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) field_type field_name;
+#define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
+
+#include "dac_generation_fields.h"
+
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
 };
 
 // Analogue for the GC CFinalize class, containing information about the finalize queue.
@@ -136,17 +142,17 @@ struct oom_history
 // GC heap (of which there are multiple, with server GC).
 class dac_gc_heap {
 public:
-    uint8_t* alloc_allocated;
-    DPTR(dac_heap_segment) ephemeral_heap_segment;
-    DPTR(dac_finalize_queue) finalize_queue;
-    oom_history oom_info;
-    size_t interesting_data_per_heap[NUM_GC_DATA_POINTS];
-    size_t compact_reasons_per_heap[MAX_COMPACT_REASONS_COUNT];
-    size_t expand_mechanisms_per_heap[MAX_EXPAND_MECHANISMS_COUNT];
-    size_t interesting_mechanism_bits_per_heap[MAX_GC_MECHANISM_BITS_COUNT];
-    uint8_t* internal_root_array;
-    size_t internal_root_array_index;
-    BOOL heap_analyze_success;
+#define ALL_FIELDS
+#define DEFINE_FIELD(field_name, field_type) field_type field_name;
+#define DEFINE_DPTR_FIELD(field_name, field_type) DPTR(field_type) field_name;
+#define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) field_type field_name[array_length];
+
+#include "dac_gcheap_fields.h"
+
+#undef DEFINE_ARRAY_FIELD
+#undef DEFINE_DPTR_FIELD
+#undef DEFINE_FIELD
+#undef ALL_FIELDS
 
     // The generation table must always be last, because the size of this array
     // (stored inline in the gc_heap class) can vary.
@@ -162,6 +168,19 @@ public:
     dac_generation generation_table[1];
 };
 
+#define GENERATION_TABLE_FIELD_INDEX 18
+
+// Unlike other DACized structures, these types are loaded manually in the debugger.
+// To avoid misuse, pointers to them are explicitly casted to these unused type.
+struct unused_gc_heap
+{
+    uint8_t unused;
+};
+
+struct unused_generation
+{
+    uint8_t unused;
+};
 
 // The DAC links against six symbols that build as part of the VM DACCESS_COMPILE
 // build. These symbols are considered to be GC-private functions, but the DAC needs

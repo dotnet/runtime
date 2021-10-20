@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
     internal class ParameterInfoWrapper : ParameterInfo
     {
@@ -22,6 +22,12 @@ namespace System.Text.Json.SourceGeneration.Reflection
         public override Type ParameterType => _parameter.Type.AsType(_metadataLoadContext);
 
         public override string Name => _parameter.Name;
+
+        public override bool HasDefaultValue => _parameter.HasExplicitDefaultValue;
+
+        public override object DefaultValue => HasDefaultValue ? _parameter.ExplicitDefaultValue : null;
+
+        public override int Position => _parameter.Ordinal; 
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {

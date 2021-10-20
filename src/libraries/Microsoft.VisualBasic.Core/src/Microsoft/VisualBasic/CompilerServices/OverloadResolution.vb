@@ -21,7 +21,7 @@ Imports System.Diagnostics.CodeAnalysis
 Namespace Microsoft.VisualBasic.CompilerServices
 
     ' Implements VB method overloading semantics.
-    Friend Class OverloadResolution
+    Friend NotInheritable Class OverloadResolution
         ' Prevent creation.
         Private Sub New()
         End Sub
@@ -980,6 +980,7 @@ nextcandidate:
             Return False
         End Function
 
+        <RequiresUnreferencedCode("Calls GetInterfaces on argument type recursively")>
         Private Shared Function InferTypeArgumentsFromArgument(
             ByVal argumentType As Type,
             ByVal parameterType As Type,
@@ -1104,6 +1105,7 @@ RetryInference:
         End Function
 
 
+        <RequiresUnreferencedCode("Calls InferTypeArgumentsFromArgument")>
         Private Shared Function InferTypeArgumentsFromArgumentDirectly(
             ByVal argumentType As Type,
             ByVal parameterType As Type,
@@ -1296,6 +1298,7 @@ RetryInference:
 
         End Function
 
+        <RequiresUnreferencedCode("Calls InferTypArgumentsFromArgument")>
         Friend Shared Function InferTypeArgumentsFromArgument(
             ByVal targetProcedure As Method,
             ByVal argument As Object,
@@ -1839,6 +1842,7 @@ skipargument:
             Return
         End Sub
 
+        <RequiresUnreferencedCode("Calls InferTypeArgumentsFromArgument")>
         Private Shared Function InferTypeArguments(
             ByVal targetProcedure As Method,
             ByVal arguments As Object(),

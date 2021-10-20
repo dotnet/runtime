@@ -22,6 +22,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
         private IEnumerable<IHostedService> _hostedServices;
+        private volatile bool _stopCalled;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -78,12 +79,26 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
+            // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
+            Task backgroundTask = backgroundService.ExecuteTask;
+            if (backgroundTask == null)
+            {
+                return;
+            }
+
             try
             {
-                await backgroundService.ExecuteTask.ConfigureAwait(false);
+                await backgroundTask.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
+                // When the host is being stopped, it cancels the background services.
+                // This isn't an error condition, so don't log it as an error.
+                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
+                {
+                    return;
+                }
+
                 _logger.BackgroundServiceFaulted(ex);
                 if (_options.BackgroundServiceExceptionBehavior == BackgroundServiceExceptionBehavior.StopHost)
                 {
@@ -95,6 +110,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public async Task StopAsync(CancellationToken cancellationToken = default)
         {
+            _stopCalled = true;
             _logger.Stopping();
 
             using (var cts = new CancellationTokenSource(_options.ShutdownTimeout))

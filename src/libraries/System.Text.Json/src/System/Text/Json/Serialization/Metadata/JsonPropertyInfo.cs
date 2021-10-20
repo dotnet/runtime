@@ -40,19 +40,24 @@ namespace System.Text.Json.Serialization.Metadata
             return info;
         }
 
-        // Create a property that is ignored at run-time. It uses the same type (typeof(sbyte)) to help
-        // prevent issues with unsupported types and helps ensure we don't accidently (de)serialize it.
-        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(MemberInfo memberInfo, JsonSerializerOptions options)
+        // Create a property that is ignored at run-time.
+        internal static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(
+            MemberInfo memberInfo,
+            Type memberType,
+            bool isVirtual,
+            JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfo<sbyte>();
+
             jsonPropertyInfo.Options = options;
             jsonPropertyInfo.MemberInfo = memberInfo;
-            jsonPropertyInfo.DeterminePropertyName();
             jsonPropertyInfo.IsIgnored = true;
+            jsonPropertyInfo.DeclaredPropertyType = memberType;
+            jsonPropertyInfo.IsVirtual = isVirtual;
+            jsonPropertyInfo.DeterminePropertyName();
 
             Debug.Assert(!jsonPropertyInfo.ShouldDeserialize);
             Debug.Assert(!jsonPropertyInfo.ShouldSerialize);
-
             return jsonPropertyInfo;
         }
 
@@ -72,6 +77,12 @@ namespace System.Text.Json.Serialization.Metadata
                 DeterminePropertyName();
                 DetermineIgnoreCondition(ignoreCondition);
 
+                JsonPropertyOrderAttribute? orderAttr = GetAttribute<JsonPropertyOrderAttribute>(MemberInfo);
+                if (orderAttr != null)
+                {
+                    Order = orderAttr.Order;
+                }
+
                 JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
                 DetermineNumberHandlingForProperty(attribute?.Handling, declaringTypeNumberHandling);
             }
@@ -80,6 +91,8 @@ namespace System.Text.Json.Serialization.Metadata
         private void DeterminePropertyName()
         {
             Debug.Assert(MemberInfo != null);
+
+            ClrName = MemberInfo.Name;
 
             JsonPropertyNameAttribute? nameAttribute = GetAttribute<JsonPropertyNameAttribute>(MemberInfo);
             if (nameAttribute != null)
@@ -256,34 +269,32 @@ namespace System.Text.Json.Serialization.Metadata
                 return true;
             }
 
+            Type potentialNumberType;
             if (!ConverterBase.IsInternalConverter ||
                 ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
             {
-                return false;
+                potentialNumberType = DeclaredPropertyType;
             }
-
-            Type? elementType = ConverterBase.ElementType;
-            Debug.Assert(elementType != null);
-
-            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
-
-            if (elementType == typeof(byte) ||
-                elementType == typeof(decimal) ||
-                elementType == typeof(double) ||
-                elementType == typeof(short) ||
-                elementType == typeof(int) ||
-                elementType == typeof(long) ||
-                elementType == typeof(sbyte) ||
-                elementType == typeof(float) ||
-                elementType == typeof(ushort) ||
-                elementType == typeof(uint) ||
-                elementType == typeof(ulong) ||
-                elementType == JsonTypeInfo.ObjectType)
+            else
             {
-                return true;
+                Debug.Assert(ConverterBase.ElementType != null);
+                potentialNumberType = ConverterBase.ElementType;
             }
 
-            return false;
+            potentialNumberType = Nullable.GetUnderlyingType(potentialNumberType) ?? potentialNumberType;
+
+            return potentialNumberType == typeof(byte) ||
+                potentialNumberType == typeof(decimal) ||
+                potentialNumberType == typeof(double) ||
+                potentialNumberType == typeof(short) ||
+                potentialNumberType == typeof(int) ||
+                potentialNumberType == typeof(long) ||
+                potentialNumberType == typeof(sbyte) ||
+                potentialNumberType == typeof(float) ||
+                potentialNumberType == typeof(ushort) ||
+                potentialNumberType == typeof(uint) ||
+                potentialNumberType == typeof(ulong) ||
+                potentialNumberType == JsonTypeInfo.ObjectType;
         }
 
         internal static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
@@ -305,6 +316,7 @@ namespace System.Text.Json.Serialization.Metadata
             Type? runtimePropertyType,
             ConverterStrategy runtimeClassType,
             MemberInfo? memberInfo,
+            bool isVirtual,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
             JsonNumberHandling? parentTypeNumberHandling,
@@ -312,12 +324,12 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(converter != null);
 
-            ClrName = memberInfo?.Name;
             DeclaringType = parentClassType;
             DeclaredPropertyType = declaredPropertyType;
             RuntimePropertyType = runtimePropertyType;
             ConverterStrategy = runtimeClassType;
             MemberInfo = memberInfo;
+            IsVirtual = isVirtual;
             ConverterBase = converter;
             Options = options;
         }
@@ -361,6 +373,11 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonSerializerOptions Options { get; set; } = null!; // initialized in Init method
 
+        /// <summary>
+        /// The property order.
+        /// </summary>
+        internal int Order { get; set; }
+
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
             ref ReadStack state,
@@ -368,57 +385,56 @@ namespace System.Text.Json.Serialization.Metadata
         {
             object propValue = GetValueAsObject(obj)!;
 
-            if (propValue is IDictionary<string, object?> dictionaryObject)
+            if (propValue is IDictionary<string, object?> dictionaryObjectValue)
             {
-                // Handle case where extension property is System.Object-based.
-
                 if (reader.TokenType == JsonTokenType.Null)
                 {
                     // A null JSON value is treated as a null object reference.
-                    dictionaryObject[state.Current.JsonPropertyNameAsString!] = null;
+                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = null;
                 }
                 else
                 {
-                    JsonConverter converter;
-                    JsonTypeInfo? dictionaryValueInfo = RuntimeTypeInfo.ElementTypeInfo;
-                    if (dictionaryValueInfo != null)
-                    {
-                        // Fast path when there is a generic type such as Dictionary<string, object>.
-                        converter = dictionaryValueInfo.PropertyInfoForTypeInfo.ConverterBase;
-                    }
-                    else
-                    {
-                        // Slower path for non-generic types that implement IDictionary<string, object>.
-                        converter = JsonMetadataServices.ObjectConverter;
-                    }
-
-                    if (!converter.TryReadAsObject(ref reader, Options, ref state, out object? value))
-                    {
-                        return false;
-                    }
-
-                    dictionaryObject[state.Current.JsonPropertyNameAsString!] = value;
+                    JsonConverter<object> converter = (JsonConverter<object>)GetDictionaryValueConverter(JsonTypeInfo.ObjectType);
+                    object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
+                    dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = value;
                 }
             }
-            else if (propValue is IDictionary<string, JsonElement> dictionaryJsonElement)
+            else if (propValue is IDictionary<string, JsonElement> dictionaryElementValue)
             {
-                JsonConverter<JsonElement> converter = JsonMetadataServices.JsonElementConverter;
-                if (!converter.TryRead(ref reader, typeof(JsonElement), Options, ref state, out JsonElement value))
-                {
-                    return false;
-                }
-
-                dictionaryJsonElement[state.Current.JsonPropertyNameAsString!] = value;
+                Type elementType = typeof(JsonElement);
+                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)GetDictionaryValueConverter(elementType);
+                JsonElement value = converter.Read(ref reader, elementType, Options);
+                dictionaryElementValue[state.Current.JsonPropertyNameAsString!] = value;
             }
             else
             {
                 // Avoid a type reference to JsonObject and its converter to support trimming.
                 Debug.Assert(propValue is Nodes.JsonObject);
-
                 ConverterBase.ReadElementAndSetProperty(propValue, state.Current.JsonPropertyNameAsString!, ref reader, Options, ref state);
             }
 
             return true;
+
+            JsonConverter GetDictionaryValueConverter(Type dictionaryValueType)
+            {
+                JsonConverter converter;
+                JsonTypeInfo? dictionaryValueInfo = RuntimeTypeInfo.ElementTypeInfo;
+                if (dictionaryValueInfo != null)
+                {
+                    // Fast path when there is a generic type such as Dictionary<,>.
+                    converter = dictionaryValueInfo.PropertyInfoForTypeInfo.ConverterBase;
+                }
+                else
+                {
+                    // Slower path for non-generic types that implement IDictionary<,>.
+                    // It is possible to cache this converter on JsonTypeInfo if we assume the property value
+                    // will always be the same type for all instances.
+                    converter = Options.GetConverterInternal(dictionaryValueType);
+                }
+
+                Debug.Assert(converter != null);
+                return converter;
+            }
         }
 
         internal abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
@@ -480,6 +496,21 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool IsIgnored { get; set; }
 
+        /// <summary>
+        /// Relevant to source generated metadata: did the property have the <see cref="JsonIncludeAttribute"/>?
+        /// </summary>
+        internal bool SrcGen_HasJsonInclude { get; set; }
+
+        /// <summary>
+        /// Relevant to source generated metadata: did the property have the <see cref="JsonExtensionDataAttribute"/>?
+        /// </summary>
+        internal bool SrcGen_IsExtensionData { get; set; }
+
+        /// <summary>
+        /// Relevant to source generated metadata: is the property public?
+        /// </summary>
+        internal bool SrcGen_IsPublic { get; set; }
+
         internal JsonNumberHandling? NumberHandling { get; set; }
 
         //  Whether the property type can be null.
@@ -490,5 +521,12 @@ namespace System.Text.Json.Serialization.Metadata
         internal MemberTypes MemberType { get; set; } // TODO: with some refactoring, we should be able to remove this.
 
         internal string? ClrName { get; set; }
+
+        internal bool IsVirtual { get; set; }
+
+        /// <summary>
+        /// Default value used for parameterized ctor invocation.
+        /// </summary>
+        internal abstract object? DefaultValue { get; }
     }
 }

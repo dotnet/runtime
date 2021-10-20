@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using MockHostTypes;
+using Microsoft.Extensions.Hosting;
 
 namespace CreateHostBuilderInvalidSignature
 {
@@ -9,7 +10,7 @@ namespace CreateHostBuilderInvalidSignature
     {
         public static void Main(string[] args)
         {
-            var webHost = CreateHostBuilder(null, args).Build();
+            var webHost = CreateHostBuilder(null, args)?.Build();
         }
 
         // Extra parameter

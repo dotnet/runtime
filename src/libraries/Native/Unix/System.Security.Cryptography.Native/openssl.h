@@ -74,3 +74,5 @@ PALEXPORT int32_t CryptoNative_EnsureOpenSslInitialized(void);
 PALEXPORT int64_t CryptoNative_OpenSslVersionNumber(void);
 
 PALEXPORT void CryptoNative_RegisterLegacyAlgorithms(void);
+
+PALEXPORT int32_t CryptoNative_OpenSslAvailable(void);

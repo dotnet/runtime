@@ -184,7 +184,7 @@ public class ReversePInvoke_MashalArrayByOut_AsManagedTest
         Assert.IsTrue(DoCallBack_MarshalUlongArray_AsParam_AsByOut(new DelUlongArrByOutAsCdeclCaller(TestMethodForUlongArray_AsReversePInvokeByOut_AsCdecl)));
         Console.WriteLine("\t\tMarshalUlongArray_AsReversePInvokeByOut_AsCdecl Passed!");
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             Console.WriteLine("\tScenario 10 : string ==> BSTR, Array_Size = 10, Return_Array_Size = 20");
             Assert.IsTrue(DoCallBack_MarshalStringArray_AsParam_AsByOut(new DelStringArrByOutAsCdeclCaller(TestMethodForStringArray_AsReversePInvokeByOut_AsCdecl)));

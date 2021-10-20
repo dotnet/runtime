@@ -103,31 +103,37 @@ namespace System.Text.Json
                             }
 
                             // Unfortunately, this is endianess sensitive
-#if BIGENDIAN
-                            *pTarget = (byte)(ch >> 16);
-                            *(pTarget + 1) = (byte)ch;
-                            pSrc += 4;
-                            *(pTarget + 2) = (byte)(chc >> 16);
-                            *(pTarget + 3) = (byte)chc;
-                            pTarget += 4;
-#else // BIGENDIAN
-                            *pTarget = (byte)ch;
-                            *(pTarget + 1) = (byte)(ch >> 16);
-                            pSrc += 4;
-                            *(pTarget + 2) = (byte)chc;
-                            *(pTarget + 3) = (byte)(chc >> 16);
-                            pTarget += 4;
-#endif // BIGENDIAN
+                            if (!BitConverter.IsLittleEndian)
+                            {
+                                *pTarget = (byte)(ch >> 16);
+                                *(pTarget + 1) = (byte)ch;
+                                pSrc += 4;
+                                *(pTarget + 2) = (byte)(chc >> 16);
+                                *(pTarget + 3) = (byte)chc;
+                                pTarget += 4;
+                            }
+                            else
+                            {
+                                *pTarget = (byte)ch;
+                                *(pTarget + 1) = (byte)(ch >> 16);
+                                pSrc += 4;
+                                *(pTarget + 2) = (byte)chc;
+                                *(pTarget + 3) = (byte)(chc >> 16);
+                                pTarget += 4;
+                            }
                         }
                         continue;
 
                     LongCodeWithMask:
-#if BIGENDIAN
-                        // be careful about the sign extension
-                        ch = (int)(((uint)ch) >> 16);
-#else // BIGENDIAN
-                        ch = (char)ch;
-#endif // BIGENDIAN
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            // be careful about the sign extension
+                            ch = (int)(((uint)ch) >> 16);
+                        }
+                        else
+                        {
+                            ch = (char)ch;
+                        }
                         pSrc++;
 
                         if (ch > 0x7F)

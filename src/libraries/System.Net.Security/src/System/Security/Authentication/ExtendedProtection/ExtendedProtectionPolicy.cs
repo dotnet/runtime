@@ -105,9 +105,9 @@ namespace System.Security.Authentication.ExtendedProtection
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("ProtectionScenario=");
-            sb.Append(_protectionScenario.ToString());
+            sb.Append($"{_protectionScenario}");
             sb.Append("; PolicyEnforcement=");
-            sb.Append(_policyEnforcement.ToString());
+            sb.Append($"{_policyEnforcement}");
 
             sb.Append("; CustomChannelBinding=");
             if (_customChannelBinding == null)

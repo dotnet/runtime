@@ -14,9 +14,9 @@ namespace
 {
     struct host_option
     {
-        const pal::string_t option;
-        const pal::string_t argument;
-        const pal::string_t description;
+        const pal::char_t* option;
+        const pal::char_t* argument;
+        const pal::char_t* description;
     };
 
     const host_option KnownHostOptions[] =
@@ -85,8 +85,8 @@ namespace
         int arg_i = *num_args;
         while (arg_i < argc)
         {
-            pal::string_t arg = argv[arg_i];
-            pal::string_t arg_lower = pal::to_lower(arg);
+            const pal::char_t* arg = argv[arg_i];
+            pal::string_t arg_lower = to_lower(arg);
             const auto &iter = std::find_if(known_opts.cbegin(), known_opts.cend(),
                 [&](const known_options &opt) { return arg_lower == get_host_option(opt).option; });
             if (iter == known_opts.cend())
@@ -101,7 +101,7 @@ namespace
                 return false;
             }
 
-            trace::verbose(_X("Parsed known arg %s = %s"), arg.c_str(), argv[arg_i + 1]);
+            trace::verbose(_X("Parsed known arg %s = %s"), arg, argv[arg_i + 1]);
             (*opts)[*iter].push_back(argv[arg_i + 1]);
 
             // Increment for both the option and its value.
@@ -134,7 +134,7 @@ namespace
             for (const auto& opt : known_opts)
             {
                 const host_option &arg = get_host_option(opt);
-                trace::error(_X("  %-37s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
+                trace::error(_X("  %s %-*s  %s"), arg.option, 36 - pal::strlen(arg.option), arg.argument, arg.description);
             }
             return StatusCode::InvalidArgFailure;
         }
@@ -211,7 +211,7 @@ pal::string_t command_line::get_option_value(
     return default_value;
 }
 
-const pal::string_t& command_line::get_option_name(known_options opt)
+const pal::char_t* command_line::get_option_name(known_options opt)
 {
     return get_host_option(opt).option;
 }
@@ -325,7 +325,7 @@ void command_line::print_muxer_usage(bool is_sdk_present)
     for (const auto& opt : known_opts)
     {
         const host_option &arg = get_host_option(opt);
-        trace::println(_X("  %-30s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
+        trace::println(_X("  %s %-*s  %s"), arg.option, 29 - pal::strlen(arg.option), arg.argument, arg.description);
     }
     trace::println(_X("  --list-runtimes                 Display the installed runtimes"));
     trace::println(_X("  --list-sdks                     Display the installed SDKs"));
@@ -334,7 +334,7 @@ void command_line::print_muxer_usage(bool is_sdk_present)
     {
         trace::println();
         trace::println(_X("Common Options:"));
-        trace::println(_X("  -h|--help                           Displays this help."));
-        trace::println(_X("  --info                              Display .NET information."));
+        trace::println(_X("  -h|--help                       Displays this help."));
+        trace::println(_X("  --info                          Display .NET information."));
     }
 }

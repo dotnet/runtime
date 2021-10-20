@@ -21,6 +21,12 @@ namespace NetClient
             var managedInner = new ManagedInner();
             var nativeOuter = (AggregationTesting)managedInner;
 
+            Assert.IsTrue(typeof(ManagedInner).IsCOMObject);
+            Assert.IsTrue(typeof(AggregationTestingClass).IsCOMObject);
+            Assert.IsFalse(typeof(AggregationTesting).IsCOMObject);
+            Assert.IsTrue(Marshal.IsComObject(managedInner));
+            Assert.IsTrue(Marshal.IsComObject(nativeOuter));
+
             Assert.IsTrue(nativeOuter.IsAggregated());
             Assert.IsTrue(nativeOuter.AreAggregated(managedInner, nativeOuter));
             Assert.IsFalse(nativeOuter.AreAggregated(nativeOuter, new object()));

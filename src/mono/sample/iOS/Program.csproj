@@ -3,33 +3,22 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <TargetOS>iOS</TargetOS>
+    <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <TargetOS Condition="'$(TargetsiOSSimulator)' == 'true'">iOSSimulator</TargetOS>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture)\$(Configuration)\runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
-    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS.ToLower())-$(TargetArchitecture)</RuntimeIdentifier>
     <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
+    <AppName>HelloiOS</AppName>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- FIXME: for some reason trimming is throwing errors about something in System.Diagnostics. -->
-    <!-- <PublishTrimmed>true</PublishTrimmed> -->
-    <!-- <TrimMode>Link</TrimMode> -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetOS)' == 'MacCatalyst'">
-    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
+    <DevTeamProvisioning Condition="'$(TargetOS)' == 'MacCatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
   </PropertyGroup>
-
-  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
-  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
-      </RuntimePack>
-    </ItemGroup>
-    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
-  </Target>
 
   <Import Project="$(RepoTasksDir)AotCompilerTask\MonoAOTCompiler.props" />
   <UsingTask TaskName="AppleAppBuilderTask"
@@ -56,15 +45,22 @@
       </AotInputAssemblies>
     </ItemGroup>
 
+    <PropertyGroup>
+      <AOTMode Condition="'$(TargetOS)' != 'MacCatalyst'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' != 'true'">Full</AOTMode>
+      <AOTMode Condition="'$(TargetOS)' == 'MacCatalyst' and '$(MonoForceInterpreter)' == 'true'">JustInterp</AOTMode>
+    </PropertyGroup>
+
     <MonoAOTCompiler
         Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="$(MonoAotCrossCompilerPath)"
-        Mode="Full"
+        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
+        Mode="$(AOTMode)"
         OutputType="AsmOnly"
         Assemblies="@(AotInputAssemblies)"
         AotModulesTablePath="$(AppDir)\modules.m"
         AotModulesTableLanguage="ObjC"
         OutputDir="$(PublishDir)"
+        IntermediateOutputPath="$(IntermediateOutputPath)"
         UseLLVM="$(UseLLVM)"
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
@@ -73,8 +69,8 @@
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"
         Arch="$(TargetArchitecture)"
-        ProjectName="HelloiOS"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)native\include\mono-2.0"
+        ProjectName="$(AppName)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)runtimes\$(TargetOS.ToLower())-$(TargetArchitecture)\native\include\mono-2.0"
         Assemblies="@(BundleAssemblies)"
         MainLibraryFileName="Program.dll"
         GenerateXcodeProject="True"
@@ -82,8 +78,10 @@
         DevTeamProvisioning="$(DevTeamProvisioning)"
         OutputDirectory="$(AppDir)"
         Optimized="$(Optimized)"
-        ForceAOT="$(ForceAOT)"
+        ForceAOT="$(RunAOTCompilation)"
         ForceInterpreter="$(MonoForceInterpreter)"
+        RuntimeComponents="$(RuntimeComponents)"
+        DiagnosticPorts="$(DiagnosticPorts)"
         AppDir="$(MSBuildThisFileDirectory)$(PublishDir)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
@@ -91,21 +89,24 @@
 
     <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
     <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+  </Target>
 
-    <!-- install and run on ios simulator -->
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl shutdown &quot;$(IosSimulator)&quot;" ContinueOnError="WarnAndContinue" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl boot &quot;$(IosSimulator)&quot;" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="open -a Simulator" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl install &quot;$(IosSimulator)&quot; $(AppBundlePath)" />
-    <Exec Condition="'$(IosSimulator)' != '' and '$(ArchiveTests)' != 'true'" Command="xcrun simctl launch --console booted net.dot.HelloiOS" />
+  <Target Name="RunAppBundle"
+          AfterTargets="BuildAppBundle"
+          Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
+    <!-- FIXME: only run if the TargetArchitecture matches the current architecture -->
+
+    <!-- install and run on ios simulator or device -->
+    <Exec Condition="'$(TargetOS)' == 'iOSSimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'iOS'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
 
     <!-- run on MacCatalyst -->
-    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=maccatalyst --output-directory=/tmp/out" />
+    <Exec Condition="'$(TargetOS)' == 'MacCatalyst'" Command="open -W $(AppBundlePath)" />
 
   </Target>
 
-  <Target Name="CopySampleAppToHelixTestDir" 
-          Condition="'$(ArchiveTests)' == 'true'" 
+  <Target Name="CopySampleAppToHelixTestDir"
+          Condition="'$(ArchiveTests)' == 'true'"
           AfterTargets="Build"
           DependsOnTargets="Publish;BuildAppBundle" >
     <PropertyGroup>
@@ -116,12 +117,13 @@
       <HelixArchiveRoot>$(ArtifactsDir)helix/</HelixArchiveRoot>
       <HelixArchiveRunOnlyRoot>$(HelixArchiveRoot)runonly/</HelixArchiveRunOnlyRoot>
       <HelixArchiveRunOnlyAppsDir>$(HelixArchiveRunOnlyRoot)$(OSPlatformConfig)/</HelixArchiveRunOnlyAppsDir>
+      <_AppBundleName>$([System.IO.Path]::GetFileName('$(AppBundlePath)'))</_AppBundleName>
     </PropertyGroup>
     <ItemGroup>
-      <_appFiles Include="$(AppBundlePath)/../**/*" />
+      <_appFiles Include="$(AppBundlePath)/**/*" />
     </ItemGroup>
     <Copy SourceFiles="@(_appFiles)"
-          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/%(RecursiveDir)" />
+          DestinationFolder="$(HelixArchiveRunOnlyAppsDir)/$(_AppBundleName)/%(RecursiveDir)" />
 
     <Message Importance="High" Text="AppBundlePath: $(AppBundlePath)"/>
     <Message Importance="High" Text="HelixArchiveRunOnlyAppsDir: $(HelixArchiveRunOnlyAppsDir)"/>

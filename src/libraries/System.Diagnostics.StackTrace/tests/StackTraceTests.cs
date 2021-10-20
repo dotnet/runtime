@@ -313,7 +313,6 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51096", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public void ToString_ShowILOffset()
         {
             string AssemblyName = "ExceptionTestAssembly.dll";

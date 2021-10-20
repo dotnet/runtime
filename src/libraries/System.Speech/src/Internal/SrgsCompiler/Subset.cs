@@ -26,7 +26,7 @@ namespace System.Speech.Internal.SrgsCompiler
                 {
                     continue;
                 }
-                if (text.IndexOf(ch) >= 0)
+                if (text.Contains(ch))
                 {
                     text = text.Replace(ch, ' ');
                 }

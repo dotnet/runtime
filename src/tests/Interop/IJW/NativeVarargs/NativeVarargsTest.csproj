@@ -16,7 +16,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeVarargsTest.cs" />
-    <Compile Include="../IjwHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />

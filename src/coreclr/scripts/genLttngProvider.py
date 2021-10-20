@@ -346,21 +346,8 @@ def generateMethodBody(template, providerName, eventName):
         return ''.join(result)
 
     else:
-        header = """
-    char stackBuffer[%s];
-    char *buffer = stackBuffer;
-    size_t offset = 0;
-    size_t size = %s;
-    bool fixedBuffer = true;
-
-    bool success = true;
-""" % (template.estimated_size, template.estimated_size)
-        footer = """
-    if (!fixedBuffer)
-        delete[] buffer;
-"""
-
         pack_list = []
+        emittedWriteToBuffer = False
         for paramName in fnSig.paramlist:
             parameter = fnSig.getParam(paramName)
 
@@ -369,18 +356,35 @@ def generateMethodBody(template, providerName, eventName):
                 if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                     size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
                 pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" % (paramName, size))
+                emittedWriteToBuffer = True
             elif paramName in template.arrays:
                 size = "sizeof(%s) * (int)%s" % (lttngDataTypeMapping[parameter.winType], parameter.prop)
                 if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
                     size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
                 pack_list.append("    success &= WriteToBuffer((const BYTE *)%s, %s, buffer, offset, size, fixedBuffer);" % (paramName, size))
+                emittedWriteToBuffer = True
             elif parameter.winType == "win:GUID":
                 pack_list.append("    success &= WriteToBuffer(*%s, buffer, offset, size, fixedBuffer);" % (parameter.name,))
+                emittedWriteToBuffer = True
             else:
                 pack_list.append("    success &= WriteToBuffer(%s, buffer, offset, size, fixedBuffer);" % (parameter.name,))
+                emittedWriteToBuffer = True
 
+        header = """
+    size_t size = {0:d};
+    char stackBuffer[{0:d}];
+    char *buffer = stackBuffer;
+    size_t offset = 0;
+""".format(template.estimated_size)
         code = "\n".join(pack_list) + "\n\n"
-        tracepoint = """    if (!success)
+        tracepoint = ""
+        footer = ""
+        if emittedWriteToBuffer:
+            header += """
+    bool fixedBuffer = true;
+    bool success = true;
+"""
+            tracepoint = """    if (!success)
     {
         if (!fixedBuffer)
             delete[] buffer;
@@ -388,14 +392,14 @@ def generateMethodBody(template, providerName, eventName):
     }
 
     do_tracepoint(%s, %s, offset, buffer);\n""" % (providerName, eventName)
+            footer = """
+    if (!fixedBuffer)
+        delete[] buffer;
+"""
 
         return header + code + tracepoint + footer
 
-
-
-
-
-def generateLttngTpProvider(providerName, eventNodes, allTemplates):
+def generateLttngTpProvider(providerName, eventNodes, allTemplates, runtimeFlavor):
     lTTngImpl = []
     for eventNode in eventNodes:
         eventName    = eventNode.getAttribute('symbol')
@@ -420,9 +424,9 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates):
             for paramName in fnSig.paramlist:
                 fnparam     = fnSig.getParam(paramName)
                 wintypeName = fnparam.winType
-                typewName   = palDataTypeMapping[wintypeName]
+                typewName   = getPalDataTypeMapping(runtimeFlavor)[wintypeName]
                 winCount    = fnparam.count
-                countw      = palDataTypeMapping[winCount]
+                countw      = getPalDataTypeMapping(runtimeFlavor)[winCount]
 
                 if paramName in template.structs:
                     linefnptype.append("%sint %s_ElementSize,\n" % (lindent, paramName))
@@ -456,7 +460,7 @@ def generateLttngTpProvider(providerName, eventNodes, allTemplates):
 
 
 
-def generateLttngFiles(etwmanifest,eventprovider_directory, dryRun):
+def generateLttngFiles(etwmanifest, eventprovider_directory, runtimeFlavor, dryRun):
 
     eventprovider_directory = eventprovider_directory + "/"
     tree                    = DOM.parse(etwmanifest)
@@ -573,7 +577,7 @@ bool WriteToBuffer(const T &value, char *&buffer, size_t& offset, size_t& size, 
 }
 
 """)
-                lttngimpl_file.write(generateLttngTpProvider(providerName,eventNodes,allTemplates) + "\n")
+                lttngimpl_file.write(generateLttngTpProvider(providerName,eventNodes,allTemplates,runtimeFlavor) + "\n")
 
             with open_for_update(lttngevntprovTp) as tpimpl_file:
                 tpimpl_file.write(stdprolog + "\n")
@@ -595,6 +599,8 @@ def main(argv):
                                     help='full path to manifest containig the description of events')
     required.add_argument('--intermediate', type=str, required=True,
                                     help='full path to eventprovider  intermediate directory')
+    required.add_argument('--runtimeflavor', type=str,default="CoreCLR",
+                                    help='runtime flavor')
     required.add_argument('--dry-run', action='store_true',
                                     help='if specified, will output the names of the generated files instead of generating the files' )
     args, unknown = parser.parse_known_args(argv)
@@ -604,9 +610,10 @@ def main(argv):
 
     sClrEtwAllMan     = args.man
     intermediate      = args.intermediate
+    runtimeFlavor     = RuntimeFlavor(args.runtimeflavor)
     dryRun            = args.dry_run
 
-    generateLttngFiles(sClrEtwAllMan,intermediate, dryRun)
+    generateLttngFiles(sClrEtwAllMan, intermediate, runtimeFlavor, dryRun)
 
 if __name__ == '__main__':
     return_code = main(sys.argv[1:])

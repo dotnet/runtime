@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.CryptoConfigTests
@@ -126,8 +127,6 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [InlineData("RSA", typeof(RSA))]
         [InlineData("System.Security.Cryptography.RSA", typeof(RSA))]
         [InlineData("ECDsa", typeof(ECDsa))]
-        [InlineData("DSA", typeof(DSA))]
-        [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
         public static void NamedAsymmetricAlgorithmCreate(string identifier, Type baseType)
         {
             using (AsymmetricAlgorithm created = AsymmetricAlgorithm.Create(identifier))
@@ -135,6 +134,28 @@ namespace System.Security.Cryptography.CryptoConfigTests
                 Assert.NotNull(created);
                 Assert.IsAssignableFrom(baseType, created);
             }
+        }
+
+        [Theory]
+        [InlineData("DSA", typeof(DSA))]
+        [InlineData("System.Security.Cryptography.DSA", typeof(DSA))]
+        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
+        public static void NamedAsymmetricAlgorithmCreate_DSA(string identifier, Type baseType)
+        {
+            using (AsymmetricAlgorithm created = AsymmetricAlgorithm.Create(identifier))
+            {
+                Assert.NotNull(created);
+                Assert.IsAssignableFrom(baseType, created);
+            }
+        }
+
+        [Theory]
+        [InlineData("DSA")]
+        [InlineData("System.Security.Cryptography.DSA")]
+        [PlatformSpecific(PlatformSupport.MobileAppleCrypto)]
+        public static void NamedAsymmetricAlgorithmCreate_DSA_NotSupported(string identifier)
+        {
+            Assert.Null(AsymmetricAlgorithm.Create(identifier));
         }
 
         [Fact]

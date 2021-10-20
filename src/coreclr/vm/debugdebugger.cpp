@@ -383,6 +383,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         OBJECTREF loadedPeSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
 
+        // Allocate memory for the IsFileLayout flags
+        OBJECTREF isFileLayouts = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiIsFileLayout), (OBJECTREF)isFileLayouts);
+
         // Allocate memory for the InMemoryPdbAddress
         BASEARRAYREF inMemoryPdbAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
         SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
@@ -709,11 +713,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     I4 *pMethodToken = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiMethodToken)->GetDirectPointerToNonObjectElements();
                     pMethodToken[iNumValidFrames] = pMethod->GetMemberDef();
 
-                    PEFile *pPEFile = pModule->GetFile();
+                    PEAssembly *pPEAssembly = pModule->GetPEAssembly();
 
                     // Get the address and size of the loaded PE image
                     COUNT_T peSize;
-                    PTR_CVOID peAddress = pPEFile->GetLoadedImageContents(&peSize);
+                    PTR_CVOID peAddress = pPEAssembly->GetLoadedImageContents(&peSize);
 
                     // Save the PE address and size
                     PTR_CVOID *pLoadedPeAddress = (PTR_CVOID *)pStackFrameHelper->rgLoadedPeAddress->GetDataPtr();
@@ -721,6 +725,14 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
                     I4 *pLoadedPeSize = (I4 *)((I4ARRAYREF)pStackFrameHelper->rgiLoadedPeSize)->GetDirectPointerToNonObjectElements();
                     pLoadedPeSize[iNumValidFrames] = (I4)peSize;
+
+                    // Set flag indicating PE file in memory has the on disk layout
+                    if (!pPEAssembly->IsDynamic())
+                    {
+                        // This flag is only available for non-dynamic assemblies.
+                        U1 *pIsFileLayout = (U1 *)((BOOLARRAYREF)pStackFrameHelper->rgiIsFileLayout)->GetDirectPointerToNonObjectElements();
+                        pIsFileLayout[iNumValidFrames] = (U1) pPEAssembly->GetLoadedLayout()->IsFlat();
+                    }
 
                     // If there is a in memory symbol stream
                     CGrowableStream* stream = pModule->GetInMemorySymbolStream();
@@ -738,7 +750,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                     else
                     {
                         // Set the pdb path (assembly file name)
-                        const SString& assemblyPath = pPEFile->GetPath();
+                        SString assemblyPath = pPEAssembly->GetIdentityPath();
                         if (!assemblyPath.IsEmpty())
                         {
                             OBJECTREF obj = (OBJECTREF)StringObject::NewString(assemblyPath);

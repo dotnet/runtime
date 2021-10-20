@@ -447,7 +447,7 @@ namespace System.Net.Http.Functional.Tests
                     {
                         int bytesRemaining = expectedData.Length - bytesSent;
                         int bytesToSend = rand.Next(1, Math.Min(bytesRemaining, maxChunkSize + 1));
-                        await connection.WriteStringAsync(bytesToSend.ToString("X") + lineEnding);
+                        await connection.WriteStringAsync($"{bytesToSend:X}{lineEnding}");
                         await connection.Stream.WriteAsync(new Memory<byte>(expectedData, bytesSent, bytesToSend));
                         await connection.WriteStringAsync(lineEnding);
                         bytesSent += bytesToSend;

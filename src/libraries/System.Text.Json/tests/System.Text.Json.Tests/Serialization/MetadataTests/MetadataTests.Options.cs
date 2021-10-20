@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
 
-namespace System.Text.Json.Tests.Serialization
+namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class MetadataTests
     {
@@ -94,12 +94,15 @@ namespace System.Text.Json.Tests.Serialization
             public MyJsonContext(JsonSerializerOptions options) : base(options) { }
 
             public override JsonTypeInfo? GetTypeInfo(Type type) => throw new NotImplementedException();
+
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
         }
 
         private class MyJsonContextThatSetsOptionsInParameterlessCtor : JsonSerializerContext
         {
             public MyJsonContextThatSetsOptionsInParameterlessCtor() : base(new JsonSerializerOptions()) { }
             public override JsonTypeInfo? GetTypeInfo(Type type) => throw new NotImplementedException();
+            protected override JsonSerializerOptions? GeneratedSerializerOptions => null;
         }
     }
 }

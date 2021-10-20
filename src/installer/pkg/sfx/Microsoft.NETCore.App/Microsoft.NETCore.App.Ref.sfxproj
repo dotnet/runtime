@@ -15,6 +15,8 @@
     <ItemGroup>
       <ReferencePath Include="@(LibrariesRefAssemblies)" />
       <DocFilesToPackage Include="$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml" Condition="Exists('$(ArtifactsBinDir)/docs/%(LibrariesRefAssemblies.FileName).xml')"/>
+      <Analyzer Include="$(MicrosoftNetCoreAppRefPackDir)/analyzers/**/*.*" />
+      <FilesToPackage Include="@(Analyzer)" ExcludeFromValidation="true" TargetPath="analyzers/%(RecursiveDir)" />
     </ItemGroup>
   </Target>
 </Project>

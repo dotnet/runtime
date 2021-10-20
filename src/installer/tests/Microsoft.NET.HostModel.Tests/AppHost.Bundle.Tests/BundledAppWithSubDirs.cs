@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 using BundleTests.Helpers;
 using Microsoft.DotNet.Cli.Build.Framework;
 using Microsoft.DotNet.CoreSetup.Test;
@@ -22,9 +23,7 @@ namespace AppHost.Bundle.Tests
         private void RunTheApp(string path, TestProjectFixture fixture)
         {
             Command.Create(path)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdErr()
-                .CaptureStdOut()
+                .EnableTracingAndCaptureOutputs()
                 .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
                 .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
@@ -50,6 +49,47 @@ namespace AppHost.Bundle.Tests
 
             // Run the bundled app again (reuse extracted files)
             RunTheApp(singleFile, fixture);
+        }
+
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows)] // GUI app host is only supported on Windows.
+        public void Bundled_Framework_dependent_App_GUI_DownlevelHostFxr_ErrorDialog(BundleOptions options)
+        {
+            var fixture = sharedTestState.TestFrameworkDependentFixture.Copy();
+            UseFrameworkDependentHost(fixture);
+            var singleFile = BundleHelper.BundleApp(fixture, options);
+            AppHostExtensions.SetWindowsGraphicalUserInterfaceBit(singleFile);
+
+            string dotnetWithMockHostFxr = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "bundleErrors"));
+            using (new TestArtifact(dotnetWithMockHostFxr))
+            {
+                Directory.CreateDirectory(dotnetWithMockHostFxr);
+                string expectedErrorCode = Constants.ErrorCode.BundleExtractionFailure.ToString("x");
+
+                var dotnetBuilder = new DotNetBuilder(dotnetWithMockHostFxr, sharedTestState.RepoDirectories.BuiltDotnet, "mockhostfxrBundleVersionFailure")
+                    .RemoveHostFxr()
+                    .AddMockHostFxr(new Version(5, 0, 0));
+                var dotnet = dotnetBuilder.Build();
+
+                Command command = Command.Create(singleFile)
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(dotnet.BinPath, sharedTestState.RepoDirectories.BuildArchitecture)
+                    .MultilevelLookup(false)
+                    .Start();
+
+                WindowsUtils.WaitForPopupFromProcess(command.Process);
+                command.Process.Kill();
+
+                command
+                    .WaitForExit(true)
+                    .Should().Fail()
+                    .And.HaveStdErrContaining("Bundle header version compatibility check failed.")
+                    .And.HaveStdErrContaining($"Showing error dialog for application: '{Path.GetFileName(singleFile)}' - error code: 0x{expectedErrorCode}")
+                    .And.HaveStdErrContaining("apphost_version=");
+            }
         }
 
         [InlineData(BundleOptions.None)]
@@ -126,6 +166,18 @@ namespace AppHost.Bundle.Tests
             Assert.Throws<ArgumentException>(()=>BundleHelper.BundleApp(fixture, options, new Version(5, 0)));
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54234")]
+        // NOTE: when enabling this test take a look at commented code maked by "ACTIVE ISSUE:" in SharedTestState
+        public void Bundled_Self_Contained_Composite_App_Run_Succeeds()
+        {
+            var fixture = sharedTestState.TestSelfContainedFixtureComposite.Copy();
+            var singleFile = BundleSelfContainedApp(fixture, BundleOptions.None, disableCompression: true);
+
+            // Run the app
+            RunTheApp(singleFile, fixture);
+        }
+
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
@@ -144,6 +196,7 @@ namespace AppHost.Bundle.Tests
             public TestProjectFixture TestFrameworkDependentFixture { get; set; }
             public TestProjectFixture TestSelfContainedFixture { get; set; }
             public TestProjectFixture TestAppWithEmptyFileFixture { get; set; }
+            public TestProjectFixture TestSelfContainedFixtureComposite { get; set; }
 
             public SharedTestState()
             {
@@ -169,6 +222,18 @@ namespace AppHost.Bundle.Tests
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
                                     outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
+
+                TestSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
+                BundleHelper.AddLongNameContentToAppWithSubDirs(TestSelfContainedFixtureComposite);
+                TestSelfContainedFixtureComposite
+                    .EnsureRestoredForRid(TestSelfContainedFixtureComposite.CurrentRid)
+                    .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,
+                                    // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
+                                    //               uncomment extraArgs when fixed.
+                                    outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite) /*,
+                                    extraArgs: new string[] {
+                                       "/p:PublishReadyToRun=true",
+                                       "/p:PublishReadyToRunComposite=true" } */);
             }
 
             public void Dispose()
@@ -176,6 +241,7 @@ namespace AppHost.Bundle.Tests
                 TestFrameworkDependentFixture.Dispose();
                 TestSelfContainedFixture.Dispose();
                 TestAppWithEmptyFileFixture.Dispose();
+                TestSelfContainedFixtureComposite.Dispose();
             }
         }
     }

@@ -292,26 +292,22 @@ namespace System.Reflection.PortableExecutable.Tests
                 0xEB, 0x28, 0x4F, 0x0B, 0x75, 0x31, 0x56, 0x12, 0x04, 0x00 // compressed data
             }, bytes);
 
-            using (var pinned = new PinnedBlob(bytes))
-            {
-                var actual = PEReader.ReadDebugDirectoryEntries(pinned.CreateReader(0, DebugDirectoryEntry.Size));
-                Assert.Equal(1, actual.Length);
-                Assert.Equal(0u, actual[0].Stamp);
-                Assert.Equal(0x0100, actual[0].MajorVersion);
-                Assert.Equal(0x0100, actual[0].MinorVersion);
-                Assert.Equal(DebugDirectoryEntryType.EmbeddedPortablePdb, actual[0].Type);
-                Assert.False(actual[0].IsPortableCodeView);
-                Assert.Equal(0x00000012, actual[0].DataSize);
-                Assert.Equal(0x0000001c, actual[0].DataRelativeVirtualAddress);
-                Assert.Equal(0x0000001c, actual[0].DataPointer);
+            using var pinned = new PinnedBlob(bytes);
+            var actual = PEReader.ReadDebugDirectoryEntries(pinned.CreateReader(0, DebugDirectoryEntry.Size));
+            Assert.Equal(1, actual.Length);
+            Assert.Equal(0u, actual[0].Stamp);
+            Assert.Equal(0x0100, actual[0].MajorVersion);
+            Assert.Equal(0x0100, actual[0].MinorVersion);
+            Assert.Equal(DebugDirectoryEntryType.EmbeddedPortablePdb, actual[0].Type);
+            Assert.False(actual[0].IsPortableCodeView);
+            Assert.Equal(0x00000012, actual[0].DataSize);
+            Assert.Equal(0x0000001c, actual[0].DataRelativeVirtualAddress);
+            Assert.Equal(0x0000001c, actual[0].DataPointer);
 
-                var provider = new ByteArrayMemoryProvider(bytes);
-                using (var block = provider.GetMemoryBlock(actual[0].DataPointer, actual[0].DataSize))
-                {
-                    var decoded = PEReader.DecodeEmbeddedPortablePdbDebugDirectoryData(block);
-                    AssertEx.Equal(new byte[] { 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 }, decoded);
-                }
-            }
+            var provider = new ByteArrayMemoryProvider(bytes);
+            using var block = provider.GetMemoryBlock(actual[0].DataPointer, actual[0].DataSize);
+            using var decoded = PEReader.DecodeEmbeddedPortablePdbDebugDirectoryData(block);
+            AssertEx.Equal(new byte[] { 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11 }, decoded.GetContentUnchecked(0, decoded.Size));
         }
 
         [Fact]

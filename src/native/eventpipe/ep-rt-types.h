@@ -98,6 +98,8 @@
 
 #define ep_rt_method_desc_t ep_rt_redefine
 
+#define ep_rt_execution_checkpoint_array_t ep_rt_redefine
+
 /*
  * PAL.
  */

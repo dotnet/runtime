@@ -5,12 +5,26 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
+#if !DISABLE_UNMANAGED_PDB_SYMBOLS
 using Microsoft.DiaSymReader;
+#endif
 
 using Internal.IL;
 
 namespace Internal.TypeSystem.Ecma
 {
+#if DISABLE_UNMANAGED_PDB_SYMBOLS
+    /// <summary>
+    ///  Provides PdbSymbolReader via unmanaged SymBinder from .NET Framework
+    /// </summary>
+    public abstract class UnmanagedPdbSymbolReader : PdbSymbolReader
+    {
+        public static PdbSymbolReader TryOpenSymbolReaderForMetadataFile(string metadataFileName, string searchPath)
+        {
+            return null;
+        }
+    }
+#else
     /// <summary>
     ///  Provides PdbSymbolReader via unmanaged SymBinder from .NET Framework
     /// </summary>
@@ -284,4 +298,5 @@ namespace Internal.TypeSystem.Ecma
             return 0;
         }
     }
+#endif
 }

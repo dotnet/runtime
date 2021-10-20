@@ -6,7 +6,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>8.0</LangVersion>
     <OutputPath>$(RuntimeBinDir)/dotnet-pgo</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
@@ -29,6 +28,7 @@
     <Compile Include="..\aot\ILCompiler.ReadyToRun\IBC\IBCProfileData.cs" Link="IBCProfileData.cs" />
     <Compile Include="..\aot\ILCompiler.ReadyToRun\Compiler\ProfileData.cs" Link="ProfileData.cs" />
     <Compile Include="..\Common\Pgo\TypeSystemEntityOrUnknown.cs" Link="TypeSystemEntityOrUnknown.cs" />
+    <Compile Include="..\Common\TypeSystem\IL\FlowGraph.cs" Link="SPGO\FlowGraph.cs" />
     <Compile Include="..\Common\TypeSystem\IL\ILReader.cs" Link="ILReader.cs" />
     <Compile Include="..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs" Link="TypeSystemMetadataEmitter" />
   </ItemGroup>

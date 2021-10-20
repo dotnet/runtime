@@ -32,18 +32,33 @@ namespace Microsoft.NET.HostModel.Tests
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
         }
 
-        private void CheckFileNotarizable(string path)
+        private void CheckFileSigned(string path)
         {
-            // attempt to remove signature data.
-            // no-op if the file is not signed (it should not be)
-            // fail if the file structure is malformed
-            // i: input, o: output, r: remove
-            Command.Create("codesign_allocate", $"-i {path} -o {path} -r")
+            // Check if the file is signed (it should have been signed by the bundler)
+            Command.Create("codesign", $"-v {path}")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should()
                 .Pass();
+        }
+
+        private string MakeUniversalBinary(string path, string rid)
+        {
+            string fatApp = path + ".fat";
+            string arch = BundleHelper.GetTargetArch(rid) == Architecture.Arm64 ? "arm64" : "x86_64";
+
+            // We will create a universal binary with just one arch slice and run it.
+            // It is enough for testing purposes. The code that finds the releavant slice
+            // would work the same regardless if there is 1, 2, 3 or more slices.
+            Command.Create("lipo", $"-create -arch {arch} {path} -output {fatApp}")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass();
+
+            return fatApp;
         }
 
         private void BundleRun(TestProjectFixture fixture, string publishPath)
@@ -60,11 +75,19 @@ namespace Microsoft.NET.HostModel.Tests
             var targetOS = BundleHelper.GetTargetOS(fixture.CurrentRid);
             if (targetOS == OSPlatform.OSX)
             {
-                CheckFileNotarizable(singleFile);
+                CheckFileSigned(singleFile);
             }
 
             // Run the extracted app
             RunTheApp(singleFile);
+
+            if (targetOS == OSPlatform.OSX)
+            {
+                string fatApp = MakeUniversalBinary(singleFile, fixture.CurrentRid);
+
+                // Run the fat app
+                RunTheApp(fatApp);
+            }
         }
 
         private string RelativePath(string path)

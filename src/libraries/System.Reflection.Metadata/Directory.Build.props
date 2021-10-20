@@ -2,13 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <PackageDescription>This packages provides a low-level .NET (ECMA-335) metadata reader and writer. It's geared for performance and is the ideal choice for building higher-level libraries that intend to provide their own object model, such as compilers.
-
-Commonly Used Types:
-System.Reflection.Metadata.MetadataReader
-System.Reflection.PortableExecutable.PEReader
-System.Reflection.Metadata.Ecma335.MetadataBuilder
-System.Reflection.PortableExecutable.PEBuilder
-System.Reflection.PortableExecutable.ManagedPEBuilder</PackageDescription>
   </PropertyGroup>
 </Project>

@@ -70,12 +70,12 @@ namespace System.Net.Http
                 }
             }
 
-            public override async ValueTask FinishAsync(bool async)
+            public override Task FinishAsync(bool async)
             {
                 // Send 0 byte chunk to indicate end, then final CrLf
                 HttpConnection connection = GetConnectionOrThrow();
                 _connection = null;
-                await connection.WriteBytesAsync(s_finalChunkBytes, async).ConfigureAwait(false);
+                return connection.WriteBytesAsync(s_finalChunkBytes, async);
             }
         }
     }

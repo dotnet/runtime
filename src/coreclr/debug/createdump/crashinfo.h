@@ -30,6 +30,10 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 
 #endif
 
+extern const std::string GetFileName(const std::string& fileName);
+extern std::string FormatString(const char* format, ...);
+extern std::string FormatGuid(const GUID* guid);
+
 class CrashInfo : public ICLRDataEnumMemoryRegionsCallback,
 #ifdef __APPLE__
     public MachOReader
@@ -42,6 +46,12 @@ private:
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
+    HMODULE m_hdac;                                 // dac module handle when loaded
+    ICLRDataEnumMemoryRegions* m_pClrDataEnumRegions; // dac enumerate memory interface instance
+    IXCLRDataProcess* m_pClrDataProcess;            // dac process interface instance
+    bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
+    pid_t m_crashThread;                            // crashing thread id or 0 if none
+    uint32_t m_signal;                              // crash signal code or 0 if none
     std::string m_name;                             // exe name
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
@@ -61,18 +71,29 @@ private:
     std::set<MemoryRegion> m_otherMappings;         // other memory mappings
     std::set<MemoryRegion> m_memoryRegions;         // memory regions from DAC, etc.
     std::set<MemoryRegion> m_moduleAddresses;       // memory region to module base address
+    std::set<ModuleInfo*, bool (*)(const ModuleInfo* lhs, const ModuleInfo* rhs)> m_moduleInfos; // module infos (base address and module name)
+    ModuleInfo* m_mainModule;                       // the module containing "Main"
+
+    // no public copy constructor
+    CrashInfo(const CrashInfo&) = delete;
+    void operator=(const CrashInfo&) = delete;
 
 public:
-    CrashInfo(pid_t pid);
+    CrashInfo(pid_t pid, bool gatherFrames, pid_t crashThread, uint32_t signal);
     virtual ~CrashInfo();
 
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
     bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
+    bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
-    uint64_t GetBaseAddress(uint64_t ip);
+    uint64_t GetBaseAddressFromAddress(uint64_t address);
+    uint64_t GetBaseAddressFromName(const char* moduleName);
+    ModuleInfo* GetModuleInfoFromBaseAddress(uint64_t baseAddress);
+    void AddModuleAddressRange(uint64_t startAddress, uint64_t endAddress, uint64_t baseAddress);
+    void AddModuleInfo(bool isManaged, uint64_t baseAddress, IXCLRDataModule* pClrDataModule, const std::string& moduleName);
     void InsertMemoryRegion(uint64_t address, size_t size);
     static const MemoryRegion* SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search);
 
@@ -82,14 +103,18 @@ public:
 #ifdef __APPLE__
     inline vm_map_t Task() const { return m_task; }
 #endif
+    inline const bool GatherFrames() const { return m_gatherFrames; }
+    inline const pid_t CrashThread() const { return m_crashThread; }
+    inline const uint32_t Signal() const { return m_signal; }
     inline const std::string& Name() const { return m_name; }
+    inline const ModuleInfo* MainModule() const { return m_mainModule; }
 
-    inline const std::vector<ThreadInfo*> Threads() const { return m_threads; }
-    inline const std::set<MemoryRegion> ModuleMappings() const { return m_moduleMappings; }
-    inline const std::set<MemoryRegion> OtherMappings() const { return m_otherMappings; }
-    inline const std::set<MemoryRegion> MemoryRegions() const { return m_memoryRegions; }
+    inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
+    inline const std::set<MemoryRegion>& ModuleMappings() const { return m_moduleMappings; }
+    inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
+    inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
 #ifndef __APPLE__
-    inline const std::vector<elf_aux_entry> AuxvEntries() const { return m_auxvEntries; }
+    inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
 #endif
 
@@ -115,9 +140,9 @@ private:
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateModuleMappings();
 #endif
-    bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
-    bool EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess);
-    bool UnwindAllThreads(IXCLRDataProcess* pClrDataProcess);
+    bool InitializeDAC();
+    bool EnumerateManagedModules();
+    bool UnwindAllThreads();
     void ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);
     void InsertMemoryBackedRegion(const MemoryRegion& region);
     void InsertMemoryRegion(const MemoryRegion& region);

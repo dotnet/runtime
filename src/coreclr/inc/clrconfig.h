@@ -31,7 +31,11 @@ public:
 
         // Remove any whitespace at beginning and end of value.  (Only applicable for
         // *string* configuration values.)
-        TrimWhiteSpaceFromStringValue = 0x2
+        TrimWhiteSpaceFromStringValue = 0x2,
+
+        // The configuration should be parsed using a 10 radix as opposed to the
+        // default of 16.
+        ParseIntegerAsBase10 = 0x4,
     };
 
     // Struct used to store information about where/how to find a Config DWORD.
@@ -122,10 +126,7 @@ public:
     static HRESULT GetConfigValue(const ConfigStringInfo & info, __deref_out_z LPWSTR * outVal);
 
     //
-    // Check whether an option is specified (e.g. explicitly listed) in any of the CLRConfig
-    // locations: environment or registry (with or without COMPlus_) or any config file.
-    // The result is therefore a conservative approximation (some settings do not actually
-    // take effect everywhere and no setting is valid both with and without COMPlus_)
+    // Check whether an option is specified (e.g. explicitly listed) in the CLRConfig.
     //
     static BOOL IsConfigOptionSpecified(LPCWSTR name);
 

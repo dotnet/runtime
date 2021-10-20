@@ -195,9 +195,6 @@ namespace System.Runtime.InteropServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void InternalPrelink(RuntimeMethodHandleInternal m);
 
-        [DllImport(RuntimeHelpers.QCall)]
-        private static extern bool IsBuiltInComSupportedInternal();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
 
@@ -211,14 +208,6 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void StructureToPtr(object structure, IntPtr ptr, bool fDeleteOld);
-
-        private static object PtrToStructureHelper(IntPtr ptr, Type structureType)
-        {
-            var rt = (RuntimeType)structureType;
-            object structure = rt.CreateInstanceDefaultCtor(publicOnly: false, wrapExceptions: true)!;
-            PtrToStructureHelper(ptr, structure, allowValueClasses: true);
-            return structure;
-        }
 
         /// <summary>
         /// Helper function to copy a pointer into a preallocated structure.
@@ -236,9 +225,12 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsPinnable(object? obj);
 
+#if TARGET_WINDOWS
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
-#if TARGET_WINDOWS
+        [DllImport(RuntimeHelpers.QCall)]
+        private static extern bool IsBuiltInComSupportedInternal();
+
         /// <summary>
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
@@ -472,8 +464,15 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Checks if the object is classic COM component.
         /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool IsComObject(object o);
+        public static bool IsComObject(object o)
+        {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+
+            return o is __ComObject;
+        }
 
         /// <summary>
         /// Release the COM component and if the reference hits 0 zombie this object.
@@ -805,5 +804,10 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
+
+#if DEBUG // Used for testing in Checked or Debug
+        [DllImport(RuntimeHelpers.QCall)]
+        internal static unsafe extern delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
+#endif
     }
 }

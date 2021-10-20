@@ -10,7 +10,7 @@ Imports System.Diagnostics.CodeAnalysis
 Namespace Microsoft.VisualBasic.CompilerServices
 
     <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
-    Friend Class VB6BinaryFile
+    Friend NotInheritable Class VB6BinaryFile
 
         '============================================================================
         ' Declarations
@@ -26,7 +26,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         ' the implementation of Lock in base class VB6RandomFile does not handle m_lRecordLen=-1
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Lock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))
@@ -50,7 +52,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         ' see Lock description
+        <UnsupportedOSPlatform("ios")>
         <UnsupportedOSPlatform("macos")>
+        <UnsupportedOSPlatform("tvos")>
         Friend Overloads Overrides Sub Unlock(ByVal lStart As Long, ByVal lEnd As Long)
             If lStart > lEnd Then
                 Throw New ArgumentException(SR.Format(SR.Argument_InvalidValue1, "Start"))

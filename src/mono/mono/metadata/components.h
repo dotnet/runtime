@@ -9,6 +9,13 @@
 #include <mono/component/hot_reload.h>
 #include <mono/component/event_pipe.h>
 #include <mono/component/diagnostics_server.h>
+#include <mono/component/debugger.h>
+
+void
+mono_component_event_pipe_100ns_ticks_start (void);
+
+gint64
+mono_component_event_pipe_100ns_ticks_stop (void);
 
 void
 mono_components_init (void);
@@ -38,14 +45,12 @@ mono_component_diagnostics_server (void)
 	return diagnostics_server;
 }
 
-/* Declare each copomnents stub init function here */
-MonoComponentHotReload *
-mono_component_hot_reload_stub_init (void);
-
-MonoComponentEventPipe *
-mono_component_event_pipe_stub_init (void);
-
-MonoComponentDiagnosticsServer *
-mono_component_diagnostics_server_stub_init (void);
+static inline
+MonoComponentDebugger *
+mono_component_debugger (void)
+{
+	extern MonoComponentDebugger *debugger;
+	return debugger;
+}
 
 #endif/*_MONO_METADATA_COMPONENTS_H*/

@@ -123,7 +123,7 @@ namespace InteropLib
                 // interface QI. Once we have the IReferenceTracker
                 // instance we can be sure the QI for IUnknown will really
                 // be the true identity.
-                HRESULT hr = external->QueryInterface(&trackerObject);
+                HRESULT hr = external->QueryInterface(IID_IReferenceTracker, (void**)&trackerObject);
                 if (SUCCEEDED(hr))
                     checkForIdentity = trackerObject.p;
             }
@@ -131,7 +131,7 @@ namespace InteropLib
             HRESULT hr;
 
             IUnknown* identityLocal;
-            RETURN_IF_FAILED(checkForIdentity->QueryInterface(&identityLocal));
+            RETURN_IF_FAILED(checkForIdentity->QueryInterface(IID_IUnknown, (void **)&identityLocal));
 
             // Set the inner if scenario dictates an update.
             if (*innerMaybe == nullptr          // User didn't supply inner - .NET 5 API scenario sanity check.
@@ -166,15 +166,37 @@ namespace InteropLib
             return S_OK;
         }
 
-        void DestroyWrapperForExternal(_In_ void* contextMaybe) noexcept
+        void NotifyWrapperForExternalIsBeingCollected(_In_ void* contextMaybe) noexcept
+         {
+             NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
+
+             // A caller should not be destroying a context without knowing if the context is valid.
+             _ASSERTE(context != nullptr);
+
+            // Check if the tracker object manager should be informed of collection.
+            IReferenceTracker* trackerMaybe = context->GetReferenceTracker();
+            if (trackerMaybe != nullptr)
+            {
+                // We only call this during a GC so ignore the failure as
+                // there is no way we can handle it at this point.
+                HRESULT hr = TrackerObjectManager::BeforeWrapperFinalized(trackerMaybe);
+                _ASSERTE(SUCCEEDED(hr));
+                (void)hr;
+            }
+        }
+
+        void DestroyWrapperForExternal(_In_ void* contextMaybe, _In_ bool notifyIsBeingCollected) noexcept
         {
             NativeObjectWrapperContext* context = NativeObjectWrapperContext::MapFromRuntimeContext(contextMaybe);
 
             // A caller should not be destroying a context without knowing if the context is valid.
             _ASSERTE(context != nullptr);
 
-            NativeObjectWrapperContext::Destroy(context);
-        }
+            if (notifyIsBeingCollected)
+                NotifyWrapperForExternalIsBeingCollected(contextMaybe);
+
+             NativeObjectWrapperContext::Destroy(context);
+         }
 
         void SeparateWrapperFromTrackerRuntime(_In_ void* contextMaybe) noexcept
         {

@@ -123,9 +123,6 @@
   <data name="InvalidLoggingMethodParameterNameMessage" xml:space="preserve">
     <value>Logging method parameter names cannot start with _</value>
   </data>
-  <data name="LoggingMethodInNestedTypeMessage" xml:space="preserve">
-    <value>Logging class cannot be in nested types</value>
-  </data>
   <data name="MissingRequiredTypeTitle" xml:space="preserve">
     <value>Could not find a required type definition</value>
   </data>
@@ -141,8 +138,12 @@
   <data name="LoggingMethodMustReturnVoidMessage" xml:space="preserve">
     <value>Logging methods must return void</value>
   </data>
+  <data name="MissingLoggerArgumentTitle" xml:space="preserve">
+    <value>One of the arguments to a static logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
+    <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
+  </data>
   <data name="MissingLoggerArgumentMessage" xml:space="preserve">
-    <value>One of the arguments to a logging method must implement the Microsoft.Extensions.Logging.ILogger interface</value>
+    <value>One of the arguments to the static logging method '{0}' must implement the Microsoft.Extensions.Logging.ILogger interface</value>
     <comment>{Locked="Microsoft.Extensions.Logging.ILogger"}</comment>
   </data>
   <data name="LoggingMethodShouldBeStaticMessage" xml:space="preserve">
@@ -167,13 +168,13 @@
     <value>Redundant qualifier in logging message</value>
   </data>
   <data name="ArgumentHasNoCorrespondingTemplateMessage" xml:space="preserve">
-    <value>Argument {0} is not referenced from the logging message</value>
+    <value>Argument '{0}' is not referenced from the logging message</value>
   </data>
   <data name="ArgumentHasNoCorrespondingTemplateTitle" xml:space="preserve">
     <value>Argument is not referenced from the logging message</value>
   </data>
   <data name="TemplateHasNoCorrespondingArgumentMessage" xml:space="preserve">
-    <value>Template {0} is not provided as argument to the logging method</value>
+    <value>Template '{0}' is not provided as argument to the logging method</value>
   </data>
   <data name="TemplateHasNoCorrespondingArgumentTitle" xml:space="preserve">
     <value>Logging template has no corresponding method argument</value>

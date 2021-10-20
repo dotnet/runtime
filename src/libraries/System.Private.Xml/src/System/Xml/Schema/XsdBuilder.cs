@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml;
 using System.Xml.Serialization;
-using System.Collections.Generic;
 
 namespace System.Xml.Schema
 {
@@ -679,8 +678,8 @@ namespace System.Xml.Schema
         private XmlSchemaRedefine? _redefine;
 
         private readonly ValidationEventHandler? _validationEventHandler;
-        private readonly ArrayList _unhandledAttributes = new ArrayList();
-        private Dictionary<string, string>? _namespaces;
+        private readonly List<XmlAttribute> _unhandledAttributes = new List<XmlAttribute>();
+        private List<XmlQualifiedName>? _namespaces;
 
         internal XsdBuilder(
                            XmlReader reader,
@@ -756,9 +755,9 @@ namespace System.Xml.Schema
                 {
                     if (_namespaces == null)
                     {
-                        _namespaces = new Dictionary<string, string>();
+                        _namespaces = new List<XmlQualifiedName>();
                     }
-                    _namespaces.Add((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value);
+                    _namespaces.Add(new XmlQualifiedName((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value));
                 }
                 else
                 {
@@ -794,12 +793,12 @@ namespace System.Xml.Schema
             {
                 if (_namespaces != null && _namespaces.Count > 0)
                 {
-                    _xso.Namespaces.Namespaces = _namespaces!;
+                    _xso.Namespaces = new XmlSerializerNamespaces(_namespaces);
                     _namespaces = null;
                 }
                 if (_unhandledAttributes.Count != 0)
                 {
-                    _xso.SetUnhandledAttributes((XmlAttribute[])_unhandledAttributes.ToArray(typeof(System.Xml.XmlAttribute)));
+                    _xso.SetUnhandledAttributes(_unhandledAttributes.ToArray());
                     _unhandledAttributes.Clear();
                 }
             }

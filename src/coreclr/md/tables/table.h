@@ -65,9 +65,6 @@ public:
         __deref_out_opt BYTE **ppRecord,
                         UINT32 cbRecordSize,
                         UINT32 cRecordCount,
-#ifdef FEATURE_PREJIT
-                        struct HotTablesDirectory *pHotTablesDirectory,
-#endif //FEATURE_PREJIT
                         UINT32 nTableIndex)
     {
         if ((nRowIndex == 0) || (nRowIndex > cRecordCount))
@@ -76,31 +73,6 @@ public:
             *ppRecord = NULL;
             return CLDB_E_INDEX_NOTFOUND;
         }
-#ifdef FEATURE_PREJIT
-        if ((pHotTablesDirectory != NULL) && (pHotTablesDirectory->m_rgTableHeader_SignedOffset[nTableIndex] != 0))
-        {
-            HRESULT hr = HotTable::GetData(
-                nRowIndex,
-                ppRecord,
-                cbRecordSize,
-                HotTable::GetTableHeader(pHotTablesDirectory, nTableIndex));
-
-            if (hr == S_OK)
-            {
-                _ASSERTE(memcmp(
-                    *ppRecord,
-                    m_pData + (nRowIndex - 1) * cbRecordSize,
-                    cbRecordSize) == 0);
-                return S_OK;
-            }
-            if (FAILED(hr))
-            {
-                *ppRecord = NULL;
-                return hr;
-            }
-            _ASSERTE(hr == S_FALSE);
-        }
-#endif //FEATURE_PREJIT
         *ppRecord = m_pData + (nRowIndex - 1) * cbRecordSize;
         return S_OK;
     } // TableRO::GetRecord

@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -44,6 +45,17 @@ namespace System
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly partial struct DateTime : IComparable, ISpanFormattable, IConvertible, IComparable<DateTime>, IEquatable<DateTime>, ISerializable
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
+        , IAdditionOperators<DateTime, TimeSpan, DateTime>,
+          IAdditiveIdentity<DateTime, TimeSpan>,
+          IComparisonOperators<DateTime, DateTime>,
+          IMinMaxValue<DateTime>,
+          ISpanParseable<DateTime>,
+          ISubtractionOperators<DateTime, TimeSpan, DateTime>,
+          ISubtractionOperators<DateTime, DateTime, TimeSpan>
+#pragma warning restore SA1001, CA2252
+#endif // FEATURE_GENERIC_MATH
     {
         // Number of 100ns ticks per time unit
         private const long TicksPerMillisecond = 10000;
@@ -449,17 +461,9 @@ namespace System
             GetDate(out int year, out int month, out int day);
             int y = year, d = day;
             int m = month + months;
-            if (m > 0)
-            {
-                int q = (int)((uint)(m - 1) / 12);
-                y += q;
-                m -= q * 12;
-            }
-            else
-            {
-                y += m / 12 - 1;
-                m = 12 + m % 12;
-            }
+            int q = m > 0 ? (int)((uint)(m - 1) / 12) : m / 12 - 1;
+            y += q;
+            m -= q * 12;
             if (y < 1 || y > 9999) ThrowDateArithmetic(2);
             uint[] daysTo = IsLeapYear(y) ? s_daysToMonth366 : s_daysToMonth365;
             uint daysToMonth = daysTo[m - 1];
@@ -676,7 +680,7 @@ namespace System
 
         public bool Equals(DateTime value)
         {
-            return Ticks == value.Ticks;
+            return this == value;
         }
 
         // Compares two DateTime values for equality. Returns true if
@@ -685,7 +689,7 @@ namespace System
         //
         public static bool Equals(DateTime t1, DateTime t2)
         {
-            return t1.Ticks == t2.Ticks;
+            return t1 == t2;
         }
 
         public static DateTime FromBinary(long dateData)
@@ -1389,9 +1393,9 @@ namespace System
 
         public static TimeSpan operator -(DateTime d1, DateTime d2) => new TimeSpan(d1.Ticks - d2.Ticks);
 
-        public static bool operator ==(DateTime d1, DateTime d2) => d1.Ticks == d2.Ticks;
+        public static bool operator ==(DateTime d1, DateTime d2) => ((d1._dateData ^ d2._dateData) << 2) == 0;
 
-        public static bool operator !=(DateTime d1, DateTime d2) => d1.Ticks != d2.Ticks;
+        public static bool operator !=(DateTime d1, DateTime d2) => !(d1 == d2);
 
         public static bool operator <(DateTime t1, DateTime t2) => t1.Ticks < t2.Ticks;
 
@@ -1503,5 +1507,113 @@ namespace System
             result = new DateTime(ticks);
             return true;
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator +(DateTime left, TimeSpan right)
+            => left + right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked DateTime IAdditionOperators<DateTime, TimeSpan, DateTime>.operator +(DateTime left, TimeSpan right)
+        //     => checked(left + right);
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static TimeSpan IAdditiveIdentity<DateTime, TimeSpan>.AdditiveIdentity
+            => default;
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTime, DateTime>.operator <(DateTime left, DateTime right)
+            => left < right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTime, DateTime>.operator <=(DateTime left, DateTime right)
+            => left <= right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTime, DateTime>.operator >(DateTime left, DateTime right)
+            => left > right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<DateTime, DateTime>.operator >=(DateTime left, DateTime right)
+            => left >= right;
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<DateTime, DateTime>.operator ==(DateTime left, DateTime right)
+            => left == right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<DateTime, DateTime>.operator !=(DateTime left, DateTime right)
+            => left != right;
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTime IMinMaxValue<DateTime>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTime IMinMaxValue<DateTime>.MaxValue => MaxValue;
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTime IParseable<DateTime>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IParseable<DateTime>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out DateTime result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTime ISpanParseable<DateTime>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, provider, DateTimeStyles.None);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool ISpanParseable<DateTime>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out DateTime result)
+            => TryParse(s, provider, DateTimeStyles.None, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator -(DateTime left, TimeSpan right)
+            => left - right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked DateTime ISubtractionOperators<DateTime, TimeSpan, DateTime>.operator -(DateTime left, TimeSpan right)
+        //     => checked(left - right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator -(DateTime left, DateTime right)
+            => left - right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked TimeSpan ISubtractionOperators<DateTime, DateTime, TimeSpan>.operator -(DateTime left, DateTime right)
+        //     => checked(left - right);
+#endif // FEATURE_GENERIC_MATH
     }
 }

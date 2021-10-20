@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Cryptography;
+using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
@@ -15,6 +17,9 @@ namespace System.Security.Cryptography
     [UnsupportedOSPlatform("browser")]
     public class HMACSHA1 : HMAC
     {
+        private const int HmacSizeBits = 160;
+        private const int HmacSizeBytes = HmacSizeBits / 8;
+
         public HMACSHA1()
             : this(RandomNumberGenerator.GetBytes(BlockSize))
         {
@@ -34,9 +39,11 @@ namespace System.Security.Cryptography
             // we just want to be explicit in all HMAC extended classes
             BlockSizeValue = BlockSize;
             HashSizeValue = _hMacCommon.HashSizeInBits;
+            Debug.Assert(HashSizeValue == HmacSizeBits);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete(Obsoletions.UseManagedSha1Message, DiagnosticId = Obsoletions.UseManagedSha1DiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public HMACSHA1(byte[] key, bool useManagedSha1) : this(key)
         {
             // useManagedSha1 is ignored
@@ -72,10 +79,89 @@ namespace System.Security.Cryptography
         protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
             _hMacCommon.TryFinalizeHashAndReset(destination, out bytesWritten);
 
-        public override void Initialize()
+        public override void Initialize() => _hMacCommon.Reset();
+
+        /// <summary>
+        /// Computes the HMAC of data using the SHA1 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <returns>The HMAC of the data.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="key" /> or <paramref name="source" /> is <see langword="null" />.
+        /// </exception>
+        public static byte[] HashData(byte[] key, byte[] source)
         {
-            // Nothing to do here. We expect HashAlgorithm to invoke HashFinal() and Initialize() as a pair. This reflects the
-            // reality that our native crypto providers (e.g. CNG) expose hash finalization and object reinitialization as an atomic operation.
+            if (key is null)
+                throw new ArgumentNullException(nameof(key));
+            if (source is null)
+                throw new ArgumentNullException(nameof(source));
+
+            return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
+        }
+
+        /// <summary>
+        /// Computes the HMAC of data using the SHA1 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <returns>The HMAC of the data.</returns>
+        public static byte[] HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source)
+        {
+            byte[] buffer = new byte[HmacSizeBytes];
+
+            int written = HashData(key, source, buffer.AsSpan());
+            Debug.Assert(written == buffer.Length);
+
+            return buffer;
+        }
+
+        /// <summary>
+        /// Computes the HMAC of data using the SHA1 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <param name="destination">The buffer to receive the HMAC value.</param>
+        /// <returns>The total number of bytes written to <paramref name="destination" />.</returns>
+        /// <exception cref="ArgumentException">
+        /// The buffer in <paramref name="destination"/> is too small to hold the calculated hash
+        /// size. The SHA1 algorithm always produces a 160-bit HMAC, or 20 bytes.
+        /// </exception>
+        public static int HashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            if (!TryHashData(key, source, destination, out int bytesWritten))
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            return bytesWritten;
+        }
+
+        /// <summary>
+        /// Attempts to compute the HMAC of data using the SHA1 algorithm.
+        /// </summary>
+        /// <param name="key">The HMAC key.</param>
+        /// <param name="source">The data to HMAC.</param>
+        /// <param name="destination">The buffer to receive the HMAC value.</param>
+        /// <param name="bytesWritten">
+        /// When this method returns, the total number of bytes written into <paramref name="destination"/>.
+        /// </param>
+        /// <returns>
+        /// <see langword="false"/> if <paramref name="destination"/> is too small to hold the
+        /// calculated hash, <see langword="true"/> otherwise.
+        /// </returns>
+        public static bool TryHashData(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length < HmacSizeBytes)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            bytesWritten = HashProviderDispenser.OneShotHashProvider.MacData(HashAlgorithmNames.SHA1, key, source, destination);
+            Debug.Assert(bytesWritten == HmacSizeBytes);
+
+            return true;
         }
 
         protected override void Dispose(bool disposing)

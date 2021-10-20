@@ -123,7 +123,7 @@ namespace System.Threading
             _trackAllValues = trackAllValues;
 
             // Assign the ID and mark the instance as initialized.
-             _idComplement = ~s_idManager.GetId();
+             _idComplement = ~s_idManager.GetId(trackAllValues);
 
             // As the last step, mark the instance as fully initialized. (Otherwise, if _initialized=false, we know that an exception
             // occurred in the constructor.)
@@ -201,7 +201,7 @@ namespace System.Threading
                 }
             }
             _linkedSlot = null;
-            s_idManager.ReturnId(id);
+            s_idManager.ReturnId(id, _trackAllValues);
         }
 
         #endregion
@@ -346,7 +346,7 @@ namespace System.Threading
             if (slotArray == null)
             {
                 slotArray = new LinkedSlotVolatile[GetNewTableSize(id + 1)];
-                ts_finalizationHelper = new FinalizationHelper(slotArray, _trackAllValues);
+                ts_finalizationHelper = new FinalizationHelper(slotArray);
                 ts_slotArray = slotArray;
             }
 
@@ -466,32 +466,6 @@ namespace System.Threading
             }
 
             return valueList;
-        }
-
-        internal IEnumerable<T> ValuesAsEnumerable
-        {
-            get
-            {
-                if (!_trackAllValues)
-                {
-                    throw new InvalidOperationException(SR.ThreadLocal_ValuesNotAvailable);
-                }
-
-                LinkedSlot? linkedSlot = _linkedSlot;
-                int id = ~_idComplement;
-                if (id == -1 || linkedSlot == null)
-                {
-                    throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
-                }
-
-                // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
-                for (linkedSlot = linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
-                {
-                    // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
-                    // objects will never be assigned to another ThreadLocal instance.
-                    yield return linkedSlot._value!;
-                }
-            }
         }
 
         /// <summary>Gets the number of threads that have data in this instance.</summary>
@@ -675,43 +649,74 @@ namespace System.Threading
         {
             // The next ID to try
             private int _nextIdToTry;
+            // Keep track of the count of non-TrackAllValues ids in use. A count of 0 leads to more efficient thread cleanup
+            private volatile int _idsThatDoNotTrackAllValues;
 
-            // Stores whether each ID is free or not. Additionally, the object is also used as a lock for the IdManager.
-            private readonly List<bool> _freeIds = new List<bool>();
+            // Stores IDs that are used, and if each ID tracksAllValues or not.
+            private readonly Dictionary<int, bool> _usedIdToTracksAllValuesMap = new Dictionary<int, bool>();
 
-            internal int GetId()
+            // Stores IDs that were previously used and are now free to reuse. Additionally, the object is also used as a lock
+            // for the IdManager.
+            private readonly List<int> _freeIds = new List<int>();
+
+            internal int GetId(bool trackAllValues)
             {
                 lock (_freeIds)
                 {
-                    int availableId = _nextIdToTry;
-                    while (availableId < _freeIds.Count)
+                    int availableId;
+                    int freeIdCount = _freeIds.Count;
+                    if (freeIdCount > 0)
                     {
-                        if (_freeIds[availableId]) { break; }
-                        availableId++;
-                    }
-
-                    if (availableId == _freeIds.Count)
-                    {
-                        _freeIds.Add(false);
+                        availableId = _freeIds[freeIdCount - 1];
                     }
                     else
                     {
-                        _freeIds[availableId] = false;
+                        availableId = _nextIdToTry;
                     }
 
-                    _nextIdToTry = availableId + 1;
+                    // Ensure that all of the IDs that will be used can be freed without throwing due to OOM when disposing or
+                    // finalizing
+                    _freeIds.EnsureCapacity(_usedIdToTracksAllValuesMap.Count + 1);
+
+                    _usedIdToTracksAllValuesMap.Add(availableId, trackAllValues);
+
+                    if (freeIdCount > 0)
+                    {
+                        _freeIds.RemoveAt(freeIdCount - 1);
+                    }
+                    else
+                    {
+                        _nextIdToTry = availableId + 1;
+                    }
+
+                    if (!trackAllValues)
+                        _idsThatDoNotTrackAllValues++;
 
                     return availableId;
                 }
             }
 
-            // Return an ID to the pool
-            internal void ReturnId(int id)
+            // Identify if an allocated id tracks all values or not
+            internal bool IdTracksAllValues(int id)
             {
                 lock (_freeIds)
                 {
-                    _freeIds[id] = true;
-                    if (id < _nextIdToTry) _nextIdToTry = id;
+                    return _usedIdToTracksAllValuesMap.TryGetValue(id, out bool tracksAllValues) && tracksAllValues;
+                }
+            }
+
+            internal int IdsThatDoNotTrackValuesCount => _idsThatDoNotTrackAllValues;
+
+            // Return an ID to the pool
+            internal void ReturnId(int id, bool idTracksAllValues)
+            {
+                lock (_freeIds)
+                {
+                    if (!idTracksAllValues)
+                        _idsThatDoNotTrackAllValues--;
+
+                    _usedIdToTracksAllValuesMap.Remove(id);
+                    _freeIds.Add(id); // does not throw because the capacity is ensured in GetId()
                 }
             }
         }
@@ -731,18 +736,17 @@ namespace System.Threading
         private sealed class FinalizationHelper
         {
             internal LinkedSlotVolatile[] SlotArray;
-            private readonly bool _trackAllValues;
 
-            internal FinalizationHelper(LinkedSlotVolatile[] slotArray, bool trackAllValues)
+            internal FinalizationHelper(LinkedSlotVolatile[] slotArray)
             {
                 SlotArray = slotArray;
-                _trackAllValues = trackAllValues;
             }
 
             ~FinalizationHelper()
             {
                 LinkedSlotVolatile[] slotArray = SlotArray;
                 Debug.Assert(slotArray != null);
+                int idsThatDoNotTrackAllValuesCountRemaining = s_idManager.IdsThatDoNotTrackValuesCount;
 
                 for (int i = 0; i < slotArray.Length; i++)
                 {
@@ -753,7 +757,10 @@ namespace System.Threading
                         continue;
                     }
 
-                    if (_trackAllValues)
+                    // If there are no ids that do not TrackAllValues, we don't need to call the IdTracksAllValues function.
+                    // This is an improvement as that function requires taking a lock.
+                    if (idsThatDoNotTrackAllValuesCountRemaining == 0 ||
+                        s_idManager.IdTracksAllValues(i))
                     {
                         // Set the SlotArray field to null to release the slot array.
                         linkedSlot._slotArray = null;
@@ -764,6 +771,13 @@ namespace System.Threading
                         // the table will be have been removed, and so the table can get GC'd.
                         lock (s_idManager)
                         {
+                            // If the slot wasn't disposed between reading it above and entering the lock
+                            // decrement idsThatDoNotTrackAllValuesCountRemaining
+                            if (slotArray[i].Value != null)
+                            {
+                                idsThatDoNotTrackAllValuesCountRemaining--;
+                            }
+
                             if (linkedSlot._next != null)
                             {
                                 linkedSlot._next._previous = linkedSlot._previous;
