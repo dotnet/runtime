@@ -20,7 +20,7 @@ namespace System.Net.Http.Json
             }
 
             JsonContent content = JsonContent.Create(value, mediaType: null, options);
-            return client.PatchAsync(requestUri, content, cancellationToken);
+            return PatchAsync(client, requestUri, content, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -32,7 +32,7 @@ namespace System.Net.Http.Json
             }
 
             JsonContent content = JsonContent.Create(value, mediaType: null, options);
-            return client.PatchAsync(requestUri, content, cancellationToken);
+            return PatchAsync(client, requestUri, content, cancellationToken);
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
@@ -51,7 +51,7 @@ namespace System.Net.Http.Json
             }
 
             JsonContent<TValue> content = new(value, jsonTypeInfo);
-            return client.PatchAsync(requestUri, content, cancellationToken);
+            return PatchAsync(client, requestUri, content, cancellationToken);
         }
 
         public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
@@ -62,7 +62,7 @@ namespace System.Net.Http.Json
             }
 
             JsonContent<TValue> content = new(value, jsonTypeInfo);
-            return client.PatchAsync(requestUri, content, cancellationToken);
+            return PatchAsync(client, requestUri, content, cancellationToken);
         }
     }
 }
