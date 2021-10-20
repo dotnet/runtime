@@ -75,9 +75,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Thread\tests\System.Threading.Thread.Tests.csproj" />
 
     <!-- Actual test failures -->
-    <!-- https://github.com/dotnet/runtime/issues/37088 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
-
     <!-- https://github.com/dotnet/runtime/issues/50871 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
 
