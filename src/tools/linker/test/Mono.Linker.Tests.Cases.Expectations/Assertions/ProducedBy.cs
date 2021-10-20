@@ -14,10 +14,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	public enum ProducedBy
 	{
 		Trimmer = 1,
-		RequiresAssemblyFileAnalyzer = 2,
-		RequiresUnreferencedCodeAnalyzer = 4,
-		COMAnalyzer = 8,
-		Analyzer = RequiresAssemblyFileAnalyzer | RequiresUnreferencedCodeAnalyzer | COMAnalyzer,
+		Analyzer = 2,
 		TrimmerAndAnalyzer = Trimmer | Analyzer
 	}
 }

@@ -175,7 +175,7 @@ namespace Mono.Linker.Tests.Cases.Interop.PInvoke.Warnings
 		static extern void CanSuppressPInvokeWithRequiresUnreferencedCode (IFoo foo);
 
 		[ExpectedWarning ("IL2050")]
-		[ExpectedWarning ("IL2026", ProducedBy = ProducedBy.Trimmer | ProducedBy.RequiresUnreferencedCodeAnalyzer)]
+		[ExpectedWarning ("IL2026")]
 		static void Call_PInvokeWithRequiresUnreferencedCode ()
 		{
 			PInvokeWithRequiresUnreferencedCode (null);
