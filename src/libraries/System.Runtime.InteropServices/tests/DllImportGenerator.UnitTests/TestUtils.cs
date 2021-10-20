@@ -83,7 +83,7 @@ namespace DllImportGenerator.UnitTests
 
             return CSharpCompilation.Create("compilation",
                 sources,
-                (await mdRefs.ResolveAsync(LanguageNames.CSharp, CancellationToken.None)).Add(ancillary),
+                (await ResolveReferenceAssemblies(mdRefs)).Add(ancillary),
                 new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe));
         }
 
@@ -112,19 +112,13 @@ namespace DllImportGenerator.UnitTests
         {
             return CSharpCompilation.Create("compilation",
                 sources,
-                (await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None)),
+                await ResolveReferenceAssemblies(referenceAssemblies),
                 new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe));
         }
 
         public static (ReferenceAssemblies, MetadataReference) GetReferenceAssemblies()
         {
-            // TODO: When .NET 6.0 releases, we can simplify this.
-            var referenceAssemblies = new ReferenceAssemblies(
-                    "net6.0",
-                    new PackageIdentity(
-                        "Microsoft.NETCore.App.Ref",
-                        "6.0.0-preview.7.21377.19"),
-                    Path.Combine("ref", "net6.0"))
+            var referenceAssemblies = ReferenceAssemblies.Net.Net60
                 .WithNuGetConfigFilePath(Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "NuGet.config"));
 
             // Include the assembly containing the new attribute and all of its references.
@@ -165,5 +159,20 @@ namespace DllImportGenerator.UnitTests
                 ImmutableArray.Create(generators.Select(gen => gen.AsSourceGenerator()).ToArray()),
                 parseOptions: (CSharpParseOptions)c.SyntaxTrees.First().Options,
                 optionsProvider: options);
+
+        private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)
+        {
+            const string envVar = "NUGET_PACKAGES";
+            try
+            {
+                // Set the NuGet package cache location to a subdirectory such that we should always have access to it
+                Environment.SetEnvironmentVariable(envVar, Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "packages"));
+                return await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(envVar, null);
+            }
+        }
     }
 }

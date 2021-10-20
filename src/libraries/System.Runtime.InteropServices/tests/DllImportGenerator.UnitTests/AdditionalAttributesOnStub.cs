@@ -23,7 +23,18 @@ using System.Runtime.InteropServices;
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -32,6 +43,25 @@ partial class C
             ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
             IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
             Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
+        }
+
+        [Fact]
+        public async Task SkipLocalsInitNotAddedOnForwardingStub()
+        {
+            string source = @"
+using System.Runtime.InteropServices;
+partial class C
+{
+    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    public static partial void Method();
+}";
+            Compilation comp = await TestUtils.CreateCompilation(source);
+
+            Compilation newComp = TestUtils.RunGenerators(comp, out _, new Microsoft.Interop.DllImportGenerator());
+
+            ITypeSymbol c = newComp.GetTypeByMetadataName("C")!;
+            IMethodSymbol stubMethod = c.GetMembers().OfType<IMethodSymbol>().Single(m => m.Name == "Method");
+            Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
@@ -54,10 +84,27 @@ namespace System.Runtime.InteropServices
     {
         public GeneratedDllImportAttribute(string a) { }
     }
-}partial class C
+
+    sealed class NativeMarshallingAttribute : System.Attribute
+    {
+        public NativeMarshallingAttribute(System.Type nativeType) { }
+    }
+}
+partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }";
             Compilation comp = await TestUtils.CreateCompilationWithReferenceAssemblies(source, referenceAssemblies);
 
@@ -85,7 +132,18 @@ using System.Runtime.CompilerServices;
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -106,7 +164,18 @@ using System.Runtime.CompilerServices;
 partial class C
 {
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 
@@ -127,7 +196,18 @@ partial class C
 {
     [SkipLocalsInit]
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method();
+    public static partial S Method();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
 

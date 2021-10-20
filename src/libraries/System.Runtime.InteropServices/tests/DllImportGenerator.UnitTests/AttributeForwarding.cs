@@ -25,7 +25,18 @@ partial class C
 {{
     [{attributeSourceName}]
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method1();
+    public static partial S Method1();
+}}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{{
+}}
+
+struct Native
+{{
+    public Native(S s) {{ }}
+    public S ToManaged() {{ return default; }}
 }}
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -36,7 +47,6 @@ partial class C
 
             Assert.NotNull(attributeType);
 
-            // The last syntax tree is the generated code
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
             Assert.Contains(
@@ -54,7 +64,18 @@ partial class C
 {
     [UnmanagedCallConv(CallConvs = new Type[0])]
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method1();
+    public static partial S Method1();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -65,7 +86,6 @@ partial class C
 
             Assert.NotNull(attributeType);
 
-            // The last syntax tree is the generated code
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
             Assert.Contains(
@@ -86,7 +106,18 @@ partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall)})]
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method1();
+    public static partial S Method1();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -98,7 +129,6 @@ partial class C
 
             Assert.NotNull(attributeType);
 
-            // The last syntax tree is the generated code
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
             Assert.Contains(
@@ -122,7 +152,18 @@ partial class C
 {
     [UnmanagedCallConv(CallConvs = new[]{typeof(CallConvStdcall), typeof(CallConvSuppressGCTransition)})]
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method1();
+    public static partial S Method1();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -135,7 +176,6 @@ partial class C
 
             Assert.NotNull(attributeType);
 
-            // The last syntax tree is the generated code
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
             Assert.Contains(
@@ -165,7 +205,18 @@ partial class C
 {
     [Other]
     [GeneratedDllImportAttribute(""DoesNotExist"")]
-    public static partial void Method1();
+    public static partial S Method1();
+}
+
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+}
+
+struct Native
+{
+    public Native(S s) { }
+    public S ToManaged() { return default; }
 }
 ";
             Compilation origComp = await TestUtils.CreateCompilation(source);
@@ -177,7 +228,6 @@ partial class C
 
             Assert.NotNull(attributeType);
 
-            // The last syntax tree is the generated code
             IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
 
             Assert.DoesNotContain(
@@ -187,14 +237,15 @@ partial class C
 
         private static IMethodSymbol GetGeneratedPInvokeTargetFromCompilation(Compilation newComp)
         {
+            // The last syntax tree is the generated code
             SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
             SemanticModel model = newComp.GetSemanticModel(generatedCode);
 
             var localFunctions = generatedCode.GetRoot()
                 .DescendantNodes().OfType<LocalFunctionStatementSyntax>()
                 .ToList();
-            Assert.Single(localFunctions);
-            IMethodSymbol targetMethod = (IMethodSymbol)model.GetDeclaredSymbol(localFunctions[0])!;
+            LocalFunctionStatementSyntax innerDllImport = Assert.Single(localFunctions);
+            IMethodSymbol targetMethod = (IMethodSymbol)model.GetDeclaredSymbol(innerDllImport)!;
             return targetMethod;
         }
     }

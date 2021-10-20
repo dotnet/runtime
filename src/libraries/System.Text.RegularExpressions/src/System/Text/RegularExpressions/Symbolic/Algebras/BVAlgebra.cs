@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions.Symbolic
         public string PrettyPrint(BV bv)
         {
             //accesses the shared BDD solver
-            ICharAlgebra<BDD> bddalgebra = SymbolicRegexRunner.s_unicode._solver;
+            ICharAlgebra<BDD> bddalgebra = SymbolicRegexRunnerFactory.s_unicode._solver;
             Debug.Assert(_partition is not null && bddalgebra is not null);
 
             return bddalgebra.PrettyPrint(ConvertToCharSet(bddalgebra, bv));

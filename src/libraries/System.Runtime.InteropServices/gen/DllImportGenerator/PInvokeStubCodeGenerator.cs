@@ -58,6 +58,8 @@ namespace Microsoft.Interop
         private readonly List<BoundGenerator> _sortedMarshallers;
         private readonly bool _stubReturnsVoid;
 
+        public bool StubIsBasicForwarder { get; }
+
         public PInvokeStubCodeGenerator(
             IEnumerable<TypePositionInfo> argTypes,
             bool setLastError,
@@ -134,6 +136,12 @@ namespace Microsoft.Interop
                 static m => GetInfoIndex(m.TypeInfo),
                 static m => GetInfoDependencies(m.TypeInfo))
                 .ToList();
+
+            StubIsBasicForwarder = !setLastError
+                && managedRetMarshaller.TypeInfo.IsNativeReturnPosition // If the managed return has native return position, then it's the return for both.
+                && _sortedMarshallers.All(
+                    m => m is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
+                        or { Generator: Forwarder });
 
             if (managedRetMarshaller.Generator.UsesNativeIdentifier(managedRetMarshaller.TypeInfo, this))
             {

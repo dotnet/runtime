@@ -736,6 +736,8 @@ namespace ContextualReflectionTest
                 assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName($"DynamicAssembly_{Guid.NewGuid():N}"), assemblyBuilderAccess);
             }
 
+            AssemblyLoadContext context = AssemblyLoadContext.GetLoadContext(assemblyBuilder);
+            Assert.AreEqual(assemblyLoadContext, context);
             Assert.IsTrue(assemblyLoadContext.Assemblies.Any(a => AssemblyName.ReferenceMatchesDefinition(a.GetName(), assemblyBuilder.GetName())));
         }
 

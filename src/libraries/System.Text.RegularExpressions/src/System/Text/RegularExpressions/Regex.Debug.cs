@@ -32,7 +32,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            srmFactory._runner._matcher.SaveDGML(writer, bound, hideStateInfo, addDotStar, inReverse, onlyDFAinfo, maxLabelLength, asNFA);
+            srmFactory._matcher.SaveDGML(writer, bound, hideStateInfo, addDotStar, inReverse, onlyDFAinfo, maxLabelLength, asNFA);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            return srmFactory._runner._matcher.GenerateRandomMembers(k, randomseed, negative);
+            return srmFactory._matcher.GenerateRandomMembers(k, randomseed, negative);
         }
     }
 }

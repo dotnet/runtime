@@ -306,11 +306,20 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
 
+_DebuggerArgsSeparator=
+if [[ "$_DebuggerFullPath" == *lldb* ]];
+then
+  _DebuggerArgsSeparator=--
+elif [[ "$_DebuggerFullPath" == *gdb* ]]
+then
+  _DebuggerArgsSeparator=--args
+fi
+
 if [ ! -z "$CLRCustomTestLauncher" ];
 then
     LAUNCHER="$CLRCustomTestLauncher $PWD/"
 else
-    LAUNCHER="$_DebuggerFullPath $(CLRTestRunFile)"
+    LAUNCHER="$_DebuggerFullPath $_DebuggerArgsSeparator $(CLRTestRunFile)"
 fi
 
 $(BashIlrtTestLaunchCmds)
