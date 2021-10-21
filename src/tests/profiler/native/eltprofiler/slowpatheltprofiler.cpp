@@ -21,10 +21,10 @@ shared_ptr<SlowPathELTProfiler> SlowPathELTProfiler::s_profiler;
 
 #ifndef WIN32
 #define UINT_PTR_FORMAT "lx"
-#define PROFILER_STUB EXTERN_C __attribute__((visibility("hidden"))) void STDMETHODCALLTYPE
+#define PROFILER_STUB __attribute__((visibility("hidden"))) static void STDMETHODCALLTYPE
 #else // WIN32
 #define UINT_PTR_FORMAT "llx"
-#define PROFILER_STUB EXTERN_C void STDMETHODCALLTYPE
+#define PROFILER_STUB static void STDMETHODCALLTYPE
 #endif // WIN32
 
 PROFILER_STUB EnterStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO eltInfo)
