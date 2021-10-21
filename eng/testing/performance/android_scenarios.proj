@@ -52,7 +52,7 @@
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot;</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <XHarnessAppBundleToTest Include="HelloAndroidWithDiag.apk">
+    <XHarnessAppBundleToTest Include="$(CorrelationPayloadDirectory)\HelloAndroidWithDiag.apk">
         <CustomCommands>
           cd $(ScenarioDirectory)helloandroid
           copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroidWithDiag.apk .
