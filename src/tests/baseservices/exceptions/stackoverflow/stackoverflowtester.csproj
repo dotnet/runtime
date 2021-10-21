@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Optimize>false</Optimize>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <!-- Fails in many GCStress jobs. https://github.com/dotnet/runtime/issues/46279 -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

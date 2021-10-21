@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestExecutionArguments>-unittest</CLRTestExecutionArguments>
     <GenerateRunScript>false</GenerateRunScript>
     <IsLongRunningGCTest>true</IsLongRunningGCTest>

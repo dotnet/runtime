@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test34094.cs" />

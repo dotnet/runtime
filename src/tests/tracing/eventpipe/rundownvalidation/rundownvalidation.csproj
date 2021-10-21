@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- The test launches a secondary process and process launch creates
