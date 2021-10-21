@@ -42,6 +42,11 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetArchitecture)' == 'arm'">
+    <!-- Issue: https://github.com/dotnet/runtime/issues/60705 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.UnitTests\DllImportGenerator.Unit.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetOS)' == 'FreeBSD'">
     <!-- DllImportGenerator runtime tests build depends pulling down a pre-built nethost binary, which is not available for FreeBSD. -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.InteropServices\tests\DllImportGenerator.Tests\DllImportGenerator.Tests.csproj" />
