@@ -842,6 +842,12 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Given a relop VN, get the VN for the "reversed" relop, which has the opposite value
+    // eg given VN(x < y), return  VN(y <=x)
+    //
+    // If vn is not a relop, return NoVN.
+    ValueNum GetReversedRelopVN(ValueNum vn);
+
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.
     // Lang is the language (C++) type for the corresponding vartype_t.

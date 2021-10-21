@@ -4450,6 +4450,87 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
     return c->m_attribs == CEA_Handle;
 }
 
+//------------------------------------------------------------------------
+// GetReversedRelopVN: return value number for reversed comparsion
+//
+// Arguments:
+//    vn - vn to reverse
+//
+// Returns:
+//    vn for reversed comparsion, or NoVN.
+//
+// Note:
+//    If "vn" corresponds to (x > y) 
+//    then reverse("vn") corresponds to (x <= y)
+//
+ValueNum ValueNumStore::GetReversedRelopVN(ValueNum vn)
+{
+    if (vn == NoVN)
+    {
+        return NoVN;
+    }
+
+    // Pull out any exception set.
+    //
+    ValueNum valueVN;
+    ValueNum excepVN;
+    VNUnpackExc(vn, &valueVN, &excepVN);
+
+    // Verify we have a binary func application
+    //
+    VNFuncApp funcAttr;
+    if (!GetVNFunc(valueVN, &funcAttr))
+    {
+        return NoVN;
+    }
+
+    if (funcAttr.m_arity != 2)
+    {
+        return NoVN;
+    }
+
+    // Map to the reverse VNFunc
+    //
+    VNFunc reverseOp;
+
+    if (funcAttr.m_func >= VNF_Boundary)
+    {
+        switch (funcAttr.m_func)
+        {
+            case VNF_LT_UN:
+                reverseOp = VNF_GE_UN;
+                break;
+            case VNF_LE_UN:
+                reverseOp = VNF_GT_UN;
+                break;
+            case VNF_GE_UN:
+                reverseOp = VNF_LT_UN;
+                break;
+            case VNF_GT_UN:
+                reverseOp = VNF_LE_UN;
+                break;
+            default:
+                return NoVN;
+        }
+    }
+    else
+    {
+        const genTreeOps op = (genTreeOps)funcAttr.m_func;
+
+        if (!GenTree::OperIsRelop(op))
+        {
+            return NoVN;
+        }
+
+        reverseOp = (VNFunc)GenTree::ReverseRelop(op);
+    }
+
+    // Create the resulting VN
+    //
+    ValueNum reverseValueVN = VNForFunc(TYP_INT, reverseOp, funcAttr.m_args[0], funcAttr.m_args[1]);
+    return VNWithExc(reverseValueVN, excepVN);
+}
+
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
     // Do we have "var < 100"?
