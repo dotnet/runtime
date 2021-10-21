@@ -149,11 +149,11 @@ if ($AndroidMono) {
         mkdir $WorkItemDirectory
     }
     if(Test-Path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk") {
-        Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory
+        Copy-Item -path "$SourceDirectory\androidHelloWorld\HelloAndroid.apk" $PayloadDirectory -Verbose
     }
         
     if(Test-Path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk") {
-        Copy-Item -path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk" $PayloadDirectory
+        Copy-Item -path "$SourceDirectory\androidHelloWorldWithDiag\HelloAndroidWithDiag.apk" $PayloadDirectory -Verbose
     }
     Copy-Item -path "$SourceDirectory\MauiAndroidDefault.apk" $PayloadDirectory
     $SetupArguments = $SetupArguments -replace $Architecture, 'arm64'
