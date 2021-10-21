@@ -86,6 +86,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 5, 6, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 10, 11, CompareOptions.IgnoreNonSpace, 4, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 1, 2, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "\r\n", "\n", 1, 2, CompareOptions.None, 1, 1 };
 
             // Weightless characters
             // NLS matches weightless characters at the end of the string

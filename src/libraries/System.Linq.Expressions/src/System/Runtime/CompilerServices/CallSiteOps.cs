@@ -20,7 +20,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <returns>The new call site.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static CallSite<T> CreateMatchmaker<T>(CallSite<T> site) where T : class
         {
             var mm = site.CreateMatchMaker();
@@ -34,7 +34,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>true if rule does not need updating, false otherwise.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool SetNotMatched(CallSite site)
         {
             var res = site._match;
@@ -47,7 +47,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>true if rule matched, false otherwise.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static bool GetMatch(CallSite site)
         {
             return site._match;
@@ -57,7 +57,7 @@ namespace System.Runtime.CompilerServices
         /// Clears the match flag on the matchmaker call site.
         /// </summary>
         /// <param name="site">An instance of the dynamic call site.</param>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void ClearMatch(CallSite site)
         {
             site._match = true;
@@ -69,7 +69,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="rule">An instance of the call site rule.</param>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void AddRule<T>(CallSite<T> site, T rule) where T : class
         {
             site.AddRule(rule);
@@ -81,7 +81,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="this">An instance of the dynamic call site.</param>
         /// <param name="matched">The matched rule index.</param>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void UpdateRules<T>(CallSite<T> @this, int matched) where T : class
         {
             if (matched > 1)
@@ -96,7 +96,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>An array of dynamic binding rules.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static T[]? GetRules<T>(CallSite<T> site) where T : class
         {
             return site.Rules;
@@ -108,7 +108,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <returns>The cache.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static RuleCache<T> GetRuleCache<T>(CallSite<T> site) where T : class
         {
             return site.Binder!.GetRuleCache<T>();
@@ -121,7 +121,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="cache">The call site rule cache.</param>
         /// <param name="rule">An instance of the call site rule.</param>
         /// <param name="i">An index of the call site rule.</param>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static void MoveRule<T>(RuleCache<T> cache, T rule, int i) where T : class
         {
             if (i > 1)
@@ -136,7 +136,7 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="T">The type of the delegate of the <see cref="CallSite"/>.</typeparam>
         /// <param name="cache">The cache.</param>
         /// <returns>The collection of applicable rules.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static T[] GetCachedRules<T>(RuleCache<T> cache) where T : class
         {
             return cache.GetRules();
@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="site">An instance of the dynamic call site.</param>
         /// <param name="args">Arguments to the call site.</param>
         /// <returns>The new call site target.</returns>
-        [Obsolete("do not use this method", error: true), EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("CallSiteOps has been deprecated and is not supported.", error: true), EditorBrowsable(EditorBrowsableState.Never)]
         public static T Bind<T>(CallSiteBinder binder, CallSite<T> site, object[] args) where T : class
         {
             return binder.BindCore(site, args);

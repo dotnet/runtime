@@ -61,7 +61,15 @@ namespace System.Reflection
         private static readonly ProxyAssembly s_proxyAssembly = new ProxyAssembly();
         private static readonly MethodInfo s_dispatchProxyInvokeMethod = typeof(DispatchProxy).GetMethod("Invoke", BindingFlags.NonPublic | BindingFlags.Instance)!;
         private static readonly MethodInfo s_getTypeFromHandleMethod = typeof(Type).GetRuntimeMethod("GetTypeFromHandle", new Type[] { typeof(RuntimeTypeHandle) })!;
-        private static readonly MethodInfo s_makeGenericMethodMethod = typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
+        private static readonly MethodInfo s_makeGenericMethodMethod = GetGenericMethodMethodInfo();
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "MakeGenericMethod is safe here because the user code invoking the generic method will reference " +
+            "the GenericTypes being used, which will guarantee the requirements of the generic method.")]
+        private static MethodInfo GetGenericMethodMethodInfo()
+        {
+            return typeof(MethodInfo).GetMethod("MakeGenericMethod", new Type[] { typeof(Type[]) })!;
+        }
 
         // Returns a new instance of a proxy the derives from 'baseType' and implements 'interfaceType'
         internal static object CreateProxyInstance(

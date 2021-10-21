@@ -31,6 +31,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/utils/mono-math.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
@@ -2245,7 +2246,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		t = mini_get_underlying_type (t);
 		//XXX what about ArgGSharedVtOnStack here?
 		if (ainfo->storage == ArgOnStack && !MONO_TYPE_ISSTRUCT (t)) {
-			if (!t->byref) {
+			if (!m_type_is_byref (t)) {
 				if (t->type == MONO_TYPE_R4)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER4_MEMBASE_REG, AMD64_RSP, ainfo->offset, in->dreg);
 				else if (t->type == MONO_TYPE_R8)
@@ -2631,7 +2632,7 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 		MonoType *t = sig->params [aindex];
 		ArgInfo *ainfo = &cinfo->args [aindex + sig->hasthis];
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			continue;
 
 		switch (t->type) {
@@ -2763,7 +2764,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			slot = general_param_reg_to_index [ainfo->reg];
 		}
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			p->regs [slot] = PTR_TO_GREG (*(arg));
 			continue;
 		}

@@ -66,5 +66,12 @@ namespace System.Diagnostics.Metrics
         /// <param name="value">The measurement value.</param>
         /// <param name="tags">A list of key-value pair tags associated with the measurement.</param>
         public void Record(T value, params KeyValuePair<string, object?>[] tags) => RecordMeasurement(value, tags.AsSpan());
+
+        /// <summary>
+        /// Record a measurement value.
+        /// </summary>
+        /// <param name="value">The measurement value.</param>
+        /// <param name="tagList">A <see cref="T:System.Diagnostics.TagList" /> of tags associated with the measurement.</param>
+        public void Record(T value, in TagList tagList) => RecordMeasurement(value, in tagList);
     }
 }

@@ -11,7 +11,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
     {
         internal static unsafe IPEndPoint INetToIPEndPoint(ref SOCKADDR_INET inetAddress)
         {
-            if (inetAddress.si_family == (ushort)QUIC_ADDRESS_FAMILY.INET)
+            if (inetAddress.si_family == QUIC_ADDRESS_FAMILY.INET)
             {
                 return new IPEndPoint(new IPAddress(MemoryMarshal.CreateReadOnlySpan<byte>(ref inetAddress.Ipv4.sin_addr[0], 4)), (ushort)IPAddress.NetworkToHostOrder((short)inetAddress.Ipv4.sin_port));
             }
@@ -24,17 +24,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         internal static unsafe SOCKADDR_INET IPEndPointToINet(IPEndPoint endpoint)
         {
             SOCKADDR_INET socketAddress = default;
-            if (endpoint.Address != IPAddress.Any && endpoint.Address != IPAddress.IPv6Any)
+            if (!endpoint.Address.Equals(IPAddress.Any) && !endpoint.Address.Equals(IPAddress.IPv6Any))
             {
                 switch (endpoint.Address.AddressFamily)
                 {
                     case AddressFamily.InterNetwork:
                         endpoint.Address.TryWriteBytes(MemoryMarshal.CreateSpan<byte>(ref socketAddress.Ipv4.sin_addr[0], 4), out _);
-                        socketAddress.Ipv4.sin_family = (ushort)QUIC_ADDRESS_FAMILY.INET;
+                        socketAddress.Ipv4.sin_family = QUIC_ADDRESS_FAMILY.INET;
                         break;
                     case AddressFamily.InterNetworkV6:
                         endpoint.Address.TryWriteBytes(MemoryMarshal.CreateSpan<byte>(ref socketAddress.Ipv6.sin6_addr[0], 16), out _);
-                        socketAddress.Ipv6.sin6_family = (ushort)QUIC_ADDRESS_FAMILY.INET6;
+                        socketAddress.Ipv6.sin6_family = QUIC_ADDRESS_FAMILY.INET6;
                         break;
                     default:
                         throw new ArgumentException(SR.net_quic_addressfamily_notsupported);

@@ -228,8 +228,8 @@ namespace System.Text.Json
         {
             StringBuilder sb = new StringBuilder("$");
 
-            // If a continuation, always report back full stack.
-            int count = Math.Max(_count, _continuationCount);
+            // If a continuation, always report back full stack which does not use Current for the last frame.
+            int count = Math.Max(_count, _continuationCount + 1);
 
             for (int i = 0; i < count - 1; i++)
             {
@@ -337,7 +337,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetConstructorArgumentState()
         {
-            if (Current.JsonTypeInfo.ParameterCount > 0)
+            if (Current.JsonTypeInfo.IsObjectWithParameterizedCtor)
             {
                 // A zero index indicates a new stack frame.
                 if (Current.CtorArgumentStateIndex == 0)

@@ -49,7 +49,7 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal("Reader exception", invalidOperationException.Message);
             Assert.Contains("ThrowTestException", invalidOperationException.StackTrace);
 
-            Assert.Single(Regex.Matches(invalidOperationException.StackTrace, "Pipe.GetFlushResult"));
+            Assert.Contains("Pipe.GetFlushResult", invalidOperationException.StackTrace);
         }
 
         [Fact]

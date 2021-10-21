@@ -30,11 +30,11 @@ internal static partial class Interop
             internal ulong TotalSize;
         }
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
-        internal static extern int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPStr)]string name, out MountPointInformation mpi);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSpaceInfoForMountPoint", SetLastError = true)]
+        internal static partial int GetSpaceInfoForMountPoint([MarshalAs(UnmanagedType.LPStr)]string name, out MountPointInformation mpi);
 
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
-        private static extern unsafe int GetFormatInfoForMountPoint(
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFormatInfoForMountPoint", SetLastError = true)]
+        private static unsafe partial int GetFormatInfoForMountPoint(
             [MarshalAs(UnmanagedType.LPStr)]string name,
             byte* formatNameBuffer,
             int bufferLength,
@@ -80,6 +80,7 @@ internal static partial class Interop
             // This list is based primarily on "man fs", "man mount", "mntent.h", "/proc/filesystems", coreutils "stat.c",
             // and "wiki.debian.org/FileSystem". It can be extended over time as we find additional file systems that should
             // be recognized as a particular drive type.
+            // Keep this in sync with the UnixFileSystemTypes enum in Interop.UnixFileSystemTypes.cs
             switch (fileSystemName)
             {
                 case "cddafs":
@@ -165,6 +166,7 @@ internal static partial class Interop
                 case "qnx6":
                 case "reiserfs":
                 case "rpc_pipefs":
+                case "sffs":
                 case "smackfs":
                 case "squashfs":
                 case "swap":
@@ -179,6 +181,8 @@ internal static partial class Interop
                 case "umsdos":
                 case "umview-mod-umfuseext2":
                 case "v9fs":
+                case "vagrant":
+                case "vboxfs":
                 case "vxfs":
                 case "vxfs_olt":
                 case "vzfs":
@@ -304,6 +308,7 @@ internal static partial class Interop
                 case "sockfs":
                 case "sysfs":
                 case "tmpfs":
+                case "udev":
                 case "usbdev":
                 case "usbdevfs":
                     return DriveType.Ram;
@@ -314,8 +319,8 @@ internal static partial class Interop
                 case "vfat":
                     return DriveType.Removable;
 
-                    // Categorize as "Unknown" everything else not explicitly
-                    // recognized as a particular drive type.
+                // Categorize as "Unknown" everything else not explicitly
+                // recognized as a particular drive type.
                 default:
                     return DriveType.Unknown;
             }

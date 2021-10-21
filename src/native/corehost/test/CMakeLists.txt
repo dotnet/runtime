@@ -1,6 +1,7 @@
 add_subdirectory(fx_ver)
 add_subdirectory(mockcoreclr)
-add_subdirectory(mockhostfxr)
+add_subdirectory(mockhostfxr/2_2)
+add_subdirectory(mockhostfxr/5_0)
 add_subdirectory(mockhostpolicy)
 add_subdirectory(nativehost)
 if (CLR_CMAKE_TARGET_WIN32)

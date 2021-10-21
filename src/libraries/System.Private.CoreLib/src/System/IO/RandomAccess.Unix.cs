@@ -33,9 +33,30 @@ namespace System.IO
                 // The Windows implementation uses ReadFile, which ignores the offset if the handle
                 // isn't seekable.  We do the same manually with PRead vs Read, in order to enable
                 // the function to be used by FileStream for all the same situations.
-                int result = handle.CanSeek ?
-                    Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset) :
-                    Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                int result;
+                if (handle.SupportsRandomAccess)
+                {
+                    // Try pread for seekable files.
+                    result = Interop.Sys.PRead(handle, bufPtr, buffer.Length, fileOffset);
+                    if (result == -1)
+                    {
+                        // We need to fallback to the non-offset version for certain file types
+                        // e.g: character devices (such as /dev/tty), pipes, and sockets.
+                        Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                        if (errorInfo.Error == Interop.Error.ENXIO ||
+                            errorInfo.Error == Interop.Error.ESPIPE)
+                        {
+                            handle.SupportsRandomAccess = false;
+                            result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                        }
+                    }
+                }
+                else
+                {
+                    result = Interop.Sys.Read(handle, bufPtr, buffer.Length);
+                }
+
                 FileStreamHelpers.CheckFileCall(result, handle.Path);
                 return result;
             }
@@ -74,8 +95,8 @@ namespace System.IO
             return FileStreamHelpers.CheckFileCall(result, handle.Path);
         }
 
-        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
-            => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
+        internal static ValueTask<int> ReadAtOffsetAsync(SafeFileHandle handle, Memory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
+            => ScheduleSyncReadAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
 
         private static ValueTask<long> ReadScatterAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<Memory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)
@@ -90,9 +111,29 @@ namespace System.IO
                     // The Windows implementation uses WriteFile, which ignores the offset if the handle
                     // isn't seekable.  We do the same manually with PWrite vs Write, in order to enable
                     // the function to be used by FileStream for all the same situations.
-                    int bytesWritten = handle.CanSeek ?
-                        Interop.Sys.PWrite(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length), fileOffset) :
-                        Interop.Sys.Write(handle, bufPtr, GetNumberOfBytesToWrite(buffer.Length));
+                    int bytesToWrite = GetNumberOfBytesToWrite(buffer.Length);
+                    int bytesWritten;
+                    if (handle.SupportsRandomAccess)
+                    {
+                        bytesWritten = Interop.Sys.PWrite(handle, bufPtr, bytesToWrite, fileOffset);
+                        if (bytesWritten == -1)
+                        {
+                            // We need to fallback to the non-offset version for certain file types
+                            // e.g: character devices (such as /dev/tty), pipes, and sockets.
+                            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+
+                            if (errorInfo.Error == Interop.Error.ENXIO ||
+                                errorInfo.Error == Interop.Error.ESPIPE)
+                            {
+                                handle.SupportsRandomAccess = false;
+                                bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        bytesWritten = Interop.Sys.Write(handle, bufPtr, bytesToWrite);
+                    }
 
                     FileStreamHelpers.CheckFileCall(bytesWritten, handle.Path);
                     if (bytesWritten == buffer.Length)
@@ -202,8 +243,8 @@ namespace System.IO
             }
         }
 
-        internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken)
-            => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken);
+        internal static ValueTask WriteAtOffsetAsync(SafeFileHandle handle, ReadOnlyMemory<byte> buffer, long fileOffset, CancellationToken cancellationToken, OSFileStreamStrategy? strategy = null)
+            => ScheduleSyncWriteAtOffsetAsync(handle, buffer, fileOffset, cancellationToken, strategy);
 
         private static ValueTask WriteGatherAtOffsetAsync(SafeFileHandle handle, IReadOnlyList<ReadOnlyMemory<byte>> buffers,
             long fileOffset, CancellationToken cancellationToken)

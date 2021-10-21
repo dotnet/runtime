@@ -109,15 +109,9 @@ public:
     
     EventMask eventMask;
 
-    //---------------------------------------------------------------
-    // m_dwProfilerEvacuationCounter keeps track of how many profiler
-    // callback calls remain on the stack
-    //---------------------------------------------------------------
-    // Why volatile?
-    // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization.
-    Volatile<DWORD> dwProfilerEvacuationCounter;
-
     Volatile<BOOL> inUse;
+
+    DWORD slot;
 
     // Reset those variables that is only for the current attach session
     void ResetPerSessionStatus();
@@ -150,19 +144,11 @@ class EvacuationCounterHolder
 {
 private:
     ProfilerInfo *m_pProfilerInfo;
+    Thread *m_pThread;
 
 public:
-    EvacuationCounterHolder(ProfilerInfo *pProfilerInfo) :
-        m_pProfilerInfo(pProfilerInfo)
-    {
-        _ASSERTE(m_pProfilerInfo != NULL);
-        InterlockedIncrement((LONG *)(m_pProfilerInfo->dwProfilerEvacuationCounter.GetPointer()));
-    }
-
-    ~EvacuationCounterHolder()
-    {
-        InterlockedDecrement((LONG *)(m_pProfilerInfo->dwProfilerEvacuationCounter.GetPointer()));
-    }
+    EvacuationCounterHolder(ProfilerInfo *pProfilerInfo);
+    ~EvacuationCounterHolder();
 };
 
 struct StoredProfilerNode
@@ -289,23 +275,26 @@ public:
     BOOL IsMainProfiler(ProfToEEInterfaceImpl *pProfToEE);
     ProfilerInfo *GetProfilerInfo(ProfToEEInterfaceImpl *pProfToEE);
 
-    template<typename ConditionFunc, typename CallbackFunc, typename Data = void, typename... Args>
-    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, Data *additionalData, CallbackFunc callback, Args... args)
+    template<typename ConditionFunc, typename CallbackFunc, typename... Args>
+    static void DoProfilerCallbackHelper(ProfilerInfo *pProfilerInfo, ConditionFunc condition, CallbackFunc callback, HRESULT *pHR, Args... args)
+    {
+        if (condition(pProfilerInfo))
+        {
+            HRESULT innerHR = callback(pProfilerInfo->pProfInterface, args...);
+            if (FAILED(innerHR))
+            {
+                *pHR = innerHR;
+            }
+        }
+    }
+
+    template<typename ConditionFunc, typename CallbackFunc, typename... Args>
+    FORCEINLINE HRESULT DoProfilerCallback(ProfilerCallbackType callbackType, ConditionFunc condition, CallbackFunc callback, Args... args)
     {
         HRESULT hr = S_OK;
         IterateProfilers(callbackType,
-                         [](ProfilerInfo *pProfilerInfo, ConditionFunc condition, Data *additionalData, CallbackFunc callback, HRESULT *pHR, Args... args)
-                            {
-                                if (condition(pProfilerInfo))
-                                {
-                                    HRESULT innerHR = callback(additionalData, pProfilerInfo->pProfInterface, args...);
-                                    if (FAILED(innerHR))
-                                    {
-                                        *pHR = innerHR;
-                                    }
-                                }
-                            },
-                         condition, additionalData, callback, &hr, args...);
+                         &DoProfilerCallbackHelper<ConditionFunc, CallbackFunc, Args...>,
+                         condition, callback, &hr, args...);
         return hr;
     }
 
@@ -317,7 +306,6 @@ public:
 
     BOOL IsCallback3Supported();
     BOOL IsCallback5Supported();
-    BOOL IsDisableTransparencySet();
     BOOL RequiresGenericsContextForEnterLeave();
     UINT_PTR EEFunctionIDMapper(FunctionID funcId, BOOL * pbHookFunction);
     

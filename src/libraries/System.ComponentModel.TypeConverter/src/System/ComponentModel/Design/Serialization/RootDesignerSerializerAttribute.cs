@@ -9,7 +9,7 @@ namespace System.ComponentModel.Design.Serialization
     /// being used as a root object.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = true)]
-    [Obsolete("This attribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)). https://go.microsoft.com/fwlink/?linkid=14202")]
+    [Obsolete("RootDesignerSerializerAttribute has been deprecated. Use DesignerSerializerAttribute instead. For example, to specify a root designer for CodeDom, use DesignerSerializerAttribute(...,typeof(TypeCodeDomSerializer)).")]
     public sealed class RootDesignerSerializerAttribute : Attribute
     {
         private string? _typeId;

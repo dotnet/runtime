@@ -11,7 +11,6 @@
 #include "common.h"
 
 #include "dbginterface.h"
-#include "compile.h"
 #include "versionresilienthashcode.h"
 #include "typehashingalgorithms.h"
 #include "method.hpp"
@@ -94,6 +93,9 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
+    // Reserve stack space for parsing out the namespace in a name-based lookup
+    // at this scope so the stack space is in scope for all usages in this method.
+    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
@@ -106,7 +108,6 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
         pszName = pName->GetName();
         pszNameSpace = "";
-
         if (pName->GetNameSpace() != NULL)
         {
             pszNameSpace = pName->GetNameSpace();
@@ -114,14 +115,13 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
         else
         {
             LPCUTF8 p;
-            CQuickBytes szNamespace;
 
             if ((p = ns::FindSep(pszName)) != NULL)
             {
                 SIZE_T d = p - pszName;
 
                 FAULT_NOT_FATAL();
-                pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
+                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
 
                 if (pszNameSpace == NULL)
                     return FALSE;
@@ -393,7 +393,7 @@ BOOL ReadyToRunInfo::IsReadyToRunEnabled()
 // Any other value: Handle of the log file.
 static  FILE * volatile s_r2rLogFile = (FILE *)(-1);
 
-static void LogR2r(const char *msg, PEFile *pFile)
+static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -431,7 +431,7 @@ static void LogR2r(const char *msg, PEFile *pFile)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pFile->GetPath().GetUnicode());
+    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pPEAssembly->GetPath().GetUnicode());
     fflush(r2rLogFile);
 }
 
@@ -504,10 +504,10 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
 
     if (ownerCompositeExecutableName != NULL)
     {
-        AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
-        return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
+        AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
+        return binder->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
-    
+
     return NULL;
 }
 
@@ -515,7 +515,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 {
     STANDARD_VM_CONTRACT;
 
-    PEFile * pFile = pModule->GetFile();
+    PEAssembly * pFile = pModule->GetPEAssembly();
 
     if (!IsReadyToRunEnabled())
     {
@@ -530,13 +530,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    if (!pFile->HasLoadedIL())
+    if (!pFile->HasLoadedPEImage())
     {
-        DoLog("Ready to Run disabled - no loaded IL image");
+        DoLog("Ready to Run disabled - no loaded PE image");
         return NULL;
     }
 
-    PEImageLayout * pLayout = pFile->GetLoadedIL();
+    PEImageLayout * pLayout = pFile->GetLoadedLayout();
     if (!pLayout->HasReadyToRunHeader())
     {
         DoLog("Ready to Run header not found");
@@ -555,29 +555,18 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-#ifdef FEATURE_NATIVE_IMAGE_GENERATION
-    // Ignore ReadyToRun during NGen
-    if (IsCompilationProcess() && !IsNgenPDBCompilationProcess())
-    {
-        DoLog("Ready to Run disabled - compilation process");
-        return NULL;
-    }
-#endif
-
     if (!pLayout->IsNativeMachineFormat())
     {
         // For CoreCLR, be strict about disallowing machine mismatches.
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
     }
 
-#ifndef CROSSGEN_COMPILE
     // The file must have been loaded using LoadLibrary
     if (!pLayout->IsRelocated())
     {
         DoLog("Ready to Run disabled - module not loaded for execution");
         return NULL;
     }
-#endif
 
     READYTORUN_HEADER * pHeader = pLayout->GetReadyToRunHeader();
 
@@ -820,17 +809,14 @@ static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pMod
     return true;
 }
 
-#ifndef CROSSGEN_COMPILE
 bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocatedMemory, ICorJitInfo::PgoInstrumentationSchema**ppSchema, UINT *pcSchema, BYTE** pInstrumentationData)
 {
     STANDARD_VM_CONTRACT;
 
     PCODE pEntryPoint = NULL;
-#ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
-#endif // CROSSGEN_COMPILE
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
     if (rid == 0)
@@ -882,13 +868,12 @@ bool ReadyToRunInfo::GetPgoInstrumentationData(MethodDesc * pMD, BYTE** pAllocat
             IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
             size_t maxSize = offset - pPgoInstrumentationDataDir->VirtualAddress + pPgoInstrumentationDataDir->Size;
 
-            return SUCCEEDED(PgoManager::getPgoInstrumentationResultsFromR2RFormat(this, m_pModule, m_pModule->GetNativeOrReadyToRunImage(), instrumentationDataPtr, maxSize, pAllocatedMemory, ppSchema, pcSchema, pInstrumentationData));
+            return SUCCEEDED(PgoManager::getPgoInstrumentationResultsFromR2RFormat(this, m_pModule, m_pModule->GetReadyToRunImage(), instrumentationDataPtr, maxSize, pAllocatedMemory, ppSchema, pcSchema, pInstrumentationData));
         }
     }
 
     return false;
 }
-#endif // !CROSSGEN_COMPILE
 
 
 PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig, BOOL fFixups)
@@ -896,11 +881,9 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     STANDARD_VM_CONTRACT;
 
     PCODE pEntryPoint = NULL;
-#ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
     BOOL fShouldSearchCache = TRUE;
 #endif // PROFILING_SUPPORTED
-#endif // CROSSGEN_COMPILE
     mdToken token = pMD->GetMemberDef();
     int rid = RidFromToken(token);
     if (rid == 0)
@@ -943,7 +926,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             goto done;
     }
 
-#ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
@@ -962,7 +944,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             goto done;
         }
 #endif // PROFILING_SUPPORTED
-#endif // CROSSGEN_COMPILE
 
     uint id;
     offset = m_nativeReader.DecodeUnsigned(offset, &id);
@@ -978,11 +959,12 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
 
         if (fFixups)
         {
-            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset))
+            BOOL mayUsePrecompiledNDirectMethods = TRUE;
+            mayUsePrecompiledNDirectMethods = !pConfig->IsForMulticoreJit();
+
+            if (!m_pModule->FixupDelayList(dac_cast<TADDR>(GetImage()->GetBase()) + offset, mayUsePrecompiledNDirectMethods))
             {
-#ifndef CROSSGEN_COMPILE
                 pConfig->SetReadyToRunRejectedPrecompiledCode();
-#endif // CROSSGEN_COMPILE
                 goto done;
             }
         }
@@ -998,7 +980,6 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     pEntryPoint = dac_cast<TADDR>(GetImage()->GetBase()) + m_pRuntimeFunctions[id].BeginAddress;
     m_pCompositeInfo->SetMethodDescForEntryPointInNativeImage(pEntryPoint, pMD);
 
-#ifndef CROSSGEN_COMPILE
 #ifdef PROFILING_SUPPORTED
         {
             BEGIN_PROFILER_CALLBACK(CORProfilerTrackCacheSearches());
@@ -1007,15 +988,10 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
             END_PROFILER_CALLBACK();
         }
 #endif // PROFILING_SUPPORTED
-#endif // CROSSGEN_COMPILE
 
     if (g_pDebugInterface != NULL)
     {
-#if defined(CROSSGEN_COMPILE)
-        g_pDebugInterface->JITComplete(NativeCodeVersion(pMD), pEntryPoint);
-#else
         g_pDebugInterface->JITComplete(pConfig->GetCodeVersion(), pEntryPoint);
-#endif
     }
 
 done:

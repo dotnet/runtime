@@ -30,6 +30,8 @@ namespace Microsoft.Workload.Build.Tasks
         [Required, NotNull]
         public string?        SdkDir             { get; set; }
 
+        public bool           OnlyUpdateManifests{ get; set; }
+
         public ITaskItem[]    ExtraNuGetSources  { get; set; } = Array.Empty<ITaskItem>();
 
         public override bool Execute()
@@ -51,6 +53,9 @@ namespace Microsoft.Workload.Build.Tasks
             string nugetConfigContents = GetNuGetConfig();
             if (!InstallWorkloadManifest(WorkloadId.GetMetadata("ManifestName"), WorkloadId.GetMetadata("Version"), nugetConfigContents, stopOnMissing: true))
                 return false;
+
+            if (OnlyUpdateManifests)
+                return !Log.HasLoggedErrors;
 
             string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
@@ -191,7 +196,7 @@ namespace Microsoft.Workload.Build.Tasks
             return first ?? Path.Combine(parentDir, dirName);
         }
 
-        private record ManifestInformation(
+        private sealed record ManifestInformation(
             object Version,
             string Description,
 
@@ -202,7 +207,7 @@ namespace Microsoft.Workload.Build.Tasks
             object Data
         );
 
-        private record WorkloadInformation(
+        private sealed record WorkloadInformation(
             bool Abstract,
             string Kind,
             string Description,
@@ -212,7 +217,7 @@ namespace Microsoft.Workload.Build.Tasks
             List<string> Platforms
         );
 
-        private record PackVersionInformation(
+        private sealed record PackVersionInformation(
             string Kind,
             string Version,
             [property: JsonPropertyName("alias-to")]
@@ -220,7 +225,7 @@ namespace Microsoft.Workload.Build.Tasks
         );
     }
 
-    internal record PackageReference(string Name,
+    internal sealed record PackageReference(string Name,
                                      string Version,
                                      string OutputDir,
                                      string relativeSourceDir = "");

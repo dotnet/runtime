@@ -48,6 +48,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonSerializerContext, JsonPropertyInfo[]>? PropInitFunc;
 
+        internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
+
         internal static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
@@ -575,18 +577,19 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void InitializePropCache()
         {
+            Debug.Assert(PropertyCache == null);
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
 
             JsonSerializerContext? context = Options._context;
             Debug.Assert(context != null);
 
-            if (PropInitFunc == null)
+            JsonPropertyInfo[] array;
+            if (PropInitFunc == null || (array = PropInitFunc(context)) == null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
                 return;
             }
 
-            JsonPropertyInfo[] array = PropInitFunc(context);
             Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
             JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
 
@@ -610,11 +613,41 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
+                if (jsonPropertyInfo.SrcGen_IsExtensionData)
+                {
+                    // Source generator compile-time type inspection has performed this validation for us.
+                    Debug.Assert(DataExtensionProperty == null);
+                    Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
+
+                    DataExtensionProperty = jsonPropertyInfo;
+                    continue;
+                }
+
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 
             // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
             PropertyCache = propertyCache;
+        }
+
+        internal void InitializeParameterCache()
+        {
+            Debug.Assert(ParameterCache == null);
+            Debug.Assert(PropertyCache != null);
+            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+
+            JsonSerializerContext? context = Options._context;
+            Debug.Assert(context != null);
+
+            JsonParameterInfoValues[] array;
+            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
+                return;
+            }
+
+            InitializeConstructorParameters(array, sourceGenMode: true);
+            Debug.Assert(ParameterCache != null);
         }
     }
 }

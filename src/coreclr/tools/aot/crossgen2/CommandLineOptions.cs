@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Reflection;
 using System.Text;
 
 using Internal.CommandLine;
@@ -74,6 +72,8 @@ namespace ILCompiler
         public IReadOnlyList<string> SingleMethodGenericArg;
 
         public IReadOnlyList<string> CodegenOptions;
+
+        public string MakeReproPath;
 
         public bool CompositeOrInputBubble => Composite || InputBubble;
 
@@ -169,6 +169,8 @@ namespace ILCompiler
                 syntax.DefineOption("verify-type-and-field-layout", ref VerifyTypeAndFieldLayout, SR.VerifyTypeAndFieldLayoutOption);
                 syntax.DefineOption("callchain-profile", ref CallChainProfileFile, SR.CallChainProfileFile);
 
+                syntax.DefineOption("make-repro-path", ref MakeReproPath, SR.MakeReproPathHelp);
+
                 syntax.DefineOption("h|help", ref Help, SR.HelpOption);
 
                 syntax.DefineParameterList("in", ref InputFilePaths, SR.InputFilesToCompile);
@@ -229,6 +231,16 @@ namespace ILCompiler
                 argSyntax.ExtraHelpParagraphs = extraHelp;
 
                 HelpText = argSyntax.GetHelpText();
+            }
+
+            if (MakeReproPath != null)
+            {
+                // Create a repro package in the specified path
+                // This package will have the set of input files needed for compilation
+                // + the original command line arguments
+                // + a rsp file that should work to directly run out of the zip file
+
+                Helpers.MakeReproPackage(MakeReproPath, OutputFilePath, args, argSyntax, new[] { "-r", "-u", "-m", "--inputbubbleref" });
             }
         }
     }

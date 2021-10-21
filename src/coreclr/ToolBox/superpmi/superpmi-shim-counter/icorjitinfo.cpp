@@ -1250,6 +1250,13 @@ bool interceptor_ICJI::notifyInstructionSetUsage(
     return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
 }
 
+void interceptor_ICJI::updateEntryPointForTailCall(
+          CORINFO_CONST_LOOKUP* entryPoint)
+{
+    mcs->AddCall("updateEntryPointForTailCall");
+    original_ICorJitInfo->updateEntryPointForTailCall(entryPoint);
+}
+
 void interceptor_ICJI::allocMem(
           AllocMemArgs* pArgs)
 {
@@ -1387,5 +1394,13 @@ uint32_t interceptor_ICJI::getJitFlags(
 {
     mcs->AddCall("getJitFlags");
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
+}
+
+bool interceptor_ICJI::doesFieldBelongToClass(
+          CORINFO_FIELD_HANDLE fldHnd,
+          CORINFO_CLASS_HANDLE cls)
+{
+    mcs->AddCall("doesFieldBelongToClass");
+    return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
 }
 

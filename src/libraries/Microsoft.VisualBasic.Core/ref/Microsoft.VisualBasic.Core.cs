@@ -130,7 +130,7 @@ namespace Microsoft.VisualBasic
         public const Microsoft.VisualBasic.MsgBoxStyle vbMsgBoxRtlReading = Microsoft.VisualBasic.MsgBoxStyle.MsgBoxRtlReading;
         public const Microsoft.VisualBasic.MsgBoxStyle vbMsgBoxSetForeground = Microsoft.VisualBasic.MsgBoxStyle.MsgBoxSetForeground;
         public const Microsoft.VisualBasic.VbStrConv vbNarrow = Microsoft.VisualBasic.VbStrConv.Narrow;
-        [System.ObsoleteAttribute("For a carriage return and line feed, use vbCrLf.  For the current platform's newline, use System.Environment.NewLine.")]
+        [System.ObsoleteAttribute("vbNewLine has been deprecated. For a carriage return and line feed, use vbCrLf. For the current platform's newline, use System.Environment.NewLine.")]
         public const string vbNewLine = "\r\n";
         public const Microsoft.VisualBasic.MsgBoxResult vbNo = Microsoft.VisualBasic.MsgBoxResult.No;
         public const Microsoft.VisualBasic.FileAttribute vbNormal = Microsoft.VisualBasic.FileAttribute.Normal;
@@ -383,7 +383,7 @@ namespace Microsoft.VisualBasic
         public static void FilePut(int FileNumber, string Value, long RecordNumber = (long)-1, bool StringIsFixedLength = false) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = (long)-1) { }
-        [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("FileSystem.FilePut has been deprecated. Use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types.")]
         public static void FilePut(object FileNumber, object Value, object RecordNumber) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The origin object type could not be statically analyzed and may be trimmed")]
         public static void FilePutObject(int FileNumber, object Value, long RecordNumber = (long)-1) { }
@@ -404,7 +404,6 @@ namespace Microsoft.VisualBasic
         public static void Input(int FileNumber, ref float Value) { }
         public static void Input(int FileNumber, ref string Value) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static string InputString(int FileNumber, int CharCount) { throw null; }
@@ -412,17 +411,14 @@ namespace Microsoft.VisualBasic
         public static string LineInput(int FileNumber) { throw null; }
         public static long Loc(int FileNumber) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Lock(int FileNumber) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Lock(int FileNumber, long Record) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
@@ -441,17 +437,14 @@ namespace Microsoft.VisualBasic
         public static Microsoft.VisualBasic.TabInfo TAB() { throw null; }
         public static Microsoft.VisualBasic.TabInfo TAB(short Column) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Unlock(int FileNumber) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Unlock(int FileNumber, long Record) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("maccatalyst")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("macos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static void Unlock(int FileNumber, long FromRecord, long ToRecord) { }
@@ -806,7 +799,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal Conversions() { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression origin object cannot be statically analyzed and may be trimmed")]
         public static object? ChangeType(object? Expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type TargetType) { throw null; }
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackUserDefinedConversion has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Expression origin object cannot be statically analyzed and may be trimmed")]
         public static object FallbackUserDefinedConversion(object Expression, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type TargetType) { throw null; }
         public static string FromCharAndCount(char Value, int Count) { throw null; }
@@ -973,35 +966,35 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal NewLateBinding() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackCall has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackCall(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames, bool IgnoreReturn) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackGet has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackGet(object Instance, string MemberName, object[] Arguments, string[] ArgumentNames) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackIndexSet has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackIndexSet(object Instance, object[] Arguments, string[] ArgumentNames) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackIndexSetComplex has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackIndexSetComplex(object Instance, object[] Arguments, string[] ArgumentNames, bool OptimisticSet, bool RValueBase) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackInvokeDefault1 has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackInvokeDefault1(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackInvokeDefault2 has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static object? FallbackInvokeDefault2(object Instance, object[] Arguments, string[] ArgumentNames, bool ReportErrors) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackSet has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackSet(object Instance, string MemberName, object[] Arguments) { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackSetComplex has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
         public static void FallbackSetComplex(object Instance, string MemberName, object[] Arguments, bool OptimisticSet, bool RValueBase) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Late binding is dynamic and cannot be statically analyzed. The referenced types and members may be trimmed")]
@@ -1109,7 +1102,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static object? DivideObject(object? Left, object? Right) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? ExponentObject(object? Left, object? Right) { throw null; }
-        [System.ObsoleteAttribute("do not use this method", true)]
+        [System.ObsoleteAttribute("FallbackInvokeUserDefinedOperator has been deprecated and is not supported.", true)]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]
         public static object? FallbackInvokeUserDefinedOperator(object? vbOp, object?[]? arguments) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The object types cannot be statically analyzed so their operators may be trimmed")]

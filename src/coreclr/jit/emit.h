@@ -243,8 +243,8 @@ struct insGroup
     insGroup* igSelf; // for consistency checking
 #endif
 #if defined(DEBUG) || defined(LATE_DISASM)
-    BasicBlock::weight_t igWeight;    // the block weight used for this insGroup
-    double               igPerfScore; // The PerfScore for this insGroup
+    weight_t igWeight;    // the block weight used for this insGroup
+    double   igPerfScore; // The PerfScore for this insGroup
 #endif
 
 #ifdef DEBUG
@@ -583,6 +583,7 @@ protected:
         instruction _idIns : 10;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
+#define INSTR_ENCODED_SIZE 4
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
@@ -884,22 +885,18 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
-            if (sz > 15)
-            {
-                // This is a temporary workaround for non-precise instr size
-                // estimator on XARCH. It often overestimates sizes and can
-                // return value more than 15 that doesn't fit in 4 bits _idCodeSize.
-                // If somehow we generate instruction that needs more than 15 bytes we
-                // will fail on another assert in emit.cpp: noway_assert(id->idCodeSize() >= csz).
-                // Issue https://github.com/dotnet/runtime/issues/12840.
-                sz = 15;
-            }
             assert(sz <= 15); // Intel decoder limit.
             _idCodeSize = sz;
             assert(sz == _idCodeSize);
         }
 
 #elif defined(TARGET_ARM64)
+
+        inline bool idIsEmptyAlign() const
+        {
+            return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
+        }
+
         unsigned idCodeSize() const
         {
             int size = 4;
@@ -921,6 +918,12 @@ protected:
                     {
                         // adrp + ldr
                         size = 8;
+                    }
+                    break;
+                case IF_SN_0A:
+                    if (idIsEmptyAlign())
+                    {
+                        size = 0;
                     }
                     break;
                 default:
@@ -1138,15 +1141,6 @@ protected:
             _idCallRegPtr = 1;
         }
 
-        bool idIsCallAddr() const
-        {
-            return _idCallAddr != 0;
-        }
-        void idSetIsCallAddr()
-        {
-            _idCallAddr = 1;
-        }
-
         // Only call instructions that call helper functions may be marked as "IsNoGC", indicating
         // that a thread executing such a call cannot be stopped for GC.  Thus, in partially-interruptible
         // code, it is not necessary to generate GC info for a call so labeled.
@@ -1358,7 +1352,7 @@ protected:
 
 #endif // defined(DEBUG) || defined(LATE_DISASM)
 
-    BasicBlock::weight_t getCurrentBlockWeight();
+    weight_t getCurrentBlockWeight();
 
     void dispIns(instrDesc* id);
 
@@ -1390,7 +1384,11 @@ protected:
         instrDescAlign* idaNext; // next align in the group/method
         insGroup*       idaIG;   // containing group
     };
-#endif
+
+    void emitLoopAlign(unsigned short paddingBytes);
+    void emitLongLoopAlign(unsigned short alignmentBoundary);
+
+#endif // FEATURE_LOOP_ALIGN
 
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
     struct instrDescLbl : instrDescJmp
@@ -1491,6 +1489,10 @@ protected:
 
     ssize_t emitGetInsCIdisp(instrDesc* id);
     unsigned emitGetInsCIargs(instrDesc* id);
+
+#ifdef DEBUG
+    inline static emitAttr emitGetMemOpSize(instrDesc* id);
+#endif // DEBUG
 
     // Return the argument count for a direct call "id".
     int emitGetInsCDinfo(instrDesc* id);
@@ -1898,6 +1900,10 @@ private:
     }
 
     instrDesc* emitLastIns;
+
+#ifdef TARGET_ARMARCH
+    instrDesc* emitLastMemBarrier;
+#endif
 
 #ifdef DEBUG
     void emitCheckIGoffsets();
@@ -2580,6 +2586,11 @@ inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 {
     instrDescAlign* newInstr = emitAllocInstrAlign();
     newInstr->idIns(INS_align);
+
+#ifdef TARGET_ARM64
+    newInstr->idInsFmt(IF_SN_0A);
+    newInstr->idInsOpt(INS_OPTS_ALIGN);
+#endif
     return newInstr;
 }
 #endif
@@ -2802,6 +2813,68 @@ inline unsigned emitter::emitGetInsCIargs(instrDesc* id)
         return (unsigned)cns;
     }
 }
+
+#ifdef DEBUG
+//-----------------------------------------------------------------------------
+// emitGetMemOpSize: Get the memory operand size of instrDesc.
+//
+// Note: vextractf128 has a 128-bit output (register or memory) but a 256-bit input (register).
+// vinsertf128 is the inverse with a 256-bit output (register), a 256-bit input(register),
+// and a 128-bit input (register or memory).
+// This method is mainly used for such instructions to return the appropriate memory operand
+// size, otherwise returns the regular operand size of the instruction.
+
+//  Arguments:
+//       id - Instruction descriptor
+//
+/* static */ emitAttr emitter::emitGetMemOpSize(instrDesc* id)
+{
+    emitAttr defaultSize = id->idOpSize();
+    emitAttr newSize     = defaultSize;
+    switch (id->idIns())
+    {
+        case INS_vextractf128:
+        case INS_vextracti128:
+        case INS_vinsertf128:
+        case INS_vinserti128:
+        {
+            return EA_16BYTE;
+        }
+
+        case INS_pextrb:
+        case INS_pinsrb:
+        {
+            return EA_1BYTE;
+        }
+
+        case INS_pextrw:
+        case INS_pextrw_sse41:
+        case INS_pinsrw:
+        {
+            return EA_2BYTE;
+        }
+
+        case INS_extractps:
+        case INS_insertps:
+        case INS_pextrd:
+        case INS_pinsrd:
+        {
+            return EA_4BYTE;
+        }
+
+        case INS_pextrq:
+        case INS_pinsrq:
+        {
+            return EA_8BYTE;
+        }
+
+        default:
+        {
+            return id->idOpSize();
+        }
+    }
+}
+#endif // DEBUG
 
 #endif // TARGET_XARCH
 

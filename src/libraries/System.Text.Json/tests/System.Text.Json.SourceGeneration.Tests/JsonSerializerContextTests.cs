@@ -59,6 +59,18 @@ namespace System.Text.Json.SourceGeneration.Tests
                 new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
         }
 
+        [Fact]
+        public static void SupportsPositionalRecords()
+        {
+            Person person = new(FirstName: "Jane", LastName: "Doe");
+
+            byte[] utf8Json = JsonSerializer.SerializeToUtf8Bytes(person, PersonJsonContext.Default.Person);
+
+            person = JsonSerializer.Deserialize<Person>(utf8Json, PersonJsonContext.Default.Person);
+            Assert.Equal("Jane", person.FirstName);
+            Assert.Equal("Doe", person.LastName);
+        }
+
         [JsonSerializable(typeof(JsonMessage))]
         internal partial class NestedContext : JsonSerializerContext { }
 
@@ -67,6 +79,15 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             [JsonSerializable(typeof(JsonMessage))]
             protected internal partial class NestedProtectedInternalClass : JsonSerializerContext { }
+        }
+
+        internal record Person(string FirstName, string LastName);
+
+        [JsonSourceGenerationOptions(
+            PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+        [JsonSerializable(typeof(Person))]
+        internal partial class PersonJsonContext : JsonSerializerContext
+        {
         }
     }
 }

@@ -627,7 +627,7 @@ mono_arch_cpu_optimizations (guint32 *exclude_mask)
 
 static gboolean
 is_regsize_var (MonoType *t) {
-	if (t->byref)
+	if (m_type_is_byref (t))
 		return TRUE;
 	t = mini_get_underlying_type (t);
 	switch (t->type) {
@@ -906,7 +906,7 @@ is_struct_returnable_via_regs  (MonoClass *klass, gboolean is_pinvoke)
 		while ((f = mono_class_get_fields_internal (klass, &iter))) {
 			if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 				// TBD: Is there a better way to check for the basic types?
-				if (f->type->byref) {
+				if (m_type_is_byref (f->type)) {
 					return FALSE;
 				} else if ((f->type->type >= MONO_TYPE_BOOLEAN) && (f->type->type <= MONO_TYPE_R8)) {
 					has_a_field = TRUE;
@@ -982,7 +982,7 @@ has_only_a_r48_field (MonoClass *klass)
 		if (!(f->type->attrs & FIELD_ATTRIBUTE_STATIC)) {
 			if (have_field)
 				return FALSE;
-			if (!f->type->byref && (f->type->type == MONO_TYPE_R4 || f->type->type == MONO_TYPE_R8))
+			if (!m_type_is_byref (f->type) && (f->type->type == MONO_TYPE_R4 || f->type->type == MONO_TYPE_R8))
 				have_field = TRUE;
 			else
 				return FALSE;
@@ -1054,7 +1054,7 @@ get_call_info (MonoMethodSignature *sig)
                         add_general (&gr, &stack_size, &cinfo->sig_cookie, TRUE);
                 }
                 DEBUG(printf("param %d: ", i));
-		if (sig->params [i]->byref) {
+		if (m_type_is_byref (sig->params [i])) {
                         DEBUG(printf("byref\n"));
 			add_general (&gr, &stack_size, cinfo->args + n, TRUE);
 			n++;
@@ -1598,7 +1598,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 		if (ainfo->regtype == RegTypeGeneral) {
 #ifndef __mono_ppc64__
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_INST_NEW (cfg, ins, OP_MOVE);
 				ins->dreg = mono_alloc_ireg (cfg);
 				ins->sreg1 = MONO_LVREG_LS (in->dreg);
@@ -1651,9 +1651,9 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			MONO_ADD_INS (cfg->cbb, ins);
 			cfg->flags |= MONO_CFG_HAS_FPOUT;
 		} else if (ainfo->regtype == RegTypeBase) {
-			if (!t->byref && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
+			if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_I8) || (t->type == MONO_TYPE_U8))) {
 				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, ppc_r1, ainfo->offset, in->dreg);
-			} else if (!t->byref && ((t->type == MONO_TYPE_R4) || (t->type == MONO_TYPE_R8))) {
+			} else if (!m_type_is_byref (t) && ((t->type == MONO_TYPE_R4) || (t->type == MONO_TYPE_R8))) {
 				if (t->type == MONO_TYPE_R8)
 					MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORER8_MEMBASE_REG, ppc_r1, ainfo->offset, in->dreg);
 				else
@@ -1824,7 +1824,7 @@ void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
 	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
-	if (!ret->byref) {
+	if (!rm_type_is_byref (ret)) {
 #ifndef __mono_ppc64__
 		if (ret->type == MONO_TYPE_I8 || ret->type == MONO_TYPE_U8) {
 			MonoInst *ins;
@@ -1963,7 +1963,7 @@ mono_arch_peephole_pass_2 (MonoCompile *cfg, MonoBasicBlock *bb)
 					MONO_DELETE_INS (bb, ins);
 					continue;
 				}
-			} else {
+			} else if (inst->inst_imm > 0) {
 				int power2 = mono_is_power_of_two (ins->inst_imm);
 				if (power2 > 0) {
 					ins->opcode = OP_SHL_IMM;
@@ -2537,7 +2537,7 @@ loop_start:
 				ins->inst_c0 = 0;
 				break;
 			}
-			imm = mono_is_power_of_two (ins->inst_imm);
+			imm = (ins->inst_imm > 0) ? mono_is_power_of_two (ins->inst_imm) : -1;
 			if (imm > 0) {
 				ins->opcode = OP_SHL_IMM;
 				ins->inst_imm = imm;

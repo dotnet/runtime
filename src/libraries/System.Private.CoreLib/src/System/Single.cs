@@ -25,10 +25,10 @@ namespace System
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Single : IComparable, IConvertible, ISpanFormattable, IComparable<float>, IEquatable<float>
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IBinaryFloatingPoint<float>,
           IMinMaxValue<float>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         private readonly float m_value; // Do not rename (binary serialization)
@@ -52,7 +52,6 @@ namespace System
 
         internal const uint SignMask = 0x8000_0000;
         internal const int SignShift = 31;
-        internal const uint ShiftedSignMask = SignMask >> SignShift;
 
         internal const uint ExponentMask = 0x7F80_0000;
         internal const int ExponentShift = 23;
@@ -183,6 +182,7 @@ namespace System
             throw new ArgumentException(SR.Arg_MustBeSingle);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int CompareTo(float value)
         {
             if (m_value < value) return -1;
@@ -448,11 +448,11 @@ namespace System
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IAdditionOperators<float, float, float>.operator +(float left, float right)
             => left + right;
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IAdditionOperators<float, float, float>.operator +(float left, float right)
         //     => checked(left + right);
 
@@ -460,14 +460,14 @@ namespace System
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IAdditiveIdentity<float, float>.AdditiveIdentity => 0.0f;
 
         //
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IBinaryNumber<float>.IsPow2(float value)
         {
             uint bits = BitConverter.SingleToUInt32Bits(value);
@@ -480,7 +480,7 @@ namespace System
                 && (significand == MinSignificand);
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IBinaryNumber<float>.Log2(float value)
             => MathF.Log2(value);
 
@@ -488,28 +488,28 @@ namespace System
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IBitwiseOperators<float, float, float>.operator &(float left, float right)
         {
             uint bits = BitConverter.SingleToUInt32Bits(left) & BitConverter.SingleToUInt32Bits(right);
             return BitConverter.UInt32BitsToSingle(bits);
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IBitwiseOperators<float, float, float>.operator |(float left, float right)
         {
             uint bits = BitConverter.SingleToUInt32Bits(left) | BitConverter.SingleToUInt32Bits(right);
             return BitConverter.UInt32BitsToSingle(bits);
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IBitwiseOperators<float, float, float>.operator ^(float left, float right)
         {
             uint bits = BitConverter.SingleToUInt32Bits(left) ^ BitConverter.SingleToUInt32Bits(right);
             return BitConverter.UInt32BitsToSingle(bits);
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IBitwiseOperators<float, float, float>.operator ~(float value)
         {
             uint bits = ~BitConverter.SingleToUInt32Bits(value);
@@ -520,19 +520,19 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<float, float>.operator <(float left, float right)
             => left < right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<float, float>.operator <=(float left, float right)
             => left <= right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<float, float>.operator >(float left, float right)
             => left > right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<float, float>.operator >=(float left, float right)
             => left >= right;
 
@@ -540,11 +540,11 @@ namespace System
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IDecrementOperators<float>.operator --(float value)
             => --value;
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IDecrementOperators<float>.operator --(float value)
         //     => checked(--value);
 
@@ -552,11 +552,11 @@ namespace System
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IDivisionOperators<float, float, float>.operator /(float left, float right)
             => left / right;
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IDivisionOperators<float, float, float>.operator /(float left, float right)
         //     => checked(left / right);
 
@@ -564,11 +564,11 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<float, float>.operator ==(float left, float right)
             => left == right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<float, float>.operator !=(float left, float right)
             => left != right;
 
@@ -576,177 +576,201 @@ namespace System
         // IFloatingPoint
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.E => MathF.E;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Epsilon => Epsilon;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.NaN => NaN;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.NegativeInfinity => NegativeInfinity;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.NegativeZero => -0.0f;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Pi => MathF.PI;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.PositiveInfinity => PositiveInfinity;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Tau => MathF.Tau;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Acos(float x)
             => MathF.Acos(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Acosh(float x)
             => MathF.Acosh(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Asin(float x)
             => MathF.Asin(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Asinh(float x)
             => MathF.Asinh(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Atan(float x)
             => MathF.Atan(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Atan2(float y, float x)
             => MathF.Atan2(y, x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Atanh(float x)
             => MathF.Atanh(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.BitIncrement(float x)
             => MathF.BitIncrement(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.BitDecrement(float x)
             => MathF.BitDecrement(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Cbrt(float x)
             => MathF.Cbrt(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Ceiling(float x)
             => MathF.Ceiling(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.CopySign(float x, float y)
             => MathF.CopySign(x, y);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Cos(float x)
             => MathF.Cos(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Cosh(float x)
             => MathF.Cosh(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Exp(float x)
             => MathF.Exp(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Floor(float x)
             => MathF.Floor(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.FusedMultiplyAdd(float left, float right, float addend)
             => MathF.FusedMultiplyAdd(left, right, addend);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.IEEERemainder(float left, float right)
             => MathF.IEEERemainder(left, right);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TInteger IFloatingPoint<float>.ILogB<TInteger>(float x)
             => TInteger.Create(MathF.ILogB(x));
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Log(float x)
             => MathF.Log(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Log(float x, float newBase)
             => MathF.Log(x, newBase);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Log2(float x)
             => MathF.Log2(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Log10(float x)
             => MathF.Log10(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.MaxMagnitude(float x, float y)
             => MathF.MaxMagnitude(x, y);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.MinMagnitude(float x, float y)
             => MathF.MinMagnitude(x, y);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Pow(float x, float y)
             => MathF.Pow(x, y);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Round(float x)
             => MathF.Round(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Round<TInteger>(float x, TInteger digits)
             => MathF.Round(x, int.Create(digits));
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Round(float x, MidpointRounding mode)
             => MathF.Round(x, mode);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Round<TInteger>(float x, TInteger digits, MidpointRounding mode)
             => MathF.Round(x, int.Create(digits), mode);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.ScaleB<TInteger>(float x, TInteger n)
             => MathF.ScaleB(x, int.Create(n));
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Sin(float x)
             => MathF.Sin(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Sinh(float x)
             => MathF.Sinh(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Sqrt(float x)
             => MathF.Sqrt(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Tan(float x)
             => MathF.Tan(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Tanh(float x)
             => MathF.Tanh(x);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IFloatingPoint<float>.Truncate(float x)
             => MathF.Truncate(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsFinite(float x) => IsFinite(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsInfinity(float x) => IsInfinity(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsNaN(float x) => IsNaN(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsNegative(float x) => IsNegative(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsNegativeInfinity(float x) => IsNegativeInfinity(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsNormal(float x) => IsNormal(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsPositiveInfinity(float x) => IsPositiveInfinity(x);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IFloatingPoint<float>.IsSubnormal(float x) => IsSubnormal(x);
 
         // static float IFloatingPoint<float>.AcosPi(float x)
         //     => MathF.AcosPi(x);
@@ -818,11 +842,11 @@ namespace System
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IIncrementOperators<float>.operator ++(float value)
             => ++value;
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IIncrementOperators<float>.operator ++(float value)
         //     => checked(++value);
 
@@ -830,21 +854,21 @@ namespace System
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IMinMaxValue<float>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IMinMaxValue<float>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IModulusOperators<float, float, float>.operator %(float left, float right)
             => left % right;
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IModulusOperators<float, float, float>.operator %(float left, float right)
         //     => checked(left % right);
 
@@ -852,18 +876,18 @@ namespace System
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IMultiplicativeIdentity<float, float>.MultiplicativeIdentity => 1.0f;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IMultiplyOperators<float, float, float>.operator *(float left, float right)
             => (float)(left * right);
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IMultiplyOperators<float, float, float>.operator *(float left, float right)
         //     => checked((float)(left * right));
 
@@ -871,21 +895,21 @@ namespace System
         // INumber
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.One => 1.0f;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Zero => 0.0f;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Abs(float value)
             => MathF.Abs(value);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Clamp(float value, float min, float max)
             => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float INumber<float>.Create<TOther>(TOther value)
         {
@@ -952,7 +976,7 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float INumber<float>.CreateSaturating<TOther>(TOther value)
         {
@@ -1019,7 +1043,7 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static float INumber<float>.CreateTruncating<TOther>(TOther value)
         {
@@ -1086,31 +1110,31 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static (float Quotient, float Remainder) INumber<float>.DivRem(float left, float right)
             => (left / right, left % right);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Max(float x, float y)
             => MathF.Max(x, y);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Min(float x, float y)
             => MathF.Min(x, y);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Parse(string s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
             => Parse(s, style, provider);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float INumber<float>.Sign(float value)
             => MathF.Sign(value);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumber<float>.TryCreate<TOther>(TOther value, out float result)
         {
@@ -1192,11 +1216,11 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<float>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
             => TryParse(s, style, provider, out result);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool INumber<float>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
             => TryParse(s, style, provider, out result);
 
@@ -1204,42 +1228,42 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IParseable<float>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<float>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out float result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float ISignedNumber<float>.NegativeOne => -1;
 
         //
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float ISpanParseable<float>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
+            => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<float>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out float result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+            => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float ISubtractionOperators<float, float, float>.operator -(float left, float right)
             => (float)(left - right);
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float ISubtractionOperators<float, float, float>.operator -(float left, float right)
         //     => checked((float)(left - right));
 
@@ -1247,20 +1271,20 @@ namespace System
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IUnaryNegationOperators<float, float>.operator -(float value) => (float)(-value);
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IUnaryNegationOperators<float, float>.operator -(float value) => checked((float)(-value));
 
         //
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static float IUnaryPlusOperators<float, float>.operator +(float value) => (float)(+value);
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked float IUnaryPlusOperators<float, float>.operator +(float value) => checked((float)(+value));
 #endif // FEATURE_GENERIC_MATH
     }

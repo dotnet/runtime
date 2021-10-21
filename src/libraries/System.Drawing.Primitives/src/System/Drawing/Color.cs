@@ -249,6 +249,10 @@ namespace System.Drawing
 
         public static Color Purple => new Color(KnownColor.Purple);
 
+        /// <summary>
+        /// Gets a system-defined color that has an ARGB value of <c>#663399</c>.
+        /// </summary>
+        /// <value>A system-defined color.</value>
         public static Color RebeccaPurple => new Color(KnownColor.RebeccaPurple);
 
         public static Color Red => new Color(KnownColor.Red);

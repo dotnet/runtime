@@ -5,9 +5,9 @@ namespace System
 {
     public enum LoaderOptimization
     {
-        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("LoaderOptimization.DisallowBindings has been deprecated and is not supported.")]
         DisallowBindings = 4,
-        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("LoaderOptimization.DomainMask has been deprecated and is not supported.")]
         DomainMask = 3,
         MultiDomain = 2,
         MultiDomainHost = 3,

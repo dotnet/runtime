@@ -82,15 +82,12 @@ namespace
 
     void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString &alcName)
     {
-        if (managedALC == GetAppDomain()->GetTPABinderContext()->GetManagedAssemblyLoadContext())
+        if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
         {
             alcName.Set(W("Default"));
             return;
         }
 
-#ifdef CROSSGEN_COMPILE
-        alcName.Set(W("Custom"));
-#else // CROSSGEN_COMPILE
         OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
 
         GCX_COOP();
@@ -108,37 +105,20 @@ namespace
         gc.alcName->GetSString(alcName);
 
         GCPROTECT_END();
-#endif // CROSSGEN_COMPILE
     }
 
-    void GetAssemblyLoadContextNameFromBinderID(UINT_PTR binderID, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, AppDomain *domain, /*out*/ SString &alcName)
     {
-        ICLRPrivBinder *binder = reinterpret_cast<ICLRPrivBinder *>(binderID);
-        if (AreSameBinderInstance(binder, domain->GetTPABinderContext()))
+        _ASSERTE(binder != nullptr);
+
+        if (binder->IsDefault())
         {
             alcName.Set(W("Default"));
         }
         else
         {
-#ifdef CROSSGEN_COMPILE
-            GetAssemblyLoadContextNameFromManagedALC(0, alcName);
-#else // CROSSGEN_COMPILE
-            CLRPrivBinderAssemblyLoadContext *alcBinder = static_cast<CLRPrivBinderAssemblyLoadContext *>(binder);
-
-            GetAssemblyLoadContextNameFromManagedALC(alcBinder->GetManagedAssemblyLoadContext(), alcName);
-#endif // CROSSGEN_COMPILE
+            GetAssemblyLoadContextNameFromManagedALC(binder->GetManagedAssemblyLoadContext(), alcName);
         }
-    }
-
-    void GetAssemblyLoadContextNameFromBindContext(ICLRPrivBinder *bindContext, AppDomain *domain, /*out*/ SString &alcName)
-    {
-        _ASSERTE(bindContext != nullptr);
-
-        UINT_PTR binderID = 0;
-        HRESULT hr = bindContext->GetBinderID(&binderID);
-        _ASSERTE(SUCCEEDED(hr));
-        if (SUCCEEDED(hr))
-            GetAssemblyLoadContextNameFromBinderID(binderID, domain, alcName);
     }
 
     void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
@@ -146,11 +126,11 @@ namespace
         _ASSERTE(spec != nullptr);
 
         AppDomain *domain = spec->GetAppDomain();
-        ICLRPrivBinder* bindContext = spec->GetBindingContext();
-        if (bindContext == nullptr)
-            bindContext = spec->GetBindingContextFromParentAssembly(domain);
+        AssemblyBinder* binder = spec->GetBinder();
+        if (binder == nullptr)
+            binder = spec->GetBinderFromParentAssembly(domain);
 
-        GetAssemblyLoadContextNameFromBindContext(bindContext, domain, alcName);
+        GetAssemblyLoadContextNameFromBinder(binder, domain, alcName);
     }
 
     void PopulateBindRequest(/*inout*/ BinderTracing::AssemblyBindOperation::BindRequest &request)
@@ -167,16 +147,14 @@ namespace
         DomainAssembly *parentAssembly = spec->GetParentAssembly();
         if (parentAssembly != nullptr)
         {
-            PEAssembly *peAssembly = parentAssembly->GetFile();
-            _ASSERTE(peAssembly != nullptr);
-            peAssembly->GetDisplayName(request.RequestingAssembly);
+            PEAssembly *pPEAssembly = parentAssembly->GetPEAssembly();
+            _ASSERTE(pPEAssembly != nullptr);
+            pPEAssembly->GetDisplayName(request.RequestingAssembly);
 
             AppDomain *domain = parentAssembly->GetAppDomain();
-            ICLRPrivBinder *bindContext = peAssembly->GetBindingContext();
-            if (bindContext == nullptr)
-                bindContext = domain->GetTPABinderContext(); // System.Private.CoreLib returns null
+            AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
-            GetAssemblyLoadContextNameFromBindContext(bindContext, domain, request.RequestingAssemblyLoadContext);
+            GetAssemblyLoadContextNameFromBinder(binder, domain, request.RequestingAssemblyLoadContext);
         }
 
         GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
@@ -259,14 +237,14 @@ namespace BinderTracing
 
 namespace BinderTracing
 {
-    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, UINT_PTR binderID, INT_PTR managedALC, const HRESULT& hr)
+    ResolutionAttemptedOperation::ResolutionAttemptedOperation(AssemblyName *assemblyName, AssemblyBinder* binder, INT_PTR managedALC, const HRESULT& hr)
         : m_hr { hr }
         , m_stage { Stage::NotYetStarted }
         , m_tracingEnabled { BinderTracing::IsEnabled() }
         , m_assemblyNameObject { assemblyName }
         , m_pFoundAssembly { nullptr }
     {
-        _ASSERTE(binderID != 0 || managedALC != 0);
+        _ASSERTE(binder != nullptr || managedALC != 0);
 
         if (!m_tracingEnabled)
             return;
@@ -282,7 +260,7 @@ namespace BinderTracing
         }
         else
         {
-            GetAssemblyLoadContextNameFromBinderID(binderID, GetAppDomain(), m_assemblyLoadContextName);
+            GetAssemblyLoadContextNameFromBinder(binder, GetAppDomain(), m_assemblyLoadContextName);
         }
     }
 

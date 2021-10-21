@@ -26,6 +26,7 @@
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
 
 #include "interp/interp.h"
 
@@ -1181,7 +1182,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 			}
 			nfields += nested_nfields;
 		} else {
-			if (!(!ftype->byref && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
+			if (!(!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_R4 || ftype->type == MONO_TYPE_R8)))
 				return FALSE;
 			if (prev_ftype && prev_ftype->type != ftype->type)
 				return FALSE;
@@ -1719,7 +1720,7 @@ mono_arch_dyn_call_prepare (MonoMethodSignature *sig)
 	for (aindex = 0; aindex < sig->param_count; aindex++) {
 		MonoType *t = info->param_types [aindex];
 
-		if (t->byref)
+		if (m_type_is_byref (t))
 			continue;
 
 		switch (t->type) {
@@ -1818,7 +1819,7 @@ mono_arch_start_dyn_call (MonoDynCallInfo *info, gpointer **args, guint8 *ret, g
 			slot = ainfo->reg;
 		}
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			p->regs [slot] = (host_mgreg_t)*arg;
 			continue;
 		}

@@ -206,7 +206,7 @@ namespace System
             IntPtr[] outHandles = new IntPtr[inHandles.Length];
             for (int i = 0; i < inHandles.Length; i++)
             {
-                outHandles[i] = inHandles[i].GetTypeHandleInternal().Value;
+                outHandles[i] = inHandles[i].TypeHandle.Value;
             }
             length = outHandles.Length;
             return outHandles;
@@ -221,7 +221,7 @@ namespace System
 
             object? instantiatedObject = null;
 
-            IntPtr typeHandle = genericParameter.GetTypeHandleInternal().Value;
+            IntPtr typeHandle = genericParameter.TypeHandle.Value;
             CreateInstanceForAnotherGenericParameter(
                 new QCallTypeHandle(ref type),
                 &typeHandle,
@@ -244,8 +244,8 @@ namespace System
 
             IntPtr* pTypeHandles = stackalloc IntPtr[]
             {
-                genericParameter1.GetTypeHandleInternal().Value,
-                genericParameter2.GetTypeHandleInternal().Value
+                genericParameter1.TypeHandle.Value,
+                genericParameter2.TypeHandle.Value
             };
 
             CreateInstanceForAnotherGenericParameter(
@@ -463,8 +463,9 @@ namespace System
         internal static bool IsComObject(RuntimeType type, bool isGenericCOM)
         {
 #if FEATURE_COMINTEROP
+            // We need to check the type handle values - not the instances - to determine if the runtime type is a ComObject.
             if (isGenericCOM)
-                return type == typeof(__ComObject);
+                return type.TypeHandle.Value == typeof(__ComObject).TypeHandle.Value;
 
             return RuntimeTypeHandle.CanCastTo(type, (RuntimeType)typeof(__ComObject));
 #else
@@ -672,7 +673,7 @@ namespace System
 
             if (HasInstantiation(retType) && !IsGenericTypeDefinition(retType))
             {
-                RuntimeTypeHandle nativeHandle = retType.GetTypeHandleInternal();
+                RuntimeTypeHandle nativeHandle = retType.TypeHandle;
                 GetGenericTypeDefinition(new QCallTypeHandle(ref nativeHandle), ObjectHandleOnStack.Create(ref retType));
             }
 
@@ -1477,14 +1478,6 @@ namespace System
                                                       IntPtr* methodInstArgs,
                                                       int methodInstCount,
                                                       ObjectHandleOnStack retField);
-
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern Interop.BOOL _ContainsPropertyMatchingHash(QCallModule module, int propertyToken, uint hash);
-
-        internal static bool ContainsPropertyMatchingHash(RuntimeModule module, int propertyToken, uint hash)
-        {
-            return _ContainsPropertyMatchingHash(new QCallModule(ref module), propertyToken, hash) != Interop.BOOL.FALSE;
-        }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void GetModuleType(QCallModule handle, ObjectHandleOnStack type);

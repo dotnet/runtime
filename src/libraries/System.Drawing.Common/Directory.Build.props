@@ -1,18 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <StrongNameKeyId>Open</StrongNameKeyId>
     <SupportedOSPlatforms>windows</SupportedOSPlatforms>
-    <PackageDescription>Provides access to GDI+ graphics functionality.
-
-Commonly Used Types:
-System.Drawing.Bitmap
-System.Drawing.BitmapData
-System.Drawing.Brush
-System.Drawing.Font
-System.Drawing.Graphics
-System.Drawing.Icon
-
-Unix support is disabled by default. See https://aka.ms/systemdrawingnonwindows for more information.</PackageDescription>
   </PropertyGroup>
 </Project>

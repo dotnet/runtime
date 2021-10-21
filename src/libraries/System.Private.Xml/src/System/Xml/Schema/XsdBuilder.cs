@@ -679,7 +679,7 @@ namespace System.Xml.Schema
 
         private readonly ValidationEventHandler? _validationEventHandler;
         private readonly List<XmlAttribute> _unhandledAttributes = new List<XmlAttribute>();
-        private Dictionary<string, string>? _namespaces;
+        private List<XmlQualifiedName>? _namespaces;
 
         internal XsdBuilder(
                            XmlReader reader,
@@ -755,9 +755,9 @@ namespace System.Xml.Schema
                 {
                     if (_namespaces == null)
                     {
-                        _namespaces = new Dictionary<string, string>();
+                        _namespaces = new List<XmlQualifiedName>();
                     }
-                    _namespaces.Add((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value);
+                    _namespaces.Add(new XmlQualifiedName((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value));
                 }
                 else
                 {
@@ -793,7 +793,7 @@ namespace System.Xml.Schema
             {
                 if (_namespaces != null && _namespaces.Count > 0)
                 {
-                    _xso.Namespaces.Namespaces = _namespaces!;
+                    _xso.Namespaces = new XmlSerializerNamespaces(_namespaces);
                     _namespaces = null;
                 }
                 if (_unhandledAttributes.Count != 0)

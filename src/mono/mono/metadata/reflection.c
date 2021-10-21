@@ -27,8 +27,8 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/exception.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -42,7 +42,6 @@
 #include "mono-endian.h"
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-ptr-array.h>
@@ -404,11 +403,11 @@ mono_type_normalize (MonoType *type)
 	}
 
 	if (is_denorm_gtd)
-		return type->byref == m_class_get_byval_arg (gtd)->byref ? m_class_get_byval_arg (gtd) : m_class_get_this_arg (gtd);
+		return m_type_is_byref (type) == m_type_is_byref (m_class_get_byval_arg (gtd)) ? m_class_get_byval_arg (gtd) : m_class_get_this_arg (gtd);
 
 	if (requires_rebind) {
 		MonoClass *klass = mono_class_bind_generic_parameters (gtd, ginst->type_argc, argv, gclass->is_dynamic);
-		return type->byref == m_class_get_byval_arg (klass)->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
+		return m_type_is_byref (type) == m_type_is_byref (m_class_get_byval_arg (klass)) ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 	}
 
 	return type;
@@ -451,7 +450,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	 * expects that is can be freed.
 	 * Using the right type from 
 	 */
-	type = m_class_get_byval_arg (klass)->byref == type->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
+	type = m_type_is_byref (m_class_get_byval_arg (klass)) == m_type_is_byref (type) ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 
 	/* We don't want to return types with custom modifiers to the managed
 	 * world since they're hard to distinguish from plain types using the
@@ -464,7 +463,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	g_assert (!type->has_cmods);
 
 	/* void is very common */
-	if (!type->byref && type->type == MONO_TYPE_VOID && domain->typeof_void)
+	if (!m_type_is_byref (type) && type->type == MONO_TYPE_VOID && domain->typeof_void)
 		return (MonoReflectionType*)domain->typeof_void;
 
 	/*
@@ -532,7 +531,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto leave;
 	}
 
-	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !type->byref) {
+	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !m_type_is_byref (type)) {
 		res = &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
 		goto leave;
 	}
@@ -548,7 +547,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		res = cached;
 	} else {
 		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
-		if (type->type == MONO_TYPE_VOID && !type->byref)
+		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
 			domain->typeof_void = (MonoObject*)res;
 	}
 	mono_mem_manager_unlock (memory_manager);
@@ -1978,7 +1977,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 		if (!assembly) {
 			/* then we must load the assembly ourselve - see #60439 */
 			MonoAssemblyByNameRequest req;
-			mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+			mono_assembly_request_prepare_byname (&req, alc);
 			req.requesting_assembly = NULL;
 			req.basedir = image ? image->assembly->basedir : NULL;
 			assembly = mono_assembly_request_byname (&info->assembly, &req, NULL);
@@ -2127,7 +2126,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 	for (mod = info->modifiers; mod; mod = mod->next) {
 		modval = GPOINTER_TO_UINT (mod->data);
 		if (!modval) { /* byref: must be last modifier */
-			type = m_class_get_this_arg (klass);
+			type = mono_class_get_byref_type (klass);
 			goto leave;
 		} else if (modval == -1) {
 			klass = mono_class_create_ptr (m_class_get_byval_arg (klass));

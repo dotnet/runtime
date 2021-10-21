@@ -95,10 +95,13 @@ int __cdecl main(const int argc, const char* argv[])
             {
                 dumpType = "triage minidump";
                 minidumpType = (MINIDUMP_TYPE)(MiniDumpFilterTriage |
-                                               MiniDumpWithDataSegs |
-                                               MiniDumpWithHandleData |
+                                               MiniDumpIgnoreInaccessibleMemory |
+                                               MiniDumpWithoutOptionalData |
+                                               MiniDumpWithProcessThreadData |
                                                MiniDumpFilterModulePaths |
-                                               MiniDumpWithThreadInfo);
+                                               MiniDumpWithUnloadedModules |
+                                               MiniDumpFilterMemory |
+                                               MiniDumpWithHandleData);
             }
             else if ((strcmp(*argv, "-u") == 0) || (strcmp(*argv, "--full") == 0))
             {

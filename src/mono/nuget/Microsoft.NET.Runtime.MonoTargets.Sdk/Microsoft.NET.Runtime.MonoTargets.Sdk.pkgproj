@@ -6,16 +6,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoTasksDir)RuntimeConfigParser\RuntimeConfigParser.csproj" />
-    <ProjectReference Include="$(RepoTasksDir)JsonToItemsTaskFactory\JsonToItemsTaskFactory.csproj" />
+    <ProjectReference Include="$(RepoTasksDir)MonoTargetsTasks\MonoTargetsTasks.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageFile Include="Sdk\Sdk.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\Sdk.targets" TargetPath="Sdk" />
     <PackageFile Include="build\$(MSBuildProjectName).props" TargetPath="build" />
-    <PackageFile Include="Sdk\RuntimeConfigParserTask.props" TargetPath="Sdk" />
-    <PackageFile Include="Sdk\RuntimeComponentManifest.props" TargetPath="Sdk" />
+    <PackageFile Include="Sdk\MonoTargetsTasks.props" TargetPath="Sdk" />
     <PackageFile Include="Sdk\RuntimeComponentManifest.targets" TargetPath="Sdk" />
   </ItemGroup>
 

@@ -8,9 +8,6 @@
 
 #ifdef DECLARE_DATA
 #include "asmconstants.h"
-#ifdef FEATURE_PREJIT
-#include "compile.h"
-#endif
 #endif
 
 //#define STUB_LOGGING
@@ -427,7 +424,6 @@ void VTableCallHolder::Initialize(unsigned slot)
 {
     unsigned offsetOfIndirection = MethodTable::GetVtableOffset() + MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
     unsigned offsetAfterIndirection = MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-    _ASSERTE(MethodTable::VTableIndir_t::isRelative == false /* TODO: NYI */);
 
     VTableCallStub* pStub = stub();
     BYTE* p = (BYTE*)(pStub->entryPoint() & ~THUMB_CODE);

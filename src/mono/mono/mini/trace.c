@@ -213,7 +213,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 
 		MonoType *type = sig->params [i];
 
-		if (type->byref) {
+		if (m_type_is_byref (type)) {
 			printf ("[BYREF:%p]", *(gpointer*)buf);
 			mini_profiler_context_free_buffer (buf);
 			break;

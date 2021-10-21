@@ -135,6 +135,7 @@ interface ICorDebugThread;
 interface ICorDebugThread2;
 interface ICorDebugThread3;
 interface ICorDebugThread4;
+interface ICorDebugThread5;
 interface ICorDebugStackWalk;
 interface ICorDebugChain;
 interface ICorDebugFrame;
@@ -4377,6 +4378,26 @@ interface ICorDebugThread4 : IUnknown
 };
 
 /*
+ * ICorDebugThread5 is a logical extension to ICorDebugThread.
+ */
+[
+    object,
+    local,
+    uuid(F98421C4-E506-4D24-916F-0237EE853EC6),
+    pointer_default(unique)
+]
+interface ICorDebugThread5 : IUnknown
+{
+    /*
+     * Returns S_OK if it was possible to obtain the allocation information for the thread
+     * and sets the corresponding SOH and UOH allocations.
+     * Returns E_INVALIDARG if any of the pointers for the outputs is null.
+     * Can return E_FAIL if the process is not properly stopped.
+     */
+    HRESULT GetBytesAllocated([out] ULONG64 *pSohAllocatedBytes, [out] ULONG64 *pUohAllocatedBytes);
+};
+
+/*
  * The new V3.0 stackwalking API.
  */
 [
@@ -5198,7 +5219,12 @@ interface ICorDebugModule4 : IUnknown
                       format while FALSE represents flat format.
      * Return Value:
      *     S_OK in successful case.
+     *     S_FALSE if they layout could not be determined.
      * Notes:
+     *     The pIsMapped value set in pIsMapped should only be interpreted as valid
+     *     when this function returns S_OK. All other return values (including
+     *     S_FALSE) indicate that the layout could not be determined and pIsMapped
+     *     should be ignored.
      */
     HRESULT IsMappedLayout([out] BOOL *pIsMapped);
 }

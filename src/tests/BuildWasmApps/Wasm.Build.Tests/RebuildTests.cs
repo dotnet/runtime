@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -18,21 +20,23 @@ namespace Wasm.Build.Tests
         {
         }
 
+        public static IEnumerable<object?[]> NonNativeDebugRebuildData()
+            => ConfigWithAOTData(aot: false, config: "Debug")
+                    .WithRunHosts(RunHost.V8)
+                    .UnwrapItemsAsArrays().ToList();
+
         [Theory]
-        [BuildAndRun(host: RunHost.V8, aot: false, parameters: false)]
-        [BuildAndRun(host: RunHost.V8, aot: false, parameters: true)]
-        [BuildAndRun(host: RunHost.V8, aot: true,  parameters: false)]
-        public void NoOpRebuild(BuildArgs buildArgs, bool nativeRelink, RunHost host, string id)
+        [MemberData(nameof(NonNativeDebugRebuildData))]
+        public void NoOpRebuild(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"rebuild_{buildArgs.Config}_{buildArgs.AOT}";
-            bool dotnetWasmFromRuntimePack = !nativeRelink && !buildArgs.AOT;
 
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, $"<WasmBuildNative>{(nativeRelink ? "true" : "false")}</WasmBuildNative>");
+            buildArgs = ExpandBuildArgs(buildArgs);
 
             BuildProject(buildArgs,
                         initProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), s_mainReturns42),
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                        dotnetWasmFromRuntimePack: true,
                         id: id,
                         createProject: true);
 
@@ -48,7 +52,7 @@ namespace Wasm.Build.Tests
             // no-op Rebuild
             BuildProject(buildArgs,
                         id: id,
-                        dotnetWasmFromRuntimePack: dotnetWasmFromRuntimePack,
+                        dotnetWasmFromRuntimePack: true,
                         createProject: false,
                         useCache: false);
 

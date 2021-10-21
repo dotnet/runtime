@@ -83,7 +83,6 @@ int mono_inject_async_exc_pos;
 MonoMethodDesc *mono_break_at_bb_method;
 int mono_break_at_bb_bb_num;
 gboolean mono_do_x86_stack_align = TRUE;
-gboolean mono_using_xdebug;
 
 /* Counters */
 static guint32 discarded_code;
@@ -441,7 +440,7 @@ guint
 mini_type_to_stind (MonoCompile* cfg, MonoType *type)
 {
 	type = mini_get_underlying_type (type);
-	if (cfg->gshared && !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
+	if (cfg->gshared && !m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		g_assert (mini_type_var_is_vt (type));
 		return CEE_STOBJ;
 	}
@@ -626,8 +625,8 @@ set_vreg_to_inst (MonoCompile *cfg, int vreg, MonoInst *inst)
 	cfg->vreg_to_inst [vreg] = inst;
 }
 
-#define mono_type_is_long(type) (!(type)->byref && ((mono_type_get_underlying_type (type)->type == MONO_TYPE_I8) || (mono_type_get_underlying_type (type)->type == MONO_TYPE_U8)))
-#define mono_type_is_float(type) (!(type)->byref && (((type)->type == MONO_TYPE_R8) || ((type)->type == MONO_TYPE_R4)))
+#define mono_type_is_long(type) (!m_type_is_byref (type) && ((mono_type_get_underlying_type (type)->type == MONO_TYPE_I8) || (mono_type_get_underlying_type (type)->type == MONO_TYPE_U8)))
+#define mono_type_is_float(type) (!m_type_is_byref (type) && (((type)->type == MONO_TYPE_R8) || ((type)->type == MONO_TYPE_R4)))
 
 MonoInst*
 mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, int vreg)
@@ -661,7 +660,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 		mono_cfg_set_exception (cfg, MONO_EXCEPTION_TYPE_LOAD);
 
 	if (cfg->compute_gc_maps) {
-		if (type->byref) {
+		if (m_type_is_byref (type)) {
 			mono_mark_vreg_as_mp (cfg, vreg);
 		} else {
 			if ((MONO_TYPE_ISSTRUCT (type) && m_class_has_references (inst->klass)) || mini_type_is_reference (type)) {
@@ -670,6 +669,11 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 			}
 		}
 	}
+
+#ifdef TARGET_WASM
+	if (mini_type_is_reference (type))
+		mono_mark_vreg_as_ref (cfg, vreg);
+#endif
 	
 	cfg->varinfo [num] = inst;
 
@@ -749,7 +753,7 @@ mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
 
-	if (type->type == MONO_TYPE_VALUETYPE && !type->byref) {
+	if (type->type == MONO_TYPE_VALUETYPE && !m_type_is_byref (type)) {
 		MonoClass *klass = mono_class_from_mono_type_internal (type);
 		if (m_class_is_enumtype (klass) && m_class_get_image (klass) == mono_get_corlib () && !strcmp (m_class_get_name (klass), "StackCrawlMark")) {
 			if (!(cfg->method->flags & METHOD_ATTRIBUTE_REQSECOBJ))
@@ -832,7 +836,7 @@ type_from_stack_type (MonoInst *ins)
 		if (ins->klass)
 			return m_class_get_this_arg (ins->klass);
 		else
-			return m_class_get_this_arg (mono_defaults.object_class);
+			return mono_class_get_byref_type (mono_defaults.object_class);
 	case STACK_OBJ:
 		/* ins->klass may not be set for ldnull.
 		 * Also, if we have a boxed valuetype, we want an object lass,
@@ -2046,18 +2050,8 @@ mono_codegen (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	int max_epilog_size;
 	guint8 *code;
-	MonoMemoryManager *code_mem_manager;
+	MonoMemoryManager *code_mem_manager = cfg->mem_manager;
 	guint unwindlen = 0;
-
-	if (mono_using_xdebug)
-		/*
-		 * Recent gdb versions have trouble processing symbol files containing
-		 * overlapping address ranges, so allocate all code from the code manager
-		 * of the root domain. (#666152).
-		 */
-		code_mem_manager = get_default_mem_manager ();
-	else
-		code_mem_manager = cfg->mem_manager;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		cfg->spill_count = 0;
@@ -2133,11 +2127,7 @@ mono_codegen (MonoCompile *cfg)
 		g_hash_table_insert (jit_mm->dynamic_code_hash, cfg->method, cfg->dynamic_info);
 		jit_mm_unlock (jit_mm);
 
-		if (mono_using_xdebug)
-			/* See the comment for cfg->code_domain */
-			code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
-		else
-			code = (guint8 *)mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
+		code = (guint8 *)mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
 	} else {
 		code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
 	}
@@ -2220,10 +2210,7 @@ mono_codegen (MonoCompile *cfg)
 	}
 
 	if (cfg->method->dynamic) {
-		if (mono_using_xdebug)
-			mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
-		else
-			mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
+		mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 	} else {
 		mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
@@ -2813,6 +2800,12 @@ insert_safepoints (MonoCompile *cfg)
 		}
 	}
 
+	if (cfg->method->wrapper_type == MONO_WRAPPER_WRITE_BARRIER) {
+		if (cfg->verbose_level > 1)
+			printf ("SKIPPING SAFEPOINTS for write barrier wrappers.\n");
+		return;
+	}
+
 	if (cfg->verbose_level > 1)
 		printf ("INSERTING SAFEPOINTS\n");
 	if (cfg->verbose_level > 2)
@@ -3381,18 +3374,6 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 		cfg->disable_out_of_line_bblocks = TRUE;
 	}
 
-	if (mono_using_xdebug) {
-		/* 
-		 * Make each variable use its own register/stack slot and extend 
-		 * their liveness to cover the whole method, making them displayable
-		 * in gdb even after they are dead.
-		 */
-		cfg->disable_reuse_registers = TRUE;
-		cfg->disable_reuse_stack_slots = TRUE;
-		cfg->extend_live_ranges = TRUE;
-		cfg->compute_precise_live_ranges = TRUE;
-	}
-
 	mini_gc_init_cfg (cfg);
 
 	if (method->wrapper_type == MONO_WRAPPER_OTHER) {
@@ -3932,10 +3913,8 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 	MONO_TIME_TRACK (mono_jit_stats.jit_gc_create_gc_map, mini_gc_create_gc_map (cfg));
 	MONO_TIME_TRACK (mono_jit_stats.jit_save_seq_point_info, mono_save_seq_point_info (cfg, cfg->jit_info));
 
-	if (!cfg->compile_aot) {
-		mono_save_xdebug_info (cfg);
+	if (!cfg->compile_aot)
 		mono_lldb_save_method_info (cfg);
-	}
 
 	if (cfg->verbose_level >= 2) {
 		char *id =  mono_method_full_name (cfg->method, TRUE);

@@ -3,7 +3,7 @@
 
 namespace System.Security.Policy
 {
-    [Obsolete("This type is obsolete. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+    [Obsolete("Code Access Security is not supported or honored by the runtime.")]
     public sealed partial class UnionCodeGroup : CodeGroup
     {
         public UnionCodeGroup(IMembershipCondition membershipCondition, PolicyStatement policy) : base(default(IMembershipCondition), default(PolicyStatement)) { }

@@ -33,7 +33,7 @@ namespace ComWrappersTests.GlobalInstance
                 ValidateRegisterForTrackerSupport();
 #if Windows
                 ValidateNotRegisteredForMarshalling();
-#endif                
+#endif
 
                 IntPtr trackerObjRaw = MockReferenceTrackerRuntime.CreateTrackerObject();
                 var trackerObj = GlobalComWrappers.Instance.GetOrCreateObjectForComInstance(trackerObjRaw, CreateObjectFlags.TrackerObject);
@@ -50,8 +50,12 @@ namespace ComWrappersTests.GlobalInstance
                 ValidatePInvokes(validateUseRegistered: true);
                 ValidatePInvokes(validateUseRegistered: false);
 
-                ValidateComActivation(validateUseRegistered: true);
-                ValidateComActivation(validateUseRegistered: false);
+                // RegFree COM is not supported on Windows Nano Server
+                if (!Utilities.IsWindowsNanoServer)
+                {
+                    ValidateComActivation(validateUseRegistered: true);
+                    ValidateComActivation(validateUseRegistered: false);
+                }
 #endif
                 ValidateNotifyEndOfReferenceTrackingOnThread();
             }

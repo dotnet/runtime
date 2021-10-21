@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <assert.h>
 #include <dlfcn.h>
+#include <sys/stat.h>
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/tokentype.h>
@@ -92,6 +93,8 @@ void mono_trace_init (void);
 
 static MonoDomain *root_domain;
 
+#define RUNTIMECONFIG_BIN_FILE "runtimeconfig.bin"
+
 static MonoString*
 mono_wasm_invoke_js (MonoString *str, int *is_exception)
 {
@@ -102,7 +105,7 @@ mono_wasm_invoke_js (MonoString *str, int *is_exception)
 	int *p_native_res_len = &native_res_len;
 
 	mono_unichar2 *native_res = (mono_unichar2*)EM_ASM_INT ({
-		var js_str = MONO.string_decoder.copy ($0);
+		var js_str = INTERNAL.string_decoder.copy ($0);
 
 		try {
 			var res = eval (js_str);
@@ -151,8 +154,8 @@ wasm_trace_logger (const char *log_domain, const char *log_level, const char *me
 		var domain = Module.UTF8ToString ($3); // is this always Mono?
 		var dataPtr = $4;
 
-		if (MONO["logging"] && MONO.logging["trace"]) {
-			MONO.logging.trace(domain, log_level, message, isFatal, dataPtr);
+		if (INTERNAL["logging"] && INTERNAL.logging["trace"]) {
+			INTERNAL.logging.trace(domain, log_level, message, isFatal, dataPtr);
 			return;
 		}
 
@@ -476,6 +479,13 @@ mono_wasm_register_bundled_satellite_assemblies ()
 
 void mono_wasm_link_icu_shim (void);
 
+void
+cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
+{
+	free (args);
+	free (user_data);
+}
+
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_load_runtime (const char *unused, int debug_level)
 {
@@ -493,7 +503,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
-
+	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
+	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
 	const char *appctx_keys[2];
 	appctx_keys [0] = "APP_CONTEXT_BASE_DIRECTORY";
 	appctx_keys [1] = "RUNTIME_IDENTIFIER";
@@ -501,6 +512,23 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *appctx_values[2];
 	appctx_values [0] = "/";
 	appctx_values [1] = "browser-wasm";
+
+	char *file_name = RUNTIMECONFIG_BIN_FILE;
+	int str_len = strlen (file_name) + 1; // +1 is for the "/"
+	char *file_path = (char *)malloc (sizeof (char) * (str_len +1)); // +1 is for the terminating null character
+	int num_char = snprintf (file_path, (str_len + 1), "/%s", file_name);
+	struct stat buffer;
+
+	assert (num_char > 0 && num_char == str_len);
+
+	if (stat (file_path, &buffer) == 0) {
+		MonovmRuntimeConfigArguments *arg = (MonovmRuntimeConfigArguments *)malloc (sizeof (MonovmRuntimeConfigArguments));
+		arg->kind = 0;
+		arg->runtimeconfig.name.path = file_path;
+		monovm_runtimeconfig_initialize (arg, cleanup_runtime_config, file_path);
+	} else {
+		free (file_path);
+	}
 
 	monovm_initialize (2, appctx_keys, appctx_values);
 
@@ -719,21 +747,6 @@ EMSCRIPTEN_KEEPALIVE char *
 mono_wasm_string_get_utf8 (MonoString *str)
 {
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
-}
-
-// Deprecated
-EMSCRIPTEN_KEEPALIVE void
-mono_wasm_string_convert (MonoString *str)
-{
-	if (str == NULL)
-		return;
-
-	mono_unichar2 *native_val = mono_string_chars (str);
-	int native_len = mono_string_length (str) * 2;
-
-	EM_ASM ({
-		MONO.string_decoder.decode($0, $0 + $1, true);
-	}, (int)native_val, native_len);
 }
 
 EMSCRIPTEN_KEEPALIVE MonoString *

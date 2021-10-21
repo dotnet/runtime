@@ -793,6 +793,13 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, int *idx)
 	if (G_LIKELY (*idx < table_info_get_rows (*t) && !any_modified))
 		return;
 
+	/* FIXME: when adding methods this won't work anymore.  We will need to update the delta
+	 * images' suppressed columns (see the Note in pass2 about
+	 * CMiniMdRW::m_SuppressedDeltaColumns) with the baseline values. */
+	/* The only column from the updates that matters the RVA, which is looked up elsewhere. */
+	if (tbl_index == MONO_TABLE_METHOD)
+		return;
+
 	GList *list = info->delta_image;
 	MonoImage *dmeta;
 	int ridx;
@@ -1155,9 +1162,15 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old Parent 0x%08x New Parent 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_PARENT], ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]);
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x CUSTOM_ATTR update. Old ctor 0x%08x New ctor 0x%08x\n", i, log_token, ca_base_cols [MONO_CUSTOM_ATTR_TYPE], ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]);
 
-				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT] ||
-				    ca_base_cols [MONO_CUSTOM_ATTR_TYPE] != ca_upd_cols [MONO_CUSTOM_ATTR_TYPE]) {
-					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent or Type. token=0x%08x", log_token);
+				/* TODO: when we support the ChangeCustomAttribute capability, the
+				 * parent might become 0 to delete attributes.  It may also be the
+				 * case that the MONO_CUSTOM_ATTR_TYPE will change.  Without that
+				 * capability, we trust that if the TYPE is not the same token, it
+				 * still resolves to the same MonoMethod* (but we can't check it in
+				 * pass1 because we haven't added the new AssemblyRefs yet.
+				 */
+				if (ca_base_cols [MONO_CUSTOM_ATTR_PARENT] != ca_upd_cols [MONO_CUSTOM_ATTR_PARENT]) {
+					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing CA table cols with a different Parent. token=0x%08x", log_token);
 					unsupported_edits = TRUE;
 					continue;
 				}
@@ -1166,6 +1179,32 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, gconstpointer
 				/* Added a row. ok */
 				break;
 			}
+		}
+		case MONO_TABLE_PARAM: {
+			/* FIXME: this should get the current table size, not the base stable size */
+			if (token_index <= table_info_get_rows (&image_base->tables [token_table])) {
+				/* We only allow modifications where the parameter name doesn't change. */
+				uint32_t base_param [MONO_PARAM_SIZE];
+				uint32_t upd_param [MONO_PARAM_SIZE];
+				int mapped_token = hot_reload_relative_delta_index (image_dmeta, mono_metadata_make_token (token_table, token_index));
+				g_assert (mapped_token != -1);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x PARAM update.  mapped index = 0x%08x\n", i, log_token, mapped_token);
+
+				mono_metadata_decode_row (&image_dmeta->tables [MONO_TABLE_PARAM], mapped_token - 1, upd_param, MONO_PARAM_SIZE);
+				mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PARAM], token_index - 1, base_param, MONO_PARAM_SIZE);
+
+				const char *base_name = mono_metadata_string_heap (image_base, base_param [MONO_PARAM_NAME]);
+				const char *upd_name = mono_metadata_string_heap (image_base, upd_param [MONO_PARAM_NAME]);
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "row[0x%02x: 0x%08x PARAM update: seq = %d (base = %d), name = '%s' (base = '%s')\n", i, log_token, upd_param [MONO_PARAM_SEQUENCE], base_param [MONO_PARAM_SEQUENCE], upd_name, base_name);
+				if (strcmp (base_name, upd_name) != 0 || base_param [MONO_PARAM_SEQUENCE] != upd_param [MONO_PARAM_SEQUENCE]) {
+					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_METADATA_UPDATE, "row[0x%02x]:0x%08x we do not support patching of existing PARAM table cols.", i, log_token);
+					mono_error_set_type_load_name (error, NULL, image_base->name, "EnC: we do not support patching of existing PARAM table cols. token=0x%08x", log_token);
+					unsupported_edits = TRUE;
+					continue;
+				}
+				break;
+			} else
+				break; /* added a row. ok */
 		}
 		default:
 			/* FIXME: this bounds check is wrong for cumulative updates - need to look at the DeltaInfo:count.prev_gen_rows */
@@ -1239,6 +1278,29 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	int rows = table_info_get_rows (table_enclog);
+
+	/* NOTE: Suppressed colums
+	 *
+	 * Certain column values in some tables in the deltas are not meant to be applied over the
+	 * previous generation. See CMiniMdRW::m_SuppressedDeltaColumns in CoreCLR.  For example the
+	 * MONO_METHOD_PARAMLIST column in MONO_TABLE_METHOD is always 0 in an update - for modified
+	 * rows the previous value must be carried over. For added rows, it is supposed to be
+	 * initialized to the end of the param table and updated with the "Param create" func code
+	 * in subsequent EnCLog records.
+	 *
+	 * For mono's immutable model (where we don't change the baseline image data), we will need
+	 * to mutate the delta image tables to incorporate the suppressed column values from the
+	 * previous generation.
+	 *
+	 * For Baseline capabilities, the only suppressed column is MONO_METHOD_PARAMLIST - which we
+	 * can ignore because we don't do anything with param updates and the only column we care
+	 * about is MONO_METHOD_RVA which gets special case treatment with set_update_method().
+	 *
+	 * But when we implement additional capabilities (for example UpdateParameters), we will
+	 * need to start mutating the delta image tables to pick up the suppressed column values.
+	 * Fortunately whether we get the delta from the debugger or from the runtime API, we always
+	 * have it in writable memory (and not mmap-ed pages), so we can rewrite the table values.
+	 */
 
 	gboolean assemblyref_updated = FALSE;
 	for (int i = 0; i < rows ; ++i) {
@@ -1338,6 +1400,10 @@ apply_enclog_pass2 (MonoImage *image_base, BaselineInfo *base_info, uint32_t gen
 			break;
 		}
 		case MONO_TABLE_CUSTOMATTRIBUTE: {
+			/* ok, pass1 checked for disallowed modifications */
+			break;
+		}
+		case MONO_TABLE_PARAM: {
 			/* ok, pass1 checked for disallowed modifications */
 			break;
 		}

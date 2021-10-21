@@ -659,7 +659,7 @@ public:
  * Used when outputting strings.
  */
 unsigned CountDigits(unsigned num, unsigned base = 10);
-unsigned CountDigits(float num, unsigned base = 10);
+unsigned CountDigits(double num, unsigned base = 10);
 
 #endif // DEBUG
 
@@ -686,6 +686,8 @@ public:
     static bool hasPreciseReciprocal(double x);
 
     static bool hasPreciseReciprocal(float x);
+
+    static double infinite_double();
 
     static float infinite_float();
 };
@@ -759,10 +761,11 @@ private:
 
 namespace MagicDivide
 {
-uint32_t GetUnsigned32Magic(uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/);
+uint32_t GetUnsigned32Magic(
+    uint32_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
 #ifdef TARGET_64BIT
 uint64_t GetUnsigned64Magic(
-    uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits = 64);
+    uint64_t d, bool* increment /*out*/, int* preShift /*out*/, int* postShift /*out*/, unsigned bits);
 #endif
 int32_t GetSigned32Magic(int32_t d, int* shift /*out*/);
 #ifdef TARGET_64BIT
@@ -775,6 +778,36 @@ int64_t GetSigned64Magic(int64_t d, int* shift /*out*/);
 //
 
 double CachedCyclesPerSecond();
+
+template <typename T>
+bool FitsIn(var_types type, T value)
+{
+    static_assert_no_msg((std::is_same<T, int32_t>::value || std::is_same<T, int64_t>::value ||
+                          std::is_same<T, uint32_t>::value || std::is_same<T, uint64_t>::value));
+
+    switch (type)
+    {
+        case TYP_BYTE:
+            return FitsIn<int8_t>(value);
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return FitsIn<uint8_t>(value);
+        case TYP_SHORT:
+            return FitsIn<int16_t>(value);
+        case TYP_USHORT:
+            return FitsIn<uint16_t>(value);
+        case TYP_INT:
+            return FitsIn<int32_t>(value);
+        case TYP_UINT:
+            return FitsIn<uint32_t>(value);
+        case TYP_LONG:
+            return FitsIn<int64_t>(value);
+        case TYP_ULONG:
+            return FitsIn<uint64_t>(value);
+        default:
+            unreached();
+    }
+}
 
 namespace CheckedOps
 {

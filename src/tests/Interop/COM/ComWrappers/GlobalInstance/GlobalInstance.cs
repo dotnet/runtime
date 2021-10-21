@@ -171,6 +171,11 @@ namespace ComWrappersTests.GlobalInstance
 
             protected override void ReleaseObjects(IEnumerable objects)
             {
+                foreach (object o in objects)
+                {
+                    Assert.IsNotNull(o);
+                }
+
                 throw new Exception() { HResult = ReleaseObjectsCallAck };
             }
 

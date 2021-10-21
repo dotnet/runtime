@@ -29,6 +29,28 @@ namespace NetClient
             Assert.IsTrue(Marshal.IsComObject(test));
         }
 
+        static void Validate_Activation_CreateInstance()
+        {
+            Console.WriteLine($"{nameof(Validate_Activation_CreateInstance)}...");
+
+            Type t = Type.GetTypeFromCLSID(Guid.Parse(Guids.ConsumeNETServerTesting));
+            Assert.IsTrue(t.IsCOMObject);
+
+            object obj = Activator.CreateInstance(t);
+            var test = (CoClass.ConsumeNETServerTesting)obj;
+            test.ReleaseResources();
+            
+            Assert.IsTrue(Marshal.IsComObject(test));
+
+            // Use the overload that takes constructor arguments. This tests the path where the runtime searches for the
+            // constructor to use (which has some special-casing for COM) instead of just always using the default.
+            obj = Activator.CreateInstance(t, Array.Empty<object>());
+            test = (CoClass.ConsumeNETServerTesting)obj;
+            test.ReleaseResources();
+
+            Assert.IsTrue(Marshal.IsComObject(test));
+        }
+
         static void Validate_CCW_Wasnt_Unwrapped()
         {
             Console.WriteLine($"{nameof(Validate_CCW_Wasnt_Unwrapped)}...");
@@ -102,6 +124,7 @@ namespace NetClient
                     string.Empty))
                 {
                     Validate_Activation();
+                    Validate_Activation_CreateInstance();
                     Validate_CCW_Wasnt_Unwrapped();
                     Validate_Client_CCW_RCW();
                     Validate_Server_CCW_RCW();

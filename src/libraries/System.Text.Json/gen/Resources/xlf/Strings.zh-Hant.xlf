@@ -12,6 +12,16 @@
         <target state="translated">衍生的 'JsonSerializerContext' 類型和所有包含類型必須是部份。</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidFormat">
+        <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
+        <target state="translated">資料延伸屬性 '{0}.{1}' 無效。它必須實作 'IDictionary&lt;string, JsonElement&gt;' 或 'IDictionary&lt;string, object&gt;'，或者為 'JsonObject'。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidTitle">
+        <source>Data extension property type invalid.</source>
+        <target state="translated">資料延伸屬性類型無效。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">有多個名為 {0} 的類型。已為偵測到的第一個項目產生來源。請使用 'JsonSerializableAttribute.TypeInfoPropertyName' 解決此衝突。</target>
@@ -20,6 +30,46 @@
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">重複類型名稱。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="translated">成員 '{0}.{1}' 已經以 JsonIncludeAttribute 標註，但對來源產生器是不可見的。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="translated">來源產生模式不支援以 JsonIncludeAttribute 標註的無法存取屬性。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="translated">來源產生模式目前不支援類型 '{0}' 定義之 init-only 屬性的還原序列化。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="translated">來源產生模式目前不支援 init-only 屬性的還原序列化。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">類型 '{0}' 包含多個以 'JsonConstructorAttribute' 註解的建構函式。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">類型包含多個以 JsonConstructorAttribute 註解的建構函式。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeFormat">
+        <source>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</source>
+        <target state="translated">類型 '{0}' 有使用 'JsonExtensionDataAttribute' 標註的多個成員。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
+        <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
+        <target state="translated">類型具有使用 JsonExtensionDataAttribute 標註的多個成員。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

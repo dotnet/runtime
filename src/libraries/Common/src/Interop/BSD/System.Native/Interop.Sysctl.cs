@@ -16,9 +16,8 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
-        private static extern unsafe int Sysctl(int* name, int namelen, void* value, size_t* len);
+        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sysctl", SetLastError = true)]
+        private static unsafe partial int Sysctl(int* name, int namelen, void* value, size_t* len);
 
         // This is 'raw' sysctl call, only wrapped to allocate memory if needed
         // caller always needs to free returned buffer using  Marshal.FreeHGlobal()

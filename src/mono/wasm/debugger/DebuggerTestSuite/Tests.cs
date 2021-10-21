@@ -91,7 +91,7 @@ namespace DebuggerTests
         [Fact]
         public async Task InspectLocalsTypesAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
-                "dotnet://debugger-test.dll/debugger-test2.cs", 48, 8, "Types",
+                "dotnet://debugger-test.dll/debugger-test2.cs", 50, 8, "Types",
                 "window.setTimeout(function() { invoke_static_method (\"[debugger-test] Fancy:Types\")(); }, 1);",
                 use_cfo: false,
                 test_fn: (locals) =>
@@ -201,14 +201,14 @@ namespace DebuggerTests
                 use_cfo: use_cfo,
                 test_fn: (locals) =>
                 {
-                    CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
+                    CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
                     CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
                     CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
 
                     // Unused locals
-                    CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>");
+                    CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
                     CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
@@ -296,7 +296,7 @@ namespace DebuggerTests
                 // Check ss_local.gs
                 var gs_props = await GetObjectOnLocals(ss_local_props, "gs");
                 CheckString(gs_props, "StringField", "set in MethodWithLocalStructs#SimpleStruct#gs#StringField");
-                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>");
+                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
             }
 
             // Check gs_local's properties
@@ -486,7 +486,7 @@ namespace DebuggerTests
                     new
                     {
                         StringField = TString("set in MethodWithLocalStructsStaticAsync#SimpleStruct#gs#StringField"),
-                        List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                        List = TObject("System.Collections.Generic.List<System.DateTime>", description: "Count = 1"),
                         Options = TEnum("DebuggerTests.Options", "Option1")
                     }
                 );
@@ -497,7 +497,7 @@ namespace DebuggerTests
             await CheckProps(gs_local_props, new
             {
                 StringField = TString("gs_local#GenericStruct<ValueTypesTest>#StringField"),
-                List = TObject("System.Collections.Generic.List<int>"),
+                List = TObject("System.Collections.Generic.List<int>", description: "Count = 2"),
                 Options = TEnum("DebuggerTests.Options", "Option2")
             }, "gs_local");
 
@@ -826,6 +826,81 @@ namespace DebuggerTests
             Assert.True(source.IsOk);
         }
 
+        [Fact]
+        public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
+            "InspectTask",
+            "RunInspectTask",
+            10,
+            "<RunInspectTask>b__0" ,
+            $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] InspectTask:RunInspectTask'); }}, 1);",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
+                CheckNumber(locals, "a", 10);
+
+                var t_props = await GetObjectOnLocals(locals, "t");
+                await CheckProps(t_props, new
+                    {
+                        Status = TGetter("Status")
+                    }, "t_props", num_fields: 53);
+            });
+
+
+        [Fact]
+        public async Task InspectLocalsWithIndexAndPositionWithDifferentValues() //https://github.com/xamarin/xamarin-android/issues/6161
+        {
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] MainPage:CallSetValue'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 758, 16,
+                "set_SomeValue",
+                locals_fn: (locals) =>
+                {
+                    CheckNumber(locals, "view", 150);
+                }
+            );
+        }
+
+        [Fact]
+        public async Task MallocUntilReallocate() //https://github.com/xamarin/xamarin-android/issues/6161
+        {
+            string eval_expr = "window.setTimeout(function() { malloc_to_reallocate_test (); }, 1)";
+
+            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
+
+            var eval_req = JObject.FromObject(new
+            {
+                expression = "window.setTimeout(function() { invoke_add(); }, 1);",
+            });
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "IntAdd",
+                wait_for_event_fn: (pause_location) =>
+                {
+                    Assert.Equal("other", pause_location["reason"]?.Value<string>());
+                    Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+
+                    var top_frame = pause_location["callFrames"][0];
+                    Assert.Equal("IntAdd", top_frame["functionName"].Value<string>());
+                    Assert.Contains("debugger-test.cs", top_frame["url"].Value<string>());
+
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, top_frame["functionLocation"]);
+
+                    //now check the scope
+                    var scope = top_frame["scopeChain"][0];
+                    Assert.Equal("local", scope["type"]);
+                    Assert.Equal("IntAdd", scope["name"]);
+
+                    Assert.Equal("object", scope["object"]["type"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 8, 4, scripts, scope["startLocation"]);
+                    CheckLocation("dotnet://debugger-test.dll/debugger-test.cs", 14, 4, scripts, scope["endLocation"]);
+                    return Task.CompletedTask;
+                }
+            );
+        }
         //TODO add tests covering basic stepping behavior as step in/out/over
     }
 }

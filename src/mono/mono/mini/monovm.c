@@ -7,6 +7,7 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/native-library.h>
+#include <mono/metadata/reflection-internals.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -16,7 +17,6 @@
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
 static MonoCoreLookupPaths *native_lib_paths;
 static MonoCoreLookupPaths *app_paths;
-static MonoCoreLookupPaths *app_ni_paths;
 static MonoCoreLookupPaths *platform_resource_roots;
 
 static void
@@ -116,7 +116,7 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 	for (int i = 0; i < a->assembly_count; ++i) {
 		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
-			mono_assembly_request_prepare_open (&req, MONO_ASMCTX_DEFAULT, default_alc);
+			mono_assembly_request_prepare_open (&req, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
@@ -163,8 +163,6 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 			parse_trusted_platform_assemblies (propertyValues[i]);
 		} else if (prop_len == 9 && !strncmp (propertyKeys [i], "APP_PATHS", 9)) {
 			app_paths = parse_lookup_paths (propertyValues [i]);
-		} else if (prop_len == 12 && !strncmp (propertyKeys [i], "APP_NI_PATHS", 12)) {
-			app_ni_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 23 && !strncmp (propertyKeys [i], "PLATFORM_RESOURCE_ROOTS", 23)) {
 			platform_resource_roots = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 29 && !strncmp (propertyKeys [i], "NATIVE_DLL_SEARCH_DIRECTORIES", 29)) {
@@ -278,4 +276,90 @@ monovm_shutdown (int *latchedExitCode)
 	*latchedExitCode = mono_environment_exitcode_get ();
 
 	return 0;
+}
+
+static int
+monovm_create_delegate_impl (const char* assemblyName, const char* typeName, const char *methodName, void **delegate);
+	
+
+int
+monovm_create_delegate (const char *assemblyName, const char *typeName, const char *methodName, void **delegate)
+{
+	int result;
+	/* monovm_create_delegate may be called instead of monovm_execute_assembly.  Initialize the
+	 * runtime if it isn't already. */
+	if (!mono_get_root_domain())
+		mini_init (assemblyName, "v4.0.30319");
+	MONO_ENTER_GC_UNSAFE;
+	result = monovm_create_delegate_impl (assemblyName, typeName, methodName, delegate);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+int
+monovm_create_delegate_impl (const char* assemblyName, const char* typeName, const char *methodName, void **delegate)
+{
+	// Load an assembly and a type and a method from the type, then return a pointer to a native
+	// callable version of the method.  See CorHost2::CreateDelegate
+	//
+	// We have to do this in general, but the CoreCLR hostpolicy only calls this with a handful
+	// of methods from the [CoreLib]Internal.Runtime.InteropServices.ComponentActivator
+	// class. See hostpolicy.cpp get_delegate()
+
+	ERROR_DECL (error);
+
+	const int failure = 0x80004005; /* E_FAIL */
+
+	if (!delegate)
+		return failure;
+	*delegate = NULL;
+
+	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
+
+	MonoImage *image;
+	if (!strcmp (MONO_ASSEMBLY_CORLIB_NAME, assemblyName)) {
+		image = mono_defaults.corlib;
+	} else {
+		MonoAssemblyName aname = {0};
+		aname.name = assemblyName;
+		MonoAssemblyByNameRequest req;
+		mono_assembly_request_prepare_byname (&req, alc);
+		MonoImageOpenStatus status = MONO_IMAGE_OK;
+		MonoAssembly *assm = mono_assembly_request_byname (&aname, &req, &status);
+
+		if (!assm || status != MONO_IMAGE_OK)
+			return failure;
+		image = assm->image;
+	}
+
+	MonoType *t = mono_reflection_type_from_name_checked ((char*)typeName, alc, image, error);
+	goto_if_nok (error, fail);
+
+	g_assert (t);
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
+	
+
+	MonoMethod *method = mono_class_get_method_from_name_checked (klass, methodName, -1, 0, error);
+	goto_if_nok (error, fail);
+
+	if (!mono_method_has_unmanaged_callers_only_attribute (method)) {
+		mono_error_set_not_supported (error, "MonoVM only supports UnmanagedCallersOnly implementations of hostfxr_get_runtime_delegate delegate types");
+		goto fail;
+	}
+	
+	MonoClass *delegate_klass = NULL;
+	MonoGCHandle target_handle = 0;
+	MonoMethod *wrapper = mono_marshal_get_managed_wrapper (method, delegate_klass, target_handle, error);
+	goto_if_nok (error, fail);
+
+	gpointer addr = mono_compile_method_checked (wrapper, error);
+	goto_if_nok (error, fail);
+
+	*delegate = addr;
+	return 0;
+
+fail:
+	g_warning ("coreclr_create_delegate: failed due to %s", mono_error_get_message (error));
+	mono_error_cleanup (error);
+	return failure;
 }

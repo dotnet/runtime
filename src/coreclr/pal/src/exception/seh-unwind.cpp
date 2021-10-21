@@ -70,7 +70,31 @@ enum
     UNW_AARCH64_X27 = UNW_ARM64_X27,
     UNW_AARCH64_X28 = UNW_ARM64_X28,
     UNW_AARCH64_X29 = UNW_ARM64_X29,
-    UNW_AARCH64_X30 = UNW_ARM64_X30
+    UNW_AARCH64_X30 = UNW_ARM64_X30,
+    UNW_AARCH64_V8 = UNW_ARM64_D8,
+    UNW_AARCH64_V9 = UNW_ARM64_D9,
+    UNW_AARCH64_V10 = UNW_ARM64_D10,
+    UNW_AARCH64_V11 = UNW_ARM64_D11,
+    UNW_AARCH64_V12 = UNW_ARM64_D12,
+    UNW_AARCH64_V13 = UNW_ARM64_D13,
+    UNW_AARCH64_V14 = UNW_ARM64_D14,
+    UNW_AARCH64_V15 = UNW_ARM64_D15,
+    UNW_AARCH64_V16 = UNW_ARM64_D16,
+    UNW_AARCH64_V17 = UNW_ARM64_D17,
+    UNW_AARCH64_V18 = UNW_ARM64_D18,
+    UNW_AARCH64_V19 = UNW_ARM64_D19,
+    UNW_AARCH64_V20 = UNW_ARM64_D20,
+    UNW_AARCH64_V21 = UNW_ARM64_D21,
+    UNW_AARCH64_V22 = UNW_ARM64_D22,
+    UNW_AARCH64_V23 = UNW_ARM64_D23,
+    UNW_AARCH64_V24 = UNW_ARM64_D24,
+    UNW_AARCH64_V25 = UNW_ARM64_D25,
+    UNW_AARCH64_V26 = UNW_ARM64_D26,
+    UNW_AARCH64_V27 = UNW_ARM64_D27,
+    UNW_AARCH64_V28 = UNW_ARM64_D28,
+    UNW_AARCH64_V29 = UNW_ARM64_D29,
+    UNW_AARCH64_V30 = UNW_ARM64_D30,
+    UNW_AARCH64_V31 = UNW_ARM64_D31
 };
 #endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
 
@@ -106,7 +130,31 @@ enum
     ASSIGN_REG(X25)        \
     ASSIGN_REG(X26)        \
     ASSIGN_REG(X27)        \
-    ASSIGN_REG(X28)
+    ASSIGN_REG(X28)        \
+    ASSIGN_FP_REG(8)       \
+    ASSIGN_FP_REG(9)       \
+    ASSIGN_FP_REG(10)       \
+    ASSIGN_FP_REG(11)       \
+    ASSIGN_FP_REG(12)       \
+    ASSIGN_FP_REG(13)       \
+    ASSIGN_FP_REG(14)       \
+    ASSIGN_FP_REG(15)       \
+    ASSIGN_FP_REG(16)       \
+    ASSIGN_FP_REG(17)       \
+    ASSIGN_FP_REG(18)       \
+    ASSIGN_FP_REG(19)       \
+    ASSIGN_FP_REG(20)       \
+    ASSIGN_FP_REG(21)       \
+    ASSIGN_FP_REG(22)       \
+    ASSIGN_FP_REG(23)       \
+    ASSIGN_FP_REG(24)       \
+    ASSIGN_FP_REG(25)       \
+    ASSIGN_FP_REG(26)       \
+    ASSIGN_FP_REG(27)       \
+    ASSIGN_FP_REG(28)       \
+    ASSIGN_FP_REG(29)       \
+    ASSIGN_FP_REG(30)       \
+    ASSIGN_FP_REG(31)
 #elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Eip)        \
@@ -134,11 +182,16 @@ enum
 
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
+#if (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
+    fpsimd_context* fp = GetNativeSigSimdContext(unwContext);
+#define ASSIGN_FP_REG(fp, reg) if (fp) *(NEON128*) &fp->vregs[reg] = winContext->V[reg];
+#endif
 #define ASSIGN_REG(reg) MCREG_##reg(unwContext->uc_mcontext) = winContext->reg;
     ASSIGN_UNWIND_REGS
 #undef ASSIGN_REG
+#undef ASSIGN_FP_REG
 }
-#else
+#else // UNWIND_CONTEXT_IS_UCONTEXT_T
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
 #if (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
@@ -163,6 +216,10 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->regs[13] = winContext->Sp;
     unwContext->regs[14] = winContext->Lr;
     unwContext->regs[15] = winContext->Pc;
+    for (int i = 0; i < 16; i++)
+    {
+        unwContext->fpregs[i] = winContext->D[i];
+    }
 #elif defined(HOST_ARM64) && !defined(TARGET_OSX)
     unwContext->uc_mcontext.pc       = winContext->Pc;
     unwContext->uc_mcontext.sp       = winContext->Sp;
@@ -179,6 +236,11 @@ static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwCon
     unwContext->uc_mcontext.regs[26] = winContext->X26;
     unwContext->uc_mcontext.regs[27] = winContext->X27;
     unwContext->uc_mcontext.regs[28] = winContext->X28;
+    unw_fpsimd_context_t *fp = (unw_fpsimd_context_t *)&unwContext->uc_mcontext.__reserved;
+    for (int i = 0; i < 32; i++)
+    {
+        *(NEON128*) &fp->vregs[i] = winContext->V[i];
+    }
 #endif
 }
 
@@ -218,9 +280,33 @@ static void WinContextToUnwindCursor(CONTEXT *winContext, unw_cursor_t *cursor)
     unw_set_reg(cursor, UNW_AARCH64_X26, winContext->X26);
     unw_set_reg(cursor, UNW_AARCH64_X27, winContext->X27);
     unw_set_reg(cursor, UNW_AARCH64_X28, winContext->X28);
+    unw_set_fpreg(cursor, UNW_AARCH64_V8, *(unw_fpreg_t *)&winContext->V[8].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V9, *(unw_fpreg_t *)&winContext->V[9].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V10, *(unw_fpreg_t *)&winContext->V[10].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V11, *(unw_fpreg_t *)&winContext->V[11].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V12, *(unw_fpreg_t *)&winContext->V[12].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V13, *(unw_fpreg_t *)&winContext->V[13].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V14, *(unw_fpreg_t *)&winContext->V[14].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V15, *(unw_fpreg_t *)&winContext->V[15].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V16, *(unw_fpreg_t *)&winContext->V[16].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V17, *(unw_fpreg_t *)&winContext->V[17].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V18, *(unw_fpreg_t *)&winContext->V[18].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V19, *(unw_fpreg_t *)&winContext->V[19].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V20, *(unw_fpreg_t *)&winContext->V[20].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V21, *(unw_fpreg_t *)&winContext->V[21].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V22, *(unw_fpreg_t *)&winContext->V[22].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V23, *(unw_fpreg_t *)&winContext->V[23].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V24, *(unw_fpreg_t *)&winContext->V[24].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V25, *(unw_fpreg_t *)&winContext->V[25].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V26, *(unw_fpreg_t *)&winContext->V[26].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V27, *(unw_fpreg_t *)&winContext->V[27].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V28, *(unw_fpreg_t *)&winContext->V[28].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V29, *(unw_fpreg_t *)&winContext->V[29].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V30, *(unw_fpreg_t *)&winContext->V[30].Low);
+    unw_set_fpreg(cursor, UNW_AARCH64_V31, *(unw_fpreg_t *)&winContext->V[31].Low);
 #endif
 }
-#endif
+#endif // UNWIND_CONTEXT_IS_UCONTEXT_T
 
 void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
 {
@@ -252,6 +338,14 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_ARM_R9, (unw_word_t *) &winContext->R9);
     unw_get_reg(cursor, UNW_ARM_R10, (unw_word_t *) &winContext->R10);
     unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
+    unw_get_fpreg(cursor, UNW_ARM_D8, (unw_fpreg_t *)&winContext->D[8]);
+    unw_get_fpreg(cursor, UNW_ARM_D9, (unw_fpreg_t *)&winContext->D[9]);
+    unw_get_fpreg(cursor, UNW_ARM_D10, (unw_fpreg_t *)&winContext->D[10]);
+    unw_get_fpreg(cursor, UNW_ARM_D11, (unw_fpreg_t *)&winContext->D[11]);
+    unw_get_fpreg(cursor, UNW_ARM_D12, (unw_fpreg_t *)&winContext->D[12]);
+    unw_get_fpreg(cursor, UNW_ARM_D13, (unw_fpreg_t *)&winContext->D[13]);
+    unw_get_fpreg(cursor, UNW_ARM_D14, (unw_fpreg_t *)&winContext->D[14]);
+    unw_get_fpreg(cursor, UNW_ARM_D15, (unw_fpreg_t *)&winContext->D[15]);
 #elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
@@ -267,6 +361,30 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_AARCH64_X26, (unw_word_t *) &winContext->X26);
     unw_get_reg(cursor, UNW_AARCH64_X27, (unw_word_t *) &winContext->X27);
     unw_get_reg(cursor, UNW_AARCH64_X28, (unw_word_t *) &winContext->X28);
+    unw_get_fpreg(cursor, UNW_AARCH64_V8, (unw_fpreg_t*)&winContext->V[8].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V9, (unw_fpreg_t*)&winContext->V[9].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V10, (unw_fpreg_t*)&winContext->V[10].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V11, (unw_fpreg_t*)&winContext->V[11].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V12, (unw_fpreg_t*)&winContext->V[12].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V13, (unw_fpreg_t*)&winContext->V[13].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V14, (unw_fpreg_t*)&winContext->V[14].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V15, (unw_fpreg_t*)&winContext->V[15].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V16, (unw_fpreg_t*)&winContext->V[16].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V17, (unw_fpreg_t*)&winContext->V[17].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V18, (unw_fpreg_t*)&winContext->V[18].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V19, (unw_fpreg_t*)&winContext->V[19].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V20, (unw_fpreg_t*)&winContext->V[20].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V21, (unw_fpreg_t*)&winContext->V[21].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V22, (unw_fpreg_t*)&winContext->V[22].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V23, (unw_fpreg_t*)&winContext->V[23].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V24, (unw_fpreg_t*)&winContext->V[24].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V25, (unw_fpreg_t*)&winContext->V[25].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V26, (unw_fpreg_t*)&winContext->V[26].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V27, (unw_fpreg_t*)&winContext->V[27].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V28, (unw_fpreg_t*)&winContext->V[28].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V29, (unw_fpreg_t*)&winContext->V[29].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V30, (unw_fpreg_t*)&winContext->V[30].Low);
+    unw_get_fpreg(cursor, UNW_AARCH64_V31, (unw_fpreg_t*)&winContext->V[31].Low);
 
 #if defined(TARGET_OSX) && defined(TARGET_ARM64)
     // Strip pointer authentication bits which seem to be leaking out of libunwind
@@ -332,6 +450,14 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_ARM_R9, &contextPointers->R9);
     GetContextPointer(cursor, unwContext, UNW_ARM_R10, &contextPointers->R10);
     GetContextPointer(cursor, unwContext, UNW_ARM_R11, &contextPointers->R11);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D8, (SIZE_T **)&contextPointers->D8);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D9, (SIZE_T **)&contextPointers->D9);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D10, (SIZE_T **)&contextPointers->D10);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D11, (SIZE_T **)&contextPointers->D11);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D12, (SIZE_T **)&contextPointers->D12);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D13, (SIZE_T **)&contextPointers->D13);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D14, (SIZE_T **)&contextPointers->D14);
+    GetContextPointer(cursor, unwContext, UNW_ARM_D15, (SIZE_T **)&contextPointers->D15);
 #elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, &contextPointers->X19);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, &contextPointers->X20);
@@ -344,6 +470,14 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V8, &contextPointers->D8);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V9, &contextPointers->D9);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V10, &contextPointers->D10);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V11, &contextPointers->D11);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V12, &contextPointers->D12);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V13, &contextPointers->D13);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V14, &contextPointers->D14);
+    GetContextPointer(cursor, unwContext, UNW_AARCH64_V15, &contextPointers->D15);
 #elif (defined(HOST_UNIX) && defined(HOST_S390X))
     GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
     GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);

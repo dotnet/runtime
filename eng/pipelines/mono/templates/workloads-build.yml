@@ -91,10 +91,8 @@ jobs:
         Contents: '*.wixpdb'
 
     # Upload artifacts to be used for generating VS components
-    - task: PublishPipelineArtifact@1
-      displayName: Publish workload artifacts
-      inputs:
-        targetPath: $(Build.SourcesDirectory)/artifacts/VSSetup/$(_BuildConfig)/Insertion
-        artifactName: 'Insertion'
-      continueOnError: true
-      condition: always()
+    - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+      parameters:
+        name: workloads-vs
+        publishPackagesCondition: false
+        publishVSSetupCondition: true

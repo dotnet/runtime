@@ -41,6 +41,12 @@ else()
 endif()
 
 if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    list (APPEND NATIVE_SOURCES pal_environment.m)
+else()
+    list (APPEND NATIVE_SOURCES pal_environment.c)
+endif()
+
+if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_log.m
         pal_searchpath.m)

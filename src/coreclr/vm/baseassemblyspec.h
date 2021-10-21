@@ -27,7 +27,7 @@ protected:
     DWORD                       m_dwFlags;             // CorAssemblyFlags
     LPCWSTR                     m_wszCodeBase;         // URL to the code
     int                         m_ownedFlags;
-    ICLRPrivBinder             *m_pBindingContext;
+    AssemblyBinder             *m_pBinder;
 
 public:
     enum
@@ -63,21 +63,19 @@ public:
     VOID    CloneFieldsToLoaderHeap(int flags, LoaderHeap *pHeap, AllocMemTracker *pamTracker);
     VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
-    inline void SetBindingContext(ICLRPrivBinder *pBindingContext)
+    inline void SetBinder(AssemblyBinder *pBinder)
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_pBindingContext = pBindingContext;
+        m_pBinder = pBinder;
     }
 
-    inline ICLRPrivBinder* GetBindingContext()
+    inline AssemblyBinder* GetBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pBindingContext;
+        return m_pBinder;
     }
-
-    BOOL IsAssemblySpecForCoreLib();
 
     HRESULT ParseName();
     DWORD Hash();

@@ -1149,10 +1149,10 @@ namespace System.Threading.Threads.Tests
             Thread.BeginThreadAffinity();
             Thread.EndThreadAffinity();
 
-#pragma warning disable 618 // obsolete members
+#pragma warning disable SYSLIB0003 // obsolete members
             Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.GetCompressedStack());
             Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetCompressedStack(CompressedStack.Capture()));
-#pragma warning restore 618 // obsolete members
+#pragma warning restore SYSLIB0003 // obsolete members
 
             Thread.MemoryBarrier();
 

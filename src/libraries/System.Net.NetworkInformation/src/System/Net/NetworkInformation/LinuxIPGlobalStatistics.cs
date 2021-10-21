@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
@@ -56,6 +57,7 @@ namespace System.Net.NetworkInformation
 
         public override long OutputPacketRequests { get { return _table.OutRequests; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long OutputPacketRoutingDiscards { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutputPacketsDiscarded { get { return _table.OutDiscards; } }

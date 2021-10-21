@@ -3,32 +3,53 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.Json;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
 public class PInvokeTableGenerator : Task
 {
-    [Required]
-    public ITaskItem[]? Modules { get; set; }
-    [Required]
-    public ITaskItem[]? Assemblies { get; set; }
-    [Required]
+    [Required, NotNull]
+    public string[]? Modules { get; set; }
+    [Required, NotNull]
+    public string[]? Assemblies { get; set; }
+
+    [Required, NotNull]
     public string? OutputPath { get; set; }
+
+    [Output]
+    public string FileWrites { get; private set; } = string.Empty;
 
     private static char[] s_charsToReplace = new[] { '.', '-', };
 
     public override bool Execute()
     {
-        Log.LogMessage(MessageImportance.Normal, $"Generating pinvoke table to '{OutputPath}'.");
-        GenPInvokeTable(Modules!.Select(item => item.ItemSpec).ToArray(), Assemblies!.Select(item => item.ItemSpec).ToArray());
-        return true;
+        if (Assemblies.Length == 0)
+        {
+            Log.LogError($"No assemblies given to scan for pinvokes");
+            return false;
+        }
+
+        if (Modules.Length == 0)
+        {
+            Log.LogError($"{nameof(PInvokeTableGenerator)}.{nameof(Modules)} cannot be empty");
+            return false;
+        }
+
+        try
+        {
+            GenPInvokeTable(Modules, Assemblies);
+            return !Log.HasLoggedErrors;
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
     }
 
     public void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
@@ -41,7 +62,7 @@ public class PInvokeTableGenerator : Task
         var callbacks = new List<PInvokeCallback>();
 
         var resolver = new PathAssemblyResolver(assemblies);
-        var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
+        using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
         {
             var a = mlc.LoadFromAssemblyPath(aname);
@@ -49,11 +70,20 @@ public class PInvokeTableGenerator : Task
                 CollectPInvokes(pinvokes, callbacks, type);
         }
 
-        using (var w = File.CreateText(OutputPath!))
+        string tmpFileName = Path.GetTempFileName();
+        using (var w = File.CreateText(tmpFileName))
         {
             EmitPInvokeTable(w, modules, pinvokes);
             EmitNativeToInterp(w, callbacks);
         }
+
+        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
+        else
+            Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");
+        FileWrites = OutputPath;
+
+        File.Delete(tmpFileName);
     }
 
     private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, Type type)
@@ -88,12 +118,36 @@ public class PInvokeTableGenerator : Task
         w.WriteLine("// GENERATED FILE, DO NOT MODIFY");
         w.WriteLine();
 
-        var decls = new HashSet<string>();
-        foreach (var pinvoke in pinvokes.OrderBy(l => l.EntryPoint))
+        var pinvokesGroupedByEntryPoint = pinvokes
+                                            .Where(l => modules.ContainsKey(l.Module))
+                                            .OrderBy(l => l.EntryPoint)
+                                            .GroupBy(l => l.EntryPoint);
+
+        var comparer = new PInvokeComparer();
+        foreach (IGrouping<string, PInvoke> group in pinvokesGroupedByEntryPoint)
         {
-            if (modules.ContainsKey(pinvoke.Module)) {
-                var decl = GenPInvokeDecl(pinvoke);
-                if (decls.Contains(decl))
+            var candidates = group.Distinct(comparer).ToArray();
+            PInvoke first = candidates[0];
+            if (ShouldTreatAsVariadic(candidates))
+            {
+                string imports = string.Join(Environment.NewLine,
+                                            candidates.Select(
+                                                p => $"    {p.Method} (in [{p.Method.DeclaringType?.Assembly.GetName().Name}] {p.Method.DeclaringType})"));
+                Log.LogWarning($"Found a native function ({first.EntryPoint}) with varargs in {first.Module}." +
+                                 " Calling such functions is not supported, and will fail at runtime." +
+                                $" Managed DllImports: {Environment.NewLine}{imports}");
+
+                foreach (var c in candidates)
+                    c.Skip = true;
+
+                continue;
+            }
+
+            var decls = new HashSet<string>();
+            foreach (var candidate in candidates)
+            {
+                var decl = GenPInvokeDecl(candidate);
+                if (decl == null || decls.Contains(decl))
                     continue;
 
                 w.WriteLine(decl);
@@ -107,10 +161,10 @@ public class PInvokeTableGenerator : Task
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
-                Where(l => l.Module == module).
+                Where(l => l.Module == module && !l.Skip).
                 OrderBy(l => l.EntryPoint).
                 GroupBy(d => d.EntryPoint).
-                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct()));
+                Select (l => "{\"" + l.Key + "\", " + l.Key + "}, // " + string.Join (", ", l.Select(c => c.Method.DeclaringType!.Module!.Assembly!.GetName ()!.Name!).Distinct().OrderBy(n => n)));
 
             foreach (var pinvoke in assemblies_pinvokes) {
                 w.WriteLine (pinvoke);
@@ -144,6 +198,22 @@ public class PInvokeTableGenerator : Task
 
             return fixedName;
         }
+
+        static bool ShouldTreatAsVariadic(PInvoke[] candidates)
+        {
+            if (candidates.Length < 2)
+                return false;
+
+            PInvoke first = candidates[0];
+            if (TryIsMethodGetParametersUnsupported(first.Method, out _))
+                return false;
+
+            int firstNumArgs = first.Method.GetParameters().Length;
+            return candidates
+                        .Skip(1)
+                        .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
+                                    c.Method.GetParameters().Length != firstNumArgs);
+        }
     }
 
     private string MapType (Type t)
@@ -163,7 +233,29 @@ public class PInvokeTableGenerator : Task
             return "int";
     }
 
-    private string GenPInvokeDecl(PInvoke pinvoke)
+    // FIXME: System.Reflection.MetadataLoadContext can't decode function pointer types
+    // https://github.com/dotnet/runtime/issues/43791
+    private static bool TryIsMethodGetParametersUnsupported(MethodInfo method, [NotNullWhen(true)] out string? reason)
+    {
+        try
+        {
+            method.GetParameters();
+        }
+        catch (NotSupportedException nse)
+        {
+            reason = nse.Message;
+            return true;
+        }
+        catch
+        {
+            // not concerned with other exceptions
+        }
+
+        reason = null;
+        return false;
+    }
+
+    private string? GenPInvokeDecl(PInvoke pinvoke)
     {
         var sb = new StringBuilder();
         var method = pinvoke.Method;
@@ -173,6 +265,14 @@ public class PInvokeTableGenerator : Task
             sb.Append($"int {pinvoke.EntryPoint} (int, int, int, int, int);");
             return sb.ToString();
         }
+
+        if (TryIsMethodGetParametersUnsupported(pinvoke.Method, out string? reason))
+        {
+            Log.LogWarning($"Skipping the following DllImport because '{reason}'. {Environment.NewLine}  {pinvoke.Method}");
+            pinvoke.Skip = true;
+            return null;
+        }
+
         sb.Append(MapType(method.ReturnType));
         sb.Append($" {pinvoke.EntryPoint} (");
         int pindex = 0;
@@ -226,7 +326,7 @@ public class PInvokeTableGenerator : Task
             sb.Append($" (*WasmInterpEntrySig_{cb_index}) (");
             int pindex = 0;
             if (method.ReturnType.Name != "Void") {
-                sb.Append("int");
+                sb.Append("int*");
                 pindex++;
             }
             foreach (var p in method.GetParameters()) {
@@ -321,14 +421,10 @@ public class PInvokeTableGenerator : Task
             return false;
     }
 
-    private static void Error (string msg)
-    {
-        // FIXME:
-        throw new Exception(msg);
-    }
+    private static void Error (string msg) => throw new LogAsErrorException(msg);
 }
 
-internal class PInvoke
+internal sealed class PInvoke : IEquatable<PInvoke>
 {
     public PInvoke(string entryPoint, string module, MethodInfo method)
     {
@@ -340,9 +436,34 @@ internal class PInvoke
     public string EntryPoint;
     public string Module;
     public MethodInfo Method;
+    public bool Skip;
+
+    public bool Equals(PInvoke? other)
+        => other != null &&
+            string.Equals(EntryPoint, other.EntryPoint, StringComparison.Ordinal) &&
+            string.Equals(Module, other.Module, StringComparison.Ordinal) &&
+            string.Equals(Method.ToString(), other.Method.ToString(), StringComparison.Ordinal);
+
+    public override string ToString() => $"{{ EntryPoint: {EntryPoint}, Module: {Module}, Method: {Method}, Skip: {Skip} }}";
 }
 
-internal class PInvokeCallback
+internal sealed class PInvokeComparer : IEqualityComparer<PInvoke>
+{
+    public bool Equals(PInvoke? x, PInvoke? y)
+    {
+        if (x == null && y == null)
+            return true;
+        if (x == null || y == null)
+            return false;
+
+        return x.Equals(y);
+    }
+
+    public int GetHashCode(PInvoke pinvoke)
+        => $"{pinvoke.EntryPoint}{pinvoke.Module}{pinvoke.Method}".GetHashCode();
+}
+
+internal sealed class PInvokeCallback
 {
     public PInvokeCallback(MethodInfo method)
     {

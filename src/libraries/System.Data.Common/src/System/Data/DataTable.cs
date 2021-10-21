@@ -31,10 +31,6 @@ namespace System.Data
     [XmlSchemaProvider(nameof(GetDataTableSchema))]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    // This coarse suppression silences all RequiresUnreferencedCode warnings in the class.
-    // https://github.com/mono/linker/issues/2136 tracks making it possible to add more granular suppressions at the member level, and with a different warning code.
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
     public class DataTable : MarshalByValueComponent, IListSource, ISupportInitializeNotification, ISerializable, IXmlSerializable
     {
@@ -196,6 +192,8 @@ namespace System.Data
         }
 
         // Deserialize the table from binary/xml stream.
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+            Justification = "CreateInstance's use of GetType uses only the parameterless constructor. Warnings are about serialization related constructors.")]
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         protected DataTable(SerializationInfo info, StreamingContext context) : this()
         {

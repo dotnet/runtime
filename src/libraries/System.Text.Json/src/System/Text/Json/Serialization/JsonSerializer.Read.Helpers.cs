@@ -20,10 +20,10 @@ namespace System.Text.Json
             // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
             object? value = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
             Debug.Assert(value == null || value is TValue);
-            return (TValue)value!;
+            return (TValue?)value;
         }
 
-        private static TValue? ReadUsingMetadata<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
+        private static TValue? ReadFromSpan<TValue>(ReadOnlySpan<byte> utf8Json, JsonTypeInfo jsonTypeInfo, int? actualByteCount = null)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
 
@@ -33,7 +33,22 @@ namespace System.Text.Json
             ReadStack state = default;
             state.Initialize(jsonTypeInfo);
 
-            TValue? value = ReadCore<TValue>(jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase, ref reader, options, ref state);
+            TValue? value;
+            JsonConverter jsonConverter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
+
+            // For performance, the code below is a lifted ReadCore() above.
+            if (jsonConverter is JsonConverter<TValue> converter)
+            {
+                // Call the strongly-typed ReadCore that will not box structs.
+                value = converter.ReadCore(ref reader, options, ref state);
+            }
+            else
+            {
+                // The non-generic API was called or we have a polymorphic case where TValue is not equal to the T in JsonConverter<T>.
+                object? objValue = jsonConverter.ReadCoreAsObject(ref reader, options, ref state);
+                Debug.Assert(objValue == null || objValue is TValue);
+                value = (TValue?)objValue;
+            }
 
             // The reader should have thrown if we have remaining bytes.
             Debug.Assert(reader.BytesConsumed == (actualByteCount ?? utf8Json.Length));

@@ -6,7 +6,7 @@ parameters:
   targetRid: ''
   crossBuild: false
   crossrootfsDir: ''
-  framework: 'net6.0'
+  framework: 'net7.0'
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''
@@ -28,10 +28,11 @@ parameters:
   shouldContinueOnError: false
   variables: {}
   pool: ''
+  # Run tests as part of the build job (instead of running them in a separate job)
   runTests: false
+  # Package up the test builds so they can be sent to Helix
   useHelix: true
   testScope: ''
-  testBuildPlatforms: []
 
 jobs:
   - template: /eng/pipelines/libraries/base-job.yml
@@ -65,20 +66,20 @@ jobs:
         - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveRuntimeBuildConfig) }}
 
       variables:
-        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}_{1}_{2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
-        - _subset: libs
+        - librariesTestsArtifactName: ${{ format('libraries_test_assets_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - _subset: libs+libs.tests
+        - ${{ if and(eq(parameters.runTests, false), eq(parameters.useHelix, false)) }}:
+          - _subset: libs
         - _buildAction: ''
         - _additionalBuildArguments: ''
         - ${{ parameters.variables }}
 
         # Tests only run for 'allConfiguration' and 'net48' build-jobs
-        # If platform is in testBuildPlatforms we build tests as well.
-        - ${{ if or(eq(parameters.runTests, true), containsValue(parameters.testBuildPlatforms, parameters.platform)) }}:
-          - _subset: libs+libs.tests
-          - ${{ if eq(parameters.useHelix, false) }}:
-            - _buildAction: -restore -build -test
-          - ${{ if eq(parameters.useHelix, true) }}:
-            - _additionalBuildArguments: /p:ArchiveTests=true
+        # Only pass -test for when we aren't running tests using Helix.
+        - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, false)) }}:
+          - _buildAction: -restore -build -test
+        - ${{ if eq(parameters.useHelix, true) }}:
+          - _additionalBuildArguments: /p:ArchiveTests=true
 
         - ${{ parameters.variables }}
 
@@ -102,7 +103,7 @@ jobs:
                 $(_additionalBuildArguments)
           displayName: Restore and Build Product
 
-        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}: 
+        - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           - script: |
               du -sh $(Build.SourcesDirectory)/*
               df -h
@@ -122,8 +123,9 @@ jobs:
               tarCompression: $(tarCompression)
               artifactName: $(librariesBuildArtifactName)
               displayName: Build Assets
-          
-          - ${{ if containsValue(parameters.testBuildPlatforms, parameters.platform) }}:
+
+          # Upload test assets if we are sending tests to Helix and not running them directly in this job.
+          - ${{ if and(eq(parameters.runTests, false), eq(parameters.useHelix, true)) }}:
             - template: /eng/pipelines/common/upload-artifact-step.yml
               parameters:
                 rootFolder: $(Build.SourcesDirectory)/artifacts/helix
@@ -141,6 +143,11 @@ jobs:
             - template: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
               parameters:
                 name: Libraries_AllConfigurations
+                publishPackagesCondition: >-
+                  or(
+                     eq(variables['_librariesBuildProducedPackages'], true),
+                     eq(variables['Build.SourceBranchName'], 'main'),
+                     eq(variables['System.PullRequest.TargetBranch'], 'main'))
 
         - ${{ if and(eq(parameters.runTests, true), eq(parameters.useHelix, true)) }}:
           - template: /eng/pipelines/libraries/helix.yml

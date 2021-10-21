@@ -10,7 +10,6 @@
 #include "gcrefmap.h"
 #include "threads.h"
 
-#ifndef CROSSGEN_COMPILE
 
 FCIMPL2(void*, TailCallHelp::AllocTailCallArgBuffer, INT32 size, void* gcDesc)
 {
@@ -43,7 +42,6 @@ FCIMPL2(void*, TailCallHelp::GetTailCallInfo, void** retAddrSlot, void** retAddr
 }
 FCIMPLEND
 
-#endif
 
 struct ArgBufferValue
 {

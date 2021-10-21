@@ -32,7 +32,7 @@ namespace System.Threading
         // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
         internal const bool SupportsTimeSensitiveWorkItems = false; // the timer currently doesn't queue time-sensitive work
 
-        internal const bool EnableWorkerTracking = false;
+        private const bool IsWorkerTrackingEnabledInConfig = false;
 
         private static bool _callbackQueued;
 

@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -124,7 +123,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (!_typeStoreItems.TryGetValue(type, out TypeStoreItem? item))
                 {
-                    var attributes = TypeDescriptor.GetAttributes(type).Cast<Attribute>();
+                    AttributeCollection attributes = TypeDescriptor.GetAttributes(type);
                     item = new TypeStoreItem(type, attributes);
                     _typeStoreItems[type] = item;
                 }
@@ -153,7 +152,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private abstract class StoreItem
         {
-            internal StoreItem(IEnumerable<Attribute> attributes)
+            internal StoreItem(AttributeCollection attributes)
             {
                 ValidationAttributes = attributes.OfType<ValidationAttribute>();
                 DisplayAttribute = attributes.OfType<DisplayAttribute>().SingleOrDefault();
@@ -176,7 +175,7 @@ namespace System.ComponentModel.DataAnnotations
             private readonly Type _type;
             private Dictionary<string, PropertyStoreItem>? _propertyStoreItems;
 
-            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedTypes)] Type type, IEnumerable<Attribute> attributes)
+            internal TypeStoreItem([DynamicallyAccessedMembers(DynamicallyAccessedTypes)] Type type, AttributeCollection attributes)
                 : base(attributes)
             {
                 _type = type;
@@ -224,7 +223,7 @@ namespace System.ComponentModel.DataAnnotations
                 var properties = TypeDescriptor.GetProperties(_type);
                 foreach (PropertyDescriptor property in properties)
                 {
-                    var item = new PropertyStoreItem(property.PropertyType, GetExplicitAttributes(property).Cast<Attribute>());
+                    var item = new PropertyStoreItem(property.PropertyType, GetExplicitAttributes(property));
                     propertyStoreItems[property.Name] = item;
                 }
 
@@ -243,8 +242,14 @@ namespace System.ComponentModel.DataAnnotations
             [RequiresUnreferencedCode("The Type of propertyDescriptor.PropertyType cannot be statically discovered.")]
             private AttributeCollection GetExplicitAttributes(PropertyDescriptor propertyDescriptor)
             {
-                List<Attribute> attributes = new List<Attribute>(propertyDescriptor.Attributes.Cast<Attribute>());
-                IEnumerable<Attribute> typeAttributes = TypeDescriptor.GetAttributes(propertyDescriptor.PropertyType).Cast<Attribute>();
+                AttributeCollection propertyDescriptorAttributes = propertyDescriptor.Attributes;
+                List<Attribute> attributes = new List<Attribute>(propertyDescriptorAttributes.Count);
+                foreach (Attribute attribute in propertyDescriptorAttributes)
+                {
+                    attributes.Add(attribute);
+                }
+
+                AttributeCollection typeAttributes = TypeDescriptor.GetAttributes(propertyDescriptor.PropertyType);
                 bool removedAttribute = false;
                 foreach (Attribute attr in typeAttributes)
                 {
@@ -259,7 +264,7 @@ namespace System.ComponentModel.DataAnnotations
                         }
                     }
                 }
-                return removedAttribute ? new AttributeCollection(attributes.ToArray()) : propertyDescriptor.Attributes;
+                return removedAttribute ? new AttributeCollection(attributes.ToArray()) : propertyDescriptorAttributes;
             }
         }
 
@@ -268,7 +273,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private sealed class PropertyStoreItem : StoreItem
         {
-            internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
+            internal PropertyStoreItem(Type propertyType, AttributeCollection attributes)
                 : base(attributes)
             {
                 Debug.Assert(propertyType != null);

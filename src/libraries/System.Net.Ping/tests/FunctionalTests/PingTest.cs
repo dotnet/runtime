@@ -124,7 +124,6 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddress(AddressFamily addressFamily)
         {
@@ -167,7 +166,6 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddress_AddressAsString(AddressFamily addressFamily)
         {
@@ -201,7 +199,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddressAndTimeout()
         {
@@ -263,7 +260,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddressAndTimeoutAndBuffer_Unix()
         {
@@ -354,7 +350,6 @@ namespace System.Net.NetworkInformation.Tests
         [Theory]
         [InlineData(AddressFamily.InterNetwork)]
         [InlineData(AddressFamily.InterNetworkV6)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithIPAddressAndTimeoutAndBufferAndPingOptions_Unix(AddressFamily addressFamily)
         {
@@ -418,7 +413,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHost()
         {
@@ -447,7 +441,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHostAndTimeout()
         {
@@ -509,7 +502,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHostAndTimeoutAndBuffer_Unix()
         {
@@ -596,7 +588,6 @@ namespace System.Net.NetworkInformation.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // On Unix, Non-root pings cannot send arbitrary data in the buffer, and do not receive it back in the PingReply.
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void SendPingWithHostAndTimeoutAndBufferAndPingOptions_Unix()
         {
@@ -656,7 +647,7 @@ namespace System.Net.NetworkInformation.Tests
             {
                 // Assert.DoesNotThrow
                 PingReply pingReply = await p.SendPingAsync(localIpAddress, TestSettings.PingTimeout, new byte[10001]);
-                
+
                 // Depending on platform the call may either succeed, report timeout or report too big packet. It
                 // should not throw wrapped SocketException though which is what this test guards.
                 //
@@ -688,7 +679,6 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50574", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/52617", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public async Task Sends_ReuseInstance_Hostname()
         {

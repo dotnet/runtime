@@ -591,64 +591,6 @@ LOCAL_LABEL(stackProbe_loop):
     bx lr
     NESTED_END stackProbe, _TEXT
 
-#ifdef FEATURE_PREJIT
-//------------------------------------------------
-// VirtualMethodFixupStub
-//
-// In NGEN images, virtual slots inherited from cross-module dependencies
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up
-// thunk, upon executing the precode, so that all subsequent calls go directly
-// to the actual method body.
-//
-// This is done lazily for performance reasons.
-//
-// On entry:
-//
-// R0 = "this" pointer
-// R12 = Address of thunk + 4
-
-    NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
-
-    // Save arguments and return address
-    PROLOG_PUSH "{r0-r3, r7,r8, lr}" // keep increase by 8B for alignment
-    PROLOG_STACK_SAVE_OFFSET r7, #20
-
-    // Align stack
-    alloc_stack  SIZEOF__FloatArgumentRegisters + 4
-    vstm                sp, {d0-d7}
-
-
-    CHECK_STACK_ALIGNMENT
-
-    // R12 contains an address that is 4 bytes ahead of
-    // where the thunk starts. Refer to ZapImportVirtualThunk::Save
-    // for details on this.
-    //
-    // Move the correct thunk start address in R1
-    sub r1, r12, #4
-
-    // Call the helper in the VM to perform the actual fixup
-    // and tell us where to tail call. R0 already contains
-    // the this pointer.
-    bl C_FUNC(VirtualMethodFixupWorker)
-
-    // On return, R0 contains the target to tailcall to
-    mov         r12, r0
-
-    // pop the stack and restore original register state
-    vldm               sp, {d0-d7}
-    free_stack SIZEOF__FloatArgumentRegisters + 4
-    EPILOG_POP "{r0-r3, r7,r8, lr}"
-
-    PATCH_LABEL VirtualMethodFixupPatchLabel
-
-    // and tailcall to the actual method
-    bx r12
-
-    NESTED_END VirtualMethodFixupStub, _TEXT
-#endif // FEATURE_PREJIT
-
 //------------------------------------------------
 // ExternalMethodFixupStub
 //
@@ -685,41 +627,6 @@ LOCAL_LABEL(stackProbe_loop):
     bx r12
 
     NESTED_END ExternalMethodFixupStub, _TEXT
-
-#ifdef FEATURE_PREJIT
-//------------------------------------------------
-// StubDispatchFixupStub
-//
-// In NGEN images, calls to interface methods initially
-// point to a jump thunk that calls into the following function that will
-// call into a VM helper. The VM helper is responsible for patching up the
-// thunk with actual stub dispatch stub.
-//
-// On entry:
-//
-// R4 = Address of indirection cell
-
-    NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
-
-    PROLOG_WITH_TRANSITION_BLOCK
-
-    // address of StubDispatchFrame
-    add         r0, sp, #__PWTB_TransitionBlock // pTransitionBlock
-    mov         r1, r4  // siteAddrForRegisterIndirect
-    mov         r2, #0  // sectionIndex
-    mov         r3, #0  // pModule
-
-    bl          C_FUNC(StubDispatchFixupWorker)
-
-    // mov the address we patched to in R12 so that we can tail call to it
-    mov         r12, r0
-
-    EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-    PATCH_LABEL StubDispatchFixupPatchLabel
-    bx   r12
-
-    NESTED_END StubDispatchFixupStub, _TEXT
-#endif // FEATURE_PREJIT
 
 //------------------------------------------------
 // JIT_RareDisableHelper

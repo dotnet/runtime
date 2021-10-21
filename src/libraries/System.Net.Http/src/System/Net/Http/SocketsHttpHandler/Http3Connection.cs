@@ -20,9 +20,6 @@ namespace System.Net.Http
     [SupportedOSPlatform("macos")]
     internal sealed class Http3Connection : HttpConnectionBase
     {
-        // TODO: once HTTP/3 is standardized, create APIs for this.
-        public static readonly SslApplicationProtocol Http3ApplicationProtocol = new SslApplicationProtocol("h3");
-
         private readonly HttpConnectionPool _pool;
         private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
@@ -116,12 +113,6 @@ namespace System.Net.Http
                 return;
             }
 
-            if (_clientControl != null)
-            {
-                _clientControl.Dispose();
-                _clientControl = null;
-            }
-
             if (_connection != null)
             {
                 // Close the QuicConnection in the background.
@@ -149,6 +140,13 @@ namespace System.Net.Http
                     {
                         Trace($"{nameof(QuicConnection)} failed to dispose: {ex}");
                     }
+
+                    if (_clientControl != null)
+                    {
+                        _clientControl.Dispose();
+                        _clientControl = null;
+                    }
+
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
@@ -204,6 +202,8 @@ namespace System.Net.Http
                 {
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
+
+                if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
 
                 Task<HttpResponseMessage> responseTask = requestStream.SendAsync(cancellationToken);
 

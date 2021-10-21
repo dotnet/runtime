@@ -3,10 +3,6 @@
 
 using System.Diagnostics;
 
-#if MS_IO_REDIST
-using Microsoft.IO;
-#endif
-
 namespace System.IO
 {
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
@@ -28,11 +24,7 @@ namespace System.IO
         {
             get
             {
-#if MS_IO_REDIST
-                return false; // Windows is always case-insensitive
-#else
-                return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
-#endif
+                return !(OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS());
             }
         }
     }

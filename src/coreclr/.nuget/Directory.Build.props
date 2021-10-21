@@ -18,7 +18,7 @@
     <SkipIndexCheck>true</SkipIndexCheck>
 
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">7.0.0</PackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 

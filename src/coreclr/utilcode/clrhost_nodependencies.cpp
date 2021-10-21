@@ -541,10 +541,10 @@ void * __cdecl operator new[](size_t n, const CExecutable&, const NoThrow&)
 // This is a DEBUG routing to verify that a memory region complies with executable requirements
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
 {
-#if defined(CROSSGEN_COMPILE) || defined(TARGET_UNIX)
+#if defined(TARGET_UNIX)
     // No NX support on PAL or for crossgen compilations.
     return TRUE;
-#else // !(CROSSGEN_COMPILE || TARGET_UNIX)
+#else // !(TARGET_UNIX)
     BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());
     BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, GetOsPageSize());
     _ASSERTE(length > 0);
@@ -566,7 +566,7 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
     }
 
     return TRUE;
-#endif // CROSSGEN_COMPILE || TARGET_UNIX
+#endif // TARGET_UNIX
 }
 
 #endif //_DEBUG

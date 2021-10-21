@@ -68,8 +68,8 @@ void wasm_debugger_log (int level, const gchar *format, ...)
 		var message = Module.UTF8ToString ($1);
 		var namespace = "Debugger.Debug";
 
-		if (MONO["logging"] && MONO.logging["debugger"]) {
-			MONO.logging.debugger (level, message);
+		if (INTERNAL["logging"] && INTERNAL.logging["debugger"]) {
+			INTERNAL.logging.debugger (level, message);
 			return;
 		}
 
@@ -144,8 +144,10 @@ static void
 mono_wasm_enable_debugging_internal (int debug_level)
 {
 	log_level = debug_level;
-	PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
-	debugger_enabled = TRUE;
+	if (debug_level != 0) {
+		PRINT_DEBUG_MSG (1, "DEBUGGING ENABLED\n");
+		debugger_enabled = TRUE;
+	}
 }
 
 static void
@@ -373,7 +375,7 @@ mono_wasm_send_dbg_command_with_parms (int id, MdbgProtCommandSet command_set, i
 	m_dbgprot_buffer_add_data (&bufWithParms, data, size);
 	if (!write_value_to_buffer(&bufWithParms, valtype, newvalue)) {
 		EM_ASM ({
-			MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+			INTERNAL.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
 		}, 0, id, 0, 0);
 		return TRUE;
 	}
@@ -401,7 +403,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 	else
 		error = mono_process_dbg_packet (id, command_set, command, &no_reply, data, data + size, &buf);
 	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
+		INTERNAL.mono_wasm_add_dbg_command_received ($0, $1, $2, $3);
 	}, error == MDBGPROT_ERR_NONE, id, buf.buf, buf.p-buf.buf);
 	
 	buffer_free (&buf);
@@ -412,7 +414,7 @@ static gboolean
 receive_debugger_agent_message (void *data, int len)
 {
 	EM_ASM ({
-		MONO.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
+		INTERNAL.mono_wasm_add_dbg_command_received (1, -1, $0, $1);
 	}, data, len);
 	mono_wasm_save_thread_context();
 	mono_wasm_fire_debugger_agent_message ();	

@@ -6,6 +6,14 @@
              https://github.com/mono/linker/pull/649 -->
       <method name=".ctor" />
     </type>
+
+    <!-- Native hosting accesses managed methods in the ComponentActivator class.
+         These are always rooted to ensure native calls get trimmer related errors
+         but will be trimmed away by the related feature switch -->
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <method name="LoadAssemblyAndGetFunctionPointer" />
+      <method name="GetFunctionPointer" />
+    </type>
   </assembly>
   
   <!-- Properties and methods used by a debugger. -->
@@ -58,8 +66,8 @@
     </type>
 
      <!-- methods used by hot reload --> 
-    <type fullname="System.Reflection.Metadata.AssemblyExtensions">
-      <method name="GetApplyUpdateCapabilities" />
+    <type fullname="System.Reflection.Metadata.MetadataUpdater">
+      <method name="GetCapabilities" />
     </type>
   </assembly>
 </linker>

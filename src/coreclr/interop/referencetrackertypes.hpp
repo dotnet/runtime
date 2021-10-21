@@ -8,7 +8,7 @@
 
 // Documentation found at https://docs.microsoft.com/windows/win32/api/windows.ui.xaml.hosting.referencetracker/
 
-//64bd43f8-bfee-4ec4-b7eb-2935158dae21
+// 64bd43f8-bfee-4ec4-b7eb-2935158dae21
 const GUID IID_IReferenceTrackerTarget = { 0x64bd43f8, 0xbfee, 0x4ec4, { 0xb7, 0xeb, 0x29, 0x35, 0x15, 0x8d, 0xae, 0x21} };
 
 class DECLSPEC_UUID("64bd43f8-bfee-4ec4-b7eb-2935158dae21") IReferenceTrackerTarget : public IUnknown
@@ -46,7 +46,7 @@ public:
     STDMETHOD(FoundTrackerTarget)(_In_ IReferenceTrackerTarget* target) = 0;
 };
 
-//11d3b13a-180e-4789-a8be-7712882893e6
+// 11d3b13a-180e-4789-a8be-7712882893e6
 const GUID IID_IReferenceTracker = { 0x11d3b13a, 0x180e, 0x4789, { 0xa8, 0xbe, 0x77, 0x12, 0x88, 0x28, 0x93, 0xe6} };
 
 class DECLSPEC_UUID("11d3b13a-180e-4789-a8be-7712882893e6") IReferenceTracker : public IUnknown

@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.Hosting.Internal
     [UnsupportedOSPlatform("android")]
     [UnsupportedOSPlatform("browser")]
     [UnsupportedOSPlatform("ios")]
-    [UnsupportedOSPlatform("maccatalyst")]
     [UnsupportedOSPlatform("tvos")]
     public partial class ConsoleLifetime : IHostLifetime, IDisposable
     {

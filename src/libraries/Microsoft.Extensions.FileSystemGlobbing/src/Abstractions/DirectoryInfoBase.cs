@@ -21,13 +21,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
         /// </summary>
         /// <param name="path">The directory name</param>
         /// <returns>Instance of <see cref="DirectoryInfoBase" /> even if directory does not exist</returns>
-        public abstract DirectoryInfoBase GetDirectory(string path);
+        public abstract DirectoryInfoBase? GetDirectory(string path);
 
         /// <summary>
         /// Returns an instance of <see cref="FileInfoBase" /> that represents a file in the directory
         /// </summary>
         /// <param name="path">The file name</param>
         /// <returns>Instance of <see cref="FileInfoBase" /> even if file does not exist</returns>
-        public abstract FileInfoBase GetFile(string path);
+        public abstract FileInfoBase? GetFile(string path);
     }
 }

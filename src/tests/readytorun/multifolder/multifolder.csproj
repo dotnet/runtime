@@ -2,7 +2,8 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <GCStressIncompatible>true</GCStressIncompatible> <!-- https://github.com/dotnet/runtime/issues/39933 -->
+    <!-- Running Crossgen2 under GCStress takes too long -->
+    <GCStressIncompatible>true</GCStressIncompatible>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
 

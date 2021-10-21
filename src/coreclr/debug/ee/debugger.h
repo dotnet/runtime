@@ -1895,7 +1895,6 @@ public:
                     AppDomain *pAppDomain,
                     DomainFile * pDomainFile,
                     BOOL fAttaching);
-    void LoadModuleFinished(Module* pRuntimeModule, AppDomain * pAppDomain);
     DebuggerModule * AddDebuggerModule(DomainFile * pDomainFile);
 
 
@@ -3452,7 +3451,7 @@ public:
     TypeHandle                         m_ownerTypeHandle;
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
-    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException);
+    DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
     bool Init()
     {

@@ -24,11 +24,14 @@ namespace Wasm.Build.Tests
             Output = output;
         }
 
-        public void EnsureSuccessful(string messagePrefix = "", bool suppressOutput = false)
+        public CommandResult EnsureSuccessful(string messagePrefix = "", bool suppressOutput = false)
+            => EnsureExitCode(0, messagePrefix, suppressOutput);
+
+        public CommandResult EnsureExitCode(int expectedExitCode = 0, string messagePrefix = "", bool suppressOutput = false)
         {
-            if (ExitCode != 0)
+            if (ExitCode != expectedExitCode)
             {
-                StringBuilder message = new StringBuilder($"{messagePrefix} Command failed with exit code {ExitCode}: {StartInfo.FileName} {StartInfo.Arguments}");
+                StringBuilder message = new StringBuilder($"{messagePrefix} Expected {expectedExitCode} exit code but got {ExitCode}: {StartInfo.FileName} {StartInfo.Arguments}");
 
                 if (!suppressOutput)
                 {
@@ -40,6 +43,8 @@ namespace Wasm.Build.Tests
 
                 throw new XunitException(message.ToString());
             }
+
+            return this;
         }
     }
 }

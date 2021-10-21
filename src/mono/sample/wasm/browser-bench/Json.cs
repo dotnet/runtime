@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
 namespace Sample
@@ -36,6 +37,7 @@ namespace Sample
         string smallOrgChartJson;
         string largeOrgChartJson;
 
+        [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
         public override void Initialize()
         {
             jsonText = JsonSerializer.Serialize(tc);
@@ -49,6 +51,8 @@ namespace Sample
 
             public TextSerialize(JsonTask task) => this.task = task;
             public override string Name => "non-ASCII text serialize";
+
+            [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
             public override void RunStep() => JsonSerializer.Serialize(task.tc);
         }
 
@@ -58,6 +62,8 @@ namespace Sample
 
             public TextDeserialize(JsonTask task) => this.task = task;
             public override string Name => "non-ASCII text deserialize";
+
+            [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
             public override void RunStep() => JsonSerializer.Deserialize<TextContainer>(task.jsonText);
         }
 
@@ -67,6 +73,8 @@ namespace Sample
 
             public SmallSerialize(JsonTask task) => this.task = task;
             public override string Name => "small serialize";
+
+            [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
             public override void RunStep() => JsonSerializer.Serialize(task.smallOrgChart);
         }
 
@@ -76,6 +84,8 @@ namespace Sample
 
             public SmallDeserialize(JsonTask task) => this.task = task;
             public override string Name => "small deserialize";
+
+            [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
             public override void RunStep() => JsonSerializer.Deserialize<Person>(task.smallOrgChartJson);
         }
 
@@ -86,6 +96,8 @@ namespace Sample
             public LargeSerialize(JsonTask task) => this.task = task;
             public override string Name => "large serialize";
             public override int InitialSamples => 3;
+
+            [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
             public override void RunStep() => JsonSerializer.Serialize(task.largeOrgChart);
         }
 
@@ -96,6 +108,8 @@ namespace Sample
             public LargeDeserialize(JsonTask task) => this.task = task;
             public override string Name => "large deserialize";
             public override int InitialSamples => 3;
+
+            [UnconditionalSuppressMessage("Trim analysis error", "IL2026")]
             public override void RunStep() => JsonSerializer.Deserialize<Person>(task.largeOrgChartJson);
         }
 

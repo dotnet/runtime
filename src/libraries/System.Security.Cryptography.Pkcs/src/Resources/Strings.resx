@@ -76,6 +76,9 @@
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
+  <data name="Argument_InvalidRsaSignaturePadding" xml:space="preserve">
+    <value>The RSA padding must be Pkcs1 or Pss.</value>
+  </data>
   <data name="ArgumentOutOfRange_Index" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
   </data>
@@ -270,6 +273,9 @@
   </data>
   <data name="PlatformNotSupported_CryptographyPkcs" xml:space="preserve">
     <value>System.Security.Cryptography.Pkcs is only supported on Windows platforms.</value>
+  </data>
+  <data name="Cryptography_AlgorithmNotSupported" xml:space="preserve">
+    <value>Algorithm '{0}' is not supported on this platform.</value>
   </data>
   <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
     <value>ASN1 corrupted data.</value>

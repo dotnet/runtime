@@ -32,13 +32,6 @@ add_library_clr(gcinfo_obj
 add_library(gcinfo INTERFACE)
 target_sources(gcinfo INTERFACE $<TARGET_OBJECTS:gcinfo_obj>)
 
-add_library_clr(gcinfo_crossgen
-    STATIC
-    ${GCINFO_SOURCES}
-)
-
-set_target_properties(gcinfo_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
-
 install (FILES gcinfoencoder.cpp
                DESTINATION gcinfo)
 
@@ -71,16 +64,18 @@ else()
 set(TARGET_OS_NAME win)
 endif()
 
+# For clrjit we need to build an exact targetted gcinfo instead of the universal one
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_ARM)
+  create_gcinfo_lib(TARGET gcinfo_${TARGET_OS_NAME}_${ARCH_TARGET_NAME} OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME})
+endif()
+
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
-  create_gcinfo_lib(TARGET gcinfo_unix_arm64 OS unix ARCH arm64)
+  create_gcinfo_lib(TARGET gcinfo_universal_arm64 OS universal ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_unix_x64 OS unix ARCH x64)
-  create_gcinfo_lib(TARGET gcinfo_win_arm64 OS win ARCH arm64)
   create_gcinfo_lib(TARGET gcinfo_win_x64 OS win ARCH x64)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 
-create_gcinfo_lib(TARGET gcinfo_unix_armel OS unix ARCH armel)
-create_gcinfo_lib(TARGET gcinfo_unix_arm OS unix ARCH arm)
-create_gcinfo_lib(TARGET gcinfo_win_arm OS win ARCH arm)
+create_gcinfo_lib(TARGET gcinfo_universal_arm OS universal ARCH arm)
 create_gcinfo_lib(TARGET gcinfo_win_x86 OS win ARCH x86)
 
 if (CLR_CMAKE_TARGET_ARCH_I386 AND CLR_CMAKE_TARGET_UNIX)

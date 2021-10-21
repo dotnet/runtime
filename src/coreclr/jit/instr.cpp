@@ -105,6 +105,39 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
         curBuf = (curBuf + 1) % 4;
         return retbuf;
     }
+
+    // Some instructions have different mnemonics depending on the size.
+    switch (ins)
+    {
+        case INS_cdq:
+            switch (id->idOpSize())
+            {
+                case EA_8BYTE:
+                    return "cqo";
+                case EA_4BYTE:
+                    return "cdq";
+                case EA_2BYTE:
+                    return "cwd";
+                default:
+                    unreached();
+            }
+
+        case INS_cwde:
+            switch (id->idOpSize())
+            {
+                case EA_8BYTE:
+                    return "cdqe";
+                case EA_4BYTE:
+                    return "cwde";
+                case EA_2BYTE:
+                    return "cbw";
+                default:
+                    unreached();
+            }
+
+        default:
+            break;
+    }
 #endif // TARGET_XARCH
 
     return insName;
@@ -2350,41 +2383,6 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
     unreached();
 #else
     NYI("instGen_Return");
-#endif
-}
-
-/*****************************************************************************
- *
- *  Emit a MemoryBarrier instruction
- *
- *     Note: all MemoryBarriers instructions can be removed by
- *           SET COMPlus_JitNoMemoryBarriers=1
- */
-void CodeGen::instGen_MemoryBarrier(BarrierKind barrierKind)
-{
-#ifdef DEBUG
-    if (JitConfig.JitNoMemoryBarriers() == 1)
-    {
-        return;
-    }
-#endif // DEBUG
-
-#if defined(TARGET_XARCH)
-    // only full barrier needs to be emitted on Xarch
-    if (barrierKind != BARRIER_FULL)
-    {
-        return;
-    }
-
-    instGen(INS_lock);
-    GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
-#elif defined(TARGET_ARM)
-    // ARM has only full barriers, so all barriers need to be emitted as full.
-    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
-#elif defined(TARGET_ARM64)
-    GetEmitter()->emitIns_BARR(INS_dmb, barrierKind == BARRIER_LOAD_ONLY ? INS_BARRIER_ISHLD : INS_BARRIER_ISH);
-#else
-#error "Unknown TARGET"
 #endif
 }
 

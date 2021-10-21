@@ -45,6 +45,7 @@ namespace System.Runtime.CompilerServices
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void RunClassConstructor(QCallTypeHandle type);
 
+        [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             RuntimeType rt = type.GetRuntimeType();
@@ -289,8 +290,7 @@ namespace System.Runtime.CompilerServices
         /// <returns>The allocated memory</returns>
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
-            RuntimeType? rt = type as RuntimeType;
-            if (rt == null)
+            if (type is not RuntimeType rt)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
             if (size < 0)

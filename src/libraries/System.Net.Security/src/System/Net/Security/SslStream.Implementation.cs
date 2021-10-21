@@ -268,16 +268,17 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
             }
 
-            if (_decryptedBytesCount is not 0)
-            {
-                throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
-            }
-
-            _sslAuthenticationOptions!.RemoteCertRequired = true;
-            _isRenego = true;
-
             try
             {
+                if (_decryptedBytesCount is not 0)
+                {
+                    throw new InvalidOperationException(SR.net_ssl_renegotiate_buffer);
+                }
+
+                _sslAuthenticationOptions!.RemoteCertRequired = true;
+                _isRenego = true;
+
+
                 SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
 
                 if (nextmsg is {} && nextmsg.Length > 0)

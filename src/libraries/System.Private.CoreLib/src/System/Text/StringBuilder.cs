@@ -1970,7 +1970,7 @@ namespace System.Text
 
             newValue ??= string.Empty;
 
-            int[]? replacements = null; // A list of replacement positions in a chunk to apply
+            Span<int> replacements = stackalloc int[5]; // A list of replacement positions in a chunk to apply
             int replacementsCount = 0;
 
             // Find the chunk, indexInChunk for the starting point
@@ -1985,13 +1985,11 @@ namespace System.Text
                     // Push it on the replacements array (with growth), we will do all replacements in a
                     // given chunk in one operation below (see ReplaceAllInChunk) so we don't have to slide
                     // many times.
-                    if (replacements == null)
+                    if (replacementsCount >= replacements.Length)
                     {
-                        replacements = new int[5];
-                    }
-                    else if (replacementsCount >= replacements.Length)
-                    {
-                        Array.Resize(ref replacements, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the beginning
+                        int[] tmp = new int[replacements.Length * 3 / 2 + 4]; // Grow by ~1.5x, but more in the beginning
+                        replacements.CopyTo(tmp);
+                        replacements = tmp;
                     }
                     replacements[replacementsCount++] = indexInChunk;
                     indexInChunk += oldValue.Length;
@@ -2009,8 +2007,7 @@ namespace System.Text
                     int index = indexInChunk + chunk.m_ChunkOffset;
 
                     // See if we accumulated any replacements, if so apply them.
-                    Debug.Assert(replacements != null || replacementsCount == 0, "replacements was null and replacementsCount != 0");
-                    ReplaceAllInChunk(replacements, replacementsCount, chunk, oldValue.Length, newValue);
+                    ReplaceAllInChunk(replacements.Slice(0, replacementsCount), chunk, oldValue.Length, newValue);
                     // The replacement has affected the logical index.  Adjust it.
                     index += ((newValue.Length - oldValue.Length) * replacementsCount);
                     replacementsCount = 0;
@@ -2162,16 +2159,15 @@ namespace System.Text
         /// Replaces strings at specified indices with a new string in a chunk.
         /// </summary>
         /// <param name="replacements">The list of indices, relative to the beginning of the chunk, to remove at.</param>
-        /// <param name="replacementsCount">The number of replacements to make.</param>
         /// <param name="sourceChunk">The source chunk.</param>
         /// <param name="removeCount">The number of characters to remove at each replacement.</param>
         /// <param name="value">The string to insert at each replacement.</param>
         /// <remarks>
         /// This routine is very efficient because it does replacements in bulk.
         /// </remarks>
-        private void ReplaceAllInChunk(int[]? replacements, int replacementsCount, StringBuilder sourceChunk, int removeCount, string value)
+        private void ReplaceAllInChunk(ReadOnlySpan<int> replacements, StringBuilder sourceChunk, int removeCount, string value)
         {
-            if (replacementsCount <= 0)
+            if (replacements.IsEmpty)
             {
                 return;
             }
@@ -2180,9 +2176,8 @@ namespace System.Text
             {
                 fixed (char* valuePtr = value)
                 {
-                    Debug.Assert(replacements != null, "replacements was null when replacementsCount > 0");
                     // calculate the total amount of extra space or space needed for all the replacements.
-                    long longDelta = (value.Length - removeCount) * (long)replacementsCount;
+                    long longDelta = (value.Length - removeCount) * (long)replacements.Length;
                     int delta = (int)longDelta;
                     if (delta != longDelta)
                     {
@@ -2206,7 +2201,7 @@ namespace System.Text
                         ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, valuePtr, value.Length);
                         int gapStart = replacements[i] + removeCount;
                         i++;
-                        if (i >= replacementsCount)
+                        if ((uint)i >= replacements.Length)
                         {
                             break;
                         }
@@ -2684,6 +2679,7 @@ namespace System.Text
             #region AppendFormatted T
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value)
             {
                 // This method could delegate to AppendFormatted with a null format, but explicitly passing
@@ -2740,6 +2736,7 @@ namespace System.Text
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, string? format)
             {
                 if (_hasCustomFormatter)
@@ -2792,6 +2789,7 @@ namespace System.Text
             /// <summary>Writes the specified value to the handler.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment) =>
                 AppendFormatted(value, alignment, format: null);
 
@@ -2799,6 +2797,7 @@ namespace System.Text
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             public void AppendFormatted<T>(T value, int alignment, string? format)
             {
                 if (alignment == 0)
@@ -2924,6 +2923,7 @@ namespace System.Text
             /// <summary>Formats the value using the custom formatter from the provider.</summary>
             /// <param name="value">The value to write.</param>
             /// <param name="format">The format string.</param>
+            /// <typeparam name="T">The type of the value to write.</typeparam>
             [MethodImpl(MethodImplOptions.NoInlining)]
             private void AppendCustomFormatter<T>(T value, string? format)
             {

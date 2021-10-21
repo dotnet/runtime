@@ -55,10 +55,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
             {
-#if NETSTANDARD2_1
-                return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
-#else
+#if NETFRAMEWORK || NETSTANDARD2_0
                 return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, key => _buildTypeDelegate(key, callSite));
+#else
+                return _scopeResolverCache.GetOrAdd(callSite.Cache.Key, _buildTypeDelegate, callSite);
 #endif
             }
 
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public Func<ServiceProviderEngineScope, object> BuildNoCache(ServiceCallSite callSite)
         {
             Expression<Func<ServiceProviderEngineScope, object>> expression = BuildExpression(callSite);
-            DependencyInjectionEventSource.Log.ExpressionTreeGenerated(callSite.ServiceType, expression);
+            DependencyInjectionEventSource.Log.ExpressionTreeGenerated(_rootScope.RootProvider, callSite.ServiceType, expression);
             return expression.Compile();
         }
 
@@ -162,7 +162,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     parameterExpressions[i] = Convert(VisitCallSite(callSite.ParameterCallSites[i], context), parameters[i].ParameterType);
                 }
             }
-            return Expression.New(callSite.ConstructorInfo, parameterExpressions);
+
+            Expression expression = Expression.New(callSite.ConstructorInfo, parameterExpressions);
+            if (callSite.ImplementationType.IsValueType)
+            {
+                expression = Expression.Convert(expression, typeof(object));
+            }
+            return expression;
         }
 
         private static Expression Convert(Expression expression, Type type, bool forceValueTypeConversion = false)

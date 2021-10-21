@@ -73,7 +73,7 @@ public:
         void AssertIsValid() const;
         bool IsDummyUse() const;
 
-        void ReplaceWith(Compiler* compiler, GenTree* replacement);
+        void ReplaceWith(GenTree* replacement);
         unsigned ReplaceWithLclVar(Compiler* compiler, unsigned lclNum = BAD_VAR_NUM, GenTree** assign = nullptr);
     };
 
@@ -298,7 +298,7 @@ public:
 
 public:
     static Range& AsRange(BasicBlock* block);
-    static const LIR::Range& LIR::AsRange(const BasicBlock* block);
+    static const Range& AsRange(const BasicBlock* block);
 
     static Range EmptyRange();
     static Range SeqTree(Compiler* compiler, GenTree* tree);

@@ -400,7 +400,7 @@ namespace DebuggerTests
             var ss_local_gs = new
             {
                 StringField = TString("ss_local#SimpleStruct#string#0#SimpleStruct#gs#StringField"),
-                List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                List = TObject("System.Collections.Generic.List<System.DateTime>", description: "Count = 1"),
                 Options = TEnum("DebuggerTests.Options", "Option1")
             };
 
@@ -447,7 +447,7 @@ namespace DebuggerTests
                 await CompareObjectPropertiesFor(ss_arg_props, "gs", new
                 {
                     StringField = TString("ValueTypesTest#MethodWithStructArgs#updated#gs#StringField#3"),
-                    List = TObject("System.Collections.Generic.List<System.DateTime>"),
+                    List = TObject("System.Collections.Generic.List<System.DateTime>", description: "Count = 1"),
                     Options = TEnum("DebuggerTests.Options", "Option1")
                 });
             }
@@ -463,7 +463,7 @@ namespace DebuggerTests
                 // Check ss_local.gs
                 var gs_props = await GetObjectOnLocals(ss_arg_props, "gs");
                 CheckString(gs_props, "StringField", "ss_local#SimpleStruct#string#0#SimpleStruct#gs#StringField");
-                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>");
+                CheckObject(gs_props, "List", "System.Collections.Generic.List<System.DateTime>", description: "Count = 1");
             }
 
             // ----------- Step back to the caller ---------
@@ -927,6 +927,26 @@ namespace DebuggerTests
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 718, 8, "MoveNext");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 719, 8, "MoveNext");
             await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 720, 4, "MoveNext");
+        }
+
+        [Fact]
+        public async Task CheckResetFrameNumberForEachStep()
+        {
+            var bp_conditional = await SetBreakpointInMethod("debugger-test.dll", "SteppingInto", "MethodToStep", 1);
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_static_method('[debugger-test] SteppingInto:MethodToStep'); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs",
+                bp_conditional.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp_conditional.Value["locations"][0]["columnNumber"].Value<int>(),
+                "MethodToStep"
+            );
+            var pause_location = await StepAndCheck(StepKind.Into, "dotnet://debugger-test.dll/debugger-test.cs", 799, 4, "Increment");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 800, 8, "Increment");
+            Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 801, 8, "Increment");
+            Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
+            pause_location = await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-test.cs", 806, 8, "Increment");
+            Assert.Equal(pause_location["callFrames"][0]["callFrameId"], "dotnet:scope:1");
         }
     }
 }

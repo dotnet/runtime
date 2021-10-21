@@ -535,7 +535,10 @@ namespace System
         public virtual Type MakeArrayType() => throw new NotSupportedException();
         public virtual Type MakeArrayType(int rank) => throw new NotSupportedException();
         public virtual Type MakeByRefType() => throw new NotSupportedException();
+
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public virtual Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SubclassOverride);
+
         public virtual Type MakePointerType() => throw new NotSupportedException();
 
         public static Type MakeGenericSignatureType(Type genericTypeDefinition, params Type[] typeArguments) => new SignatureConstructedGenericType(genericTypeDefinition, typeArguments);
@@ -577,6 +580,27 @@ namespace System
             return base.GetHashCode();
         }
         public virtual bool Equals(Type? o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
+
+        [Intrinsic]
+        public static bool operator ==(Type? left, Type? right)
+        {
+            if (object.ReferenceEquals(left, right))
+                return true;
+
+            // Runtime types are never equal to non-runtime types
+            // If `left` is a non-runtime type with a weird Equals implementation
+            // this is where operator `==` would differ from `Equals` call.
+            if (left is null || right is null || left is RuntimeType || right is RuntimeType)
+                return false;
+
+            return left.Equals(right);
+        }
+
+        [Intrinsic]
+        public static bool operator !=(Type? left, Type? right)
+        {
+            return !(left == right);
+        }
 
         [Obsolete(Obsoletions.ReflectionOnlyLoadingMessage, DiagnosticId = Obsoletions.ReflectionOnlyLoadingDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) => throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly);

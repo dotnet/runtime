@@ -1314,22 +1314,22 @@ ULONG DebuggerMethodInfoTable::CheckDmiTable(void)
 //      pContext - The context to return to when done with this eval.
 //      pEvalInfo - Contains all the important information, such as parameters, type args, method.
 //      fInException - TRUE if the thread for the eval is currently in an exception notification.
+//      bpInfoSegmentRX - bpInfoSegmentRX is an InteropSafe allocation allocated by the caller.
+//                        (Caller allocated as there is no way to fail the allocation without
+//                        throwing, and this function is called in a NOTHROW region)
 //
-DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException)
+DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, bool fInException, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX)
 {
     WRAPPER_NO_CONTRACT;
 
-    // Allocate the breakpoint instruction info in executable memory.
-    void *bpInfoSegmentRX = g_pDebugger->GetInteropSafeExecutableHeap()->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
-
 #if !defined(DBI_COMPILE) && !defined(DACCESS_COMPILE) && defined(HOST_OSX) && defined(HOST_ARM64)
-    ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder((DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
+    ExecutableWriterHolder<DebuggerEvalBreakpointInfoSegment> bpInfoSegmentWriterHolder(bpInfoSegmentRX, sizeof(DebuggerEvalBreakpointInfoSegment));
     DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentWriterHolder.GetRW();
 #else // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
-    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRW = bpInfoSegmentRX;
 #endif // !DBI_COMPILE && !DACCESS_COMPILE && HOST_OSX && HOST_ARM64
     new (bpInfoSegmentRW) DebuggerEvalBreakpointInfoSegment(this);
-    m_bpInfoSegment = (DebuggerEvalBreakpointInfoSegment*)bpInfoSegmentRX;
+    m_bpInfoSegment = bpInfoSegmentRX;
 
     // This must be non-zero so that the saved opcode is non-zero, and on IA64 we want it to be 0x16
     // so that we can have a breakpoint instruction in any slot in the bundle.
@@ -9537,145 +9537,9 @@ void Debugger::LoadModule(Module* pRuntimeModule,
 
     SENDIPCEVENT_END;
 
-    // need to update pdb stream for SQL passed in pdb stream
-    // regardless attach or not.
-    //
-    if (pRuntimeModule->IsIStream())
-    {
-        // Just ignore failures. Caller was just sending a debug event and we don't
-        // want that to interop non-debugging functionality.
-        HRESULT hr = S_OK;
-        EX_TRY
-        {
-            SendUpdateModuleSymsEventAndBlock(pRuntimeModule, pAppDomain);
-        }
-        EX_CATCH_HRESULT(hr);
-    }
-
     // Now that we're done with the load module event, can no longer change Jit flags.
     module->SetCanChangeJitFlags(false);
 }
-
-
-//---------------------------------------------------------------------------------------
-//
-// Special LS-only notification that a module has reached the FILE_LOADED level. For now
-// this is only useful to bind breakpoints in generic instantiations from NGENd modules
-// that we couldn't bind earlier (at LoadModule notification time) because the method
-// iterator refuses to consider modules earlier than the FILE_LOADED level. Normally
-// generic instantiations would have their breakpoints bound when they get JITted, but in
-// the case of NGEN that may never happen, so we need to bind them here.
-//
-// Arguments:
-//      * pRuntimeModule - Module that just loaded
-//      * pAppDomain - AD into which the Module was loaded
-//
-// Assumptions:
-//     This is called during the loading process, and blocks that process from
-//     completing. The module has reached the FILE_LOADED stage, but typically not yet
-//     the IsReadyForTypeLoad stage.
-//
-
-void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomain)
-{
-    CONTRACTL
-    {
-        SUPPORTS_DAC;
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(pRuntimeModule != NULL);
-    _ASSERTE(pAppDomain != NULL);
-
-    if (CORDBUnrecoverableError(this))
-        return;
-
-    // Just as an optimization, skip binding breakpoints if there's no debugger attached.
-    // If a debugger attaches at some point after here, it will be able to bind patches
-    // by making the request at that time. If a debugger detaches at some point after
-    // here, there's no harm in having extra patches bound.
-    if (!CORDebuggerAttached())
-        return;
-
-    // For now, this notification only does interesting work if the module that loaded is
-    // an NGENd module, because all we care about in this notification is ensuring NGENd
-    // methods get breakpoints bound on them
-    if (!pRuntimeModule->HasNativeImage())
-        return;
-
-    // This notification is called just before MODULE_READY_FOR_TYPELOAD gets set. But
-    // for shared modules (loaded into multiple domains), MODULE_READY_FOR_TYPELOAD has
-    // already been set if this module was already loaded into an earlier domain. For
-    // such cases, there's no need to bind breakpoints now because the module has already
-    // been fully loaded into at least one domain, and breakpoint binding has already
-    // been done for us
-    if (pRuntimeModule->IsReadyForTypeLoad())
-        return;
-
-#ifdef _DEBUG
-    {
-        // This notification is called once the module is loaded
-        DomainFile * pDomainFile = pRuntimeModule->GetDomainFile();
-        _ASSERTE((pDomainFile != NULL) && (pDomainFile->GetLoadLevel() >= FILE_LOADED));
-    }
-#endif // _DEBUG
-
-    // Find all IL Master patches for this module, and bind & activate their
-    // corresponding slave patches.
-    {
-        DebuggerController::ControllerLockHolder ch;
-
-        HASHFIND info;
-        DebuggerPatchTable * pTable = DebuggerController::GetPatchTable();
-
-        for (DebuggerControllerPatch * pMasterPatchCur = pTable->GetFirstPatch(&info);
-            pMasterPatchCur != NULL;
-            pMasterPatchCur = pTable->GetNextPatch(&info))
-        {
-            if (!pMasterPatchCur->IsILMasterPatch())
-                continue;
-
-            DebuggerMethodInfo *dmi = GetOrCreateMethodInfo(pMasterPatchCur->key.module, pMasterPatchCur->key.md);
-
-            // Found a relevant IL master patch. Now bind all corresponding slave patches
-            // that belong to this Module
-            DebuggerMethodInfo::DJIIterator it;
-            dmi->IterateAllDJIs(pAppDomain, pRuntimeModule, pMasterPatchCur->pMethodDescFilter, &it);
-            for (; !it.IsAtEnd(); it.Next())
-            {
-                DebuggerJitInfo *dji = it.Current();
-                _ASSERTE(dji->m_jitComplete);
-
-                if (dji->m_encVersion != pMasterPatchCur->GetEnCVersion())
-                    continue;
-
-                // Do we already have a slave for this DJI & Controller?  If so, no need
-                // to add another one
-                BOOL fSlaveExists = FALSE;
-                HASHFIND f;
-                for (DebuggerControllerPatch * pSlavePatchCur = pTable->GetFirstPatch(&f);
-                    pSlavePatchCur != NULL;
-                    pSlavePatchCur = pTable->GetNextPatch(&f))
-                {
-                    if (pSlavePatchCur->IsILSlavePatch() &&
-                        (pSlavePatchCur->GetDJI() == dji) &&
-                        (pSlavePatchCur->controller == pMasterPatchCur->controller))
-                    {
-                        fSlaveExists = TRUE;
-                        break;
-                    }
-                }
-
-                if (fSlaveExists)
-                    continue;
-
-                pMasterPatchCur->controller->AddBindAndActivateILSlavePatch(pMasterPatchCur, dji);
-            }
-        }
-    }
-}
-
 
 // Send the raw event for Updating symbols. Debugger must query for contents from out-of-process
 //
@@ -9712,7 +9576,7 @@ void Debugger::SendRawUpdateModuleSymsEvent(Module *pRuntimeModule, AppDomain *p
     // callback.  That callback is defined to pass a PDB stream, and so we still use this
     // only for legacy compatibility reasons when we've actually got PDB symbols.
     // New clients know they must request a new symbol reader after ClassLoad events.
-    if (pRuntimeModule->GetInMemorySymbolStreamFormat() != eSymbolFormatPDB)
+    if (pRuntimeModule->GetInMemorySymbolStream() == NULL)
         return; // Non-PDB symbols
 
     DebuggerModule* module = LookupOrCreateModule(pRuntimeModule, pAppDomain);
@@ -9831,7 +9695,7 @@ void Debugger::UnloadModule(Module* pRuntimeModule,
 
         STRESS_LOG6(LF_CORDB, LL_INFO10000,
             "D::UM: Unloading RTMod:%#08x (DomFile: %#08x, IsISStream:%#08x); DMod:%#08x(RTMod:%#08x DomFile: %#08x)\n",
-            pRuntimeModule, pRuntimeModule->GetDomainFile(), pRuntimeModule->IsIStream(),
+            pRuntimeModule, pRuntimeModule->GetDomainFile(), false,
             module, module->GetRuntimeModule(), module->GetDomainFile());
 
         // Note: the appdomain the module was loaded in must match the appdomain we're unloading it from. If it doesn't,
@@ -15139,9 +15003,22 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
+    // Allocate the breakpoint instruction info for the debugger info in in executable memory.
+    DebuggerHeap *pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
+    if (pHeap == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    DebuggerEvalBreakpointInfoSegment *bpInfoSegmentRX = (DebuggerEvalBreakpointInfoSegment*)pHeap->Alloc(sizeof(DebuggerEvalBreakpointInfoSegment));
+    if (bpInfoSegmentRX == NULL)
+    {
+        return E_OUTOFMEMORY;
+    }
+
     // Create a DebuggerEval to hold info about this eval while its in progress. Constructor copies the thread's
     // CONTEXT.
-    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException);
+    DebuggerEval *pDE = new (interopsafe, nothrow) DebuggerEval(filterContext, pEvalInfo, fInException, bpInfoSegmentRX);
 
     if (pDE == NULL)
     {
@@ -16494,7 +16371,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
             return E_OUTOFMEMORY;
         }
     }
-#endif    
+#endif
 
 #endif // !DACCESS_COMPILE
 

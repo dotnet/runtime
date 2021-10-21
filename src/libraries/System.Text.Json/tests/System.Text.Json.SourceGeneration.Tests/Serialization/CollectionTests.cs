@@ -9,6 +9,8 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Tests;
+using System.Threading.Tasks;
+using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
 {
@@ -20,7 +22,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         protected CollectionTests_Metadata(JsonSerializerWrapperForString serializerWrapper)
-            : base(serializerWrapper, new StreamSerializerWrapper())
+            : base(serializerWrapper, null)
         {
         }
 
@@ -373,6 +375,22 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyWrapperForIDictionary))]
         [JsonSerializable(typeof(ReadOnlyStringToStringIDictionaryWrapper))]
         [JsonSerializable(typeof(Dictionary<string, int?>[]))]
+        [JsonSerializable(typeof(KeyValuePair<string, int>))]
+        [JsonSerializable(typeof(List<KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, List<int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<int, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, string>))]
+        [JsonSerializable(typeof(KeyValuePair<string, object>))]
+        [JsonSerializable(typeof(KeyValuePair<string, SimpleClassWithKeyValuePairs>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, string>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, object>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>))]
+        [JsonSerializable(typeof(SimpleClassWithKeyValuePairs))]
+        [JsonSerializable(typeof(KeyNameNullPolicy))]
+        [JsonSerializable(typeof(ValueNameNullPolicy))]
+        [JsonSerializable(typeof(KeyValuePair<int, int>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(StackWrapper))]
         internal sealed partial class CollectionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -733,6 +751,22 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ReadOnlyWrapperForIDictionary))]
         [JsonSerializable(typeof(ReadOnlyStringToStringIDictionaryWrapper))]
         [JsonSerializable(typeof(Dictionary<string, int?>[]))]
+        [JsonSerializable(typeof(KeyValuePair<string, int>))]
+        [JsonSerializable(typeof(List<KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, List<int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<int, int>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, string>))]
+        [JsonSerializable(typeof(KeyValuePair<string, object>))]
+        [JsonSerializable(typeof(KeyValuePair<string, SimpleClassWithKeyValuePairs>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, string>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, object>>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, SimpleClassWithKeyValuePairs>>))]
+        [JsonSerializable(typeof(SimpleClassWithKeyValuePairs))]
+        [JsonSerializable(typeof(KeyNameNullPolicy))]
+        [JsonSerializable(typeof(ValueNameNullPolicy))]
+        [JsonSerializable(typeof(KeyValuePair<int, int>))]
+        [JsonSerializable(typeof(KeyValuePair<string, KeyValuePair<string, int>>))]
+        [JsonSerializable(typeof(StackWrapper))]
         internal sealed partial class CollectionTestsContext_Default : JsonSerializerContext
         {
         }

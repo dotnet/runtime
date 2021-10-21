@@ -13,12 +13,12 @@ namespace System
     /// </summary>
     public readonly struct TimeOnly : IComparable, IComparable<TimeOnly>, IEquatable<TimeOnly>, ISpanFormattable
 #if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
         , IComparisonOperators<TimeOnly, TimeOnly>,
           IMinMaxValue<TimeOnly>,
           ISpanParseable<TimeOnly>,
           ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>
-#pragma warning restore SA1001
+#pragma warning restore SA1001, CA2252
 #endif // FEATURE_GENERIC_MATH
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
@@ -138,10 +138,10 @@ namespace System
 
         /// <summary>
         /// Returns a new TimeOnly that adds the value of the specified TimeSpan to the value of this instance.
-        /// If the added value circulate though the day, this method will out the number of the circulated days.
+        /// If the result wraps past the end of the day, this method will return the number of excess days as an out parameter.
         /// </summary>
         /// <param name="value">A positive or negative time interval.</param>
-        /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
+        /// <param name="wrappedDays">When this method returns, contains the number of excess days if any that resulted from wrapping during this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the time interval represented by value.</returns>
         public TimeOnly Add(TimeSpan value, out int wrappedDays) => AddTicks(value.Ticks, out wrappedDays);
 
@@ -154,10 +154,10 @@ namespace System
 
         /// <summary>
         /// Returns a new TimeOnly that adds the specified number of hours to the value of this instance.
-        /// If the added value circulate though the day, this method will out the number of the circulated days.
+        /// If the result wraps past the end of the day, this method will return the number of excess days as an out parameter.
         /// </summary>
         /// <param name="value">A number of whole and fractional hours. The value parameter can be negative or positive.</param>
-        /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
+        /// <param name="wrappedDays">When this method returns, contains the number of excess days if any that resulted from wrapping during this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the number of hours represented by value.</returns>
         public TimeOnly AddHours(double value, out int wrappedDays) => AddTicks((long)(value * TimeSpan.TicksPerHour), out wrappedDays);
 
@@ -170,10 +170,10 @@ namespace System
 
         /// <summary>
         /// Returns a new TimeOnly that adds the specified number of minutes to the value of this instance.
-        /// If the added value circulate though the day, this method will out the number of the circulated days.
+        /// If the result wraps past the end of the day, this method will return the number of excess days as an out parameter.
         /// </summary>
         /// <param name="value">A number of whole and fractional minutes. The value parameter can be negative or positive.</param>
-        /// <param name="wrappedDays">When this method returns, contains the number of circulated days resulted from this addition operation.</param>
+        /// <param name="wrappedDays">When this method returns, contains the number of excess days if any that resulted from wrapping during this addition operation.</param>
         /// <returns>An object whose value is the sum of the time represented by this instance and the number of minutes represented by value.</returns>
         public TimeOnly AddMinutes(double value, out int wrappedDays) => AddTicks((long)(value * TimeSpan.TicksPerMinute), out wrappedDays);
 
@@ -911,19 +911,19 @@ namespace System
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <(TimeOnly left, TimeOnly right)
             => left < right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeOnly, TimeOnly>.operator <=(TimeOnly left, TimeOnly right)
             => left <= right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >(TimeOnly left, TimeOnly right)
             => left > right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IComparisonOperators<TimeOnly, TimeOnly>.operator >=(TimeOnly left, TimeOnly right)
             => left >= right;
 
@@ -931,11 +931,11 @@ namespace System
         // IEqualityOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<TimeOnly, TimeOnly>.operator ==(TimeOnly left, TimeOnly right)
             => left == right;
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IEqualityOperators<TimeOnly, TimeOnly>.operator !=(TimeOnly left, TimeOnly right)
             => left != right;
 
@@ -943,11 +943,11 @@ namespace System
         // IParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeOnly IParseable<TimeOnly>.Parse(string s, IFormatProvider? provider)
             => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool IParseable<TimeOnly>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeOnly result)
             => TryParse(s, provider, DateTimeStyles.None, out result);
 
@@ -955,11 +955,11 @@ namespace System
         // ISpanParseable
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeOnly ISpanParseable<TimeOnly>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
             => Parse(s, provider, DateTimeStyles.None);
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static bool ISpanParseable<TimeOnly>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeOnly result)
             => TryParse(s, provider, DateTimeStyles.None, out result);
 
@@ -967,13 +967,20 @@ namespace System
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures]
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         static TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
             => left - right;
 
-        // [RequiresPreviewFeatures]
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         // static checked TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator -(TimeOnly left, TimeOnly right)
         //     => checked(left - right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static TimeOnly IMinMaxValue<TimeOnly>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static TimeOnly IMinMaxValue<TimeOnly>.MaxValue => MaxValue;
+
 #endif // FEATURE_GENERIC_MATH
     }
 }

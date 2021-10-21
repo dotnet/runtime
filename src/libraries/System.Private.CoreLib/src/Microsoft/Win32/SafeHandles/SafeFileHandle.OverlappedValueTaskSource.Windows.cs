@@ -46,7 +46,7 @@ namespace Microsoft.Win32.SafeHandles
 
             internal readonly PreAllocatedOverlapped _preallocatedOverlapped;
             internal readonly SafeFileHandle _fileHandle;
-            private AsyncWindowsFileStreamStrategy? _strategy;
+            private OSFileStreamStrategy? _strategy;
             internal MemoryHandle _memoryHandle;
             private int _bufferSize;
             internal ManualResetValueTaskSourceCore<int> _source; // mutable struct; do not make this readonly
@@ -77,15 +77,20 @@ namespace Microsoft.Win32.SafeHandles
                     ? ThrowHelper.CreateEndOfFileException()
                     : Win32Marshal.GetExceptionForWin32Error(errorCode, path);
 
-            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, AsyncWindowsFileStreamStrategy? strategy = null)
+            internal NativeOverlapped* PrepareForOperation(ReadOnlyMemory<byte> memory, long fileOffset, OSFileStreamStrategy? strategy = null)
             {
+                Debug.Assert(strategy is null || strategy is AsyncWindowsFileStreamStrategy, $"Strategy was expected to be null or async, got {strategy}.");
+
                 _result = 0;
                 _strategy = strategy;
                 _bufferSize = memory.Length;
                 _memoryHandle = memory.Pin();
                 _overlapped = _fileHandle.ThreadPoolBinding!.AllocateNativeOverlapped(_preallocatedOverlapped);
-                _overlapped->OffsetLow = (int)fileOffset;
-                _overlapped->OffsetHigh = (int)(fileOffset >> 32);
+                if (_fileHandle.CanSeek)
+                {
+                    _overlapped->OffsetLow = (int)fileOffset;
+                    _overlapped->OffsetHigh = (int)(fileOffset >> 32);
+                }
                 return _overlapped;
             }
 
@@ -140,13 +145,14 @@ namespace Microsoft.Win32.SafeHandles
             private void ReleaseResources()
             {
                 _strategy = null;
-                // Unpin any pinned buffer.
-                _memoryHandle.Dispose();
 
                 // Ensure that any cancellation callback has either completed or will never run,
                 // so that we don't try to access an overlapped for this operation after it's already
                 // been freed.
                 _cancellationRegistration.Dispose();
+
+                // Unpin any pinned buffer.
+                _memoryHandle.Dispose();
 
                 // Free the overlapped.
                 if (_overlapped != null)
@@ -193,15 +199,8 @@ namespace Microsoft.Win32.SafeHandles
 
             internal void Complete(uint errorCode, uint numBytes)
             {
-                Debug.Assert(errorCode == Interop.Errors.ERROR_SUCCESS || numBytes == 0, $"Callback returned {errorCode} error and {numBytes} bytes");
-
-                AsyncWindowsFileStreamStrategy? strategy = _strategy;
+                OSFileStreamStrategy? strategy = _strategy;
                 ReleaseResources();
-
-                if (strategy is not null && _bufferSize != numBytes) // true only for incomplete reads
-                {
-                    strategy.OnIncompleteRead(_bufferSize, (int)numBytes);
-                }
 
                 switch (errorCode)
                 {
@@ -209,11 +208,16 @@ namespace Microsoft.Win32.SafeHandles
                     case Interop.Errors.ERROR_BROKEN_PIPE:
                     case Interop.Errors.ERROR_NO_DATA:
                     case Interop.Errors.ERROR_HANDLE_EOF: // logically success with 0 bytes read (read at end of file)
+                        if (_bufferSize != numBytes) // true only for incomplete operations
+                        {
+                            strategy?.OnIncompleteOperation(_bufferSize, (int)numBytes);
+                        }
                         // Success
                         _source.SetResult((int)numBytes);
                         break;
 
                     case Interop.Errors.ERROR_OPERATION_ABORTED:
+                        strategy?.OnIncompleteOperation(_bufferSize, 0); // don't use numBytes here, as it can be != 0 for this errorCode (#57212)
                         // Cancellation
                         CancellationToken ct = _cancellationRegistration.Token;
                         _source.SetException(ct.IsCancellationRequested ? new OperationCanceledException(ct) : new OperationCanceledException());
@@ -221,6 +225,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     default:
                         // Failure
+                        strategy?.OnIncompleteOperation(_bufferSize, 0);
                         _source.SetException(Win32Marshal.GetExceptionForWin32Error((int)errorCode));
                         break;
                 }

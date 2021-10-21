@@ -50,6 +50,7 @@ namespace System.Runtime.CompilerServices
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern object? GetObjectValue(object? obj);
 
+        [RequiresUnreferencedCode("Trimmer can't guarantee existence of class constructor")]
         public static void RunClassConstructor(RuntimeTypeHandle type)
         {
             if (type.Value == IntPtr.Zero)

@@ -20,6 +20,7 @@
 
       <PublishReadyToRunUseCrossgen2>true</PublishReadyToRunUseCrossgen2>
       <PublishReadyToRunCrossgen2ExtraArgs>@(PublishReadyToRunCrossgen2ExtraArgsList)</PublishReadyToRunCrossgen2ExtraArgs>
+      <PublishReadyToRunPerfmapFormatVersion Condition="'$(PublishReadyToRunPerfmapFormatVersion)' == ''">1</PublishReadyToRunPerfmapFormatVersion>
 
       <ScriptExt>.sh</ScriptExt>
       <ScriptExt Condition="'$(OS)' == 'Windows_NT'">.cmd</ScriptExt>
@@ -42,7 +43,11 @@
                     DiaSymReader="$(_diaSymReaderPath)" />
     </ItemGroup>
     <ItemGroup>
-      <Crossgen2Tool Include="$(Crossgen2Dll)" TargetArch="$(TargetArchitecture)" TargetOS="$(TargetOS)" DotNetHostPath="$(RepoRoot)/dotnet$(ScriptExt)" />
+      <Crossgen2Tool Include="$(Crossgen2Dll)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(TargetOS)"
+                     DotNetHostPath="$(RepoRoot)/dotnet$(ScriptExt)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
     </ItemGroup>
   </Target>
 </Project>

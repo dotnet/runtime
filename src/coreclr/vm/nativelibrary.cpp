@@ -318,27 +318,14 @@ namespace
 #endif // !TARGET_UNIX
 
         NATIVE_LIBRARY_HANDLE hmod = NULL;
-        AppDomain* pDomain = GetAppDomain();
-        CLRPrivBinderCoreCLR *pTPABinder = pDomain->GetTPABinderContext();
-
-        PEFile *pManifestFile = pAssembly->GetManifestFile();
-        PTR_ICLRPrivBinder pBindingContext = pManifestFile->GetBindingContext();
+        PEAssembly *pManifestFile = pAssembly->GetManifestFile();
+        PTR_AssemblyBinder pBinder = pManifestFile->GetAssemblyBinder();
 
         //Step 0: Check if  the assembly was bound using TPA.
-        //        The Binding Context can be null or an overridden TPA context
-        if (pBindingContext == NULL)
-        {
-            // If we do not have any binder associated, then return to the default resolution mechanism.
-            return NULL;
-        }
+        AssemblyBinder *pCurrentBinder = pBinder;
 
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // For assemblies bound via TPA binder, we should use the standard mechanism to make the pinvoke call.
-        if (AreSameBinderInstance(pCurrentBinder, pTPABinder))
+        // For assemblies bound via default binder, we should use the standard mechanism to make the pinvoke call.
+        if (pCurrentBinder->IsDefault())
         {
             return NULL;
         }
@@ -355,7 +342,7 @@ namespace
         GCPROTECT_BEGIN(pUnmanagedDllName);
 
         // Get the pointer to the managed assembly load context
-        INT_PTR ptrManagedAssemblyLoadContext = ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
+        INT_PTR ptrManagedAssemblyLoadContext = pCurrentBinder->GetManagedAssemblyLoadContext();
 
         // Prepare to invoke  System.Runtime.Loader.AssemblyLoadContext.ResolveUnmanagedDll method.
         PREPARE_NONVIRTUAL_CALLSITE(METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUNMANAGEDDLL);
@@ -376,28 +363,8 @@ namespace
     {
         STANDARD_VM_CONTRACT;
 
-        PTR_ICLRPrivBinder pBindingContext = pAssembly->GetManifestFile()->GetBindingContext();
-        if (pBindingContext == NULL)
-        {
-            // GetBindingContext() returns NULL for System.Private.CoreLib
-            return NULL;
-        }
-
-        UINT_PTR assemblyBinderID = 0;
-        IfFailThrow(pBindingContext->GetBinderID(&assemblyBinderID));
-
-        AppDomain *pDomain = GetAppDomain();
-        ICLRPrivBinder *pCurrentBinder = reinterpret_cast<ICLRPrivBinder *>(assemblyBinderID);
-
-        // The code here deals with two implementations of ICLRPrivBinder interface:
-        //    - CLRPrivBinderCoreCLR for the TPA binder in the default ALC, and
-        //    - CLRPrivBinderAssemblyLoadContext for custom ALCs.
-        // in order obtain the associated ALC handle.
-        INT_PTR ptrManagedAssemblyLoadContext = AreSameBinderInstance(pCurrentBinder, pDomain->GetTPABinderContext())
-            ? ((CLRPrivBinderCoreCLR *)pCurrentBinder)->GetManagedAssemblyLoadContext()
-            : ((CLRPrivBinderAssemblyLoadContext *)pCurrentBinder)->GetManagedAssemblyLoadContext();
-
-        return ptrManagedAssemblyLoadContext;
+        PTR_AssemblyBinder pBinder = pAssembly->GetManifestFile()->GetAssemblyBinder();
+        return pBinder->GetManagedAssemblyLoadContext();
     }
 
     NATIVE_LIBRARY_HANDLE LoadNativeLibraryViaAssemblyLoadContextEvent(Assembly * pAssembly, PCWSTR wszLibName)

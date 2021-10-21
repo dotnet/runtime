@@ -259,11 +259,11 @@ inline DWORD GetMaxDBCSCharByteSize()
 #endif // HOST_UNIX
 }
 
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 BOOL RunningInteractive();
-#else // !TARGET_UNIX
+#else // !HOST_UNIX
 #define RunningInteractive() FALSE
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
@@ -481,7 +481,7 @@ inline int LateboundMessageBoxA(HWND hWnd,
     return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
 }
 
-#if defined(FEATURE_CORESYSTEM) && !defined(CROSSGEN_COMPILE)
+#if defined(FEATURE_CORESYSTEM)
 
 #define MessageBoxW LateboundMessageBoxW
 #define MessageBoxA LateboundMessageBoxA

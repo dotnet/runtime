@@ -18,6 +18,7 @@
 
 import argparse
 import asyncio
+import csv
 import datetime
 import locale
 import logging
@@ -194,6 +195,10 @@ Normally, we don't download if the target directory exists. This forces download
 target directory already exists.
 """
 
+download_no_progress_help = """\
+If specified, then download progress will not be shown.
+"""
+
 merge_mch_pattern_help = """\
 A pattern to describing files to merge, passed through directly to `mcs -merge`.
 Acceptable patterns include `*.mch`, `file*.mch`, and `c:\\my\\directory\\*.mch`.
@@ -250,7 +255,7 @@ superpmi_common_parser.add_argument("--break_on_error", action="store_true", hel
 superpmi_common_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 superpmi_common_parser.add_argument("--sequential", action="store_true", help="Run SuperPMI in sequential mode. Default is to run in parallel for faster runs.")
 superpmi_common_parser.add_argument("-spmi_log_file", help=spmi_log_file_help)
-superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_win_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
+superpmi_common_parser.add_argument("-jit_name", help="Specify the filename of the jit to use, e.g., 'clrjit_universal_arm64_x64.dll'. Default is clrjit.dll/libclrjit.so")
 superpmi_common_parser.add_argument("--altjit", action="store_true", help="Set the altjit variables on replay.")
 superpmi_common_parser.add_argument("-error_limit", help=error_limit_help)
 
@@ -337,6 +342,7 @@ download_parser.add_argument("-filter", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)
+download_parser.add_argument("--no_progress", action="store_true", help=download_no_progress_help)
 download_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
 download_parser.add_argument("-private_store", action="append", help=private_store_help)
 
@@ -420,11 +426,11 @@ def download_progress_hook(count, block_size, total_size):
         block_size (int)          : size of a block
         total_size (int)          : total size of a payload
     """
-    sys.stdout.write("\rDownloading %d/%d..." % (count - 1, total_size / max(block_size, 1)))
+    sys.stdout.write("\rDownloading {0:.1f}/{1:.1f} MB...".format(min(count * block_size, total_size) / 1024 / 1024, total_size / 1024 / 1024))
     sys.stdout.flush()
 
 
-def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True):
+def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=True, display_progress=True):
     """ Do an URI download using urllib.request.urlretrieve with a progress hook.
 
     Args:
@@ -439,7 +445,8 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
 
     ok = True
     try:
-        urllib.request.urlretrieve(uri, target_location, reporthook=download_progress_hook)
+        progress_display_method = download_progress_hook if display_progress else None
+        urllib.request.urlretrieve(uri, target_location, reporthook=progress_display_method)
     except urllib.error.HTTPError as httperror:
         if (httperror == 404) and fail_if_not_found:
             logging.error("HTTP 404 error")
@@ -498,7 +505,7 @@ def download_with_azure(uri, target_location, fail_if_not_found=True):
     return ok
 
 
-def download_one_url(uri, target_location, fail_if_not_found=True):
+def download_one_url(uri, target_location, fail_if_not_found=True, display_progress=True):
     """ Do an URI download using urllib.request.urlretrieve or Azure Storage APIs.
 
     Args:
@@ -512,7 +519,7 @@ def download_one_url(uri, target_location, fail_if_not_found=True):
     if authenticate_using_azure:
         return download_with_azure(uri, target_location, fail_if_not_found)
     else:
-        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found)
+        return download_with_progress_urlretrieve(uri, target_location, fail_if_not_found, display_progress)
 
 
 def is_zero_length_file(fpath):
@@ -794,6 +801,22 @@ def is_url(path):
     # If it doesn't look like an URL, treat it like a file, possibly a UNC file.
     return path.lower().startswith("http:") or path.lower().startswith("https:")
 
+def read_csv_metrics(path):
+    """ Read a metrics summary file produced by superpmi, and return the single row containing the information as a dictionary.
+
+    Args:
+        path (str) : path to .csv file
+
+    Returns:
+        A dictionary with each metric
+    """
+
+    with open(path) as csv_file:
+        reader = csv.DictReader(csv_file)
+        for row in reader:
+            return row
+
+    return None
 
 ################################################################################
 # Helper classes
@@ -1794,6 +1817,9 @@ class SuperPMIReplayAsmDiffs:
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
                 diff_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff.mcl")
 
+                base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
+                diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
+
                 # If the user passed -temp_dir, we skip the SuperPMI replay process,
                 # and rely on what we find from a previous run.
                 if self.coreclr_args.temp_dir is not None:
@@ -1804,7 +1830,9 @@ class SuperPMIReplayAsmDiffs:
                         "-v", "ewmi",  # display errors, warnings, missing, jit info
                         "-f", fail_mcl_file,  # Failing mc List
                         "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
-                        "-r", os.path.join(temp_location, "repro")  # Repro name, create .mc repro files
+                        "-r", os.path.join(temp_location, "repro"),  # Repro name, create .mc repro files
+                        "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
+                        "-diffMetricsSummary", diff_metrics_summary_file,
                     ]
                     flags += altjit_asm_diffs_flags
                     flags += base_option_flags
@@ -1833,7 +1861,7 @@ class SuperPMIReplayAsmDiffs:
                         return_code = run_and_log(command)
                         print_superpmi_failure_code(return_code, self.coreclr_args)
                         if return_code == 0:
-                            logging.info("Clean SuperPMI replay")
+                            logging.info("Clean SuperPMI diff")
                         else:
                             result = False
                             # Don't report as replay failure asm diffs (return code 2) or missing data (return code 3).
@@ -1955,6 +1983,17 @@ class SuperPMIReplayAsmDiffs:
                         logging.debug(item)
                     logging.debug("")
 
+                    base_metrics = read_csv_metrics(base_metrics_summary_file)
+                    diff_metrics = read_csv_metrics(diff_metrics_summary_file)
+
+                    if base_metrics is not None and "Code bytes" in base_metrics and diff_metrics is not None and "Code bytes" in diff_metrics:
+                        base_bytes = int(base_metrics["Code bytes"])
+                        diff_bytes = int(diff_metrics["Code bytes"])
+                        logging.info("Total Code bytes of base: {}".format(base_bytes))
+                        logging.info("Total Code bytes of diff: {}".format(diff_bytes))
+                        delta_bytes = diff_bytes - base_bytes
+                        logging.info("Total Code bytes of delta: {} ({:.2%} of base)".format(delta_bytes, delta_bytes / base_bytes))
+
                     try:
                         current_text_diff = text_differences.get_nowait()
                     except:
@@ -1979,6 +2018,9 @@ class SuperPMIReplayAsmDiffs:
                                 command = [ jit_analyze_path, "--md", md_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
+                                elif base_bytes is not None and diff_bytes is not None:
+                                    command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
+
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
 
@@ -2008,6 +2050,14 @@ class SuperPMIReplayAsmDiffs:
                     if os.path.isfile(fail_mcl_file):
                         os.remove(fail_mcl_file)
                         fail_mcl_file = None
+
+                    if os.path.isfile(base_metrics_summary_file):
+                        os.remove(base_metrics_summary_file)
+                        base_metrics_summary_file = None
+
+                    if os.path.isfile(diff_metrics_summary_file):
+                        os.remove(diff_metrics_summary_file)
+                        diff_metrics_summary_file = None
 
             ################################################################################################ end of for mch_file in self.mch_files
 
@@ -2532,7 +2582,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     for item in mch_files:
         # On Windows only, see if any of the mch_files are UNC paths (i.e., "\\server\share\...").
         # If so, download and cache all the files found there to our usual local cache location, to avoid future network access.
-        if coreclr_args.host_os == "windows" and item.startswith("\\\\"):
+        if coreclr_args.host_os == "windows":# and item.startswith("\\\\"):
             # Special case: if the user specifies a .mch file, we'll also look for and cache a .mch.mct file next to it, if one exists.
             # This happens naturally if a directory is passed and we search for all .mch and .mct files in that directory.
             mch_file = os.path.abspath(item)
@@ -2557,8 +2607,9 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
     urls = [url for url in urls if filter_local_path(url)]
 
     # Download all the urls at once, and add the local cache filenames to our accumulated list of local file names.
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
     if len(urls) != 0:
-        local_mch_files += download_files(urls, mch_cache_dir)
+        local_mch_files += download_files(urls, mch_cache_dir, display_progress=not skip_progress)
 
     # Special case: walk the URLs list and for every ".mch" or ".mch.zip" file, check to see that either the associated ".mct" file is already
     # in the list, or add it to a new list to attempt to download (but don't fail the download if it doesn't exist).
@@ -2569,7 +2620,7 @@ def process_local_mch_files(coreclr_args, mch_files, mch_cache_dir):
             if mct_url not in urls:
                 mct_urls.append(mct_url)
     if len(mct_urls) != 0:
-        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False)
+        local_mch_files += download_files(mct_urls, mch_cache_dir, fail_if_not_found=False, display_progress=not skip_progress)
 
     # Even though we might have downloaded MCT files, only return the set of MCH files.
     local_mch_files = [file for file in local_mch_files if any(file.lower().endswith(extension) for extension in [".mch"])]
@@ -2645,7 +2696,7 @@ def download_mch_from_azure(coreclr_args, target_dir):
         list containing the local path of files downloaded
     """
 
-    blob_filter_string = "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
+    blob_filter_string =  "{}/{}/{}/".format(coreclr_args.jit_ee_version, coreclr_args.target_os, coreclr_args.mch_arch).lower()
 
     # Determine if a URL in Azure Storage should be allowed. The path looks like:
     #   jit-ee-guid/Linux/x64/Linux.x64.Checked.frameworks.mch.zip
@@ -2664,10 +2715,10 @@ def download_mch_from_azure(coreclr_args, target_dir):
     blob_url_prefix = "{}/{}/".format(az_blob_storage_superpmi_container_uri, az_collections_root_folder)
     urls = [blob_url_prefix + path for path in paths]
 
-    return download_files(urls, target_dir)
+    skip_progress = hasattr(coreclr_args, 'no_progress') and coreclr_args.no_progress
+    return download_files(urls, target_dir, display_progress=not skip_progress)
 
-
-def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
+def download_files(paths, target_dir, verbose=True, fail_if_not_found=True, display_progress=True):
     """ Download a set of files, specified as URLs or paths (such as Windows UNC paths),
         to a target directory. If a file is a .ZIP file, then uncompress the file and
         copy all its contents to the target directory.
@@ -2716,7 +2767,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
 
                 download_path = os.path.join(temp_location, item_name)
                 if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found)
+                    ok = download_one_url(item_path, download_path, fail_if_not_found, display_progress)
                     if not ok:
                         continue
                 else:
@@ -2742,7 +2793,7 @@ def download_files(paths, target_dir, verbose=True, fail_if_not_found=True):
                 # Not a zip file; download directory to target directory
                 download_path = os.path.join(target_dir, item_name)
                 if is_item_url:
-                    ok = download_one_url(item_path, download_path, fail_if_not_found)
+                    ok = download_one_url(item_path, download_path, fail_if_not_found, display_progress)
                     if not ok:
                         continue
                 else:
@@ -3773,6 +3824,11 @@ def setup_args(args):
                             "force_download",
                             lambda unused: True,
                             "Unable to set force_download")
+
+        coreclr_args.verify(args,
+                            "no_progress",
+                            lambda unused: True,
+                            "Unable to set no_progress")
 
         coreclr_args.verify(args,
                             "filter",

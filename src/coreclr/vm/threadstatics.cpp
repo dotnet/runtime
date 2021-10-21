@@ -464,7 +464,7 @@ void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
 
     // If this allocation fails, we throw. If it succeeds,
     // then we are good to go
-    pNewDynamicClassTable = (DynamicClassInfo*)(void*)new BYTE[sizeof(DynamicClassInfo) * aDynamicEntries];
+    pNewDynamicClassTable = new DynamicClassInfo[aDynamicEntries];
 
     // Zero out the dynamic class table
     memset(pNewDynamicClassTable, 0, sizeof(DynamicClassInfo) * aDynamicEntries);
@@ -487,7 +487,7 @@ void    ThreadLocalModule::EnsureDynamicClassIndex(DWORD dwID)
     m_aDynamicEntries = aDynamicEntries;
 
     if (pOldDynamicClassTable != NULL)
-        delete pOldDynamicClassTable;
+        delete[] pOldDynamicClassTable;
 }
 
 void    ThreadLocalModule::AllocateDynamicClass(MethodTable *pMT)

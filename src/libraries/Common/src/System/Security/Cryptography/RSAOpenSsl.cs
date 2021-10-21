@@ -33,6 +33,7 @@ namespace System.Security.Cryptography
 
         public RSAOpenSsl(int keySize)
         {
+            ThrowIfNotSupported();
             base.KeySize = keySize;
             _key = new Lazy<SafeEvpPKeyHandle>(GenerateKey);
         }
@@ -945,6 +946,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
         }
+
+        static partial void ThrowIfNotSupported();
 
         private static Exception PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);

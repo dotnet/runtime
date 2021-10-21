@@ -210,7 +210,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         // Arguments:
         //    val - the input value
         //    field - the FIELD node that uses the input address value
-        //    fieldSeqStore - the compiler's field sequence store
+        //    compiler - the compiler instance
         //
         // Return Value:
         //    `true` if the value was consumed. `false` if the input value
@@ -224,8 +224,9 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
         //     if the offset overflows then location is not representable, must escape
         //   - UNKNOWN => UNKNOWN
         //
-        bool Field(Value& val, GenTreeField* field, FieldSeqStore* fieldSeqStore)
+        bool Field(Value& val, GenTreeField* field, Compiler* compiler)
         {
+
             assert(!IsLocation() && !IsAddress());
 
             if (val.IsLocation())
@@ -246,13 +247,79 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                 m_lclNum = val.m_lclNum;
                 m_offset = newOffset.Value();
 
+                bool haveCorrectFieldForVN;
                 if (field->gtFldMayOverlap)
                 {
-                    m_fieldSeq = FieldSeqStore::NotAField();
+                    haveCorrectFieldForVN = false;
                 }
                 else
                 {
+                    LclVarDsc* varDsc = compiler->lvaGetDesc(m_lclNum);
+                    if (!varTypeIsStruct(varDsc))
+                    {
+                        haveCorrectFieldForVN = false;
+                    }
+                    else if (FieldSeqStore::IsPseudoField(field->gtFldHnd))
+                    {
+                        assert(compiler->compObjectStackAllocation());
+                        // We use PseudoFields when accessing stack allocated classes.
+                        haveCorrectFieldForVN = false;
+                    }
+                    else if (val.m_fieldSeq == nullptr)
+                    {
+
+                        CORINFO_CLASS_HANDLE clsHnd = varDsc->GetStructHnd();
+                        // If the answer is no we are probably accessing a canon type with a non-canon fldHnd,
+                        // currently it could happen in crossgen2 scenario where VM distinguishes class<canon>._field
+                        // from class<not-canon-ref-type>._field.
+                        haveCorrectFieldForVN =
+                            compiler->info.compCompHnd->doesFieldBelongToClass(field->gtFldHnd, clsHnd);
+                    }
+                    else
+                    {
+                        FieldSeqNode* lastSeqNode = val.m_fieldSeq->GetTail();
+                        assert(lastSeqNode != nullptr);
+                        if (lastSeqNode->IsPseudoField() || lastSeqNode == FieldSeqStore::NotAField())
+                        {
+                            haveCorrectFieldForVN = false;
+                        }
+                        else
+                        {
+                            CORINFO_FIELD_HANDLE lastFieldBeforeTheCurrent = lastSeqNode->GetFieldHandle();
+
+                            CORINFO_CLASS_HANDLE clsHnd;
+                            CorInfoType          fieldCorType =
+                                compiler->info.compCompHnd->getFieldType(lastFieldBeforeTheCurrent, &clsHnd);
+                            if (fieldCorType != CORINFO_TYPE_VALUECLASS)
+                            {
+                                // For example, System.IntPtr:ToInt64, when inlined, creates trees like
+                                // *  FIELD     long   _value
+                                // \--*  ADDR      byref
+                                //    \--*  FIELD     long   Information
+                                //       \--*  ADDR      byref
+                                //          \--*  LCL_VAR   struct<Interop+NtDll+IO_STATUS_BLOCK, 16> V08 tmp7
+                                haveCorrectFieldForVN = false;
+                            }
+                            else
+                            {
+
+                                haveCorrectFieldForVN =
+                                    compiler->info.compCompHnd->doesFieldBelongToClass(field->gtFldHnd, clsHnd);
+                                noway_assert(haveCorrectFieldForVN);
+                            }
+                        }
+                    }
+                }
+
+                if (haveCorrectFieldForVN)
+                {
+                    FieldSeqStore* fieldSeqStore = compiler->GetFieldSeqStore();
                     m_fieldSeq = fieldSeqStore->Append(val.m_fieldSeq, fieldSeqStore->CreateSingleton(field->gtFldHnd));
+                }
+                else
+                {
+                    m_fieldSeq = FieldSeqStore::NotAField();
+                    JITDUMP("Setting NotAField for [%06u],\n", compiler->dspTreeID(field));
                 }
             }
 
@@ -458,12 +525,12 @@ public:
                 break;
 
             case GT_FIELD:
-                if (node->AsField()->gtFldObj != nullptr)
+                if (node->AsField()->GetFldObj() != nullptr)
                 {
                     assert(TopValue(1).Node() == node);
-                    assert(TopValue(0).Node() == node->AsField()->gtFldObj);
+                    assert(TopValue(0).Node() == node->AsField()->GetFldObj());
 
-                    if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler->GetFieldSeqStore()))
+                    if (!TopValue(1).Field(TopValue(0), node->AsField(), m_compiler))
                     {
                         // Either the address comes from a location value (e.g. FIELD(IND(...)))
                         // or the field offset has overflowed.
@@ -541,7 +608,8 @@ public:
                             LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
                             if (varDsc->lvFieldCnt > 1)
                             {
-                                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(Compiler::DNER_BlockOp));
+                                m_compiler->lvaSetVarDoNotEnregister(
+                                    lclNum DEBUGARG(DoNotEnregisterReason::BlockOpRet));
                             }
                         }
                     }
@@ -627,7 +695,8 @@ private:
                          (val.Node() == user->AsCall()->gtCallThisArg->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
-        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl : val.LclNum());
+        m_compiler->lvaSetVarAddrExposed(exposeParentLcl ? varDsc->lvParentLcl
+                                                         : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
@@ -739,7 +808,9 @@ private:
 
             if (isWide)
             {
-                m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField ? varDsc->lvParentLcl : val.LclNum());
+                m_compiler->lvaSetVarAddrExposed(varDsc->lvIsStructField
+                                                     ? varDsc->lvParentLcl
+                                                     : val.LclNum() DEBUGARG(AddressExposedReason::WIDE_INDIR));
             }
             else
             {
@@ -1036,7 +1107,7 @@ private:
 
             // Promoted struct vars aren't currently handled here so the created LCL_FLD can't be
             // later transformed into a LCL_VAR and the variable cannot be enregistered.
-            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(Compiler::DNER_LocalField));
+            m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
         }
         else
         {
@@ -1184,7 +1255,7 @@ private:
 
         if (isArgToCall)
         {
-            JITDUMP("LocalAddressVisitor incrementing weighted ref count from %d to %d"
+            JITDUMP("LocalAddressVisitor incrementing weighted ref count from " FMT_WT " to " FMT_WT
                     " for implicit by-ref V%02d arg passed to call\n",
                     varDsc->lvRefCntWtd(RCS_EARLY), varDsc->lvRefCntWtd(RCS_EARLY) + 1, lclNum);
             varDsc->incLvRefCntWtd(1, RCS_EARLY);

@@ -48,7 +48,7 @@ EXTERN_C void FastCallFinalizeWorker(Object *obj, PCODE funcPtr);
 #define SIZEOF_LOAD_AND_JUMP_THUNK              22   // # bytes to mov r10, X; jmp Z
 #define SIZEOF_LOAD2_AND_JUMP_THUNK             32   // # bytes to mov r10, X; mov r11, Y; jmp Z
 
-// Also in Zapper.h, CorCompile.h, FnTableAccess.h
+// Also in CorCompile.h, FnTableAccess.h
 #define USE_INDIRECT_CODEHEADER                 // use CodeHeader, RealCodeHeader construct
 
 #define HAS_NDIRECT_IMPORT_PRECODE              1
@@ -136,11 +136,7 @@ void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
 }
 
 
-#ifdef CROSSGEN_COMPILE
-#define GetEEFuncEntryPoint(pfn) 0x1001
-#else
 #define GetEEFuncEntryPoint(pfn) GFN_TADDR(pfn)
-#endif
 
 
 //**********************************************************************
@@ -617,7 +613,7 @@ public:
         : m_part0{                                              0x48, 0xb8},            //     mov  rax,
         m_remainingCallCountCell(remainingCallCountCell),                               //               <imm64>
         m_part1{                                                0x66, 0xff, 0x08,       //     dec  word ptr [rax]
-                                                                0x0f, 0x85},            //     jnz  
+                                                                0x0f, 0x85},            //     jnz
         m_rel32TargetForMethod(                                                         //          <rel32>
             GetRelative32BitOffset(
                 &stubRX->m_rel32TargetForMethod,

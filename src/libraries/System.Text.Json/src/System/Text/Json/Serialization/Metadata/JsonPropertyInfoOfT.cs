@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -27,7 +28,10 @@ namespace System.Text.Json.Serialization.Metadata
         private bool _propertyTypeEqualsTypeToConvert;
 
         internal Func<object, T>? Get { get; set; }
+
         internal Action<object, T>? Set { get; set; }
+
+        internal override object? DefaultValue => default(T);
 
         public JsonConverter<T> Converter { get; internal set; } = null!;
 
@@ -115,28 +119,15 @@ namespace System.Text.Json.Serialization.Metadata
             GetPolicies(ignoreCondition, parentTypeNumberHandling);
         }
 
-        internal void InitializeForSourceGen(
-            JsonSerializerOptions options,
-            bool isProperty,
-            bool isPublic,
-            Type declaringType,
-            JsonTypeInfo typeInfo,
-            JsonConverter<T> converter,
-            Func<object, T>? getter,
-            Action<object, T>? setter,
-            JsonIgnoreCondition? ignoreCondition,
-            bool hasJsonInclude,
-            JsonNumberHandling? numberHandling,
-            string propertyName,
-            string? jsonPropertyName)
+        internal void InitializeForSourceGen(JsonSerializerOptions options, JsonPropertyInfoValues<T> propertyInfo)
         {
             Options = options;
-            ClrName = propertyName;
+            ClrName = propertyInfo.PropertyName;
 
             // Property name settings.
-            if (jsonPropertyName != null)
+            if (propertyInfo.JsonPropertyName != null)
             {
-                NameAsString = jsonPropertyName;
+                NameAsString = propertyInfo.JsonPropertyName;
             }
             else if (options.PropertyNamingPolicy == null)
             {
@@ -153,11 +144,27 @@ namespace System.Text.Json.Serialization.Metadata
 
             NameAsUtf8Bytes ??= Encoding.UTF8.GetBytes(NameAsString!);
             EscapedNameSection ??= JsonHelpers.GetEscapedPropertyNameSection(NameAsUtf8Bytes, Options.Encoder);
+            SrcGen_IsPublic = propertyInfo.IsPublic;
+            SrcGen_HasJsonInclude = propertyInfo.HasJsonInclude;
+            SrcGen_IsExtensionData = propertyInfo.IsExtensionData;
+            DeclaredPropertyType = typeof(T);
 
-            SrcGen_IsPublic = isPublic;
-            SrcGen_HasJsonInclude = hasJsonInclude;
+            JsonTypeInfo propertyTypeInfo = propertyInfo.PropertyTypeInfo;
+            Type declaringType = propertyInfo.DeclaringType;
 
-            if (ignoreCondition == JsonIgnoreCondition.Always)
+            JsonConverter? converter = propertyInfo.Converter;
+            if (converter == null)
+            {
+                converter = propertyTypeInfo.PropertyInfoForTypeInfo.ConverterBase as JsonConverter<T>;
+                if (converter == null)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.ConverterForPropertyMustBeValid, declaringType, ClrName, typeof(T)));
+                }
+            }
+
+            ConverterBase = converter;
+
+            if (propertyInfo.IgnoreCondition == JsonIgnoreCondition.Always)
             {
                 IsIgnored = true;
                 Debug.Assert(!ShouldSerialize);
@@ -165,25 +172,23 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                Get = getter;
-                Set = setter;
+                Get = propertyInfo.Getter!;
+                Set = propertyInfo.Setter;
                 HasGetter = Get != null;
                 HasSetter = Set != null;
-                ConverterBase = converter;
-                RuntimeTypeInfo = typeInfo;
-                DeclaredPropertyType = typeof(T);
+                RuntimeTypeInfo = propertyTypeInfo;
                 DeclaringType = declaringType;
-                IgnoreCondition = ignoreCondition;
-                MemberType = isProperty ? MemberTypes.Property : MemberTypes.Field;
+                IgnoreCondition = propertyInfo.IgnoreCondition;
+                MemberType = propertyInfo.IsProperty ? MemberTypes.Property : MemberTypes.Field;
 
-                _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
+                _converterIsExternalAndPolymorphic = !ConverterBase.IsInternalConverter && DeclaredPropertyType != ConverterBase.TypeToConvert;
                 PropertyTypeCanBeNull = typeof(T).CanBeNull();
-                _propertyTypeEqualsTypeToConvert = converter.TypeToConvert == typeof(T);
+                _propertyTypeEqualsTypeToConvert = ConverterBase.TypeToConvert == typeof(T);
                 ConverterStrategy = Converter!.ConverterStrategy;
                 RuntimePropertyType = DeclaredPropertyType;
                 DetermineIgnoreCondition(IgnoreCondition);
                 // TODO: this method needs to also take the number handling option for the declaring type.
-                DetermineNumberHandlingForProperty(numberHandling, declaringTypeNumberHandling: null);
+                DetermineNumberHandlingForProperty(propertyInfo.NumberHandling, declaringTypeNumberHandling: null);
                 DetermineSerializationCapabilities(IgnoreCondition);
             }
         }

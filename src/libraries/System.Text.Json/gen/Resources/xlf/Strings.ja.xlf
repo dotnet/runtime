@@ -12,6 +12,16 @@
         <target state="translated">派生した 'JsonSerializerContext' 型と含まれているすべての型は部分的である必要があります。</target>
         <note />
       </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidFormat">
+        <source>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</source>
+        <target state="translated">データ拡張プロパティ '{0}.{1}' が無効です。これには、'IDictionary&lt;string, JsonElement&gt;'、'IDictionary&lt;string, object&gt;'、または 'JsonObject' を実装する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DataExtensionPropertyInvalidTitle">
+        <source>Data extension property type invalid.</source>
+        <target state="translated">データ拡張プロパティの型が無効です。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="DuplicateTypeNameMessageFormat">
         <source>There are multiple types named {0}. Source was generated for the first one detected. Use 'JsonSerializableAttribute.TypeInfoPropertyName' to resolve this collision.</source>
         <target state="translated">{0} と名前が付けられた種類が複数あります。最初に検出されたものに対してソースが生成されました。この問題を解決するには、'JsonSerializableAttribute.TypeInfoPropertyName' を使用します。</target>
@@ -20,6 +30,46 @@
       <trans-unit id="DuplicateTypeNameTitle">
         <source>Duplicate type name.</source>
         <target state="translated">重複した種類名。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
+        <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
+        <target state="translated">メンバー '{0}.{1}' には、JsonIncludeAttribute で注釈が付けられていますが、ソース ジェネレーターには表示されません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedTitle">
+        <source>Inaccessible properties annotated with the JsonIncludeAttribute are not supported in source generation mode.</source>
+        <target state="translated">JsonIncludeAttribute で注釈が付けられたアクセスできないプロパティは、ソース生成モードではサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedFormat">
+        <source>The type '{0}' defines init-only properties, deserialization of which is currently not supported in source generation mode.</source>
+        <target state="translated">型 '{0}' は、ソース生成モードでは現在サポートされていない init-only プロパティの逆シリアル化を定義します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InitOnlyPropertyDeserializationNotSupportedTitle">
+        <source>Deserialization of init-only properties is currently not supported in source generation mode.</source>
+        <target state="translated">現在、ソース生成モードでは init-only プロパティの逆シリアル化はサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeFormat">
+        <source>Type '{0}' has multiple constructors annotated with 'JsonConstructorAttribute'.</source>
+        <target state="translated">型 '{0}' には、'JsonConstructorAttribute' で注釈が付けられた複数のコンストラクターがあります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonConstructorAttributeTitle">
+        <source>Type has multiple constructors annotated with JsonConstructorAttribute.</source>
+        <target state="translated">型には、JsonConstructorAttribute で注釈が付けられた複数のコンストラクターがあります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeFormat">
+        <source>Type '{0}' has multiple members annotated with 'JsonExtensionDataAttribute'.</source>
+        <target state="translated">型 '{0}' には、'JsonExtensionDataAttribute' に注釈が付けられた複数のメンバーが含まれます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleJsonExtensionDataAttributeTitle">
+        <source>Type has multiple members annotated with JsonExtensionDataAttribute.</source>
+        <target state="translated">型には、'JsonExtensionDataAttribute' に注釈が付けられた複数のメンバーが含まれます。</target>
         <note />
       </trans-unit>
       <trans-unit id="TypeNotSupportedMessageFormat">

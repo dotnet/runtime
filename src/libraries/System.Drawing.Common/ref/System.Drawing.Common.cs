@@ -382,7 +382,7 @@ namespace System.Drawing
         public int GetCellAscent(System.Drawing.FontStyle style) { throw null; }
         public int GetCellDescent(System.Drawing.FontStyle style) { throw null; }
         public int GetEmHeight(System.Drawing.FontStyle style) { throw null; }
-        [System.ObsoleteAttribute("Do not use method GetFamilies, use property Families instead")]
+        [System.ObsoleteAttribute("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
         public static System.Drawing.FontFamily[] GetFamilies(System.Drawing.Graphics graphics) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetLineSpacing(System.Drawing.FontStyle style) { throw null; }
@@ -594,14 +594,6 @@ namespace System.Drawing
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHwndInternal(System.IntPtr hwnd) { throw null; }
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        public object GetContextInfo() { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public void GetContextInfo(out PointF offset) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
         public static System.IntPtr GetHalftonePalette() { throw null; }
         public System.IntPtr GetHdc() { throw null; }
         public System.Drawing.Color GetNearestColor(System.Drawing.Color color) { throw null; }
@@ -2184,7 +2176,7 @@ namespace System.Drawing.Imaging
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, short[] value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numberValues, System.Drawing.Imaging.EncoderParameterValueType type, System.IntPtr value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator, int denominator) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.")]
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int NumberOfValues, int Type, int Value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator1, int demoninator1, int numerator2, int demoninator2) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int[] numerator, int[] denominator) { }

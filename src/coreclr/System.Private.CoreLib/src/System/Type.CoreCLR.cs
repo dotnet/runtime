@@ -81,29 +81,12 @@ namespace System
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
         }
 
-        internal virtual RuntimeTypeHandle GetTypeHandleInternal()
-        {
-            return TypeHandle;
-        }
-
         // Given a class handle, this will return the class for that handle.
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern RuntimeType GetTypeFromHandleUnsafe(IntPtr handle);
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Type GetTypeFromHandle(RuntimeTypeHandle handle);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool operator ==(Type? left, Type? right);
-
-        [Intrinsic]
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool operator !=(Type? left, Type? right);
-
-        // Exists to faciliate code sharing between CoreCLR and CoreRT.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool IsRuntimeImplemented() => this is RuntimeType;
+        public static extern Type? GetTypeFromHandle(RuntimeTypeHandle handle);
     }
 }

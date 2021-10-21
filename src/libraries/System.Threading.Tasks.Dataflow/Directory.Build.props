@@ -2,20 +2,5 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
-    <PackageDescription>TPL Dataflow promotes actor/agent-oriented designs through primitives for in-process message passing, dataflow, and pipelining. TDF builds upon the APIs and scheduling infrastructure provided by the Task Parallel Library (TPL), and integrates with the language support for asynchrony provided by C#, Visual Basic, and F#.
-
-Commonly Used Types:
-System.Threading.Tasks.Dataflow.ActionBlock&lt;TInput&gt;
-System.Threading.Tasks.Dataflow.BatchBlock&lt;T&gt;
-System.Threading.Tasks.Dataflow.BatchedJoinBlock&lt;T1, T2&gt;
-System.Threading.Tasks.Dataflow.BatchedJoinBlock&lt;T1, T2, T3&gt;
-System.Threading.Tasks.Dataflow.BroadcastBlock&lt;T&gt;
-System.Threading.Tasks.Dataflow.BufferBlock&lt;T&gt;
-System.Threading.Tasks.Dataflow.DataflowBlock
-System.Threading.Tasks.Dataflow.JoinBlock&lt;T1, T2&gt;
-System.Threading.Tasks.Dataflow.JoinBlock&lt;T1, T2, T3&gt;
-System.Threading.Tasks.Dataflow.TransformBlock&lt;TInput, TOutput&gt;
-System.Threading.Tasks.Dataflow.TransformManyBlock&lt;TInput, TOutput&gt;
-System.Threading.Tasks.Dataflow.WriteOnceBlock&lt;T&gt;</PackageDescription>
   </PropertyGroup>
 </Project>

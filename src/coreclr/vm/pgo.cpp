@@ -718,24 +718,11 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
     *pCountSchemaItems = 0;
     *pPgoSource = ICorJitInfo::PgoSource::Unknown;
 
-    PgoManager *mgr;
-    if (!pMD->IsDynamicMethod())
-    {
-        mgr = pMD->GetLoaderAllocator()->GetPgoManager();
-    }
-    else
-    {
-        mgr = pMD->AsDynamicMethodDesc()->GetResolver()->GetDynamicPgoManager();
-    }
-
     HRESULT hr = E_NOTIMPL;
-    if (mgr != NULL)
-    {
-        hr = mgr->getPgoInstrumentationResultsInstance(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
-    }
 
-    // If not found in the data from the current run, look in the data from the text file
-    if (FAILED(hr) && s_textFormatPgoData.GetCount() > 0)
+    // If there is text format PGO data, prefer that over any dynamic or static data.
+    //
+    if (s_textFormatPgoData.GetCount() > 0)
     {
         COUNT_T methodhash = pMD->GetStableHash();
         int codehash;
@@ -796,11 +783,12 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                         *pAllocatedData = new BYTE[schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema)];
                         memcpy(*pAllocatedData, schemaArray.OpenRawBuffer(), schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema));
                         schemaArray.CloseRawBuffer();
-                        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)pAllocatedData;
+                        *ppSchema = (ICorJitInfo::PgoInstrumentationSchema*)*pAllocatedData;
 
                         *pCountSchemaItems = schemaArray.GetCount();
                         *pInstrumentationData = found->GetData();
                         *pPgoSource = ICorJitInfo::PgoSource::Text;
+
                         hr = S_OK;
                     }
                     EX_CATCH
@@ -815,6 +803,26 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                     hr = E_NOTIMPL;
                 }
             }
+        }
+    }
+
+    // If we didn't find any text format data, look for dynamic or static data.
+    //
+    if (FAILED(hr))
+    {
+        PgoManager *mgr;
+        if (!pMD->IsDynamicMethod())
+        {
+            mgr = pMD->GetLoaderAllocator()->GetPgoManager();
+        }
+        else
+        {
+            mgr = pMD->AsDynamicMethodDesc()->GetResolver()->GetDynamicPgoManager();
+        }
+
+        if (mgr != NULL)
+        {
+            hr = mgr->getPgoInstrumentationResultsInstance(pMD, pAllocatedData, ppSchema, pCountSchemaItems, pInstrumentationData, pPgoSource);
         }
     }
 
