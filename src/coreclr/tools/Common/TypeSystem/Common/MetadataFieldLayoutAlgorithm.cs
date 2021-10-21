@@ -434,6 +434,27 @@ namespace Internal.TypeSystem
                 alignUpInstanceByteSize: true,
                 out instanceByteSizeAndAlignment);
 
+            if (type is InstantiatedType it)
+            {
+                if (it.Name == "ValueArray`2" && it.Namespace == "System")
+                {
+                    if (it.Instantiation[1] is ArrayType arr)
+                    {
+                        int repeat = arr.Rank;
+
+                        if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+                        {
+                            instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+                        }
+
+                        if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
+                        {
+                            instanceByteSizeAndAlignment.Size = new LayoutInt(instanceByteSizeAndAlignment.Size.AsInt * repeat);
+                        }
+                    }
+                }
+            }
+
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;
             computedLayout.FieldSize = instanceSizeAndAlignment.Size;
@@ -721,6 +742,27 @@ namespace Internal.TypeSystem
                 classLayoutSize: 0,
                 alignUpInstanceByteSize: true,
                 out instanceByteSizeAndAlignment);
+
+            if (type is InstantiatedType it)
+            {
+                if (it.Name == "ValueArray`2" && it.Namespace == "System")
+                {
+                    if (it.Instantiation[1] is ArrayType arr)
+                    {
+                        int repeat = arr.Rank;
+
+                        if (!instanceSizeAndAlignment.Size.IsIndeterminate)
+                        {
+                            instanceSizeAndAlignment.Size = new LayoutInt(instanceSizeAndAlignment.Size.AsInt * repeat);
+                        }
+
+                        if (!instanceByteSizeAndAlignment.Size.IsIndeterminate)
+                        {
+                            instanceByteSizeAndAlignment.Size = new LayoutInt(instanceByteSizeAndAlignment.Size.AsInt * repeat);
+                        }
+                    }
+                }
+            }
 
             ComputedInstanceFieldLayout computedLayout = new ComputedInstanceFieldLayout();
             computedLayout.FieldAlignment = instanceSizeAndAlignment.Alignment;

@@ -1928,6 +1928,17 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
 
+            if (type is InstantiatedType it)
+            {
+                if (it.Name == "ValueArray`2" && it.Namespace == "System")
+                {
+                    if (it.Instantiation[1] is ArrayType arr && arr.Rank > 1)
+                    {
+                        result |= CorInfoFlag.CORINFO_FLG_DONT_PROMOTE;
+                    }
+                }
+            }
+
 #if READYTORUN
             if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
             {
