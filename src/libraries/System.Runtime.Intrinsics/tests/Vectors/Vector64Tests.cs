@@ -17,10 +17,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             var vector = Vector64.Create(values);
 
-            Assert.All(
-                values.Select((value, index) => (index, value)),
-                tuple => Assert.Equal(tuple.value, vector[tuple.index])
-            );
+            Assert.Equal(vector[0], values[0]);
+            Assert.Equal(vector[1], values[1]);
         }
 
         [Theory]
@@ -32,10 +30,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             var vector = Vector64.Create(values);
 
-            Assert.All(
-                values.Select((value, index) => (index, value)),
-                tuple => Assert.Equal(tuple.value, vector[tuple.index])
-            );
+            Assert.Equal(vector[0], values[0]);
+            Assert.Equal(vector[1], values[1]);
         }
     }
 }
