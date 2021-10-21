@@ -343,7 +343,9 @@ namespace System
                 SslProtocols.Tls => "TLS 1.0",
                 SslProtocols.Tls11 => "TLS 1.1",
                 SslProtocols.Tls12 => "TLS 1.2",
+#if !NETFRAMEWORK
                 SslProtocols.Tls13 => "TLS 1.3",
+#endif
                 _ => throw new Exception($"Registry key not defined for {protocol}.")
             };
 
@@ -456,7 +458,12 @@ namespace System
                 // The build number is approximation.
                 bool defaultProtocolSupport = IsWindows10Version2004Build19573OrGreater;
 
+#if NETFRAMEWORK
+                return false;
+#else
                 return GetProtocolSupportFormWindowsRegistry(SslProtocols.Tls13, defaultProtocolSupport);
+#endif
+
             }
             else if (IsOSX || IsMacCatalyst || IsiOS || IstvOS)
             {
