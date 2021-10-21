@@ -123,6 +123,44 @@ namespace Microsoft.WebAssembly.Diagnostics
             //Log ("protocol", $"from result: {obj}");
             return new Result(obj["result"] as JObject, obj["error"] as JObject);
         }
+        public static Result FromJsonFirefox(JObject obj)
+        {
+            //Log ("protocol", $"from result: {obj}");
+            JObject o;
+            if (obj["result"] is JObject && obj["result"]["type"].Value<string>() == "object")
+            {
+                if (obj["result"]["class"].Value<string>() == "Array")
+                {
+                    o = JObject.FromObject(new
+                    {
+                        result = JObject.FromObject(new
+                        {
+                            value = obj["result"]["preview"]["items"]
+                        })
+                    });
+                }
+                else
+                {
+                    o = JObject.FromObject(new
+                    {
+                        result = JObject.FromObject(new
+                        {
+                            value = obj["result"]["preview"]["ownProperties"]["value"]
+                        })
+                    });
+                }
+            }
+            else
+                o = JObject.FromObject(new
+                {
+                    result = JObject.FromObject(new
+                    {
+                        value = obj["result"]
+                    })
+                });
+
+            return new Result(o, obj["hasException"] as JObject);
+        }
 
         public static Result Ok(JObject ok) => new Result(ok, null);
 

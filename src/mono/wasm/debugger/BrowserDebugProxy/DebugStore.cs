@@ -59,8 +59,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string Id { get; private set; }
         public string Assembly { get; private set; }
         public string File { get; private set; }
-        public int Line { get; private set; }
-        public int Column { get; private set; }
+        public int Line { get; set; }
+        public int Column { get; set; }
         public string Condition { get; private set; }
         public MethodInfo Method { get; set; }
 

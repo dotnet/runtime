@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
@@ -16,273 +17,6 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class FirefoxProxy : DevToolsProxy
-    {
-        private int portBrowser;
-        private TcpClient ide;
-        private TcpClient browser;
-        public FirefoxProxy(ILoggerFactory loggerFactory, int portBrowser): base(loggerFactory)
-        {
-            this.portBrowser = portBrowser;
-        }
-        private async Task<string> ReadOne(TcpClient socket, CancellationToken token)
-        {
-#pragma warning disable CA1835 // Prefer the 'Memory'-based overloads for 'ReadAsync' and 'WriteAsync'
-            byte[] buff = new byte[4000];
-            var mem = new MemoryStream();
-            try
-            {
-                while (true)
-                {
-                    byte[] buffer = new byte[100000];
-                    var stream = socket.GetStream();
-                    int bytesRead = 0;
-                    while (bytesRead == 0 || Convert.ToChar(buffer[bytesRead-1]) != ':')
-                    {
-                        var readLen = await stream.ReadAsync(buffer, bytesRead, 1, token);
-                        bytesRead++;
-                    }
-                    var str = Encoding.ASCII.GetString(buffer, 0, bytesRead-1);
-                    int len = int.Parse(str);
-                    bytesRead = await stream.ReadAsync(buffer, 0, len, token);
-                    str = Encoding.ASCII.GetString(buffer, 0, len);
-                    Console.WriteLine(str);
-                    return str;
-                }
-            }
-            catch (Exception)
-            {
-                client_initiated_close.TrySetResult();
-                return null;
-            }
-        }
-
-        public async void Run(TcpClient ideClient)
-        {
-            ide = ideClient;
-            browser = new TcpClient();
-            browser.Connect("127.0.0.1", portBrowser);
-
-            var x = new CancellationTokenSource();
-
-            pending_ops.Add(ReadOne(browser, x.Token));
-            pending_ops.Add(ReadOne(ide, x.Token));
-            pending_ops.Add(side_exception.Task);
-            pending_ops.Add(client_initiated_close.Task);
-
-            try
-            {
-                while (!x.IsCancellationRequested)
-                {
-                    Task task = await Task.WhenAny(pending_ops.ToArray());
-
-                    if (client_initiated_close.Task.IsCompleted)
-                    {
-                        await client_initiated_close.Task.ConfigureAwait(false);
-                        x.Cancel();
-
-                        break;
-                    }
-
-                    //logger.LogTrace ("pump {0} {1}", task, pending_ops.IndexOf (task));
-                    if (task == pending_ops[0])
-                    {
-                        string msg = ((Task<string>)task).Result;
-                        if (msg != null)
-                        {
-                            pending_ops[0] = ReadOne(browser, x.Token); //queue next read
-                            ProcessBrowserMessage(msg, x.Token);
-                        }
-                    }
-                    else if (task == pending_ops[1])
-                    {
-                        string msg = ((Task<string>)task).Result;
-                        if (msg != null)
-                        {
-                            pending_ops[1] = ReadOne(ide, x.Token); //queue next read
-                            ProcessIdeMessage(msg, x.Token);
-                        }
-                    }
-                    else if (task == pending_ops[2])
-                    {
-                        bool res = ((Task<bool>)task).Result;
-                        throw new Exception("side task must always complete with an exception, what's going on???");
-                    }
-                    else
-                    {
-                        //must be a background task
-                        pending_ops.Remove(task);
-                        DevToolsQueue queue = GetQueueForTask(task);
-                        if (queue != null)
-                        {
-                            if (queue.TryPumpIfCurrentCompleted(x.Token, out Task tsk))
-                                pending_ops.Add(tsk);
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Log("error", $"DevToolsProxy::Run: Exception {e}");
-                //throw;
-            }
-            finally
-            {
-                if (!x.IsCancellationRequested)
-                    x.Cancel();
-            }
-        }
-
-        internal void Send(TcpClient to, JObject o, CancellationToken token)
-        {
-            NetworkStream toStream = to.GetStream();
-
-            var msg = o.ToString();
-            msg = $"{msg.Length}:{msg}";
-            toStream.Write(Encoding.ASCII.GetBytes(msg), 0, msg.Length);
-
-            /*string sender = browser == to ? "Send-browser" : "Send-ide";
-
-            string method = o["method"]?.ToString();
-            //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-            Log("protocol", $"{sender}: " + JsonConvert.SerializeObject(o));
-            byte[] bytes = Encoding.UTF8.GetBytes(o.ToString());
-
-            DevToolsQueue queue = GetQueueForSocket(to);
-
-            Task task = queue.Send(bytes, token);
-            if (task != null)
-                pending_ops.Add(task);*/
-        }
-
-        internal override async Task OnEvent(SessionId sessionId, JObject parms, CancellationToken token)
-        {
-            try
-            {
-                if (!await AcceptEvent(sessionId, parms, token))
-                {
-                    //logger.LogDebug ("proxy browser: {0}::{1}",method, args);
-                    SendEventInternal(sessionId, parms, token);
-                }
-            }
-            catch (Exception e)
-            {
-                side_exception.TrySetException(e);
-            }
-        }
-
-        internal override async Task OnCommand(MessageId id, JObject parms, CancellationToken token)
-        {
-            try
-            {
-                if (!await AcceptCommand(id, parms, token))
-                {
-                    Result res = await SendCommandInternal(id, parms, token);
-                    SendResponseInternal(id, res, token);
-                }
-            }
-            catch (Exception e)
-            {
-                side_exception.TrySetException(e);
-            }
-        }
-
-        internal override void OnResponse(MessageId id, Result result)
-        {
-            //logger.LogTrace ("got id {0} res {1}", id, result);
-            // Fixme
-            if (pending_cmds.Remove(id, out TaskCompletionSource<Result> task))
-            {
-                task.SetResult(result);
-                return;
-            }
-            logger.LogError("Cannot respond to command: {id} with result: {result} - command is not pending", id, result);
-        }
-
-        internal override void ProcessBrowserMessage(string msg, CancellationToken token)
-        {
-            var res = JObject.Parse(msg);
-
-            //if (method != "Debugger.scriptParsed" && method != "Runtime.consoleAPICalled")
-            Log("protocol", $"browser: {msg}");
-
-            if (res["id"] == null)
-                pending_ops.Add(OnEvent(res.ToObject<SessionId>(), res, token));
-            else
-                OnResponse(res.ToObject<MessageId>(), Result.FromJson(res));
-        }
-
-        internal override void ProcessIdeMessage(string msg, CancellationToken token)
-        {
-            Log("protocol", $"ide: {msg}");
-            if (!string.IsNullOrEmpty(msg))
-            {
-                var res = JObject.Parse(msg);
-                var id = res.ToObject<MessageId>();
-                pending_ops.Add(OnCommand(
-                    id,
-                    res,
-                    token));
-            }
-        }
-
-        public async Task<Result> SendCommand(SessionId id, JObject args, CancellationToken token)
-        {
-            //Log ("verbose", $"sending command {method}: {args}");
-            return await SendCommandInternal(id, args, token);
-        }
-
-        internal Task<Result> SendCommandInternal(SessionId sessionId, JObject args, CancellationToken token)
-        {
-            int id = Interlocked.Increment(ref next_cmd_id);
-
-            var tcs = new TaskCompletionSource<Result>();
-
-            var msgId = new MessageId(sessionId.sessionId, id);
-            //Log ("verbose", $"add cmd id {sessionId}-{id}");
-            pending_cmds[msgId] = tcs;
-
-            Send(this.browser, args, token);
-
-            return tcs.Task;
-        }
-
-        internal void SendEvent(SessionId sessionId, JObject args, CancellationToken token)
-        {
-            //Log ("verbose", $"sending event {method}: {args}");
-            SendEventInternal(sessionId, args, token);
-        }
-
-        internal void SendEventInternal(SessionId sessionId, JObject args, CancellationToken token)
-        {
-            Send(this.ide, args, token);
-            /*var o = JObject.FromObject(new
-            {
-                method,
-                @params = args
-            })
-            if (sessionId.sessionId != null)
-                o["sessionId"] = sessionId.sessionId;
-            */
-            //Send(this.ide, o, token);
-        }
-
-        public override void SendResponse(MessageId id, Result result, CancellationToken token)
-        {
-            SendResponseInternal(id, result, token);
-        }
-
-        internal override void SendResponseInternal(MessageId id, Result result, CancellationToken token)
-        {
-            JObject o = result.ToJObject(id);
-            if (result.IsErr)
-                logger.LogError($"sending error response for id: {id} -> {result}");
-
-            //Send(this.ide, o, token);
-        }
-
-    }
-
     internal class DevToolsProxy
     {
         protected TaskCompletionSource<bool> side_exception = new TaskCompletionSource<bool>();
@@ -451,13 +185,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async Task<Result> SendCommand(SessionId id, string method, JObject args, CancellationToken token)
+        internal virtual async Task<Result> SendCommand(SessionId id, string method, JObject args, CancellationToken token)
         {
             //Log ("verbose", $"sending command {method}: {args}");
             return await SendCommandInternal(id, method, args, token);
         }
 
-        internal Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+        internal virtual Task<Result> SendCommandInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             int id = Interlocked.Increment(ref next_cmd_id);
 
@@ -479,13 +213,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return tcs.Task;
         }
 
-        internal void SendEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
+        internal virtual void SendEvent(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             //Log ("verbose", $"sending event {method}: {args}");
             SendEventInternal(sessionId, method, args, token);
         }
 
-        internal void SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
+        internal virtual void SendEventInternal(SessionId sessionId, string method, JObject args, CancellationToken token)
         {
             var o = JObject.FromObject(new
             {
@@ -623,6 +357,32 @@ namespace Microsoft.WebAssembly.Diagnostics
                     logger.LogDebug(msg);
                     break;
             }
+        }
+    }
+    public class FirefoxProxyServer
+    {
+        private int portProxy;
+        private int portBrowser;
+        private ILoggerFactory loggerFactory;
+
+        public FirefoxProxyServer(ILoggerFactory loggerFactory, int portProxy, int portBrowser)
+        {
+            this.portBrowser = portBrowser;
+            this.portProxy = portProxy;
+            this.loggerFactory = loggerFactory;
+        }
+
+        public async void Run()
+        {
+            var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), portProxy);
+            _server.Start();
+            // wait for client connection
+            TcpClient newClient = await _server.AcceptTcpClientAsync();
+
+            // client found.
+            // create a thread to handle communication
+            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
+            monoProxy.Run(newClient);
         }
     }
 }

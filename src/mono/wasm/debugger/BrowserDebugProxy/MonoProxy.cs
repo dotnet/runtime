@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -13,121 +12,17 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
-using System.Net.Sockets;
-using Microsoft.Extensions.Primitives;
-using System.Text;
+
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-
-    public class FirefoxProxyServer
-    {
-        private int portProxy;
-        private int portBrowser;
-        private ILoggerFactory loggerFactory;
-
-        public FirefoxProxyServer(ILoggerFactory loggerFactory, int portProxy, int portBrowser)
-        {
-            this.portBrowser = portBrowser;
-            this.portProxy = portProxy;
-            this.loggerFactory = loggerFactory;
-        }
-
-        public async void Run()
-        {
-            var _server = new TcpListener(IPAddress.Parse("127.0.0.1"), portProxy);
-            _server.Start();
-            // wait for client connection
-            TcpClient newClient = await _server.AcceptTcpClientAsync();
-
-            // client found.
-            // create a thread to handle communication
-            var monoProxy = new FirefoxMonoProxy(loggerFactory, portBrowser);
-            monoProxy.Run(newClient);
-        }
-
-
-    }
-    internal class FirefoxMonoProxy : FirefoxProxy
-    {
-        private int portBrowser;
-
-        public FirefoxMonoProxy(ILoggerFactory loggerFactory, int portBrowser) : base(loggerFactory, portBrowser)
-        {
-            this.portBrowser = portBrowser;
-        }
-        protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject args, CancellationToken token)
-        {
-            if (args["type"] == null)
-                return await Task.FromResult(false);
-            if (args["messages"] != null)
-            {
-                var messages = args["messages"].Value<JArray>();
-                foreach (var message in messages)
-                {
-                    var messageArgs = message["message"]["arguments"].Value<JArray>();
-                    if (messageArgs.Count == 2)
-                    {
-                        if (messageArgs[0].Value<string>() == MonoConstants.RUNTIME_IS_READY && messageArgs[1].Value<string>() == MonoConstants.RUNTIME_IS_READY_ID)
-                        {
-
-                        }
-                    }
-                }
-                return true;
-            }
-            switch (args["type"].Value<string>())
-            {
-                case "paused":
-                    {
-                        var topFunc = args["frame"]["displayName"].Value<string>();
-                        switch (topFunc)
-                        {
-                            case "mono_wasm_fire_debugger_agent_message":
-                            case "_mono_wasm_fire_debugger_agent_message":
-                                {
-                                    /*try
-                                    {
-                                        return await OnReceiveDebuggerAgentEvent(sessionId, args, token);
-                                    }
-                                    catch (Exception) //if the page is refreshed maybe it stops here.
-                                    {
-                                        await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
-                                        return true;
-                                    }*/
-                                    return true;
-                                }
-                        }
-                        break;
-                    }
-            }
-            return await Task.FromResult(false);
-        }
-        protected override async Task<bool> AcceptCommand(MessageId id, JObject args, CancellationToken token)
-        {
-            if (args["type"] == null)
-                return await Task.FromResult(false);
-
-            switch (args["type"].Value<string>())
-            {
-                case "setBreakpoint":
-                {
-                        break;
-                }
-                default:
-                    return false;
-            }
-            return false;
-        }
-    }
-
     internal class MonoProxy : DevToolsProxy
     {
         internal MonoSDBHelper SdbHelper { get; set; }
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
 
@@ -152,7 +47,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return previous;
         }
 
-        internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
+        internal virtual Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
 
         protected override async Task<bool> AcceptEvent(SessionId sessionId, JObject parms, CancellationToken token)
         {
@@ -339,7 +234,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return false;
         }
 
-        private async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
+        protected async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
             if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
@@ -1059,7 +954,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        private async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
+        protected async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
             if (UpdateContext(sessionId, context, out ExecutionContext previousContext))
@@ -1271,7 +1166,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return bp;
         }
 
-        private async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
+        internal virtual async Task OnSourceFileAdded(SessionId sessionId, SourceFile source, ExecutionContext context, CancellationToken token)
         {
             JObject scriptSource = JObject.FromObject(source.ToScriptSource(context.Id, context.AuxData));
             Log("debug", $"sending {source.Url} {context.Id} {sessionId.sessionId}");
@@ -1319,7 +1214,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return context.store;
         }
 
-        private async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
+        protected async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
@@ -1387,7 +1282,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 breakpointRequest.Locations = new List<Breakpoint>();
         }
 
-        private async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
+        protected async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
             if (req.Locations.Any())
