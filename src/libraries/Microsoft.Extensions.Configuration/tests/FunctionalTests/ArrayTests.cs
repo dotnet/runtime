@@ -46,6 +46,7 @@ i=ini_i.i.i.i
 }
 ";
 
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_KeysAreSorted()
@@ -75,6 +76,7 @@ i=ini_i.i.i.i
             Assert.Equal("address:x", indexConfigurationSections[7].Path);
         }
 
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60583", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void DifferentConfigSources_Merged_WithOverwrites()
