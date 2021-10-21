@@ -4451,7 +4451,7 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// GetReversedRelopVN: return value number for reversed comparsion
+// GetReversedRelopVN: return value number for reversed comparison
 //
 // Arguments:
 //    vn - vn to reverse
@@ -4460,8 +4460,10 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //    vn for reversed comparsion, or NoVN.
 //
 // Note:
-//    If "vn" corresponds to (x > y) 
+//    If "vn" corresponds to (x > y)
 //    then reverse("vn") corresponds to (x <= y)
+//
+//    Will return NoVN for all float comparisons.
 //
 ValueNum ValueNumStore::GetReversedRelopVN(ValueNum vn)
 {
@@ -4485,6 +4487,13 @@ ValueNum ValueNumStore::GetReversedRelopVN(ValueNum vn)
     }
 
     if (funcAttr.m_arity != 2)
+    {
+        return NoVN;
+    }
+
+    // Don't try and model float compares.
+    //
+    if (varTypeIsFloating(TypeOfVN(funcAttr.m_args[0])))
     {
         return NoVN;
     }

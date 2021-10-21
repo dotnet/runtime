@@ -131,6 +131,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 // We can use liberal VNs as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
+                ValueNum treeVN      = tree->GetVN(VNK_Liberal);
                 ValueNum domCmpVN    = domCmpTree->GetVN(VNK_Liberal);
                 ValueNum domCmpRevVN = vnStore->GetReversedRelopVN(domCmpVN);
 
@@ -139,13 +140,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 // That is left as a future enhancement.
                 //
-                if ((domCmpVN == tree->GetVN(VNK_Liberal)) ||
-                    ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == tree->GetVN(VNK_Liberal))))
+                if ((domCmpVN == treeVN) || ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN)))
                 {
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    const bool domIsSameRelop = domCmpVN == tree->GetVN(VNK_Liberal);
+                    const bool domIsSameRelop = (domCmpVN == treeVN);
                     JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with %s liberal VN\n", domBlock->bbNum,
                             block->bbNum, domIsSameRelop ? "the same" : "a reverse");
                     DISPTREE(domCmpTree);
