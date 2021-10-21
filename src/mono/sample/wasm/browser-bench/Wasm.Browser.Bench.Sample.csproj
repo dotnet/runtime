@@ -2,7 +2,6 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
-    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
 
   <ItemGroup>
