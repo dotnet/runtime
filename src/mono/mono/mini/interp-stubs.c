@@ -155,7 +155,7 @@ stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 }
 
 static void
-stub_init_delegate (MonoDelegate *del, MonoError *error)
+stub_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo **info, MonoError *error)
 {
 	g_assert_not_reached ();
 }
