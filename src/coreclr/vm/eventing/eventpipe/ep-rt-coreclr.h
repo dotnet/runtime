@@ -2,13 +2,13 @@
 #ifndef __EVENTPIPE_RT_CORECLR_H__
 #define __EVENTPIPE_RT_CORECLR_H__
 
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-thread.h"
-#include "ep-types.h"
-#include "ep-provider.h"
-#include "ep-session-provider.h"
+#include <eventpipe/ep-thread.h>
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep-provider.h>
+#include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
 #include "win32threadpool.h"
@@ -2565,7 +2565,7 @@ ep_rt_utf8_string_replace (
 	if (strFound != NULL)
 	{
 		size_t strSearchLen = strlen(strSearch);
-		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1; 
+		size_t newStrSize = strlen(*str) + strlen(strReplacement) - strSearchLen + 1;
 		ep_char8_t *newStr =  reinterpret_cast<ep_char8_t *>(malloc(newStrSize));
 		if (newStr == NULL)
 		{

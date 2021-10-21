@@ -6,6 +6,8 @@ endif()
 
 project(mono)
 
+include(../../eng/native/configurepaths.cmake)
+
 set(CMAKE_C_FLAGS_CHECKED "")
 set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
@@ -587,7 +589,7 @@ endif()
 ######################################
 # ICU CHECKS
 ######################################
-set(ICU_SHIM_PATH "../../../libraries/Native/Unix/System.Globalization.Native")
+set(ICU_SHIM_PATH "${CLR_SRC_LIBS_NATIVE_DIR}/Unix/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
 elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
@@ -810,6 +812,7 @@ if (TARGET_BROWSER)
 endif()
 ### End of OS specific checks
 
+include_directories("${CLR_SRC_NATIVE_DIR}")
 add_subdirectory(mono)
 if (ENABLE_MSCORDBI AND NOT TARGET_ARCH STREQUAL "arm64"  AND NOT CMAKE_CROSSCOMPILING AND NOT TARGET_IOS AND NOT TARGET_ANDROID AND NOT TARGET_BROWSER AND NOT HOST_MACCAT)
   add_subdirectory(dlls/mscordbi)

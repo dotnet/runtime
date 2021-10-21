@@ -27,11 +27,7 @@ if(HOST_WIN32)
     endif()
 endif()
 
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configuretools.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurepaths.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configureplatform.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurecompiler.cmake)
-
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 add_definitions(-D_WIN32_WINNT=0x0602)
 
