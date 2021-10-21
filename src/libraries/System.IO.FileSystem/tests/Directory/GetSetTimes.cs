@@ -52,6 +52,6 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        public override string CreateSymlinkToItem(string item) => Directory.CreateSymbolicLink(item + ".link", item).FullName;
+        protected override string CreateSymlinkToItem(string item) => Directory.CreateSymbolicLink(item + ".link", item).FullName;
     }
 }

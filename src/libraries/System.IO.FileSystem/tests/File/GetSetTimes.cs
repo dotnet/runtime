@@ -103,7 +103,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        public override string CreateSymlinkToItem(string item) => File.CreateSymbolicLink(item + ".link", item).FullName;
+        protected override string CreateSymlinkToItem(string item) => File.CreateSymbolicLink(item + ".link", item).FullName;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)]

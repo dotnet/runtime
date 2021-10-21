@@ -58,6 +58,6 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        public override DirectoryInfo CreateSymlinkToItem(DirectoryInfo item) => (DirectoryInfo)Directory.CreateSymbolicLink(item.FullName + ".link", item.FullName);
+        protected override DirectoryInfo CreateSymlinkToItem(DirectoryInfo item) => (DirectoryInfo)Directory.CreateSymbolicLink(item.FullName + ".link", item.FullName);
     }
 }
