@@ -64,9 +64,10 @@ jobs:
       - ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
         - '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{parameters.buildConfig }}'
       - ${{ if ne(parameters.stagedBuild, true) }}:
-        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'))  }}:
+        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter'), eq(parameters.runtimeVariant, 'llvmaot'), eq(parameters.runtimeVariant, 'llvmfullaot'))  }}:
           # This is needed for creating a CORE_ROOT in the current design.
           - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
+        - ${{ if or( eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')) }} :
           # minijit and mono interpreter runtimevariants do not require any special build of the runtime
           - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, '', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if not(or(eq(parameters.runtimeVariant, 'minijit'), eq(parameters.runtimeVariant, 'monointerpreter')))  }}:
