@@ -103,7 +103,7 @@ namespace System.IO.Tests
                 DateTimeKind.Utc);
         }
 
-        public FileInfo CreateSymlinkToItem(FileInfo item) => (FileInfo)File.CreateSymbolicLink(item.FullName + ".link", item.FullName);
+        public override FileInfo CreateSymlinkToItem(FileInfo item) => (FileInfo)File.CreateSymbolicLink(item.FullName + ".link", item.FullName);
 
         [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToMillisecondPresent()
