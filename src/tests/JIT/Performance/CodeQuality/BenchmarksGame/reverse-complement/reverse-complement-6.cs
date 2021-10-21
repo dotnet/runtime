@@ -29,7 +29,7 @@ namespace BenchmarksGame
         public Thread ReverseThread;
     }
 
-    public static class ReverseComplement_6
+    public class ReverseComplement_6
     {
         const int READER_BUFFER_SIZE = 1024 * 1024;
         const byte LF = 10, GT = (byte)'>', SP = 32;

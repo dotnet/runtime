@@ -34,7 +34,7 @@ public static class Ackermann
         int a11 = Acker(1, 1);
         int a22 = Acker(2, 2);
         int a33 = Acker(3, 3);
-        return (a00 == 1) && (a11 == 3) && (a22 == 7) & (a33 == 61);
+        return (a00 == 1) && (a11 == 3) && (a22 == 7) && (a33 == 61);
     }
 
     static bool TestBase() {

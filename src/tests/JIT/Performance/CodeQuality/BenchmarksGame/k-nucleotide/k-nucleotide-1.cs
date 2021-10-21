@@ -19,7 +19,6 @@ using System.Text;
 
 namespace BenchmarksGame
 {
-
     public struct ByteString : IEquatable<ByteString>
     {
         public byte[] Array;

@@ -54,6 +54,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
+
 namespace Benchstone.BenchF
 {
 public class LLoops
@@ -103,13 +104,8 @@ public class LLoops
         0.171449024000e+06, -0.510829560800e+07
     };
 
-    public static volatile object VolatileObject;
-
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Escape(object obj)
-    {
-        VolatileObject = obj;
-    }
+    private static void Escape(object _) { }
 
     private static T[][] AllocArray<T>(int n1, int n2)
     {
@@ -620,8 +616,7 @@ public class LLoops
 
     public static int Main()
     {
-        var lloops = new LLoops();
-        bool result = lloops.Bench();
+        bool result = (new LLoops()).Bench();
         return (result ? 100 : -1);
     }
 }

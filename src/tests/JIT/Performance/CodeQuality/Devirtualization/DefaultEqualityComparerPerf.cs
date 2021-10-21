@@ -109,9 +109,6 @@ namespace Devirtualization
             BLUE = 2
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void Consume(bool b) { }
-
         public static int Main()
         {
             var valueTupleFixture = new EqualityComparerFixture<ValueTuple<byte, E, int>>();

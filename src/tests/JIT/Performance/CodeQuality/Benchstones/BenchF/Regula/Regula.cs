@@ -16,13 +16,8 @@ public static class Regula
     public const int Iterations = 4000000;
 #endif
 
-    public static volatile object VolatileObject;
-
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Escape(object obj)
-    {
-        VolatileObject = obj;
-    }
+    private static void Escape(object _) { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool Bench()

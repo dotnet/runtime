@@ -28,7 +28,7 @@ public static class Adams
     private static void Bench()
     {
         double[] f = new double[5];
-        double xn, yn, dn, en, yxn, h, fnp, ynp, y0, x0, nz;
+        double xn, yn, dn, en, yxn, h, fnp, ynp, y0, x0;
         int i, k, n, nstep;
 
 #if VERBOSE
@@ -44,11 +44,10 @@ public static class Adams
         yn = 0.0;
         dn = 0.0;
         en = 0.0;
-        nz = 0;
 
         f[1] = x0 + y0;
 #if VERBOSE
-        Console.WriteLine("{0},  {1},  {2},  {3},  {4}", nz, x0, y0, dn, en);
+        Console.WriteLine("{0},  {1},  {2},  {3}", x0, y0, dn, en);
 #endif // VERBOSE
         xn = x0;
         for (i = 2; i <= 4; i++)

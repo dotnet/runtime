@@ -21,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace BenchmarksGame
 {
-    public sealed class BinaryTrees_5
+    public class BinaryTrees_5
     {
         public const int MinDepth = 4;
 

@@ -18,13 +18,9 @@ public static class FFT
 #endif
 
     private static readonly int s_points = 16;
-    public static volatile object VolatileObject;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void Escape(object obj)
-    {
-        VolatileObject = obj;
-    }
+    private static void Escape(object _) { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool Bench()

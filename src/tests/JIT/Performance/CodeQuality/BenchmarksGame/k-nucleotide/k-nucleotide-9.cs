@@ -24,7 +24,7 @@ using System.Runtime.CompilerServices;
 namespace BenchmarksGame
 {
     class Wrapper { public int v = 1; }
-    public static class KNucleotide_9
+    public class KNucleotide_9
     {
         const int BLOCK_SIZE = 1024 * 1024 * 8;
         static List<byte[]> threeBlocks = new List<byte[]>();

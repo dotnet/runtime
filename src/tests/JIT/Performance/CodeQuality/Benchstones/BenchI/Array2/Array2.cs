@@ -51,7 +51,7 @@ public static class Array2
 
         return true;
     }
-
+    
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Bench(int loop) {
 

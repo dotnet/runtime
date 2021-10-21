@@ -18,12 +18,8 @@ public static class AddArray
 
     const int Size = 6000;
 
-    public static volatile object VolatileObject;
-
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Escape(object obj) {
-        VolatileObject = obj;
-    }
+    static void Escape(object _) { }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static bool Bench() {

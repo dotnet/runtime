@@ -49,7 +49,6 @@ namespace BenchmarksGame
             sequence = r.Replace(sequence, "");
             int codeLength = sequence.Length;
 
-
             // regex match
             string[] variants = {
                 "agggtaaa|tttaccct",
@@ -73,7 +72,6 @@ namespace BenchmarksGame
                 if (verbose)
                     Console.WriteLine("{0} {1}", v, count);
             }
-
 
             // regex substitution
             IUB[] codes = {

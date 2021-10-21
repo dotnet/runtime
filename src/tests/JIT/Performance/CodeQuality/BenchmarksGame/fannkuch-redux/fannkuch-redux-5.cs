@@ -20,7 +20,7 @@ using System.Runtime.CompilerServices;
 
 namespace BenchmarksGame
 {
-    public static class FannkuchRedux_5
+    public class FannkuchRedux_5
     {
         static int[] fact, chkSums, maxFlips;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

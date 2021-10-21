@@ -87,6 +87,8 @@ namespace BenchmarksGame
             }
         }
 
+
+
         static void MakeRandomFasta(string id, string desc,
                                     Frequency[] a, int n, Stream s)
         {
@@ -120,6 +122,7 @@ namespace BenchmarksGame
             {
                 s.Write(r, 0, r.Length);
             }
+
         }
 
         private static byte[] SelectNucleotides(Frequency[] a, int[] rnd)
@@ -276,6 +279,7 @@ namespace BenchmarksGame
             new Frequency ('g', 0.1975473066391),
             new Frequency ('t', 0.3015094502008)
         };
+
 
         private static void FillRandom(int[] result)
         {

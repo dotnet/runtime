@@ -18,7 +18,7 @@ namespace BenchmarksGame
 {
     public class FannkuchRedux_2
     {
-        public static int[] fannkuch(int n)
+        public int[] fannkuch(int n)
         {
             int[] p = new int[n], q = new int[n], s = new int[n];
             int sign = 1, maxflips = 0, sum = 0, m = n - 1;
@@ -74,7 +74,8 @@ namespace BenchmarksGame
         static int Main(string[] args)
         {
             int n = (args.Length > 0) ? Int32.Parse(args[0]) : 7;
-            var pf = fannkuch(n);
+            var fr2 = new FannkuchRedux_2();
+            var pf = fr2.fannkuch(n);
             Console.Write("{0}\nPfannkuchen({1}) = {2}\n", pf[0], n, pf[1]);
 
             int expected = 228;

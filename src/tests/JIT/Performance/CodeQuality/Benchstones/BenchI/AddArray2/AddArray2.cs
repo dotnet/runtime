@@ -16,7 +16,7 @@ public static class AddArray2
 #endif
 
     private const int Dim = 200;
-
+    
     private static T[][] AllocArray<T>(int n1, int n2)
     {
         T[][] a = new T[n1][];
@@ -72,7 +72,7 @@ public static class AddArray2
             }
         }
     }
-
+    
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool Bench(int[][] a)
     {

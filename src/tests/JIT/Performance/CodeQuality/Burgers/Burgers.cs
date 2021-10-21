@@ -238,13 +238,5 @@ public class Burgers
 
         return 100;
     }
-
-    static volatile object VolatileObject;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Escape(object obj)
-    {
-        VolatileObject = obj;
-    }
 }
 
