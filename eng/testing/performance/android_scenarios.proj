@@ -55,8 +55,8 @@
     <XHarnessApkToTest Include="Startup - Android HelloWorld">
         <ApkPath>$(CorrelationPayloadDirectory)\HelloAndroidWithDiag.apk</ApkPath>
         <CustomCommands>
-          cd "$env:HELIX_CORRELATION_PAYLOAD\performance\src\scenarios"
-          copy "$env:HELIX_CORRELATION_PAYLOAD\HelloAndroidWithDiag.apk" .
+          cd "$env:HELIX_CORRELATION_PAYLOAD\performance\src\scenarios\helloandroid"
+          copy "$env:HELIX_CORRELATION_PAYLOAD\HelloAndroidWithDiag.apk" . -Verbose
           $(Python) pre.py
           $(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroidWithDiag.apk --package-name net.dot.HelloAndroid --scenario-name &quot;Startup - Android HelloWorld&quot;
           $(Python) post.py
