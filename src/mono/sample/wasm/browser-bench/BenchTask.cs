@@ -12,6 +12,8 @@ abstract class BenchTask
     readonly List<Result> results = new();
     public Regex pattern;
 
+    public virtual bool BrowserOnly => false;
+
     public async Task<string> RunBatch(List<Result> results, int measurementIdx, int milliseconds = 5000)
     {
         var measurement = Measurements[measurementIdx];

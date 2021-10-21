@@ -2,14 +2,17 @@
   <PropertyGroup>
     <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
     <WasmMainJSPath>runtime.js</WasmMainJSPath>
+    <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
   </PropertyGroup>
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <Compile Remove="Console.cs" />
   </ItemGroup>
 
   <PropertyGroup>
     <_SampleProject>Wasm.Browser.Bench.Sample.csproj</_SampleProject>
+    <_SampleAssembly> Wasm.Browser.Bench.Sample.dll</_SampleAssembly>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
