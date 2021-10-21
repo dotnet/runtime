@@ -226,27 +226,6 @@
     </XHarnessAppBundleToTest>
   </ItemDefinitionGroup>
 
-<!--
-  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">
-    <XHarnessAppBundleToTest>
-      <Targets Condition="'$(TargetArchitecture)' == 'arm'">ios-device</Targets>
-      <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-device</Targets>
-      <TestTimeout>$(_workItemTimeout)</TestTimeout>
-      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
-    </XHarnessAppBundleToTest>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOSSimulator'">
-    <XHarnessAppBundleToTest>
-      <Targets Condition="'$(TargetArchitecture)' == 'arm64'">ios-simulator-64</Targets>
-      <Targets Condition="'$(TargetArchitecture)' == 'x64'">ios-simulator-64</Targets>
-      <Targets Condition="'$(TargetArchitecture)' == 'x86'">ios-simulator-32</Targets>
-      <TestTimeout>$(_workItemTimeout)</TestTimeout>
-      <LaunchTimeout>$(_workItemTimeout)</LaunchTimeout>
-    </XHarnessAppBundleToTest>
-  </ItemDefinitionGroup>
--->
-
   <ItemDefinitionGroup Condition="'$(TargetOS)' == 'Android'">
     <XHarnessApkToTest>
         <Targets Condition="'$(TargetArchitecture)' == 'arm'">armeabi-v7a</Targets>
@@ -312,7 +291,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
-      <iOSBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSBuildTargetsDir>
+      <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
       <CMakeUrl>https://netcorenativeassets.blob.core.windows.net/resource-packages/external/macos/cmake/cmake-3.16.4-Darwin-x86_64.tar.gz</CMakeUrl>
@@ -438,7 +417,7 @@
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
       <HelixCorrelationPayload Include="$(MonoAOTCompilerDir)"                   Destination="build/MonoAOTCompiler" />
       <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRuntimePackDir)"    Destination="build/microsoft.netcore.app.runtime.$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())" />
-      <HelixCorrelationPayload Include="$(iOSBuildTargetsDir)"                   Destination="build/apple" />
+      <HelixCorrelationPayload Include="$(iOSLikeBuildTargetsDir)"                   Destination="build/apple" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>

@@ -46,7 +46,7 @@ namespace System.Xml.Tests
         private static readonly string s_temporaryResolverDocumentFullName = Path.Combine(Path.GetTempPath(), typeof(XsltApiTestCaseBase) + "_" + Path.GetRandomFileName());
         private static readonly object s_temporaryResolverDocumentLock = new object();
         protected static string absoluteUriXslFile = "xmlResolver_document_function_absolute_uri_replaced.xsl";
-
+        
         // Generic data for all derived test cases
         public string szXslNS = "http://www.w3.org/1999/XSL/Transform";
 
@@ -60,7 +60,7 @@ namespace System.Xml.Tests
 
         // Variables from init string
         private string _strPath;           // Path of the data files
-
+        
         private string _httpPath;          // HTTP Path of the data files
 
         // Other global variables
@@ -221,8 +221,10 @@ namespace System.Xml.Tests
         // Returns the full, lower-cased path of a file, based on LTM parameters
         public string FullFilePath(string szFile, bool normalizeToLower)
         {
-            if (szFile == null || szFile == string.Empty || Path.IsPathFullyQualified(szFile))
+            if (szFile == null || szFile == string.Empty || szFile == absoluteUriXslFile)
+            {
                 return szFile;
+            }
             // why is this check here?
             if (szFile.Length > 5)
             {
