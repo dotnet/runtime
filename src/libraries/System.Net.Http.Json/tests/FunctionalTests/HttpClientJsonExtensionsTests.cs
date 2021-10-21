@@ -117,7 +117,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 },
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
-                    ValidateRequest(request);
+                    ValidateRequest(request, "POST");
                     Person per = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                     per.Validate();
                 });
@@ -161,7 +161,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 },
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
-                    ValidateRequest(request);
+                    ValidateRequest(request, "PUT");
 
                     byte[] json = request.Body;
 
@@ -212,8 +212,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 },
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
-                    ValidateRequest(request);
-
+                    ValidateRequest(request, "PATCH");
                     byte[] json = request.Body;
 
                     Person obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions);
@@ -276,10 +275,11 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PutAsJsonAsync(uri, null, JsonContext.Default.Person));
         }
 
-        private void ValidateRequest(HttpRequestData requestData)
+        private void ValidateRequest(HttpRequestData requestData, string expectedMethod)
         {
             HttpHeaderData contentType = requestData.Headers.Where(x => x.Name == "Content-Type").First();
             Assert.Equal("application/json; charset=utf-8", contentType.Value);
+            Assert.Equal(expectedMethod, requestData.Method);
         }
 
         [Fact]
