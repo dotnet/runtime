@@ -53,9 +53,9 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emit containing types
-            RegexType parent = regexClass.ParentClass;
+            RegexType? parent = regexClass.ParentClass;
             var parentClasses = new Stack<string>();
-            while (parent != null)
+            while (parent is not null)
             {
                 parentClasses.Push($"partial {parent.Keyword} {parent.Name} {parent.Constraints}");
                 parent = parent.ParentClass;
@@ -75,6 +75,7 @@ namespace System.Text.RegularExpressions.Generator
             // Generate a name to describe the regex instance.  This includes the method name
             // the user provided and a non-randomized (for determinism) hash of it to try to make
             // the name that much harder to predict.
+            Debug.Assert(regexClass.Method is not null);
             string generatedName = $"GeneratedRegex_{regexClass.Method.MethodName}_";
             generatedName += ComputeStringHash(generatedName).ToString("X");
 
@@ -104,31 +105,18 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Gets whether a given regular expression method is supported by the code generator.</summary>
-        private static bool SupportsCustomCodeGeneration(RegexMethod rm)
-        {
-            const RegexOptions SupportedOptions =
-                RegexOptions.IgnoreCase |
-                RegexOptions.Multiline |
-                RegexOptions.ExplicitCapture |
-                RegexOptions.Compiled |
-                RegexOptions.Singleline |
-                RegexOptions.IgnorePatternWhitespace |
-                RegexOptions.RightToLeft |
-                RegexOptions.ECMAScript |
-                RegexOptions.CultureInvariant;
-
-            // If we see an option we're not aware of (but that was allowed through), don't emit custom regex code.
-            return (rm.Options & ~(int)SupportedOptions) == 0;
-        }
+        private static bool SupportsCustomCodeGeneration(RegexMethod rm) =>
+            // The generator doesn't currently know how to emit code for NonBacktracking.
+            (rm.Options & RegexOptions.NonBacktracking) == 0;
 
         /// <summary>Generates the code for a regular expression method.</summary>
         private static void EmitRegexMethod(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             string patternExpression = Literal(rm.Pattern);
-            string optionsExpression = $"(global::System.Text.RegularExpressions.RegexOptions)({rm.Options})";
+            string optionsExpression = $"(global::System.Text.RegularExpressions.RegexOptions)({(int)rm.Options})";
             string timeoutExpression = rm.MatchTimeout == Timeout.Infinite ?
                 "global::System.Threading.Timeout.InfiniteTimeSpan" :
-                $"global::System.TimeSpan.FromMilliseconds({rm.MatchTimeout.Value.ToString(CultureInfo.InvariantCulture)})";
+                $"global::System.TimeSpan.FromMilliseconds({rm.MatchTimeout.ToString(CultureInfo.InvariantCulture)})";
 
             writer.WriteLine(s_generatedCodeAttribute);
             writer.WriteLine($"{rm.Modifiers} global::System.Text.RegularExpressions.Regex {rm.MethodName}() => {id}.Instance;");
@@ -242,8 +230,8 @@ namespace System.Text.RegularExpressions.Generator
         private static void EmitFindFirstChar(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             RegexOptions options = (RegexOptions)rm.Options;
-            var code = rm.Code;
-            var lcc = code.LeadingCharClasses;
+            RegexCode code = rm.Code;
+            (string CharClass, bool CaseInsensitive)[]? lcc = code.LeadingCharClasses;
             bool rtl = code.RightToLeft;
             bool hasTextInfo = false;
             bool textInfoEmitted = false;
@@ -523,7 +511,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine("return true;");
                     }
                 }
-                else if (code.LeadingCharClasses is null)
+                else if (lcc is null)
                 {
                     writer.WriteLine("return true;");
                 }
@@ -680,7 +668,11 @@ namespace System.Text.RegularExpressions.Generator
         private static void EmitGo(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             Debug.Assert(rm.Code.Tree.Root.Type == RegexNode.Capture);
-            if (RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(rm.Code.Tree.Root.Child(0), RegexNode.DefaultMaxRecursionDepth) &&
+            if ((rm.Options & RegexOptions.NonBacktracking) != 0)
+            {
+                EmitNonBacktrackingGo(writer, rm, id);
+            }
+            else if (RegexNode.NodeSupportsSimplifiedCodeGenerationImplementation(rm.Code.Tree.Root.Child(0), RegexNode.DefaultMaxRecursionDepth) &&
                 (((RegexOptions)rm.Code.Tree.Root.Options) & RegexOptions.RightToLeft) == 0)
             {
                 EmitSimplifiedGo(writer, rm, id);
@@ -689,6 +681,12 @@ namespace System.Text.RegularExpressions.Generator
             {
                 EmitCompleteGo(writer, rm, id);
             }
+        }
+
+        /// <summary>Emits the body of a Go method supporting RegexOptions.NonBacktracking.</summary>
+        private static void EmitNonBacktrackingGo(IndentedTextWriter writer, RegexMethod rm, string id)
+        {
+            // TODO: Implement this and remove SupportsCustomCodeGeneration.
         }
 
         /// <summary>Emits the body of a simplified Go implementation that's possible when there's minimal backtracking required by the expression.</summary>
@@ -888,7 +886,7 @@ namespace System.Text.RegularExpressions.Generator
                             Debug.Assert(child.Type is RegexNode.One or RegexNode.Multi or RegexNode.Concatenate, child.Description());
                             Debug.Assert(child.Type is not RegexNode.Concatenate || (child.ChildCount() >= 2 && child.Child(0).Type is RegexNode.One or RegexNode.Multi));
 
-                            RegexNode childStart = child.FindBranchOneOrMultiStart();
+                            RegexNode? childStart = child.FindBranchOneOrMultiStart();
                             Debug.Assert(childStart is not null, child.Description());
 
                             writer.WriteLine($"case {Literal(childStart.FirstCharOfOneOrMulti())}:");
@@ -1248,7 +1246,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Emits the code to handle a single-character match.
-            void EmitSingleChar(RegexNode node, bool emitLengthCheck = true, string offset = null)
+            void EmitSingleChar(RegexNode node, bool emitLengthCheck = true, string? offset = null)
             {
                 string expr = $"{textSpanLocal}[{Sum(textSpanPos, offset)}]";
                 switch (node.Type)
@@ -1843,7 +1841,7 @@ namespace System.Text.RegularExpressions.Generator
             const string Backtrack = "Backtrack"; // label for backtracking
 
             int[] codes = rm.Code.Codes;
-            RegexOptions options = (RegexOptions)rm.Options.Value;
+            RegexOptions options = rm.Options;
 
             int labelCounter = 0;
             string DefineLabel(string prefix = "L") => $"{prefix}{labelCounter++}";
@@ -1919,6 +1917,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     using (EmitBlock(writer, $"case {i}:"))
                     {
+                        Debug.Assert(notes is not null);
                         BacktrackNote n = notes[i];
                         if (n.flags != 0)
                         {
@@ -2879,7 +2878,7 @@ namespace System.Text.RegularExpressions.Generator
             /// </summary>
             void Trackagain() => PushTrack(currentBacktrackNote);
 
-            void PushTrack<T>(T expr) => writer.WriteLine($"{ReadyPushTrack()} = {(expr is IFormattable ? ((IFormattable)expr).ToString(null, CultureInfo.InvariantCulture) : expr.ToString())};");
+            void PushTrack<T>(T expr) where T : notnull => writer.WriteLine($"{ReadyPushTrack()} = {(expr is IFormattable ? ((IFormattable)expr).ToString(null, CultureInfo.InvariantCulture) : expr.ToString())};");
 
             /// <summary>Retrieves the top entry on the tracking stack without popping.</summary>
             string TopTrack() => "runtrack[runtrackpos]";
@@ -2896,7 +2895,7 @@ namespace System.Text.RegularExpressions.Generator
             int Code() => currentOpcode & RegexCode.Mask;
 
             /// <summary>Saves the value of a local variable on the grouping stack.</summary>
-            void PushStack<T>(T expr) => writer.WriteLine($"{ReadyPushStack()} = {(expr is IFormattable ? ((IFormattable)expr).ToString(null, CultureInfo.InvariantCulture) : expr.ToString())};");
+            void PushStack<T>(T expr) where T : notnull => writer.WriteLine($"{ReadyPushStack()} = {(expr is IFormattable ? ((IFormattable)expr).ToString(null, CultureInfo.InvariantCulture) : expr.ToString())};");
 
             string ReadyPushStack() => "runstack[--runstackpos]";
 
@@ -2924,7 +2923,7 @@ namespace System.Text.RegularExpressions.Generator
             int NextCodepos() => currentCodePos + RegexCode.OpcodeSize(codes[currentCodePos]);
 
             /// <summary>The label for the next (forward) operation.</summary>
-            string AdvanceLabel() => labels![NextCodepos()];
+            string AdvanceLabel() => labels[NextCodepos()]!;
 
             /// <summary>Goto the next (forward) operation.</summary>
             void Advance() => writer.WriteLine($"goto {AdvanceLabel()};");
@@ -2971,7 +2970,7 @@ namespace System.Text.RegularExpressions.Generator
             {
                 if (forwardJumpsThroughSwitch[destpos] == -1)
                 {
-                    forwardJumpsThroughSwitch[destpos] = AddBacktrackNote(0, labels![destpos], destpos);
+                    forwardJumpsThroughSwitch[destpos] = AddBacktrackNote(0, labels[destpos]!, destpos);
                 }
 
                 return forwardJumpsThroughSwitch[destpos];
@@ -2998,7 +2997,7 @@ namespace System.Text.RegularExpressions.Generator
 
         private static bool EmitLoopTimeoutCounterIfNeeded(IndentedTextWriter writer, RegexMethod rm)
         {
-            if (rm.MatchTimeout.HasValue && rm.MatchTimeout.Value != Timeout.Infinite)
+            if (rm.MatchTimeout != Timeout.Infinite)
             {
                 writer.WriteLine("int loopTimeoutCounter = 0;");
                 return true;
