@@ -362,7 +362,11 @@ namespace System.Buffers
         private sealed class LockedStack
         {
             /// <summary>The arrays in the stack.</summary>
-            private readonly T[]?[] _arrays = new T[MaxBuffersPerArraySizePerCore][];
+#if NICE_SYNTAX
+            private T[]?[MaxBuffersPerArraySizePerCore] _arrays;
+#else
+            private ValueArray<T[]?, object[,,,,,,,]> _arrays;
+#endif
             /// <summary>Number of arrays stored in <see cref="_arrays"/>.</summary>
             private int _count;
             /// <summary>Timestamp set by Trim when it sees this as 0.</summary>
@@ -373,9 +377,8 @@ namespace System.Buffers
             {
                 bool enqueued = false;
                 Monitor.Enter(this);
-                T[]?[] arrays = _arrays;
                 int count = _count;
-                if ((uint)count < (uint)arrays.Length)
+                if ((uint)count < (uint)_arrays.Length)
                 {
                     if (count == 0)
                     {
@@ -384,7 +387,7 @@ namespace System.Buffers
                         _millisecondsTimestamp = 0;
                     }
 
-                    arrays[count] = array;
+                    _arrays[count] = array;
                     _count = count + 1;
                     enqueued = true;
                 }
@@ -397,12 +400,11 @@ namespace System.Buffers
             {
                 T[]? arr = null;
                 Monitor.Enter(this);
-                T[]?[] arrays = _arrays;
                 int count = _count - 1;
-                if ((uint)count < (uint)arrays.Length)
+                if ((uint)count < (uint)_arrays.Length)
                 {
-                    arr = arrays[count];
-                    arrays[count] = null;
+                    arr = _arrays[count];
+                    _arrays[count] = null;
                     _count = count;
                 }
                 Monitor.Exit(this);
