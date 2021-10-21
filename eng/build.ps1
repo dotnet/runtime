@@ -266,6 +266,10 @@ foreach ($argument in $PSBoundParameters.Keys)
   }
 }
 
+# Disable targeting pack caching as reference a partially constructed targetting pack and update it later.
+# The later changes are ignored when using the cache.
+$env:DOTNETSDK_ALLOW_TARGETING_PACK_CACHING=0
+
 $failedBuilds = @()
 
 if ($os -eq "Browser") {
