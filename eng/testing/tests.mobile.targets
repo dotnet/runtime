@@ -213,6 +213,8 @@
     </ItemGroup>
   </Target>
 
+  <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" />
+
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
