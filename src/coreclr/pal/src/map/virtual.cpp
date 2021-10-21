@@ -1321,6 +1321,25 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 
 /*++
 Function:
+  PAL_GetExecutableMemoryAllocatorReservedRange
+
+  This function gets the reserved range allocated by the executable memory allocator.
+
+  lpBeginAddress - Inclusive beginning of range
+  lpEndAddress - Exclusive end of range
+  dwSize - Number of bytes to allocate
+--*/
+void
+PALAPI
+PAL_GetExecutableMemoryAllocatorReservedRange(
+    OUT LPVOID *start,
+    OUT LPVOID *end)
+{
+    g_executableMemoryAllocator.GetReservedRange(start, end);
+}
+
+/*++
+Function:
   VirtualAlloc
 
 Note:
@@ -2093,11 +2112,6 @@ Function:
 --*/
 void ExecutableMemoryAllocator::Initialize()
 {
-    m_startAddress = NULL;
-    m_nextFreeAddress = NULL;
-    m_totalSizeOfReservedMemory = 0;
-    m_remainingReservedMemory = 0;
-
     // Enable the executable memory allocator on 64-bit platforms only
     // because 32-bit platforms have limited amount of virtual address space.
 #ifdef HOST_64BIT

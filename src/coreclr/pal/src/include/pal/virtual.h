@@ -145,6 +145,12 @@ public:
     --*/
     void *AllocateMemoryWithinRange(const void *beginAddress, const void *endAddress, SIZE_T allocationSize);
 
+    void GetReservedRange(void **start, void **end)
+    {
+        *start = m_startAddress;
+        *end = (void*)((char*)m_startAddress + m_totalSizeOfReservedMemory);
+    }
+
 private:
     /*++
     Function:
@@ -179,17 +185,17 @@ private:
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
 
     // Start address of the reserved virtual address space
-    void* m_startAddress;
+    void* m_startAddress = NULL;
 
     // Next available address in the reserved address space
-    void* m_nextFreeAddress;
+    void* m_nextFreeAddress = NULL;
 
     // Total size of the virtual memory that the allocator has been able to
     // reserve during its initialization.
-    int32_t m_totalSizeOfReservedMemory;
+    int32_t m_totalSizeOfReservedMemory = 0;
 
     // Remaining size of the reserved virtual memory that can be used to satisfy allocation requests.
-    int32_t m_remainingReservedMemory;
+    int32_t m_remainingReservedMemory = 0;
 };
 
 #endif // __cplusplus
