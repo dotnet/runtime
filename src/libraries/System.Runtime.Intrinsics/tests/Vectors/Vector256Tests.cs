@@ -18,10 +18,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             var vector = Vector256.Create(values);
 
-            Assert.All(
-                values.Select((value, index) => (index, value)),
-                tuple => Assert.Equal(tuple.value, vector[tuple.index])
-            );
+            Assert.Equal(vector[0], values[0]);
+            Assert.Equal(vector[1], values[1]);
+            Assert.Equal(vector[2], values[2]);
+            Assert.Equal(vector[3], values[3]);
+            Assert.Equal(vector[4], values[4]);
+            Assert.Equal(vector[5], values[5]);
+            Assert.Equal(vector[6], values[6]);
+            Assert.Equal(vector[7], values[7]);
         }
 
         [Theory]
@@ -32,11 +36,15 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector256Int64IndexerTest(params long[] values)
         {
             var vector = Vector256.Create(values);
-
-            Assert.All(
-                values.Select((value, index) => (index, value)),
-                tuple => Assert.Equal(tuple.value, vector[tuple.index])
-            );
+            
+            Assert.Equal(vector[0], values[0]);
+            Assert.Equal(vector[1], values[1]);
+            Assert.Equal(vector[2], values[2]);
+            Assert.Equal(vector[3], values[3]);
+            Assert.Equal(vector[4], values[4]);
+            Assert.Equal(vector[5], values[5]);
+            Assert.Equal(vector[6], values[6]);
+            Assert.Equal(vector[7], values[7]);
         }
     }
 }
