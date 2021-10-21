@@ -10,106 +10,87 @@ using System.Threading.Tasks;
 using System.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Text.RegularExpressions.Tests
 {
     public class RegexMatchTests
     {
-        public static IEnumerable<object[]> Match_Basic_TestData_LazyLoops()
-        {
-            var allOptions = new List<RegexOptions>() { RegexOptions.Singleline, RegexOptions.Compiled | RegexOptions.Singleline };
-            if (PlatformDetection.IsNetCore)
-            {
-                allOptions.Add(RegexHelpers.RegexOptionNonBacktracking | RegexOptions.Singleline);
-            }
-
-            foreach (RegexOptions options in allOptions)
-            {
-                yield return new object[] { @"\W.*?\D", "seq 012 of 3 digits", options, 0, 19, true, " 012 " };
-                yield return new object[] { @"\W.+?\D", "seq 012 of 3 digits", options, 0, 19, true, " 012 " };
-                yield return new object[] { @"\W.{1,7}?\D", "seq 012 of 3 digits", options, 0, 19, true, " 012 " };
-                yield return new object[] { @"\W.{1,2}?\D", "seq 012 of 3 digits", options, 0, 19, true, " of" };
-                yield return new object[] { @"\W.*?\b", "digits:0123456789", options, 0, 17, true, ":" };
-                yield return new object[] { @"\B.*?\B", "e.g:abc", options, 0, 7, true, "" };
-                yield return new object[] { @"\B\W+?", "e.g:abc", options, 0, 7, false, "" };
-                yield return new object[] { @"\B\W*?", "e.g:abc", options, 0, 7, true, "" };
-
-                // While not lazy loops themselves, variants of the prior case that should give same results here
-                yield return new object[] { @"\B\W*", "e.g:abc", options, 0, 7, true, "" };
-                yield return new object[] { @"\B\W?", "e.g:abc", options, 0, 7, true, "" };
-
-                //mixed lazy and eager counting
-                yield return new object[] { "z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa" };
-            }
-        }
-
-        public static IEnumerable<object[]> Match_Basic_TestData()
+        public static IEnumerable<object[]> Match_MemberData()
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
+                (string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)[] cases = Cases(engine).ToArray();
+                Regex[] regexes = RegexHelpers.GetRegexesAsync(engine, cases.Select(c => (c.Pattern, (RegexOptions?)c.Options, (TimeSpan?)null)).ToArray()).Result;
+                for (int i = 0; i < regexes.Length; i++)
+                {
+                    yield return new object[] { engine, cases[i].Pattern, cases[i].Input, cases[i].Options, regexes[i], cases[i].Beginning, cases[i].Length, cases[i].ExpectedSuccess, cases[i].ExpectedValue };
+                }
+            }
+
+            static IEnumerable<(string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)> Cases(RegexEngine engine)
+            {
                 // pattern, input, options, beginning, length, expectedSuccess, expectedValue
-                yield return new object[] { engine, @"H#", "#H#", RegexOptions.IgnoreCase, 0, 3, true, "H#" }; // https://github.com/dotnet/runtime/issues/39390
-                yield return new object[] { engine, @"H#", "#H#", RegexOptions.None, 0, 3, true, "H#" };
+                yield return (@"H#", "#H#", RegexOptions.IgnoreCase, 0, 3, true, "H#"); // https://github.com/dotnet/runtime/issues/39390
+                yield return (@"H#", "#H#", RegexOptions.None, 0, 3, true, "H#");
 
                 // Testing octal sequence matches: "\\060(\\061)?\\061"
                 // Octal \061 is ASCII 49 ('1')
-                yield return new object[] { engine, @"\060(\061)?\061", "011", RegexOptions.None, 0, 3, true, "011" };
+                yield return (@"\060(\061)?\061", "011", RegexOptions.None, 0, 3, true, "011");
 
                 // Testing hexadecimal sequence matches: "(\\x30\\x31\\x32)"
                 // Hex \x31 is ASCII 49 ('1')
-                yield return new object[] { engine, @"(\x30\x31\x32)", "012", RegexOptions.None, 0, 3, true, "012" };
+                yield return (@"(\x30\x31\x32)", "012", RegexOptions.None, 0, 3, true, "012");
 
                 // Testing control character escapes???: "2", "(\u0032)"
-                yield return new object[] { engine, "(\u0034)", "4", RegexOptions.None, 0, 1, true, "4", };
+                yield return ("(\u0034)", "4", RegexOptions.None, 0, 1, true, "4");
 
                 // Using long loop prefix
-                yield return new object[] { engine, @"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10) };
-                yield return new object[] { engine, @"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100) };
+                yield return (@"a{10}", new string('a', 10), RegexOptions.None, 0, 10, true, new string('a', 10));
+                yield return (@"a{100}", new string('a', 100), RegexOptions.None, 0, 100, true, new string('a', 100));
 
-                yield return new object[] { engine, @"a{10}b", new string('a', 10) + "bc", RegexOptions.None, 0, 12, true, new string('a', 10) + "b" };
-                yield return new object[] { engine, @"a{100}b", new string('a', 100) + "bc", RegexOptions.None, 0, 102, true, new string('a', 100) + "b" };
+                yield return (@"a{10}b", new string('a', 10) + "bc", RegexOptions.None, 0, 12, true, new string('a', 10) + "b");
+                yield return (@"a{100}b", new string('a', 100) + "bc", RegexOptions.None, 0, 102, true, new string('a', 100) + "b");
 
-                yield return new object[] { engine, @"a{11}b", new string('a', 10) + "bc", RegexOptions.None, 0, 12, false, string.Empty };
-                yield return new object[] { engine, @"a{101}b", new string('a', 100) + "bc", RegexOptions.None, 0, 102, false, string.Empty };
+                yield return (@"a{11}b", new string('a', 10) + "bc", RegexOptions.None, 0, 12, false, string.Empty);
+                yield return (@"a{101}b", new string('a', 100) + "bc", RegexOptions.None, 0, 102, false, string.Empty);
 
-                yield return new object[] { engine, @"a{1,3}b", "bc", RegexOptions.None, 0, 2, false, string.Empty };
-                yield return new object[] { engine, @"a{1,3}b", "abc", RegexOptions.None, 0, 3, true, "ab" };
-                yield return new object[] { engine, @"a{1,3}b", "aaabc", RegexOptions.None, 0, 5, true, "aaab" };
-                yield return new object[] { engine, @"a{1,3}b", "aaaabc", RegexOptions.None, 0, 6, true, "aaab" };
+                yield return (@"a{1,3}b", "bc", RegexOptions.None, 0, 2, false, string.Empty);
+                yield return (@"a{1,3}b", "abc", RegexOptions.None, 0, 3, true, "ab");
+                yield return (@"a{1,3}b", "aaabc", RegexOptions.None, 0, 5, true, "aaab");
+                yield return (@"a{1,3}b", "aaaabc", RegexOptions.None, 0, 6, true, "aaab");
 
-                yield return new object[] { engine, @"a{2,}b", "abc", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"a{2,}b", "aabc", RegexOptions.None, 0, 4, true, "aab" };
+                yield return (@"a{2,}b", "abc", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"a{2,}b", "aabc", RegexOptions.None, 0, 4, true, "aab");
 
                 // {,n} is treated as a literal rather than {0,n} as it should be
-                yield return new object[] { engine, @"a{,3}b", "a{,3}bc", RegexOptions.None, 0, 6, true, "a{,3}b" };
-                yield return new object[] { engine, @"a{,3}b", "aaabc", RegexOptions.None, 0, 5, false, string.Empty };
+                yield return (@"a{,3}b", "a{,3}bc", RegexOptions.None, 0, 6, true, "a{,3}b");
+                yield return (@"a{,3}b", "aaabc", RegexOptions.None, 0, 5, false, string.Empty);
 
                 // Using [a-z], \s, \w: Actual - "([a-zA-Z]+)\\s(\\w+)"
-                yield return new object[] { engine, @"([a-zA-Z]+)\s(\w+)", "David Bau", RegexOptions.None, 0, 9, true, "David Bau" };
+                yield return (@"([a-zA-Z]+)\s(\w+)", "David Bau", RegexOptions.None, 0, 9, true, "David Bau");
 
                 // \\S, \\d, \\D, \\W: Actual - "(\\S+):\\W(\\d+)\\s(\\D+)"
-                yield return new object[] { engine, @"(\S+):\W(\d+)\s(\D+)", "Price: 5 dollars", RegexOptions.None, 0, 16, true, "Price: 5 dollars" };
+                yield return (@"(\S+):\W(\d+)\s(\D+)", "Price: 5 dollars", RegexOptions.None, 0, 16, true, "Price: 5 dollars");
 
                 // \\S, \\d, \\D, \\W: Actual - "[^0-9]+(\\d+)"
-                yield return new object[] { engine, @"[^0-9]+(\d+)", "Price: 30 dollars", RegexOptions.None, 0, 17, true, "Price: 30" };
+                yield return (@"[^0-9]+(\d+)", "Price: 30 dollars", RegexOptions.None, 0, 17, true, "Price: 30");
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Zero-width negative lookahead assertion: Actual - "abc(?!XXX)\\w+"
-                    yield return new object[] { engine, @"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty };
+                    yield return (@"abc(?!XXX)\w+", "abcXXXdef", RegexOptions.None, 0, 9, false, string.Empty);
 
                     // Zero-width positive lookbehind assertion: Actual - "(\\w){6}(?<=XXX)def"
-                    yield return new object[] { engine, @"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef" };
+                    yield return (@"(\w){6}(?<=XXX)def", "abcXXXdef", RegexOptions.None, 0, 9, true, "abcXXXdef");
 
                     // Zero-width negative lookbehind assertion: Actual - "(\\w){6}(?<!XXX)def"
-                    yield return new object[] { engine, @"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef" };
+                    yield return (@"(\w){6}(?<!XXX)def", "XXXabcdef", RegexOptions.None, 0, 9, true, "XXXabcdef");
 
                     // Nonbacktracking subexpression: Actual - "[^0-9]+(?>[0-9]+)3"
                     // The last 3 causes the match to fail, since the non backtracking subexpression does not give up the last digit it matched
                     // for it to be a success. For a correct match, remove the last character, '3' from the pattern
-                    yield return new object[] { engine, "[^0-9]+(?>[0-9]+)3", "abc123", RegexOptions.None, 0, 6, false, string.Empty };
-                    yield return new object[] { engine, "[^0-9]+(?>[0-9]+)", "abc123", RegexOptions.None, 0, 6, true, "abc123" };
+                    yield return ("[^0-9]+(?>[0-9]+)3", "abc123", RegexOptions.None, 0, 6, false, string.Empty);
+                    yield return ("[^0-9]+(?>[0-9]+)", "abc123", RegexOptions.None, 0, 6, true, "abc123");
                 }
 
                 // More nonbacktracking expressions
@@ -117,439 +98,456 @@ namespace System.Text.RegularExpressions.Tests
                 {
                     string Case(string s) => (options & RegexOptions.IgnoreCase) != 0 ? s.ToUpper() : s;
 
-                    yield return new object[] { engine, Case("(?:hi|hello|hey)hi"), "hellohi", options, 0, 7, true, "hellohi" }; // allow backtracking and it succeeds
-                    yield return new object[] { engine, Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty };
+                    yield return (Case("(?:hi|hello|hey)hi"), "hellohi", options, 0, 7, true, "hellohi"); // allow backtracking and it succeeds
+                    yield return (Case(@"a[^wyz]*w"), "abczw", RegexOptions.IgnoreCase, 0, 0, false, string.Empty);
 
                     if (!RegexHelpers.IsNonBacktracking(engine))
                     {
-                        yield return new object[] { engine, Case("(?>[0-9]+)abc"), "abc12345abc", options, 3, 8, true, "12345abc" };
-                        yield return new object[] { engine, Case("(?>(?>[0-9]+))abc"), "abc12345abc", options, 3, 8, true, "12345abc" };
-                        yield return new object[] { engine, Case("(?>[0-9]*)abc"), "abc12345abc", options, 3, 8, true, "12345abc" };
-                        yield return new object[] { engine, Case("(?>[^z]+)z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz" };
-                        yield return new object[] { engine, Case("(?>(?>[^z]+))z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz" };
-                        yield return new object[] { engine, Case("(?>[^z]*)z123"), "zzzzxyxyxyz123", options, 4, 10, true, "xyxyxyz123" };
-                        yield return new object[] { engine, Case("(?>a+)123"), "aa1234", options, 0, 5, true, "aa123" };
-                        yield return new object[] { engine, Case("(?>a*)123"), "aa1234", options, 0, 5, true, "aa123" };
-                        yield return new object[] { engine, Case("(?>(?>a*))123"), "aa1234", options, 0, 5, true, "aa123" };
-                        yield return new object[] { engine, Case("(?>a+?)a"), "aaaaa", options, 0, 2, true, "aa" };
-                        yield return new object[] { engine, Case("(?>a*?)a"), "aaaaa", options, 0, 1, true, "a" };
-                        yield return new object[] { engine, Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty };
-                        yield return new object[] { engine, Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi" };
+                        yield return (Case("(?>[0-9]+)abc"), "abc12345abc", options, 3, 8, true, "12345abc");
+                        yield return (Case("(?>(?>[0-9]+))abc"), "abc12345abc", options, 3, 8, true, "12345abc");
+                        yield return (Case("(?>[0-9]*)abc"), "abc12345abc", options, 3, 8, true, "12345abc");
+                        yield return (Case("(?>[^z]+)z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz");
+                        yield return (Case("(?>(?>[^z]+))z"), "zzzzxyxyxyz123", options, 4, 9, true, "xyxyxyz");
+                        yield return (Case("(?>[^z]*)z123"), "zzzzxyxyxyz123", options, 4, 10, true, "xyxyxyz123");
+                        yield return (Case("(?>a+)123"), "aa1234", options, 0, 5, true, "aa123");
+                        yield return (Case("(?>a*)123"), "aa1234", options, 0, 5, true, "aa123");
+                        yield return (Case("(?>(?>a*))123"), "aa1234", options, 0, 5, true, "aa123");
+                        yield return (Case("(?>a+?)a"), "aaaaa", options, 0, 2, true, "aa");
+                        yield return (Case("(?>a*?)a"), "aaaaa", options, 0, 1, true, "a");
+                        yield return (Case("(?>hi|hello|hey)hi"), "hellohi", options, 0, 0, false, string.Empty);
+                        yield return (Case("(?>hi|hello|hey)hi"), "hihi", options, 0, 4, true, "hihi");
                     }
                 }
 
                 // Loops at beginning of expressions
-                yield return new object[] { engine, @"a+", "aaa", RegexOptions.None, 0, 3, true, "aaa" };
-                yield return new object[] { engine, @"a+\d+", "a1", RegexOptions.None, 0, 2, true, "a1" };
-                yield return new object[] { engine, @".+\d+", "a1", RegexOptions.None, 0, 2, true, "a1" };
-                yield return new object[] { engine, ".+\nabc", "a\nabc", RegexOptions.None, 0, 5, true, "a\nabc" };
-                yield return new object[] { engine, @"\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123" };
-                yield return new object[] { engine, @"\d+\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123" };
-                yield return new object[] { engine, @"\w+123\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "abcd123efg" };
-                yield return new object[] { engine, @"\d+\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "123efg" };
-                yield return new object[] { engine, @"\w+@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"\w{3,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"\w{4,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, false, string.Empty };
-                yield return new object[] { engine, @"\w{2,5}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"\w{3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"\w{0,3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"\w{0,2}c@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"\w*@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"(\w+)@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"((\w+))@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com" };
-                yield return new object[] { engine, @"(\w+)c@\w+.com", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.com" };
+                yield return (@"a+", "aaa", RegexOptions.None, 0, 3, true, "aaa");
+                yield return (@"a+\d+", "a1", RegexOptions.None, 0, 2, true, "a1");
+                yield return (@".+\d+", "a1", RegexOptions.None, 0, 2, true, "a1");
+                yield return (".+\nabc", "a\nabc", RegexOptions.None, 0, 5, true, "a\nabc");
+                yield return (@"\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123");
+                yield return (@"\d+\d+", "abcd123efg", RegexOptions.None, 0, 10, true, "123");
+                yield return (@"\w+123\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "abcd123efg");
+                yield return (@"\d+\w+", "abcd123efg", RegexOptions.None, 0, 10, true, "123efg");
+                yield return (@"\w+@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"\w{3,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"\w{4,}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, false, string.Empty);
+                yield return (@"\w{2,5}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"\w{3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"\w{0,3}@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"\w{0,2}c@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"\w*@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"(\w+)@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"((\w+))@\w+.com", "abc@def.com", RegexOptions.None, 0, 11, true, "abc@def.com");
+                yield return (@"(\w+)c@\w+.com", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.com");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(\w+)c@\w+.com\1", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.comab" };
-                    yield return new object[] { engine, @"(\w+)@def.com\1", "abc@def.comab", RegexOptions.None, 0, 13, false, string.Empty };
-                    yield return new object[] { engine, @"(\w+)@def.com\1", "abc@def.combc", RegexOptions.None, 0, 13, true, "bc@def.combc" };
-                    yield return new object[] { engine, @"(\w*)@def.com\1", "abc@def.com", RegexOptions.None, 0, 11, true, "@def.com" };
-                    yield return new object[] { engine, @"\w+(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
-                    yield return new object[] { engine, @"\w+(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
-                    yield return new object[] { engine, @"(?>\w+)(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty };
-                    yield return new object[] { engine, @"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty };
+                    yield return (@"(\w+)c@\w+.com\1", "abc@def.comabcdef", RegexOptions.None, 0, 17, true, "abc@def.comab");
+                    yield return (@"(\w+)@def.com\1", "abc@def.comab", RegexOptions.None, 0, 13, false, string.Empty);
+                    yield return (@"(\w+)@def.com\1", "abc@def.combc", RegexOptions.None, 0, 13, true, "bc@def.combc");
+                    yield return (@"(\w*)@def.com\1", "abc@def.com", RegexOptions.None, 0, 11, true, "@def.com");
+                    yield return (@"\w+(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty);
+                    yield return (@"\w+(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty);
+                    yield return (@"(?>\w+)(?<!a)", "a", RegexOptions.None, 0, 1, false, string.Empty);
+                    yield return (@"(?>\w+)(?<!a)", "aa", RegexOptions.None, 0, 2, false, string.Empty);
                 }
-                yield return new object[] { engine, @".+a", "baa", RegexOptions.None, 0, 3, true, "baa" };
-                yield return new object[] { engine, @"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa" };
-                yield return new object[] { engine, @"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234" };
-                yield return new object[] { engine, @"(\d{2,3}){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
-                yield return new object[] { engine, @"((\d{2,3})){2}", "1234", RegexOptions.None, 0, 4, true, "1234" };
+                yield return (@".+a", "baa", RegexOptions.None, 0, 3, true, "baa");
+                yield return (@"[ab]+a", "cacbaac", RegexOptions.None, 0, 7, true, "baa");
+                yield return (@"^(\d{2,3}){2}$", "1234", RegexOptions.None, 0, 4, true, "1234");
+                yield return (@"(\d{2,3}){2}", "1234", RegexOptions.None, 0, 4, true, "1234");
+                yield return (@"((\d{2,3})){2}", "1234", RegexOptions.None, 0, 4, true, "1234");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123" };
-                    yield return new object[] { engine, @"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123" };
+                    yield return (@"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "123");
+                    yield return (@"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "123");
                 }
                 else
                 {
                     // In NonBacktracking engine the alternation in the inner loop allows the alternate longer eager match of \d{2}\d{2}
-                    yield return new object[] { engine, @"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "1234" };
-                    yield return new object[] { engine, @"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "1234" };
+                    yield return (@"(\d{2,3})+", "1234", RegexOptions.None, 0, 4, true, "1234");
+                    yield return (@"(\d{2,3})*", "123456", RegexOptions.None, 0, 4, true, "1234");
                 }
-                yield return new object[] { engine, @"(abc\d{2,3}){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc456" };
+                yield return (@"(abc\d{2,3}){2}", "abc123abc4567", RegexOptions.None, 0, 12, true, "abc123abc456");
                 foreach (RegexOptions lineOption in new[] { RegexOptions.None, RegexOptions.Singleline, RegexOptions.Multiline })
                 {
-                    yield return new object[] { engine, @".*", "abc", lineOption, 1, 2, true, "bc" };
-                    yield return new object[] { engine, @".*c", "abc", lineOption, 1, 2, true, "bc" };
-                    yield return new object[] { engine, @"b.*", "abc", lineOption, 1, 2, true, "bc" };
-                    yield return new object[] { engine, @".*", "abc", lineOption, 2, 1, true, "c" };
+                    yield return (@".*", "abc", lineOption, 1, 2, true, "bc");
+                    yield return (@".*c", "abc", lineOption, 1, 2, true, "bc");
+                    yield return (@"b.*", "abc", lineOption, 1, 2, true, "bc");
+                    yield return (@".*", "abc", lineOption, 2, 1, true, "c");
                 }
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
-                yield return new object[] { engine, @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz" };
-                yield return new object[] { engine, @"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.IgnoreCase, 0, 4, false, string.Empty };
+                yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzz", RegexOptions.IgnoreCase, 0, 17, true, "aaaasdfajsdlfjzzz");
+                yield return (@"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.IgnoreCase, 0, 4, false, string.Empty);
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.RightToLeft, 0, 4, false, string.Empty };
-                    yield return new object[] { engine, @"\Aaaaaa\w+zzzzz\Z", "aaaa", RegexOptions.RightToLeft, 0, 4, false, string.Empty };
-                    yield return new object[] { engine, @"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 0, 4, false, string.Empty };
+                    yield return (@"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.RightToLeft, 0, 4, false, string.Empty);
+                    yield return (@"\Aaaaaa\w+zzzzz\Z", "aaaa", RegexOptions.RightToLeft, 0, 4, false, string.Empty);
+                    yield return (@"\Aaaaaa\w+zzz\Z", "aaaa", RegexOptions.RightToLeft | RegexOptions.IgnoreCase, 0, 4, false, string.Empty);
                 }
-                yield return new object[] { engine, @"abc\Adef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty };
-                yield return new object[] { engine, @"abc\adef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty };
+                yield return (@"abc\Adef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty);
+                yield return (@"abc\adef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty);
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"abc\Gdef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty };
+                    yield return (@"abc\Gdef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty);
                 }
-                yield return new object[] { engine, @"abc^def", "abcdef", RegexOptions.None, 0, 0, false, string.Empty };
-                yield return new object[] { engine, @"abc\Zef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty };
-                yield return new object[] { engine, @"abc\zef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty };
+                yield return (@"abc^def", "abcdef", RegexOptions.None, 0, 0, false, string.Empty);
+                yield return (@"abc\Zef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty);
+                yield return (@"abc\zef", "abcdef", RegexOptions.None, 0, 0, false, string.Empty);
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
-                yield return new object[] { engine, @"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty };
+                yield return (@"\Aaaa\w+zzz\Z", "aaaasdfajsdlfjzzza", RegexOptions.None, 0, 18, false, string.Empty);
 
                 // Anchors and multiline
-                yield return new object[] { engine, @"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty };
+                yield return (@"^A$", "ABC\n", RegexOptions.Multiline, 0, 2, false, string.Empty);
 
                 // Using beginning/end of string chars \A, \Z: Actual - "\\Aaaa\\w+zzz\\Z"
-                yield return new object[] { engine, @"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3" };
+                yield return (@"\A(line2\n)line3\Z", "line2\nline3\n", RegexOptions.Multiline, 0, 12, true, "line2\nline3");
 
                 // Using beginning/end of string chars ^: Actual - "^b"
-                yield return new object[] { engine, "^b", "ab", RegexOptions.None, 0, 2, false, string.Empty };
+                yield return ("^b", "ab", RegexOptions.None, 0, 2, false, string.Empty);
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Actual - "(?<char>\\w)\\<char>"
-                    yield return new object[] { engine, @"(?<char>\w)\<char>", "aa", RegexOptions.None, 0, 2, true, "aa" };
+                    yield return (@"(?<char>\w)\<char>", "aa", RegexOptions.None, 0, 2, true, "aa");
 
                     // Actual - "(?<43>\\w)\\43"
-                    yield return new object[] { engine, @"(?<43>\w)\43", "aa", RegexOptions.None, 0, 2, true, "aa" };
+                    yield return (@"(?<43>\w)\43", "aa", RegexOptions.None, 0, 2, true, "aa");
 
                     // Actual - "abc(?(1)111|222)"
-                    yield return new object[] { engine, "(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty };
+                    yield return ("(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty);
                 }
 
                 // "x" option. Removes unescaped whitespace from the pattern: Actual - " ([^/]+) ","x"
-                yield return new object[] { engine, "            ((.)+) #comment     ", "abc", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "abc" };
+                yield return ("            ((.)+) #comment     ", "abc", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "abc");
 
                 // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
-                yield return new object[] { engine, "\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      " };
+                yield return ("\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      ");
 
                 // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
                 if ("i".ToUpper() == "I")
                 {
-                    yield return new object[] { engine, "aaa(?i:match this)bbb", "aaaMaTcH ThIsbbb", RegexOptions.None, 0, 16, true, "aaaMaTcH ThIsbbb" };
+                    yield return ("aaa(?i:match this)bbb", "aaaMaTcH ThIsbbb", RegexOptions.None, 0, 16, true, "aaaMaTcH ThIsbbb");
                 }
 
                 // Turning off case insensitive option in mid-pattern : Actual - "aaa(?-i:match this)bbb", "i"
-                yield return new object[] { engine, "aAa(?-i:match this)bbb", "AaAmatch thisBBb", RegexOptions.IgnoreCase, 0, 16, true, "AaAmatch thisBBb" };
+                yield return ("aAa(?-i:match this)bbb", "AaAmatch thisBBb", RegexOptions.IgnoreCase, 0, 16, true, "AaAmatch thisBBb");
 
                 // Turning on/off all the options at once : Actual - "aaa(?imnsx-imnsx:match this)bbb", "i"
-                yield return new object[] { engine, "aaa(?imnsx-imnsx:match this)bbb", "AaAmatcH thisBBb", RegexOptions.IgnoreCase, 0, 16, false, string.Empty };
+                yield return ("aaa(?imnsx-imnsx:match this)bbb", "AaAmatcH thisBBb", RegexOptions.IgnoreCase, 0, 16, false, string.Empty);
 
                 // Actual - "aaa(?#ignore this completely)bbb"
-                yield return new object[] { engine, "aAa(?#ignore this completely)bbb", "aAabbb", RegexOptions.None, 0, 6, true, "aAabbb" };
+                yield return ("aAa(?#ignore this completely)bbb", "aAabbb", RegexOptions.None, 0, 6, true, "aAabbb");
 
                 // Trying empty string: Actual "[a-z0-9]+", ""
-                yield return new object[] { engine, "[a-z0-9]+", "", RegexOptions.None, 0, 0, false, string.Empty };
+                yield return ("[a-z0-9]+", "", RegexOptions.None, 0, 0, false, string.Empty);
 
                 // Numbering pattern slots: "(?<1>\\d{3})(?<2>\\d{3})(?<3>\\d{4})"
-                yield return new object[] { engine, @"(?<1>\d{3})(?<2>\d{3})(?<3>\d{4})", "8885551111", RegexOptions.None, 0, 10, true, "8885551111" };
-                yield return new object[] { engine, @"(?<1>\d{3})(?<2>\d{3})(?<3>\d{4})", "Invalid string", RegexOptions.None, 0, 14, false, string.Empty };
+                yield return (@"(?<1>\d{3})(?<2>\d{3})(?<3>\d{4})", "8885551111", RegexOptions.None, 0, 10, true, "8885551111");
+                yield return (@"(?<1>\d{3})(?<2>\d{3})(?<3>\d{4})", "Invalid string", RegexOptions.None, 0, 14, false, string.Empty);
 
                 // Not naming pattern slots at all: "^(cat|chat)"
-                yield return new object[] { engine, "^(cat|chat)", "cats are bad", RegexOptions.None, 0, 12, true, "cat" };
+                yield return ("^(cat|chat)", "cats are bad", RegexOptions.None, 0, 12, true, "cat");
 
-                yield return new object[] { engine, "abc", "abc", RegexOptions.None, 0, 3, true, "abc" };
-                yield return new object[] { engine, "abc", "aBc", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, "abc", "aBc", RegexOptions.IgnoreCase, 0, 3, true, "aBc" };
-                yield return new object[] { engine, @"abc.*def", "abcghiDEF", RegexOptions.IgnoreCase, 0, 9, true, "abcghiDEF" };
+                yield return ("abc", "abc", RegexOptions.None, 0, 3, true, "abc");
+                yield return ("abc", "aBc", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return ("abc", "aBc", RegexOptions.IgnoreCase, 0, 3, true, "aBc");
+                yield return (@"abc.*def", "abcghiDEF", RegexOptions.IgnoreCase, 0, 9, true, "abcghiDEF");
 
                 // Using *, +, ?, {}: Actual - "a+\\.?b*\\.?c{2}"
-                yield return new object[] { engine, @"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc" };
-                yield return new object[] { engine, @"[^a]+\.[^z]+", "zzzzz", RegexOptions.None, 0, 5, false, string.Empty };
+                yield return (@"a+\.?b*\.+c{2}", "ab.cc", RegexOptions.None, 0, 5, true, "ab.cc");
+                yield return (@"[^a]+\.[^z]+", "zzzzz", RegexOptions.None, 0, 5, false, string.Empty);
 
                 // IgnoreCase
-                yield return new object[] { engine, "AAA", "aaabbb", RegexOptions.IgnoreCase, 0, 6, true, "aaa" };
-                yield return new object[] { engine, @"\p{Lu}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b" };
-                yield return new object[] { engine, @"\p{Ll}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b" };
-                yield return new object[] { engine, @"\p{Lt}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b" };
-                yield return new object[] { engine, @"\p{Lo}", "1bc", RegexOptions.IgnoreCase, 0, 3, false, string.Empty };
+                yield return ("AAA", "aaabbb", RegexOptions.IgnoreCase, 0, 6, true, "aaa");
+                yield return (@"\p{Lu}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
+                yield return (@"\p{Ll}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
+                yield return (@"\p{Lt}", "1bc", RegexOptions.IgnoreCase, 0, 3, true, "b");
+                yield return (@"\p{Lo}", "1bc", RegexOptions.IgnoreCase, 0, 3, false, string.Empty);
 
                 // "\D+"
-                yield return new object[] { engine, @"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty };
+                yield return (@"\D+", "12321", RegexOptions.None, 0, 5, false, string.Empty);
 
                 // Groups
-                yield return new object[] { engine, "(?<first_name>\\S+)\\s(?<last_name>\\S+)", "David Bau", RegexOptions.None, 0, 9, true, "David Bau" };
+                yield return ("(?<first_name>\\S+)\\s(?<last_name>\\S+)", "David Bau", RegexOptions.None, 0, 9, true, "David Bau");
 
                 // "^b"
-                yield return new object[] { engine, "^b", "abc", RegexOptions.None, 0, 3, false, string.Empty };
+                yield return ("^b", "abc", RegexOptions.None, 0, 3, false, string.Empty);
 
                 // Trim leading and trailing whitespace
-                yield return new object[] { engine, @"\s*(.*?)\s*$", " Hello World ", RegexOptions.None, 0, 13, true, " Hello World " };
+                yield return (@"\s*(.*?)\s*$", " Hello World ", RegexOptions.None, 0, 13, true, " Hello World ");
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // Throws NotSupported with NonBacktracking engine because of the balancing group dog-0
-                    yield return new object[] { engine, @"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty };
+                    yield return (@"(?<cat>cat)\w+(?<dog-0>dog)", "cat_Hello_World_dog", RegexOptions.None, 0, 19, false, string.Empty);
                 }
 
                 // Atomic Zero-Width Assertions \A \Z \z \b \B
-                yield return new object[] { engine, @"\A(cat)\s+(dog)", "cat   \n\n\ncat     dog", RegexOptions.None, 0, 20, false, string.Empty };
-                yield return new object[] { engine, @"\A(cat)\s+(dog)", "cat   \n\n\ncat     dog", RegexOptions.Multiline, 0, 20, false, string.Empty };
+                yield return (@"\A(cat)\s+(dog)", "cat   \n\n\ncat     dog", RegexOptions.None, 0, 20, false, string.Empty);
+                yield return (@"\A(cat)\s+(dog)", "cat   \n\n\ncat     dog", RegexOptions.Multiline, 0, 20, false, string.Empty);
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"\A(cat)\s+(dog)", "cat   \n\n\ncat     dog", RegexOptions.ECMAScript, 0, 20, false, string.Empty };
+                    yield return (@"\A(cat)\s+(dog)", "cat   \n\n\ncat     dog", RegexOptions.ECMAScript, 0, 20, false, string.Empty);
                 }
 
-                yield return new object[] { engine, @"(cat)\s+(dog)\Z", "cat   dog\n\n\ncat", RegexOptions.None, 0, 15, false, string.Empty };
-                yield return new object[] { engine, @"(cat)\s+(dog)\Z", "cat   dog\n\n\ncat     ", RegexOptions.Multiline, 0, 20, false, string.Empty };
+                yield return (@"(cat)\s+(dog)\Z", "cat   dog\n\n\ncat", RegexOptions.None, 0, 15, false, string.Empty);
+                yield return (@"(cat)\s+(dog)\Z", "cat   dog\n\n\ncat     ", RegexOptions.Multiline, 0, 20, false, string.Empty);
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(cat)\s+(dog)\Z", "cat   dog\n\n\ncat     ", RegexOptions.ECMAScript, 0, 20, false, string.Empty };
+                    yield return (@"(cat)\s+(dog)\Z", "cat   dog\n\n\ncat     ", RegexOptions.ECMAScript, 0, 20, false, string.Empty);
                 }
 
-                yield return new object[] { engine, @"(cat)\s+(dog)\z", "cat   dog\n\n\ncat", RegexOptions.None, 0, 15, false, string.Empty };
-                yield return new object[] { engine, @"(cat)\s+(dog)\z", "cat   dog\n\n\ncat     ", RegexOptions.Multiline, 0, 20, false, string.Empty };
+                yield return (@"(cat)\s+(dog)\z", "cat   dog\n\n\ncat", RegexOptions.None, 0, 15, false, string.Empty);
+                yield return (@"(cat)\s+(dog)\z", "cat   dog\n\n\ncat     ", RegexOptions.Multiline, 0, 20, false, string.Empty);
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(cat)\s+(dog)\z", "cat   dog\n\n\ncat     ", RegexOptions.ECMAScript, 0, 20, false, string.Empty };
+                    yield return (@"(cat)\s+(dog)\z", "cat   dog\n\n\ncat     ", RegexOptions.ECMAScript, 0, 20, false, string.Empty);
                 }
-                yield return new object[] { engine, @"(cat)\s+(dog)\z", "cat   \n\n\n   dog\n", RegexOptions.None, 0, 16, false, string.Empty };
-                yield return new object[] { engine, @"(cat)\s+(dog)\z", "cat   \n\n\n   dog\n", RegexOptions.Multiline, 0, 16, false, string.Empty };
+                yield return (@"(cat)\s+(dog)\z", "cat   \n\n\n   dog\n", RegexOptions.None, 0, 16, false, string.Empty);
+                yield return (@"(cat)\s+(dog)\z", "cat   \n\n\n   dog\n", RegexOptions.Multiline, 0, 16, false, string.Empty);
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, @"(cat)\s+(dog)\z", "cat   \n\n\n   dog\n", RegexOptions.ECMAScript, 0, 16, false, string.Empty };
+                    yield return (@"(cat)\s+(dog)\z", "cat   \n\n\n   dog\n", RegexOptions.ECMAScript, 0, 16, false, string.Empty);
                 }
 
-                yield return new object[] { engine, @"\b@cat", "123START123;@catEND", RegexOptions.None, 0, 19, false, string.Empty };
-                yield return new object[] { engine, @"\b<cat", "123START123'<catEND", RegexOptions.None, 0, 19, false, string.Empty };
-                yield return new object[] { engine, @"\b,cat", "satwe,,,START',catEND", RegexOptions.None, 0, 21, false, string.Empty };
-                yield return new object[] { engine, @"\b\[cat", "`12START123'[catEND", RegexOptions.None, 0, 19, false, string.Empty };
+                yield return (@"\b@cat", "123START123;@catEND", RegexOptions.None, 0, 19, false, string.Empty);
+                yield return (@"\b<cat", "123START123'<catEND", RegexOptions.None, 0, 19, false, string.Empty);
+                yield return (@"\b,cat", "satwe,,,START',catEND", RegexOptions.None, 0, 21, false, string.Empty);
+                yield return (@"\b\[cat", "`12START123'[catEND", RegexOptions.None, 0, 19, false, string.Empty);
 
-                yield return new object[] { engine, @"\B@cat", "123START123@catEND", RegexOptions.None, 0, 18, false, string.Empty };
-                yield return new object[] { engine, @"\B<cat", "123START123<catEND", RegexOptions.None, 0, 18, false, string.Empty };
-                yield return new object[] { engine, @"\B,cat", "satwe,,,START,catEND", RegexOptions.None, 0, 20, false, string.Empty };
-                yield return new object[] { engine, @"\B\[cat", "`12START123[catEND", RegexOptions.None, 0, 18, false, string.Empty };
+                yield return (@"\B@cat", "123START123@catEND", RegexOptions.None, 0, 18, false, string.Empty);
+                yield return (@"\B<cat", "123START123<catEND", RegexOptions.None, 0, 18, false, string.Empty);
+                yield return (@"\B,cat", "satwe,,,START,catEND", RegexOptions.None, 0, 20, false, string.Empty);
+                yield return (@"\B\[cat", "`12START123[catEND", RegexOptions.None, 0, 18, false, string.Empty);
 
                 // Lazy operator Backtracking
-                yield return new object[] { engine, @"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/", "http://www.msn.com", RegexOptions.IgnoreCase, 0, 18, false, string.Empty };
+                yield return (@"http://([a-zA-z0-9\-]*\.?)*?(:[0-9]*)??/", "http://www.msn.com", RegexOptions.IgnoreCase, 0, 18, false, string.Empty);
 
                 // Grouping Constructs Invalid Regular Expressions
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, "(?!)", "(?!)cat", RegexOptions.None, 0, 7, false, string.Empty };
-                    yield return new object[] { engine, "(?<!)", "(?<!)cat", RegexOptions.None, 0, 8, false, string.Empty };
+                    yield return ("(?!)", "(?!)cat", RegexOptions.None, 0, 7, false, string.Empty);
+                    yield return ("(?<!)", "(?<!)cat", RegexOptions.None, 0, 8, false, string.Empty);
                 }
 
                 // Alternation construct
-                yield return new object[] { engine, "[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest" };
+                yield return ("[^a-z0-9]etag|[^a-z0-9]digest", "this string has .digest as a substring", RegexOptions.None, 16, 7, true, ".digest");
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
-                    yield return new object[] { engine, "(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty };
-                    yield return new object[] { engine, "(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty };
-                    yield return new object[] { engine, "(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty };
-                    yield return new object[] { engine, "(?(cat)|dog)", "cat", RegexOptions.None, 0, 3, true, string.Empty };
-                    yield return new object[] { engine, "(?(cat)|dog)", "catdog", RegexOptions.None, 0, 6, true, string.Empty };
-                    yield return new object[] { engine, "(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty };
-                    yield return new object[] { engine, "(?(cat)dog1|dog2)", "catdog1", RegexOptions.None, 0, 7, false, string.Empty };
-                    yield return new object[] { engine, "(?(cat)dog1|dog2)", "catdog2", RegexOptions.None, 0, 7, true, "dog2" };
-                    yield return new object[] { engine, "(?(cat)dog1|dog2)", "catdog1dog2", RegexOptions.None, 0, 11, true, "dog2" };
+                    yield return ("(?(dog2))", "dog2", RegexOptions.None, 0, 4, true, string.Empty);
+                    yield return ("(?(a:b))", "a", RegexOptions.None, 0, 1, true, string.Empty);
+                    yield return ("(?(a:))", "a", RegexOptions.None, 0, 1, true, string.Empty);
+                    yield return ("(?(cat)|dog)", "cat", RegexOptions.None, 0, 3, true, string.Empty);
+                    yield return ("(?(cat)|dog)", "catdog", RegexOptions.None, 0, 6, true, string.Empty);
+                    yield return ("(?(cat)|dog)", "oof", RegexOptions.None, 0, 3, false, string.Empty);
+                    yield return ("(?(cat)dog1|dog2)", "catdog1", RegexOptions.None, 0, 7, false, string.Empty);
+                    yield return ("(?(cat)dog1|dog2)", "catdog2", RegexOptions.None, 0, 7, true, "dog2");
+                    yield return ("(?(cat)dog1|dog2)", "catdog1dog2", RegexOptions.None, 0, 11, true, "dog2");
                 }
 
                 // No Negation
-                yield return new object[] { engine, "[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, "[1234-[1234]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return ("[abcd-[abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return ("[1234-[1234]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // All Negation
-                yield return new object[] { engine, "[^abcd-[^abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, "[^1234-[^1234]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return ("[^abcd-[^abcd]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return ("[^1234-[^1234]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // No Negation
-                yield return new object[] { engine, "[a-z-[a-z]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, "[0-9-[0-9]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return ("[a-z-[a-z]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return ("[0-9-[0-9]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // All Negation
-                yield return new object[] { engine, "[^a-z-[^a-z]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, "[^0-9-[^0-9]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return ("[^a-z-[^a-z]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return ("[^0-9-[^0-9]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // No Negation
-                yield return new object[] { engine, @"[\w-[\w]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\W-[\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\s-[\s]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\S-[\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\d-[\d]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\D-[\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return (@"[\w-[\w]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\W-[\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\s-[\s]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\S-[\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\d-[\d]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\D-[\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // All Negation
-                yield return new object[] { engine, @"[^\w-[^\w]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\W-[^\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\s-[^\s]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\S-[^\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\d-[^\d]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\D-[^\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return (@"[^\w-[^\w]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\W-[^\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\s-[^\s]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\S-[^\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\d-[^\d]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\D-[^\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // MixedNegation
-                yield return new object[] { engine, @"[^\w-[\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\w-[^\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\s-[\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\s-[^\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\d-[\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\d-[^\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return (@"[^\w-[\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\w-[^\W]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\s-[\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\s-[^\S]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\d-[\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\d-[^\D]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // No Negation
-                yield return new object[] { engine, @"[\p{Ll}-[\p{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\P{Ll}-[\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\p{Lu}-[\p{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\P{Lu}-[\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\p{Nd}-[\p{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\P{Nd}-[\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return (@"[\p{Ll}-[\p{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\P{Ll}-[\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\p{Lu}-[\p{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\P{Lu}-[\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\p{Nd}-[\p{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\P{Nd}-[\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // All Negation
-                yield return new object[] { engine, @"[^\p{Ll}-[^\p{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\P{Ll}-[^\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\p{Lu}-[^\p{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\P{Lu}-[^\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\p{Nd}-[^\p{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\P{Nd}-[^\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return (@"[^\p{Ll}-[^\p{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\P{Ll}-[^\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\p{Lu}-[^\p{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\P{Lu}-[^\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\p{Nd}-[^\p{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\P{Nd}-[^\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // MixedNegation
-                yield return new object[] { engine, @"[^\p{Ll}-[\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\p{Ll}-[^\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\p{Lu}-[\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\p{Lu}-[^\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[^\p{Nd}-[\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
-                yield return new object[] { engine, @"[\p{Nd}-[^\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty };
+                yield return (@"[^\p{Ll}-[\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\p{Ll}-[^\P{Ll}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\p{Lu}-[\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\p{Lu}-[^\P{Lu}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[^\p{Nd}-[\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
+                yield return (@"[\p{Nd}-[^\P{Nd}]]+", "abcxyzABCXYZ`!@#$%^&*()_-+= \t\n", RegexOptions.None, 0, 30, false, string.Empty);
 
                 // Character Class Substraction
-                yield return new object[] { engine, @"[ab\-\[cd-[-[]]]]", "[]]", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"[ab\-\[cd-[-[]]]]", "-]]", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"[ab\-\[cd-[-[]]]]", "`]]", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"[ab\-\[cd-[-[]]]]", "e]]", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"[ab\-\[cd-[[]]]]", "']]", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"[ab\-\[cd-[[]]]]", "e]]", RegexOptions.None, 0, 3, false, string.Empty };
-                yield return new object[] { engine, @"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty };
+                yield return (@"[ab\-\[cd-[-[]]]]", "[]]", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"[ab\-\[cd-[-[]]]]", "-]]", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"[ab\-\[cd-[-[]]]]", "`]]", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"[ab\-\[cd-[-[]]]]", "e]]", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"[ab\-\[cd-[[]]]]", "']]", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"[ab\-\[cd-[[]]]]", "e]]", RegexOptions.None, 0, 3, false, string.Empty);
+                yield return (@"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty);
 
                 // \c
                 if (!PlatformDetection.IsNetFramework) // missing fix for https://github.com/dotnet/runtime/issues/24759
                 {
-                    yield return new object[] { engine, @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
+                    yield return (@"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty);
                 }
 
                 // Surrogate pairs split up into UTF-16 code units.
-                yield return new object[] { engine, @"(\uD82F[\uDCA0-\uDCA3])", "\uD82F\uDCA2", RegexOptions.CultureInvariant, 0, 2, true, "\uD82F\uDCA2" };
+                yield return (@"(\uD82F[\uDCA0-\uDCA3])", "\uD82F\uDCA2", RegexOptions.CultureInvariant, 0, 2, true, "\uD82F\uDCA2");
 
                 // Unicode text
                 foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.RightToLeft, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant })
                 {
                     if (engine != RegexEngine.NonBacktracking || options != RegexOptions.RightToLeft)
                     {
-                        yield return new object[] { engine, "\u05D0\u05D1\u05D2\u05D3(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "abc\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5def", options, 3, 6, true, "\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5" };
-                        yield return new object[] { engine, "\u05D0(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "\u05D0\u05D8", options, 0, 2, true, "\u05D0\u05D8" };
-                        yield return new object[] { engine, "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2" };
-                        yield return new object[] { engine, "\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "" };
+                        yield return ("\u05D0\u05D1\u05D2\u05D3(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "abc\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5def", options, 3, 6, true, "\u05D0\u05D1\u05D2\u05D3\u05D4\u05D5");
+                        yield return ("\u05D0(\u05D4\u05D5|\u05D6\u05D7|\u05D8)", "\u05D0\u05D8", options, 0, 2, true, "\u05D0\u05D8");
+                        yield return ("\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D2", options, 0, 2, true, "\u05D0\u05D2");
+                        yield return ("\u05D0(?:\u05D1|\u05D2|\u05D3)", "\u05D0\u05D4", options, 0, 0, false, "");
                     }
                 }
 
                 // .* : Case sensitive
-                yield return new object[] { engine, @".*\nfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "" };
-                yield return new object[] { engine, @"a.*\nfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "" };
-                yield return new object[] { engine, @".*\nFoo", $"\nFooThis should match", RegexOptions.None, 0, 21, true, "\nFoo" };
-                yield return new object[] { engine, @".*\nfoo", "\nfooThis should match", RegexOptions.None, 4, 17, false, "" };
+                yield return (@".*\nfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "");
+                yield return (@"a.*\nfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "");
+                yield return (@".*\nFoo", $"\nFooThis should match", RegexOptions.None, 0, 21, true, "\nFoo");
+                yield return (@".*\nfoo", "\nfooThis should match", RegexOptions.None, 4, 17, false, "");
 
-                yield return new object[] { engine, @".*\dfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "" };
-                yield return new object[] { engine, @".*\dFoo", "This1Foo should match", RegexOptions.None, 0, 21, true, "This1Foo" };
-                yield return new object[] { engine, @".*\dFoo", "This1foo should 2Foo match", RegexOptions.None, 0, 26, true, "This1foo should 2Foo" };
-                yield return new object[] { engine, @".*\dFoo", "This1foo shouldn't 2foo match", RegexOptions.None, 0, 29, false, "" };
-                yield return new object[] { engine, @".*\dfoo", "This1foo shouldn't 2foo match", RegexOptions.None, 24, 5, false, "" };
+                yield return (@".*\dfoo", "This shouldn't match", RegexOptions.None, 0, 20, false, "");
+                yield return (@".*\dFoo", "This1Foo should match", RegexOptions.None, 0, 21, true, "This1Foo");
+                yield return (@".*\dFoo", "This1foo should 2Foo match", RegexOptions.None, 0, 26, true, "This1foo should 2Foo");
+                yield return (@".*\dFoo", "This1foo shouldn't 2foo match", RegexOptions.None, 0, 29, false, "");
+                yield return (@".*\dfoo", "This1foo shouldn't 2foo match", RegexOptions.None, 24, 5, false, "");
 
-                yield return new object[] { engine, @".*\dfoo", "1fooThis1foo should 1foo match", RegexOptions.None, 4, 9, true, "This1foo" };
-                yield return new object[] { engine, @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None, 0, 20, false, "" };
+                yield return (@".*\dfoo", "1fooThis1foo should 1foo match", RegexOptions.None, 4, 9, true, "This1foo");
+                yield return (@".*\dfoo", "This shouldn't match 1foo", RegexOptions.None, 0, 20, false, "");
 
                 // Turkish case sensitivity
-                yield return new object[] { engine, @"[\u0120-\u0130]", "\u0130", RegexOptions.None, 0, 1, true, "\u0130" };
+                yield return (@"[\u0120-\u0130]", "\u0130", RegexOptions.None, 0, 1, true, "\u0130");
 
                 // .* : Case insensitive
-                yield return new object[] { engine, @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase, 0, 21, true, "\nfoo" };
-                yield return new object[] { engine, @".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase, 0, 21, true, "This1foo" };
-                yield return new object[] { engine, @".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo should 2FoO" };
-                yield return new object[] { engine, @".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo should 2fOo" };
-                yield return new object[] { engine, @".*\dfoo", "1fooThis1FOO should 1foo match", RegexOptions.IgnoreCase, 4, 9, true, "This1FOO" };
+                yield return (@".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase, 0, 21, true, "\nfoo");
+                yield return (@".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase, 0, 21, true, "This1foo");
+                yield return (@".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase, 0, 26, true, "This1foo should 2FoO");
+                yield return (@".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase, 0, 26, true, "This1Foo should 2fOo");
+                yield return (@".*\dfoo", "1fooThis1FOO should 1foo match", RegexOptions.IgnoreCase, 4, 9, true, "This1FOO");
 
                 if (!RegexHelpers.IsNonBacktracking(engine))
                 {
                     // RightToLeft
-                    yield return new object[] { engine, @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 0, 32, true, "foo4567890" };
-                    yield return new object[] { engine, @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 22, true, "foo4567890" };
-                    yield return new object[] { engine, @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 4, true, "foo4" };
-                    yield return new object[] { engine, @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 3, false, string.Empty };
-                    yield return new object[] { engine, @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 11, 21, false, string.Empty };
+                    yield return (@"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 0, 32, true, "foo4567890");
+                    yield return (@"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 22, true, "foo4567890");
+                    yield return (@"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 4, true, "foo4");
+                    yield return (@"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 3, false, string.Empty);
+                    yield return (@"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 11, 21, false, string.Empty);
 
-                    yield return new object[] { engine, @"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12" };
-                    yield return new object[] { engine, @"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty };
-                    yield return new object[] { engine, "aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty };
-                    yield return new object[] { engine, "abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def" };
+                    yield return (@"\s+\d+", "sdf 12sad", RegexOptions.RightToLeft, 0, 9, true, " 12");
+                    yield return (@"\s+\d+", " asdf12 ", RegexOptions.RightToLeft, 0, 6, false, string.Empty);
+                    yield return ("aaa", "aaabbb", RegexOptions.None, 3, 3, false, string.Empty);
+                    yield return ("abc|def", "123def456", RegexOptions.RightToLeft | RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 9, true, "def");
 
                     // .* : RTL, Case-sensitive
-                    yield return new object[] { engine, @".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
-                    yield return new object[] { engine, @".*\nfoo", "This should matchfoo\n", RegexOptions.None | RegexOptions.RightToLeft, 4, 13, false, "" };
-                    yield return new object[] { engine, @"a.*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
-                    yield return new object[] { engine, @".*\nFoo", $"This should match\nFoo", RegexOptions.None | RegexOptions.RightToLeft, 0, 21, true, "This should match\nFoo" };
+                    yield return (@".*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
+                    yield return (@".*\nfoo", "This should matchfoo\n", RegexOptions.None | RegexOptions.RightToLeft, 4, 13, false, "");
+                    yield return (@"a.*\nfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
+                    yield return (@".*\nFoo", $"This should match\nFoo", RegexOptions.None | RegexOptions.RightToLeft, 0, 21, true, "This should match\nFoo");
 
-                    yield return new object[] { engine, @".*\dfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
-                    yield return new object[] { engine, @".*\dFoo", "This1Foo should match", RegexOptions.None | RegexOptions.RightToLeft, 0, 21, true, "This1Foo" };
-                    yield return new object[] { engine, @".*\dFoo", "This1foo should 2Foo match", RegexOptions.None | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2Foo" };
-                    yield return new object[] { engine, @".*\dFoo", "This1foo shouldn't 2foo match", RegexOptions.None | RegexOptions.RightToLeft, 0, 29, false, "" };
-                    yield return new object[] { engine, @".*\dfoo", "This1foo shouldn't 2foo match", RegexOptions.None | RegexOptions.RightToLeft, 19, 0, false, "" };
+                    yield return (@".*\dfoo", "This shouldn't match", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
+                    yield return (@".*\dFoo", "This1Foo should match", RegexOptions.None | RegexOptions.RightToLeft, 0, 21, true, "This1Foo");
+                    yield return (@".*\dFoo", "This1foo should 2Foo match", RegexOptions.None | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2Foo");
+                    yield return (@".*\dFoo", "This1foo shouldn't 2foo match", RegexOptions.None | RegexOptions.RightToLeft, 0, 29, false, "");
+                    yield return (@".*\dfoo", "This1foo shouldn't 2foo match", RegexOptions.None | RegexOptions.RightToLeft, 19, 0, false, "");
 
-                    yield return new object[] { engine, @".*\dfoo", "1fooThis2foo should 1foo match", RegexOptions.None | RegexOptions.RightToLeft, 8, 4, true, "2foo" };
-                    yield return new object[] { engine, @".*\dfoo", "This shouldn't match 1foo", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "" };
+                    yield return (@".*\dfoo", "1fooThis2foo should 1foo match", RegexOptions.None | RegexOptions.RightToLeft, 8, 4, true, "2foo");
+                    yield return (@".*\dfoo", "This shouldn't match 1foo", RegexOptions.None | RegexOptions.RightToLeft, 0, 20, false, "");
 
                     // .* : RTL, case insensitive
-                    yield return new object[] { engine, @".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "\nfoo" };
-                    yield return new object[] { engine, @".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "This1foo" };
-                    yield return new object[] { engine, @".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2FoO" };
-                    yield return new object[] { engine, @".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1Foo should 2fOo" };
-                    yield return new object[] { engine, @".*\dfoo", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 8, 4, true, "2FOO" };
+                    yield return (@".*\nFoo", "\nfooThis should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "\nfoo");
+                    yield return (@".*\dFoo", "This1foo should match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 21, true, "This1foo");
+                    yield return (@".*\dFoo", "This1foo should 2FoO match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1foo should 2FoO");
+                    yield return (@".*\dFoo", "This1Foo should 2fOo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 0, 26, true, "This1Foo should 2fOo");
+                    yield return (@".*\dfoo", "1fooThis2FOO should 1foo match", RegexOptions.IgnoreCase | RegexOptions.RightToLeft, 8, 4, true, "2FOO");
                 }
 
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/36149")]
                 //if (PlatformDetection.IsNetCore)
                 //{
                 //    // Unicode symbols in character ranges. These are chars whose lowercase values cannot be found by using the offsets specified in s_lcTable.
-                //    yield return new object[] { engine, @"^(?i:[\u00D7-\u00D8])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
-                //    yield return new object[] { engine, @"^(?i:[\u00C0-\u00DE])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
-                //    yield return new object[] { engine, @"^(?i:[\u00C0-\u00DE])$", ((char)('\u00C0' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u00C0' + 32)).ToString() };
-                //    yield return new object[] { engine, @"^(?i:[\u00C0-\u00DE])$", ((char)('\u00DE' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u00DE' + 32)).ToString() };
-                //    yield return new object[] { engine, @"^(?i:[\u0391-\u03AB])$", ((char)('\u03A2' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
-                //    yield return new object[] { engine, @"^(?i:[\u0391-\u03AB])$", ((char)('\u0391' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u0391' + 32)).ToString() };
-                //    yield return new object[] { engine, @"^(?i:[\u0391-\u03AB])$", ((char)('\u03AB' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u03AB' + 32)).ToString() };
-                //    yield return new object[] { engine, @"^(?i:[\u1F18-\u1F1F])$", ((char)('\u1F1F' - 8)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
-                //    yield return new object[] { engine, @"^(?i:[\u1F18-\u1F1F])$", ((char)('\u1F18' - 8)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u1F18' - 8)).ToString() };
-                //    yield return new object[] { engine, @"^(?i:[\u10A0-\u10C5])$", ((char)('\u10A0' + 7264)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u10A0' + 7264)).ToString() };
-                //    yield return new object[] { engine, @"^(?i:[\u10A0-\u10C5])$", ((char)('\u1F1F' + 48)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
-                //    yield return new object[] { engine, @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24D0' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "" };
-                //    yield return new object[] { engine, @"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString() };
+                //    yield return (@"^(?i:[\u00D7-\u00D8])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
+                //    yield return (@"^(?i:[\u00C0-\u00DE])$", '\u00F7'.ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
+                //    yield return (@"^(?i:[\u00C0-\u00DE])$", ((char)('\u00C0' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u00C0' + 32)).ToString());
+                //    yield return (@"^(?i:[\u00C0-\u00DE])$", ((char)('\u00DE' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u00DE' + 32)).ToString());
+                //    yield return (@"^(?i:[\u0391-\u03AB])$", ((char)('\u03A2' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
+                //    yield return (@"^(?i:[\u0391-\u03AB])$", ((char)('\u0391' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u0391' + 32)).ToString());
+                //    yield return (@"^(?i:[\u0391-\u03AB])$", ((char)('\u03AB' + 32)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u03AB' + 32)).ToString());
+                //    yield return (@"^(?i:[\u1F18-\u1F1F])$", ((char)('\u1F1F' - 8)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
+                //    yield return (@"^(?i:[\u1F18-\u1F1F])$", ((char)('\u1F18' - 8)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u1F18' - 8)).ToString());
+                //    yield return (@"^(?i:[\u10A0-\u10C5])$", ((char)('\u10A0' + 7264)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u10A0' + 7264)).ToString());
+                //    yield return (@"^(?i:[\u10A0-\u10C5])$", ((char)('\u1F1F' + 48)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
+                //    yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24D0' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, false, "");
+                //    yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString());
                 //}
+
+                foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.Singleline })
+                {
+                    yield return (@"\W.*?\D", "seq 012 of 3 digits", options, 0, 19, true, " 012 ");
+                    yield return (@"\W.+?\D", "seq 012 of 3 digits", options, 0, 19, true, " 012 ");
+                    yield return (@"\W.{1,7}?\D", "seq 012 of 3 digits", options, 0, 19, true, " 012 ");
+                    yield return (@"\W.{1,2}?\D", "seq 012 of 3 digits", options, 0, 19, true, " of");
+                    yield return (@"\W.*?\b", "digits:0123456789", options, 0, 17, true, ":");
+                    yield return (@"\B.*?\B", "e.g:abc", options, 0, 7, true, "");
+                    yield return (@"\B\W+?", "e.g:abc", options, 0, 7, false, "");
+                    yield return (@"\B\W*?", "e.g:abc", options, 0, 7, true, "");
+
+                    // While not lazy loops themselves, variants of the prior case that should give same results here
+                    yield return (@"\B\W*", "e.g:abc", options, 0, 7, true, "");
+                    yield return (@"\B\W?", "e.g:abc", options, 0, 7, true, "");
+
+                    //mixed lazy and eager counting
+                    yield return ("z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa");
+                }
             }
         }
 
         [Theory]
-        [MemberData(nameof(Match_Basic_TestData))]
-        public async Task Match(RegexEngine engine, string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
+        [MemberData(nameof(Match_MemberData))]
+        public void Match(RegexEngine engine, string pattern, string input, RegexOptions options, Regex r, int beginning, int length, bool expectedSuccess, string expectedValue)
         {
             bool isDefaultStart = RegexHelpers.IsDefaultStart(input, options, beginning);
             bool isDefaultCount = RegexHelpers.IsDefaultCount(input, options, length);
-
-            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
 
             // Test instance method overloads
             if (isDefaultStart && isDefaultCount)
@@ -592,34 +590,44 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
+        private async Task CreateAndMatch(RegexEngine engine, string pattern, string input, RegexOptions options, int beginning, int length, bool expectedSuccess, string expectedValue)
+        {
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            Match(engine, pattern, input, options, r, beginning, length, expectedSuccess, expectedValue);
+        }
+
         public static IEnumerable<object[]> Match_VaryingLengthStrings_MemberData()
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, RegexOptions.None };
-                yield return new object[] { engine, RegexOptions.IgnoreCase };
-                yield return new object[] { engine, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant };
+                foreach (int length in new[] { 2, 3, 7, 8, 9, 64 })
+                {
+                    yield return new object[] { engine, RegexOptions.None, length };
+                    yield return new object[] { engine, RegexOptions.IgnoreCase, length };
+                    yield return new object[] { engine, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, length };
+                }
             }
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(Match_VaryingLengthStrings_MemberData))]
-        public async Task Match_VaryingLengthStrings(RegexEngine engine, RegexOptions options)
+        public async Task Match_VaryingLengthStrings(RegexEngine engine, RegexOptions options, int length)
         {
-            var lengths = new List<int>() { 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 63, 64, 65 };
-            if ((options & RegexOptions.IgnoreCase) == 0)
-            {
-                lengths.Add(100_000); // currently produces too large a compiled method for case-insensitive
-            }
-
             bool caseInsensitive = (options & RegexOptions.IgnoreCase) != 0;
-            foreach (int length in lengths)
-            {
-                string pattern = "[123]" + string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
-                string input = "2" + string.Concat(Enumerable.Range(0, length).Select(i => (char)((caseInsensitive ? 'a' : 'A') + (i % 26))));
-                await Match(engine, pattern, input, options, 0, input.Length, expectedSuccess: true, expectedValue: input);
-            }
+            string pattern = "[123]" + string.Concat(Enumerable.Range(0, length).Select(i => (char)('A' + (i % 26))));
+            string input = "2" + string.Concat(Enumerable.Range(0, length).Select(i => (char)((caseInsensitive ? 'a' : 'A') + (i % 26))));
+            Regex r = await RegexHelpers.GetRegexAsync(engine, pattern, options);
+            Match(engine, pattern, input, options, r, 0, input.Length, expectedSuccess: true, expectedValue: input);
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Takes several minutes on .NET Framework")]
+        [OuterLoop("Takes several seconds")]
+        [Theory]
+        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
+        public async Task Match_VaryingLengthStrings_Huge(RegexEngine engine)
+        {
+            await Match_VaryingLengthStrings(engine, RegexOptions.None, 100_000);
         }
 
         public static IEnumerable<object[]> Match_DeepNesting_MemberData()
@@ -1224,8 +1232,8 @@ namespace System.Text.RegularExpressions.Tests
         {
             using (new ThreadCultureChange("en-US"))
             {
-                await Match(engine, "\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                await Match(engine, "\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await CreateAndMatch(engine, "\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await CreateAndMatch(engine, "\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
             }
         }
 
@@ -1235,10 +1243,10 @@ namespace System.Text.RegularExpressions.Tests
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))
             {
-                await Match(engine, "\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                await Match(engine, "\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                await Match(engine, "\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-                await Match(engine, "\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await CreateAndMatch(engine, "\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await CreateAndMatch(engine, "\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await CreateAndMatch(engine, "\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
+                await CreateAndMatch(engine, "\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
             }
         }
 
