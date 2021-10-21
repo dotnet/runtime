@@ -2471,11 +2471,9 @@ size_t      gc_heap::mark_stack_array_length = 0;
 
 mark*       gc_heap::mark_stack_array = 0;
 
-size_t      gc_heap::saved_mark_stack_array_length = 0;
+uint32_t    gc_heap::saved_pinned_queue_index = 0;
 
-size_t      gc_heap::saved_mark_stack_tos = 0;
-
-mark*       gc_heap::saved_mark_stack_array = 0;
+saved_pinned_queue gc_heap::saved_pinned_queues[MAX_SAVED_PINNED_QUEUES];
 
 #if defined (_DEBUG) && defined (VERIFY_HEAP)
 BOOL        gc_heap::verify_pinned_queue_p = FALSE;
@@ -7814,9 +7812,7 @@ void gc_heap::make_mark_stack (mark* arr)
 #ifdef MH_SC_MARK
     mark_stack_busy() = 0;
 #endif //MH_SC_MARK
-    saved_mark_stack_array = nullptr;
-    saved_mark_stack_array_length = 0;
-    saved_mark_stack_tos = 0;
+    saved_pinned_queue_index = 0;
 }
 
 #ifdef BACKGROUND_GC
@@ -32099,27 +32095,41 @@ size_t gc_heap::recover_saved_pinned_info()
     return total_recovered_sweep_size;
 }
 
-void gc_heap::save_pinned_queue()
+void saved_pinned_queue::save(gc_phase phase, size_t gc_index, size_t tos, size_t length, mark* array)
 {
-    if (saved_mark_stack_array_length < mark_stack_array_length)
+    if (mark_stack_array_length < length)
     {
-        if (saved_mark_stack_array != nullptr)
+        if (mark_stack_array != nullptr)
         {
-            delete[] saved_mark_stack_array;
-            saved_mark_stack_array = nullptr;
+            delete[] mark_stack_array;
+            mark_stack_array = nullptr;
         }
-        saved_mark_stack_array = new (nothrow) mark[mark_stack_array_length];
-        if (saved_mark_stack_array == nullptr)
+        mark_stack_array = new (nothrow) mark[length];
+        if (mark_stack_array == nullptr)
         {
-            saved_mark_stack_array_length = 0;
-            saved_mark_stack_tos = 0;
+            mark_stack_array_length = 0;
+            mark_stack_tos = 0;
             return;
         }
-        saved_mark_stack_array_length = mark_stack_array_length;
+        mark_stack_array_length = length;
     }
-    assert (saved_mark_stack_array_length >= mark_stack_array_length);
-    memcpy (saved_mark_stack_array, mark_stack_array, sizeof(saved_mark_stack_array[0])*mark_stack_tos);
-    saved_mark_stack_tos = mark_stack_tos;
+    assert (mark_stack_array_length >= length);
+    memcpy (mark_stack_array, array, sizeof(mark_stack_array[0])*tos);
+    mark_stack_tos = tos;
+    saved_gc_index = gc_index;
+    saved_phase = phase;
+}
+
+void gc_heap::save_pinned_queue(saved_pinned_queue::gc_phase phase)
+{
+    saved_pinned_queues[saved_pinned_queue_index].save(
+        phase,
+        settings.gc_index,
+        mark_stack_tos,
+        mark_stack_array_length,
+        mark_stack_array);
+
+    saved_pinned_queue_index = (saved_pinned_queue_index + 1) % MAX_SAVED_PINNED_QUEUES;
 }
 
 void gc_heap::compact_phase (int condemned_gen_number,
@@ -32158,7 +32168,9 @@ void gc_heap::compact_phase (int condemned_gen_number,
 
     reset_pinned_queue_bos();
     if (condemned_gen_number == 1)
-        save_pinned_queue();
+    {
+        save_pinned_queue(saved_pinned_queue::start_compact);
+    }
     update_oldest_pinned_plug();
     BOOL reused_seg = expand_reused_seg_p();
     if (reused_seg)
@@ -32265,6 +32277,11 @@ void gc_heap::compact_phase (int condemned_gen_number,
     }
 
     recover_saved_pinned_info();
+
+    if (condemned_gen_number == 1)
+    {
+        save_pinned_queue(saved_pinned_queue::end_compact);
+    }
 
     concurrent_print_time_delta ("compact end");
 

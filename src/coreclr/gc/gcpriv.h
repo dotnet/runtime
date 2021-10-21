@@ -1200,6 +1200,37 @@ enum bookkeeping_element
     total_bookkeeping_elements
 };
 
+class saved_pinned_queue
+{
+public:
+    enum gc_phase
+    {
+        invalid,
+        start_compact,
+        end_compact,
+    };
+
+private:
+    size_t   saved_gc_index;
+    gc_phase saved_phase;
+    size_t   mark_stack_tos;
+    size_t   mark_stack_array_length;
+    mark*    mark_stack_array;
+
+public:
+
+    saved_pinned_queue() :
+        saved_gc_index(0),
+        saved_phase(invalid),
+        mark_stack_tos(0),
+        mark_stack_array_length(0),
+        mark_stack_array(nullptr)
+    {
+    }
+
+    void    save(gc_phase phase, size_t gc_index, size_t tos, size_t length, mark* array);
+};
+
 //class definition of the internal class
 class gc_heap
 {
@@ -2310,7 +2341,7 @@ protected:
     PER_HEAP
     void reset_pinned_queue_bos();
     PER_HEAP
-    void save_pinned_queue();
+    void save_pinned_queue(saved_pinned_queue::gc_phase phase);
     PER_HEAP
     void set_allocator_next_pin (generation* gen);
     PER_HEAP
@@ -4072,14 +4103,13 @@ protected:
     PER_HEAP
     mark*       mark_stack_array;
 
-    PER_HEAP
-    size_t      saved_mark_stack_array_length;
+#define MAX_SAVED_PINNED_QUEUES  8
 
     PER_HEAP
-    size_t      saved_mark_stack_tos;
+    uint32_t    saved_pinned_queue_index;
 
     PER_HEAP
-    mark*       saved_mark_stack_array;
+    saved_pinned_queue saved_pinned_queues[MAX_SAVED_PINNED_QUEUES];
 
 #if defined (_DEBUG) && defined (VERIFY_HEAP)
     PER_HEAP
