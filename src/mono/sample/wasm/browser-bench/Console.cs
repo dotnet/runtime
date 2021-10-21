@@ -17,9 +17,7 @@ namespace Sample
         {
             var help = false;
             var options = new OptionSet {
-                $"Usage: wa-info.exe OPTIONS* file.wasm [file2.wasm ...]",
-                "",
-                "Provides information about WebAssembly file(s)",
+                "Simple mono wasm benchmark",
                 "",
                 "Copyright 2021 Microsoft Corporation",
                 "",
