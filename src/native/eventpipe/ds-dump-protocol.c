@@ -122,8 +122,6 @@ dump_protocol_helper_generate_core_dump (
 		ds_ipc_message_send_success (stream, ipc_result);
 	}
 
-	result = true;
-
 ep_on_exit:
 	ds_generate_core_dump_command_payload_free (payload);
 	ds_ipc_stream_free (stream);
