@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -94,22 +90,6 @@ public static class AddArray2
         BenchInner2(a, ref n);
 
         return true;
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        int[][] array = AllocArray<int>(Dim + 1, Dim + 1);
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                for (int i = 1; i <= Iterations; i++)
-                {
-                    Bench(array);
-                }
-            }
-        }
     }
 
     private static bool TestBase()

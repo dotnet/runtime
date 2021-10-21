@@ -4,12 +4,8 @@
 // FFT benchmark adapted from a Fortran routine from the book
 // Digital Signal Analysis, Samuel Stearns, Hayden Book Co.
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchF
 {
@@ -127,27 +123,9 @@ public static class FFT
         }
     }
 
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                Bench();
-            }
-        }
-    }
-
-    private static bool TestBase()
-    {
-        bool result = Bench();
-        return result;
-    }
-
     public static int Main()
     {
-        bool result = TestBase();
+        bool result = Bench();
         return (result ? 100 : -1);
     }
 }

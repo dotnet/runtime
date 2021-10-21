@@ -51,12 +51,8 @@
  ************************************************************************
  */
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchF
 {
@@ -622,29 +618,10 @@ public class LLoops
         }
     }
 
-    [Benchmark]
-    public static void Test()
-    {
-        var lloops = new LLoops();
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                lloops.Bench();
-            }
-        }
-    }
-
-    private bool TestBase()
-    {
-        bool result = Bench();
-        return result;
-    }
-
     public static int Main()
     {
         var lloops = new LLoops();
-        bool result = lloops.TestBase();
+        bool result = lloops.Bench();
         return (result ? 100 : -1);
     }
 }

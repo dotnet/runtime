@@ -20,11 +20,6 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
-[assembly: MeasureGCCounts]
 
 namespace BenchmarksGame
 {
@@ -263,19 +258,6 @@ namespace BenchmarksGame
             bool ok = Bench(helpers, true);
 
             return (ok ? 100 : -1);
-        }
-
-        [Benchmark(InnerIterationCount = 10)]
-        public static void RunBench()
-        {
-            var helpers = new TestHarnessHelpers(bigInput: true);
-            bool ok = true;
-
-            Benchmark.Iterate(() =>
-            {
-                ok &= Bench(helpers, false);
-            });
-            Assert.True(ok);
         }
 
         static bool Bench(TestHarnessHelpers helpers, bool verbose)

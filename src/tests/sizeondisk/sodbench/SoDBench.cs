@@ -1,7 +1,6 @@
 using CommandLine;
 using CommandLine.Text;
 using Newtonsoft.Json;
-using Microsoft.Xunit.Performance.Api;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

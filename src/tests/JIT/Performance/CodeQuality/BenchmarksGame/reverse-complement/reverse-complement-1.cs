@@ -16,10 +16,6 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Security.Cryptography;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -63,24 +59,6 @@ namespace BenchmarksGame
                 return -1;
             }
             return 100;
-        }
-
-        [Benchmark(InnerIterationCount = 1500)]
-        public static void RunBench()
-        {
-            var helpers = new TestHarnessHelpers(bigInput: true);
-            var outBytes = new byte[helpers.FileLength];
-
-            Benchmark.Iterate(() =>
-            {
-                using (var inputStream = helpers.GetInputStream())
-                using (var outputStream = new MemoryStream(outBytes))
-                {
-                    Bench(inputStream, outputStream);
-                }
-            });
-
-            Assert.True(MatchesChecksum(outBytes, helpers.CheckSum));
         }
 
         static bool MatchesChecksum(byte[] bytes, string checksum)

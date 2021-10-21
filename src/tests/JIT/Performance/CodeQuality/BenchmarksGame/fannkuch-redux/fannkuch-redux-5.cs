@@ -17,10 +17,6 @@
 using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -111,17 +107,6 @@ namespace BenchmarksGame
 
             // Return 100 on success, anything else on failure.
             return sum - expected + 100;
-        }
-
-        [Benchmark(InnerIterationCount = 20)]
-        [InlineData(10, 38)]
-        public static void RunBench(int n, int expectedSum)
-        {
-            Benchmark.Iterate(() =>
-            {
-                int sum = Bench(n, false);
-                Assert.Equal(expectedSum, sum);
-            });
         }
 
         static int Bench(int n, bool verbose)

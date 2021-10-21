@@ -13,10 +13,6 @@
 */
 
 using System;
-using Microsoft.Xunit.Performance;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace BenchmarksGame
 {
@@ -85,17 +81,6 @@ namespace BenchmarksGame
 
             // Return 100 on success, anything else on failure.
             return pf[0] - expected + 100;
-        }
-
-        [Benchmark(InnerIterationCount = 7)]
-        [InlineData(10, 73196)]
-        public static void RunBench(int n, int expectedSum)
-        {
-            Benchmark.Iterate(() =>
-            {
-                var pf = fannkuch(n);
-                Assert.Equal(expectedSum, pf[0]);
-            });
         }
     }
 }

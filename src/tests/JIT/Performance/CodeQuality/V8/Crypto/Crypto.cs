@@ -37,12 +37,9 @@
 
 // The code has been adapted for use as a benchmark by Microsoft.
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace V8.Crypto
 {
@@ -79,23 +76,6 @@ namespace V8.Crypto
             bool result = s_TEXT.Equals(INPUT);
 
             return (result ? 100 : -1);
-        }
-
-        [Benchmark]
-        public static void Bench()
-        {
-            const int Iterations = 10;
-            const int n = 8;
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Iterations; i++)
-                    {
-                        Measure(n, false);
-                    }
-                }
-            }
         }
 
         public static void Measure(int n, bool verbose)
