@@ -4,7 +4,6 @@
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
