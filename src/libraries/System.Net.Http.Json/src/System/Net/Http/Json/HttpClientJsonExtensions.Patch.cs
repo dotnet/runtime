@@ -64,23 +64,5 @@ namespace System.Net.Http.Json
             JsonContent<TValue> content = new(value, jsonTypeInfo);
             return client.PatchAsync(requestUri, content, cancellationToken);
         }
-
-#if !NETCOREAPP
-        private static Task<HttpResponseMessage> PatchAsync(this HttpClient client, string? requestUri, HttpContent content, CancellationToken cancellationToken)
-        {
-            Uri? uri = string.IsNullOrEmpty(requestUri) ? null : new Uri(requestUri, UriKind.RelativeOrAbsolute);
-            return client.PatchAsync(uri, content, cancellationToken);
-        }
-
-        private static HttpMethod HttpPatch => s_httpPatch ??= new HttpMethod("PATCH");
-        private static HttpMethod? s_httpPatch;
-        
-        private static Task<HttpResponseMessage> PatchAsync(this HttpClient client, Uri? requestUri, HttpContent content, CancellationToken cancellationToken)
-        {
-            // HttpClient.PatchAsync is not available in .NET standard and NET462
-            HttpRequestMessage request = new HttpRequestMessage(HttpPatch, requestUri) { Content = content };
-            return client.SendAsync(request, cancellationToken);
-        }
-#endif
     }
 }

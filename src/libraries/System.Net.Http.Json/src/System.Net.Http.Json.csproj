@@ -27,6 +27,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
+    <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingReadStream.cs" />
     <Compile Include="System\Net\Http\Json\TranscodingWriteStream.cs" />
