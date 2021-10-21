@@ -191,6 +191,7 @@ namespace System.Reflection.TypeLoading.Ecma
                     break;
 
                 case UnmanagedType.ByValArray:
+                case UnmanagedType.ByValTStr:
                     if (br.RemainingBytes == 0)
                         break;
                     ma.SizeConst = br.ReadCompressedInteger();
