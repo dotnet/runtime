@@ -107,7 +107,7 @@ i=ini_i.i.i.i
         {
             string basePath;
 
-            if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            if (PlatformDetection.IsAppleMobile)
             {
                 basePath = Path.GetTempPath();
             }
