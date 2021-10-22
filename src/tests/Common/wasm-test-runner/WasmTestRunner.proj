@@ -22,6 +22,7 @@
     <MonoAOTCompilerDir>$(CORE_ROOT)\monoaotcompiler</MonoAOTCompilerDir>
     <PublishTrimmed>true</PublishTrimmed>
     <WasmBuildSupportDir>$(CORE_ROOT)/build/</WasmBuildSupportDir>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
   </PropertyGroup>
 
   <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.props" />
@@ -30,8 +31,8 @@
   <PropertyGroup>
     <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
-  
-  <Target Name="BuildApp" >
+
+  <Target Name="BuildApp" DependsOnTargets="Publish">
     <PropertyGroup>
       <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
