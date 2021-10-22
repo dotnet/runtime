@@ -22,7 +22,7 @@ namespace XUnitWrapperGenerator
                             && method.AttributeLists.Count > 0,
                     static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!)
                     .Where(method => method.IsStatic && method.Parameters.IsEmpty && method.GetAttributes().Any(attr => attr.AttributeClass!.ToDisplayString() == "Xunit.FactAttribute"))
-                    .Select((method, ct) => method.ToDisplayString())
+                    .Select((method, ct) => $"{method.ContainingType.ToDisplayString()}.{method.Name}")
                     .Collect(),
                 static (context, methods) =>
                 {
@@ -30,7 +30,7 @@ namespace XUnitWrapperGenerator
                     StringBuilder builder = new();
                     builder.AppendLine("try {");
                     builder.Append(string.Join("\n", methods.Select(m => $"{m}();")));
-                    builder.AppendLine("} catch(Exception) { return 101; }");
+                    builder.AppendLine("} catch(System.Exception) { return 101; }");
                     builder.AppendLine("return 100;");
                     context.AddSource("Main.g.cs", builder.ToString());
                 });
