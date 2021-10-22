@@ -852,6 +852,9 @@ mono_get_generic_context_from_stack_frame (MonoJitInfo *ji, gpointer generic_inf
 		klass = vtable->klass;
 	}
 
+	if (mono_class_is_interface (method->klass))
+		return context;
+		
 	//g_assert (!mono_class_is_gtd (method->klass));
 	if (mono_class_is_ginst (method->klass))
 		method_container_class = mono_class_get_generic_class (method->klass)->container_class;
