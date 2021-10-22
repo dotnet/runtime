@@ -1499,11 +1499,11 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, ParamsArray.Create(arg0));
 
-        public StringBuilder AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, ParamsArray.Create(arg0, arg1));
 
-        public StringBuilder AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, ParamsArray.Create(arg0, arg1, arg2));
 
         public StringBuilder AppendFormat(string format, params object?[] args)
         {
@@ -1515,14 +1515,14 @@ namespace System.Text
                 throw new ArgumentNullException(paramName);
             }
 
-            return AppendFormatHelper(null, format, new ParamsArray(args));
+            return AppendFormatHelper(null, format, ParamsArray.Create(args));
         }
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0) => AppendFormatHelper(provider, format, ParamsArray.Create(arg0));
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, ParamsArray.Create(arg0, arg1));
 
-        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, ParamsArray.Create(arg0, arg1, arg2));
 
         public StringBuilder AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
@@ -1534,7 +1534,7 @@ namespace System.Text
                 throw new ArgumentNullException(paramName);
             }
 
-            return AppendFormatHelper(provider, format, new ParamsArray(args));
+            return AppendFormatHelper(provider, format, ParamsArray.Create(args));
         }
 
         private static void FormatError()
@@ -1546,7 +1546,7 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        internal StringBuilder AppendFormatHelper<TArr>(IFormatProvider? provider, string format, ParamsArray<TArr> args) where TArr : IValueArray<object?>
         {
             if (format == null)
             {

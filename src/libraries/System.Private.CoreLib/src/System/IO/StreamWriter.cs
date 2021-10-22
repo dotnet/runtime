@@ -517,7 +517,7 @@ namespace System.IO
             }
         }
 
-        private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
+        private void WriteFormatHelper<TArr>(string format, ParamsArray<TArr> args, bool appendNewLine) where TArr : IValueArray<object?>
         {
             StringBuilder sb =
                 StringBuilderCache.Acquire((format?.Length ?? 0) + args.Length * 8)
@@ -542,7 +542,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: false);
+                WriteFormatHelper(format, ParamsArray.Create(arg0), appendNewLine: false);
             }
             else
             {
@@ -554,7 +554,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: false);
+                WriteFormatHelper(format, ParamsArray.Create(arg0, arg1), appendNewLine: false);
             }
             else
             {
@@ -566,7 +566,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: false);
+                WriteFormatHelper(format, ParamsArray.Create(arg0, arg1, arg2), appendNewLine: false);
             }
             else
             {
@@ -582,7 +582,7 @@ namespace System.IO
                 {
                     throw new ArgumentNullException((format == null) ? nameof(format) : nameof(arg)); // same as base logic
                 }
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
+                WriteFormatHelper(format, ParamsArray.Create(arg), appendNewLine: false);
             }
             else
             {
@@ -594,7 +594,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0), appendNewLine: true);
+                WriteFormatHelper(format, ParamsArray.Create(arg0), appendNewLine: true);
             }
             else
             {
@@ -606,7 +606,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1), appendNewLine: true);
+                WriteFormatHelper(format, ParamsArray.Create(arg0, arg1), appendNewLine: true);
             }
             else
             {
@@ -618,7 +618,7 @@ namespace System.IO
         {
             if (GetType() == typeof(StreamWriter))
             {
-                WriteFormatHelper(format, new ParamsArray(arg0, arg1, arg2), appendNewLine: true);
+                WriteFormatHelper(format, ParamsArray.Create(arg0, arg1, arg2), appendNewLine: true);
             }
             else
             {
@@ -634,7 +634,7 @@ namespace System.IO
                 {
                     throw new ArgumentNullException(nameof(arg));
                 }
-                WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
+                WriteFormatHelper(format, ParamsArray.Create(arg), appendNewLine: true);
             }
             else
             {

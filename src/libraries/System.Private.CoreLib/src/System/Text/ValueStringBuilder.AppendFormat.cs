@@ -5,11 +5,11 @@ namespace System.Text
 {
     internal ref partial struct ValueStringBuilder
     {
-        public void AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+        public void AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, ParamsArray.Create(arg0));
 
-        public void AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+        public void AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, ParamsArray.Create(arg0, arg1));
 
-        public void AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        public void AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, ParamsArray.Create(arg0, arg1, arg2));
 
         public void AppendFormat(string format, params object?[] args)
         {
@@ -21,14 +21,14 @@ namespace System.Text
                 throw new ArgumentNullException(paramName);
             }
 
-            AppendFormatHelper(null, format, new ParamsArray(args));
+            AppendFormatHelper(null, format, ParamsArray.Create(args));
         }
 
-        public void AppendFormat(IFormatProvider? provider, string format, object? arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public void AppendFormat(IFormatProvider? provider, string format, object? arg0) => AppendFormatHelper(provider, format, ParamsArray.Create(arg0));
 
-        public void AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public void AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, ParamsArray.Create(arg0, arg1));
 
-        public void AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public void AppendFormat(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, ParamsArray.Create(arg0, arg1, arg2));
 
         public void AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
@@ -40,7 +40,7 @@ namespace System.Text
                 throw new ArgumentNullException(paramName);
             }
 
-            AppendFormatHelper(provider, format, new ParamsArray(args));
+            AppendFormatHelper(provider, format, ParamsArray.Create(args));
         }
 
         internal void AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable
@@ -57,7 +57,7 @@ namespace System.Text
 
         // Copied from StringBuilder, can't be done via generic extension
         // as ValueStringBuilder is a ref struct and cannot be used in a generic.
-        internal void AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        internal void AppendFormatHelper<TArr>(IFormatProvider? provider, string format, ParamsArray<TArr> args) where TArr : IValueArray<object?>
         {
             // Undocumented exclusive limits on the range for Argument Hole Index and Argument Hole Alignment.
             const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit

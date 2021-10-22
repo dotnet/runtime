@@ -439,17 +439,17 @@ namespace System
 
         public static string Format(string format, object? arg0)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0));
+            return FormatHelper(null, format, ParamsArray.Create(arg0));
         }
 
         public static string Format(string format, object? arg0, object? arg1)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0, arg1));
+            return FormatHelper(null, format, ParamsArray.Create(arg0, arg1));
         }
 
         public static string Format(string format, object? arg0, object? arg1, object? arg2)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+            return FormatHelper(null, format, ParamsArray.Create(arg0, arg1, arg2));
         }
 
         public static string Format(string format, params object?[] args)
@@ -461,22 +461,22 @@ namespace System
                 throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
 
-            return FormatHelper(null, format, new ParamsArray(args));
+            return FormatHelper(null, format, ParamsArray.Create(args));
         }
 
         public static string Format(IFormatProvider? provider, string format, object? arg0)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0));
+            return FormatHelper(provider, format, ParamsArray.Create(arg0));
         }
 
         public static string Format(IFormatProvider? provider, string format, object? arg0, object? arg1)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0, arg1));
+            return FormatHelper(provider, format, ParamsArray.Create(arg0, arg1));
         }
 
         public static string Format(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+            return FormatHelper(provider, format, ParamsArray.Create(arg0, arg1, arg2));
         }
 
         public static string Format(IFormatProvider? provider, string format, params object?[] args)
@@ -488,10 +488,10 @@ namespace System
                 throw new ArgumentNullException((format == null) ? nameof(format) : nameof(args));
             }
 
-            return FormatHelper(provider, format, new ParamsArray(args));
+            return FormatHelper(provider, format, ParamsArray.Create(args));
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        private static string FormatHelper<TArr>(IFormatProvider? provider, string format, ParamsArray<TArr> args) where TArr : IValueArray<object?>
         {
             if (format == null)
                 throw new ArgumentNullException(nameof(format));
