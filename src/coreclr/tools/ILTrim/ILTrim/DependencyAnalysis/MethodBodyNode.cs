@@ -21,7 +21,7 @@ namespace ILTrim.DependencyAnalysis
     /// <summary>
     /// Represents method body bytes emitted into the executable.
     /// </summary>
-    public class MethodBodyNode : DependencyNodeCore<NodeFactory>
+    public class MethodBodyNode : DependencyNodeCore<NodeFactory>, INodeWithDeferredDependencies
     {
         private readonly EcmaModule _module;
         private readonly MethodDefinitionHandle _methodHandle;
@@ -37,7 +37,7 @@ namespace ILTrim.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => _dependencies;
 
-        internal void ComputeDependencies(NodeFactory factory)
+        void INodeWithDeferredDependencies.ComputeDependencies(NodeFactory factory)
         {
             _dependencies = new DependencyList();
 

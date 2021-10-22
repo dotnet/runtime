@@ -108,7 +108,7 @@ namespace ILTrim
 
             void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> nodesWithPendingDependencyCalculation) =>
                 RunForEach(
-                    nodesWithPendingDependencyCalculation.OfType<MethodBodyNode>(),
+                    nodesWithPendingDependencyCalculation.Cast<INodeWithDeferredDependencies>(),
                     node => node.ComputeDependencies(factory));
 
             void RunForEach<T>(IEnumerable<T> inputs, Action<T> action)

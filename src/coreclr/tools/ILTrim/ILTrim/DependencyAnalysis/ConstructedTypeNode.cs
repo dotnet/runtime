@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 
@@ -14,80 +15,66 @@ namespace ILTrim.DependencyAnalysis
     /// <summary>
     /// Represents a type that is considered allocated at runtime (e.g. with a "new").
     /// </summary>
-    public class ConstructedTypeNode : DependencyNodeCore<NodeFactory>
+    public class ConstructedTypeNode : DependencyNodeCore<NodeFactory>, INodeWithDeferredDependencies
     {
         private readonly EcmaType _type;
+        private IReadOnlyCollection<CombinedDependencyListEntry> _conditionalDependencies;
 
         public ConstructedTypeNode(EcmaType type)
         {
             _type = type;
         }
 
-        public override bool HasConditionalStaticDependencies
+        public override bool HasConditionalStaticDependencies => _conditionalDependencies.Count > 0;
+
+        void INodeWithDeferredDependencies.ComputeDependencies(NodeFactory factory)
         {
-            get
-            {
-                // If there's any virtual method, we have conditional dependencies.
-                foreach (MethodDesc method in _type.GetAllVirtualMethods())
-                {
-                    return true;
-                }
+            List<CombinedDependencyListEntry> result = null;
 
-                // Even if a type has no virtual methods, if it introduces a new interface,
-                // we might end up with with conditional dependencies.
-                //
-                // Consider:
-                //
-                // interface IFooer { void Foo(); }
-                // class Base { public virtual void Foo() { } }
-                // class Derived : Base, IFooer { }
-                //
-                // Notice Derived has no virtual methods, but needs to keep track of the
-                // fact that Base.Foo now implements IFooer.Foo.
-                if (_type.RuntimeInterfaces.Length > 0)
-                {
-                    return true;
-                }
-
-                // TODO: limit this somehow. We don't know if there's any flow annotations
-                return !_type.IsInterface;
-            }
-        }
-
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
-        {
-            // For each virtual method slot (e.g. Object.GetHashCode()), check whether the current type
-            // provides an implementation of the virtual method (e.g. SomeFoo.GetHashCode()),
-            // if so, make sure we generate the body.
             if (factory.IsModuleTrimmed(_type.EcmaModule))
             {
-                foreach (MethodDesc decl in _type.EnumAllVirtualSlots())
+                // Quickly check if going over the virtual slots is worth it for this type.
+                bool hasVirtualMethods = false;
+                foreach (MethodDesc method in _type.GetAllVirtualMethods())
                 {
-                    MethodDesc impl = _type.FindVirtualFunctionTargetMethodOnObjectType(decl);
+                    hasVirtualMethods = true;
+                    break;
+                }
 
-                    // We're only interested in the case when it's implemented on this type.
-                    // If the implementation comes from a base type, that's covered by the base type
-                    // ConstructedTypeNode.
-                    if (impl.OwningType == _type)
+                if (hasVirtualMethods)
+                {
+                    // For each virtual method slot (e.g. Object.GetHashCode()), check whether the current type
+                    // provides an implementation of the virtual method (e.g. SomeFoo.GetHashCode()),
+                    // if so, make sure we generate the body.
+                    foreach (MethodDesc decl in _type.EnumAllVirtualSlots())
                     {
-                        // If the slot defining virtual method is used, make sure we generate the implementation method.
-                        var ecmaImpl = (EcmaMethod)impl.GetTypicalMethodDefinition();
+                        MethodDesc impl = _type.FindVirtualFunctionTargetMethodOnObjectType(decl);
 
-                        EcmaMethod declDefinition = (EcmaMethod)decl.GetTypicalMethodDefinition();
-                        VirtualMethodUseNode declUse = factory.VirtualMethodUse(declDefinition);
-
-                        yield return new(
-                            factory.MethodDefinition(ecmaImpl.Module, ecmaImpl.Handle),
-                            declUse,
-                            "Virtual method");
-
-                        var implHandle = TryGetMethodImplementationHandle(_type, declDefinition);
-                        if (!implHandle.IsNil)
+                        // We're only interested in the case when it's implemented on this type.
+                        // If the implementation comes from a base type, that's covered by the base type
+                        // ConstructedTypeNode.
+                        if (impl.OwningType == _type)
                         {
-                            yield return new(
-                                factory.MethodImplementation(_type.EcmaModule, implHandle),
+                            // If the slot defining virtual method is used, make sure we generate the implementation method.
+                            var ecmaImpl = (EcmaMethod)impl.GetTypicalMethodDefinition();
+
+                            EcmaMethod declDefinition = (EcmaMethod)decl.GetTypicalMethodDefinition();
+                            VirtualMethodUseNode declUse = factory.VirtualMethodUse(declDefinition);
+
+                            result ??= new List<CombinedDependencyListEntry>();
+                            result.Add(new(
+                                factory.MethodDefinition(ecmaImpl.Module, ecmaImpl.Handle),
                                 declUse,
-                                "Explicitly implemented virtual method");
+                                "Virtual method"));
+
+                            var implHandle = TryGetMethodImplementationHandle(_type, declDefinition);
+                            if (!implHandle.IsNil)
+                            {
+                                result.Add(new(
+                                    factory.MethodImplementation(_type.EcmaModule, implHandle),
+                                    declUse,
+                                    "Explicitly implemented virtual method"));
+                            }
                         }
                     }
                 }
@@ -108,19 +95,21 @@ namespace ILTrim.DependencyAnalysis
                         var interfaceMethodDefinition = (EcmaMethod)interfaceMethod.GetTypicalMethodDefinition();
                         VirtualMethodUseNode interfaceMethodUse = factory.VirtualMethodUse(interfaceMethodDefinition);
 
+                        result ??= new List<CombinedDependencyListEntry>();
+
                         // Interface method implementation provided within the class hierarchy.
-                        yield return new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
+                        result.Add(new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
                             interfaceMethodUse,
-                            "Interface method");
+                            "Interface method"));
 
                         if (factory.IsModuleTrimmed(_type.EcmaModule))
                         {
                             MethodImplementationHandle implHandle = TryGetMethodImplementationHandle(_type, interfaceMethodDefinition);
                             if (!implHandle.IsNil)
                             {
-                                yield return new(factory.MethodImplementation(_type.EcmaModule, implHandle),
+                                result.Add(new(factory.MethodImplementation(_type.EcmaModule, implHandle),
                                     interfaceMethodUse,
-                                    "Explicitly implemented interface method");
+                                    "Explicitly implemented interface method"));
                             }
                         }
                     }
@@ -130,9 +119,10 @@ namespace ILTrim.DependencyAnalysis
                         var resolution = _type.ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, out implMethod);
                         if (resolution == DefaultInterfaceMethodResolution.DefaultImplementation || resolution == DefaultInterfaceMethodResolution.Reabstraction)
                         {
-                            yield return new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
+                            result ??= new List<CombinedDependencyListEntry>();
+                            result.Add(new(factory.VirtualMethodUse((EcmaMethod)implMethod.GetTypicalMethodDefinition()),
                                 factory.VirtualMethodUse((EcmaMethod)interfaceMethod.GetTypicalMethodDefinition()),
-                                "Default interface method");
+                                "Default interface method"));
                         }
                         else
                         {
@@ -145,10 +135,11 @@ namespace ILTrim.DependencyAnalysis
             // For each interface, make the interface considered constructed if the interface is used
             foreach (DefType intface in _type.RuntimeInterfaces)
             {
+                result ??= new List<CombinedDependencyListEntry>();
                 EcmaType interfaceDefinition = (EcmaType)intface.GetTypeDefinition();
-                yield return new(factory.ConstructedType(interfaceDefinition),
+                result.Add(new(factory.ConstructedType(interfaceDefinition),
                     factory.InterfaceUse(interfaceDefinition),
-                    "Used interface on a constructed type");
+                    "Used interface on a constructed type"));
             }
 
             // Check to see if we have any dataflow annotations on the type.
@@ -170,10 +161,11 @@ namespace ILTrim.DependencyAnalysis
                     // There's an annotation on the base type. If object.GetType was called on something
                     // statically typed as the base type, we might actually be calling it on this type.
                     // Ensure we have the flow dependencies.
-                    yield return new(
+                    result ??= new List<CombinedDependencyListEntry>();
+                    result.Add(new(
                         factory.ObjectGetTypeFlowDependencies(_type),
                         factory.ObjectGetTypeFlowDependencies((EcmaType)baseType.GetTypeDefinition()),
-                        "GetType called on the base type");
+                        "GetType called on the base type"));
 
                     // We don't have to follow all the bases since the base MethodTable will bubble this up
                 }
@@ -185,10 +177,11 @@ namespace ILTrim.DependencyAnalysis
                         // There's an annotation on the interface type. If object.GetType was called on something
                         // statically typed as the interface type, we might actually be calling it on this type.
                         // Ensure we have the flow dependencies.
-                        yield return new(
+                        result ??= new List<CombinedDependencyListEntry>();
+                        result.Add(new(
                             factory.ObjectGetTypeFlowDependencies(_type),
                             factory.ObjectGetTypeFlowDependencies((EcmaType)interfaceType.GetTypeDefinition()),
-                            "GetType called on the interface");
+                            "GetType called on the interface"));
                     }
 
                     // We don't have to recurse into the interface because we're inspecting runtime interfaces
@@ -199,6 +192,14 @@ namespace ILTrim.DependencyAnalysis
                 // of the bases/interfaces are annotated.
                 // ObjectGetTypeFlowDependencies don't need to be conditional in that case. They'll be added as needed.
             }
+
+            _conditionalDependencies = result ?? (IReadOnlyCollection<CombinedDependencyListEntry>)Array.Empty<CombinedDependencyListEntry>();
+        }
+
+        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        {
+            System.Diagnostics.Debug.Assert(_conditionalDependencies != null);
+            return _conditionalDependencies;
         }
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
@@ -218,7 +219,7 @@ namespace ILTrim.DependencyAnalysis
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
-        public override bool StaticDependenciesAreComputed => true;
+        public override bool StaticDependenciesAreComputed => _conditionalDependencies != null;
         public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
 
         private static MethodImplementationHandle TryGetMethodImplementationHandle(EcmaType implementingType, EcmaMethod declMethod)
