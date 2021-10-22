@@ -111,7 +111,7 @@ void ExecutableAllocator::ResetLazyPreferredRangeHint()
 {
     LIMITED_METHOD_CONTRACT;
 #if USE_LAZY_PREFERRED_RANGE
-    g_lazyPreferredRangeHint = g_preferredRangeMin;
+    g_lazyPreferredRangeHint = g_lazyPreferredRangeStart;
 #endif
 }
 // Returns TRUE if p is is located in the memory area where we prefer to put
