@@ -43,14 +43,18 @@
     var machine = system.sysctl("hw.machine");
     var cputype = system.sysctl("hw.cputype");
     var cpu64 = system.sysctl("hw.cpu64bit_capable");
+    var translated = system.sysctl("sysctl.proc_translated");
     system.log("Machine type: " + machine);
     system.log("Cpu type: " + cputype);
     system.log("64-bit: " + cpu64);
+    system.log("Translated: " + translated);
 
     // From machine.h
     // CPU_TYPE_X86_64 = CPU_TYPE_X86 | CPU_ARCH_ABI64 = 0x010000007 = 16777223
     // CPU_TYPE_X86 = 7
     var result = machine == "amd64" || machine == "x86_64" || cputype == "16777223" || (cputype == "7" && cpu64 == "1");
+    // We may be running under translation (Rosetta) that makes it seem like system is x64, if so assume machine is not actually x64
+    result = result && (translated != "1");
     system.log("IsX64Machine: " + result);
     return result;
 }]]></script>
