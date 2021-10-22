@@ -10069,14 +10069,14 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
     // then add "int3" instruction. Sinc int3 takes 1 byte, we would only add
     // it if paddingToAdd >= 1 byte.
 
-    if(emitComp->compStressCompile(Compiler::STRESS_EMITTER, 1) &&
+    if(emitComp->compStressCompile(Compiler::STRESS_EMITTER, 50) &&
         !validatePadding && paddingToAdd >= 1)
     {
         size_t int3Code = insCodeMR(INS_BREAKPOINT);
         // There is no good way to squeeze in "int3" as well as display it
         // in the disassembly because there is no corresponding instrDesc for
         // it. As such, leave it as is, the "0xCC" bytecode will be seen next
-        // to the nop instruction in disasm
+        // to the nop instruction in disasm.
         // e.g. CC                   align    [1 bytes for IG29]
         //
         //if (emitComp->opts.disAsm)
