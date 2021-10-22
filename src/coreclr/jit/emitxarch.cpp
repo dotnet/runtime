@@ -10063,7 +10063,9 @@ BYTE* emitter::emitOutputAlign(insGroup* ig, instrDesc* id, BYTE* dst)
 #endif
 
     BYTE* dstRW = dst + writeableOffset;
-    dstRW       = emitOutputNOP(dstRW, paddingToAdd);
+    if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 1) && !validatePadding && paddingToAdd >= 1)
+        // if (emitComp->opts.disAsm)
+    dstRW = emitOutputNOP(dstRW, paddingToAdd);
     return dstRW - writeableOffset;
 }
 

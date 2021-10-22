@@ -4932,9 +4932,24 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 //
 void emitter::emitConnectAlignInstrWithCurIG()
 {
+    JITDUMP("Mapping 'align' instruction in IG%02u to target IG%02u\n", emitRecentFirstAlign->idaIG->igNum,
+            emitCurIG->igNum);
     // Since we never align overlapping instructions, it is always guaranteed that
     // the emitRecentFirstAlign points to the loop that is in process of getting aligned.
-    emitRecentFirstAlign->idaTargetIG = emitCurIG;
+
+    if (emitCurIGsize == 0)
+    {
+        // However, if current IG is still empty (e.g. codegen didn't generate moves if they were redundant)
+        // in that case, loop will start in emitCurIG itself. For such cases, make sure that targetIG is
+        // pointing to previous IG.
+        assert(emitPrevIG != emitCurIG);
+
+        emitRecentFirstAlign->idaTargetIG = emitPrevIG;
+    }
+    else
+    {
+        emitRecentFirstAlign->idaTargetIG = emitCurIG;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -5024,9 +5039,14 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->endsWithAlignInstr())
+        if (igInLoop->endsWithAlignInstr() || igInLoop->isAlignInstrRemoved())
         {
-            // If igInLoop is marked as "IGF_HAS_ALIGN", the basic block flow detected a loop start.
+            // If igInLoop can be in one of the following state:
+            // IGF_HAS_ALIGN - igInLoop contains align instruction at the end, for next IG or some future IG.
+            // IGF_REMOVED_ALIGN - igInLoop had align instruction at the end, but was removed.
+            //
+            // For both cases, remove the padding bytes from igInLoop's size so it is not included in loopSize.
+            //
             // If the loop was formed because of forward jumps like the loop IG18 below, the backedge is not
             // set for them and such loops are not aligned. For such cases, the loop size threshold will never
             // be met and we would break as soon as loopSize > maxLoopSize.
@@ -5039,9 +5059,9 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
             //      ...
             //      jne IG05
             //
-            // If igInLoop is a legitimate loop, and igInLoop's next IG is also a loop that needs alignment,
-            // then igInLoop should be the last IG of the current loop and should have backedge to current
-            // loop header.
+            // If igInLoop is a legitimate loop, and igInLoop's end with another 'align' instruction for different IG
+            // representing a loop that needs alignment, then igInLoop should be the last IG of the current loop and
+            // should have backedge to current loop header.
             //
             // Below, IG05 is the last IG of loop IG04-IG05 and its backedge points to IG04.
             //
@@ -5198,7 +5218,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(!markedCurrLoop);
 
                     // This IG should no longer contain alignment instruction
-                    alignInstr->idaIG->removeAlignInstr();
+                    alignInstr->removeAlignFlags();
 
                     markedCurrLoop = true;
                     JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
@@ -5215,7 +5235,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(alignInstr->idaIG->endsWithAlignInstr());
 
                     // This IG should no longer contain alignment instruction
-                    alignInstr->idaIG->removeAlignInstr();
+                    alignInstr->removeAlignFlags();
 
                     markedLastLoop = true;
                     JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
@@ -5275,7 +5295,7 @@ void emitter::emitLoopAlignAdjustments()
         insGroup* containingIG = alignInstr->idaIG;
 
         JITDUMP("  Adjusting 'align' instruction in IG%02u that is targeted for IG%02u \n", containingIG->igNum,
-                alignIG->igNum);
+                alignIG->igNext->igNum);
 
         // Since we only adjust the padding up to the next align instruction which is behind the jump, we make sure
         // that we take into account all the alignBytes we removed until that point. Hence " - alignBytesRemoved"
@@ -5307,7 +5327,7 @@ void emitter::emitLoopAlignAdjustments()
             containingIG->igFlags |= IGF_UPD_ISZ;
             if (actualPaddingNeeded == 0)
             {
-                containingIG->removeAlignInstr();
+                alignInstr->removeAlignFlags();
             }
 
 #ifdef TARGET_XARCH
@@ -8414,6 +8434,12 @@ insGroup* emitter::emitAllocAndLinkIG()
     /* Propagate some IG flags from the current group to the new group */
 
     ig->igFlags |= (emitCurIG->igFlags & IGF_PROPAGATE_MASK);
+
+#ifdef FEATURE_LOOP_ALIGN
+    /* Save the prev IG */
+
+    emitPrevIG = emitCurIG;
+#endif
 
     /* Set the new IG as the current IG */
 
