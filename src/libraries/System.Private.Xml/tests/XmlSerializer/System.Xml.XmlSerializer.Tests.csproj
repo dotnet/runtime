@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Microsoft.XmlSerializer.Generator\tests\SerializableAssembly.csproj" />
+    <TrimmerRootAssembly Include="SerializableAssembly" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Utils.cs" />
