@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -618,11 +619,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public int GetFixedLength()
         {
-            // Guard against stack overflow due to deep recursion.
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                SymbolicRegexNode<S> thisRef = this;
-                return StackHelper.CallOnEmptyStack(() => thisRef.GetFixedLength());
+                // If we can't recur further, assume no fixed length.
+                return -1;
             }
 
             switch (_kind)
@@ -690,11 +690,9 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<S> MkDerivative(S elem, uint context)
         {
             // Guard against stack overflow due to deep recursion
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                S localElem = elem;
-                uint localContext = context;
-                return StackHelper.CallOnEmptyStack(() => MkDerivative(localElem, localContext));
+                return StackHelper.CallOnEmptyStack(MkDerivative, elem, context);
             }
 
             if (this == _builder._anyStar || this == _builder._nothing)
@@ -1100,10 +1098,9 @@ namespace System.Text.RegularExpressions.Symbolic
         internal void ToString(StringBuilder sb)
         {
             // Guard against stack overflow due to deep recursion
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                StringBuilder localSb = sb;
-                StackHelper.CallOnEmptyStack(() => ToString(localSb));
+                StackHelper.CallOnEmptyStack(ToString, sb);
                 return;
             }
 
@@ -1665,12 +1662,9 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<S> PruneAnchors(uint prevKind, bool contWithWL, bool contWithNWL)
         {
             // Guard against stack overflow due to deep recursion
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                uint localPrevKind = prevKind;
-                bool localContWithWL = contWithWL;
-                bool localContWithNWL = contWithNWL;
-                return StackHelper.CallOnEmptyStack(() => PruneAnchors(localPrevKind, localContWithWL, localContWithNWL));
+                return StackHelper.CallOnEmptyStack(PruneAnchors, prevKind, contWithWL, contWithNWL);
             }
 
             if (!_info.StartsWithSomeAnchor)
