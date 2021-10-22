@@ -107,16 +107,13 @@ void ExecutableAllocator::InitPreferredRange()
 #endif
 }
 
-// Use this function to reset the g_codeAllocHint
-// after unloading an AppDomain
-void ExecutableAllocator::ResetCodeAllocHint()
+void ExecutableAllocator::ResetLazyPreferredRangeHint()
 {
     LIMITED_METHOD_CONTRACT;
 #if USE_LAZY_PREFERRED_RANGE
-    g_codeAllocHint = g_codeAllocStart;
+    g_lazyPreferredRangeHint = g_preferredRangeMin;
 #endif
 }
-
 // Returns TRUE if p is is located in the memory area where we prefer to put
 // executable code and static fields. This area is typically close to the
 // coreclr library.
@@ -554,27 +551,27 @@ void* ExecutableAllocator::Reserve(size_t size)
     // to reach the code for our ngen-ed images on x64,
     // since they are also placed in the UPPER_ADDRESS space.
     //
-    BYTE * pHint = g_codeAllocHint;
+    BYTE * pHint = g_lazyPreferredRangeHint;
 
-    if (size <= (SIZE_T)(g_codeMaxAddr - g_codeMinAddr) && pHint != NULL)
+    if (size <= (SIZE_T)(g_preferredRangeMax - g_preferredRangeMin) && pHint != NULL)
     {
         // Try to allocate in the preferred region after the hint
-        result = (BYTE*)ReserveWithinRange(size, pHint, g_codeMaxAddr);
+        result = (BYTE*)ReserveWithinRange(size, pHint, g_preferredRangeMax);
         if (result != NULL)
         {
-            g_codeAllocHint = result + size;
+            g_lazyPreferredRangeHint = result + size;
         }
         else
         {
             // Try to allocate in the preferred region before the hint
-            result = (BYTE*)ReserveWithinRange(size, g_codeMinAddr, pHint + size);
+            result = (BYTE*)ReserveWithinRange(size, g_preferredRangeMin, pHint + size);
 
             if (result != NULL)
             {
-                g_codeAllocHint = result + size;
+                g_lazyPreferredRangeHint = result + size;
             }
 
-            g_codeAllocHint = NULL;
+            g_lazyPreferredRangeHint = NULL;
         }
     }
 

@@ -157,18 +157,16 @@ public:
     // Return true if W^X is enabled
     static bool IsWXORXEnabled();
 
-    // Use this function to initialize the g_lazyPreferredRangeHint
-    // during startup. base is runtime .dll base address,
-    // size is runtime .dll virtual size.
+    // Use this function to initialize g_lazyPreferredRangeHint during startup.
+    // base is runtime .dll base address, size is runtime .dll virtual size.
     static void InitLazyPreferredRange(size_t base, size_t size, int randomPageOffset);
+
+    // Use this function to reset g_lazyPreferredRangeHint after unloading code.
+    static void ResetLazyPreferredRangeHint();
 
     // Use this function to initialize the preferred range of executable memory
     // from PAL.
     static void InitPreferredRange();
-
-    // Use this function to reset the g_codeAllocHint
-    // after unloading an AppDomain
-    static void ResetCodeAllocHint();
 
     // Returns TRUE if p is located in near clr.dll that allows us
     // to use rel32 IP-relative addressing modes.
