@@ -306,7 +306,14 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertStaticMethodCall(int n, object obj)
         {
-            AssertTypeName("MethodCallExpression" + n, obj);
+            if (n == 0)
+            {
+                AssertTypeName("MethodCallExpression0", obj);
+            }
+            else
+            {
+                AssertTypeName("MethodCallExpressionInlineArgs`1", obj);
+            }
         }
 
         private static void AssertInstanceMethodCall(int n, object obj)

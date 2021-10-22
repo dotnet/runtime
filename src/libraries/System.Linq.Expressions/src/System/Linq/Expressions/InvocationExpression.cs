@@ -344,6 +344,8 @@ namespace System.Linq.Expressions
         }
     }
 
+    // TODO: the whole family of classes can be simplified by using inline storage.
+
     internal sealed class InvocationExpression5 : InvocationExpression
     {
         private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider

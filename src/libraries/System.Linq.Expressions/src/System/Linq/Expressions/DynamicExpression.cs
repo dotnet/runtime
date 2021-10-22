@@ -725,6 +725,8 @@ namespace System.Linq.Expressions
         public sealed override Type Type { get; }
     }
 
+    // TODO: the whole family of classes can be simplified by using inline storage.
+
     internal class DynamicExpression4 : DynamicExpression, IArgumentProvider
     {
         private object _arg0;                               // storage for the 1st argument or a read-only collection.  See IArgumentProvider for more info.

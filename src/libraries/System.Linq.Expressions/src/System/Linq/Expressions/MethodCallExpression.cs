@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic.Utils;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq.Expressions
 {
@@ -257,170 +258,56 @@ namespace System.Linq.Expressions
         }
     }
 
-    internal sealed class MethodCallExpression1 : MethodCallExpression, IArgumentProvider
+    internal sealed class MethodCallExpressionInlineArgs<TArr> : MethodCallExpression, IArgumentProvider
+        where TArr : struct, IValueArray<object>
     {
-        private object _arg0;       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
+        // NOTE: _args[0] for historical reasons may store a read-only collection.  See IArgumentProvider
+        //        This is why we need to use "object" elements. That is ok.
 
-        public MethodCallExpression1(MethodInfo method, Expression arg0)
+        // Use ValueArray<object, ?>  as inline storage for arguments.
+        private TArr _args;
+
+        public MethodCallExpressionInlineArgs(MethodInfo method, TArr args)
             : base(method)
         {
-            _arg0 = arg0;
-        }
-
-        public override Expression GetArgument(int index) =>
-            index switch
-            {
-                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
-                _ => throw new ArgumentOutOfRangeException(nameof(index)),
-            };
-
-        public override int ArgumentCount => 1;
-
-        internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
-        {
-            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
-        }
-
-        internal override bool SameArguments(ICollection<Expression>? arguments)
-        {
-            if (arguments != null && arguments.Count == 1)
-            {
-                using (IEnumerator<Expression> en = arguments.GetEnumerator())
-                {
-                    en.MoveNext();
-                    return en.Current == ExpressionUtils.ReturnObject<Expression>(_arg0);
-                }
-            }
-
-            return false;
-        }
-
-        internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
-        {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 1);
-
-            if (args != null)
-            {
-                return Expression.Call(Method, args[0]);
-            }
-
-            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0));
-        }
-    }
-
-    internal sealed class MethodCallExpression2 : MethodCallExpression, IArgumentProvider
-    {
-        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
-        private readonly Expression _arg1;  // storage for the 2nd arg
-
-        public MethodCallExpression2(MethodInfo method, Expression arg0, Expression arg1)
-            : base(method)
-        {
-            _arg0 = arg0;
-            _arg1 = arg1;
+            _args = args;
         }
 
         public override Expression GetArgument(int index)
         {
-            return index switch
+            if ((uint)index < (uint)_args.Length)
             {
-                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
-                1 => _arg1,
-                _ => throw new ArgumentOutOfRangeException(nameof(index)),
-            };
+                return index == 0 ?
+                    ExpressionUtils.ReturnObject<Expression>(_args[0]) :
+                    Unsafe.As<Expression>(_args[index]);
+            }
+
+            throw new ArgumentOutOfRangeException(nameof(index));
         }
 
-        public override int ArgumentCount => 2;
+        public override int ArgumentCount => _args.Length;
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 2)
+            if (arguments != null && arguments.Count == _args.Length)
             {
-                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
+                if (_args[0] is ReadOnlyCollection<Expression> alreadyCollection)
                 {
                     return ExpressionUtils.SameElements(arguments, alreadyCollection);
                 }
 
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
-                    en.MoveNext();
-                    if (en.Current == _arg0)
+                    for (int i = 0; i < _args.Length; i++)
                     {
                         en.MoveNext();
-                        return en.Current == _arg1;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
-        {
-            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
-        }
-
-        internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
-        {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 2);
-
-            if (args != null)
-            {
-                return Expression.Call(Method, args[0], args[1]);
-            }
-            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1);
-        }
-    }
-
-    internal sealed class MethodCallExpression3 : MethodCallExpression, IArgumentProvider
-    {
-        private object _arg0;           // storage for the 1st argument or a read-only collection.  See IArgumentProvider
-        private readonly Expression _arg1, _arg2; // storage for the 2nd - 3rd args.
-
-        public MethodCallExpression3(MethodInfo method, Expression arg0, Expression arg1, Expression arg2)
-            : base(method)
-        {
-            _arg0 = arg0;
-            _arg1 = arg1;
-            _arg2 = arg2;
-        }
-
-        public override Expression GetArgument(int index)
-        {
-            return index switch
-            {
-                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
-                1 => _arg1,
-                2 => _arg2,
-                _ => throw new ArgumentOutOfRangeException(nameof(index)),
-            };
-        }
-
-        public override int ArgumentCount => 3;
-
-        internal override bool SameArguments(ICollection<Expression>? arguments)
-        {
-            if (arguments != null && arguments.Count == 3)
-            {
-                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
-                {
-                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
-                }
-
-                using (IEnumerator<Expression> en = arguments.GetEnumerator())
-                {
-                    en.MoveNext();
-                    if (en.Current == _arg0)
-                    {
-                        en.MoveNext();
-                        if (en.Current == _arg1)
+                        if (_args[i] != en.Current)
                         {
-                            en.MoveNext();
-                            return en.Current == _arg2;
+                            return false;
                         }
                     }
+
+                    return true;
                 }
             }
 
@@ -429,180 +316,23 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _args[0]);
         }
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
             Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 3);
+            Debug.Assert(args == null || args.Count == _args.Length);
 
             if (args != null)
             {
-                return Expression.Call(Method, args[0], args[1], args[2]);
-            }
-            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2);
-        }
-    }
-
-    internal sealed class MethodCallExpression4 : MethodCallExpression, IArgumentProvider
-    {
-        private object _arg0;               // storage for the 1st argument or a read-only collection.  See IArgumentProvider
-        private readonly Expression _arg1, _arg2, _arg3;  // storage for the 2nd - 4th args.
-
-        public MethodCallExpression4(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3)
-            : base(method)
-        {
-            _arg0 = arg0;
-            _arg1 = arg1;
-            _arg2 = arg2;
-            _arg3 = arg3;
-        }
-
-        public override Expression GetArgument(int index)
-        {
-            return index switch
-            {
-                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
-                1 => _arg1,
-                2 => _arg2,
-                3 => _arg3,
-                _ => throw new ArgumentOutOfRangeException(nameof(index)),
-            };
-        }
-
-        public override int ArgumentCount => 4;
-
-        internal override bool SameArguments(ICollection<Expression>? arguments)
-        {
-            if (arguments != null && arguments.Count == 4)
-            {
-                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
-                {
-                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
-                }
-
-                using (IEnumerator<Expression> en = arguments.GetEnumerator())
-                {
-                    en.MoveNext();
-                    if (en.Current == _arg0)
-                    {
-                        en.MoveNext();
-                        if (en.Current == _arg1)
-                        {
-                            en.MoveNext();
-                            if (en.Current == _arg2)
-                            {
-                                en.MoveNext();
-                                return en.Current == _arg3;
-                            }
-                        }
-                    }
-                }
+                return Expression.Call(Method, args);
             }
 
-            return false;
-        }
+            TArr newArgs = _args;
+            newArgs[0] = ExpressionUtils.ReturnObject<Expression>(_args[0]);
 
-        internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
-        {
-            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
-        }
-
-        internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
-        {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 4);
-
-            if (args != null)
-            {
-                return Expression.Call(Method, args[0], args[1], args[2], args[3]);
-            }
-            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
-        }
-    }
-
-    internal sealed class MethodCallExpression5 : MethodCallExpression, IArgumentProvider
-    {
-        private object _arg0;           // storage for the 1st argument or a read-only collection.  See IArgumentProvider
-        private readonly Expression _arg1, _arg2, _arg3, _arg4;   // storage for the 2nd - 5th args.
-
-        public MethodCallExpression5(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4)
-            : base(method)
-        {
-            _arg0 = arg0;
-            _arg1 = arg1;
-            _arg2 = arg2;
-            _arg3 = arg3;
-            _arg4 = arg4;
-        }
-
-        public override Expression GetArgument(int index)
-        {
-            return index switch
-            {
-                0 => ExpressionUtils.ReturnObject<Expression>(_arg0),
-                1 => _arg1,
-                2 => _arg2,
-                3 => _arg3,
-                4 => _arg4,
-                _ => throw new ArgumentOutOfRangeException(nameof(index)),
-            };
-        }
-
-        public override int ArgumentCount => 5;
-
-        internal override bool SameArguments(ICollection<Expression>? arguments)
-        {
-            if (arguments != null && arguments.Count == 5)
-            {
-                if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
-                {
-                    return ExpressionUtils.SameElements(arguments, alreadyCollection);
-                }
-
-                using (IEnumerator<Expression> en = arguments.GetEnumerator())
-                {
-                    en.MoveNext();
-                    if (en.Current == _arg0)
-                    {
-                        en.MoveNext();
-                        if (en.Current == _arg1)
-                        {
-                            en.MoveNext();
-                            if (en.Current == _arg2)
-                            {
-                                en.MoveNext();
-                                if (en.Current == _arg3)
-                                {
-                                    en.MoveNext();
-                                    return en.Current == _arg4;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
-        {
-            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
-        }
-
-        internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
-        {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 5);
-
-            if (args != null)
-            {
-                return Expression.Call(Method, args[0], args[1], args[2], args[3], args[4]);
-            }
-
-            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
+            return new MethodCallExpressionInlineArgs<TArr>(Method, newArgs);
         }
     }
 
@@ -755,6 +485,8 @@ namespace System.Linq.Expressions
         }
     }
 
+    // TODO: the whole family of classes can be simplified by using inline storage.
+
     internal sealed class InstanceMethodCallExpression3 : InstanceMethodCallExpression, IArgumentProvider
     {
         private object _arg0;                       // storage for the 1st argument or a read-only collection.  See IArgumentProvider
@@ -865,9 +597,16 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 1, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            ValueArray<object, object[]> args = default;
+            args[0] = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
 
-            return new MethodCallExpression1(method, arg0);
+            return CreateWithInlineArgs(method, args);
+        }
+
+        private static MethodCallExpression CreateWithInlineArgs<TArr>(MethodInfo method, TArr args)
+            where TArr : struct, IValueArray<object>
+        {
+            return new MethodCallExpressionInlineArgs<TArr>(method, args);
         }
 
         /// <summary>Creates a <see cref="MethodCallExpression"/> that represents a call to a static method that takes two arguments.</summary>
@@ -887,10 +626,11 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 2, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            ValueArray<object, object[,]> args = default;
+            args[0] = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            args[1] = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
 
-            return new MethodCallExpression2(method, arg0, arg1);
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>Creates a <see cref="MethodCallExpression"/> that represents a call to a static method that takes three arguments.</summary>
@@ -912,11 +652,12 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 3, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
+            ValueArray<object, object[,,]> args = default;
+            args[0] = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            args[1] = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            args[2] = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
 
-            return new MethodCallExpression3(method, arg0, arg1, arg2);
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>Creates a <see cref="MethodCallExpression"/> that represents a call to a static method that takes four arguments.</summary>
@@ -940,12 +681,13 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 4, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
-            arg3 = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3], nameof(method), nameof(arg3));
+            ValueArray<object, object[,,,]> args = default;
+            args[0] = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            args[1] = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            args[2] = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
+            args[3] = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3], nameof(method), nameof(arg3));
 
-            return new MethodCallExpression4(method, arg0, arg1, arg2, arg3);
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>Creates a <see cref="MethodCallExpression"/> that represents a call to a static method that takes five arguments.</summary>
@@ -972,13 +714,14 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 5, pis);
 
-            arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
-            arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
-            arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
-            arg3 = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3], nameof(method), nameof(arg3));
-            arg4 = ValidateOneArgument(method, ExpressionType.Call, arg4, pis[4], nameof(method), nameof(arg4));
+            ValueArray<object, object[,,,,]> args = default;
+            args[0] = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
+            args[1] = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
+            args[2] = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
+            args[3] = ValidateOneArgument(method, ExpressionType.Call, arg3, pis[3], nameof(method), nameof(arg3));
+            args[4] = ValidateOneArgument(method, ExpressionType.Call, arg4, pis[4], nameof(method), nameof(arg4));
 
-            return new MethodCallExpression5(method, arg0, arg1, arg2, arg3, arg4);
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>
@@ -1062,7 +805,10 @@ namespace System.Linq.Expressions
                 return new InstanceMethodCallExpression1(method, instance, arg0);
             }
 
-            return new MethodCallExpression1(method, arg0);
+            ValueArray<object, object[]> args = default;
+            args[0] = arg0;
+
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>
@@ -1091,7 +837,11 @@ namespace System.Linq.Expressions
                 return new InstanceMethodCallExpression2(method, instance, arg0, arg1);
             }
 
-            return new MethodCallExpression2(method, arg0, arg1);
+            ValueArray<object, object[,]> args = default;
+            args[0] = arg0;
+            args[1] = arg1;
+
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>
@@ -1122,7 +872,13 @@ namespace System.Linq.Expressions
             {
                 return new InstanceMethodCallExpression3(method, instance, arg0, arg1, arg2);
             }
-            return new MethodCallExpression3(method, arg0, arg1, arg2);
+
+            ValueArray<object, object[,,]> args = default;
+            args[0] = arg0;
+            args[1] = arg1;
+            args[2] = arg2;
+
+            return CreateWithInlineArgs(method, args);
         }
 
         /// <summary>Creates a <see cref="MethodCallExpression"/> that represents a call to an instance method by calling the appropriate factory method.</summary>
