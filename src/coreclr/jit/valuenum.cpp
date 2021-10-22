@@ -4451,21 +4451,24 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
-// GetReversedRelopVN: return value number for reversed comparison
+// GetRelatedRelop: return value number for reversed/swapped comparison
 //
 // Arguments:
-//    vn - vn to reverse
+//    vn - vn to base things on
+//    vnk - whether the new vn should swap, reverse, or both
 //
 // Returns:
-//    vn for reversed comparsion, or NoVN.
+//    vn for reversed/swapped comparsion, or NoVN.
 //
 // Note:
-//    If "vn" corresponds to (x > y)
-//    then reverse("vn") corresponds to (x <= y)
+//    If "vn" corresponds to (x > y), the resulting VN correponds to
+//    VRK_Swap               (y < x)
+//    VRK_Reverse            (x <= y)
+//    VRK_SwapReverse        (y >= x)
 //
 //    Will return NoVN for all float comparisons.
 //
-ValueNum ValueNumStore::GetReversedRelopVN(ValueNum vn)
+ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 {
     if (vn == NoVN)
     {
@@ -4498,46 +4501,108 @@ ValueNum ValueNumStore::GetReversedRelopVN(ValueNum vn)
         return NoVN;
     }
 
-    // Map to the reverse VNFunc
-    //
-    VNFunc reverseOp;
+    const bool reverse = (vrk == VN_RELATION_KIND::VRK_Reverse) || (vrk == VN_RELATION_KIND::VRK_SwapReverse);
+    const bool swap    = (vrk == VN_RELATION_KIND::VRK_Swap) || (vrk == VN_RELATION_KIND::VRK_SwapReverse);
 
-    if (funcAttr.m_func >= VNF_Boundary)
+    // Set up the new function
+    //
+    VNFunc newFunc = funcAttr.m_func;
+
+    // Swap the predicate, if so asked.
+    //
+    if (swap)
     {
-        switch (funcAttr.m_func)
+        if (newFunc >= VNF_Boundary)
         {
-            case VNF_LT_UN:
-                reverseOp = VNF_GE_UN;
-                break;
-            case VNF_LE_UN:
-                reverseOp = VNF_GT_UN;
-                break;
-            case VNF_GE_UN:
-                reverseOp = VNF_LT_UN;
-                break;
-            case VNF_GT_UN:
-                reverseOp = VNF_LE_UN;
-                break;
-            default:
+            switch (newFunc)
+            {
+                case VNF_LT_UN:
+                    newFunc = VNF_GT_UN;
+                    break;
+                case VNF_LE_UN:
+                    newFunc = VNF_GE_UN;
+                    break;
+                case VNF_GE_UN:
+                    newFunc = VNF_LE_UN;
+                    break;
+                case VNF_GT_UN:
+                    newFunc = VNF_LT_UN;
+                    break;
+                default:
+                    return NoVN;
+            }
+        }
+        else
+        {
+            const genTreeOps op = (genTreeOps)newFunc;
+
+            if (!GenTree::OperIsRelop(op))
+            {
                 return NoVN;
+            }
+
+            newFunc = (VNFunc)GenTree::SwapRelop(op);
         }
     }
-    else
-    {
-        const genTreeOps op = (genTreeOps)funcAttr.m_func;
 
-        if (!GenTree::OperIsRelop(op))
-        {
-            return NoVN;
-        }
-
-        reverseOp = (VNFunc)GenTree::ReverseRelop(op);
-    }
-
-    // Create the resulting VN
+    // Reverse the predicate, if so asked.
     //
-    ValueNum reverseValueVN = VNForFunc(TYP_INT, reverseOp, funcAttr.m_args[0], funcAttr.m_args[1]);
-    return VNWithExc(reverseValueVN, excepVN);
+    if (reverse)
+    {
+        if (newFunc >= VNF_Boundary)
+        {
+            switch (newFunc)
+            {
+                case VNF_LT_UN:
+                    newFunc = VNF_GE_UN;
+                    break;
+                case VNF_LE_UN:
+                    newFunc = VNF_GT_UN;
+                    break;
+                case VNF_GE_UN:
+                    newFunc = VNF_LT_UN;
+                    break;
+                case VNF_GT_UN:
+                    newFunc = VNF_LE_UN;
+                    break;
+                default:
+                    return NoVN;
+            }
+        }
+        else
+        {
+            const genTreeOps op = (genTreeOps)newFunc;
+
+            if (!GenTree::OperIsRelop(op))
+            {
+                return NoVN;
+            }
+
+            newFunc = (VNFunc)GenTree::ReverseRelop(op);
+        }
+    }
+
+    // Create the resulting VN, swapping arguments if needed.
+    //
+    ValueNum newVN  = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
+    ValueNum result = VNWithExc(newVN, excepVN);
+
+#ifdef DEBUG
+    if (m_pComp->verbose)
+    {
+        printf("%s of ", swap ? (reverse ? "swap-reverse" : "swap") : "reverse");
+        m_pComp->vnPrint(vn, 1);
+        printf(" => ");
+        m_pComp->vnPrint(newVN, 1);
+        if (result != newVN)
+        {
+            m_pComp->vnPrint(result, 1);
+        }
+        printf("\n");
+    }
+#endif
+
+    return result;
 }
 
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)

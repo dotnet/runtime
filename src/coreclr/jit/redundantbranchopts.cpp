@@ -128,26 +128,40 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
             if (domCmpTree->OperKind() & GTK_RELOP)
             {
-                // We can use liberal VNs as bounds checks are not yet
+                // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
-                ValueNum treeVN      = tree->GetVN(VNK_Liberal);
-                ValueNum domCmpVN    = domCmpTree->GetVN(VNK_Liberal);
-                ValueNum domCmpRevVN = vnStore->GetReversedRelopVN(domCmpVN);
+                // Look for an exact match and also try the various swapped/reversed forms.
+                //
+                const ValueNum treeVN   = tree->GetVN(VNK_Liberal);
+                const ValueNum domCmpVN = domCmpTree->GetVN(VNK_Liberal);
+                const ValueNum domCmpSwpVN =
+                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                const ValueNum domCmpRevVN =
+                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+                const ValueNum domCmpSwpRevVN =
+                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
+
+                const bool matchCmp       = ((domCmpVN != ValueNumStore::NoVN) && (domCmpVN == treeVN));
+                const bool matchSwp       = ((domCmpSwpVN != ValueNumStore::NoVN) && (domCmpSwpVN == treeVN));
+                const bool matchRev       = ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN));
+                const bool matchSwpRev    = ((domCmpSwpRevVN != ValueNumStore::NoVN) && (domCmpSwpRevVN == treeVN));
+                const bool domIsSameRelop = matchCmp || matchSwp;
+                const bool domIsRevRelop  = matchRev || matchSwpRev;
 
                 // Note we could also infer the tree relop's value from similar relops higher in the dom tree.
                 // For example, (x >= 0) dominating (x > 0), or (x < 0) dominating (x > 0).
                 //
                 // That is left as a future enhancement.
                 //
-                if ((domCmpVN == treeVN) || ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN)))
+                if (domIsSameRelop || domIsRevRelop)
                 {
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    const bool domIsSameRelop = (domCmpVN == treeVN);
-                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with %s liberal VN\n", domBlock->bbNum,
-                            block->bbNum, domIsSameRelop ? "the same" : "a reverse");
+                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has %srelop with %s liberal VN\n", domBlock->bbNum,
+                            block->bbNum, matchSwp || matchSwpRev ? "swapped " : "",
+                            domIsSameRelop ? "the same" : "a reverse");
                     DISPTREE(domCmpTree);
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
