@@ -7896,8 +7896,16 @@ namespace System
         Path = 2,
         Query = 3,
     }
+    public partial interface IValueArray<T>
+    {
+        public int Length { get; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ref T GetPinnableReference();
+        public ref T this[int index] { get; }
+        public Span<T> Slice(int start);
+    }
     public partial struct ValueArray<T, R> // where R : System.Array
-        : System.IEquatable<ValueArray<T, R>>
+        : IValueArray<T>, System.IEquatable<ValueArray<T, R>>
     {
         public int Length { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

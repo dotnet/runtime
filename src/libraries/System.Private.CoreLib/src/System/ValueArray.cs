@@ -7,9 +7,41 @@ using Internal.Runtime.CompilerServices;
 
 namespace System
 {
-    public struct ValueArray<T, R> // where R : System.Array
-        : IEquatable<ValueArray<T, R>>
+    public interface IValueArray<T>
     {
+        /// <summary>The number of elements this ValueArray contains.</summary>
+        public int Length { get; }
+
+        /// <summary>
+        /// Returns a reference to the first element of the value array.
+        /// </summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public ref T GetPinnableReference();
+
+        /// <summary>
+        /// Returns a reference to specified element of the value array.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        /// <exception cref="System.IndexOutOfRangeException">
+        /// Thrown when index less than 0 or index greater than or equal to Length
+        /// </exception>
+        public ref T this[int index] { get; }
+
+        /// <summary>
+        /// Forms a slice out of the given value array, beginning at 'start'.
+        /// </summary>
+        /// <param name="start">The index at which to begin this slice.</param>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;Length).
+        /// </exception>
+        public Span<T> Slice(int start);
+    }
+
+    public struct ValueArray<T, R> // where R : System.Array
+        : IValueArray<T>, IEquatable<ValueArray<T, R>>
+    {
+        /// <summary>The number of elements this ValueArray contains.</summary>
         public int Length => RankOf<R>.Value;
 
         // For the array of Length N, runtime will add N-1 elements immediately after this one.
