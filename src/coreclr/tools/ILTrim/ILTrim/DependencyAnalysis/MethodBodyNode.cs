@@ -139,7 +139,7 @@ namespace ILTrim.DependencyAnalysis
                         _dependencies.Add(factory.GetNodeForToken(
                             _module,
                             token),
-                            $"Instruction {opcode.ToString()} operand");
+                            $"Instruction operand");
 
                         if (method != null && !requiresMethodBodyScanner)
                         {
