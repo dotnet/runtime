@@ -273,19 +273,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        public SymbolicRegexSet<S> Restrict(S pred)
-        {
-            return CreateMulti(_builder, RestrictElements(pred), _kind);
-
-            IEnumerable<SymbolicRegexNode<S>> RestrictElements(S pred)
-            {
-                foreach (SymbolicRegexNode<S> elem in this)
-                {
-                    yield return elem.Restrict(pred);
-                }
-            }
-        }
-
         internal bool IsNullableFor(uint context)
         {
             Enumerator e = GetEnumerator();
