@@ -9,10 +9,13 @@ namespace System.IO.Tests
     public class File_GetSetAttributes : BaseGetSetAttributes
     {
         protected override FileAttributes GetAttributes(string path) => File.GetAttributes(path);
+#if TargetsWindows
         protected FileAttributes GetAttributes(SafeFileHandle fileHandle) => File.GetAttributes(fileHandle);
+#endif
         protected override void SetAttributes(string path, FileAttributes attributes) => File.SetAttributes(path, attributes);
+#if TargetsWindows
         protected void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes) => File.SetAttributes(fileHandle, attributes);
-
+#endif
         // Getting only throws for File, not FileInfo
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void GetAttributes_MissingFile(char trailingChar)
@@ -21,6 +24,7 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(TrailingCharacters))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetAttributes_MissingFile_SafeFileHandle(char trailingChar)
         {
             Assert.Throws<FileNotFoundException>(() =>
@@ -66,6 +70,7 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(TrailingCharacters))]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void GetAttributes_MissingDirectory_SafeFileHandle(char trailingChar)
         {
             Assert.Throws<DirectoryNotFoundException>(() =>

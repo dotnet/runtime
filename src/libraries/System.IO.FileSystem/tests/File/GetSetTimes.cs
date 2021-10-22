@@ -43,24 +43,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes_SafeFileHandle()
-        {
-            // On Linux, we synthesize CreationTime from the oldest of status changed time and write time
-            //  if birth time is not available. So WriteTime should never be earlier.
-
-            // Set different values for all three
-            // Status changed time will be when the file was first created, in this case)
-            string path = GetExistingItem();
-            using var fileHandle = File.OpenHandle(path);
-            File.SetLastWriteTime(fileHandle, DateTime.Now.AddMinutes(1));
-            File.SetLastAccessTime(fileHandle, DateTime.Now.AddMinutes(2));
-
-            // Assert.InRange is inclusive.
-            Assert.InRange(File.GetCreationTimeUtc(fileHandle), DateTime.MinValue, File.GetLastWriteTimeUtc(fileHandle));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
         public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture()
         {
             // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
@@ -80,28 +62,6 @@ namespace System.IO.Tests
             Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(path));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture_SafeFileHandle()
-        {
-            // On Linux, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
-            // Changing the CreationTime, updates mtime and causes ctime to change to the current time.
-            // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
-
-            string path = GetTestFilePath();
-            await File.WriteAllTextAsync(path, "");
-
-            // Set the creation time to a value in the past that is between ctime and now.
-            using var fileHandle = File.OpenHandle(path);
-            await Task.Delay(600);
-            DateTime newCreationTimeUTC = DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(300));
-            File.SetCreationTimeUtc(fileHandle, newCreationTimeUTC);
-
-            Assert.Equal(newCreationTimeUTC, File.GetLastWriteTimeUtc(fileHandle));
-
-            Assert.Equal(newCreationTimeUTC, File.GetCreationTimeUtc(fileHandle));
-        }
-
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
             if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
@@ -110,6 +70,7 @@ namespace System.IO.Tests
                     File.SetCreationTime,
                     File.GetCreationTime,
                     DateTimeKind.Local);
+#if TargetsWindows
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
@@ -122,10 +83,12 @@ namespace System.IO.Tests
                         return File.GetCreationTime(fileHandle);
                     },
                     DateTimeKind.Local);
+#endif
                 yield return TimeFunction.Create(
                     File.SetCreationTimeUtc,
                     File.GetCreationTimeUtc,
                     DateTimeKind.Unspecified);
+#if TargetsWindows
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
@@ -138,10 +101,12 @@ namespace System.IO.Tests
                         return File.GetCreationTimeUtc(fileHandle);
                     },
                     DateTimeKind.Unspecified);
+#endif
                 yield return TimeFunction.Create(
                     File.SetCreationTimeUtc,
                     File.GetCreationTimeUtc,
                     DateTimeKind.Utc);
+#if TargetsWindows
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
@@ -155,10 +120,12 @@ namespace System.IO.Tests
                     },
                     DateTimeKind.Utc);
             }
+#endif
             yield return TimeFunction.Create(
                 File.SetLastAccessTime,
                 File.GetLastAccessTime,
                 DateTimeKind.Local);
+#if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -171,10 +138,12 @@ namespace System.IO.Tests
                     return File.GetLastAccessTime(fileHandle);
                 },
                 DateTimeKind.Local);
+#endif
             yield return TimeFunction.Create(
                 File.SetLastAccessTimeUtc,
                 File.GetLastAccessTimeUtc,
                 DateTimeKind.Unspecified);
+#if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -187,10 +156,12 @@ namespace System.IO.Tests
                     return File.GetLastAccessTimeUtc(fileHandle);
                 },
                 DateTimeKind.Unspecified);
+#endif
             yield return TimeFunction.Create(
                 File.SetLastAccessTimeUtc,
                 File.GetLastAccessTimeUtc,
                 DateTimeKind.Utc);
+#if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -203,10 +174,12 @@ namespace System.IO.Tests
                     return File.GetLastAccessTimeUtc(fileHandle);
                 },
                 DateTimeKind.Utc);
+#endif
             yield return TimeFunction.Create(
                 File.SetLastWriteTime,
                 File.GetLastWriteTime,
                 DateTimeKind.Local);
+#if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -219,10 +192,12 @@ namespace System.IO.Tests
                     return File.GetLastWriteTime(fileHandle);
                 },
                 DateTimeKind.Local);
+#endif
             yield return TimeFunction.Create(
                 File.SetLastWriteTimeUtc,
                 File.GetLastWriteTimeUtc,
                 DateTimeKind.Unspecified);
+#if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -235,10 +210,12 @@ namespace System.IO.Tests
                     return File.GetLastWriteTimeUtc(fileHandle);
                 },
                 DateTimeKind.Unspecified);
+#endif
             yield return TimeFunction.Create(
                 File.SetLastWriteTimeUtc,
                 File.GetLastWriteTimeUtc,
                 DateTimeKind.Utc);
+#if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -251,6 +228,7 @@ namespace System.IO.Tests
                     return File.GetLastWriteTimeUtc(fileHandle);
                 },
                 DateTimeKind.Utc);
+#endif
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
@@ -285,6 +263,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetLastWriteTimeTicks_SafeFileHandle()
         {
             string firstFilePath = GetTestFilePath();
@@ -316,22 +295,6 @@ namespace System.IO.Tests
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
-        [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format/Browser Platform do not support nanosecond granularity.
-        public void SetUptoNanoseconds_SafeFileHandle()
-        {
-            string filePath = GetTestFilePath();
-            File.WriteAllText(filePath, "");
-
-            using var fileHandle = File.OpenHandle(filePath);
-
-            DateTime dateTime = DateTime.UtcNow;
-            File.SetLastWriteTimeUtc(fileHandle, dateTime);
-            long ticks = File.GetLastWriteTimeUtc(fileHandle).Ticks;
-
-            Assert.Equal(dateTime, File.GetLastWriteTimeUtc(fileHandle));
-            Assert.Equal(ticks, dateTime.Ticks);
-        }
-
         // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
         [PlatformSpecific(~TestPlatforms.Linux)]
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
@@ -349,7 +312,7 @@ namespace System.IO.Tests
         }
 
         // Linux kernels no longer have long max date time support. Discussed in https://github.com/dotnet/runtime/issues/43166.
-        [PlatformSpecific(~TestPlatforms.Linux)]
+        [PlatformSpecific(~TestPlatforms.Windows)]
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax_SafeFileHandle()
         {
@@ -381,6 +344,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void SetLastAccessTimeTicks_SafeFileHandle()
         {
             string firstFilePath = GetTestFilePath();
