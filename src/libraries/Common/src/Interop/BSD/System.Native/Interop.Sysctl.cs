@@ -21,16 +21,7 @@ internal static partial class Interop
 
         // This is 'raw' sysctl call, only wrapped to allocate memory if needed
         // caller always needs to free returned buffer using  Marshal.FreeHGlobal()
-
-        internal static unsafe void Sysctl(Span<int> name, ref byte* value, ref int len)
-        {
-            fixed (int* ptr = &MemoryMarshal.GetReference(name))
-            {
-                Sysctl(ptr, name.Length, ref value, ref len);
-            }
-        }
-
-        private static unsafe void Sysctl(int* name, int name_len, ref byte* value, ref int len)
+        internal static unsafe void Sysctl(int* name, int name_len, ref byte* value, ref int len)
         {
             IntPtr bytesLength = (IntPtr)len;
             int ret = -1;

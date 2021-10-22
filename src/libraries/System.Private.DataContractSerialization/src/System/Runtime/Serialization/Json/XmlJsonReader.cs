@@ -276,7 +276,11 @@ namespace System.Runtime.Serialization.Json
                 CharType.None | CharType.FirstName | CharType.Name, //  FF (?)
             };
         private bool _buffered;
-        private byte[]? _charactersToSkipOnNextRead;
+#if NICE_SYNTAX
+        private byte[2] _charactersToSkipOnNextRead;
+#else
+        private ValueArray<byte, object[,]> _charactersToSkipOnNextRead;
+#endif
         private JsonComplexTextMode _complexTextMode = JsonComplexTextMode.None;
         private bool _expectingFirstElementInNonPrimitiveChild;
         private int _maxBytesPerRead;
@@ -415,7 +419,6 @@ namespace System.Runtime.Serialization.Json
                 BufferReader.SetWindow(ElementNode.BufferOffset, _maxBytesPerRead);
             }
 
-            Debug.Assert(_charactersToSkipOnNextRead != null);
             byte ch;
 
             // Skip whitespace before checking EOF
@@ -1548,7 +1551,7 @@ namespace System.Runtime.Serialization.Json
         {
             _complexTextMode = JsonComplexTextMode.None;
             _expectingFirstElementInNonPrimitiveChild = false;
-            _charactersToSkipOnNextRead = new byte[2];
+            _charactersToSkipOnNextRead = default;
             _scopeDepth = 0;
             if ((_scopes != null) && (_scopes.Length > JsonGlobals.maxScopeSize))
             {

@@ -186,8 +186,11 @@ internal static partial class Interop
         /// <param name="count">The number of kinfo_proc entries returned.</param>
         public static unsafe kinfo_proc* GetProcInfo(int pid, bool threads, out int count)
         {
-            Span<int> sysctlName = stackalloc int[4];
-
+#if NICE_SYNTAX
+            int[4] sysctlName = default;
+#else
+            ValueArray<int, object[,,,]> sysctlName = default;
+#endif
             if (pid == 0)
             {
                 // get all processes
@@ -205,7 +208,7 @@ internal static partial class Interop
 
             byte* pBuffer = null;
             int bytesLength = 0;
-            Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
+            Interop.Sys.Sysctl((int*)&sysctlName, sysctlName.Length, ref pBuffer, ref bytesLength);
 
             kinfo_proc* kinfo = (kinfo_proc*)pBuffer;
 

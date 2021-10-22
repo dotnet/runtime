@@ -76,13 +76,22 @@ internal static partial class Interop
         /// <param name="pid">The PID of the process</param>
         public static unsafe string? GetProcPath(int pid)
         {
-            Span<int> sysctlName = stackalloc int[] { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid };
+#if NICE_SYNTAX
+            int[4] sysctlName = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, pid };
+#else
+            ValueArray<int, object[,,,]> sysctlName = default;
+            sysctlName[0] = CTL_KERN;
+            sysctlName[1] = KERN_PROC;
+            sysctlName[2] = KERN_PROC_PATHNAME;
+            sysctlName[3] = pid;
+#endif
+
             byte* pBuffer = null;
             int bytesLength = 0;
 
             try
             {
-                Interop.Sys.Sysctl(sysctlName, ref pBuffer, ref bytesLength);
+                Interop.Sys.Sysctl((int*)&sysctlName, sysctlName.Length, ref pBuffer, ref bytesLength);
                 return System.Text.Encoding.UTF8.GetString(pBuffer, (int)bytesLength - 1);
             }
             finally
