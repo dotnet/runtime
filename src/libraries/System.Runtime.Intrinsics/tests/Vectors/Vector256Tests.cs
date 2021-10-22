@@ -29,8 +29,8 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Theory]
-        [InlineData(0L, 0L, 0L, 0L, 0L, 0L, 0L, 0L)]
-        [InlineData(1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L)]
+        [InlineData(0L, 0L, 0L, 0L)]
+        [InlineData(1L, 1L, 1L, 1L)]
         [InlineData(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L)]
         [InlineData(0L, 0L, 50L, 430L, -64L, 0L, long.MaxValue, long.MinValue)]
         public void Vector256Int64IndexerTest(params long[] values)
@@ -41,10 +41,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Assert.Equal(vector[1], values[1]);
             Assert.Equal(vector[2], values[2]);
             Assert.Equal(vector[3], values[3]);
-            Assert.Equal(vector[4], values[4]);
-            Assert.Equal(vector[5], values[5]);
-            Assert.Equal(vector[6], values[6]);
-            Assert.Equal(vector[7], values[7]);
         }
     }
 }
