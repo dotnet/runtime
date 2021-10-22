@@ -50,7 +50,14 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
     
 
-  # #Unzip the nuget packages to make the actual runtimes accessible
+  #Unzip the nuget packages to make the actual runtimes accessible
+  - task: ExtractFiles@1
+    displayName: Extract android-arm runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-arm
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
   - task: ExtractFiles@1
     displayName: Extract android-arm64 runtime
     inputs:
@@ -65,6 +72,13 @@ steps:
         destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x86
         overwriteExistingFiles: true
         cleanDestinationFolder: false
+  - task: ExtractFiles@1
+    displayName: Extract android-x64 runtime
+    inputs:
+        archiveFilePatterns: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64.*.zip
+        destinationFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks/Microsoft.NETCore.App.Runtime.Mono.android-x64
+        overwriteExistingFiles: true
+        cleanDestinationFolder: false
 
   - script: |
       curl -o ./rollback.json 'maui.blob.core.windows.net/metadata/rollbacks/main.json'
@@ -76,8 +90,8 @@ steps:
   - script: |
       ./dotnet.sh new maui -n MauiTesting
       cd MauiTesting
-      cp $(Build.SourcesDirectory)/src/maui/MauiScenario.props ./Directory.Build.props
-      cp $(Build.SourcesDirectory)/src/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
     displayName: Setup MAUI Project
     workingDirectory: $(Build.SourcesDirectory)
 

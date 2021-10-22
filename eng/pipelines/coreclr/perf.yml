@@ -492,6 +492,8 @@ jobs:
       runtimeFlavor: mono
       platforms:
       - Android_x86
+      - Android_x64
+      - Android_arm
       - Android_arm64
       jobParameters:
         buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
@@ -518,8 +520,10 @@ jobs:
       - iOS_arm64
       jobParameters:
         dependsOn:
+          - Build_Android_arm_release_Maui_Packs_Mono
           - Build_Android_arm64_release_Maui_Packs_Mono
           - Build_Android_x86_release_Maui_Packs_Mono
+          - Build_Android_x64_release_Maui_Packs_Mono
         buildArgs: -s mono -c $(_BuildConfig)
         nameSuffix: MACiOSAndroidMaui
         isOfficialBuild: false
