@@ -14,25 +14,11 @@ namespace System.Text.RegularExpressions
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
 
-        // Distribution of common patterns indicates an average amount of 56 op codes. Since we're stackalloc'ing,
-        // we can afford to make it a bit higher and a power of two for simplicity.
-        private const int EmittedSize = 64;
-        private const int IntStackSize = 32;
-
-        private readonly Dictionary<string, int> _stringTable;
+        private Dictionary<string, int> _stringTable;
         private ValueListBuilder<int> _emitted;
         private ValueListBuilder<int> _intStack;
         private Hashtable? _caps;
         private int _trackCount;
-
-        private RegexWriter(Span<int> emittedSpan, Span<int> intStackSpan)
-        {
-            _emitted = new ValueListBuilder<int>(emittedSpan);
-            _intStack = new ValueListBuilder<int>(intStackSpan);
-            _stringTable = new Dictionary<string, int>();
-            _caps = null;
-            _trackCount = 0;
-        }
 
         /// <summary>
         /// This is the only function that should be called from outside.
@@ -40,7 +26,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static RegexCode Write(RegexTree tree)
         {
-            var writer = new RegexWriter(stackalloc int[EmittedSize], stackalloc int[IntStackSize]);
+            var writer = new RegexWriter() { _stringTable = new Dictionary<string, int>() };
             RegexCode code = writer.RegexCodeFromRegexTree(tree);
             writer.Dispose();
 

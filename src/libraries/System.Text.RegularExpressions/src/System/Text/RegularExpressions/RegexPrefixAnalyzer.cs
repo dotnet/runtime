@@ -11,7 +11,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Detects various forms of prefixes in the regular expression that can help FindFirstChars optimize its search.</summary>
     internal ref struct RegexPrefixAnalyzer
     {
-        private const int StackBufferSize = 32;
         private const int BeforeChild = 64;
         private const int AfterChild = 128;
 
@@ -25,20 +24,11 @@ namespace System.Text.RegularExpressions
         public const int Boundary = 0x0040;
         public const int ECMABoundary = 0x0080;
 
-        private readonly List<RegexFC> _fcStack;
+        private ValueListBuilder<RegexFC> _fcStack;
         private ValueListBuilder<int> _intStack;    // must not be readonly
         private bool _skipAllChildren;              // don't process any more children at the current level
         private bool _skipchild;                    // don't process the current child.
         private bool _failed;
-
-        private RegexPrefixAnalyzer(Span<int> intStack)
-        {
-            _fcStack = new List<RegexFC>(StackBufferSize);
-            _intStack = new ValueListBuilder<int>(intStack);
-            _failed = false;
-            _skipchild = false;
-            _skipAllChildren = false;
-        }
 
         /// <summary>Computes the leading substring in <paramref name="tree"/>.</summary>
         /// <remarks>It's quite trivial and gives up easily, in which case an empty string is returned.</remarks>
@@ -122,7 +112,7 @@ namespace System.Text.RegularExpressions
         /// <remarks>true if a character class could be computed; otherwise, false.</remarks>
         public static (string CharClass, bool CaseInsensitive)[]? ComputeFirstCharClass(RegexTree tree)
         {
-            var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
+            RegexPrefixAnalyzer s = default;
             RegexFC? fc = s.RegexFCFromRegexTree(tree);
             s.Dispose();
 
@@ -392,23 +382,22 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// We also use a stack of RegexFC objects.
         /// </summary>
-        private void PushFC(RegexFC fc) => _fcStack.Add(fc);
+        private void PushFC(RegexFC fc) => _fcStack.Append(fc);
 
-        private bool FCIsEmpty() => _fcStack.Count == 0;
+        private bool FCIsEmpty() => _fcStack.Length == 0;
 
-        private RegexFC PopFC()
-        {
-            RegexFC item = TopFC();
-            _fcStack.RemoveAt(_fcStack.Count - 1);
-            return item;
-        }
+        private RegexFC PopFC() => _fcStack.Pop();
 
-        private RegexFC TopFC() => _fcStack[_fcStack.Count - 1];
+        private RegexFC TopFC() => _fcStack[_fcStack.Length - 1];
 
         /// <summary>
         /// Return rented buffers.
         /// </summary>
-        public void Dispose() => _intStack.Dispose();
+        public void Dispose()
+        {
+            _intStack.Dispose();
+            _fcStack.Dispose();
+        }
 
         /// <summary>
         /// The main FC computation. It does a shortcutted depth-first walk

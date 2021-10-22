@@ -16,7 +16,6 @@ namespace System.Text.RegularExpressions
         // ScanBlank() calls are just kind of duct-taped in.
 
         private const int EscapeMaxBufferSize = 256;
-        private const int OptionStackDefaultSize = 32;
         private const int MaxValueDiv10 = int.MaxValue / 10;
         private const int MaxValueMod10 = int.MaxValue % 10;
 
@@ -44,12 +43,12 @@ namespace System.Text.RegularExpressions
         private RegexOptions _options;
         // NOTE: _optionsStack is ValueListBuilder<int> to ensure that
         //       ArrayPool<int>.Shared, not ArrayPool<RegexOptions>.Shared,
-        //       will be created if the stackalloc'd capacity is ever exceeded.
+        //       will be created if the builder capacity is ever exceeded.
         private ValueListBuilder<int> _optionsStack;
 
         private bool _ignoreNextParen; // flag to skip capturing a parentheses group
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames, Span<int> optionSpan)
+        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames)
         {
             Debug.Assert(pattern != null, "Pattern must be set");
             Debug.Assert(culture != null, "Culture must be set");
@@ -61,7 +60,7 @@ namespace System.Text.RegularExpressions
             _capsize = capsize;
             _capnames = capnames;
 
-            _optionsStack = new ValueListBuilder<int>(optionSpan);
+            _optionsStack = default;
             _stack = null;
             _group = null;
             _alternation = null;
@@ -76,14 +75,14 @@ namespace System.Text.RegularExpressions
             _ignoreNextParen = false;
         }
 
-        private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Span<int> optionSpan)
-            : this(pattern, options, culture, new Hashtable(), default, null, optionSpan)
+        private RegexParser(string pattern, RegexOptions options, CultureInfo culture)
+            : this(pattern, options, culture, new Hashtable(), default, null)
         {
         }
 
         public static RegexTree Parse(string pattern, RegexOptions options, CultureInfo culture)
         {
-            var parser = new RegexParser(pattern, options, culture, stackalloc int[OptionStackDefaultSize]);
+            var parser = new RegexParser(pattern, options, culture);
 
             parser.CountCaptures();
             parser.Reset(options);
@@ -102,7 +101,7 @@ namespace System.Text.RegularExpressions
         public static RegexReplacement ParseReplacement(string pattern, RegexOptions options, Hashtable caps, int capsize, Hashtable capnames)
         {
             CultureInfo culture = (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames, stackalloc int[OptionStackDefaultSize]);
+            var parser = new RegexParser(pattern, options, culture, caps, capsize, capnames);
 
             RegexNode root = parser.ScanReplacement();
             var regexReplacement = new RegexReplacement(pattern, root, caps);
@@ -194,7 +193,7 @@ namespace System.Text.RegularExpressions
 
         private static string UnescapeImpl(string input, int i)
         {
-            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture, stackalloc int[OptionStackDefaultSize]);
+            var parser = new RegexParser(input, RegexOptions.None, CultureInfo.InvariantCulture);
 
             // In the worst case the escaped string has the same length.
             // For small inputs we use stack allocation.

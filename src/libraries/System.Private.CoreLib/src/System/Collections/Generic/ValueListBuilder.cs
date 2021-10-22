@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -10,15 +11,16 @@ namespace System.Collections.Generic
     internal ref partial struct ValueListBuilder<T>
     {
         private Span<T> _span;
+
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+#if NICE_SYNTAX
+        private T[64] _inlineArray;     // 64 arbitrarily chosen
+#else
+        private ValueArray<T, object[,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,]> _inlineArray;
+#endif
+#endif
         private T[]? _arrayFromPool;
         private int _pos;
-
-        public ValueListBuilder(Span<T> initialSpan)
-        {
-            _span = initialSpan;
-            _arrayFromPool = null;
-            _pos = 0;
-        }
 
         public int Length
         {
@@ -69,7 +71,20 @@ namespace System.Collections.Generic
 
         private void Grow()
         {
-            T[] array = ArrayPool<T>.Shared.Rent(_span.Length * 2);
+#if !NETFRAMEWORK && !NETSTANDARD2_0
+            if (_span.Length == 0)
+            {
+                _span = _inlineArray.Slice(0);
+                return;
+            }
+#endif
+
+            Rent();
+        }
+
+        private void Rent()
+        {
+            T[] array = ArrayPool<T>.Shared.Rent(Math.Max(_span.Length * 2, 64));
 
             bool success = _span.TryCopyTo(array);
             Debug.Assert(success);

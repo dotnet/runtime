@@ -38,9 +38,9 @@ namespace System.Text.RegularExpressions
 
             Span<char> vsbStack = stackalloc char[256];
             var vsb = new ValueStringBuilder(vsbStack);
-            FourStackStrings stackStrings = default;
-            var strings = new ValueListBuilder<string>(MemoryMarshal.CreateSpan(ref stackStrings.Item1!, 4));
-            var rules = new ValueListBuilder<int>(stackalloc int[64]);
+
+            ValueListBuilder<string> strings = default;
+            ValueListBuilder<int> rules = default;
 
             int childCount = concat.ChildCount();
             for (int i = 0; i < childCount; i++)
@@ -89,17 +89,8 @@ namespace System.Text.RegularExpressions
             _strings = strings.AsSpan().ToArray();
             _rules = rules.AsSpan().ToArray();
 
+            strings.Dispose();
             rules.Dispose();
-        }
-
-        /// <summary>Simple struct of four strings.</summary>
-        [StructLayout(LayoutKind.Sequential)]
-        private struct FourStackStrings // used to do the equivalent of: Span<string> strings = stackalloc string[4];
-        {
-            public string Item1;
-            public string Item2;
-            public string Item3;
-            public string Item4;
         }
 
         /// <summary>

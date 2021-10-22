@@ -15,8 +15,6 @@ namespace System
 {
     public partial class String
     {
-        private const int StackallocIntBufferSizeLimit = 128;
-
         private static void FillStringChecked(string dest, int destPos, string src)
         {
             Debug.Assert(dest != null);
@@ -1067,7 +1065,7 @@ namespace System
             newValue ??= Empty;
 
             // Track the locations of oldValue to be replaced.
-            var replacementIndices = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+            ValueListBuilder<int> replacementIndices = default;
 
             if (oldValue.Length == 1)
             {
@@ -1380,7 +1378,7 @@ namespace System
                 options &= ~StringSplitOptions.TrimEntries;
             }
 
-            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+            ValueListBuilder<int> sepListBuilder = default;
 
             MakeSeparatorList(separators, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
@@ -1470,8 +1468,8 @@ namespace System
                 }
             }
 
-            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
-            var lengthListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+            ValueListBuilder<int> sepListBuilder = default;
+            ValueListBuilder<int> lengthListBuilder = default;
 
             MakeSeparatorList(separators!, ref sepListBuilder, ref lengthListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
@@ -1495,7 +1493,7 @@ namespace System
 
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
         {
-            var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
+            ValueListBuilder<int> sepListBuilder = default;
 
             MakeSeparatorList(separator, ref sepListBuilder);
             ReadOnlySpan<int> sepList = sepListBuilder.AsSpan();
