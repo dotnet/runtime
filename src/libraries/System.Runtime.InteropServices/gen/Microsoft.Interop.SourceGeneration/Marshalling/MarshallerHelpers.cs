@@ -55,17 +55,23 @@ namespace Microsoft.Interop
                         IdentifierName(indexerIdentifier))));
         }
 
-        public static LocalDeclarationStatementSyntax DeclareWithDefault(TypeSyntax typeSyntax, string identifier)
+        public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
+            VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
+            if (initializeToDefault)
+            {
+                decl = decl.WithInitializer(
+                    EqualsValueClause(
+                        LiteralExpression(SyntaxKind.DefaultLiteralExpression)));
+            }
+
+            // <type> <identifier>;
+            // or
             // <type> <identifier> = default;
             return LocalDeclarationStatement(
                 VariableDeclaration(
                     typeSyntax,
-                    SingletonSeparatedList(
-                        VariableDeclarator(identifier)
-                            .WithInitializer(
-                                EqualsValueClause(
-                                    LiteralExpression(SyntaxKind.DefaultLiteralExpression))))));
+                    SingletonSeparatedList(decl)));
         }
 
         public static RefKind GetRefKindForByValueContentsKind(this ByValueContentsMarshalKind byValue)
