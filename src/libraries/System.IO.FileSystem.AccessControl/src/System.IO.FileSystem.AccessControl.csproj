@@ -58,6 +58,8 @@
              Link="Common\Interop\Windows\Interop.SetThreadErrorMode.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs"
              Link="Common\Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs" />
+	<Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.BY_HANDLE_FILE_INFORMATION.cs" 
+			 Link="Common\Interop\Windows\Interop.BY_HANDLE_FILE_INFORMATION.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.WIN32_FIND_DATA.cs"
              Link="Common\Interop\Windows\Interop.WIN32_FIND_DATA.cs" />
     <Compile Include="$(CoreLibSharedDir)System\IO\DisableMediaInsertionPrompt.cs"
