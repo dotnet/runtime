@@ -143,7 +143,6 @@
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
     <NETStandardLibraryRefVersion>2.1.0</NETStandardLibraryRefVersion>
     <NetStandardLibraryVersion>2.0.3</NetStandardLibraryVersion>
-    <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsToolsRuntimeClientVersion>1.0.4-preview6.19326.1</MicrosoftDiagnosticsToolsRuntimeClientVersion>
     <MicrosoftDiagnosticsNETCoreClientVersion>0.2.61701</MicrosoftDiagnosticsNETCoreClientVersion>
     <DNNEVersion>1.0.26</DNNEVersion>

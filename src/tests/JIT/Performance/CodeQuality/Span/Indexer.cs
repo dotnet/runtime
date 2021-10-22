@@ -4,15 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using Xunit;
-using Microsoft.Xunit.Performance;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Span
 {
@@ -23,6 +17,36 @@ namespace Span
 
         public byte b;
         public int i;
+    }
+
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    class BenchmarkAttribute : Attribute
+    {
+        public BenchmarkAttribute()
+        {
+        }
+        private long _innerIterationsCount = 1;
+        public long InnerIterationCount
+        {
+            get { return _innerIterationsCount; }
+            set { _innerIterationsCount = value; }
+        }
+    }
+
+    // A simplified xunit InlineData attribute.
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    class InlineDataAttribute : Attribute
+    {
+        public InlineDataAttribute(int data)
+        {
+            _data = data;
+        }
+        int _data;
+        public int Data
+        {
+            get { return _data; }
+            set { _data = value; }
+        }
     }
 
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
@@ -848,46 +872,36 @@ namespace Span
             return r;
         }
 
-        // Invoke routine to abstract away the difference between running under xunit-perf vs running from the
-        // command line.  Inner loop to be measured is taken as an Func<int, byte>, and invoked passing the number
+        // Inner loop to be measured is taken as an Func<int, byte>, and invoked passing the number
         // of iterations that the inner loop should execute.
         static void Invoke(Func<int, byte> innerLoop, string nameFormat, params object[] nameArgs)
         {
-            if (IsXunitInvocation)
+            if (DoWarmUp)
             {
-                foreach (var iteration in Benchmark.Iterations)
-                    using (iteration.StartMeasurement())
-                        innerLoop((int)Benchmark.InnerIterationCount);
+                // Run some warm-up iterations before measuring
+                innerLoop(CommandLineInnerIterationCount);
+                // Clear the flag since we're now warmed up (caller will
+                // reset it before calling new code)
+                DoWarmUp = false;
             }
-            else
+
+            // Now do the timed run of the inner loop.
+            Stopwatch sw = Stopwatch.StartNew();
+            byte check = innerLoop(CommandLineInnerIterationCount);
+            sw.Stop();
+
+            // Print result.
+            string name = String.Format(nameFormat, nameArgs);
+            double timeInMs = sw.Elapsed.TotalMilliseconds;
+            Console.Write("{0,25}: {1,7:F2}ms", name, timeInMs);
+
+            bool failed = (check != Expected);
+            if (failed)
             {
-                if (DoWarmUp)
-                {
-                    // Run some warm-up iterations before measuring
-                    innerLoop(CommandLineInnerIterationCount);
-                    // Clear the flag since we're now warmed up (caller will
-                    // reset it before calling new code)
-                    DoWarmUp = false;
-                }
-
-                // Now do the timed run of the inner loop.
-                Stopwatch sw = Stopwatch.StartNew();
-                byte check = innerLoop(CommandLineInnerIterationCount);
-                sw.Stop();
-
-                // Print result.
-                string name = String.Format(nameFormat, nameArgs);
-                double timeInMs = sw.Elapsed.TotalMilliseconds;
-                Console.Write("{0,25}: {1,7:F2}ms", name, timeInMs);
-
-                bool failed = (check != Expected);
-                if (failed)
-                {
-                    Console.Write(" -- failed to validate, got {0} expected {1}", check, Expected);
-                    HasFailure = true;
-                }
-                Console.WriteLine();
+                Console.Write(" -- failed to validate, got {0} expected {1}", check, Expected);
+                HasFailure = true;
             }
+            Console.WriteLine();
         }
 
         static byte[] GetData(int size)
@@ -903,7 +917,6 @@ namespace Span
             Rnd.NextBytes(data);
         }
 
-        static bool IsXunitInvocation = true;
         static int CommandLineInnerIterationCount = 1;
         static bool DoWarmUp;
 
@@ -942,9 +955,6 @@ namespace Span
                     CommandLineInnerIterationCount);
                 Usage();
             }
-
-            // When we call into Invoke, it'll need to know this isn't xunit-perf running
-            IsXunitInvocation = false;
 
             // Discover what tests to run via reflection
             TypeInfo t = typeof(IndexerBench).GetTypeInfo();
@@ -996,11 +1006,8 @@ namespace Span
                     // what arguments they should be run.
                     foreach (InlineDataAttribute dataAttr in m.GetCustomAttributes<InlineDataAttribute>())
                     {
-                        foreach (object[] data in dataAttr.GetData(m))
-                        {
-                            // All the benchmark methods in this test take a single int parameter
-                            invokeMethod((int)data[0]);
-                        }
+                        int data = dataAttr.Data;
+                        invokeMethod(data);
                     }
                 }
 
