@@ -67,6 +67,8 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.Http2.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
+    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs"
+             Link="Common\System\Net\Http\aspnetcore\Http3\Helpers\VariableLengthIntegerHelper.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -95,6 +97,7 @@
     <Compile Include="Tests\System\Net\aspnetcore\Http2\HPackDecoderTest.cs" />
     <Compile Include="Tests\System\Net\aspnetcore\Http2\HPackIntegerTest.cs" />
     <Compile Include="Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs" />
+    <Compile Include="Tests\System\Net\aspnetcore\Http3\VariableLengthIntegerHelperTests.cs" />
     <Compile Include="System\Net\Sockets\Fletcher32.cs"
              Link="System\Net\Sockets\Fletcher32.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
