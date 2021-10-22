@@ -703,6 +703,21 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		helper_sig_llvmonly_imt_trampoline = tmp;
 	}
 
+	if (!cfg->gsharedvt && (m_class_get_parent (cmethod->klass) == mono_defaults.multicastdelegate_class) && !strcmp (cmethod->name, "Invoke")) {
+		/* Delegate invokes */
+		MONO_EMIT_NULL_CHECK (cfg, this_reg, FALSE);
+
+		/* Make a call to delegate->invoke_impl */
+		int invoke_reg = alloc_preg (cfg);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, invoke_reg, this_reg, MONO_STRUCT_OFFSET (MonoDelegate, invoke_impl));
+
+		int addr_reg = alloc_preg (cfg);
+		int arg_reg = alloc_preg (cfg);
+		EMIT_NEW_LOAD_MEMBASE (cfg, call_target, OP_LOAD_MEMBASE, addr_reg, invoke_reg, 0);
+		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, arg_reg, invoke_reg, TARGET_SIZEOF_VOID_P);
+		return mini_emit_extra_arg_calli (cfg, fsig, sp, arg_reg, call_target);
+	}
+
 	if (!fsig->generic_param_count && !is_iface) {
 		/*
 		 * The simplest case, a normal virtual call.

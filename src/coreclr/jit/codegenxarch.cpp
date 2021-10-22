@@ -466,7 +466,13 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             ssize_t              cnsVal = con->IconValue();
 
             emitAttr attr = emitActualTypeSize(targetType);
-            if (con->IsIconHandle())
+            // Currently this cannot be done for all handles due to
+            // https://github.com/dotnet/runtime/issues/60712. However, it is
+            // also unclear whether we unconditionally want to use rip-relative
+            // lea instructions when not necessary. While a mov is larger, on
+            // many Intel CPUs rip-relative lea instructions have higher
+            // latency.
+            if (con->ImmedValNeedsReloc(compiler))
             {
                 attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
             }
