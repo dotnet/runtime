@@ -5,29 +5,15 @@ using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using FactAttribute = Xunit.FactAttribute;
 
 public class Vector2_3_4Test
 {
     private const int StartingIntValue = 42;
     private const int NewIntValue = 18;
 
-    public static int Main()
-    {
-        try
-        {
-            RunVector2Tests();
-            RunVector3Tests();
-            RunVector4Tests();
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine(ex);
-            return 101;
-        }
-        return 100;
-    }
-
-    private static void RunVector2Tests()
+    [Fact]
+    public static void RunVector2Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector2Tests)}... ");
         float X = StartingIntValue;
@@ -53,7 +39,7 @@ public class Vector2_3_4Test
 
         Vector2_3_4TestNative.GetVector2ForFloats(X, Y, out var vec);
         Assert.AreEqual(startingVector, vec);
-        
+
         Assert.AreEqual(startingVector, Vector2_3_4TestNative.CreateWrappedVector2FromFloats(X, Y).vec);
 
         Assert.IsTrue(Vector2_3_4TestNative.WrappedVector2EqualToFloats(new Vector2_3_4TestNative.Vector2Wrapper { vec = startingVector }, X, Y));
@@ -62,14 +48,15 @@ public class Vector2_3_4Test
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeWrappedVector2(ref localVectorWrapper, X, Y, XNew, YNew));
         Assert.AreEqual(newVector, localVectorWrapper.vec);
 
-        Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector2ToCallback(startingVector, vectorParam => 
+        Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector2ToCallback(startingVector, vectorParam =>
         {
             Assert.AreEqual(startingVector, vectorParam);
             return newVector;
         }));
     }
 
-    private static void RunVector3Tests()
+    [Fact]
+    public static void RunVector3Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector3Tests)}... ");
         float X = StartingIntValue;
@@ -95,7 +82,7 @@ public class Vector2_3_4Test
 
         Vector2_3_4TestNative.GetVector3ForFloats(X, Y, Z, out var vec);
         Assert.AreEqual(startingVector, vec);
-        
+
         Assert.AreEqual(startingVector, Vector2_3_4TestNative.CreateWrappedVector3FromFloats(X, Y, Z).vec);
 
         Assert.IsTrue(Vector2_3_4TestNative.WrappedVector3EqualToFloats(new Vector2_3_4TestNative.Vector3Wrapper { vec = startingVector }, X, Y, Z));
@@ -104,14 +91,15 @@ public class Vector2_3_4Test
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeWrappedVector3(ref localVectorWrapper, X, Y, Z, XNew, YNew, ZNew));
         Assert.AreEqual(newVector, localVectorWrapper.vec);
 
-        Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector3ToCallback(startingVector, vectorParam => 
+        Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector3ToCallback(startingVector, vectorParam =>
         {
             Assert.AreEqual(startingVector, vectorParam);
             return newVector;
         }));
     }
 
-    private static void RunVector4Tests()
+    [Fact]
+    public static void RunVector4Tests()
     {
         Console.WriteLine($"Running {nameof(RunVector4Tests)}... ");
         float X = StartingIntValue;
@@ -137,7 +125,7 @@ public class Vector2_3_4Test
 
         Vector2_3_4TestNative.GetVector4ForFloats(X, Y, Z, W, out var vec);
         Assert.AreEqual(startingVector, vec);
-        
+
         Assert.AreEqual(startingVector, Vector2_3_4TestNative.CreateWrappedVector4FromFloats(X, Y, Z, W).vec);
 
         Assert.IsTrue(Vector2_3_4TestNative.WrappedVector4EqualToFloats(new Vector2_3_4TestNative.Vector4Wrapper { vec = startingVector }, X, Y, Z, W));
@@ -146,7 +134,7 @@ public class Vector2_3_4Test
         Assert.IsTrue(Vector2_3_4TestNative.ValidateAndChangeWrappedVector4(ref localVectorWrapper, X, Y, Z, W, XNew, YNew, ZNew, WNew));
         Assert.AreEqual(newVector, localVectorWrapper.vec);
 
-        Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector4ToCallback(startingVector, vectorParam => 
+        Assert.AreEqual(newVector, Vector2_3_4TestNative.PassThroughVector4ToCallback(startingVector, vectorParam =>
         {
             Assert.AreEqual(startingVector, vectorParam);
             return newVector;
