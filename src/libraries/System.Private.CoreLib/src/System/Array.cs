@@ -1212,7 +1212,42 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            if (SpanHelpers.CanVectorizeIndexOfForType<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<byte[]>(array)), startIndex),
+                        Unsafe.As<T, byte>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                {
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<char[]>(array)), startIndex),
+                        Unsafe.As<T, char>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
+                        Unsafe.As<T, int>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
+                        Unsafe.As<T, long>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+            }
+            else if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {

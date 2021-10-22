@@ -291,6 +291,96 @@ namespace System
             return true;
         }
 
+        internal static unsafe int IndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, IEquatable<T>
+        {
+            Debug.Assert(length >= 0);
+
+            nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
+            if (Vector.IsHardwareAccelerated && CanVectorizeIndexOfForType<T>() && (Vector<T>.Count * 2) <= length)
+            {
+                Vector<T> valueVector = new Vector<T>(value);
+                while (length >= Vector<T>.Count)
+                {
+                    Vector<T> compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    Vector<T> matchVector = Vector.Equals(valueVector, compareVector);
+                    if (matchVector != Vector<T>.Zero)
+                    {
+                        for (int i = 0; i < Vector<T>.Count; i++)
+                            if (compareVector[i].Equals(value))
+                                return (int)(index + i);
+                    }
+                    index += Vector<T>.Count;
+                    length -= Vector<T>.Count;
+                }
+            }
+            while (length >= 8)
+            {
+                length -= 8;
+
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    goto Found1;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    goto Found2;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    goto Found3;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 4)))
+                    goto Found4;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 5)))
+                    goto Found5;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 6)))
+                    goto Found6;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
+                    goto Found7;
+
+                index += 8;
+            }
+
+            if (length >= 4)
+            {
+                length -= 4;
+
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
+                    goto Found1;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 2)))
+                    goto Found2;
+                if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
+                    goto Found3;
+
+                index += 4;
+            }
+
+            while (length > 0)
+            {
+                if (value.Equals(Unsafe.Add(ref searchSpace, index)))
+                    goto Found;
+
+                index += 1;
+                length--;
+            }
+            return -1;
+
+        Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
+            return (int)index;
+        Found1:
+            return (int)(index + 1);
+        Found2:
+            return (int)(index + 2);
+        Found3:
+            return (int)(index + 3);
+        Found4:
+            return (int)(index + 4);
+        Found5:
+            return (int)(index + 5);
+        Found6:
+            return (int)(index + 6);
+        Found7:
+            return (int)(index + 7);
+        }
+
         public static unsafe int IndexOf<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
@@ -1141,6 +1231,22 @@ namespace System
                     return result;
             }
             return firstLength.CompareTo(secondLength);
+        }
+
+        internal static bool CanVectorizeIndexOfForType<T>()
+        {
+            return (typeof(T) == typeof(byte)) ||
+                   (typeof(T) == typeof(double)) ||
+                   (typeof(T) == typeof(short)) ||
+                   (typeof(T) == typeof(int)) ||
+                   (typeof(T) == typeof(long)) ||
+                   (typeof(T) == typeof(nint)) ||
+                   (typeof(T) == typeof(nuint)) ||
+                   (typeof(T) == typeof(sbyte)) ||
+                   (typeof(T) == typeof(float)) ||
+                   (typeof(T) == typeof(ushort)) ||
+                   (typeof(T) == typeof(uint)) ||
+                   (typeof(T) == typeof(ulong));
         }
     }
 }
