@@ -5,6 +5,7 @@
     or to target a new TFM, since we use the SDK to invoke SGen and there is no recent SDK with
     VNext.0.0 then SGen fails when it tries to load the types to serialize. -->
     <TargetFrameworks>netstandard2.1</TargetFrameworks>
+    <TrimMode>copyused</TrimMode>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,8 +16,6 @@
 
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
-
-    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
   </ItemGroup>
 
 </Project>
