@@ -18,6 +18,8 @@ project(CoreCLR)
 include(../../eng/native/configurepaths.cmake)
 include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
+include_directories("${CLR_SRC_NATIVE_DIR}")
+
 if(MSVC)
   set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 endif (MSVC)
@@ -133,7 +135,7 @@ endif()
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("pal/prebuilt/inc")
-include_directories("../../artifacts/obj/coreclr")
+include_directories("${CLR_REPO_ROOT_DIR}/artifacts/obj/coreclr")
 
 add_subdirectory(tools/aot/jitinterface)
 
