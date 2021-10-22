@@ -77,7 +77,7 @@ namespace System.Numerics
                 if ((uint)row >= 3)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
+                var vrow = Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row);
                 return vrow[column];
             }
             set
@@ -85,7 +85,7 @@ namespace System.Numerics
                 if ((uint)row >= 3)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
 
-                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row * sizeof(Vector2));
+                ref var vrow = ref Unsafe.Add(ref Unsafe.As<float, Vector2>(ref M11), row);
                 var tmp = Vector2.WithElement(vrow, column, value);
                 vrow = tmp;
             }
