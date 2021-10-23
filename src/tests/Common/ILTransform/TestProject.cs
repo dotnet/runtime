@@ -1,0 +1,542 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
+using System.Xml;
+
+public struct DebugOptimize : IComparable<DebugOptimize>
+{
+    public readonly string Debug;
+    public readonly string Optimize;
+
+    public DebugOptimize(string debug, string optimize)
+    {
+        Debug = debug;
+        Optimize = optimize;
+    }
+
+    public int CompareTo(DebugOptimize other)
+    {
+        int result = Debug.CompareTo(other.Debug);
+        if (result == 0)
+        {
+            result = Optimize.CompareTo(other.Optimize);
+        }
+        return result;
+    }
+
+    public override bool Equals(object? obj) => obj is DebugOptimize optimize && Debug == optimize.Debug && Optimize == optimize.Optimize;
+
+    public override int GetHashCode() => HashCode.Combine(Debug, Optimize);
+}
+
+public class TestProject
+{
+    public readonly string AbsolutePath;
+    public readonly string RelativePath;
+    public readonly string OutputType;
+    public readonly string TestType;
+    public readonly DebugOptimize DebugOptimize;
+    public readonly string Priority;
+    public readonly string[] CompileFiles;
+    public readonly string[] ProjectReferences;
+    public readonly string TestClassName;
+    public readonly string TestClassSourceFile;
+    public readonly int TestClassLine;
+    public readonly int MainMethodLine;
+
+    public string? DeduplicatedClassName;
+
+    public TestProject(
+        string absolutePath,
+        string relativePath,
+        string outputType,
+        string testType,
+        DebugOptimize debugOptimize,
+        string priority,
+        string[] compileFiles,
+        string[] projectReferences,
+        string testClassName,
+        string testClassSourceFile,
+        int testClassLine,
+        int mainMethodLine)
+    {
+        AbsolutePath = absolutePath;
+        RelativePath = relativePath;
+        OutputType = outputType;
+        TestType = testType;
+        DebugOptimize = debugOptimize;
+        Priority = priority;
+        CompileFiles = compileFiles;
+        ProjectReferences = projectReferences;
+        TestClassName = testClassName;
+        TestClassSourceFile = testClassSourceFile;
+        TestClassLine = testClassLine;
+        MainMethodLine = mainMethodLine;
+    }
+
+    public static bool IsIdentifier(char c)
+    {
+        return Char.IsDigit(c) || Char.IsLetter(c) || c == '_' || c == '@';
+    }
+
+    public static string SanitizeIdentifier(string source)
+    {
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < source.Length; i++)
+        {
+            char c = source[i];
+            if (IsIdentifier(c))
+            {
+                output.Append(c);
+            }
+            else if (c == '-')
+            {
+                output.Append("_");
+            }
+            else
+            {
+                output.Append("__");
+            }
+        }
+        return output.ToString();
+    }
+}
+
+class TestProjectStore
+{
+    private readonly List<TestProject> _projects;
+    private readonly Dictionary<string, List<TestProject>> _classNameMap;
+
+    public TestProjectStore()
+    {
+        _projects = new List<TestProject>();
+        _classNameMap = new Dictionary<string, List<TestProject>>();
+    }
+
+    public void ScanTree(string rootPath)
+    {
+        int projectCount = 0;
+        Stopwatch sw = Stopwatch.StartNew();
+        ScanRecursive(rootPath, "", ref projectCount);
+        PopulateClassNameMap();
+        Console.WriteLine("Done scanning {0} projects in {1} msecs", projectCount, sw.ElapsedMilliseconds);
+    }
+
+    public void DumpFolderStatistics(TextWriter writer)
+    {
+        for (int level = 1; level <= 2; level++)
+        {
+            string title = string.Format("Level {0} folder partitioning:", level);
+            writer.WriteLine(title);
+            writer.WriteLine(new string('-', title.Length));
+            Dictionary<string, int> folderCounts = new Dictionary<string, int>();
+            foreach (TestProject project in _projects)
+            {
+                string[] folderSplit = project.RelativePath.Split(Path.DirectorySeparatorChar);
+                StringBuilder folderNameBuilder = new StringBuilder();
+                for (int component = 0; component < folderSplit.Length - 1 && component < level; component++)
+                {
+                    if (folderNameBuilder.Length != 0)
+                    {
+                        folderNameBuilder.Append('/');
+                    }
+                    folderNameBuilder.Append(folderSplit[component]);
+                }
+                string folderName = folderNameBuilder.ToString();
+                folderCounts.TryGetValue(folderName, out int count);
+                folderCounts[folderName] = count + 1;
+            }
+            foreach (KeyValuePair<string, int> kvp in folderCounts.OrderBy(kvp => kvp.Key))
+            {
+                writer.WriteLine("{0,5} | {1}", kvp.Value, kvp.Key);
+            }
+            writer.WriteLine();
+        }
+    }
+
+    public void DumpDebugOptimizeStatistics(TextWriter writer)
+    {
+        Dictionary<DebugOptimize, int> debugOptimizeCountMap = new Dictionary<DebugOptimize, int>();
+
+        foreach (TestProject project in _projects)
+        {
+            debugOptimizeCountMap.TryGetValue(project.DebugOptimize, out int projectCount);
+            debugOptimizeCountMap[project.DebugOptimize] = projectCount + 1;
+        }
+
+        writer.WriteLine("DEBUG      | OPTIMIZE   | PROJECT COUNT");
+        writer.WriteLine("----------------------------------------");
+
+        foreach (KeyValuePair<DebugOptimize, int> kvp in debugOptimizeCountMap.OrderByDescending(kvp => kvp.Value))
+        {
+            writer.WriteLine("{0,-10} | {1,-10} | {2}", kvp.Key.Debug, kvp.Key.Optimize, kvp.Value);
+        }
+        writer.WriteLine();
+    }
+
+    public void DumpDuplicateEntrypointClasses(TextWriter writer)
+    {
+        writer.WriteLine("#PROJECTS | DUPLICATE TEST CLASS NAME");
+        writer.WriteLine("-------------------------------------");
+
+        foreach (KeyValuePair<string, List<TestProject>> kvp in _classNameMap.Where(kvp => kvp.Value.Count > 1).OrderByDescending(kvp => kvp.Value.Count))
+        {
+            writer.WriteLine("{0,-9} | {1}", kvp.Value.Count, kvp.Key);
+        }
+
+        writer.WriteLine();
+
+        foreach (KeyValuePair<string, List<TestProject>> kvp in _classNameMap.OrderByDescending(kvp => kvp.Value.Count))
+        {
+            string title = string.Format("{0} PROJECTS WITH CLASS NAME {1}:", kvp.Value.Count, kvp.Key);
+            writer.WriteLine(title);
+            writer.WriteLine(new string('-', title.Length));
+            foreach (TestProject project in kvp.Value.OrderBy(prj => prj.RelativePath))
+            {
+                writer.WriteLine(project.AbsolutePath);
+            }
+        }
+
+        writer.WriteLine();
+    }
+
+    public void RewriteAllTests()
+    {
+        HashSet<string> classNameDuplicates = new HashSet<string>(_classNameMap.Where(kvp => kvp.Value.Count > 1).Select(kvp => kvp.Key));
+
+        int index = 0;
+        foreach (TestProject project in _projects)
+        {
+            new ILRewriter(project, classNameDuplicates).Rewrite();
+            index++;
+            if (index % 100 == 0)
+            {
+                Console.WriteLine("Rewritten {0} / {1} projects", index, _projects.Count);
+            }
+        }
+    }
+
+    public void GenerateAllWrappers(string outputDir)
+    {
+        HashSet<DebugOptimize> debugOptimizeMap = new HashSet<DebugOptimize>();
+        foreach (TestProject testProject in _projects)
+        {
+            debugOptimizeMap.Add(testProject.DebugOptimize);
+        }
+        foreach (DebugOptimize debugOpt in debugOptimizeMap.OrderBy(d => d))
+        {
+            GenerateWrapper(outputDir, debugOpt);
+        }
+    }
+
+    private void GenerateWrapper(string rootDir, DebugOptimize debugOptimize)
+    {
+        string dbgOptName = "Dbg" + debugOptimize.Debug + "_Opt" + debugOptimize.Optimize;
+        string outputDir = Path.Combine(rootDir, dbgOptName);
+
+        Directory.CreateDirectory(outputDir);
+
+        foreach (string preexistingFile in Directory.GetFiles(outputDir))
+        {
+            File.Delete(preexistingFile);
+        }
+
+        string wrapperSourceName = dbgOptName + ".g.cs";
+        string wrapperSourcePath = Path.Combine(outputDir, wrapperSourceName);
+
+        string wrapperProjectName = dbgOptName + ".g.csproj";
+        string wrapperProjectPath = Path.Combine(outputDir, wrapperProjectName);
+
+        using (StreamWriter writer = new StreamWriter(wrapperSourcePath))
+        {
+            writer.WriteLine("using System;");
+            writer.WriteLine("public static class " + dbgOptName);
+            writer.WriteLine("{");
+            writer.WriteLine("    public static int Main(string[] args)");
+            writer.WriteLine("    {");
+            writer.WriteLine("        int mainExitCode = 100;");
+
+            foreach (TestProject project in _projects)
+            {
+                if (project.DebugOptimize.Equals(debugOptimize) && project.TestClassName != "")
+                {
+                    string testName = project.RelativePath.Replace('\\', '/');
+                    writer.WriteLine("        try");
+                    writer.WriteLine("        {");
+                    writer.WriteLine("            int exitCode = " + (project.DeduplicatedClassName ?? project.TestClassName) + ".TestEntrypoint(args);");
+                    writer.WriteLine("            if (exitCode == 100)");
+                    writer.WriteLine("            {");
+                    writer.WriteLine("                Console.WriteLine(\"Test succeeded: '" + testName + "'\");");
+                    writer.WriteLine("            }");
+                    writer.WriteLine("            else");
+                    writer.WriteLine("            {");
+                    writer.WriteLine("                Console.Error.WriteLine(\"Wrong exit code: '" + testName + "' - {0}\", exitCode);");
+                    writer.WriteLine("                mainExitCode = exitCode;");
+                    writer.WriteLine("            }");
+                    writer.WriteLine("        }");
+                    writer.WriteLine("        catch (Exception ex)");
+                    writer.WriteLine("        {");
+                    writer.WriteLine("            Console.Error.WriteLine(\"Test crashed: '" + testName  + "' - {0}\", ex.Message);");
+                    writer.WriteLine("            mainExitCode = -1;");
+                    writer.WriteLine("        }");
+                }
+            }
+
+            writer.WriteLine("        return mainExitCode;");
+            writer.WriteLine("    }");
+            writer.WriteLine("}");
+        }
+
+        using (StreamWriter writer = new StreamWriter(wrapperProjectPath))
+        {
+            writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+            writer.WriteLine("    <PropertyGroup>");
+            writer.WriteLine("        <OutputType>Exe</OutputType>");
+            writer.WriteLine("        <CLRTestKind>BuildAndRun</CLRTestKind>");
+            writer.WriteLine("    </PropertyGroup>");
+            writer.WriteLine("    <ItemGroup>");
+            writer.WriteLine("        <Compile Include=\"" + wrapperSourceName + "\" />");
+            writer.WriteLine("    </ItemGroup>");
+            writer.WriteLine("    <ItemGroup>");
+            foreach (TestProject project in _projects)
+            {
+                if (project.DebugOptimize.Equals(debugOptimize))
+                {
+                    string relativePath = Path.GetRelativePath(outputDir, project.AbsolutePath);
+                    writer.WriteLine("        <ProjectReference Include=\"" + relativePath + "\" />");
+                }
+            }
+            writer.WriteLine("    </ItemGroup>");
+            writer.WriteLine("</Project>");
+        }
+    }
+
+    private void ScanRecursive(string absolutePath, string relativePath, ref int projectCount)
+    {
+        foreach (string absoluteProjectPath in Directory.EnumerateFiles(absolutePath, "*.ilproj", SearchOption.TopDirectoryOnly))
+        {
+            string relativeProjectPath = Path.Combine(relativePath, Path.GetFileName(absoluteProjectPath));
+            ScanProject(absoluteProjectPath, relativeProjectPath);
+            if (++projectCount % 500 == 0)
+            {
+                Console.WriteLine("Projects scanned: {0}", projectCount);
+            }
+        }
+        foreach (string absoluteSubdirectoryPath in Directory.EnumerateDirectories(absolutePath, "*", SearchOption.TopDirectoryOnly))
+        {
+            string relativeSubdirectoryPath = Path.Combine(relativePath, Path.GetFileName(absoluteSubdirectoryPath));
+            ScanRecursive(absoluteSubdirectoryPath, relativeSubdirectoryPath, ref projectCount);
+        }
+    }
+
+    private void ScanProject(string absolutePath, string relativePath)
+    {
+        string projectName = Path.GetFileNameWithoutExtension(relativePath);
+        string projectDir = Path.GetDirectoryName(absolutePath)!;
+
+        string outputType = "";
+        string testKind = "";
+        string priority = "";
+        string debugType = "";
+        string optimize = "";
+        List<string> compileFiles = new List<string>();
+        List<string> projectReferences = new List<string>();
+
+        XmlDocument xmlDoc = new XmlDocument();
+        xmlDoc.Load(absolutePath);
+        foreach (XmlNode project in xmlDoc.GetElementsByTagName("Project"))
+        {
+            foreach (XmlNode projectChild in project.ChildNodes)
+            {
+                if (projectChild.Name == "PropertyGroup")
+                {
+                    foreach (XmlNode property in projectChild.ChildNodes)
+                    {
+                        switch (property.Name)
+                        {
+                            case "OutputType":
+                                outputType = property.InnerText;
+                                break;
+
+                            case "CLRTestPriority":
+                                priority = property.InnerText;
+                                break;
+
+                            case "CLRTestKind":
+                                testKind = property.InnerText;
+                                break;
+
+                            case "DebugType":
+                                debugType = property.InnerText;
+                                break;
+
+                            case "Optimize":
+                                optimize = property.InnerText;
+                                break;
+                        }
+                    }
+                }
+                else if (projectChild.Name == "ItemGroup")
+                {
+                    foreach (XmlNode item in projectChild.ChildNodes)
+                    {
+                        switch (item.Name)
+                        {
+                            case "Compile":
+                                {
+                                    string? compileFileList = item.Attributes?["Include"]?.Value;
+                                    if (compileFileList is not null)
+                                    {
+                                        string[] compileFileArray = compileFileList.Split(' ');
+                                        foreach (string compileFile in compileFileArray)
+                                        {
+                                            string file = compileFile.Replace("$(MSBuildProjectName)", projectName).Replace("$(MSBuildThisFileName)", projectName);
+                                            compileFiles.Add(Path.GetFullPath(file, projectDir));
+                                        }
+                                    }
+                                }
+                                break;
+
+                            case "ProjectReference":
+                                {
+                                    string? projectReference = item.Attributes?["Include"]?.Value;
+                                    if (projectReference is not null)
+                                    {
+                                        projectReferences.Add(Path.GetFullPath(projectReference, projectDir));
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+
+        string testClassName = "";
+        string testClassSourceFile = "";
+        int testClassLine = -1;
+        int mainMethodLine = -1;
+        foreach (string compileFile in compileFiles)
+        {
+            AnalyzeSource(
+                compileFile,
+                testClassName: ref testClassName,
+                testClassSourceFile: ref testClassSourceFile,
+                testClassLine: ref testClassLine,
+                mainMethodLine: ref mainMethodLine);
+        }
+
+        _projects.Add(new TestProject(
+            absolutePath,
+            relativePath,
+            outputType,
+            testKind,
+            new DebugOptimize(InitCaps(debugType), InitCaps(optimize)),
+            priority,
+            compileFiles.ToArray(),
+            projectReferences.ToArray(),
+            testClassName,
+            testClassSourceFile,
+            testClassLine,
+            mainMethodLine));
+    }
+
+    private static string InitCaps(string s)
+    {
+        if (s.Length > 0)
+        {
+            s = s.Substring(0, 1).ToUpper() + s.Substring(1);
+        }
+        if (s.Equals("pdbonly", StringComparison.OrdinalIgnoreCase))
+        {
+            s = "PdbOnly";
+        }
+        return s;
+    }
+
+    private static void AnalyzeSource(string path, ref string testClassName, ref string testClassSourceFile, ref int testClassLine, ref int mainMethodLine)
+    {
+        List<string> lines = new List<string>(File.ReadAllLines(path));
+
+        for (int lineIndex = lines.Count; --lineIndex >= 0;)
+        {
+            string line = lines[lineIndex];
+            const string MainTag = " Main(";
+            int mainPos = line.IndexOf(MainTag);
+            if (mainPos >= 0)
+            {
+                mainMethodLine = lineIndex;
+            }
+            const string TestEntrypointTag = " TestEntrypoint(";
+            int entrypointPos = line.IndexOf(TestEntrypointTag);
+            if (mainPos >= 0 || entrypointPos >= 0)
+            {
+                while (--lineIndex >= 0 && testClassName == "")
+                {
+                    string[] components = lines[lineIndex].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (components.Length >= 2 && components[0] == ".class")
+                    {
+                        for (int componentIndex = 1; componentIndex < components.Length; componentIndex++)
+                        {
+                            string component = components[componentIndex];
+                            if (component != "auto" &&
+                                component != "ansi" &&
+                                component != "interface" &&
+                                component != "public" &&
+                                component != "private" &&
+                                component != "sealed" &&
+                                component != "value" &&
+                                component != "beforefieldinit" &&
+                                component != "sequential" &&
+                                component != "explicit" &&
+                                component != "abstract")
+                            {
+                                testClassName = component;
+                                testClassSourceFile = path;
+                                testClassLine = lineIndex;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                break;
+            }
+        }
+    }
+
+    private void PopulateClassNameMap()
+    {
+        foreach (TestProject project in _projects.Where(p => p.TestClassName != null))
+        {
+            if (!_classNameMap.TryGetValue(project.TestClassName!, out List<TestProject>? projectList))
+            {
+                projectList = new List<TestProject>();
+                _classNameMap.Add(project.TestClassName!, projectList);
+            }
+            projectList!.Add(project);
+        }
+
+        foreach (List<TestProject> projectList in _classNameMap.Values.Where(v => v.Count > 1))
+        {
+            Dictionary<DebugOptimize, int> counts = new Dictionary<DebugOptimize, int>();
+            foreach (TestProject project in projectList)
+            {
+                counts.TryGetValue(project.DebugOptimize, out int count);
+                counts[project.DebugOptimize] = count + 1;
+            }
+
+            if (counts.Values.Any(c => c > 1))
+            {
+                foreach (TestProject project in projectList)
+                {
+                    project.DeduplicatedClassName = project.TestClassName! + "_" + TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(project.RelativePath));
+                }
+            }
+        }
+    }
+}
