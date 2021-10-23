@@ -1596,7 +1596,10 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().FullName);
+            }
         }
 
         private void CheckDisposedOrStarted()

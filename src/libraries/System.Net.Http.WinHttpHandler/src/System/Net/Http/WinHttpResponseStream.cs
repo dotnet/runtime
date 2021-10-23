@@ -340,7 +340,10 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
         }
 
         // The only way to abort pending async operations in WinHTTP is to close the request handle.

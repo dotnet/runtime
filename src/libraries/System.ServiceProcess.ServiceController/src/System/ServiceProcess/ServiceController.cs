@@ -641,7 +641,10 @@ namespace System.ServiceProcess
 
         private void GetDataBaseHandleWithConnectAccess()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.
             if (_serviceManagerHandle == null)
