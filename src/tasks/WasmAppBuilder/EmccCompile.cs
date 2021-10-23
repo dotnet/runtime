@@ -45,9 +45,13 @@ namespace Microsoft.WebAssembly.Build.Tasks
 
         public override bool Execute()
         {
+            var startTime = DateTime.Now;
             try
             {
-                return ExecuteActual();
+                bool result = ExecuteActual();
+                var endTime = DateTime.Now;
+                Log.LogMessage(MessageImportance.High, $"Total time: {(endTime - startTime).TotalSeconds}s");
+                return result;
             }
             catch (LogAsErrorException laee)
             {
