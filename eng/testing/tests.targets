@@ -95,7 +95,6 @@
       <!-- Do not put anything between this and the GenerateRunScript invocation. -->
       <RunScriptCommands Include="@(PostRunScriptCommands)" />
     </ItemGroup>
-    <Message Text="RunScriptCommands: %(RunScriptCommands.Identity)" Importance="High" />
 
     <GenerateRunScript RunCommands="@(RunScriptCommands)"
                        TemplatePath="$(RunScriptInputPath)"
