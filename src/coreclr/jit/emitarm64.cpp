@@ -6882,6 +6882,8 @@ void emitter::emitIns_R_R_R_I(instruction ins,
 
     if (fmt == IF_LS_3A)
     {
+        assert((imm > 0) && (imm < 4));
+        id->idOpSize((emitAttr)(1 << imm));
         id->idReg3Scaled(true);
     }
 
