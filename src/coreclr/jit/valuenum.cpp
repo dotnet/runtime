@@ -4455,13 +4455,13 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //
 // Arguments:
 //    vn - vn to base things on
-//    vnk - whether the new vn should swap, reverse, or both
+//    vrk - whether the new vn should swap, reverse, or both
 //
 // Returns:
 //    vn for reversed/swapped comparsion, or NoVN.
 //
 // Note:
-//    If "vn" corresponds to (x > y), the resulting VN correponds to
+//    If "vn" corresponds to (x > y), the resulting VN corresponds to
 //    VRK_Swap               (y < x)
 //    VRK_Reverse            (x <= y)
 //    VRK_SwapReverse        (y >= x)

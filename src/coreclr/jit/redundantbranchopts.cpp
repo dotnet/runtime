@@ -149,8 +149,10 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 const bool domIsSameRelop = matchCmp || matchSwp;
                 const bool domIsRevRelop  = matchRev || matchSwpRev;
 
-                // Note we could also infer the tree relop's value from similar relops higher in the dom tree.
-                // For example, (x >= 0) dominating (x > 0), or (x < 0) dominating (x > 0).
+                // Note we could also infer the tree relop's value from relops higher in the dom tree
+                // that involve the same operands but are not swaps or reverses.
+                //
+                // For example, (x >= 0) dominating (x > 0).
                 //
                 // That is left as a future enhancement.
                 //
