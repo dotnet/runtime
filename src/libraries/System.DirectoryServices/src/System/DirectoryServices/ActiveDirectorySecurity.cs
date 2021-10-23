@@ -430,7 +430,7 @@ namespace System.DirectoryServices
         //  None                None                    None
         //  All                 ContainerInherit        None
         //  Descendents         ContainerInherit        InheritOnly
-        //  SelfAndChildren     ContainerInherit        NoPropogateInherit
+        //  SelfAndChildren     ContainerInherit        NoPropagateInherit
         //  Children            ContainerInherit        InheritOnly | NoPropagateInherit
         //
         internal static InheritanceFlags[] ITToIF = new InheritanceFlags[] {
