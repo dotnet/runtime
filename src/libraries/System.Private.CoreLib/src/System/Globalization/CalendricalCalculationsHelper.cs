@@ -108,15 +108,9 @@ namespace System.Globalization
             new EphemerisCorrectionAlgorithmMap(int.MinValue, CorrectionAlgorithm.Default) // default must be last
         };
 
-        private static double Reminder(double divisor, double dividend)
-        {
-            double whole = Math.Floor(divisor / dividend);
-            return divisor - (dividend * whole);
-        }
-
         private static double NormalizeLongitude(double longitude)
         {
-            longitude = Reminder(longitude, FullCircleOfArc);
+            longitude %= FullCircleOfArc;
             if (longitude < 0)
             {
                 longitude += FullCircleOfArc;
