@@ -1646,7 +1646,22 @@ AGAIN:
             break;
 
 #endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
+#else // !TARGET_ARMARCH
+#if SCALED_ADDR_MODES
+
+    case GT_LSH:
+
+        mul = op2->GetScaledIndex();
+        if (mul)
+        {
+            // 'op2' is a scaled value...is it's argument also scaled?
+            rv2 = op2->AsOp()->gtOp1;
+            rv1 = op1;
+            goto FOUND_AM;
+        }
+        break;
+#endif // SCALED_ADDR_MODES
+#endif // TARGET_ARMARCH
 
         case GT_NOP:
 

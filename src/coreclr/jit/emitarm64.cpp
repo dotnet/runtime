@@ -6459,6 +6459,16 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     /* Figure out the encoding format of the instruction */
     switch (ins)
     {
+        case INS_ldrh:
+        case INS_ldrsh:
+        case INS_strh:
+        case INS_ldrb:
+        case INS_ldrsb:
+        case INS_str:
+        case INS_ldr:
+            fmt = IF_LS_3A;
+            break;
+
         case INS_extr:
             assert(insOptsNone(opt));
             assert(isValidGeneralDatasize(size));
@@ -6869,6 +6879,11 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idReg3(reg3);
+
+    if (fmt == IF_LS_3A)
+    {
+        id->idReg3Scaled(true);
+    }
 
     // Record the attribute for the second register in the pair
     id->idGCrefReg2(GCT_NONE);
