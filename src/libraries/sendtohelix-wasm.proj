@@ -94,7 +94,6 @@
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
-
     <ItemGroup Condition=" '$(Scenario)' != 'BuildWasmApps'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
@@ -103,6 +102,26 @@
     <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps'">
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
+
+    <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+      <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
+      <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
+      <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
+      <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
+      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
+      <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
+      <XHarnessBrowserPathArg>--browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</XHarnessBrowserPathArg>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
+      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+      <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+    </ItemGroup>
 
     <PropertyGroup>
       <!-- using _WorkItem -->
@@ -119,28 +138,6 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
-      <ExecXHarnessCmd>dotnet exec $XHARNESS_CLI_PATH</ExecXHarnessCmd>
-      <XHarnessOutput>$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output</XHarnessOutput>
-      <XHarnessCommand>$XHARNESS_COMMAND</XHarnessCommand>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
-      <ExecXHarnessCmd>dotnet exec %XHARNESS_CLI_PATH%</ExecXHarnessCmd>
-      <XHarnessOutput>%HELIX_WORKITEM_UPLOAD_ROOT%\xharness-output</XHarnessOutput>
-      <XHarnessCommand>%XHARNESS_COMMAND%</XHarnessCommand>
-      <XHarnessBrowserPathArg>--browser-path=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe</XHarnessBrowserPathArg>
-    </PropertyGroup>
-
-    <ItemGroup Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'">
-      <!-- Create a work item for run-only WASM console app  -->
-      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
-      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
-        <PayloadArchive>%(Identity)</PayloadArchive>
-        <!-- No RunTests script generated for the sample project so we just use the direct command -->
-        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
-      </HelixWorkItem>
-    </ItemGroup>
-
     <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser'">
       <!-- Create a work item for run-only WASM browser app  -->
       <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Browser.Sample.zip" />
@@ -151,13 +148,18 @@
       </HelixWorkItem>
     </ItemGroup>
 
-    <ItemGroup>
-      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Console.*.Test.zip" Condition="'$(Scenario)' != 'WasmTestOnBrowser' and '$(Scenario)' != 'BuildWasmApps'" />
-      <_WorkItem Include="$(TestArchiveRoot)runonly/**/WebAssembly.Browser.*.Test.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
+    <ItemGroup Condition="'$(Scenario)' == 'normal'">
+      <!-- Create a work item for run-only WASM console app  -->
+      <_RunOnlyWorkItem Include="$(TestArchiveRoot)runonly/**/*.Console.Sample.zip" />
+      <HelixWorkItem Include="@(_RunOnlyWorkItem -> '%(FileName)')" >
+        <PayloadArchive>%(Identity)</PayloadArchive>
+        <!-- No RunTests script generated for the sample project so we just use the direct command -->
+        <Command>$(ExecXHarnessCmd) wasm $(XHarnessCommand)  --app=. --engine=V8  --engine-arg=--stack-trace-limit=1000 --js-file=runtime.js --output-directory=$(XHarnessOutput) -- --run %(FileName).dll</Command>
+      </HelixWorkItem>
+    </ItemGroup>
 
-      <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')" Condition="'$(Scenario)' != 'BuildWasmApps'">
+    <ItemGroup Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser'">
+      <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
