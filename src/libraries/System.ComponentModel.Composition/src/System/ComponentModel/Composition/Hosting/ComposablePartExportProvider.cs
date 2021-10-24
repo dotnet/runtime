@@ -408,7 +408,10 @@ namespace System.ComponentModel.Composition.Hosting
         [DebuggerStepThrough]
         private void ThrowIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
         }
 
         [DebuggerStepThrough]
