@@ -226,7 +226,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 return _connectionName;
             }
@@ -236,7 +237,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 // get the source server
                 if (_sourceServerName == null)
@@ -265,7 +267,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (_destinationServerName == null)
                 {
@@ -303,7 +306,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 // fetch the property value
                 try
@@ -320,7 +324,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -337,7 +342,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 // for exisint connection, we need to check its property, for newly created and not committed one, we just return
                 // the member variable value directly
@@ -372,7 +378,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 PropertyValueCollection? propValue = null;
 
@@ -402,7 +409,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -440,7 +448,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 PropertyValueCollection? propValue = null;
                 try
@@ -470,7 +479,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -508,7 +518,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 PropertyValueCollection? propValue = null;
                 try
@@ -541,7 +552,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (value < NotificationStatus.NoNotification || value > NotificationStatus.NotificationAlways)
                     throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(NotificationStatus));
@@ -588,7 +600,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 PropertyValueCollection? propValue = null;
                 try
@@ -620,7 +633,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -660,7 +674,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 PropertyValueCollection? propValue = null;
                 try
@@ -690,7 +705,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -728,7 +744,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 // find out whether the site and the destination is in the same site
                 string destinationPath = (string)PropertyManager.GetPropertyValue(context, cachedDirectoryEntry, PropertyManager.FromServer)!;
@@ -753,7 +770,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 ActiveDirectorySchedule? schedule = null;
                 bool scheduleExists = false;
@@ -778,7 +796,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -823,7 +842,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Delete()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (!existingConnection)
             {
@@ -844,7 +864,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             try
             {
@@ -863,14 +884,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string ToString()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             return Name;
         }
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (!existingConnection)
             {

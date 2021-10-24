@@ -311,7 +311,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override void CheckReplicationConsistency()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             // get the handle
             GetADAMHandle();
@@ -326,7 +327,8 @@ namespace System.DirectoryServices.ActiveDirectory
             int context = 0;
             bool advanced = true;
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -345,7 +347,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr info = (IntPtr)0;
             bool advanced = true;
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             // get the handle
             GetADAMHandle();
@@ -358,7 +361,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr info = (IntPtr)0;
             bool advanced = true;
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -377,7 +381,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr info = (IntPtr)0;
             bool advanced = true;
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             // get the handle
             GetADAMHandle();
@@ -395,7 +400,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr info = (IntPtr)0;
             bool advanced = true;
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (objectPath == null)
                 throw new ArgumentNullException(nameof(objectPath));
@@ -411,7 +417,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override void SyncReplicaFromServer(string partition, string sourceServer)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -432,7 +439,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override void TriggerSyncReplicaFromNeighbors(string partition)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -447,7 +455,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override void SyncReplicaFromAllServers(string partition, SyncFromAllServersOptions options)
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (partition == null)
                 throw new ArgumentNullException(nameof(partition));
@@ -792,14 +801,16 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 return _userDelegate;
             }
 
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 _userDelegate = value;
             }
@@ -818,7 +829,8 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr info = (IntPtr)0;
             bool advanced = true;
 
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             // get the handle
             GetADAMHandle();

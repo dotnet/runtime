@@ -101,7 +101,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 return _transport;
             }
@@ -111,7 +112,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int option = 0;
                 try
@@ -132,7 +134,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int option = 0;
                 try
@@ -159,7 +162,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int option = 0;
                 try
@@ -181,7 +185,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int option = 0;
                 try
@@ -210,7 +215,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (!_linkRetrieved)
                 {
@@ -257,7 +263,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (!_bridgeRetrieved)
                 {
@@ -303,7 +310,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             try
             {
@@ -317,7 +325,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             return DirectoryEntryManager.GetDirectoryEntryInternal(_context, _cachedEntry.Path);
         }
@@ -330,7 +339,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string ToString()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             return _transport.ToString();
         }

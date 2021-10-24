@@ -198,7 +198,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 return _name;
             }
@@ -208,7 +209,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 return _transport;
             }
@@ -218,7 +220,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (existing)
                 {
@@ -242,7 +245,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -259,7 +263,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (value < 0)
                     throw new ArgumentException(null, nameof(value));
@@ -279,7 +284,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -298,7 +304,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 if (value < TimeSpan.Zero)
                     throw new ArgumentException(SR.NoNegativeTime, nameof(value));
@@ -326,7 +333,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
                 PropertyValueCollection? propValue = null;
@@ -352,7 +360,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
                 PropertyValueCollection? propValue = null;
@@ -388,7 +397,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
                 PropertyValueCollection? propValue = null;
@@ -414,7 +424,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
                 PropertyValueCollection? propValue = null;
@@ -450,7 +461,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
                 PropertyValueCollection? propValue = null;
@@ -479,7 +491,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 int options = 0;
                 PropertyValueCollection? propValue = null;
@@ -516,7 +529,8 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 ActiveDirectorySchedule? schedule = null;
                 try
@@ -538,7 +552,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_disposed)
+                    throw new ObjectDisposedException(GetType().Name);
 
                 try
                 {
@@ -561,7 +576,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Save()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             try
             {
@@ -584,7 +600,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Delete()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (!existing)
             {
@@ -605,14 +622,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override string ToString()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             return _name;
         }
 
         public DirectoryEntry GetDirectoryEntry()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+                throw new ObjectDisposedException(GetType().Name);
 
             if (!existing)
             {

@@ -770,7 +770,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void CheckIfDisposed()
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
         }
         #endregion private methods
     }
