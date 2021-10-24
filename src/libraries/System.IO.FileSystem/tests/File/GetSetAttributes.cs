@@ -23,6 +23,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => GetAttributes(GetTestFilePath() + trailingChar));
         }
 
+#if TargetsWindows
         [Theory, MemberData(nameof(TrailingCharacters))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetAttributes_MissingFile_SafeFileHandle(char trailingChar)
@@ -33,7 +34,7 @@ namespace System.IO.Tests
                 GetAttributes(fileHandle);
             });
         }
-
+#endif
         // Getting only throws for File, not FileInfo
         [Theory,
             InlineData(":bar"),
