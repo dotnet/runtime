@@ -215,7 +215,7 @@ namespace System.Diagnostics.Tracing
         {
             private static Func<TContainer, TProperty> GetGetMethod<TProperty>(PropertyInfo property) where TProperty : struct =>
 #if ES_BUILD_STANDALONE
-                (Func<TContainer, TProperty>)GetMethod!.CreateDelegate(typeof(Func<TContainer, TProperty>));
+                (Func<TContainer, TProperty>)property.GetMethod!.CreateDelegate(typeof(Func<TContainer, TProperty>));
 #else
                 property.GetMethod!.CreateDelegate<Func<TContainer, TProperty>>();
 #endif
