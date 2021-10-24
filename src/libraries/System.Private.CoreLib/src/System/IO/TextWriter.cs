@@ -48,12 +48,7 @@ namespace System.IO
         }
 
         public virtual IFormatProvider FormatProvider
-        {
-            get
-            {
-                return _internalFormatProvider ?? CultureInfo.CurrentCulture;
-            }
-        }
+            => _internalFormatProvider ?? CultureInfo.CurrentCulture;
 
         public virtual void Close()
         {
