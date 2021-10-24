@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private BDD CreateConditionFromSet(bool ignoreCase, string set)
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(CreateConditionFromSet, ignoreCase, set);
             }

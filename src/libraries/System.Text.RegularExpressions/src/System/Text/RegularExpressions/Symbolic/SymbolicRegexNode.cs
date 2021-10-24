@@ -130,7 +130,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             static void AppendToList(SymbolicRegexNode<S> concat, List<SymbolicRegexNode<S>> list)
             {
-                if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(AppendToList, concat, list);
                     return;
@@ -168,7 +168,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (!_info.CanBeNullable)
                 return false;
 
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(IsNullableFor, context);
             }
@@ -805,7 +805,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return _transitionRegex;
             }
 
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(MkDerivative);
             }
@@ -911,7 +911,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 return _builder._nothing;
             }
 
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(ExtractNullabilityTest);
             }
@@ -1025,7 +1025,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // Check equality of the sets of regexes
                 Debug.Assert(_alts is not null && that._alts is not null);
-                if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     return StackHelper.CallOnEmptyStack(_alts.Equals, that._alts);
                 }
@@ -1215,7 +1215,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         private void CollectPredicates_helper(HashSet<S> predicates)
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 StackHelper.CallOnEmptyStack(CollectPredicates_helper, predicates);
                 return;
@@ -1312,7 +1312,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public SymbolicRegexNode<S> Reverse()
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(Reverse);
             }
@@ -1391,7 +1391,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal bool StartsWithLoop(int upperBoundLowestValue = 1)
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(StartsWithLoop, upperBoundLowestValue);
             }

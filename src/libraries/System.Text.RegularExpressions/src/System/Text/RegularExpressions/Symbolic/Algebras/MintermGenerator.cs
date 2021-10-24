@@ -116,7 +116,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             internal void Refine(TPredicate other)
             {
-                if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(Refine, other);
                     return;
@@ -195,7 +195,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             private void ExtendLeft()
             {
-                if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(ExtendLeft);
                     return;
@@ -218,7 +218,7 @@ namespace System.Text.RegularExpressions.Symbolic
             /// </summary>
             private void ExtendRight()
             {
-                if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+                if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     StackHelper.CallOnEmptyStack(ExtendRight);
                     return;

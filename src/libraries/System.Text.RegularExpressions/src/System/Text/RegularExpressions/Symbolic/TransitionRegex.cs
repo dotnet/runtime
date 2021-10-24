@@ -79,7 +79,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public TransitionRegex<S> Complement()
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(Complement);
             }
@@ -107,7 +107,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Concatenate a node at the end of this transition regex</summary>
         public TransitionRegex<S> Concat(SymbolicRegexNode<S> node)
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(Concat, node);
             }
@@ -144,7 +144,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private TransitionRegex<S> IntersectWith(TransitionRegex<S> that, S pathIn)
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(IntersectWith, that, pathIn);
             }
@@ -222,7 +222,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private static TransitionRegex<S> Union(TransitionRegex<S> one, TransitionRegex<S> two)
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(Union, one, two);
             }

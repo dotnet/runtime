@@ -297,7 +297,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builderT, Func<TElement, T> predicateTransformer) where T : notnull
         {
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(Transform, sr, builderT, predicateTransformer);
             }
