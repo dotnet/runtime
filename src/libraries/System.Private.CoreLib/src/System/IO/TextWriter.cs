@@ -51,14 +51,7 @@ namespace System.IO
         {
             get
             {
-                if (_internalFormatProvider == null)
-                {
-                    return CultureInfo.CurrentCulture;
-                }
-                else
-                {
-                    return _internalFormatProvider;
-                }
+                return _internalFormatProvider ?? CultureInfo.CurrentCulture;
             }
         }
 
