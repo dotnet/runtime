@@ -4346,6 +4346,11 @@ protected:
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+
+#ifdef DEBUG
+    const char* impGetIntrinsicName(CorInfoIntrinsics intrinsicID);
+#endif // DEBUG
+
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -8047,9 +8052,16 @@ public:
     CORINFO_EE_INFO* eeGetEEInfo();
 
     // Gets the offset of a SDArray's first element
-    unsigned eeGetArrayDataOffset(var_types type);
-    // Gets the offset of a MDArray's first element
-    unsigned eeGetMDArrayDataOffset(var_types type, unsigned rank);
+    static unsigned eeGetArrayDataOffset();
+
+    // Get the offset of a MDArray's first element
+    static unsigned eeGetMDArrayDataOffset(unsigned rank);
+
+    // Get the offset of a MDArray's dimension length for a given dimension.
+    static unsigned eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension);
+
+    // Get the offset of a MDArray's lower bound for a given dimension.
+    static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
     GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
 

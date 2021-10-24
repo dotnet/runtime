@@ -1841,9 +1841,12 @@ struct CORINFO_Array : public CORINFO_Object
 #endif // HOST_64BIT
 
 #if 0
-    /* Multi-dimensional arrays have the lengths and bounds here */
-    unsigned                dimLength[length];
-    unsigned                dimBound[length];
+    // Multi-dimensional arrays have the dimension lengths and bounds here.
+    // The element count of these arrays is the array rank (the number of dimensions in the
+    // multi-dimensional array). So, there is one element for each dimension. The upper bound
+    // of a dimension is `dimBound[d] + dimLength[d] - 1`.
+    int                     dimLength[rank]; // Number of array elements in each dimension.
+    int                     dimBound[rank];  // Lower bound of each dimension (possibly negative).
 #endif
 
     union

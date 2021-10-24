@@ -375,6 +375,7 @@ namespace System
 
         public unsafe int Rank
         {
+            [Intrinsic]
             get
             {
                 int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
@@ -382,6 +383,7 @@ namespace System
             }
         }
 
+        [Intrinsic]
         public unsafe int GetLength(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
@@ -394,6 +396,7 @@ namespace System
             return Unsafe.Add(ref RuntimeHelpers.GetMultiDimensionalArrayBounds(this), dimension);
         }
 
+        [Intrinsic]
         public unsafe int GetUpperBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
@@ -407,6 +410,7 @@ namespace System
             return Unsafe.Add(ref bounds, dimension) + Unsafe.Add(ref bounds, rank + dimension) - 1;
         }
 
+        [Intrinsic]
         public unsafe int GetLowerBound(int dimension)
         {
             int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);
