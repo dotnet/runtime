@@ -4,6 +4,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CS0649
 internal static partial class Interop
 {
     internal static partial class Kernel32
@@ -23,3 +24,4 @@ internal static partial class Interop
         }
     }
 }
+#pragma warning restore CS0649

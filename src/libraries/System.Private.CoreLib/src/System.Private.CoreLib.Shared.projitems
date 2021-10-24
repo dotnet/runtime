@@ -1534,6 +1534,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs</Link>
     </Compile>

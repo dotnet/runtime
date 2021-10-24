@@ -524,6 +524,12 @@ namespace System
             throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_Enum);
         }
 
+        internal static void ThrowForMissingPath_SafeFileHandle(string? path)
+        {
+            if (path is not null) return;
+            throw new IOException(SR.IO_SafeFileHandlePathNull);
+        }
+
         private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)

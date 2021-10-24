@@ -121,10 +121,10 @@ namespace System.IO.Tests
                     DateTimeKind.Utc);
             }
 #endif
-            yield return TimeFunction.Create(
-                File.SetLastAccessTime,
-                File.GetLastAccessTime,
-                DateTimeKind.Local);
+                yield return TimeFunction.Create(
+                    File.SetLastAccessTime,
+                    File.GetLastAccessTime,
+                    DateTimeKind.Local);
 #if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
@@ -139,10 +139,10 @@ namespace System.IO.Tests
                 },
                 DateTimeKind.Local);
 #endif
-            yield return TimeFunction.Create(
-                File.SetLastAccessTimeUtc,
-                File.GetLastAccessTimeUtc,
-                DateTimeKind.Unspecified);
+                yield return TimeFunction.Create(
+                    File.SetLastAccessTimeUtc,
+                    File.GetLastAccessTimeUtc,
+                    DateTimeKind.Unspecified);
 #if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
@@ -157,10 +157,10 @@ namespace System.IO.Tests
                 },
                 DateTimeKind.Unspecified);
 #endif
-            yield return TimeFunction.Create(
-                File.SetLastAccessTimeUtc,
-                File.GetLastAccessTimeUtc,
-                DateTimeKind.Utc);
+                yield return TimeFunction.Create(
+                    File.SetLastAccessTimeUtc,
+                    File.GetLastAccessTimeUtc,
+                    DateTimeKind.Utc);
 #if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
@@ -175,10 +175,10 @@ namespace System.IO.Tests
                 },
                 DateTimeKind.Utc);
 #endif
-            yield return TimeFunction.Create(
-                File.SetLastWriteTime,
-                File.GetLastWriteTime,
-                DateTimeKind.Local);
+                yield return TimeFunction.Create(
+                    File.SetLastWriteTime,
+                    File.GetLastWriteTime,
+                    DateTimeKind.Local);
 #if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
@@ -193,10 +193,10 @@ namespace System.IO.Tests
                 },
                 DateTimeKind.Local);
 #endif
-            yield return TimeFunction.Create(
-                File.SetLastWriteTimeUtc,
-                File.GetLastWriteTimeUtc,
-                DateTimeKind.Unspecified);
+                yield return TimeFunction.Create(
+                    File.SetLastWriteTimeUtc,
+                    File.GetLastWriteTimeUtc,
+                    DateTimeKind.Unspecified);
 #if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
@@ -211,10 +211,10 @@ namespace System.IO.Tests
                 },
                 DateTimeKind.Unspecified);
 #endif
-            yield return TimeFunction.Create(
-                File.SetLastWriteTimeUtc,
-                File.GetLastWriteTimeUtc,
-                DateTimeKind.Utc);
+                yield return TimeFunction.Create(
+                    File.SetLastWriteTimeUtc,
+                    File.GetLastWriteTimeUtc,
+                    DateTimeKind.Utc);
 #if TargetsWindows
             yield return TimeFunction.Create(
                 (path, time) =>
@@ -229,6 +229,7 @@ namespace System.IO.Tests
                 },
                 DateTimeKind.Utc);
 #endif
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
@@ -320,7 +321,7 @@ namespace System.IO.Tests
             File.WriteAllText(file, "");
 
             using var fileHandle = File.OpenHandle(file);
-            DateTime dateTime = new (9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
+            DateTime dateTime = new(9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
             File.SetLastWriteTimeUtc(fileHandle, dateTime);
             long ticks = File.GetLastWriteTimeUtc(fileHandle).Ticks;
 

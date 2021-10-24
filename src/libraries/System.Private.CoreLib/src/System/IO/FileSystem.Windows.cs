@@ -449,14 +449,8 @@ namespace System.IO
 
         public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
         {
-            if (fileHandle.Path is { } path)
-            {
-                SetAttributes(path, attributes);
-            }
-            else
-            {
-                throw new IOException($"Underlying file handle has no {nameof(fileHandle.Path)}");
-            }
+            ThrowHelper.ThrowForMissingPath_SafeFileHandle(fileHandle.Path);
+            SetAttributes(fileHandle.Path!, attributes);
         }
 
         // Default values indicate "no change". Use defaults so that we don't force callsites to be aware of the default values
