@@ -10514,6 +10514,17 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
 
 #ifdef _DEBUG
     BEGIN_DEBUG_ONLY_CODE;
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitThrowOnAssertionFailure) != 0)
+    {
+        SString output;
+        output.Printf(
+            W("JIT assert failed:\n")
+            W("%hs\n")
+            W("    File: %hs Line: %d\n"),
+            szExpr, szFile, iLine);
+        COMPlusThrowNonLocalized(kInvalidProgramException, output.GetUnicode());
+    }
+
     result = _DbgBreakCheck(szFile, iLine, szExpr);
     END_DEBUG_ONLY_CODE;
 #else // !_DEBUG

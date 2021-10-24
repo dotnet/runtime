@@ -17,11 +17,14 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import threading
 from azdo_pipelines_util import run_command, TempDir
 from coreclr_arguments import *
 from os import path
+
+jit_assert_regex = re.compile(r"Assertion failed '(.*)' in '.*' during '(.*)'")
 
 parser = argparse.ArgumentParser(description="description")
 
@@ -79,6 +82,22 @@ def setup_args(args):
 
     return coreclr_args
 
+def extract_jit_assertion_error(text):
+    """ Extract a JIT assertion error
+    
+    Args:
+        text (string): The text that might contain an assertion
+    Returns:
+        The assertion as a string, or None if no assertion error is in the text.
+    """
+
+    issue_match = re.search(jit_assert_regex, text)
+    if issue_match is not None:
+        assert_string = " ".join(issue_match.groups())
+        return assert_string.strip()
+
+    return None
+
 class ReduceExamples(threading.Thread):
     def __init__(self, examples_file, examples_dir, fuzzlyn_path, host_path, exit_evt):
         super(ReduceExamples, self).__init__()
@@ -87,6 +106,7 @@ class ReduceExamples(threading.Thread):
         self.fuzzlyn_path = fuzzlyn_path
         self.host_path = host_path
         self.exit_evt = exit_evt
+        self.reduced_jit_asserts = set()
 
     def run(self):
         num_reduced = 0
@@ -103,7 +123,16 @@ class ReduceExamples(threading.Thread):
                 # We will still report crashes, just not with a reduced example.
                 if evt["Kind"] == "ExampleFound":
                     ex = evt["Example"]
+                    ex_assert_err = None
+
+                    reduce_this = False
                     if ex["Kind"] == "BadResult":
+                        reduce_this = True
+                    elif ex["Kind"] == "HitsJitAssert":
+                        ex_assert_err = extract_jit_assertion_error(ex["Message"])
+                        reduce_this = ex_assert_err is not None and ex_assert_err not in self.reduced_jit_asserts
+
+                    if reduce_this:
                         print("Reducing {}".format(ex['Seed']))
                         output_path = path.join(self.examples_dir, str(ex["Seed"]) + ".cs")
                         cmd = [self.fuzzlyn_path,
@@ -117,6 +146,9 @@ class ReduceExamples(threading.Thread):
                             if num_reduced >= 5:
                                 print("Skipping reduction of remaining examples (reached limit of 5)")
                                 return
+
+                            if ex_assert_err is not None:
+                                self.reduced_jit_asserts.add(ex_assert_err)
 
 
 def main(main_args):
