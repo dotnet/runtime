@@ -1661,6 +1661,42 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
     GenTree* operand = tree->gtGetOp1();
     GenTree* shiftBy = tree->gtGetOp2();
+
+#ifdef TARGET_ARM64
+    if (operand->OperIs(GT_CAST) && shiftBy->IsIntegralConst())
+    {
+        emitter::instrDesc* lastIns      = GetEmitter()->emitLastIns;
+        ssize_t             cns          = shiftBy->AsIntConCommon()->IconValue();
+        var_types           castToType   = genActualType(operand->AsCast()->CastToType());
+        var_types           castFromType = genActualType(operand->AsCast()->CastFromType());
+
+        if ((castFromType == TYP_INT) && (castToType == TYP_LONG) && (cns > 0) && (cns < 32) &&
+            (lastIns->idReg1() == tree->GetRegNum()) && (lastIns->idReg2() == operand->GetRegNum()) &&
+            (lastIns->idGCref() == GCT_NONE) && operand->AsCast()->IsUnsigned())
+        {
+            union bitMaskImm {
+                struct
+                {
+                    unsigned immS : 6;
+                    unsigned immR : 6;
+                    unsigned immN : 1;
+                };
+                unsigned immNRS;
+            };
+            bitMaskImm bmi;
+            bmi.immN = 1;
+            bmi.immR = 64 - cns;
+            bmi.immS = 31;
+            assert(lastIns->idInsOpt() == INS_OPTS_NONE);
+            lastIns->idInsFmt(emitter::IF_DI_2D);
+            lastIns->idOpSize(size);
+            lastIns->idIns(INS_ubfiz);
+            lastIns->idSmallCns(bmi.immNRS);
+            return;
+        }
+    }
+#endif
+
     if (!shiftBy->IsCnsIntOrI())
     {
         GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
