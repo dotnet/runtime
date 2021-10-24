@@ -48,6 +48,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => GetAttributes(streamName));
         }
 
+#if TargetsWindows
         [Theory,
          InlineData(":bar"),
          InlineData(":bar:$DATA")]
@@ -63,13 +64,13 @@ namespace System.IO.Tests
                 GetAttributes(fileHandle);
             });
         }
-
+#endif
         [Theory, MemberData(nameof(TrailingCharacters))]
         public void GetAttributes_MissingDirectory(char trailingChar)
         {
             Assert.Throws<DirectoryNotFoundException>(() => GetAttributes(Path.Combine(GetTestFilePath(), "dir" + trailingChar)));
         }
-
+#if TargetsWindows
         [Theory, MemberData(nameof(TrailingCharacters))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetAttributes_MissingDirectory_SafeFileHandle(char trailingChar)
@@ -80,5 +81,6 @@ namespace System.IO.Tests
                 GetAttributes(fileHandle);
             });
         }
+#endif
     }
 }
