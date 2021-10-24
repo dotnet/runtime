@@ -6991,9 +6991,10 @@ void emitter::emitIns_R_R_R_Ext(instruction ins,
     id->idReg1(reg1);
     id->idReg2(reg2);
     id->idReg3(reg3);
-    id->idReg3Scaled(shiftAmount == scale);
-    if (id->idReg3Scaled())
+    if (shiftAmount == scale)
     {
+        id->idReg3Scaled(true);
+        // Scale is calculated from opsize
         id->idOpSize((emitAttr)(1 << shiftAmount));
     }
 
