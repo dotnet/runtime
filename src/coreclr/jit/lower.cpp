@@ -4897,11 +4897,12 @@ bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, Ge
 // Arguments:
 //    use - the use of the address we want to transform
 //    isContainable - true if this addressing mode can be contained
+//    targetType - on arm we can use "scale" only for appropriate target type
 //
 // Returns:
 //    true if the address node was changed to a LEA, false otherwise.
 //
-bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
+bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types targetType)
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
@@ -4920,10 +4921,15 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable)
                                                        &rev,   // reverse ops
                                                        &base,  // base addr
                                                        &index, // index val
-#if SCALED_ADDR_MODES
                                                        &scale,   // scaling
-#endif                                                           // SCALED_ADDR_MODES
                                                        &offset); // displacement
+
+#ifdef TARGET_ARMARCH
+    if ((scale > 0) && (genTypeSize(targetType) != scale))
+    {
+        return false;
+    }
+#endif
 
     if (scale == 0)
     {
@@ -6678,7 +6684,7 @@ void Lowering::ContainCheckBitCast(GenTree* node)
 void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
 {
     assert(ind->TypeGet() != TYP_STRUCT);
-    TryCreateAddrMode(ind->Addr(), true);
+    TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
     if (!comp->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {
         LowerStoreIndir(ind);
@@ -6701,7 +6707,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // TODO-Cleanup: We're passing isContainable = true but ContainCheckIndir rejects
         // address containment in some cases so we end up creating trivial (reg + offfset)
         // or (reg + reg) LEAs that are not necessary.
-        TryCreateAddrMode(ind->Addr(), true);
+        TryCreateAddrMode(ind->Addr(), true, ind->TypeGet());
         ContainCheckIndir(ind);
 
         if (ind->OperIs(GT_NULLCHECK) || ind->IsUnusedValue())
@@ -6714,7 +6720,7 @@ void Lowering::LowerIndir(GenTreeIndir* ind)
         // If the `ADDR` node under `STORE_OBJ(dstAddr, IND(struct(ADDR))`
         // is a complex one it could benefit from an `LEA` that is not contained.
         const bool isContainable = false;
-        TryCreateAddrMode(ind->Addr(), isContainable);
+        TryCreateAddrMode(ind->Addr(), isContainable, ind->TypeGet());
     }
 }
 

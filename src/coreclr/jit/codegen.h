@@ -36,9 +36,7 @@ public:
                                    bool*     revPtr,
                                    GenTree** rv1Ptr,
                                    GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
                                    unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
                                    ssize_t* cnsPtr);
 
 private:
