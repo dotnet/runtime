@@ -97,7 +97,7 @@ public:
                                    GenTree** rv1Ptr,
                                    GenTree** rv2Ptr,
                                    unsigned* mulPtr,
-                                   ssize_t* cnsPtr) = 0;
+                                   ssize_t*  cnsPtr) = 0;
 
     GCInfo gcInfo;
 

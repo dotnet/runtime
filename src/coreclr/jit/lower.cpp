@@ -4916,11 +4916,11 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
     bool     rev    = false;
 
     // Find out if an addressing mode can be constructed
-    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,   // address
-                                                       true,   // fold
-                                                       &rev,   // reverse ops
-                                                       &base,  // base addr
-                                                       &index, // index val
+    bool doAddrMode = comp->codeGen->genCreateAddrMode(addr,     // address
+                                                       true,     // fold
+                                                       &rev,     // reverse ops
+                                                       &base,    // base addr
+                                                       &index,   // index val
                                                        &scale,   // scaling
                                                        &offset); // displacement
 

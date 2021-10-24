@@ -1308,13 +1308,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *                  form an address mode later on.
  */
 
-bool CodeGen::genCreateAddrMode(GenTree*  addr,
-                                bool      fold,
-                                bool*     revPtr,
-                                GenTree** rv1Ptr,
-                                GenTree** rv2Ptr,
-                                unsigned* mulPtr,
-                                ssize_t* cnsPtr)
+bool CodeGen::genCreateAddrMode(
+    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1364,7 +1359,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
     GenTree* op1;
     GenTree* op2;
 
-    ssize_t cns;
+    ssize_t  cns;
     unsigned mul;
 
     GenTree* tmp;
@@ -1591,7 +1586,7 @@ AGAIN:
 
             break;
 
-#else // !TARGET_ARMARCH
+#else  // !TARGET_ARMARCH
         case GT_MUL:
 
             if (op2->gtOverflow())
