@@ -20,11 +20,21 @@
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(BrowserHost)' == 'windows'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' != 'true'">
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
+    <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' == 'true'">
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
+    <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -47,15 +57,6 @@
   </PropertyGroup>
 
   <Target Name="PrepareForBuildHelixWorkItems_Wasm">
-    <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' != 'true'">
-      <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chromedriver_linux64:$PATH" />
-      <HelixPreCommand Include="export PATH=$HELIX_CORRELATION_PAYLOAD/chrome-linux:$PATH" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(WindowsShell)' == 'true'">
-      <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chromedriver_win32%3B%PATH%" />
-      <HelixPreCommand Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\chrome-win%3B%PATH%" />
-    </ItemGroup>
-
     <PropertyGroup>
       <EmSdkDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDir>
       <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>

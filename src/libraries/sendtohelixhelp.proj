@@ -15,7 +15,7 @@
 
     <HelixConfiguration>$(Configuration)</HelixConfiguration>
     <HelixArchitecture>$(TargetArchitecture)</HelixArchitecture>
-    <BuildHelixWorkItemsDependsOn>PrepareWorkItems</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn>BuildHelixCommand</BuildHelixWorkItemsDependsOn>
     <EnableDefaultBuildHelixWorkItems>true</EnableDefaultBuildHelixWorkItems>
   </PropertyGroup>
 
@@ -160,7 +160,7 @@
     such as the HelixWorkItem item group) before Helix "Test" target is invoked (as a normal target).
   -->
 
-  <Target Name="PrepareWorkItems">
+  <Target Name="BuildHelixCommand">
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
       <HelixCommandPrefix Condition="'$(WindowsShell)' == 'true' and @(HelixCommandPrefixItem->Count()) > 0" >$(HelixCommandPrefix) @(HelixCommandPrefixItem -> 'set &quot;%(Identity)&quot;', ' &amp; ')</HelixCommandPrefix>
