@@ -24,7 +24,7 @@ public class PInvokeTableGenerator : Task
     [Output]
     public string FileWrites { get; private set; } = string.Empty;
 
-    private static char[] s_charsToReplace = new[] { '.', '-', };
+    private static char[] s_charsToReplace = new[] { '.', '-', ',', '|', '<', '>' };
 
     public override bool Execute()
     {
@@ -157,7 +157,7 @@ public class PInvokeTableGenerator : Task
 
         foreach (var module in modules.Keys)
         {
-            string symbol = ModuleNameToId(module) + "_imports";
+            string symbol = FixupSymbolName(module) + "_imports";
             w.WriteLine("static PinvokeImport " + symbol + " [] = {");
 
             var assemblies_pinvokes = pinvokes.
@@ -176,7 +176,7 @@ public class PInvokeTableGenerator : Task
         w.Write("static void *pinvoke_tables[] = { ");
         foreach (var module in modules.Keys)
         {
-            string symbol = ModuleNameToId(module) + "_imports";
+            string symbol = FixupSymbolName(module) + "_imports";
             w.Write(symbol + ",");
         }
         w.WriteLine("};");
@@ -186,18 +186,6 @@ public class PInvokeTableGenerator : Task
             w.Write("\"" + module + "\"" + ",");
         }
         w.WriteLine("};");
-
-        static string ModuleNameToId(string name)
-        {
-            if (name.IndexOfAny(s_charsToReplace) < 0)
-                return name;
-
-            string fixedName = name;
-            foreach (char c in s_charsToReplace)
-                fixedName = fixedName.Replace(c, '_');
-
-            return fixedName;
-        }
 
         static bool ShouldTreatAsVariadic(PInvoke[] candidates)
         {
@@ -214,6 +202,26 @@ public class PInvokeTableGenerator : Task
                         .Any(c => !TryIsMethodGetParametersUnsupported(c.Method, out _) &&
                                     c.Method.GetParameters().Length != firstNumArgs);
         }
+    }
+
+    private static string FixupSymbolName(string name)
+    {
+        if (name.IndexOfAny(s_charsToReplace) < 0)
+            return name;
+
+        string fixedName = name;
+        foreach (char c in s_charsToReplace)
+            fixedName = fixedName.Replace(c, '_');
+
+        return fixedName;
+    }
+
+    private static string SymbolNameForMethod(MethodInfo method)
+    {
+        string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!;
+        string class_name = method.DeclaringType.Name;
+        string method_name = method.Name;
+        return FixupSymbolName($"{module_symbol}_{class_name}_{method_name}");
     }
 
     private string MapType (Type t)
@@ -343,15 +351,12 @@ public class PInvokeTableGenerator : Task
 
             bool is_void = method.ReturnType.Name == "Void";
 
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
-            uint token = (uint)method.MetadataToken;
-            string class_name = method.DeclaringType.Name;
-            string method_name = method.Name;
-            string entry_name = $"wasm_native_to_interp_{module_symbol}_{class_name}_{method_name}";
+            string entry_name = $"wasm_native_to_interp_{SymbolNameForMethod(method)}";
             if (callbackNames.Contains (entry_name))
             {
-                Error($"Two callbacks with the same name '{method_name}' are not supported.");
+                Error($"Two callbacks with the same name '{entry_name}' are not supported.");
             }
+
             callbackNames.Add (entry_name);
             cb.EntryName = entry_name;
             sb.Append(MapType(method.ReturnType));
@@ -395,7 +400,7 @@ public class PInvokeTableGenerator : Task
         // Array of function pointers
         w.Write ("static void *wasm_native_to_interp_funcs[] = { ");
         foreach (var cb in callbacks) {
-            w.Write (cb.EntryName + ",");
+            w.Write ($"\t{cb.EntryName},{Environment.NewLine}");
         }
         w.WriteLine ("};");
 
@@ -403,13 +408,8 @@ public class PInvokeTableGenerator : Task
         // The key is a string of the form <assembly name>_<method token>
         // FIXME: Use a better encoding
         w.Write ("static const char *wasm_native_to_interp_map[] = { ");
-        foreach (var cb in callbacks) {
-            var method = cb.Method;
-            string module_symbol = method.DeclaringType!.Module!.Assembly!.GetName()!.Name!.Replace(".", "_");
-            string class_name = method.DeclaringType.Name;
-            string method_name = method.Name;
-            w.WriteLine ($"\"{module_symbol}_{class_name}_{method_name}\",");
-        }
+        foreach (var cb in callbacks)
+            w.WriteLine ($"\"{SymbolNameForMethod(cb.Method)}\",");
         w.WriteLine ("};");
     }
 
