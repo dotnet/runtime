@@ -2983,6 +2983,11 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
 #endif // SCALED_ADDR_MODES
                                    &cns))
     {
+        if (mul > 0 && genTypeSize(type) != mul)
+        {
+            return false;
+        }
+
         // We can form a complex addressing mode, so mark each of the interior
         // nodes with GTF_ADDRMODE_NO_CSE and calculate a more accurate cost.
 
