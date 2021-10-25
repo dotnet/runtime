@@ -18,13 +18,23 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterImplementationSourceOutput(
-            context.SyntaxProvider.CreateSyntaxProvider(
+        var methodsInSource = context.SyntaxProvider.CreateSyntaxProvider(
                 static (node, ct) =>
                     node.IsKind(SyntaxKind.MethodDeclaration)
                         && node is MethodDeclarationSyntax method
                         && method.AttributeLists.Count > 0,
-                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!)
+                static (context, ct) => (IMethodSymbol)context.SemanticModel.GetDeclaredSymbol(context.Node)!);
+
+        var methodsInReferencedAssemblies = context.MetadataReferencesProvider.Combine(context.CompilationProvider).SelectMany((data, ct) =>
+        {
+            ExternallyReferencedTestMethodsVisitor visitor = new();
+            return visitor.Visit(data.Right.GetAssemblyOrModuleSymbol(data.Left))!;
+        });
+
+        var allMethods = methodsInSource.Collect().Combine(methodsInReferencedAssemblies.Collect()).SelectMany((methods, ct) => methods.Left.AddRange(methods.Right));
+
+        context.RegisterImplementationSourceOutput(
+            allMethods
             .Combine(context.AnalyzerConfigOptionsProvider)
             .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left, data.Right)))
             .Collect(),
@@ -38,6 +48,58 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 builder.AppendLine("return 100;");
                 context.AddSource("Main.g.cs", builder.ToString());
             });
+    }
+
+    private class ExternallyReferencedTestMethodsVisitor : SymbolVisitor<IEnumerable<IMethodSymbol>>
+    {
+        public override IEnumerable<IMethodSymbol>? VisitAssembly(IAssemblySymbol symbol)
+        {
+            if (symbol.Name.StartsWith("autoinit.exe"))
+            {
+
+            }
+            return Visit(symbol.GlobalNamespace);
+        }
+
+        public override IEnumerable<IMethodSymbol>? VisitModule(IModuleSymbol symbol)
+        {
+            return Visit(symbol.GlobalNamespace);
+        }
+
+        public override IEnumerable<IMethodSymbol>? VisitNamespace(INamespaceSymbol symbol)
+        {
+            foreach (var type in symbol.GetMembers())
+            {
+                foreach (var result in Visit(type) ?? Array.Empty<IMethodSymbol>())
+                {
+                    yield return result;
+                }
+            }
+        }
+
+        public override IEnumerable<IMethodSymbol>? VisitNamedType(INamedTypeSymbol symbol)
+        {
+            if (symbol.DeclaredAccessibility == Accessibility.Public)
+            {
+                foreach (var type in symbol.GetMembers())
+                {
+                    foreach (var result in Visit(type) ?? Array.Empty<IMethodSymbol>())
+                    {
+                        yield return result;
+                    }
+                }
+            }
+        }
+
+        public override IEnumerable<IMethodSymbol>? VisitMethod(IMethodSymbol symbol)
+        {
+            if (symbol.DeclaredAccessibility == Accessibility.Public
+                && symbol.GetAttributes().Any(attr => attr.AttributeClass?.ContainingNamespace.Name == "Xunit"))
+            {
+                return new[] { symbol };
+            }
+            return Array.Empty<IMethodSymbol>();
+        }
     }
 
     private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options)
