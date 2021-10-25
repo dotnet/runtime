@@ -39,18 +39,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private readonly ServiceProviderEngineScope _rootScope;
 
-        private readonly ConcurrentDictionary<ServiceCacheKey, Func<ServiceProviderEngineScope, object>> _scopeResolverCache;
+        private readonly ConcurrentDictionary<ServiceCacheKey, ServiceFactory> _scopeResolverCache;
 
-        private readonly Func<ServiceCacheKey, ServiceCallSite, Func<ServiceProviderEngineScope, object>> _buildTypeDelegate;
+        private readonly Func<ServiceCacheKey, ServiceCallSite, ServiceFactory> _buildTypeDelegate;
 
         public ExpressionResolverBuilder(ServiceProvider serviceProvider)
         {
             _rootScope = serviceProvider.Root;
-            _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, Func<ServiceProviderEngineScope, object>>();
+            _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, ServiceFactory>();
             _buildTypeDelegate = (key, cs) => BuildNoCache(cs);
         }
 
-        public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
+        public ServiceFactory Build(ServiceCallSite callSite)
         {
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
@@ -65,11 +65,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return BuildNoCache(callSite);
         }
 
-        public Func<ServiceProviderEngineScope, object> BuildNoCache(ServiceCallSite callSite)
+        public ServiceFactory BuildNoCache(ServiceCallSite callSite)
         {
             Expression<Func<ServiceProviderEngineScope, object>> expression = BuildExpression(callSite);
             DependencyInjectionEventSource.Log.ExpressionTreeGenerated(_rootScope.RootProvider, callSite.ServiceType, expression);
-            return expression.Compile();
+            return ServiceFactory.FromFactory(expression.Compile());
         }
 
         private Expression<Func<ServiceProviderEngineScope, object>> BuildExpression(ServiceCallSite callSite)
@@ -185,7 +185,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override Expression VisitScopeCache(ServiceCallSite callSite, object context)
         {
-            Func<ServiceProviderEngineScope, object> lambda = Build(callSite);
+            Func<ServiceProviderEngineScope, object> lambda = Build(callSite).Create;
             return Expression.Invoke(Expression.Constant(lambda), ScopeParameter);
         }
 

@@ -11,12 +11,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private RuntimeServiceProviderEngine() { }
 
-        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
+        public override ServiceFactory RealizeService(ServiceCallSite callSite) =>
+            new RuntimeServiceFactory(callSite);
+
+        internal sealed class RuntimeServiceFactory : ServiceFactory
         {
-            return scope =>
+            private readonly ServiceCallSite _serviceCallSite;
+
+            public RuntimeServiceFactory(ServiceCallSite serviceCallSite)
             {
-                return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
-            };
+                _serviceCallSite = serviceCallSite;
+            }
+
+            public override object Create(ServiceProviderEngineScope scope) =>
+                CallSiteRuntimeResolver.Instance.Resolve(_serviceCallSite, scope);
         }
     }
 }

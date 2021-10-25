@@ -91,8 +91,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             using var scope = (ServiceProviderEngineScope)provider.CreateScope();
 
             var service1 = Invoke(callSite, scope);
-            var service2 = compiledCallSite(scope);
-            var serviceEnumerator = ((IEnumerable)compiledCollectionCallSite(scope)).GetEnumerator();
+            var service2 = compiledCallSite.Create(scope);
+            var serviceEnumerator = ((IEnumerable)compiledCollectionCallSite.Create(scope)).GetEnumerator();
 
             Assert.NotNull(service1);
             Assert.True(compare(service1, service2));
@@ -117,7 +117,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             using var scope = (ServiceProviderEngineScope)provider.CreateScope();
 
-            var serviceC = (ServiceC)compiledCallSite(scope);
+            var serviceC = (ServiceC)compiledCallSite.Create(scope);
 
             Assert.NotNull(serviceC.ServiceB.ServiceA);
             Assert.Equal(serviceC, Invoke(callSite, scope));
@@ -136,11 +136,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
-            var serviceC = (DisposableServiceC)compiledCallSite(provider.Root);
+            var serviceC = (DisposableServiceC)compiledCallSite.Create(provider.Root);
 
             Assert.Equal(3, provider.Root.Disposables.Count);
         }
@@ -163,7 +163,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
-            var serviceC = (DisposableServiceC)compiledCallSite(provider.Root);
+            var serviceC = (DisposableServiceC)compiledCallSite.Create(provider.Root);
 
             Assert.Equal(3, provider.Root.Disposables.Count);
         }
@@ -185,11 +185,11 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             var disposables = new List<object>();
             var provider = new ServiceProvider(descriptors, ServiceProviderOptions.Default);
-            
+
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceC), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
-            var serviceC = (ServiceC)compiledCallSite(provider.Root);
+            var serviceC = (ServiceC)compiledCallSite.Create(provider.Root);
 
             Assert.Empty(provider.Root.Disposables);
         }
@@ -211,7 +211,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var callSite = provider.CallSiteFactory.GetCallSite(typeof(ServiceD), new CallSiteChain());
             var compiledCallSite = CompileCallSite(callSite, provider);
 
-            var serviceD = (ServiceD)compiledCallSite(provider.Root);
+            var serviceD = (ServiceD)compiledCallSite.Create(provider.Root);
 
             Assert.Empty(provider.Root.Disposables);
         }
@@ -232,10 +232,10 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var callSite2 = provider.CallSiteFactory.GetCallSite(typeof(ClassWithThrowingCtor), new CallSiteChain());
             var compiledCallSite2 = CompileCallSite(callSite2, provider);
 
-            var ex1 = Assert.Throws<Exception>(() => compiledCallSite1(provider.Root));
+            var ex1 = Assert.Throws<Exception>(() => compiledCallSite1.Create(provider.Root));
             Assert.Equal(nameof(ClassWithThrowingEmptyCtor), ex1.Message);
 
-            var ex2 = Assert.Throws<Exception>(() => compiledCallSite2(provider.Root));
+            var ex2 = Assert.Throws<Exception>(() => compiledCallSite2.Create(provider.Root));
             Assert.Equal(nameof(ClassWithThrowingCtor), ex2.Message);
         }
 
@@ -392,7 +392,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             return CallSiteRuntimeResolver.Instance.Resolve(callSite, scope);
         }
 
-        private static Func<ServiceProviderEngineScope, object> CompileCallSite(ServiceCallSite callSite, ServiceProvider provider)
+        private static ServiceFactory CompileCallSite(ServiceCallSite callSite, ServiceProvider provider)
         {
             return new ExpressionResolverBuilder(provider).Build(callSite);
         }

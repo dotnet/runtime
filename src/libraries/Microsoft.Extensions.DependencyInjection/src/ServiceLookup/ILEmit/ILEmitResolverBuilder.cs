@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
@@ -38,33 +39,32 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             public Func<IServiceProvider, object>[] Factories;
         }
 
-        private struct GeneratedMethod
+        private struct GeneratedFactory
         {
-            public Func<ServiceProviderEngineScope, object> Lambda;
+            public ServiceFactory Factory;
 
-            public ILEmitResolverBuilderRuntimeContext Context;
-            public DynamicMethod DynamicMethod;
+            public MethodInfo CreateMethod;
         }
 
         private readonly ServiceProviderEngineScope _rootScope;
 
-        private readonly ConcurrentDictionary<ServiceCacheKey, GeneratedMethod> _scopeResolverCache;
+        private readonly ConcurrentDictionary<ServiceCacheKey, GeneratedFactory> _scopeResolverCache;
 
-        private readonly Func<ServiceCacheKey, ServiceCallSite, GeneratedMethod> _buildTypeDelegate;
+        private readonly Func<ServiceCacheKey, ServiceCallSite, GeneratedFactory> _buildTypeDelegate;
 
         public ILEmitResolverBuilder(ServiceProvider serviceProvider)
         {
             _rootScope = serviceProvider.Root;
-            _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, GeneratedMethod>();
+            _scopeResolverCache = new ConcurrentDictionary<ServiceCacheKey, GeneratedFactory>();
             _buildTypeDelegate = (key, cs) => BuildTypeNoCache(cs);
         }
 
-        public Func<ServiceProviderEngineScope, object> Build(ServiceCallSite callSite)
+        public ServiceFactory Build(ServiceCallSite callSite)
         {
-            return BuildType(callSite).Lambda;
+            return BuildType(callSite).Factory;
         }
 
-        private GeneratedMethod BuildType(ServiceCallSite callSite)
+        private GeneratedFactory BuildType(ServiceCallSite callSite)
         {
             // Only scope methods are cached
             if (callSite.Cache.Location == CallSiteResultCacheLocation.Scope)
@@ -79,47 +79,118 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return BuildTypeNoCache(callSite);
         }
 
-        private GeneratedMethod BuildTypeNoCache(ServiceCallSite callSite)
+        private GeneratedFactory BuildTypeNoCache(ServiceCallSite callSite)
         {
             // We need to skip visibility checks because services/constructors might be private
-            var dynamicMethod = new DynamicMethod("ResolveService",
-                attributes: MethodAttributes.Public | MethodAttributes.Static,
-                callingConvention: CallingConventions.Standard,
-                returnType: typeof(object),
-                parameterTypes: new[] { typeof(ILEmitResolverBuilderRuntimeContext), typeof(ServiceProviderEngineScope) },
-                owner: GetType(),
-                skipVisibility: true);
+            var assemblyName = $"{callSite.ServiceType.Name}_{DateTime.UtcNow.Ticks}_ServiceFactoryAssembly";
+
+            var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName),
+#if SAVE_ASSEMBLIES
+                AssemblyBuilderAccess.RunAndSave
+#else
+                AssemblyBuilderAccess.Run
+#endif
+                );
+
+            var createMethod = typeof(ServiceFactory).GetMethod(nameof(ServiceFactory.Create));
+
+            // This is a bit insane but we need to walk the types to mark them all as skipping visibility
+            void IgnoreAccessChecksToType(Type type, HashSet<Assembly> assemblies)
+            {
+                if (type is null)
+                {
+                    return;
+                }
+
+                if (assemblies.Add(type.Assembly))
+                {
+                    IgnoreAccessChecks(type.Assembly);
+                }
+
+                if (!type.IsGenericType)
+                {
+                    return;
+                }
+
+                foreach (var t in type.GetGenericArguments())
+                {
+                    IgnoreAccessChecksToType(t, assemblies);
+                }
+            }
+
+            void IgnoreAccessChecks(Assembly ignoreAccessChecksAssembly)
+            {
+                if (ignoreAccessChecksAssembly is null)
+                {
+                    return;
+                }
+
+                var ignoresAccessChecksTo = new CustomAttributeBuilder
+                (
+                    typeof(IgnoresAccessChecksToAttribute).GetConstructor(new Type[] { typeof(string) }),
+                    new object[] { ignoreAccessChecksAssembly.GetName().Name }
+                );
+                assemblyBuilder.SetCustomAttribute(ignoresAccessChecksTo);
+            }
+
+            var assemblies = new HashSet<Assembly>();
+            IgnoreAccessChecksToType(typeof(ServiceFactory), assemblies);
+            IgnoreAccessChecksToType(callSite.ServiceType, assemblies);
+            IgnoreAccessChecksToType(callSite.ImplementationType, assemblies);
+
+            var module = assemblyBuilder.DefineDynamicModule(assemblyName);
+            var serviceTypeBuilder = module.DefineType(callSite.ServiceType.Name + "ServiceFactory", TypeAttributes.Public | TypeAttributes.Sealed, typeof(ServiceFactory));
+
+            var f1 = serviceTypeBuilder.DefineField("_resolverContext", typeof(ILEmitResolverBuilderRuntimeContext), FieldAttributes.Private);
+            var createParameters = createMethod.GetParameters();
+
+            var parameterTypes = new Type[createParameters.Length];
+            for (int i = 0; i < createParameters.Length; i++)
+            {
+                parameterTypes[i] = createParameters[i].ParameterType;
+            }
+
+            var createMethodOverride = serviceTypeBuilder.DefineMethod(
+                createMethod.Name,
+                MethodAttributes.Private | MethodAttributes.HideBySig |
+                MethodAttributes.NewSlot | MethodAttributes.Virtual |
+                MethodAttributes.Final, createMethod.ReturnType,
+                parameterTypes);
 
             // In traces we've seen methods range from 100B - 4K sized methods since we've
             // stop trying to inline everything into scoped methods. We'll pay for a couple of resizes
             // so there'll be allocations but we could potentially change ILGenerator to use the array pool
-            ILGenerator ilGenerator = dynamicMethod.GetILGenerator(512);
-            ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator);
+            ILGenerator ilGenerator = createMethodOverride.GetILGenerator(512);
+
+            ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator, f1, out var dependentAssemblies);
+
+            if (dependentAssemblies is not null)
+            {
+                foreach (var a in dependentAssemblies)
+                {
+                    IgnoreAccessChecks(a);
+                }
+            }
+
+            serviceTypeBuilder.DefineMethodOverride(createMethodOverride, createMethod);
+
+            var type = serviceTypeBuilder.CreateType();
+
+            var factory = (ServiceFactory)Activator.CreateInstance(type);
+
+            // Set the field
+            type.GetField("_resolverContext", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(factory, runtimeContext);
 
 #if SAVE_ASSEMBLIES
-            var assemblyName = "Test" + DateTime.Now.Ticks;
-            var fileName = assemblyName + ".dll";
-
-            var assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(assemblyName), AssemblyBuilderAccess.RunAndSave);
-            var module = assembly.DefineDynamicModule(assemblyName, fileName);
-            var type = module.DefineType(callSite.ServiceType.Name + "Resolver");
-
-            var method = type.DefineMethod(
-                "ResolveService", MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard, typeof(object),
-                new[] { typeof(ILEmitResolverBuilderRuntimeContext), typeof(ServiceProviderEngineScope) });
-
-            GenerateMethodBody(callSite, method.GetILGenerator());
-            type.CreateTypeInfo();
             // Assembly.Save is only available in .NET Framework (https://github.com/dotnet/runtime/issues/15704)
-            assembly.Save(fileName);
+            assembly.Save(assemblyName + ".dll");
 #endif
             DependencyInjectionEventSource.Log.DynamicMethodBuilt(_rootScope.RootProvider, callSite.ServiceType, ilGenerator.ILOffset);
 
-            return new GeneratedMethod()
+            return new GeneratedFactory()
             {
-                Lambda = (Func<ServiceProviderEngineScope, object>)dynamicMethod.CreateDelegate(typeof(Func<ServiceProviderEngineScope, object>), runtimeContext),
-                Context = runtimeContext,
-                DynamicMethod = dynamicMethod
+                Factory = factory,
+                CreateMethod = createMethodOverride
             };
         }
 
@@ -168,20 +239,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitScopeCache(ServiceCallSite scopedCallSite, ILEmitResolverBuilderContext argument)
         {
-            GeneratedMethod generatedMethod = BuildType(scopedCallSite);
+            GeneratedFactory generatedFactory = BuildType(scopedCallSite);
 
-            // Type builder doesn't support invoking dynamic methods, replace them with delegate.Invoke calls
-#if SAVE_ASSEMBLIES
-            AddConstant(argument, generatedMethod.Lambda);
+            argument.Assemblies ??= new();
+            argument.Assemblies.Add(generatedFactory.Factory.GetType().Assembly);
+
+            AddConstant(argument, generatedFactory.Factory);
             // ProviderScope
+            argument.Generator.Emit(OpCodes.Castclass, typeof(ServiceFactory));
             argument.Generator.Emit(OpCodes.Ldarg_1);
-            argument.Generator.Emit(OpCodes.Call, generatedMethod.Lambda.GetType().GetMethod("Invoke"));
-#else
-            AddConstant(argument, generatedMethod.Context);
-            // ProviderScope
-            argument.Generator.Emit(OpCodes.Ldarg_1);
-            argument.Generator.Emit(OpCodes.Call, generatedMethod.DynamicMethod);
-#endif
+            argument.Generator.Emit(OpCodes.Callvirt, generatedFactory.CreateMethod);
 
             return null;
         }
@@ -244,6 +311,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             // this.Factories[i](ProviderScope)
             argument.Generator.Emit(OpCodes.Ldarg_0);
+            argument.Generator.Emit(OpCodes.Ldfld, argument.RuntimeContextField);
             argument.Generator.Emit(OpCodes.Ldfld, FactoriesField);
 
             argument.Generator.Emit(OpCodes.Ldc_I4, argument.Factories.Count);
@@ -265,6 +333,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             // this.Constants[i]
             argument.Generator.Emit(OpCodes.Ldarg_0);
+            argument.Generator.Emit(OpCodes.Ldfld, argument.RuntimeContextField);
             argument.Generator.Emit(OpCodes.Ldfld, ConstantsField);
 
             argument.Generator.Emit(OpCodes.Ldc_I4, argument.Constants.Count);
@@ -281,13 +350,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);
         }
 
-        private ILEmitResolverBuilderRuntimeContext GenerateMethodBody(ServiceCallSite callSite, ILGenerator generator)
+        private ILEmitResolverBuilderRuntimeContext GenerateMethodBody(ServiceCallSite callSite, ILGenerator generator, FieldInfo runtimeResolverContextField, out HashSet<Assembly> assemblies)
         {
             var context = new ILEmitResolverBuilderContext()
             {
                 Generator = generator,
                 Constants = null,
-                Factories = null
+                Factories = null,
+                RuntimeContextField = runtimeResolverContextField
             };
 
             // if (scope.IsRootScope)
@@ -434,6 +504,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 context.Generator.Emit(OpCodes.Ret);
             }
 
+            assemblies = context.Assemblies;
+
             return new ILEmitResolverBuilderRuntimeContext
             {
                 Constants = context.Constants?.ToArray(),
@@ -451,5 +523,18 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // When calling CaptureDisposable we expect callee and arguments to be on the stackcontext.Generator.BeginExceptionBlock
             argument.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.CaptureDisposableMethodInfo);
         }
+    }
+}
+
+// The runtime understands this attribute, but it is not defined in the BCL so you have to define it yourself.
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
+    internal class IgnoresAccessChecksToAttribute : Attribute
+    {
+        public IgnoresAccessChecksToAttribute(string assemblyName)
+            => AssemblyName = assemblyName;
+
+        public string AssemblyName { get; }
     }
 }

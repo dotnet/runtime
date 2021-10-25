@@ -16,10 +16,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _serviceProvider = serviceProvider;
         }
 
-        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
+        public override ServiceFactory RealizeService(ServiceCallSite callSite)
         {
             int callCount = 0;
-            return scope =>
+            return ServiceFactory.FromFactory(scope =>
             {
                 // Resolve the result before we increment the call count, this ensures that singletons
                 // won't cause any side effects during the compilation of the resolve function.
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 return result;
-            };
+            });
         }
     }
 }

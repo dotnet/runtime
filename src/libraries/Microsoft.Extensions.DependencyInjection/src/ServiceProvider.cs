@@ -17,14 +17,14 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         private readonly CallSiteValidator _callSiteValidator;
 
-        private readonly Func<Type, Func<ServiceProviderEngineScope, object>> _createServiceAccessor;
+        private readonly Func<Type, ServiceFactory> _createServiceFactory;
 
         // Internal for testing
         internal ServiceProviderEngine _engine;
 
         private bool _disposed;
 
-        private ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>> _realizedServices;
+        private ConcurrentDictionary<Type, ServiceFactory> _serviceFactories;
 
         internal CallSiteFactory CallSiteFactory { get; }
 
@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.DependencyInjection
             // note that Root needs to be set before calling GetEngine(), because the engine may need to access Root
             Root = new ServiceProviderEngineScope(this, isRootScope: true);
             _engine = GetEngine();
-            _createServiceAccessor = CreateServiceAccessor;
-            _realizedServices = new ConcurrentDictionary<Type, Func<ServiceProviderEngineScope, object>>();
+            _createServiceFactory = CreateServiceFactory;
+            _serviceFactories = new ConcurrentDictionary<Type, ServiceFactory>();
 
             CallSiteFactory = new CallSiteFactory(serviceDescriptors);
             // The list of built in services that aren't part of the list of service descriptors
@@ -122,10 +122,10 @@ namespace Microsoft.Extensions.DependencyInjection
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            Func<ServiceProviderEngineScope, object> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
+            ServiceFactory factory = _serviceFactories.GetOrAdd(serviceType, _createServiceFactory);
             OnResolve(serviceType, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
-            var result = realizedService.Invoke(serviceProviderEngineScope);
+            var result = factory.Create(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
         }
@@ -151,7 +151,7 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private Func<ServiceProviderEngineScope, object> CreateServiceAccessor(Type serviceType)
+        private ServiceFactory CreateServiceFactory(Type serviceType)
         {
             ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
             if (callSite != null)
@@ -163,18 +163,18 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
                 {
                     object value = CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                    return scope => value;
+                    return ServiceFactory.FromValue(value);
                 }
 
                 return _engine.RealizeService(callSite);
             }
 
-            return _ => null;
+            return ServiceFactory.Null;
         }
 
-        internal void ReplaceServiceAccessor(ServiceCallSite callSite, Func<ServiceProviderEngineScope, object> accessor)
+        internal void ReplaceServiceAccessor(ServiceCallSite callSite, ServiceFactory factory)
         {
-            _realizedServices[callSite.ServiceType] = accessor;
+            _serviceFactories[callSite.ServiceType] = factory;
         }
 
         internal IServiceScope CreateScope()

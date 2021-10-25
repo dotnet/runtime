@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _expressionResolverBuilder = new ExpressionResolverBuilder(serviceProvider);
         }
 
-        public override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
+        public override ServiceFactory RealizeService(ServiceCallSite callSite)
         {
             return _expressionResolverBuilder.Build(callSite);
         }
