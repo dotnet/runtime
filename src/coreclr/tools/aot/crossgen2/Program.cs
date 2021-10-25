@@ -969,7 +969,7 @@ namespace ILCompiler
         // From StrongNameInternal.cpp
         // Checks to see if a public key is a valid instance of a PublicKeyBlob as
         // defined in StongName.h
-        internal static bool IsValidPublicKey(ReadOnlySpan<byte> blob)
+        internal static bool IsValidPublicKey(byte[] blob)
         {
             // The number of public key bytes must be at least large enough for the header and one byte of data.
             if (blob.Length < s_publicKeyHeaderSize + 1)
@@ -977,25 +977,27 @@ namespace ILCompiler
                 return false;
             }
 
+            // Check for the ECMA key, which does not obey the invariants checked below.
+            if (blob.AsSpan().SequenceEqual(s_ecmaKey))
+            {
+                return true;
+            }
+
+            var blobReader = new BinaryReader(new MemoryStream(blob, writable: false));
+
             // Signature algorithm ID
-            var sigAlgId = BinaryPrimitives.ReadUInt32LittleEndian(blob);
+            var sigAlgId = blobReader.ReadUInt32();
             // Hash algorithm ID
-            var hashAlgId = BinaryPrimitives.ReadUInt32LittleEndian(blob.Slice(4));
+            var hashAlgId = blobReader.ReadUInt32();
             // Size of public key data in bytes, not including the header
-            var publicKeySize = BinaryPrimitives.ReadUInt32LittleEndian(blob.Slice(8));
+            var publicKeySize = blobReader.ReadUInt32();
             // publicKeySize bytes of public key data
-            var publicKey = blob[12];
+            var publicKey = blobReader.ReadByte();
 
             // The number of public key bytes must be the same as the size of the header plus the size of the public key data.
             if (blob.Length != s_publicKeyHeaderSize + publicKeySize)
             {
                 return false;
-            }
-
-            // Check for the ECMA key, which does not obey the invariants checked below.
-            if (blob.SequenceEqual(s_ecmaKey))
-            {
-                return true;
             }
 
             // The public key must be in the wincrypto PUBLICKEYBLOB format
