@@ -355,11 +355,14 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
-            Assert.False(Semaphore.TryOpenExisting(name, out _));
+            Semaphore s;
+            Assert.False(Semaphore.TryOpenExisting(name, out s));
+            Assert.Null(s);
 
             using (var s = new Semaphore(0, 1, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
-            Assert.False(Semaphore.TryOpenExisting(name, out _));
+            Assert.False(Semaphore.TryOpenExisting(name, out s));
+            Assert.Null(s);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)] // named semaphores aren't supported on Unix

@@ -323,11 +323,14 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
-            Assert.False(Mutex.TryOpenExisting(name, out _));
+            Mutex m;
+            Assert.False(Mutex.TryOpenExisting(name, out m));
+            Assert.Null(m);
 
             using (var m = new Mutex(false, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
-            Assert.False(Mutex.TryOpenExisting(name, out _));
+            Assert.False(Mutex.TryOpenExisting(name, out m));
+            Assert.Null(m);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix

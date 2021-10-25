@@ -163,11 +163,14 @@ namespace System.Threading.Tests
         {
             string name = Guid.NewGuid().ToString("N");
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
-            Assert.False(EventWaitHandle.TryOpenExisting(name, out _));
+            EventWaitHandle e;
+            Assert.False(EventWaitHandle.TryOpenExisting(name, out e));
+            Assert.Null(e);
 
             using (var e = new EventWaitHandle(false, EventResetMode.AutoReset, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => EventWaitHandle.OpenExisting(name));
-            Assert.False(EventWaitHandle.TryOpenExisting(name, out _));
+            Assert.False(EventWaitHandle.TryOpenExisting(name, out e));
+            Assert.Null(e);
         }
 
         [PlatformSpecific(TestPlatforms.Windows)]  // OpenExisting not supported on Unix
