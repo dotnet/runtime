@@ -54,7 +54,7 @@
 
     <PropertyGroup>
       <_ZipSourceDirectory>$(OutDir)</_ZipSourceDirectory>
-      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' != 'tvOS' or '$(TargetOS)' != 'MacCatalyst' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
+      <_ZipSourceDirectory Condition="'$(TargetOS)' == 'Browser' or '$(TestSingleFile)' == 'true'">$(BundleDir)</_ZipSourceDirectory>
     </PropertyGroup>
 
     <MakeDir Directories="$(TestArchiveTestsDir)" />
