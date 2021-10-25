@@ -223,7 +223,8 @@ GTNODE(MUL_LONG         , GenTreeMultiRegOp  ,1,GTK_BINOP)
 #elif defined(TARGET_ARM64)
 GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP)
 #endif
-GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP) // AndNot - emitted on ARM/ARM64 as the BIC instruction.
+// AndNot - emitted on ARM/ARM64 as the BIC instruction. Also used for creating AndNot HWINTRINSIC vector nodes in a cross-ISA manner.
+GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP)
 //-----------------------------------------------------------------------------
 //  LIR specific compare and conditional branch/set nodes:
 //-----------------------------------------------------------------------------
