@@ -375,7 +375,6 @@ namespace System
 
         public unsafe int Rank
         {
-            [Intrinsic]
             get
             {
                 int rank = RuntimeHelpers.GetMultiDimensionalArrayRank(this);

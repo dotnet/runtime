@@ -4522,31 +4522,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
-            case NI_System_Array_get_Rank:
-            {
-                // System.Array.Rank property:
-                //     public int Rank { get; }
-                // Valid for both SZ and MD arrays. Replace the call with a constant.
-                // For System.Array types, we don't know the value at compile time (getArrayRank
-                // will return zero), so don't implement it as an intrinsic.
-
-                bool                 isExact   = false;
-                bool                 isNonNull = false;
-                CORINFO_CLASS_HANDLE arrCls    = gtGetClassHandle(impStackTop().val, &isExact, &isNonNull);
-                if (arrCls != NO_CLASS_HANDLE)
-                {
-                    unsigned rank = info.compCompHnd->getArrayRank(arrCls);
-                    if (rank != 0)
-                    {
-                        GenTree* op1 = impPopStack().val; // The array. Don't need it anymore.
-                        assert(op1->TypeIs(TYP_REF));
-                        assert(callType == TYP_INT);
-                        retNode = gtNewIconNode(rank, TYP_INT);
-                    }
-                }
-                break;
-            }
-
             case NI_System_Array_GetLength:
             case NI_System_Array_GetLowerBound:
             case NI_System_Array_GetUpperBound:
@@ -4572,7 +4547,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     if (arrCls != NO_CLASS_HANDLE)
                     {
                         unsigned rank = info.compCompHnd->getArrayRank(arrCls);
-                        if ((rank != 0) && !info.compCompHnd->isSDArray(arrCls))
+                        if ((rank > 1) && !info.compCompHnd->isSDArray(arrCls))
                         {
                             // `rank` is guaranteed to be <=32 (see MAX_RANK in vm\array.h). Any constant argument
                             // is `int` sized.
@@ -4595,7 +4570,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs   = eeGetMDArrayLengthOffset(rank, dim);
                                         GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewOperNode(GT_IND, TYP_INT, gtAddr);
+                                        retNode         = gtNewIndir(TYP_INT, gtAddr);
+                                        retNode->gtFlags |= GTF_IND_INVARIANT;
                                         break;
                                     }
                                     case NI_System_Array_GetLowerBound:
@@ -4604,7 +4580,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs   = eeGetMDArrayLowerBoundOffset(rank, dim);
                                         GenTree* gtOffs = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        retNode         = gtNewOperNode(GT_IND, TYP_INT, gtAddr);
+                                        retNode         = gtNewIndir(TYP_INT, gtAddr);
+                                        retNode->gtFlags |= GTF_IND_INVARIANT;
                                         break;
                                     }
                                     case NI_System_Array_GetUpperBound:
@@ -4615,7 +4592,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         unsigned offs         = eeGetMDArrayLowerBoundOffset(rank, dim);
                                         GenTree* gtOffs       = gtNewIconNode(offs, TYP_I_IMPL);
                                         GenTree* gtAddr       = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
-                                        GenTree* gtLowerBound = gtNewOperNode(GT_IND, TYP_INT, gtAddr);
+                                        GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr);
+                                        gtLowerBound->gtFlags |= GTF_IND_INVARIANT;
 
                                         // Don't re-use the array node; create a clone.
                                         GenTree* gtArrClone = gtClone(gtArr);
@@ -4623,7 +4601,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         offs              = eeGetMDArrayLengthOffset(rank, dim);
                                         gtOffs            = gtNewIconNode(offs, TYP_I_IMPL);
                                         gtAddr            = gtNewOperNode(GT_ADD, TYP_BYREF, gtArrClone, gtOffs);
-                                        GenTree* gtLength = gtNewOperNode(GT_IND, TYP_INT, gtAddr);
+                                        GenTree* gtLength = gtNewIndir(TYP_INT, gtAddr);
+                                        gtLength->gtFlags |= GTF_IND_INVARIANT;
 
                                         GenTree* gtSum = gtNewOperNode(GT_ADD, TYP_INT, gtLowerBound, gtLength);
                                         GenTree* gtOne = gtNewIconNode(1, TYP_INT);
@@ -5041,10 +5020,6 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             if (strcmp(methodName, "Clone") == 0)
             {
                 result = NI_System_Array_Clone;
-            }
-            else if (strcmp(methodName, "get_Rank") == 0)
-            {
-                result = NI_System_Array_get_Rank;
             }
             else if (strcmp(methodName, "GetLength") == 0)
             {
