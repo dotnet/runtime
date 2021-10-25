@@ -167,7 +167,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             testInfos = DecorateWithSkipOnPlatform(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
                             break;
                         case "global::Xunit.TestRuntimes":
-                            testInfos = FilterForRuntimeFlavor(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
+                            testInfos = FilterForSkippedRuntime(testInfos, (int)filterAttribute.ConstructorArguments[1].Value!, options);
                             break;
                         default:
                             break;
@@ -182,15 +182,15 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return testInfos;
     }
 
-    private static ImmutableArray<ITestInfo> FilterForRuntimeFlavor(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options)
+    private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options)
     {
-        Xunit.TestRuntimes runtime = (Xunit.TestRuntimes)v;
+        Xunit.TestRuntimes skippedRuntimes = (Xunit.TestRuntimes)v;
         options.GlobalOptions.TryGetValue("build_property.RuntimeFlavor", out string? runtimeFlavor);
-        if (runtimeFlavor == "Mono" && runtime.HasFlag(Xunit.TestRuntimes.Mono))
+        if (runtimeFlavor == "Mono" && skippedRuntimes.HasFlag(Xunit.TestRuntimes.Mono))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
-        else if (runtime.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        else if (skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
