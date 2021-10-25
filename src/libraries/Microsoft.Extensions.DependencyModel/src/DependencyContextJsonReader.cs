@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.DependencyModel
             reader.ReadStartObject();
 
             string runtime = string.Empty;
-            string framework = string.Empty;
+            string? framework = string.Empty;
             bool isPortable = true;
             string? runtimeTargetName = null;
             string? runtimeSignature = null;
@@ -242,8 +242,13 @@ namespace Microsoft.Extensions.DependencyModel
             return target;
         }
 
-        private static bool IsRuntimeTarget(string name)
+        private static bool IsRuntimeTarget(string? name)
         {
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
             return name.Contains(DependencyContextStrings.VersionSeparator);
         }
 
@@ -358,7 +363,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                targets.Add(ReadTarget(ref reader, reader.GetString()!));
+                targets.Add(ReadTarget(ref reader, reader.GetString()));
             }
 
             reader.CheckEndObject();
@@ -366,7 +371,7 @@ namespace Microsoft.Extensions.DependencyModel
             return targets;
         }
 
-        private Target ReadTarget(ref Utf8JsonReader reader, string targetName)
+        private Target ReadTarget(ref Utf8JsonReader reader, string? targetName)
         {
             reader.ReadStartObject();
 
@@ -374,7 +379,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                libraries.Add(ReadTargetLibrary(ref reader, reader.GetString()!));
+                libraries.Add(ReadTargetLibrary(ref reader, reader.GetString()));
             }
 
             reader.CheckEndObject();
@@ -382,7 +387,7 @@ namespace Microsoft.Extensions.DependencyModel
             return new Target(targetName, libraries);
         }
 
-        private TargetLibrary ReadTargetLibrary(ref Utf8JsonReader reader, string targetLibraryName)
+        private TargetLibrary ReadTargetLibrary(ref Utf8JsonReader reader, string? targetLibraryName)
         {
             IEnumerable<Dependency>? dependencies = null;
             List<RuntimeFile>? runtimes = null;
@@ -464,10 +469,14 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string libraryName = reader.GetString()!;
+                string? libraryName = reader.GetString();
                 reader.Skip();
 
-                runtimes.Add(libraryName);
+                // TODO Discuss about other options?
+                if (string.IsNullOrEmpty(libraryName))
+                {
+                    throw new ArgumentException(null, nameof(libraryName));
+                }
             }
 
             reader.CheckEndObject();
@@ -486,7 +495,7 @@ namespace Microsoft.Extensions.DependencyModel
                 string? assemblyVersion = null;
                 string? fileVersion = null;
 
-                string path = reader.GetString()!;
+                string? path = reader.GetString();
 
                 reader.ReadStartObject();
 
@@ -523,7 +532,7 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 var runtimeTarget = new RuntimeTargetEntryStub
                 {
-                    Path = reader.GetString()!
+                    Path = reader.GetString()
                 };
 
                 reader.ReadStartObject();
@@ -565,7 +574,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string path = reader.GetString()!;
+                string? path = reader.GetString();
                 string? locale = null;
 
                 reader.ReadStartObject();
@@ -599,9 +608,15 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string libraryName = reader.GetString()!;
+                string? libraryName = reader.GetString();
 
-                libraries.Add(Pool(libraryName), ReadOneLibrary(ref reader));
+                if (string.IsNullOrEmpty(libraryName))
+                {
+                    // TODO Discuss about other options?
+                    throw new ArgumentException(null, nameof(libraryName));
+                }
+
+                libraries.Add(libraryName, ReadOneLibrary(ref reader));
             }
 
             reader.CheckEndObject();
@@ -669,7 +684,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                string runtime = reader.GetString()!;
+                string? runtime = reader.GetString();
                 string?[] fallbacks = reader.ReadStringArray();
 
                 runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
@@ -693,9 +708,9 @@ namespace Microsoft.Extensions.DependencyModel
 
         private Library? CreateLibrary(TargetLibrary targetLibrary, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
         {
-            string nameWithVersion = targetLibrary.Name;
+            string? nameWithVersion = targetLibrary.Name;
 
-            if (libraryStubs == null || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
+            if (libraryStubs == null || string.IsNullOrEmpty(nameWithVersion) || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
             {
                 throw new InvalidOperationException(SR.Format(SR.LibraryInformationNotFound, nameWithVersion));
             }
@@ -804,11 +819,11 @@ namespace Microsoft.Extensions.DependencyModel
 
         private sealed class Target
         {
-            public string Name;
+            public string? Name;
 
             public IEnumerable<TargetLibrary> Libraries;
 
-            public Target(string name, IEnumerable<TargetLibrary> libraries)
+            public Target(string? name, IEnumerable<TargetLibrary> libraries)
             {
                 Name = name;
                 Libraries = libraries;
@@ -817,7 +832,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private struct TargetLibrary
         {
-            public string Name;
+            public string? Name;
 
             public IEnumerable<Dependency> Dependencies;
 
@@ -838,7 +853,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             public string? Type;
 
-            public string Path;
+            public string? Path;
 
             public string? Rid;
 
