@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class ResourceAssembly
     {
-        public ResourceAssembly(string path, string locale)
+        public ResourceAssembly(string? path, string locale)
         {
             if (string.IsNullOrEmpty(path))
             {
