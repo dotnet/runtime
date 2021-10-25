@@ -14,10 +14,8 @@ namespace System.Threading.Tests
     public class MutexTests : FileCleanupTestBase
     {
         [Fact]
-        public void BasicFunctionalityTest()
+        public void ConstructorAndDisposeTest()
         {
-            // Constructor and dispose
-
             var m = new Mutex();
             Assert.True(m.WaitOne(0));
             m.ReleaseMutex();
@@ -28,21 +26,25 @@ namespace System.Threading.Tests
             m = new Mutex(false);
             Assert.True(m.WaitOne(0));
             m.ReleaseMutex();
+            m.Dispose();
 
             m = new Mutex(true);
             Assert.True(m.WaitOne(0));
             m.ReleaseMutex();
             m.ReleaseMutex();
+            m.Dispose();
 
             m = new Mutex(true);
             Assert.True(m.WaitOne(0));
             m.Dispose();
             Assert.Throws<ObjectDisposedException>(() => m.ReleaseMutex());
             Assert.Throws<ObjectDisposedException>(() => m.WaitOne(0));
+        }
 
-            // Acquire and release
-
-            m = new Mutex();
+        [Fact]
+        public void AcquireAndReleaseTest()
+        {
+            var m = new Mutex();
             Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
             Assert.True(m.WaitOne(0));
             m.ReleaseMutex();
@@ -54,9 +56,12 @@ namespace System.Threading.Tests
             m.ReleaseMutex();
             m.ReleaseMutex();
             Assert.Throws<ApplicationException>(() => m.ReleaseMutex());
+        }
 
-            // Wait
-
+        [Fact]
+        public void WaitTest()
+        {
+            var m = new Mutex();
             m.CheckedWait();
             m.CheckedWait();
             m.ReleaseMutex();
@@ -65,10 +70,11 @@ namespace System.Threading.Tests
             Assert.True(m.WaitOne());
             m.ReleaseMutex();
             m.ReleaseMutex();
+        }
 
-            m = null;
-
-            // Multi-wait with all indexes unlocked
+        [Fact]
+        public void MultiWaitWithAllIndexesUnlockedTest()
+        {
             var ms =
                 new Mutex[]
                 {
@@ -110,10 +116,19 @@ namespace System.Threading.Tests
             {
                 ms[i].ReleaseMutex();
             }
+        }
 
-            // Multi-wait with indexes 0 and 3 locked
-            ms[0].WaitOne(0);
-            ms[3].WaitOne(0);
+        [Fact]
+        public void MultiWaitWithOuterIndexesLockedTest()
+        {
+            var ms =
+                new Mutex[]
+                {
+                    new Mutex(true),
+                    new Mutex(),
+                    new Mutex(),
+                    new Mutex(true)
+                };
             Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
             ms[0].ReleaseMutex();
             Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
@@ -145,12 +160,19 @@ namespace System.Threading.Tests
             Assert.Throws<ApplicationException>(() => ms[1].ReleaseMutex());
             Assert.Throws<ApplicationException>(() => ms[2].ReleaseMutex());
             ms[3].ReleaseMutex();
+        }
 
-            // Multi-wait with all indexes locked
-            for (int i = 0; i < ms.Length; ++i)
-            {
-                Assert.True(ms[i].WaitOne(0));
-            }
+        [Fact]
+        public void MultiWaitWithAllIndexesLockedTest()
+        {
+            var ms =
+                new Mutex[]
+                {
+                    new Mutex(true),
+                    new Mutex(true),
+                    new Mutex(true),
+                    new Mutex(true)
+                };
             Assert.Equal(0, WaitHandle.WaitAny(ms, 0));
             ms[0].ReleaseMutex();
             Assert.Equal(0, WaitHandle.WaitAny(ms, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));

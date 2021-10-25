@@ -9,10 +9,8 @@ namespace System.Threading.Tests
     public class ManualResetEventTests
     {
         [Fact]
-        public void BasicFunctionalityTest()
+        public void ConstructorAndDisposeTest()
         {
-            // Constructor and dispose
-
             var e = new ManualResetEvent(false);
             Assert.False(e.WaitOne(0));
             e.Dispose();
@@ -22,10 +20,13 @@ namespace System.Threading.Tests
 
             e = new ManualResetEvent(true);
             Assert.True(e.WaitOne(0));
+            e.Dispose();
+        }
 
-            // Set and reset
-
-            e = new ManualResetEvent(true);
+        [Fact]
+        public void SetAndResetTest()
+        {
+            var e = new ManualResetEvent(true);
             e.Reset();
             Assert.False(e.WaitOne(0));
             Assert.False(e.WaitOne(0));
@@ -36,19 +37,22 @@ namespace System.Threading.Tests
             Assert.True(e.WaitOne(0));
             e.Set();
             Assert.True(e.WaitOne(0));
+        }
 
-            // Wait
-
-            e.Set();
+        [Fact]
+        public void WaitTest()
+        {
+            var e = new ManualResetEvent(true);
             e.CheckedWait();
             e.CheckedWait();
 
             e.Reset();
             Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+        }
 
-            e = null;
-
-            // Multi-wait with all indexes set
+        [Fact]
+        public void MultiWaitWithAllIndexesSetTest()
+        {
             var es =
                 new ManualResetEvent[]
                 {
@@ -67,10 +71,19 @@ namespace System.Threading.Tests
             {
                 Assert.True(es[i].WaitOne(0));
             }
+        }
 
-            // Multi-wait with indexes 1 and 2 set
-            es[0].Reset();
-            es[3].Reset();
+        [Fact]
+        public void MultiWaitWithInnerIndexesSetTest()
+        {
+            var es =
+                new ManualResetEvent[]
+                {
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(true),
+                    new ManualResetEvent(false)
+                };
             Assert.Equal(1, WaitHandle.WaitAny(es, 0));
             Assert.Equal(1, WaitHandle.WaitAny(es, ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(es, 0));
@@ -79,10 +92,19 @@ namespace System.Threading.Tests
             {
                 Assert.Equal(i == 1 || i == 2, es[i].WaitOne(0));
             }
+        }
 
-            // Multi-wait with all indexes reset
-            es[1].Reset();
-            es[2].Reset();
+        [Fact]
+        public void MultiWaitWithAllIndexesResetTest()
+        {
+            var es =
+                new ManualResetEvent[]
+                {
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(false),
+                    new ManualResetEvent(false)
+                };
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, 0));
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(es, 0));

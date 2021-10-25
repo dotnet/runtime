@@ -14,10 +14,8 @@ namespace System.Threading.Tests
         private const int FailedWaitTimeout = 30000;
 
         [Fact]
-        public void BasicFunctionalityTest()
+        public void ConstructorAndDisposeTest()
         {
-            // Constructor and dispose
-
             var s = new Semaphore(0, 1);
             Assert.False(s.WaitOne(0));
             s.Dispose();
@@ -26,9 +24,13 @@ namespace System.Threading.Tests
 
             s = new Semaphore(1, 1);
             Assert.True(s.WaitOne(0));
+            s.Dispose();
+        }
 
-            // Signal and unsignal
-
+        [Fact]
+        public void SignalAndUnsignalTest()
+        {
+            var s = new Semaphore(0, 1);
             Assert.Throws<ArgumentOutOfRangeException>(() => s.Release(0));
 
             s = new Semaphore(1, 1);
@@ -49,10 +51,12 @@ namespace System.Threading.Tests
             Assert.Throws<SemaphoreFullException>(() => s.Release(3));
             Assert.Equal(0, s.Release(2));
             Assert.Throws<SemaphoreFullException>(() => s.Release());
+        }
 
-            // Wait
-
-            s = new Semaphore(1, 2);
+        [Fact]
+        public void WaitTest()
+        {
+            var s = new Semaphore(1, 2);
             s.CheckedWait();
             Assert.False(s.WaitOne(0));
             s.Release();
@@ -65,10 +69,11 @@ namespace System.Threading.Tests
 
             s = new Semaphore(0, 2);
             Assert.False(s.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+        }
 
-            s = null;
-
-            // Multi-wait with all indexes signaled
+        [Fact]
+        public void MultiWaitWithAllIndexesSignaledTest()
+        {
             var ss =
                 new Semaphore[]
                 {
@@ -112,10 +117,19 @@ namespace System.Threading.Tests
             {
                 Assert.False(ss[i].WaitOne(0));
             }
+        }
 
-            // Multi-wait with indexes 1 and 2 signaled
-            ss[1].Release();
-            ss[2].Release();
+        [Fact]
+        public void MultiWaitWithInnerIndexesSignaled()
+        {
+            var ss =
+                new Semaphore[]
+                {
+                    new Semaphore(0, 1),
+                    new Semaphore(1, 1),
+                    new Semaphore(1, 1),
+                    new Semaphore(0, 1)
+                };
             Assert.Equal(1, WaitHandle.WaitAny(ss, 0));
             for (int i = 0; i < ss.Length; ++i)
             {
@@ -136,8 +150,19 @@ namespace System.Threading.Tests
             {
                 Assert.Equal(i == 1 || i == 2, ss[i].WaitOne(0));
             }
+        }
 
-            // Multi-wait with all indexes unsignaled
+        [Fact]
+        public void MultiWaitWithAllIndexesUnsignaled()
+        {
+            var ss =
+                new Semaphore[]
+                {
+                    new Semaphore(0, 1),
+                    new Semaphore(0, 1),
+                    new Semaphore(0, 1),
+                    new Semaphore(0, 1)
+                };
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, 0));
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(ss, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(ss, 0));

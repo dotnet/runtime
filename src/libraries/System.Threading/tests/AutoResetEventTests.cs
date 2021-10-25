@@ -9,10 +9,8 @@ namespace System.Threading.Tests
     public class AutoResetEventTests
     {
         [Fact]
-        public void BasicFunctionalityTest()
+        public void ConstructorAndDisposeTest()
         {
-            // Constructor and dispose
-
             var e = new AutoResetEvent(false);
             Assert.False(e.WaitOne(0));
             e.Dispose();
@@ -22,10 +20,13 @@ namespace System.Threading.Tests
 
             e = new AutoResetEvent(true);
             Assert.True(e.WaitOne(0));
+            e.Dispose();
+        }
 
-            // Set and reset
-
-            e = new AutoResetEvent(true);
+        [Fact]
+        public void SetAndResetTest()
+        {
+            var e = new AutoResetEvent(true);
             e.Reset();
             Assert.False(e.WaitOne(0));
             Assert.False(e.WaitOne(0));
@@ -37,10 +38,12 @@ namespace System.Threading.Tests
             e.Set();
             e.Set();
             Assert.True(e.WaitOne(0));
+        }
 
-            // Wait
-
-            e.Set();
+        [Fact]
+        public void WaitTest()
+        {
+            var e = new AutoResetEvent(true);
             e.CheckedWait();
             Assert.False(e.WaitOne(0));
             e.Set();
@@ -49,10 +52,11 @@ namespace System.Threading.Tests
 
             e.Reset();
             Assert.False(e.WaitOne(ThreadTestHelpers.ExpectedTimeoutMilliseconds));
+        }
 
-            e = null;
-
-            // Multi-wait with all indexes set
+        [Fact]
+        public void MultiWaitWithAllIndexesSetTest()
+        {
             var es =
                 new AutoResetEvent[]
                 {
@@ -96,10 +100,19 @@ namespace System.Threading.Tests
             {
                 Assert.False(es[i].WaitOne(0));
             }
+        }
 
-            // Multi-wait with indexes 1 and 2 set
-            es[1].Set();
-            es[2].Set();
+        [Fact]
+        public void MultiWaitWithInnerIndexesSetTest()
+        {
+            var es =
+                new AutoResetEvent[]
+                {
+                    new AutoResetEvent(false),
+                    new AutoResetEvent(true),
+                    new AutoResetEvent(true),
+                    new AutoResetEvent(false)
+                };
             Assert.Equal(1, WaitHandle.WaitAny(es, 0));
             for (int i = 0; i < es.Length; ++i)
             {
@@ -120,8 +133,19 @@ namespace System.Threading.Tests
             {
                 Assert.Equal(i == 1 || i == 2, es[i].WaitOne(0));
             }
+        }
 
-            // Multi-wait with all indexes reset
+        [Fact]
+        public void MultiWaitWithAllIndexesResetTest()
+        {
+            var es =
+                new AutoResetEvent[]
+                {
+                    new AutoResetEvent(false),
+                    new AutoResetEvent(false),
+                    new AutoResetEvent(false),
+                    new AutoResetEvent(false)
+                };
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, 0));
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(es, ThreadTestHelpers.ExpectedTimeoutMilliseconds));
             Assert.False(WaitHandle.WaitAll(es, 0));
