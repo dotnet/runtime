@@ -4,32 +4,44 @@
 using System;
 using System.Runtime.InteropServices;
 using TestLibrary;
+using FactAttribute = Xunit.FactAttribute;
+
+namespace Xunit
+{
+    [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+    public class SkipOnPlatformAttribute : Attribute
+    {
+        internal SkipOnPlatformAttribute() { }
+        public SkipOnPlatformAttribute(TestPlatforms testPlatforms, string reason) { }
+    }
+
+    [Flags]
+    public enum TestPlatforms
+    {
+        Windows = 1,
+        Linux = 2,
+        OSX = 4,
+        FreeBSD = 8,
+        NetBSD = 16,
+        illumos= 32,
+        Solaris = 64,
+        iOS = 128,
+        tvOS = 256,
+        Android = 512,
+        Browser = 1024,
+        MacCatalyst = 2048,
+        AnyUnix = FreeBSD | Linux | NetBSD | OSX | illumos | Solaris | iOS | tvOS | MacCatalyst | Android | Browser,
+        Any = ~0
+    }
+}
 
 public class DecimalTest
 {
     private const int StartingIntValue = 42;
     private const int NewIntValue = 18;
 
-    public static int Main()
-    {
-        try
-        {
-            RunDecimalTests();
-            RunLPDecimalTests();
-            if (OperatingSystem.IsWindows())
-            {
-                RunCurrencyTests();
-            }
-        }
-        catch (System.Exception ex)
-        {
-            Console.WriteLine(ex.ToString());
-            return 101;
-        }
-        return 100;
-    }
-
-    private static void RunDecimalTests()
+    [Fact]
+    public static void RunDecimalTests()
     {
         Assert.AreEqual((decimal)StartingIntValue, DecimalTestNative.CreateDecimalFromInt(StartingIntValue));
 
@@ -41,7 +53,7 @@ public class DecimalTest
 
         DecimalTestNative.GetDecimalForInt(NewIntValue, out var dec);
         Assert.AreEqual((decimal)NewIntValue, dec);
-        
+
         Assert.AreEqual((decimal)StartingIntValue, DecimalTestNative.CreateWrappedDecimalFromInt(StartingIntValue).dec);
 
         Assert.IsTrue(DecimalTestNative.WrappedDecimalEqualToInt(new DecimalTestNative.DecimalWrapper { dec = (decimal)StartingIntValue }, StartingIntValue));
@@ -53,10 +65,11 @@ public class DecimalTest
         DecimalTestNative.GetWrappedDecimalForInt(NewIntValue, out var decWrapper);
         Assert.AreEqual((decimal)NewIntValue, decWrapper.dec);
 
-        DecimalTestNative.PassThroughDecimalToCallback((decimal)NewIntValue, d => Assert.AreEqual((decimal)NewIntValue, d));  
+        DecimalTestNative.PassThroughDecimalToCallback((decimal)NewIntValue, d => Assert.AreEqual((decimal)NewIntValue, d));
     }
 
-    private static void RunLPDecimalTests()
+    [Fact]
+    public static void RunLPDecimalTests()
     {
         Assert.AreEqual((decimal)StartingIntValue, DecimalTestNative.CreateLPDecimalFromInt(StartingIntValue));
 
@@ -72,8 +85,10 @@ public class DecimalTest
         DecimalTestNative.PassThroughLPDecimalToCallback((decimal)NewIntValue, d => Assert.AreEqual((decimal)NewIntValue, d));
     }
 
-    private static void RunCurrencyTests()
-    {        
+    [Fact]
+    [Xunit.SkipOnPlatform(~Xunit.TestPlatforms.Windows, "OLE Currency type is Windows-only")]
+    public static void RunCurrencyTests()
+    {
         Assert.Throws<MarshalDirectiveException>(() => DecimalTestNative.CreateCurrencyFromInt(StartingIntValue));
 
         Assert.IsTrue(DecimalTestNative.CurrencyEqualToInt((decimal)StartingIntValue, StartingIntValue));
@@ -84,7 +99,7 @@ public class DecimalTest
 
         DecimalTestNative.GetCurrencyForInt(NewIntValue, out var cy);
         Assert.AreEqual((decimal)NewIntValue, cy);
-        
+
         Assert.AreEqual((decimal)StartingIntValue, DecimalTestNative.CreateWrappedCurrencyFromInt(StartingIntValue).currency);
 
         Assert.IsTrue(DecimalTestNative.WrappedCurrencyEqualToInt(new DecimalTestNative.CurrencyWrapper { currency = (decimal)StartingIntValue }, StartingIntValue));
@@ -94,8 +109,8 @@ public class DecimalTest
         Assert.AreEqual((decimal)NewIntValue, localCurrencyWrapper.currency);
 
         DecimalTestNative.GetWrappedCurrencyForInt(NewIntValue, out var currencyWrapper);
-        Assert.AreEqual((decimal)NewIntValue, currencyWrapper.currency);      
-        
+        Assert.AreEqual((decimal)NewIntValue, currencyWrapper.currency);
+
         DecimalTestNative.PassThroughCurrencyToCallback((decimal)NewIntValue, d => Assert.AreEqual((decimal)NewIntValue, d));
     }
 }

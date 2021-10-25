@@ -7,5 +7,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />
+    <ProjectReference Include="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <Import Project="$(RepoRoot)/src/tests/Common/XUnitWrapperGenerator/XUnitWrapperGenerator.props" />
 </Project>

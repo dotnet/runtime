@@ -1,0 +1,8 @@
+﻿<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="RuntimeFlavor" />
+    <CompilerVisibleProperty Include="TargetOS" />
+    <CompilerVisibleProperty Include="TargetArchitecture" />
+    <CompilerVisibleProperty Include="Priority" />
+  </ItemGroup>
+</Project>
