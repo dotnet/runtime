@@ -105,7 +105,7 @@ namespace System.DirectoryServices
         private unsafe byte[] RetrieveDirectorySynchronizationCookie()
         {
             if (_disposed)
-                    throw new ObjectDisposedException(GetType().Name);
+                throw new ObjectDisposedException(GetType().Name);
 
             // get the dirsync cookie back
             AdsSearchColumn column = default;

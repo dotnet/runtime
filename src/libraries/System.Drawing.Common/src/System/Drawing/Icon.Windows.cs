@@ -213,7 +213,6 @@ namespace System.Drawing
                 {
                     throw new ObjectDisposedException(GetType().Name);
                 }
-
                 return _handle;
             }
         }
