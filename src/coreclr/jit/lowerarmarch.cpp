@@ -277,25 +277,6 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
     return mul->gtNext;
 }
 
-// LowerBinaryArithmetic: lowers the given binary arithmetic node.
-//
-// Currently only performs containment checks.
-//
-// TODO-CQ-ARMArch: take advantage of "madd" and "msub" here.
-//
-// Arguments:
-//    node - the arithmetic node to lower
-//
-// Returns:
-//    The next node to lower.
-//
-GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* node)
-{
-    ContainCheckBinary(node);
-
-    return node->gtNext;
-}
-
 //------------------------------------------------------------------------
 // LowerBlockStore: Lower a block store node
 //

@@ -139,7 +139,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            return LowerBinaryArithmeticCommon(node->AsOp());
+            return LowerBinaryArithmetic(node->AsOp());
 
         case GT_MUL:
         case GT_MULHI:
@@ -5098,11 +5098,10 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerBinaryArithmeticCommon: lowers the given binary arithmetic node.
+// LowerBinaryArithmetic: lowers the given binary arithmetic node.
 //
 // Recognizes opportunities for using target-independent "combined" nodes
-// (currently AND_NOT on ARMArch). Calls the target-specific "LowerBinaryArithmetic"
-// method, which checks for more nodes and containment.
+// (currently AND_NOT on ARMArch). Performs containment checks.
 //
 // Arguments:
 //    node - the arithmetic node to lower
@@ -5110,7 +5109,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 // Returns:
 //    The next node to lower.
 //
-GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* node)
+GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* node)
 {
     // TODO-CQ-XArch: support BMI2 "andn" in codegen and condition
     // this logic on the support for the instruction set on XArch.
@@ -5142,7 +5141,9 @@ GenTree* Lowering::LowerBinaryArithmeticCommon(GenTreeOp* node)
     }
 #endif // TARGET_ARMARCH
 
-    return LowerBinaryArithmetic(node);
+    ContainCheckBinary(node);
+
+    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
