@@ -2660,6 +2660,11 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                 break;
 
             case CEE_TAILCALL:
+                if (impGetNonPrefixOpcode(codeAddr + sizeof(mdToken) + 1, codeAddr + sizeof(mdToken) + 2) == CEE_POP)
+                {
+                    opcode = CEE_NOP;
+                    break;
+                }
                 if (compIsForInlining())
                 {
                     // TODO-CQ: We can inline some callees with explicit tail calls if we can guarantee that the calls

@@ -6773,8 +6773,18 @@ bool Compiler::fgCanFastTailCall(GenTreeCall* callee, const char** failReason)
         // Otherwise go the slow route.
         if (info.compRetBuffArg == BAD_VAR_NUM)
         {
-            reportFastTailCallDecision("Callee has RetBuf but caller does not.");
-            return false;
+            if ((info.compRetType == TYP_VOID) &&
+                (callee->gtRetClsHnd != NO_CLASS_HANDLE) &&
+                info.compCompHnd->isValueClass(callee->gtRetClsHnd) &&
+                (info.compCompHnd->getClassSize(callee->gtRetClsHnd) <= TARGET_POINTER_SIZE)) // we can allow more depending on ABI
+            {
+                // Allow tailcalls for small buffers
+            }
+            else
+            {
+                reportFastTailCallDecision("Callee has RetBuf but caller does not.");
+                return false;
+            }
         }
     }
 
@@ -7231,7 +7241,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
                 }
-                else
+                else if (info.compRetType != TYP_VOID)
                 {
                     failTailCall("Local address taken", varNum);
                     return nullptr;
@@ -17996,7 +18006,11 @@ bool Compiler::fgCheckStmtAfterTailCall()
             // where lclVar was return buffer in the call for structs or simd.
             Statement* retStmt = nextMorphStmt;
             GenTree*   retExpr = retStmt->GetRootNode();
-            noway_assert(retExpr->gtOper == GT_RETURN);
+
+            if (retExpr->gtOper != GT_RETURN)
+            {
+                return true;
+            }
 
             nextMorphStmt = retStmt->GetNextStmt();
         }
@@ -18051,13 +18065,19 @@ bool Compiler::fgCheckStmtAfterTailCall()
                 noway_assert(retExpr->gtOper == GT_RETURN);
 
                 GenTree* treeWithLcl = retExpr->gtGetOp1();
-                while (treeWithLcl->gtOper == GT_CAST)
+                if (treeWithLcl != nullptr)
                 {
-                    noway_assert(!treeWithLcl->gtOverflow());
-                    treeWithLcl = treeWithLcl->gtGetOp1();
+                    while (treeWithLcl->gtOper == GT_CAST)
+                    {
+                        noway_assert(!treeWithLcl->gtOverflow());
+                        treeWithLcl = treeWithLcl->gtGetOp1();
+                    }
+                    noway_assert(callResultLclNumber == treeWithLcl->AsLclVarCommon()->GetLclNum());
                 }
-
-                noway_assert(callResultLclNumber == treeWithLcl->AsLclVarCommon()->GetLclNum());
+                else
+                {
+                    assert(retExpr->TypeIs(TYP_VOID));
+                }
 
                 nextMorphStmt = retStmt->GetNextStmt();
             }
