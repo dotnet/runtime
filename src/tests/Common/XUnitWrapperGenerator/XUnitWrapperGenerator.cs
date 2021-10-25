@@ -190,7 +190,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
-        else if (skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
+        else if ((string.IsNullOrEmpty(runtimeFlavor) || runtimeFlavor == "CoreCLR") && skippedRuntimes.HasFlag(Xunit.TestRuntimes.CoreCLR))
         {
             return ImmutableArray<ITestInfo>.Empty;
         }
