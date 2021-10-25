@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Ole32
     {
-        [DllImport(Libraries.Ole32)]
-        internal static extern int CoGetObjectContext([MarshalAs(UnmanagedType.LPStruct)] Guid riid, out IntPtr ppv);
+        [DllImport(Libraries.Ole32, PreserveSig = false)]
+        internal static extern IStream CreateStreamOnHGlobal(IntPtr hGlobal, bool fDeleteOnRelease);
     }
 }

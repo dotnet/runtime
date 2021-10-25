@@ -39,7 +39,7 @@ namespace System.Net.Http.Json
         /// Based on <see cref="JsonContent.SerializeToStreamAsyncCore(Stream, bool, CancellationToken)"/>.
         /// The difference is that this implementation calls overloads of <see cref="JsonSerializer"/> that take type metadata directly.
         /// This is done to avoid rooting unused, built-in <see cref="System.Text.Json.Serialization.JsonConverter"/>s and reflection-based
-        /// warm-up logic (to reduce app size and be ILLinker-friendly), post ILLinker trimming.
+        /// warm-up logic (to reduce app size and be trim-friendly), post trimming.
         /// </summary>
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
@@ -58,10 +58,7 @@ namespace System.Net.Http.Json
                     }
                     else
                     {
-                        // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                        // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                        using var writer = new Utf8JsonWriter(transcodingStream);
-                        JsonSerializer.Serialize(writer, _typedValue, _typeInfo);
+                        JsonSerializer.Serialize(transcodingStream, _typedValue, _typeInfo);
                     }
                 }
                 finally
@@ -99,10 +96,7 @@ namespace System.Net.Http.Json
                 else
                 {
 #if NETCOREAPP
-                    // Have to use Utf8JsonWriter because JsonSerializer doesn't support sync serialization into stream directly.
-                    // ToDo: Remove Utf8JsonWriter usage after https://github.com/dotnet/runtime/issues/1574
-                    using var writer = new Utf8JsonWriter(targetStream);
-                    JsonSerializer.Serialize(writer, _typedValue, _typeInfo);
+                    JsonSerializer.Serialize(targetStream, _typedValue, _typeInfo);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif

@@ -100,7 +100,7 @@ namespace System.Buffers.Text
                     maxSrcLength = (destLength / 3) * 4;
                 }
 
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(s_decodingMap);
+                ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
                 srcMax = srcBytes + (uint)maxSrcLength;
 
                 while (src < srcMax)
@@ -275,7 +275,7 @@ namespace System.Buffers.Text
                 if (bufferLength == 0)
                     goto DoneExit;
 
-                ref sbyte decodingMap = ref MemoryMarshal.GetReference(s_decodingMap);
+                ref sbyte decodingMap = ref MemoryMarshal.GetReference(DecodingMap);
 
                 while (sourceIndex < bufferLength - 4)
                 {
@@ -362,14 +362,59 @@ namespace System.Buffers.Text
             // See SSSE3-version below for an explanation of how the code works.
 
             // The JIT won't hoist these "constants", so help it
-            Vector256<sbyte> lutHi = ReadVector<Vector256<sbyte>>(s_avxDecodeLutHi);
-            Vector256<sbyte> lutLo = ReadVector<Vector256<sbyte>>(s_avxDecodeLutLo);
-            Vector256<sbyte> lutShift = ReadVector<Vector256<sbyte>>(s_avxDecodeLutShift);
+            Vector256<sbyte> lutHi = Vector256.Create(
+                0x10, 0x10, 0x01, 0x02,
+                0x04, 0x08, 0x04, 0x08,
+                0x10, 0x10, 0x10, 0x10,
+                0x10, 0x10, 0x10, 0x10,
+                0x10, 0x10, 0x01, 0x02,
+                0x04, 0x08, 0x04, 0x08,
+                0x10, 0x10, 0x10, 0x10,
+                0x10, 0x10, 0x10, 0x10);
+
+            Vector256<sbyte> lutLo = Vector256.Create(
+                0x15, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x13, 0x1A,
+                0x1B, 0x1B, 0x1B, 0x1A,
+                0x15, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x13, 0x1A,
+                0x1B, 0x1B, 0x1B, 0x1A);
+
+            Vector256<sbyte> lutShift = Vector256.Create(
+                 0, 16, 19, 4,
+                -65, -65, -71, -71,
+                0, 0, 0, 0,
+                0, 0, 0, 0,
+                0, 16, 19, 4,
+                -65, -65, -71, -71,
+                0, 0, 0, 0,
+                0, 0, 0, 0);
+
+            Vector256<sbyte> packBytesInLaneMask = Vector256.Create(
+                2, 1, 0, 6,
+                5, 4, 10, 9,
+                8, 14, 13, 12,
+                -1, -1, -1, -1,
+                2, 1, 0, 6,
+                5, 4, 10, 9,
+                8, 14, 13, 12,
+                -1, -1, -1, -1);
+
+            Vector256<int> packLanesControl = Vector256.Create(
+                 0, 0, 0, 0,
+                1, 0, 0, 0,
+                2, 0, 0, 0,
+                4, 0, 0, 0,
+                5, 0, 0, 0,
+                6, 0, 0, 0,
+                -1, -1, -1, -1,
+                -1, -1, -1, -1).AsInt32();
+
             Vector256<sbyte> mask2F = Vector256.Create((sbyte)'/');
             Vector256<sbyte> mergeConstant0 = Vector256.Create(0x01400140).AsSByte();
             Vector256<short> mergeConstant1 = Vector256.Create(0x00011000).AsInt16();
-            Vector256<sbyte> packBytesInLaneMask = ReadVector<Vector256<sbyte>>(s_avxDecodePackBytesInLaneMask);
-            Vector256<int> packLanesControl = ReadVector<Vector256<sbyte>>(s_avxDecodePackLanesControl).AsInt32();
 
             byte* src = srcBytes;
             byte* dest = destBytes;
@@ -508,13 +553,33 @@ namespace System.Buffers.Text
             // 1111 0x10 andlut     0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10
 
             // The JIT won't hoist these "constants", so help it
-            Vector128<sbyte> lutHi = ReadVector<Vector128<sbyte>>(s_sseDecodeLutHi);
-            Vector128<sbyte> lutLo = ReadVector<Vector128<sbyte>>(s_sseDecodeLutLo);
-            Vector128<sbyte> lutShift = ReadVector<Vector128<sbyte>>(s_sseDecodeLutShift);
+            Vector128<sbyte> lutHi = Vector128.Create(
+                0x10, 0x10, 0x01, 0x02,
+                0x04, 0x08, 0x04, 0x08,
+                0x10, 0x10, 0x10, 0x10,
+                0x10, 0x10, 0x10, 0x10);
+
+            Vector128<sbyte> lutLo = Vector128.Create(
+                0x15, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x11, 0x11,
+                0x11, 0x11, 0x13, 0x1A,
+                0x1B, 0x1B, 0x1B, 0x1A);
+
+            Vector128<sbyte> lutShift = Vector128.Create(
+                0, 16, 19, 4,
+                -65, -65, -71, -71,
+                0, 0, 0, 0,
+                0, 0, 0, 0);
+
+            Vector128<sbyte> packBytesMask = Vector128.Create(
+                2, 1, 0, 6,
+                5, 4, 10, 9,
+                8, 14, 13, 12,
+                -1, -1, -1, -1);
+
             Vector128<sbyte> mask2F = Vector128.Create((sbyte)'/');
             Vector128<sbyte> mergeConstant0 = Vector128.Create(0x01400140).AsSByte();
             Vector128<short> mergeConstant1 = Vector128.Create(0x00011000).AsInt16();
-            Vector128<sbyte> packBytesMask = ReadVector<Vector128<sbyte>>(s_sseDecodePackBytesMask);
             Vector128<sbyte> zero = Vector128<sbyte>.Zero;
 
             byte* src = srcBytes;
@@ -613,7 +678,7 @@ namespace System.Buffers.Text
         }
 
         // Pre-computing this table using a custom string(s_characters) and GenerateDecodingMapAndVerify (found in tests)
-        private static ReadOnlySpan<sbyte> s_decodingMap => new sbyte[] {
+        private static ReadOnlySpan<sbyte> DecodingMap => new sbyte[] {
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,         //62 is placed at index 43 (for +), 63 at index 47 (for /)
@@ -630,89 +695,6 @@ namespace System.Buffers.Text
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodePackBytesMask => new sbyte[] {
-            2, 1, 0, 6,
-            5, 4, 10, 9,
-            8, 14, 13, 12,
-            -1, -1, -1, -1
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodeLutLo => new sbyte[] {
-            0x15, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x13, 0x1A,
-            0x1B, 0x1B, 0x1B, 0x1A
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodeLutHi => new sbyte[] {
-            0x10, 0x10, 0x01, 0x02,
-            0x04, 0x08, 0x04, 0x08,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x10, 0x10
-        };
-
-        private static ReadOnlySpan<sbyte> s_sseDecodeLutShift => new sbyte[] {
-            0, 16, 19, 4,
-            -65, -65, -71, -71,
-            0, 0, 0, 0,
-            0, 0, 0, 0
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodePackBytesInLaneMask => new sbyte[] {
-            2, 1, 0, 6,
-            5, 4, 10, 9,
-            8, 14, 13, 12,
-            -1, -1, -1, -1,
-            2, 1, 0, 6,
-            5, 4, 10, 9,
-            8, 14, 13, 12,
-            -1, -1, -1, -1
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodePackLanesControl => new sbyte[] {
-            0, 0, 0, 0,
-            1, 0, 0, 0,
-            2, 0, 0, 0,
-            4, 0, 0, 0,
-            5, 0, 0, 0,
-            6, 0, 0, 0,
-            -1, -1, -1, -1,
-            -1, -1, -1, -1
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodeLutLo => new sbyte[] {
-            0x15, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x13, 0x1A,
-            0x1B, 0x1B, 0x1B, 0x1A,
-            0x15, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x11, 0x11,
-            0x11, 0x11, 0x13, 0x1A,
-            0x1B, 0x1B, 0x1B, 0x1A
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodeLutHi => new sbyte[] {
-            0x10, 0x10, 0x01, 0x02,
-            0x04, 0x08, 0x04, 0x08,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x01, 0x02,
-            0x04, 0x08, 0x04, 0x08,
-            0x10, 0x10, 0x10, 0x10,
-            0x10, 0x10, 0x10, 0x10
-        };
-
-        private static ReadOnlySpan<sbyte> s_avxDecodeLutShift => new sbyte[] {
-            0, 16, 19, 4,
-            -65, -65, -71, -71,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 16, 19, 4,
-            -65, -65, -71, -71,
-            0, 0, 0, 0,
-            0, 0, 0, 0
         };
     }
 }

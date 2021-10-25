@@ -9,51 +9,44 @@
 
 #include <Security/Security.h>
 
-#if !defined(TARGET_MACCATALYST) && !defined(TARGET_IOS) && !defined(TARGET_TVOS)
+enum
+{
+    PAL_SignatureAlgorithm_Unknown = 0,
+    PAL_SignatureAlgorithm_DSA = 1,
+    PAL_SignatureAlgorithm_RSA_Pkcs1 = 2,
+    PAL_SignatureAlgorithm_RSA_Pss = 3,
+    PAL_SignatureAlgorithm_RSA_Raw = 4,
+    PAL_SignatureAlgorithm_EC = 5,
+};
+typedef uint32_t PAL_SignatureAlgorithm;
+
 /*
-Generate a signature for algorithms which require only the data hash blob, like DSA and ECDSA.
+Generate a DSA, RSA or ECDsa signature.
+
+For DSA and ECDsa the hashAlgorithm parameter is ignored and should be set to PAL_Unknown.
 
 Follows pal_seckey return conventions.
 */
-PALEXPORT int32_t AppleCryptoNative_GenerateSignature(
-    SecKeyRef privateKey, uint8_t* pbDataHash, int32_t cbDataHash, CFDataRef* pSignatureOut, CFErrorRef* pErrorOut);
+PALEXPORT int32_t AppleCryptoNative_SecKeyCreateSignature(SecKeyRef privateKey,
+                                                          uint8_t* pbDataHash,
+                                                          int32_t cbDataHash,
+                                                          PAL_HashAlgorithm hashAlgorithm,
+                                                          PAL_SignatureAlgorithm signatureAlgorithm,
+                                                          CFDataRef* pSignatureOut,
+                                                          CFErrorRef* pErrorOut);
 
 /*
-Generate a signature for algorithms which require the pair of (dataHash, algorithmId), like RSA.
+Verify a DSA, RSA or ECDsa signature.
+
+For DSA and ECDsa the hashAlgorithm parameter is ignored and should be set to PAL_Unknown.
 
 Follows pal_seckey return conventions.
 */
-PALEXPORT int32_t AppleCryptoNative_GenerateSignatureWithHashAlgorithm(SecKeyRef privateKey,
-                                                                       uint8_t* pbDataHash,
-                                                                       int32_t cbDataHash,
-                                                                       PAL_HashAlgorithm hashAlgorithm,
-                                                                       CFDataRef* pSignatureOut,
-                                                                       CFErrorRef* pErrorOut);
-
-/*
-Verify a signature for algorithms which only require the data hash blob, like DSA and ECDSA.
-
-Returns 1 when the signature is correct, 0 when it is incorrect, and otherwise
-follows pal_seckey return conventions.
-*/
-PALEXPORT int32_t AppleCryptoNative_VerifySignatureWithHashAlgorithm(SecKeyRef publicKey,
-                                                                     uint8_t* pbDataHash,
-                                                                     int32_t cbDataHash,
-                                                                     uint8_t* pbSignature,
-                                                                     int32_t cbSignature,
-                                                                     PAL_HashAlgorithm hashAlgorithm,
-                                                                     CFErrorRef* pErrorOut);
-
-/*
-Verify a signature for algorithms which require the pair of (dataHash, algorithmId), like RSA.
-
-Returns 1 when the signature is correct, 0 when it is incorrect, and otherwise
-follows pal_seckey return conventions.
-*/
-PALEXPORT int32_t AppleCryptoNative_VerifySignature(SecKeyRef publicKey,
-                                                    uint8_t* pbDataHash,
-                                                    int32_t cbDataHash,
-                                                    uint8_t* pbSignature,
-                                                    int32_t cbSignature,
-                                                    CFErrorRef* pErrorOut);
-#endif
+PALEXPORT int32_t AppleCryptoNative_SecKeyVerifySignature(SecKeyRef publicKey,
+                                                          uint8_t* pbDataHash,
+                                                          int32_t cbDataHash,
+                                                          uint8_t* pbSignature,
+                                                          int32_t cbSignature,
+                                                          PAL_HashAlgorithm hashAlgorithm,
+                                                          PAL_SignatureAlgorithm signatureAlgorithm,
+                                                          CFErrorRef* pErrorOut);

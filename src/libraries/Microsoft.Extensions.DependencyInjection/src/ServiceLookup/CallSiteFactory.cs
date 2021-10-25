@@ -6,27 +6,31 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class CallSiteFactory
+    internal sealed class CallSiteFactory : IServiceProviderIsService
     {
         private const int DefaultSlot = 0;
         private readonly ServiceDescriptor[] _descriptors;
-        private readonly ConcurrentDictionary<Type, ServiceCallSite> _callSiteCache = new ConcurrentDictionary<Type, ServiceCallSite>();
+        private readonly ConcurrentDictionary<ServiceCacheKey, ServiceCallSite> _callSiteCache = new ConcurrentDictionary<ServiceCacheKey, ServiceCallSite>();
         private readonly Dictionary<Type, ServiceDescriptorCacheItem> _descriptorLookup = new Dictionary<Type, ServiceDescriptorCacheItem>();
+        private readonly ConcurrentDictionary<Type, object> _callSiteLocks = new ConcurrentDictionary<Type, object>();
 
         private readonly StackGuard _stackGuard;
 
-        public CallSiteFactory(IEnumerable<ServiceDescriptor> descriptors)
+        public CallSiteFactory(ICollection<ServiceDescriptor> descriptors)
         {
             _stackGuard = new StackGuard();
-            _descriptors = descriptors.ToArray();
+            _descriptors = new ServiceDescriptor[descriptors.Count];
+            descriptors.CopyTo(_descriptors, 0);
+
             Populate();
         }
+
+        internal ServiceDescriptor[] Descriptors => _descriptors;
 
         private void Populate()
         {
@@ -50,10 +54,17 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             SR.Format(SR.TypeCannotBeActivated, implementationType, serviceType));
                     }
 
-                    if (serviceType.GetGenericArguments().Length != implementationType.GetGenericArguments().Length)
+                    Type[] serviceTypeGenericArguments = serviceType.GetGenericArguments();
+                    Type[] implementationTypeGenericArguments = implementationType.GetGenericArguments();
+                    if (serviceTypeGenericArguments.Length != implementationTypeGenericArguments.Length)
                     {
                         throw new ArgumentException(
                             SR.Format(SR.ArityOfOpenGenericServiceNotEqualArityOfOpenGenericImplementation, serviceType, implementationType), "descriptors");
+                    }
+
+                    if (ServiceProvider.VerifyOpenGenericServiceTrimmability)
+                    {
+                        ValidateTrimmingAnnotations(serviceType, serviceTypeGenericArguments, implementationType, implementationTypeGenericArguments);
                     }
                 }
                 else if (descriptor.ImplementationInstance == null && descriptor.ImplementationFactory == null)
@@ -76,8 +87,81 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
+        /// <summary>
+        /// Validates that two generic type definitions have compatible trimming annotations on their generic arguments.
+        /// </summary>
+        /// <remarks>
+        /// When open generic types are used in DI, there is an error when the concrete implementation type
+        /// has [DynamicallyAccessedMembers] attributes on a generic argument type, but the interface/service type
+        /// doesn't have matching annotations. The problem is that the trimmer doesn't see the members that need to
+        /// be preserved on the type being passed to the generic argument. But when the interface/service type also has
+        /// the annotations, the trimmer will see which members need to be preserved on the closed generic argument type.
+        /// </remarks>
+        private static void ValidateTrimmingAnnotations(
+            Type serviceType,
+            Type[] serviceTypeGenericArguments,
+            Type implementationType,
+            Type[] implementationTypeGenericArguments)
+        {
+            Debug.Assert(serviceTypeGenericArguments.Length == implementationTypeGenericArguments.Length);
+
+            for (int i = 0; i < serviceTypeGenericArguments.Length; i++)
+            {
+                Type serviceGenericType = serviceTypeGenericArguments[i];
+                Type implementationGenericType = implementationTypeGenericArguments[i];
+
+                DynamicallyAccessedMemberTypes serviceDynamicallyAccessedMembers = GetDynamicallyAccessedMemberTypes(serviceGenericType);
+                DynamicallyAccessedMemberTypes implementationDynamicallyAccessedMembers = GetDynamicallyAccessedMemberTypes(implementationGenericType);
+
+                if (!AreCompatible(serviceDynamicallyAccessedMembers, implementationDynamicallyAccessedMembers))
+                {
+                    throw new ArgumentException(SR.Format(SR.TrimmingAnnotationsDoNotMatch, implementationType.FullName, serviceType.FullName));
+                }
+
+                bool serviceHasNewConstraint = serviceGenericType.GenericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint);
+                bool implementationHasNewConstraint = implementationGenericType.GenericParameterAttributes.HasFlag(GenericParameterAttributes.DefaultConstructorConstraint);
+                if (implementationHasNewConstraint && !serviceHasNewConstraint)
+                {
+                    throw new ArgumentException(SR.Format(SR.TrimmingAnnotationsDoNotMatch_NewConstraint, implementationType.FullName, serviceType.FullName));
+                }
+            }
+        }
+
+        private static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypes(Type serviceGenericType)
+        {
+            foreach (CustomAttributeData attributeData in serviceGenericType.GetCustomAttributesData())
+            {
+                if (attributeData.AttributeType.FullName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute" &&
+                    attributeData.ConstructorArguments.Count == 1 &&
+                    attributeData.ConstructorArguments[0].ArgumentType.FullName == "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes")
+                {
+                    return (DynamicallyAccessedMemberTypes)(int)attributeData.ConstructorArguments[0].Value;
+                }
+            }
+
+            return DynamicallyAccessedMemberTypes.None;
+        }
+
+        private static bool AreCompatible(DynamicallyAccessedMemberTypes serviceDynamicallyAccessedMembers, DynamicallyAccessedMemberTypes implementationDynamicallyAccessedMembers)
+        {
+            // The DynamicallyAccessedMemberTypes don't need to exactly match.
+            // The service type needs to preserve a superset of the members required by the implementation type.
+            return serviceDynamicallyAccessedMembers.HasFlag(implementationDynamicallyAccessedMembers);
+        }
+
+        // For unit testing
+        internal int? GetSlot(ServiceDescriptor serviceDescriptor)
+        {
+            if (_descriptorLookup.TryGetValue(serviceDescriptor.ServiceType, out ServiceDescriptorCacheItem item))
+            {
+                return item.GetSlot(serviceDescriptor);
+            }
+
+            return null;
+        }
+
         internal ServiceCallSite GetCallSite(Type serviceType, CallSiteChain callSiteChain) =>
-            _callSiteCache.TryGetValue(serviceType, out ServiceCallSite site) ? site :
+            _callSiteCache.TryGetValue(new ServiceCacheKey(serviceType, DefaultSlot), out ServiceCallSite site) ? site :
             CreateCallSite(serviceType, callSiteChain);
 
         internal ServiceCallSite GetCallSite(ServiceDescriptor serviceDescriptor, CallSiteChain callSiteChain)
@@ -98,15 +182,28 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 return _stackGuard.RunOnEmptyStack((type, chain) => CreateCallSite(type, chain), serviceType, callSiteChain);
             }
 
-            callSiteChain.CheckCircularDependency(serviceType);
+            // We need to lock the resolution process for a single service type at a time:
+            // Consider the following:
+            // C -> D -> A
+            // E -> D -> A
+            // Resolving C and E in parallel means that they will be modifying the callsite cache concurrently
+            // to add the entry for C and E, but the resolution of D and A is synchronized
+            // to make sure C and E both reference the same instance of the callsite.
 
-            ServiceCallSite callSite = TryCreateExact(serviceType, callSiteChain) ??
-                                       TryCreateOpenGeneric(serviceType, callSiteChain) ??
-                                       TryCreateEnumerable(serviceType, callSiteChain);
+            // This is to make sure we can safely store singleton values on the callsites themselves
 
-            _callSiteCache[serviceType] = callSite;
+            var callsiteLock = _callSiteLocks.GetOrAdd(serviceType, static _ => new object());
 
-            return callSite;
+            lock (callsiteLock)
+            {
+                callSiteChain.CheckCircularDependency(serviceType);
+
+                ServiceCallSite callSite = TryCreateExact(serviceType, callSiteChain) ??
+                                           TryCreateOpenGeneric(serviceType, callSiteChain) ??
+                                           TryCreateEnumerable(serviceType, callSiteChain);
+
+                return callSite;
+            }
         }
 
         private ServiceCallSite TryCreateExact(Type serviceType, CallSiteChain callSiteChain)
@@ -132,6 +229,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private ServiceCallSite TryCreateEnumerable(Type serviceType, CallSiteChain callSiteChain)
         {
+            ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, DefaultSlot);
+            if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
+            {
+                return serviceCallSite;
+            }
+
             try
             {
                 callSiteChain.Add(serviceType);
@@ -188,10 +291,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ResultCache resultCache = ResultCache.None;
                     if (cacheLocation == CallSiteResultCacheLocation.Scope || cacheLocation == CallSiteResultCacheLocation.Root)
                     {
-                        resultCache = new ResultCache(cacheLocation, new ServiceCacheKey(serviceType, DefaultSlot));
+                        resultCache = new ResultCache(cacheLocation, callSiteKey);
                     }
 
-                    return new IEnumerableCallSite(resultCache, itemType, callSites.ToArray());
+                    return _callSiteCache[callSiteKey] = new IEnumerableCallSite(resultCache, itemType, callSites.ToArray());
                 }
 
                 return null;
@@ -211,6 +314,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (serviceType == descriptor.ServiceType)
             {
+                ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, slot);
+                if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
+                {
+                    return serviceCallSite;
+                }
+
                 ServiceCallSite callSite;
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceType, slot);
                 if (descriptor.ImplementationInstance != null)
@@ -230,17 +339,27 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     throw new InvalidOperationException(SR.InvalidServiceDescriptor);
                 }
 
-                return callSite;
+                return _callSiteCache[callSiteKey] = callSite;
             }
 
             return null;
         }
 
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:MakeGenericType",
+            Justification = "MakeGenericType here is used to create a closed generic implementation type given the closed service type. " +
+            "Trimming annotations on the generic types are verified when 'Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability' is set, which is set by default when PublishTrimmed=true. " +
+            "That check informs developers when these generic types don't have compatible trimming annotations.")]
         private ServiceCallSite TryCreateOpenGeneric(ServiceDescriptor descriptor, Type serviceType, CallSiteChain callSiteChain, int slot, bool throwOnConstraintViolation)
         {
             if (serviceType.IsConstructedGenericType &&
                 serviceType.GetGenericTypeDefinition() == descriptor.ServiceType)
             {
+                ServiceCacheKey callSiteKey = new ServiceCacheKey(serviceType, slot);
+                if (_callSiteCache.TryGetValue(callSiteKey, out ServiceCallSite serviceCallSite))
+                {
+                    return serviceCallSite;
+                }
+
                 Debug.Assert(descriptor.ImplementationType != null, "descriptor.ImplementationType != null");
                 var lifetime = new ResultCache(descriptor.Lifetime, serviceType, slot);
                 Type closedType;
@@ -258,7 +377,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     return null;
                 }
 
-                return CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
+                return _callSiteCache[callSiteKey] = CreateConstructorCallSite(lifetime, serviceType, closedType, callSiteChain);
             }
 
             return null;
@@ -406,7 +525,39 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public void Add(Type type, ServiceCallSite serviceCallSite)
         {
-            _callSiteCache[type] = serviceCallSite;
+            _callSiteCache[new ServiceCacheKey(type, DefaultSlot)] = serviceCallSite;
+        }
+
+        public bool IsService(Type serviceType)
+        {
+            if (serviceType is null)
+            {
+                throw new ArgumentNullException(nameof(serviceType));
+            }
+
+            // Querying for an open generic should return false (they aren't resolvable)
+            if (serviceType.IsGenericTypeDefinition)
+            {
+                return false;
+            }
+
+            if (_descriptorLookup.ContainsKey(serviceType))
+            {
+                return true;
+            }
+
+            if (serviceType.IsConstructedGenericType && serviceType.GetGenericTypeDefinition() is Type genericDefinition)
+            {
+                // We special case IEnumerable since it isn't explicitly registered in the container
+                // yet we can manifest instances of it when requested.
+                return genericDefinition == typeof(IEnumerable<>) || _descriptorLookup.ContainsKey(genericDefinition);
+            }
+
+            // These are the built in service types that aren't part of the list of service descriptors
+            // If you update these make sure to also update the code in ServiceProvider.ctor
+            return serviceType == typeof(IServiceProvider) ||
+                   serviceType == typeof(IServiceScopeFactory) ||
+                   serviceType == typeof(IServiceProviderIsService);
         }
 
         private struct ServiceDescriptorCacheItem
@@ -465,7 +616,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 if (descriptor == _item)
                 {
-                    return 0;
+                    return Count - 1;
                 }
 
                 if (_items != null)
@@ -473,7 +624,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     int index = _items.IndexOf(descriptor);
                     if (index != -1)
                     {
-                        return index + 1;
+                        return _items.Count - (index + 1);
                     }
                 }
 

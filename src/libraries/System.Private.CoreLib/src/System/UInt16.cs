@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -14,6 +15,13 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct UInt16 : IComparable, IConvertible, ISpanFormattable, IComparable<ushort>, IEquatable<ushort>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
+        , IBinaryInteger<ushort>,
+          IMinMaxValue<ushort>,
+          IUnsignedNumber<ushort>
+#pragma warning restore SA1001, CA2252
+#endif // FEATURE_GENERIC_MATH
     {
         private readonly ushort m_value; // Do not rename (binary serialization)
 
@@ -265,5 +273,705 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right)
+            => (ushort)(left + right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right)
+        //     => checked((ushort)(left + right));
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IAdditiveIdentity<ushort, ushort>.AdditiveIdentity => 0;
+
+        //
+        // IBinaryInteger
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBinaryInteger<ushort>.LeadingZeroCount(ushort value)
+            => (ushort)(BitOperations.LeadingZeroCount(value) - 16);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBinaryInteger<ushort>.PopCount(ushort value)
+            => (ushort)BitOperations.PopCount(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBinaryInteger<ushort>.RotateLeft(ushort value, int rotateAmount)
+            => (ushort)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBinaryInteger<ushort>.RotateRight(ushort value, int rotateAmount)
+            => (ushort)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBinaryInteger<ushort>.TrailingZeroCount(ushort value)
+            => (ushort)(BitOperations.TrailingZeroCount(value << 16) - 16);
+
+        //
+        // IBinaryNumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IBinaryNumber<ushort>.IsPow2(ushort value)
+            => BitOperations.IsPow2((uint)value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBinaryNumber<ushort>.Log2(ushort value)
+            => (ushort)BitOperations.Log2(value);
+
+        //
+        // IBitwiseOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right)
+            => (ushort)(left & right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBitwiseOperators<ushort, ushort, ushort>.operator |(ushort left, ushort right)
+            => (ushort)(left | right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBitwiseOperators<ushort, ushort, ushort>.operator ^(ushort left, ushort right)
+            => (ushort)(left ^ right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IBitwiseOperators<ushort, ushort, ushort>.operator ~(ushort value)
+            => (ushort)(~value);
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<ushort, ushort>.operator <(ushort left, ushort right)
+            => left < right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<ushort, ushort>.operator <=(ushort left, ushort right)
+            => left <= right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<ushort, ushort>.operator >(ushort left, ushort right)
+            => left > right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<ushort, ushort>.operator >=(ushort left, ushort right)
+            => left >= right;
+
+        //
+        // IDecrementOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IDecrementOperators<ushort>.operator --(ushort value)
+            => --value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IDecrementOperators<ushort>.operator --(ushort value)
+        //     => checked(--value);
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right)
+            => (ushort)(left / right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IDivisionOperators<ushort, ushort, ushort>.operator /(ushort left, ushort right)
+        //     => checked((ushort)(left / right));
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<ushort, ushort>.operator ==(ushort left, ushort right)
+            => left == right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<ushort, ushort>.operator !=(ushort left, ushort right)
+            => left != right;
+
+        //
+        // IIncrementOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IIncrementOperators<ushort>.operator ++(ushort value)
+            => ++value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IIncrementOperators<ushort>.operator ++(ushort value)
+        //     => checked(++value);
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IMinMaxValue<ushort>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IMinMaxValue<ushort>.MaxValue => MaxValue;
+
+        //
+        // IModulusOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IModulusOperators<ushort, ushort, ushort>.operator %(ushort left, ushort right)
+            => (ushort)(left % right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IModulusOperators<ushort, ushort, ushort>.operator %(ushort left, ushort right)
+        //     => checked((ushort)(left % right));
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IMultiplicativeIdentity<ushort, ushort>.MultiplicativeIdentity => 1;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IMultiplyOperators<ushort, ushort, ushort>.operator *(ushort left, ushort right)
+            => (ushort)(left * right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IMultiplyOperators<ushort, ushort, ushort>.operator *(ushort left, ushort right)
+        //     => checked((ushort)(left * right));
+
+        //
+        // INumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.One => 1;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Zero => 0;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Abs(ushort value)
+            => value;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Clamp(ushort value, ushort min, ushort max)
+            => Math.Clamp(value, min, max);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static ushort INumber<ushort>.Create<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return checked((ushort)(decimal)(object)value);
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return checked((ushort)(double)(object)value);
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return checked((ushort)(short)(object)value);
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return checked((ushort)(int)(object)value);
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return checked((ushort)(long)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return checked((ushort)(nint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return checked((ushort)(sbyte)(object)value);
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return checked((ushort)(float)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return checked((ushort)(uint)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return checked((ushort)(ulong)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return checked((ushort)(nuint)(object)value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static ushort INumber<ushort>.CreateSaturating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                var actualValue = (short)(object)value;
+                return (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                var actualValue = (int)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                var actualValue = (sbyte)(object)value;
+                return (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < 0) ? MinValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (ushort)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (ushort)actualValue;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static ushort INumber<ushort>.CreateTruncating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (ushort)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (ushort)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (ushort)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (ushort)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (ushort)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (ushort)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (ushort)(sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (ushort)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (ushort)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ushort)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (ushort)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static (ushort Quotient, ushort Remainder) INumber<ushort>.DivRem(ushort left, ushort right)
+            => Math.DivRem(left, right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Max(ushort x, ushort y)
+            => Math.Max(x, y);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Min(ushort x, ushort y)
+            => Math.Min(x, y);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort INumber<ushort>.Sign(ushort value)
+            => (ushort)((value == 0) ? 0 : 1);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumber<ushort>.TryCreate<TOther>(TOther value, out ushort result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                var actualValue = (short)(object)value;
+
+                if (actualValue < 0)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                var actualValue = (int)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                var actualValue = (long)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                var actualValue = (nint)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                var actualValue = (sbyte)(object)value;
+
+                if (actualValue < 0)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+
+                if ((actualValue < 0) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                var actualValue = (uint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (ushort)actualValue;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool INumber<ushort>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out ushort result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool INumber<ushort>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out ushort result)
+            => TryParse(s, style, provider, out result);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IParseable<ushort>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IParseable<ushort>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out ushort result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // IShiftOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IShiftOperators<ushort, ushort>.operator <<(ushort value, int shiftAmount)
+            => (ushort)(value << shiftAmount);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IShiftOperators<ushort, ushort>.operator >>(ushort value, int shiftAmount)
+            => (ushort)(value >> shiftAmount);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static ushort IShiftOperators<ushort, ushort>.operator >>>(ushort value, int shiftAmount)
+        //     => (ushort)(value >> shiftAmount);
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort ISpanParseable<ushort>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, NumberStyles.Integer, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool ISpanParseable<ushort>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out ushort result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort ISubtractionOperators<ushort, ushort, ushort>.operator -(ushort left, ushort right)
+            => (ushort)(left - right);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort ISubtractionOperators<ushort, ushort, ushort>.operator -(ushort left, ushort right)
+        //     => checked((ushort)(left - right));
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IUnaryNegationOperators<ushort, ushort>.operator -(ushort value)
+            => (ushort)(-value);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IUnaryNegationOperators<ushort, ushort>.operator -(ushort value)
+        //     => checked((ushort)(-value));
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static ushort IUnaryPlusOperators<ushort, ushort>.operator +(ushort value)
+            => (ushort)(+value);
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked ushort IUnaryPlusOperators<ushort, ushort>.operator +(ushort value)
+        //     => checked((ushort)(+value));
+#endif // FEATURE_GENERIC_MATH
     }
 }

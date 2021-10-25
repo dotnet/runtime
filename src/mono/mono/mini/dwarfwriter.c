@@ -1144,7 +1144,7 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 	int j;
 	const char *tdie;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		if (t->type == MONO_TYPE_VALUETYPE) {
 			tdie = (const char *)g_hash_table_lookup (w->class_to_pointer_die, klass);
 		}
@@ -1203,7 +1203,7 @@ emit_type (MonoDwarfWriter *w, MonoType *t)
 	int j;
 	const char *tdie;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		if (t->type == MONO_TYPE_VALUETYPE) {
 			tdie = emit_class_dwarf_info (w, klass, TRUE);
 			if (tdie)
@@ -1899,7 +1899,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 	g_free (names);
 
 	/* Locals */
-	locals_info = mono_debug_lookup_locals (method, FALSE);
+	locals_info = mono_debug_lookup_locals (method);
 
 	for (i = 0; i < header->num_locals; ++i) {
 		MonoInst *ins = locals [i];

@@ -18,6 +18,7 @@ jobs:
     - Linux_arm
     - Linux_x64
     - Linux_arm64
+    - OSX_arm64
     - OSX_x64
     - windows_x86
     - windows_x64
@@ -45,6 +46,7 @@ jobs:
     - Linux_arm
     - Linux_x64
     - Linux_arm64
+    - OSX_arm64
     - OSX_x64
     - windows_x86
     - windows_x64

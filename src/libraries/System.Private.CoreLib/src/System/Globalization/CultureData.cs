@@ -49,7 +49,6 @@ namespace System.Globalization
         // Identity
         private string? _sName; // locale name (ie: en-us, NO sort info, but could be neutral)
         private string? _sParent; // Parent name (which may be a custom locale/culture)
-        private string? _sLocalizedDisplayName; // Localized pretty name for this locale
         private string? _sEnglishDisplayName; // English pretty name for this locale
         private string? _sNativeDisplayName; // Native pretty name for this locale
         private string? _sSpecificCulture; // The culture name to be used in CultureInfo.CreateSpecificCulture(), en-US form if neutral, sort name if sort
@@ -57,7 +56,6 @@ namespace System.Globalization
         // Language
         private string? _sISO639Language; // ISO 639 Language Name
         private string? _sISO639Language2; // ISO 639 Language Name
-        private string? _sLocalizedLanguage; // Localized name for this language
         private string? _sEnglishLanguage; // English name for this language
         private string? _sNativeLanguage; // Native name of this language
         private string? _sAbbrevLang; // abbreviated language name (Windows Language Name) ex: ENU
@@ -563,7 +561,6 @@ namespace System.Globalization
             // Language
             invariant._sISO639Language = "iv";                   // ISO 639 Language Name
             invariant._sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
-            invariant._sLocalizedLanguage = "Invariant Language";   // Display name for this Language
             invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
             invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
             invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
@@ -647,7 +644,6 @@ namespace System.Globalization
 
             if (GlobalizationMode.Invariant)
             {
-                invariant._sLocalizedDisplayName = invariant._sNativeDisplayName;
                 invariant._sLocalizedCountry = invariant._sNativeCountry;
             }
 
@@ -673,9 +669,9 @@ namespace System.Globalization
                 return CultureData.Invariant;
             }
 
-            if (GlobalizationMode.PredefinedCulturesOnly && !GlobalizationMode.Invariant)
+            if (GlobalizationMode.PredefinedCulturesOnly)
             {
-                if (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName))
+                if (GlobalizationMode.Invariant || (GlobalizationMode.UseNls ? !NlsIsEnsurePredefinedLocaleName(cultureName): !IcuIsEnsurePredefinedLocaleName(cultureName)))
                     return null;
             }
 
@@ -868,7 +864,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
             {
                 // LCID is not supported in the InvariantMode
-                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupportedInInvariantMode);
             }
 
             // Convert the lcid to a name, then use that
@@ -930,74 +926,26 @@ namespace System.Globalization
         {
             get
             {
-                string? localizedDisplayName = _sLocalizedDisplayName;
-                if (localizedDisplayName == null && !GlobalizationMode.Invariant)
+                string? localizedDisplayName = NativeName;
+                if (!GlobalizationMode.Invariant && Name.Length > 0)
                 {
-                    if (IsSupplementalCustomCulture)
+                    try
                     {
-                        if (IsNeutralCulture)
-                        {
-                            localizedDisplayName = NativeLanguageName;
-                        }
-                        else
-                        {
-                            localizedDisplayName = NativeName;
-                        }
+                        localizedDisplayName = GetLanguageDisplayNameCore(
+                            Name.Equals("zh-CHT", StringComparison.OrdinalIgnoreCase) ? "zh-Hant" :
+                            Name.Equals("zh-CHS", StringComparison.OrdinalIgnoreCase) ? "zh-Hans" :
+                            Name);
                     }
-                    else
+                    catch
                     {
-                        try
-                        {
-                            const string ZH_CHT = "zh-CHT";
-                            const string ZH_CHS = "zh-CHS";
-
-                            if (Name.Equals(ZH_CHT, StringComparison.OrdinalIgnoreCase))
-                            {
-                                localizedDisplayName = GetLanguageDisplayNameCore("zh-Hant");
-                            }
-                            else if (Name.Equals(ZH_CHS, StringComparison.OrdinalIgnoreCase))
-                            {
-                                localizedDisplayName = GetLanguageDisplayNameCore("zh-Hans");
-                            }
-                            else
-                            {
-                                localizedDisplayName = GetLanguageDisplayNameCore(Name);
-                            }
-                        }
-                        catch
-                        {
-                            // do nothing
-                        }
+                        // do nothing
                     }
 
                     // If it hasn't been found (Windows 8 and up), fallback to the system
-                    if (string.IsNullOrEmpty(localizedDisplayName))
+                    if (string.IsNullOrEmpty(localizedDisplayName) && IsNeutralCulture)
                     {
-                        // If its neutral use the language name
-                        if (IsNeutralCulture)
-                        {
-                            localizedDisplayName = LocalizedLanguageName;
-                        }
-                        else
-                        {
-                            // Usually the UI culture shouldn't be different than what we got from WinRT except
-                            // if DefaultThreadCurrentUICulture was set
-                            CultureInfo ci;
-
-                            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                                ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
-                                !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
-                            {
-                                localizedDisplayName = NativeName;
-                            }
-                            else
-                            {
-                                localizedDisplayName = GetLocaleInfoCore(LocaleStringData.LocalizedDisplayName);
-                            }
-                        }
+                        localizedDisplayName = LocalizedLanguageName;
                     }
-
-                    _sLocalizedDisplayName = localizedDisplayName;
                 }
 
                 return localizedDisplayName!;
@@ -1021,7 +969,12 @@ namespace System.Globalization
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        englishDisplayName = EnglishLanguageName;
+                        englishDisplayName = GetLocaleInfoCore(LocaleStringData.EnglishDisplayName);
+                        if (string.IsNullOrEmpty(englishDisplayName))
+                        {
+                            englishDisplayName = EnglishLanguageName;
+                        }
+
                         // differentiate the legacy display names
                         switch (_sName)
                         {
@@ -1078,7 +1031,12 @@ namespace System.Globalization
                     // If its neutral use the language name
                     if (IsNeutralCulture)
                     {
-                        nativeDisplayName = NativeLanguageName;
+                        nativeDisplayName = GetLocaleInfoCore(LocaleStringData.NativeDisplayName);
+                        if (string.IsNullOrEmpty(nativeDisplayName))
+                        {
+                            nativeDisplayName = NativeLanguageName;
+                        }
+
                         // differentiate the legacy display names
                         switch (_sName)
                         {
@@ -1140,32 +1098,23 @@ namespace System.Globalization
                                                                             IcuGetThreeLetterWindowsLanguageName(_sRealName!);
 
         /// <summary>
-        /// Localized name for this language (Windows Only) ie: Inglis
-        /// This is only valid for Windows 8 and higher neutrals:
+        /// Localized name for this language
         /// </summary>
         private string LocalizedLanguageName
         {
             get
             {
-                if (_sLocalizedLanguage == null && !GlobalizationMode.Invariant)
+                string localizedLanguage = NativeLanguageName;
+                if (!GlobalizationMode.Invariant && Name.Length > 0)
                 {
-                    // Usually the UI culture shouldn't be different than what we got from WinRT except
-                    // if DefaultThreadCurrentUICulture was set
-                    CultureInfo ci;
-
-                    if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                        ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
-                        !CultureInfo.DefaultThreadCurrentUICulture!.Name.Equals(ci.Name))
+                    // If ICU is enabled we call it anyway. If NLS, we call it only if the Windows UI language match the Current UI language
+                    if (!GlobalizationMode.UseNls || CultureInfo.UserDefaultUICulture?.Name == CultureInfo.CurrentUICulture.Name)
                     {
-                        _sLocalizedLanguage = NativeLanguageName;
-                    }
-                    else
-                    {
-                        _sLocalizedLanguage = GetLocaleInfoCore(LocaleStringData.LocalizedLanguageName);
+                        localizedLanguage = GetLocaleInfoCore(LocaleStringData.LocalizedLanguageName, CultureInfo.CurrentUICulture.Name);
                     }
                 }
 
-                return _sLocalizedLanguage!;
+                return localizedLanguage;
             }
         }
 
@@ -1987,14 +1936,23 @@ namespace System.Globalization
             {
                 if (_sTimeSeparator == null && !GlobalizationMode.Invariant)
                 {
-                    string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
-                    if (string.IsNullOrEmpty(longTimeFormat))
+                    // fr-CA culture uses time format as "HH 'h' mm 'min' ss 's'" which we cannot derive the time separator from such pattern.
+                    // We special case such culture and force ':' as time separator.
+                    if (_sName == "fr-CA")
                     {
-                        longTimeFormat = LongTimes[0];
+                        _sTimeSeparator = ":";
                     }
+                    else
+                    {
+                        string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
+                        if (string.IsNullOrEmpty(longTimeFormat))
+                        {
+                            longTimeFormat = LongTimes[0];
+                        }
 
-                    // Compute STIME from time format
-                    _sTimeSeparator = GetTimeSeparator(longTimeFormat);
+                        // Compute STIME from time format
+                        _sTimeSeparator = GetTimeSeparator(longTimeFormat);
+                    }
                 }
                 return _sTimeSeparator!;
             }
@@ -2017,7 +1975,7 @@ namespace System.Globalization
                 // changing the default pattern is likely will happen in the near future which can easily break formatting
                 // and parsing.
                 // We are forcing here the date separator to '/' to ensure the parsing is not going to break when changing
-                // the default short date pattern. The application still can override this in the code by DateTimeFormatInfo.DateSeparartor.
+                // the default short date pattern. The application still can override this in the code by DateTimeFormatInfo.DateSeparator.
                 return "/";
             }
 
@@ -2171,6 +2129,47 @@ namespace System.Globalization
             return cultureId == CultureInfo.LOCALE_CUSTOM_DEFAULT || cultureId == CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
         }
 
+        private string[] GetNativeDigits()
+        {
+            string[] result = NumberFormatInfo.s_asciiDigits;
+
+            // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
+            string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
+
+            // if digits.Length < NumberFormatInfo.s_asciiDigits.Length means the native digits setting is messed up in the host machine.
+            // Instead of throwing IndexOutOfRangeException that will be hard to diagnose after the fact, we'll fall back to use the ASCII digits instead.
+            if (digits.Length < NumberFormatInfo.s_asciiDigits.Length)
+            {
+                return result;
+            }
+
+            // Try to check if the digits are all ASCII so we can avoid the array allocation and use the static array NumberFormatInfo.s_asciiDigits instead.
+            // If we have non-ASCII digits, we should exit the loop very quickly.
+            int i = 0;
+            while (i < NumberFormatInfo.s_asciiDigits.Length)
+            {
+                if (digits[i] != NumberFormatInfo.s_asciiDigits[i][0])
+                {
+                    break;
+                }
+                i++;
+            }
+
+            if (i >= NumberFormatInfo.s_asciiDigits.Length)
+            {
+                return result;
+            }
+
+            // we have non-ASCII digits
+            result = new string[10];
+            for (i = 0; i < result.Length; i++)
+            {
+                result[i] = char.ToString(digits[i]);
+            }
+
+            return result;
+        }
+
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
             if (GlobalizationMode.Invariant || IsInvariantCulture)
@@ -2210,13 +2209,7 @@ namespace System.Globalization
                 nfi._currencyNegativePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.NegativeMonetaryNumberFormat);
                 nfi._numberNegativePattern = GetLocaleInfoCoreUserOverride(LocaleNumberData.NegativeNumberFormat);
 
-                // LOCALE_SNATIVEDIGITS (array of 10 single character strings).
-                string digits = GetLocaleInfoCoreUserOverride(LocaleStringData.Digits);
-                nfi._nativeDigits = new string[10];
-                for (int i = 0; i < nfi._nativeDigits.Length; i++)
-                {
-                    nfi._nativeDigits[i] = char.ToString(digits[i]);
-                }
+                nfi._nativeDigits = GetNativeDigits();
 
                 Debug.Assert(_sRealName != null);
                 nfi._digitSubstitution = ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(LocaleNumberData.DigitSubstitution) : IcuGetDigitSubstitution(_sRealName);
@@ -2291,22 +2284,22 @@ namespace System.Globalization
             return ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
         }
 
-        private string GetLocaleInfoCore(LocaleStringData type)
+        private string GetLocaleInfoCore(LocaleStringData type, string? uiCultureName = null)
         {
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(type) : IcuGetLocaleInfo(type, uiCultureName);
         }
 
-        private string GetLocaleInfoCore(string localeName, LocaleStringData type)
+        private string GetLocaleInfoCore(string localeName, LocaleStringData type, string? uiCultureName = null)
         {
             // This is never reached but helps illinker statically remove dependencies
             if (GlobalizationMode.Invariant)
                 return null!;
 
-            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type);
+            return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
         }
 
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
@@ -2350,7 +2343,7 @@ namespace System.Globalization
             DecimalSeparator = 0x0000000E,
             /// <summary>thousand separator (corresponds to LOCALE_STHOUSAND)</summary>
             ThousandSeparator = 0x0000000F,
-            /// <summary>digit grouping (corresponds to LOCALE_SGROUPING)</summary>
+            /// <summary>native digits for 0-9, eg "0123456789" (corresponds to LOCALE_SNATIVEDIGITS)</summary>
             Digits = 0x00000013,
             /// <summary>local monetary symbol (corresponds to LOCALE_SCURRENCY)</summary>
             MonetarySymbol = 0x00000014,

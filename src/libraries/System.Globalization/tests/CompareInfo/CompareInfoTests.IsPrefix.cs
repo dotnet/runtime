@@ -36,11 +36,15 @@ namespace System.Globalization.Tests
 
             // Turkish
             yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.None, false, 0 };
-            yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.IgnoreCase, false, 0 };
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "interesting", "I", CompareOptions.IgnoreCase, false, 0 };
+                yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, true, 1 };
+            }
             yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.None, false, 0 };
-            yield return new object[] { s_turkishCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, true, 1 };
-            yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.IgnoreCase, true, 1 };
+            yield return new object[] { s_invariantCompare, "interesting", "I", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.None, false, 0 };
             yield return new object[] { s_invariantCompare, "interesting", "\u0130", CompareOptions.IgnoreCase, false, 0 };
 

@@ -37,7 +37,7 @@ enum LoaderAllocatorType
 
 typedef SHash<PtrSetSHashTraits<LoaderAllocator *>> LoaderAllocatorSet;
 
-class CLRPrivBinderAssemblyLoadContext;
+class CustomAssemblyBinder;
 
 // Iterator over a DomainAssembly in the same ALC
 class DomainAssemblyIterator
@@ -236,9 +236,7 @@ protected:
     FatTokenSet *m_pFatTokenSet;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     VirtualCallStubManager *m_pVirtualCallStubManager;
-#endif
 
 private:
     LoaderAllocatorSet m_LoaderAllocatorReferences;
@@ -286,9 +284,7 @@ private:
     PTR_CallCountingManager m_callCountingManager;
 #endif
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker m_methodDescBackpatchInfoTracker;
-#endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
     PTR_OnStackReplacementManager m_onStackReplacementManager;
@@ -587,7 +583,6 @@ public:
     void InitVirtualCallStubManager(BaseDomain *pDomain);
     void UninitVirtualCallStubManager();
 
-#ifndef CROSSGEN_COMPILE
     inline VirtualCallStubManager *GetVirtualCallStubManager()
     {
         LIMITED_METHOD_CONTRACT;
@@ -596,7 +591,6 @@ public:
 
     UMEntryThunkCache *GetUMEntryThunkCache();
 
-#endif
 
     static LoaderAllocator* GetLoaderAllocator(ILStubCache* pILStubCache)
     {
@@ -652,13 +646,11 @@ public:
     }
 #endif // FEATURE_TIERED_COMPILATION
 
-#ifndef CROSSGEN_COMPILE
     MethodDescBackpatchInfoTracker *GetMethodDescBackpatchInfoTracker()
     {
         LIMITED_METHOD_CONTRACT;
         return &m_methodDescBackpatchInfoTracker;
     }
-#endif
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 public:
@@ -707,7 +699,7 @@ protected:
 public:
     virtual LoaderAllocatorID* Id();
     AssemblyLoaderAllocator() : m_Id(LAT_Assembly), m_pShuffleThunkCache(NULL)
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
         , m_binderToRelease(NULL)
 #endif
     { LIMITED_METHOD_CONTRACT; }
@@ -727,18 +719,18 @@ public:
         return m_pShuffleThunkCache;
     }
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#if !defined(DACCESS_COMPILE)
     virtual void RegisterHandleForCleanup(OBJECTHANDLE objHandle);
     virtual void UnregisterHandleFromCleanup(OBJECTHANDLE objHandle);
     virtual void CleanupHandles();
-    CLRPrivBinderAssemblyLoadContext* GetBinder()
+    CustomAssemblyBinder* GetBinder()
     {
         return m_binderToRelease;
     }
     virtual ~AssemblyLoaderAllocator();
-    void RegisterBinder(CLRPrivBinderAssemblyLoadContext* binderToRelease);
+    void RegisterBinder(CustomAssemblyBinder* binderToRelease);
     virtual void ReleaseManagedAssemblyLoadContext();
-#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+#endif // !defined(DACCESS_COMPILE)
 
 private:
     struct HandleCleanupListItem
@@ -753,8 +745,8 @@ private:
     };
 
     SList<HandleCleanupListItem> m_handleCleanupList;
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    CLRPrivBinderAssemblyLoadContext* m_binderToRelease;
+#if !defined(DACCESS_COMPILE)
+    CustomAssemblyBinder* m_binderToRelease;
 #endif
 };
 

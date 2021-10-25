@@ -218,7 +218,7 @@ namespace CoreXml.Test.XLinq
         /// </summary>
         public void PutCData()
         {
-            _nodeQueue.Append("<![CDATA[" + CDATA + _cCount++ + "]]>");
+            _nodeQueue.Append($"<![CDATA[{CDATA}{_cCount++}]]>");
         }
 
         /// <summary>
@@ -226,7 +226,7 @@ namespace CoreXml.Test.XLinq
         /// </summary>
         public void PutPI()
         {
-            _nodeQueue.Append("<?" + PI + _pCount++ + "?>");
+            _nodeQueue.Append($"<?{PI}{_pCount++}?>");
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace CoreXml.Test.XLinq
         /// </summary>
         public void PutComment()
         {
-            _nodeQueue.Append("<!--" + COMMENT + _mCount++ + " -->");
+            _nodeQueue.Append($"<!--{COMMENT}{_mCount++} -->");
         }
 
         /// <summary>

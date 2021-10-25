@@ -18,7 +18,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object in the given source
         /// type to a globally unique identifier object using the context.
         /// </summary>
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
         {
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
@@ -27,7 +27,7 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object to
         /// the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -35,7 +35,7 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given object to a globally unique identifier object.
         /// </summary>
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
         {
             if (value is string text)
             {
@@ -52,13 +52,13 @@ namespace System.ComponentModel
         /// type is string. If this cannot convert to the destination type, this will
         /// throw a NotSupportedException.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor) && value is Guid)
             {
-                ConstructorInfo ctor = typeof(Guid).GetConstructor(new Type[] { typeof(string) });
+                ConstructorInfo? ctor = typeof(Guid).GetConstructor(new Type[] { typeof(string) });
                 Debug.Assert(ctor != null, "Expected constructor to exist.");
-                return new InstanceDescriptor(ctor, new object[] { value.ToString() });
+                return new InstanceDescriptor(ctor, new object?[] { value.ToString() });
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

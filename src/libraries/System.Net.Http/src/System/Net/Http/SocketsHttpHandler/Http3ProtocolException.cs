@@ -7,7 +7,6 @@ using System.Runtime.Versioning;
 namespace System.Net.Http
 {
     [Serializable]
-    // TODO: SupportedOSPlatform doesn't work for internal APIs https://github.com/dotnet/runtime/issues/51305
     [SupportedOSPlatform("windows")]
     [SupportedOSPlatform("linux")]
     [SupportedOSPlatform("macos")]

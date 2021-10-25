@@ -395,19 +395,12 @@ namespace System.Reflection.Tests
         [MemberData(nameof(Names_TestData))]
         [MemberData(nameof(Names_TestDataRequiresEscaping))]
         [InlineData(null, "")]
+        [InlineData("", "")]
         public void Name_Set_FullName(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
             assemblyName.Name = name;
             Assert.Equal(expectedName, assemblyName.FullName);
-        }
-
-        [Fact]
-        public void Name_Set_FullName_Invalid()
-        {
-            AssemblyName assemblyName = new AssemblyName("MyAssemblyName");
-            assemblyName.Name = "";
-            Assert.Throws<FileLoadException>(() => assemblyName.FullName);
         }
 
         [Fact]
@@ -637,6 +630,15 @@ namespace System.Reflection.Tests
         {
             var assemblyName = new AssemblyName(name);
             Assert.StartsWith(name, assemblyName.ToString());
+            Assert.Equal(assemblyName.FullName, assemblyName.ToString());
+        }
+
+        [Fact]
+        public void ToStringEmptyNameTest()
+        {
+            var assemblyName = new AssemblyName("test");
+            assemblyName.Name = "";
+            Assert.StartsWith(string.Empty, assemblyName.ToString());
             Assert.Equal(assemblyName.FullName, assemblyName.ToString());
         }
 

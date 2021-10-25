@@ -35,7 +35,7 @@ namespace ILCompiler.IBC
                 try
                 {
                     if (token == 0)
-                        return new TypeSystemEntityOrUnknown(0);
+                        return new TypeSystemEntityOrUnknown(null);
                     if ((token & 0xFF000000) == 0)
                     {
                         // token type is 0, therefore it can't be a type
@@ -516,7 +516,7 @@ namespace ILCompiler.IBC
                     throw new NotImplementedException();
                 }
 
-                public override MetadataType GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
+                public override object GetType(string nameSpace, string name, NotFoundBehavior notFoundBehavior)
                 {
                     TypeSystemContext context = Context;
 
@@ -529,11 +529,10 @@ namespace ILCompiler.IBC
                         if (notFoundBehavior != NotFoundBehavior.ReturnNull)
                         {
                             var failure = ResolutionFailure.GetTypeLoadResolutionFailure(nameSpace, name, "System.Private.Canon");
-                            ModuleDesc.GetTypeResolutionFailure = failure;
                             if (notFoundBehavior == NotFoundBehavior.Throw)
                                 failure.Throw();
 
-                            return null;
+                            return failure;
                         }
                         return null;
                     }

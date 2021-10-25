@@ -48,7 +48,7 @@ static gboolean type_is_reference (MonoType *type);
 
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_typed_argument, "System.Reflection", "CustomAttributeTypedArgument");
 static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.Reflection", "CustomAttributeNamedArgument");
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (customattribute_data, "System.Reflection", "CustomAttributeData");
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (customattribute_data, "System.Reflection", "RuntimeCustomAttributeData");
 
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs);
@@ -397,7 +397,11 @@ MONO_RESTORE_WARNING
 		//  to decode some attributes in assemblies that Windows .NET Framework
 		//  and CoreCLR both manage to decode.
 		// See https://simonsapin.github.io/wtf-8/ for a description of wtf-8.
-		*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (p, slen, error);
+		// Always use string.Empty for empty strings
+		if (slen == 0)
+			*out_obj = (MonoObject*)mono_string_empty_internal (mono_domain_get ());
+		else
+			*out_obj = (MonoObject*)mono_string_new_wtf8_len_checked (p, slen, error);
 		return NULL;
 	}
 	case MONO_TYPE_CLASS: {
@@ -1350,7 +1354,7 @@ fail:
 }
 
 void
-ves_icall_System_Reflection_CustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethodHandle ref_method_h, MonoReflectionAssemblyHandle assembly_h,
+ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal (MonoReflectionMethodHandle ref_method_h, MonoReflectionAssemblyHandle assembly_h,
 																		  gpointer data, guint32 len,
 																		  MonoArrayHandleOut ctor_args_h, MonoArrayHandleOut named_args_h,
 																		  MonoError *error)
@@ -1441,7 +1445,7 @@ try_get_cattr_data_class (MonoError* error)
 	error_init (error);
 	MonoClass *res = mono_class_try_get_customattribute_data_class ();
 	if (!res)
-		mono_error_set_execution_engine (error, "Class System.Reflection.CustomAttributeData not found, probably removed by the linker");
+		mono_error_set_execution_engine (error, "Class System.Reflection.RuntimeCustomAttributeData not found, probably removed by the linker");
 	return res;
 }
 

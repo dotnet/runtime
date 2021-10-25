@@ -15,7 +15,6 @@
 #ifndef _ASSEMBLYSPEC_H
 #define _ASSEMBLYSPEC_H
 #include "hash.h"
-#include "memorypool.h"
 #include "assemblyspecbase.h"
 #include "domainfile.h"
 #include "holder.h"
@@ -28,19 +27,15 @@ enum FileLoadLevel;
 class AssemblySpec  : public BaseAssemblySpec
 {
   private:
-
-    friend class AppDomain;
-    friend class AssemblyNameNative;
-
     AppDomain       *m_pAppDomain;
     DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
 
     // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
-    ICLRPrivBinder *m_pFallbackLoadContextBinder;
+    AssemblyBinder *m_pFallbackBinder;
 
     // Flag to indicate if we should prefer the fallback load context binder for binding or not.
-    bool m_fPreferFallbackLoadContextBinder;
+    bool m_fPreferFallbackBinder;
 
     BOOL IsValidAssemblyName();
 
@@ -55,7 +50,7 @@ class AssemblySpec  : public BaseAssemblySpec
                 mdAssemblyRef       kAssemblyRef,
                 IMDInternalImport * pMDImportOverride,
                 BOOL                fDoNotUtilizeExtraChecks,
-                ICLRPrivBinder      *pBindingContextForLoadedAssembly);
+                AssemblyBinder      *pBinderForLoadedAssembly);
 
   public:
 
@@ -65,8 +60,8 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
 
-        m_pFallbackLoadContextBinder = NULL;
-        m_fPreferFallbackLoadContextBinder = false;
+        m_pFallbackBinder = NULL;
+        m_fPreferFallbackBinder = false;
 
     }
 #endif //!DACCESS_COMPILE
@@ -76,15 +71,15 @@ class AssemblySpec  : public BaseAssemblySpec
         LIMITED_METHOD_CONTRACT
         m_pParentAssembly = NULL;
 
-        m_pFallbackLoadContextBinder = NULL;
-        m_fPreferFallbackLoadContextBinder = false;
+        m_pFallbackBinder = NULL;
+        m_fPreferFallbackBinder = false;
 
     }
 
 
     DomainAssembly* GetParentAssembly();
 
-    ICLRPrivBinder* GetBindingContextFromParentAssembly(AppDomain *pDomain);
+    AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }
@@ -107,7 +102,7 @@ class AssemblySpec  : public BaseAssemblySpec
     };
 
 
-    void InitializeSpec(PEAssembly *pFile);
+    void InitializeSpec(PEAssembly* pPEAssembly);
     HRESULT InitializeSpec(StackingAllocator* alloc,
                         ASSEMBLYNAMEREF* pName,
                         BOOL fParse = TRUE);
@@ -135,32 +130,32 @@ class AssemblySpec  : public BaseAssemblySpec
         m_pParentAssembly = pAssembly;
     }
 
-    void SetFallbackLoadContextBinderForRequestingAssembly(ICLRPrivBinder *pFallbackLoadContextBinder)
+    void SetFallbackBinderForRequestingAssembly(AssemblyBinder *pFallbackBinder)
     {
        LIMITED_METHOD_CONTRACT;
 
-        m_pFallbackLoadContextBinder = pFallbackLoadContextBinder;
+        m_pFallbackBinder = pFallbackBinder;
     }
 
-    ICLRPrivBinder* GetFallbackLoadContextBinderForRequestingAssembly()
+    AssemblyBinder* GetFallbackBinderForRequestingAssembly()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackLoadContextBinder;
+        return m_pFallbackBinder;
     }
 
-    void SetPreferFallbackLoadContextBinder()
+    void SetPreferFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_fPreferFallbackLoadContextBinder = true;
+        m_fPreferFallbackBinder = true;
     }
 
-    bool GetPreferFallbackLoadContextBinder()
+    bool GetPreferFallbackBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_fPreferFallbackLoadContextBinder;
+        return m_fPreferFallbackBinder;
     }
 
     // Note that this method does not clone the fields!
@@ -179,8 +174,8 @@ class AssemblySpec  : public BaseAssemblySpec
         SetParentAssembly(pSource->GetParentAssembly());
 
         // Copy the details of the fallback load context binder
-        SetFallbackLoadContextBinderForRequestingAssembly(pSource->GetFallbackLoadContextBinderForRequestingAssembly());
-        m_fPreferFallbackLoadContextBinder = pSource->GetPreferFallbackLoadContextBinder();
+        SetFallbackBinderForRequestingAssembly(pSource->GetFallbackBinderForRequestingAssembly());
+        m_fPreferFallbackBinder = pSource->GetPreferFallbackBinder();
 
         m_dwHashAlg = pSource->m_dwHashAlg;
     }
@@ -190,12 +185,9 @@ class AssemblySpec  : public BaseAssemblySpec
     HRESULT EmitToken(IMetaDataAssemblyEmit *pEmit,
                       mdAssemblyRef *pToken);
 
-    VOID Bind(
+    HRESULT Bind(
         AppDomain* pAppDomain,
-        BOOL fThrowOnFileNotFound,
-        CoreBindResult* pBindResult,
-        BOOL fNgenExplicitBind = FALSE,
-        BOOL fExplicitBindToNativeImage = FALSE);
+        BINDER_SPACE::Assembly** ppAssembly);
 
     Assembly *LoadAssembly(FileLoadLevel targetLevel,
                            BOOL fThrowOnFileNotFound = TRUE);
@@ -243,12 +235,6 @@ class AssemblySpec  : public BaseAssemblySpec
             _ASSERTE(!"Unexpected content type.");
             return E_UNEXPECTED;
         }
-    }
-
-    inline BOOL CanUseWithBindingCache() const
-    {
-        STATIC_CONTRACT_LIMITED_METHOD;
-        return HasUniqueIdentity();
     }
 };
 
@@ -346,8 +332,8 @@ class AssemblySpecBindingCache
         {
             WRAPPER_NO_CONTRACT;
 
-            if (m_pFile != NULL)
-                m_pFile->Release();
+            if (m_pPEAssembly != NULL)
+                m_pPEAssembly->Release();
 
             if (m_exceptionType==EXTYPE_EE)
                 delete m_pException;
@@ -355,7 +341,7 @@ class AssemblySpecBindingCache
 
         inline DomainAssembly* GetAssembly(){ LIMITED_METHOD_CONTRACT; return m_pAssembly;};
         inline void SetAssembly(DomainAssembly* pAssembly){ LIMITED_METHOD_CONTRACT;  m_pAssembly=pAssembly;};
-        inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pFile;};
+        inline PEAssembly* GetFile(){ LIMITED_METHOD_CONTRACT; return m_pPEAssembly;};
         inline BOOL IsError(){ LIMITED_METHOD_CONTRACT; return (m_exceptionType!=EXTYPE_NONE);};
 
         // bound to the file, but failed later
@@ -379,7 +365,7 @@ class AssemblySpecBindingCache
                 default: _ASSERTE(!"Unexpected exception type");
             }
         };
-        inline void Init(AssemblySpec* pSpec, PEAssembly* pFile, DomainAssembly* pAssembly, Exception* pEx, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
+        inline void Init(AssemblySpec* pSpec, PEAssembly* pPEAssembly, DomainAssembly* pAssembly, Exception* pEx, LoaderHeap *pHeap, AllocMemTracker *pamTracker)
         {
             CONTRACTL
             {
@@ -389,7 +375,7 @@ class AssemblySpecBindingCache
             }
             CONTRACTL_END;
 
-            InitInternal(pSpec,pFile,pAssembly);
+            InitInternal(pSpec,pPEAssembly,pAssembly);
             if (pHeap != NULL)
             {
                 m_spec.CloneFieldsToLoaderHeap(AssemblySpec::ALL_OWNED,pHeap, pamTracker);
@@ -458,19 +444,19 @@ class AssemblySpecBindingCache
         };
     protected:
 
-        inline void InitInternal(AssemblySpec* pSpec, PEAssembly* pFile, DomainAssembly* pAssembly )
+        inline void InitInternal(AssemblySpec* pSpec, PEAssembly* pPEAssembly, DomainAssembly* pAssembly )
         {
             WRAPPER_NO_CONTRACT;
             m_spec.CopyFrom(pSpec);
-            m_pFile = pFile;
-            if (m_pFile)
-                m_pFile->AddRef();
+            m_pPEAssembly = pPEAssembly;
+            if (m_pPEAssembly)
+                m_pPEAssembly->AddRef();
             m_pAssembly = pAssembly;
             m_exceptionType=EXTYPE_NONE;
         }
 
         AssemblySpec    m_spec;
-        PEAssembly      *m_pFile;
+        PEAssembly      *m_pPEAssembly;
         DomainAssembly  *m_pAssembly;
         enum{
             EXTYPE_NONE               = 0x00000000,
@@ -504,7 +490,7 @@ class AssemblySpecBindingCache
     PEAssembly *LookupFile(AssemblySpec *pSpec, BOOL fThrow = TRUE);
 
     BOOL StoreAssembly(AssemblySpec *pSpec, DomainAssembly *pAssembly);
-    BOOL StoreFile(AssemblySpec *pSpec, PEAssembly *pFile);
+    BOOL StorePEAssembly(AssemblySpec *pSpec, PEAssembly *pPEAssembly);
 
     BOOL StoreException(AssemblySpec *pSpec, Exception* pEx);
 

@@ -186,10 +186,10 @@ struct MSLAYOUT ModuleInfo
     // (such as for a dynamic module that's not persisted to disk).
     CORDB_ADDRESS pPEBaseAddress;
 
-    // The PEFile associated with the module. Every module (even non-file-based ones) has a PEFile.
+    // The PEAssembly associated with the module. Every module (even non-file-based ones) has a PEAssembly.
     // This is critical because DAC may ask for a metadata importer via PE-file.
-    // a PEFile may have 1 or more PEImage child objects (1 for IL, 1 for native image, etc)
-    VMPTR_PEFile vmPEFile;
+    // a PEAssembly may have 1 or more PEImage child objects (1 for IL, 1 for native image, etc)
+    VMPTR_PEAssembly vmPEAssembly;
 
     // The PE Base address and size of the module. These may be 0 if there is no image
     // (such as for a dynamic module that's not persisted to disk).
@@ -787,8 +787,8 @@ struct MSLAYOUT DacSharedReJitInfo
 // These represent the allocated bytes so far on the thread.
 struct MSLAYOUT DacThreadAllocInfo
 {
-    ULONG m_allocBytesSOH;
-    ULONG m_allocBytesUOH;
+    ULONG64 m_allocBytesSOH;
+    ULONG64 m_allocBytesUOH;
 };
 
 #include "dacdbistructures.inl"

@@ -433,7 +433,6 @@
     <Compile Include="System\Xml\Schema\XmlTokenizedType.cs" />
     <Compile Include="System\Xml\Schema\XmlTypeCode.cs" />
     <Compile Include="System\Xml\Schema\XmlValueConverter.cs" />
-    <Compile Include="System\Xml\Schema\XmlUntypedStringConverter.cs" />
     <Compile Include="System\Xml\Schema\XsdBuilder.cs" />
     <Compile Include="System\Xml\Schema\XsdDateTime.cs" />
     <Compile Include="System\Xml\Schema\XsdDuration.cs" />
@@ -516,7 +515,6 @@
     <Compile Include="System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs" />
     <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
     <Compile Include="System\Xml\Serialization\Globals.cs" />
-    <Compile Include="System\Xml\Serialization\TypeCode.cs" />
   </ItemGroup>
   <!-- Embedded DTD files -->
   <ItemGroup>
@@ -567,6 +565,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />

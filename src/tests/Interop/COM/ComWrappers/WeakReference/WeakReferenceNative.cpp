@@ -3,8 +3,10 @@
 
 #include <xplatform.h>
 #include <ComHelpers.h>
+#ifdef WINDOWS
 #include <inspectable.h>
 #include <WeakReference.h>
+#endif // WINDOWS
 
 namespace
 {
@@ -44,9 +46,34 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
+#ifdef WINDOWS
             return DoQueryInterface(riid, ppvObject, static_cast<IWeakReference*>(this));
+#else
+            if (ppvObject == nullptr)
+               return E_POINTER;
+
+            if (riid == __uuidof(IUnknown))
+            {
+                *ppvObject = static_cast<IUnknown*>(this);
+            }
+            else
+            {
+                if (riid == __uuidof(IWeakReference))
+                {
+                    *ppvObject = static_cast<IWeakReference*>(this);
+                }
+                else
+                {
+                    *ppvObject = nullptr;
+                    return E_NOINTERFACE;
+                }
+            }
+
+            DoAddRef();
+            return S_OK;
+#endif
         }
 
         DEFINE_REF_COUNTING()
@@ -55,7 +82,7 @@ namespace
     struct WeakReferencableObject : public IWeakReferenceSource, public IInspectable, public UnknownImpl
     {
         ComSmartPtr<WeakReference> _weakReference;
-        STDMETHOD(GetWeakReference)(_COM_Outptr_ IWeakReference** ppWeakReference)
+        STDMETHOD(GetWeakReference)(IWeakReference** ppWeakReference)
         {
             if (!_weakReference)
             {
@@ -87,9 +114,33 @@ namespace
 
         STDMETHOD(QueryInterface)(
             /* [in] */ REFIID riid,
-            /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject)
+            /* [iid_is][out] */ void ** ppvObject)
         {
-            HRESULT hr = DoQueryInterface(riid, ppvObject, static_cast<IWeakReferenceSource*>(this), static_cast<IInspectable*>(this), static_cast<IWeakReferenceSource*>(this));
+            HRESULT hr;
+#ifdef WINDOWS
+            hr = DoQueryInterface(riid, ppvObject, static_cast<IWeakReferenceSource*>(this), static_cast<IInspectable*>(this), static_cast<IWeakReferenceSource*>(this));
+#else
+            if (ppvObject == nullptr)
+               return E_POINTER;
+
+            if (riid == __uuidof(IUnknown) || riid == __uuidof(IWeakReferenceSource))
+            {
+                *ppvObject = static_cast<IWeakReferenceSource*>(this);
+                hr = S_OK;
+            }
+            else if (riid == __uuidof(IInspectable))
+            {
+                *ppvObject = static_cast<IInspectable*>(this);
+                hr = S_OK;
+            }
+            else
+            {
+                *ppvObject = nullptr;
+                return E_NOINTERFACE;
+            }
+
+            DoAddRef();
+#endif
             if (SUCCEEDED(hr) && _weakReference)
             {
                 _weakReference->AddStrongRef();

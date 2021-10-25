@@ -59,10 +59,11 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            if (_arrayFromPool != null)
+            T[]? toReturn = _arrayFromPool;
+            if (toReturn != null)
             {
-                ArrayPool<T>.Shared.Return(_arrayFromPool);
                 _arrayFromPool = null;
+                ArrayPool<T>.Shared.Return(toReturn);
             }
         }
 

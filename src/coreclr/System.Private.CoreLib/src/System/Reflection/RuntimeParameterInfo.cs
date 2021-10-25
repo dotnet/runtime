@@ -320,8 +320,8 @@ namespace System.Reflection
                 if (raw)
                 {
                     CustomAttributeTypedArgument value =
-                        CustomAttributeData.Filter(
-                            CustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
+                        RuntimeCustomAttributeData.Filter(
+                            RuntimeCustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
 
                     if (value.ArgumentType != null)
                         return new DateTime((long)value.Value!);
@@ -338,7 +338,7 @@ namespace System.Reflection
             if (!MdToken.IsNullToken(m_tkParamDef))
             {
                 // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
-                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.GetTypeHandleInternal(), raw);
+                defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
             }
             #endregion
 
@@ -515,9 +515,7 @@ namespace System.Reflection
             if (MdToken.IsNullToken(m_tkParamDef))
                 return Array.Empty<object>();
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -531,9 +529,7 @@ namespace System.Reflection
             if (MdToken.IsNullToken(m_tkParamDef))
                 return false;
 
-            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null)
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
@@ -541,7 +537,7 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
+            return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
     }

@@ -27,7 +27,6 @@
 #include "mini.h"
 #include "mini-amd64.h"
 #include "mini-amd64-gsharedvt.h"
-#include "debugger-agent.h"
 
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 
@@ -451,7 +450,7 @@ mono_arch_get_gsharedvt_call_info (MonoMemoryManager *mem_manager, gpointer addr
 		/* Compute return value marshalling */
 		switch (cinfo->ret.storage) {
 		case ArgInIReg:
-			if (!gsharedvt_in || sig->ret->byref) {
+			if (!gsharedvt_in || m_type_is_byref (sig->ret)) {
 				info->ret_marshal = GSHAREDVT_RET_IREGS_1;
 			} else {
 				MonoType *ret = sig->ret;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Configuration.Assemblies;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Serialization;
 using System.Text;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -59,10 +60,12 @@ namespace System.Reflection
 
         public string? CodeBase
         {
+            [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
             get => _codeBase;
             set => _codeBase = value;
         }
 
+        [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
         public string? EscapedCodeBase
         {
             get
@@ -123,7 +126,7 @@ namespace System.Reflection
                 _publicKey = (byte[]?)_publicKey?.Clone(),
                 _publicKeyToken = (byte[]?)_publicKeyToken?.Clone(),
                 _cultureInfo = _cultureInfo,
-                _version = (Version?)_version?.Clone(),
+                _version = _version,
                 _flags = _flags,
                 _codeBase = _codeBase,
                 _hashAlgorithm = _hashAlgorithm,
@@ -209,10 +212,8 @@ namespace System.Reflection
         {
             get
             {
-                if (this.Name == null)
+                if (string.IsNullOrEmpty(this.Name))
                     return string.Empty;
-                if (this.Name == string.Empty)
-                    throw new System.IO.FileLoadException();
 
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
                 byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();
@@ -260,6 +261,7 @@ namespace System.Reflection
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
 
+        [RequiresAssemblyFiles("The code will return an empty string for assemblies embedded in a single-file app")]
         internal static string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)

@@ -17,10 +17,10 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/profiler-private.h>
-#include <mono/metadata/security-core-clr.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/tokentype.h>
+#include <mono/metadata/marshal.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
@@ -493,7 +493,7 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 
 		if (mono_metadata_token_table (parent_token) == MONO_TABLE_TYPESPEC) {
 			/*WARNING: this must satisfy mono_metadata_type_hash*/
-			klass->this_arg.byref = 1;
+			klass->this_arg.byref__ = 1;
 			klass->this_arg.data.klass = klass;
 			klass->this_arg.type = MONO_TYPE_CLASS;
 			klass->_byval_arg.data.klass = klass;
@@ -846,7 +846,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->_byval_arg.type = MONO_TYPE_GENERICINST;
 	klass->this_arg.type = m_class_get_byval_arg (klass)->type;
 	klass->this_arg.data.generic_class = klass->_byval_arg.data.generic_class = gclass;
-	klass->this_arg.byref = TRUE;
+	klass->this_arg.byref__ = TRUE;
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
@@ -1093,6 +1093,8 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 	klass->type_token = 0;
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
+	klass->rank = rank;
+	klass->element_class = eclass;
 
 	if (m_class_get_byval_arg (eclass)->type == MONO_TYPE_TYPEDBYREF) {
 		/*Arrays of those two types are invalid.*/
@@ -1127,16 +1129,12 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 
 	klass->has_references = MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (eclass)) || m_class_has_references (eclass)? TRUE: FALSE;
 
-	klass->rank = rank;
-	
 	if (eclass->enumtype)
 		klass->cast_class = eclass->element_class;
 	else
 		klass->cast_class = eclass;
 
 	class_composite_fixup_cast_class (klass, FALSE);
-
-	klass->element_class = eclass;
 
 	if ((rank > 1) || bounded) {
 		MonoArrayType *at = mm ? (MonoArrayType *)mono_mem_manager_alloc0 (mm, sizeof (MonoArrayType)) : (MonoArrayType *)mono_image_alloc0 (image, sizeof (MonoArrayType));
@@ -1150,7 +1148,7 @@ mono_class_create_bounded_array (MonoClass *eclass, guint32 rank, gboolean bound
 		klass->_byval_arg.data.klass = eclass;
 	}
 	klass->this_arg = klass->_byval_arg;
-	klass->this_arg.byref = 1;
+	klass->this_arg.byref__ = 1;
 
 	if (rank > 32) {
 		ERROR_DECL (prepared_error);
@@ -1323,7 +1321,7 @@ make_generic_param_class (MonoGenericParam *param)
 	klass->this_arg.type = t;
 	CHECKED_METADATA_WRITE_PTR ( klass->this_arg.data.generic_param ,  param );
 	CHECKED_METADATA_WRITE_PTR ( klass->_byval_arg.data.generic_param , param );
-	klass->this_arg.byref = TRUE;
+	klass->this_arg.byref__ = TRUE;
 
 	/* We don't use type_token for VAR since only classes can use it (not arrays, pointer, VARs, etc) */
 	klass->sizes.generic_param_token = !is_anonymous ? pinfo->token : 0;
@@ -1466,7 +1464,7 @@ mono_class_create_ptr (MonoType *type)
 
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_PTR;
 	result->this_arg.data.type = result->_byval_arg.data.type = m_class_get_byval_arg (el_class);
-	result->this_arg.byref = TRUE;
+	result->this_arg.byref__ = TRUE;
 
 	mono_class_setup_supertypes (result);
 
@@ -1531,7 +1529,7 @@ mono_class_create_fnptr (MonoMethodSignature *sig)
 	result->cast_class = result->element_class = result;
 	result->this_arg.type = result->_byval_arg.type = MONO_TYPE_FNPTR;
 	result->this_arg.data.method = result->_byval_arg.data.method = sig;
-	result->this_arg.byref = TRUE;
+	result->this_arg.byref__ = TRUE;
 	result->blittable = TRUE;
 	result->inited = TRUE;
 
@@ -1807,7 +1805,7 @@ type_has_references (MonoClass *klass, MonoType *ftype)
 {
 	if (MONO_TYPE_IS_REFERENCE (ftype) || IS_GC_REFERENCE (klass, ftype) || ((MONO_TYPE_ISSTRUCT (ftype) && class_has_references (mono_class_from_mono_type_internal (ftype)))))
 		return TRUE;
-	if (!ftype->byref && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
+	if (!m_type_is_byref (ftype) && (ftype->type == MONO_TYPE_VAR || ftype->type == MONO_TYPE_MVAR)) {
 		MonoGenericParam *gparam = ftype->data.generic_param;
 
 		if (gparam->gshared_constraint)
@@ -1976,7 +1974,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 		if (field->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (blittable) {
-			if (field->type->byref || MONO_TYPE_IS_REFERENCE (field->type)) {
+			if (m_type_is_byref (field->type) || MONO_TYPE_IS_REFERENCE (field->type)) {
 				blittable = FALSE;
 			} else if (mono_type_is_generic_parameter (field->type) &&
 				   mono_class_is_gparam_with_nonblittable_parent (mono_class_from_mono_type_internal (field->type))) {
@@ -3104,7 +3102,7 @@ mono_class_setup_mono_type (MonoClass *klass)
 	const char *nspace = klass->name_space;
 	gboolean is_corlib = mono_is_corlib_image (klass->image);
 
-	klass->this_arg.byref = 1;
+	klass->this_arg.byref__ = 1;
 	klass->this_arg.data.klass = klass;
 	klass->this_arg.type = MONO_TYPE_CLASS;
 	klass->_byval_arg.data.klass = klass;

@@ -26,7 +26,7 @@ namespace System.Security
                 !_encrypted &&
                 !Interop.Crypt32.CryptProtectMemory(_buffer, (uint)_buffer.ByteLength, Interop.Crypt32.CRYPTPROTECTMEMORY_SAME_PROCESS))
             {
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw new CryptographicException(Marshal.GetLastPInvokeError());
             }
 
             _encrypted = true;
@@ -41,7 +41,7 @@ namespace System.Security
                 _encrypted &&
                 !Interop.Crypt32.CryptUnprotectMemory(_buffer, (uint)_buffer.ByteLength, Interop.Crypt32.CRYPTPROTECTMEMORY_SAME_PROCESS))
             {
-                throw new CryptographicException(Marshal.GetLastWin32Error());
+                throw new CryptographicException(Marshal.GetLastPInvokeError());
             }
 
             _encrypted = false;

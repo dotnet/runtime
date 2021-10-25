@@ -33,11 +33,16 @@ mono_get_object_type (void)
 	return m_class_get_byval_arg (mono_defaults.object_class);
 }
 
-
 static inline gboolean
 mono_class_is_def (MonoClass *klass)
 {
 	return m_class_get_class_kind (klass) == MONO_CLASS_DEF;
+}
+
+static inline gboolean
+m_class_is_array (MonoClass *klass)
+{
+	return m_class_get_rank (klass) != 0;
 }
 
 static inline gboolean
@@ -198,6 +203,30 @@ static inline gboolean
 m_class_is_private (MonoClass *klass)
 {
 	return (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_VISIBILITY_MASK) == TYPE_ATTRIBUTE_NOT_PUBLIC;
+}
+
+static inline gboolean
+m_method_is_static (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_STATIC) != 0;
+}
+
+static inline gboolean
+m_method_is_virtual (MonoMethod *method)
+{
+	return (method->flags & METHOD_ATTRIBUTE_VIRTUAL) != 0;
+}
+
+static inline gboolean
+m_method_is_abstract (MonoMethod *method)
+{
+        return (method->flags & METHOD_ATTRIBUTE_ABSTRACT) != 0;
+}
+
+static inline gboolean
+m_method_is_final (MonoMethod *method)
+{
+        return (method->flags & METHOD_ATTRIBUTE_FINAL) != 0;
 }
 
 static inline gboolean

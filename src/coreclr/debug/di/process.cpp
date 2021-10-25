@@ -290,10 +290,10 @@ static inline DWORD CordbGetWaitTimeout()
 
 //----------------------------------------------------------------------------
 // Implementation of IDacDbiInterface::IMetaDataLookup.
-// lookup Internal Metadata Importer keyed by PEFile
+// lookup Internal Metadata Importer keyed by PEAssembly
 // isILMetaDataForNGENImage is true iff the IMDInternalImport returned represents a pointer to
 // metadata from an IL image when the module was an ngen'ed image.
-IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &isILMetaDataForNGENImage)
+IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEAssembly vmPEAssembly, bool &isILMetaDataForNGENImage)
 {
     INTERNAL_DAC_CALLBACK(this);
 
@@ -312,7 +312,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
              pModule != NULL;
              pModule = pAppDomain->m_modules.FindNext(&hashFindModule))
         {
-            if (pModule->GetPEFile() == vmPEFile)
+            if (pModule->GetPEFile() == vmPEAssembly)
             {
                 pMDII = NULL;
                 ALLOW_DATATARGET_MISSING_MEMORY(
@@ -341,7 +341,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
              pModule != NULL;
              pModule = pAppDomain->m_modules.FindNext(&hashFindModule))
         {
-            if (pModule->GetPEFile() == vmPEFile)
+            if (pModule->GetPEFile() == vmPEAssembly)
             {
                 pMDII = NULL;
                 ALLOW_DATATARGET_MISSING_MEMORY(
@@ -354,7 +354,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
                     // debugger if it can find the metadata elsewhere.
                     // If this was live debugging, we should have just gotten the memory contents.
                     // Thus this code is for dump debugging, when you don't have the metadata in the dump.
-                    pMDII = LookupMetaDataFromDebugger(vmPEFile, isILMetaDataForNGENImage, pModule);
+                    pMDII = LookupMetaDataFromDebugger(vmPEAssembly, isILMetaDataForNGENImage, pModule);
                 }
                 return pMDII;
             }
@@ -366,7 +366,7 @@ IMDInternalImport * CordbProcess::LookupMetaData(VMPTR_PEFile vmPEFile, bool &is
 
 
 IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
-    VMPTR_PEFile vmPEFile,
+    VMPTR_PEAssembly vmPEAssembly,
     bool &isILMetaDataForNGENImage,
     CordbModule * pModule)
 {
@@ -377,7 +377,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
     IMDInternalImport * pMDII = NULL;
 
     // First, see if the debugger can locate the exact metadata we want.
-    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEFile, dwImageTimeStamp, dwImageSize, isNGEN, &filePath))
+    if (this->GetDAC()->GetMetaDataFileInfoFromPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, isNGEN, &filePath))
     {
         _ASSERTE(filePath.IsSet());
 
@@ -408,7 +408,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebugger(
         filePath.Clear();
         if ((pMDII == NULL) &&
             (isNGEN) &&
-            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEFile, dwImageTimeStamp, dwImageSize, &filePath)))
+            (this->GetDAC()->GetILImageInfoFromNgenPEFile(vmPEAssembly, dwImageTimeStamp, dwImageSize, &filePath)))
         {
             _ASSERTE(filePath.IsSet());
 
@@ -496,7 +496,7 @@ IMDInternalImport * CordbProcess::LookupMetaDataFromDebuggerForSingleFile(
         if (SUCCEEDED(hr))
         {
             // While we're successfully returning a metadata reader, remember that there's
-            // absolutely no guarantee this metadata is an exact match for the vmPEFile.
+            // absolutely no guarantee this metadata is an exact match for the vmPEAssembly.
             // The debugger could literally send us back a path to any managed file with
             // metadata content that is readable and we'll 'succeed'.
             // For now, this is by-design.  A debugger should be allowed to decide if it wants
@@ -14737,32 +14737,8 @@ HRESULT CordbProcess::SetDesiredNGENCompilerFlags(DWORD dwFlags)
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
 
-#if defined(FEATURE_PREJIT)
-    if ((dwFlags != CORDEBUG_JIT_DEFAULT) && (dwFlags != CORDEBUG_JIT_DISABLE_OPTIMIZATION))
-    {
-        return E_INVALIDARG;
-    }
-
-    CordbProcess *pProcess = GetProcess();
-    ATT_REQUIRE_STOPPED_MAY_FAIL(pProcess);
-    HRESULT  hr = S_OK;
-    EX_TRY
-    {
-        // Left-side checks that this is a valid time to set the Ngen flags.
-        hr = pProcess->GetDAC()->SetNGENCompilerFlags(dwFlags);
-        if (!SUCCEEDED(hr) && GetShim() != NULL)
-        {
-            // Emulate V2 error semantics.
-            hr = GetShim()->FilterSetNgenHresult(hr);
-        }
-    }
-    EX_CATCH_HRESULT(hr);
-    return hr;
-
-#else  // !FEATURE_PREJIT
     return CORDBG_E_NGEN_NOT_SUPPORTED;
 
-#endif // FEATURE_PREJIT
 }
 
 HRESULT CordbProcess::GetDesiredNGENCompilerFlags(DWORD *pdwFlags )

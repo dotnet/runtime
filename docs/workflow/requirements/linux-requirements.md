@@ -57,3 +57,9 @@ libssl-dev libnuma-dev libkrb5-dev zlib1g-dev ninja-build
 ```
 
 You now have all the required components.
+*Unsupported OSes*:
+In case you have Gentoo you can run following commands:
+
+```
+emerge --ask clang dev-util/lttng-ust app-crypt/mit-krb5
+```

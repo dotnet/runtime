@@ -4,19 +4,12 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
     internal static partial class JsonHelpers
     {
-        // Members accessed by the serializer when deserializing.
-        public const DynamicallyAccessedMemberTypes MembersAccessedOnRead =
-            DynamicallyAccessedMemberTypes.PublicConstructors |
-            DynamicallyAccessedMemberTypes.PublicProperties |
-            DynamicallyAccessedMemberTypes.PublicFields;
-
         /// <summary>
         /// Returns the span for the given reader.
         /// </summary>
@@ -107,20 +100,24 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Emulates Dictionary.TryAdd on netstandard.
+        /// Emulates Dictionary(IEnumerable{KeyValuePair}) on netstandard.
         /// </summary>
-        public static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, in TKey key, in TValue value) where TKey : notnull
+        public static Dictionary<TKey, TValue> CreateDictionaryFromCollection<TKey, TValue>(
+            IEnumerable<KeyValuePair<TKey, TValue>> collection,
+            IEqualityComparer<TKey> comparer)
+            where TKey : notnull
         {
 #if NETSTANDARD2_0 || NETFRAMEWORK
-            if (!dictionary.ContainsKey(key))
+            var dictionary = new Dictionary<TKey, TValue>(comparer);
+
+            foreach (KeyValuePair<TKey, TValue> item in collection)
             {
-                dictionary[key] = value;
-                return true;
+                dictionary.Add(item.Key, item.Value);
             }
 
-            return false;
+            return dictionary;
 #else
-            return dictionary.TryAdd(key, value);
+            return new Dictionary<TKey, TValue>(collection: collection, comparer);
 #endif
         }
 

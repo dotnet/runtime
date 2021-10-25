@@ -160,7 +160,7 @@ namespace System
             else
             {
                 if (assembly == null)
-                    type = RuntimeType.GetType(name, throwOnError, ignoreCase, false, ref stackMark);
+                    type = RuntimeType.GetType(name, throwOnError, ignoreCase, ref stackMark);
                 else
                     type = assembly.GetType(name, throwOnError, ignoreCase);
             }

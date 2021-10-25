@@ -3,6 +3,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -13,6 +14,13 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public readonly struct Int64 : IComparable, IConvertible, ISpanFormattable, IComparable<long>, IEquatable<long>
+#if FEATURE_GENERIC_MATH
+#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
+        , IBinaryInteger<long>,
+          IMinMaxValue<long>,
+          ISignedNumber<long>
+#pragma warning restore SA1001, CA2252
+#endif // FEATURE_GENERIC_MATH
     {
         private readonly long m_value; // Do not rename (binary serialization)
 
@@ -253,5 +261,661 @@ namespace System
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
+
+#if FEATURE_GENERIC_MATH
+        //
+        // IAdditionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IAdditionOperators<long, long, long>.operator +(long left, long right)
+            => left + right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IAdditionOperators<long, long, long>.operator +(long left, long right)
+        //     => checked(left + right);
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IAdditiveIdentity<long, long>.AdditiveIdentity => 0;
+
+        //
+        // IBinaryInteger
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBinaryInteger<long>.LeadingZeroCount(long value)
+            => BitOperations.LeadingZeroCount((ulong)value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBinaryInteger<long>.PopCount(long value)
+            => BitOperations.PopCount((ulong)value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBinaryInteger<long>.RotateLeft(long value, int rotateAmount)
+            => (long)BitOperations.RotateLeft((ulong)value, rotateAmount);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBinaryInteger<long>.RotateRight(long value, int rotateAmount)
+            => (long)BitOperations.RotateRight((ulong)value, rotateAmount);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBinaryInteger<long>.TrailingZeroCount(long value)
+            => BitOperations.TrailingZeroCount(value);
+
+        //
+        // IBinaryNumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IBinaryNumber<long>.IsPow2(long value)
+            => BitOperations.IsPow2(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBinaryNumber<long>.Log2(long value)
+        {
+            if (value < 0)
+            {
+                ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
+            }
+            return BitOperations.Log2((ulong)value);
+        }
+
+        //
+        // IBitwiseOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBitwiseOperators<long, long, long>.operator &(long left, long right)
+            => left & right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBitwiseOperators<long, long, long>.operator |(long left, long right)
+            => left | right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBitwiseOperators<long, long, long>.operator ^(long left, long right)
+            => left ^ right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IBitwiseOperators<long, long, long>.operator ~(long value)
+            => ~value;
+
+        //
+        // IComparisonOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<long, long>.operator <(long left, long right)
+            => left < right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<long, long>.operator <=(long left, long right)
+            => left <= right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<long, long>.operator >(long left, long right)
+            => left > right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IComparisonOperators<long, long>.operator >=(long left, long right)
+            => left >= right;
+
+        //
+        // IDecrementOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IDecrementOperators<long>.operator --(long value)
+            => --value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IDecrementOperators<long>.operator --(long value)
+        //     => checked(--value);
+
+        //
+        // IDivisionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IDivisionOperators<long, long, long>.operator /(long left, long right)
+            => left / right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IDivisionOperators<long, long, long>.operator /(long left, long right)
+        //     => checked(left / right);
+
+        //
+        // IEqualityOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<long, long>.operator ==(long left, long right)
+            => left == right;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IEqualityOperators<long, long>.operator !=(long left, long right)
+            => left != right;
+
+        //
+        // IIncrementOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IIncrementOperators<long>.operator ++(long value)
+            => ++value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IIncrementOperators<long>.operator ++(long value)
+        //     => checked(++value);
+
+        //
+        // IMinMaxValue
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IMinMaxValue<long>.MinValue => MinValue;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IMinMaxValue<long>.MaxValue => MaxValue;
+
+        //
+        // IModulusOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IModulusOperators<long, long, long>.operator %(long left, long right)
+            => left % right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IModulusOperators<long, long, long>.operator %(long left, long right)
+        //     => checked(left % right);
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IMultiplicativeIdentity<long, long>.MultiplicativeIdentity => 1;
+
+        //
+        // IMultiplyOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IMultiplyOperators<long, long, long>.operator *(long left, long right)
+            => left * right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IMultiplyOperators<long, long, long>.operator *(long left, long right)
+        //     => checked(left * right);
+
+        //
+        // INumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.One => 1;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Zero => 0;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Abs(long value)
+            => Math.Abs(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Clamp(long value, long min, long max)
+            => Math.Clamp(value, min, max);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static long INumber<long>.Create<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return checked((long)(decimal)(object)value);
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return checked((long)(double)(object)value);
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return checked((long)(float)(object)value);
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return checked((long)(ulong)(object)value);
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return checked((long)(nuint)(object)value);
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static long INumber<long>.CreateSaturating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (long)actualValue;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (long)actualValue;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+                return (actualValue > MaxValue) ? MaxValue :
+                       (actualValue < MinValue) ? MinValue : (long)actualValue;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (long)actualValue;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+                return (actualValue > MaxValue) ? MaxValue : (long)actualValue;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static long INumber<long>.CreateTruncating<TOther>(TOther value)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (long)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (long)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (long)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (long)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (long)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static (long Quotient, long Remainder) INumber<long>.DivRem(long left, long right)
+            => Math.DivRem(left, right);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Max(long x, long y)
+            => Math.Max(x, y);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Min(long x, long y)
+            => Math.Min(x, y);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Parse(string s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+            => Parse(s, style, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long INumber<long>.Sign(long value)
+            => Math.Sign(value);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool INumber<long>.TryCreate<TOther>(TOther value, out long result)
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                var actualValue = (decimal)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (long)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                var actualValue = (double)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (long)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                result = (short)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                result = (long)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (sbyte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                var actualValue = (float)(object)value;
+
+                if ((actualValue < MinValue) || (actualValue > MaxValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (long)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                result = (uint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                var actualValue = (ulong)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (long)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                var actualValue = (nuint)(object)value;
+
+                if (actualValue > MaxValue)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (long)actualValue;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool INumber<long>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out long result)
+            => TryParse(s, style, provider, out result);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool INumber<long>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out long result)
+            => TryParse(s, style, provider, out result);
+
+        //
+        // IParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IParseable<long>.Parse(string s, IFormatProvider? provider)
+            => Parse(s, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool IParseable<long>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out long result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // IShiftOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IShiftOperators<long, long>.operator <<(long value, int shiftAmount)
+            => value << (int)shiftAmount;
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IShiftOperators<long, long>.operator >>(long value, int shiftAmount)
+            => value >> (int)shiftAmount;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static long IShiftOperators<long, long>.operator >>>(long value, int shiftAmount)
+        //     => (long)((ulong)value >> (int)shiftAmount);
+
+        //
+        // ISignedNumber
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long ISignedNumber<long>.NegativeOne => -1;
+
+        //
+        // ISpanParseable
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long ISpanParseable<long>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
+            => Parse(s, NumberStyles.Integer, provider);
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static bool ISpanParseable<long>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out long result)
+            => TryParse(s, NumberStyles.Integer, provider, out result);
+
+        //
+        // ISubtractionOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long ISubtractionOperators<long, long, long>.operator -(long left, long right)
+            => left - right;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long ISubtractionOperators<long, long, long>.operator -(long left, long right)
+        //     => checked(left - right);
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IUnaryNegationOperators<long, long>.operator -(long value)
+            => -value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IUnaryNegationOperators<long, long>.operator -(long value)
+        //     => checked(-value);
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        static long IUnaryPlusOperators<long, long>.operator +(long value)
+            => +value;
+
+        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        // static checked long IUnaryPlusOperators<long, long>.operator +(long value)
+        //     => checked(+value);
+#endif // FEATURE_GENERIC_MATH
     }
 }

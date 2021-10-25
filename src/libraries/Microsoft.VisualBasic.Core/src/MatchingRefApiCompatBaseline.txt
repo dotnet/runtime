@@ -1,28 +1,4 @@
-Compat issues with assembly Microsoft.VisualBasic:
-
-# Loaded via reflection so needs to be public in the implementation but we don't want to expose them publicly in the ref assembly:
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Conversions.FallbackUserDefinedConversion(System.Object, System.Type)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackCall(System.Object, System.String, System.Object[], System.String[], System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackGet(System.Object, System.String, System.Object[], System.String[])' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackIndexSet(System.Object, System.Object[], System.String[])' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackIndexSetComplex(System.Object, System.Object[], System.String[], System.Boolean, System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackInvokeDefault1(System.Object, System.Object[], System.String[], System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackInvokeDefault2(System.Object, System.Object[], System.String[], System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackSet(System.Object, System.String, System.Object[])' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.FallbackSetComplex(System.Object, System.String, System.Object[], System.Boolean, System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.LateCallInvokeDefault(System.Object, System.Object[], System.String[], System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.NewLateBinding.LateGetInvokeDefault(System.Object, System.Object[], System.String[], System.Boolean)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'Microsoft.VisualBasic.CompilerServices.Operators.FallbackInvokeUserDefinedOperator(System.Object, System.Object[])' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate0' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate1' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate2' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate3' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate4' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate5' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate6' does not exist in the reference but it does exist in the implementation.
-TypesMustExist : Type 'Microsoft.VisualBasic.CompilerServices.SiteDelegate7' does not exist in the reference but it does exist in the implementation.
-
-# C# doesn't permit setting the parameter name of the setter.
+Compat issues with assembly Microsoft.VisualBasic.Core:
 ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ComClassAttribute.InterfaceShadows.set(System.Boolean)' is 'value' in the reference but 'AutoPropertyValue' in the implementation.
 ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.DateString.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
 ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.DateAndTime.TimeOfDay.set(System.DateTime)' is 'value' in the reference but 'Value' in the implementation.
@@ -33,3 +9,4 @@ ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.Err
 ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.HelpFile.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
 ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Number.set(System.Int32)' is 'value' in the reference but 'Value' in the implementation.
 ParameterNamesCannotChange : Parameter name on member 'Microsoft.VisualBasic.ErrObject.Source.set(System.String)' is 'value' in the reference but 'Value' in the implementation.
+Total Issues: 10

@@ -5,6 +5,8 @@ namespace System.Configuration
 {
     public class SettingsProperty
     {
+        internal static bool EnableUnsafeBinaryFormatterInPropertyValueSerialization { get; } = AppContext.TryGetSwitch("System.Configuration.ConfigurationManager.EnableUnsafeBinaryFormatterInPropertyValueSerialization", out bool isEnabled) ? isEnabled : false;
+
         public virtual string Name { get; set; }
         public virtual bool IsReadOnly { get; set; }
         public virtual object DefaultValue { get; set; }
@@ -37,7 +39,19 @@ namespace System.Configuration
             Provider = provider;
             IsReadOnly = isReadOnly;
             DefaultValue = defaultValue;
-            SerializeAs = serializeAs;
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (serializeAs == SettingsSerializeAs.Binary)
+#pragma warning restore CS0618 // Type or member is obsolete
+            {
+                if (EnableUnsafeBinaryFormatterInPropertyValueSerialization)
+                {
+                    SerializeAs = serializeAs;
+                }
+                else
+                {
+                    throw new NotSupportedException(Obsoletions.BinaryFormatterMessage);
+                }
+            }
             Attributes = attributes;
             ThrowOnErrorDeserializing = throwOnErrorDeserializing;
             ThrowOnErrorSerializing = throwOnErrorSerializing;

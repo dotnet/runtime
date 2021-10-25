@@ -71,18 +71,39 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static bool IsPow2(ulong value) => (value & (value - 1)) == 0 && value != 0;
 
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPow2(nint value) => (value & (value - 1)) == 0 && value > 0;
+
+        /// <summary>
+        /// Evaluate whether a given integral value is a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static bool IsPow2(nuint value) => (value & (value - 1)) == 0 && value != 0;
+
         /// <summary>Round the given integral value up to a power of 2.</summary>
         /// <param name="value">The value.</param>
-        internal static uint RoundUpToPowerOf2(uint value)
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static uint RoundUpToPowerOf2(uint value)
         {
-            // TODO: https://github.com/dotnet/runtime/issues/43135
-            // When this is exposed publicly, decide on the behavior for the boundary cases...
-            // the accelerated and fallback paths differ.
-            Debug.Assert(value > 0 && value <= (uint.MaxValue / 2) + 1);
-
             if (Lzcnt.IsSupported || ArmBase.IsSupported || X86Base.IsSupported)
             {
-                return 1u << (32 - LeadingZeroCount(value - 1));
+#if TARGET_64BIT
+                return (uint)(0x1_0000_0000ul >> LeadingZeroCount(value - 1));
+#else
+                int shift = 32 - LeadingZeroCount(value - 1);
+                return (1u ^ (uint)(shift >> 5)) << shift;
+#endif
             }
 
             // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
@@ -93,6 +114,54 @@ namespace System.Numerics
             value |= value >> 8;
             value |= value >> 16;
             return value + 1;
+        }
+
+        /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static ulong RoundUpToPowerOf2(ulong value)
+        {
+            if (Lzcnt.X64.IsSupported || ArmBase.Arm64.IsSupported)
+            {
+                int shift = 64 - LeadingZeroCount(value - 1);
+                return (1ul ^ (ulong)(shift >> 6)) << shift;
+            }
+
+            // Based on https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+            --value;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            value |= value >> 32;
+            return value + 1;
+        }
+
+        /// <summary>
+        /// Round the given integral value up to a power of 2.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>
+        /// The smallest power of 2 which is greater than or equal to <paramref name="value"/>.
+        /// If <paramref name="value"/> is 0 or the result overflows, returns 0.
+        /// </returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static nuint RoundUpToPowerOf2(nuint value)
+        {
+#if TARGET_64BIT
+            return (nuint)RoundUpToPowerOf2((ulong)value);
+#else
+            return (nuint)RoundUpToPowerOf2((uint)value);
+#endif
         }
 
         /// <summary>
@@ -169,6 +238,22 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Count the number of leading zero bits in a mask.
+        /// Similar in behavior to the x86 instruction LZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int LeadingZeroCount(nuint value)
+        {
+#if TARGET_64BIT
+            return LeadingZeroCount((ulong)value);
+#else
+            return LeadingZeroCount((uint)value);
+#endif
+        }
+
+        /// <summary>
         /// Returns the integer (floor) log of the specified value, base 2.
         /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
         /// </summary>
@@ -242,6 +327,22 @@ namespace System.Numerics
             }
 
             return 32 + Log2(hi);
+        }
+
+        /// <summary>
+        /// Returns the integer (floor) log of the specified value, base 2.
+        /// Note that by convention, input value 0 returns 0 since log(0) is undefined.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int Log2(nuint value)
+        {
+#if TARGET_64BIT
+            return Log2((ulong)value);
+#else
+            return Log2((uint)value);
+#endif
         }
 
         /// <summary>
@@ -383,6 +484,22 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Returns the population count (number of bits set) of a mask.
+        /// Similar in behavior to the x86 instruction POPCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int PopCount(nuint value)
+        {
+#if TARGET_64BIT
+            return PopCount((ulong)value);
+#else
+            return PopCount((uint)value);
+#endif
+        }
+
+        /// <summary>
         /// Count the number of trailing zero bits in an integer value.
         /// Similar in behavior to the x86 instruction TZCNT.
         /// </summary>
@@ -476,6 +593,31 @@ namespace System.Numerics
         }
 
         /// <summary>
+        /// Count the number of trailing zero bits in a mask.
+        /// Similar in behavior to the x86 instruction TZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int TrailingZeroCount(nint value)
+            => TrailingZeroCount((nuint)value);
+
+        /// <summary>
+        /// Count the number of trailing zero bits in a mask.
+        /// Similar in behavior to the x86 instruction TZCNT.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static int TrailingZeroCount(nuint value)
+        {
+#if TARGET_64BIT
+            return TrailingZeroCount((ulong)value);
+#else
+            return TrailingZeroCount((uint)value);
+#endif
+        }
+
+        /// <summary>
         /// Rotates the specified value left by the specified number of bits.
         /// Similar in behavior to the x86 instruction ROL.
         /// </summary>
@@ -502,6 +644,26 @@ namespace System.Numerics
             => (value << offset) | (value >> (64 - offset));
 
         /// <summary>
+        /// Rotates the specified value left by the specified number of bits.
+        /// Similar in behavior to the x86 instruction ROL.
+        /// </summary>
+        /// <param name="value">The value to rotate.</param>
+        /// <param name="offset">The number of bits to rotate by.
+        /// Any value outside the range [0..31] is treated as congruent mod 32 on a 32-bit process,
+        /// and any value outside the range [0..63] is treated as congruent mod 64 on a 64-bit process.</param>
+        /// <returns>The rotated value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static nuint RotateLeft(nuint value, int offset)
+        {
+#if TARGET_64BIT
+            return (nuint)RotateLeft((ulong)value, offset);
+#else
+            return (nuint)RotateLeft((uint)value, offset);
+#endif
+        }
+
+        /// <summary>
         /// Rotates the specified value right by the specified number of bits.
         /// Similar in behavior to the x86 instruction ROR.
         /// </summary>
@@ -526,5 +688,25 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static ulong RotateRight(ulong value, int offset)
             => (value >> offset) | (value << (64 - offset));
+
+        /// <summary>
+        /// Rotates the specified value right by the specified number of bits.
+        /// Similar in behavior to the x86 instruction ROR.
+        /// </summary>
+        /// <param name="value">The value to rotate.</param>
+        /// <param name="offset">The number of bits to rotate by.
+        /// Any value outside the range [0..31] is treated as congruent mod 32 on a 32-bit process,
+        /// and any value outside the range [0..63] is treated as congruent mod 64 on a 64-bit process.</param>
+        /// <returns>The rotated value.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CLSCompliant(false)]
+        public static nuint RotateRight(nuint value, int offset)
+        {
+#if TARGET_64BIT
+            return (nuint)RotateRight((ulong)value, offset);
+#else
+            return (nuint)RotateRight((uint)value, offset);
+#endif
+        }
     }
 }

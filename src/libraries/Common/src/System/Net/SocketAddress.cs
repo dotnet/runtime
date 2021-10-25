@@ -251,7 +251,7 @@ namespace System.Net.Internals
                 stackalloc char[256] :
                 new char[maxLength];
 
-            familyString.AsSpan().CopyTo(result);
+            familyString.CopyTo(result);
             int length = familyString.Length;
 
             result[length++] = ':';

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <GenerateInstallers Condition="'$(BuildRpmPackage)' != 'true'">false</GenerateInstallers>
+    <PackageTargetOS>fedora.34</PackageTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <LinuxPackageDependency Include="libicu;krb5-libs" />
+  </ItemGroup>
+</Project>

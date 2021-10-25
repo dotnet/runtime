@@ -24,6 +24,7 @@
 #include "corhost.h"
 #include "reflectioninvocation.h"
 #include "sigbuilder.h"
+#include "callconvbuilder.hpp"
 #include "callsiteinspect.h"
 
 #define DISPATCH_INVOKE_SLOT 6
@@ -37,7 +38,6 @@ void CreateCLRToDispatchCOMStub(
             DWORD        dwStubFlags             // NDirectStubFlags
             );
 
-#ifndef CROSSGEN_COMPILE
 
 PCODE TheGenericComplusCallStub()
 {
@@ -46,7 +46,6 @@ PCODE TheGenericComplusCallStub()
     return GetEEFuncEntryPoint(GenericComPlusCallStub);
 }
 
-#endif //#ifndef CROSSGEN_COMPILE
 
 
 ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWORD* pdwStubFlags)
@@ -165,74 +164,32 @@ MethodDesc* ComPlusCall::GetILStubMethodDesc(MethodDesc* pMD, DWORD dwStubFlags)
                     &sigDesc,
                     (CorNativeLinkType)0,
                     (CorNativeLinkFlags)0,
-                    MetaSig::GetDefaultUnmanagedCallingConvention(),
+                    CallConv::GetDefaultUnmanagedCallingConvention(),
                     dwStubFlags);
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 PCODE ComPlusCall::GetStubForILStub(MethodDesc* pMD, MethodDesc** ppStubMD)
 {
     STANDARD_VM_CONTRACT;
 
     _ASSERTE(pMD->IsComPlusCall() || pMD->IsGenericComPlusCall());
+    _ASSERTE(*ppStubMD == NULL);
 
-    ComPlusCallInfo *pComInfo = NULL;
+    DWORD dwStubFlags;
+    ComPlusCallInfo* pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
+
+    *ppStubMD = ComPlusCall::GetILStubMethodDesc(pMD, dwStubFlags);
 
     if (*ppStubMD != NULL)
     {
-        // pStubMD, if provided, must be preimplemented.
-        _ASSERTE((*ppStubMD)->IsPreImplemented());
-
-        pComInfo = ComPlusCallInfo::FromMethodDesc(pMD);
-        _ASSERTE(pComInfo != NULL);
-
-        _ASSERTE((*ppStubMD) ==  pComInfo->m_pStubMD.GetValue());
-
-        if (pComInfo->m_pInterfaceMT == NULL)
-        {
-            ComPlusCall::PopulateComPlusCallMethodDesc(pMD, NULL);
-        }
-        else
-        {
-            pComInfo->m_pInterfaceMT->CheckRestore();
-        }
-
-        if (pComInfo->m_pILStub == NULL)
-        {
-            PCODE pCode = JitILStub(*ppStubMD);
-            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
-        }
-        else
-        {
-            // Pointer to pre-implemented code initialized at NGen-time
-            _ASSERTE((*ppStubMD)->GetNativeCode() == pComInfo->m_pILStub);
-        }
+        PCODE pCode = JitILStub(*ppStubMD);
+        InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
     }
     else
     {
-        DWORD dwStubFlags;
-        pComInfo = ComPlusCall::PopulateComPlusCallMethodDesc(pMD, &dwStubFlags);
-
-        if (!pComInfo->m_pStubMD.IsNull())
-        {
-            // Discard pre-implemented code
-            PCODE pPreImplementedCode = pComInfo->m_pStubMD.GetValue()->GetNativeCode();
-            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), NULL, pPreImplementedCode);
-        }
-
-        *ppStubMD = ComPlusCall::GetILStubMethodDesc(pMD, dwStubFlags);
-
-        if (*ppStubMD != NULL)
-        {
-            PCODE pCode = JitILStub(*ppStubMD);
-            InterlockedCompareExchangeT<PCODE>(pComInfo->GetAddrOfILStubField(), pCode, NULL);
-        }
-        else
-        {
-            CreateCLRToDispatchCOMStub(pMD, dwStubFlags);
-        }
+        CreateCLRToDispatchCOMStub(pMD, dwStubFlags);
     }
 
     PCODE pStub = NULL;
@@ -437,13 +394,13 @@ CallsiteDetails CreateCallsiteDetails(_In_ FramedMethodFrame *pFrame)
         DelegateEEClass* delegateCls = (DelegateEEClass*)pMD->GetMethodTable()->GetClass();
         _ASSERTE(pFrame->GetThis()->GetMethodTable()->IsDelegate());
 
-        if (pMD == delegateCls->m_pBeginInvokeMethod.GetValue())
+        if (pMD == delegateCls->m_pBeginInvokeMethod)
         {
             callsiteFlags |= CallsiteDetails::BeginInvoke;
         }
         else
         {
-            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod.GetValue());
+            _ASSERTE(pMD == delegateCls->m_pEndInvokeMethod);
             callsiteFlags |= CallsiteDetails::EndInvoke;
         }
 
@@ -794,10 +751,8 @@ UINT32 STDCALL CLRToCOMWorker(TransitionBlock * pTransitionBlock, ComPlusCallMet
 
 #pragma optimize( "", on )
 
-#endif // CROSSGEN_COMPILE
 #endif // #ifndef DACCESS_COMPILE
 
-#ifndef CROSSGEN_COMPILE
 //---------------------------------------------------------
 // Debugger support for ComPlusMethodFrame
 //---------------------------------------------------------
@@ -970,7 +925,6 @@ BOOL ComPlusMethodFrame::TraceFrame(Thread *thread, BOOL fromPatch,
 
     return TRUE;
 }
-#endif //CROSSGEN_COMPILE
 
 #ifdef TARGET_X86
 
@@ -1013,17 +967,20 @@ LPVOID ComPlusCall::GetRetThunk(UINT numStackBytes)
     {
         // cache miss -> create a new thunk
         AllocMemTracker dummyAmTracker;
-        pRetThunk = (LPVOID)dummyAmTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T((numStackBytes == 0) ? 1 : 3)));
+        size_t thunkSize = (numStackBytes == 0) ? 1 : 3;
+        pRetThunk = (LPVOID)dummyAmTracker.Track(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap()->AllocMem(S_SIZE_T(thunkSize)));
 
-        BYTE *pThunk = (BYTE *)pRetThunk;
+        ExecutableWriterHolder<BYTE> thunkWriterHolder((BYTE *)pRetThunk, thunkSize);
+        BYTE *pThunkRW = thunkWriterHolder.GetRW();
+
         if (numStackBytes == 0)
         {
-            pThunk[0] = 0xc3;
+            pThunkRW[0] = 0xc3;
         }
         else
         {
-            pThunk[0] = 0xc2;
-            *(USHORT *)&pThunk[1] = (USHORT)numStackBytes;
+            pThunkRW[0] = 0xc2;
+            *(USHORT *)&pThunkRW[1] = (USHORT)numStackBytes;
         }
 
         // add it to the cache

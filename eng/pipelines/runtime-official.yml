@@ -42,9 +42,22 @@ stages:
   jobs:
 
   #
+  # Localization build
+  #
+  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    - template: /eng/common/templates/job/onelocbuild.yml
+      parameters:
+        MirrorRepo: runtime
+        LclSource: lclFilesfromPackage
+        LclPackageId: 'LCL-JUNO-PROD-RUNTIME'
+
+  #
   # Source Index Build
   #
-  - template: ./source-index.yml
+  - ${{ if eq(variables['Build.SourceBranch'], 'refs/heads/main') }}:
+    - template: /eng/common/templates/job/source-index-stage1.yml
+      parameters:
+        sourceIndexBuildCommand: build.cmd -subset libs.ref+libs.src -binarylog -os Linux -ci
 
   #
   # Build CoreCLR
@@ -145,6 +158,7 @@ stages:
       - Browser_wasm
       - tvOS_arm64
       - iOS_arm64
+      - MacCatalyst_x64
 
   #
   # Build Mono release AOT cross-compilers
@@ -204,7 +218,7 @@ stages:
       - OSX_x64
       jobParameters:
         buildArgs: -s mono+packs -c $(_BuildConfig)
-                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+                   /p:MonoCrossAOTTargetOS=Android+Browser+tvOS+iOS+MacCatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
         nameSuffix: CrossAOT_Mono
         runtimeVariant: crossaot
         dependsOn:
@@ -212,11 +226,13 @@ stages:
         - mono_browser_offsets
         - mono_tvos_offsets
         - mono_ios_offsets
+        - mono_maccatalyst_offsets
         monoCrossAOTTargetOS:
         - Android
         - Browser
         - tvOS
         - iOS
+        - MacCatalyst
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
@@ -289,6 +305,9 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         liveRuntimeBuildConfig: release
+        # Official builds don't run tests, locally or on Helix
+        runTests: false
+        useHelix: false
 
   #
   # Build libraries AllConfigurations for packages
@@ -304,6 +323,26 @@ stages:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         isOfficialAllConfigurations: true
         liveRuntimeBuildConfig: release
+        # Official builds don't run tests, locally or on Helix
+        runTests: false
+        useHelix: false
+
+  #
+  # Build Sourcebuild leg
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Release
+      helixQueueGroup: ci
+      platforms:
+      - SourceBuild_Linux_x64
+      jobParameters:
+        nameSuffix: SourceBuild
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: SourceBuildPackages
+
 
   #
   # Installer Build
@@ -358,6 +397,36 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+
+  #
+  # Build Workloads
+  #
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/mono/templates/workloads-build.yml
+      buildConfig: release
+      platforms:
+      - windows_x64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        timeoutInMinutes: 120
+        dependsOn:
+        - Build_Android_arm_release_AllSubsets_Mono
+        - Build_Android_arm64_release_AllSubsets_Mono
+        - Build_Android_x86_release_AllSubsets_Mono
+        - Build_Android_x64_release_AllSubsets_Mono
+        - Build_Browser_wasm_release_AllSubsets_Mono
+        - Build_iOS_arm_release_AllSubsets_Mono
+        - Build_iOS_arm64_release_AllSubsets_Mono
+        - Build_iOSSimulator_x64_release_AllSubsets_Mono
+        - Build_iOSSimulator_x86_release_AllSubsets_Mono
+        - Build_iOSSimulator_arm64_release_AllSubsets_Mono
+        - Build_MacCatalyst_arm64_release_AllSubsets_Mono
+        - Build_MacCatalyst_x64_release_AllSubsets_Mono
+        - Build_tvOS_arm64_release_AllSubsets_Mono
+        - Build_tvOSSimulator_arm64_release_AllSubsets_Mono
+        - Build_tvOSSimulator_x64_release_AllSubsets_Mono
+        - Build_Windows_x64_release_CrossAOT_Mono
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

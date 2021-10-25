@@ -1,12 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
-namespace System.Text.Json.SourceGeneration.Reflection
+namespace System.Text.Json.Reflection
 {
-    internal static class ReflectionExtensions
+    internal static partial class ReflectionExtensions
     {
         public static CustomAttributeData GetCustomAttributeData(this MemberInfo memberInfo, Type type)
         {
@@ -20,14 +22,28 @@ namespace System.Text.Json.SourceGeneration.Reflection
 
         public static bool IsInitOnly(this MethodInfo method)
         {
-            MethodInfoWrapper? methodInfoWrapper = method as MethodInfoWrapper;
-
-            if (methodInfoWrapper == null)
+            if (method == null)
             {
-                throw new ArgumentException("Expected a MethodInfoWrapper instance.", nameof(method));
+                throw new ArgumentNullException(nameof(method));
             }
 
+            MethodInfoWrapper methodInfoWrapper = (MethodInfoWrapper)method;
             return methodInfoWrapper.IsInitOnly;
+        }
+
+        private static bool HasJsonConstructorAttribute(ConstructorInfo constructorInfo)
+        {
+            IList<CustomAttributeData> attributeDataList = CustomAttributeData.GetCustomAttributes(constructorInfo);
+
+            foreach (CustomAttributeData attributeData in attributeDataList)
+            {
+                if (attributeData.AttributeType.FullName == "System.Text.Json.Serialization.JsonConstructorAttribute")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

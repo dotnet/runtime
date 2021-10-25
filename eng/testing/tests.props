@@ -6,6 +6,7 @@
     <TestDependsOn Condition="'$(TestNoBuild)' != 'true' and '$(BuildAllProjects)' != 'true'">Build</TestDependsOn>
     <TestDependsOn>$(TestDependsOn);GenerateRunScript;RunTests</TestDependsOn>
     <VSTestNoLogo>true</VSTestNoLogo>
+    <ILLinkDescriptorsPath>$(MSBuildThisFileDirectory)ILLinkDescriptors\</ILLinkDescriptorsPath>
   </PropertyGroup>
 
   <PropertyGroup>

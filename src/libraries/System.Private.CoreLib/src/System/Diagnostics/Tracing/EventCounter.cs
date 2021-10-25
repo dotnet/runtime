@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tracing
             int count = Volatile.Read(ref _count);
             return count == 0 ?
                 $"EventCounter '{Name}' Count 0" :
-                $"EventCounter '{Name}' Count {count} Mean {(_sum / count).ToString("n3")}";
+                $"EventCounter '{Name}' Count {count} Mean {_sum / count:n3}";
         }
 
         #region Statistics Calculation

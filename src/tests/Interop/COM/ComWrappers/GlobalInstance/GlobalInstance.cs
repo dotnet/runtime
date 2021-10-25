@@ -116,14 +116,14 @@ namespace ComWrappersTests.GlobalInstance
                 }
                 else if (string.Equals(ManagedServerTypeName, obj.GetType().Name))
                 {
-                    IntPtr fpQueryInteface = default;
+                    IntPtr fpQueryInterface = default;
                     IntPtr fpAddRef = default;
                     IntPtr fpRelease = default;
-                    ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+                    ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
 
                     var vtbl = new IUnknownVtbl()
                     {
-                        QueryInterface = fpQueryInteface,
+                        QueryInterface = fpQueryInterface,
                         AddRef = fpAddRef,
                         Release = fpRelease
                     };
@@ -171,19 +171,24 @@ namespace ComWrappersTests.GlobalInstance
 
             protected override void ReleaseObjects(IEnumerable objects)
             {
+                foreach (object o in objects)
+                {
+                    Assert.IsNotNull(o);
+                }
+
                 throw new Exception() { HResult = ReleaseObjectsCallAck };
             }
 
             private unsafe ComInterfaceEntry* ComputeVtablesForTestObject(Test obj, out int count)
             {
-                IntPtr fpQueryInteface = default;
+                IntPtr fpQueryInterface = default;
                 IntPtr fpAddRef = default;
                 IntPtr fpRelease = default;
-                ComWrappers.GetIUnknownImpl(out fpQueryInteface, out fpAddRef, out fpRelease);
+                ComWrappers.GetIUnknownImpl(out fpQueryInterface, out fpAddRef, out fpRelease);
 
                 var iUnknownVtbl = new IUnknownVtbl()
                 {
-                    QueryInterface = fpQueryInteface,
+                    QueryInterface = fpQueryInterface,
                     AddRef = fpAddRef,
                     Release = fpRelease
                 };

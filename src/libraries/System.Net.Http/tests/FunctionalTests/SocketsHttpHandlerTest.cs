@@ -141,9 +141,15 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
     }
 
-    public sealed class SocketsHttpHandler_DiagnosticsTest : DiagnosticsTest
+    public sealed class SocketsHttpHandler_DiagnosticsTest_Http11 : DiagnosticsTest
     {
-        public SocketsHttpHandler_DiagnosticsTest(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_DiagnosticsTest_Http11(ITestOutputHelper output) : base(output) { }
+    }
+
+    public sealed class SocketsHttpHandler_DiagnosticsTest_Http2 : DiagnosticsTest
+    {
+        public SocketsHttpHandler_DiagnosticsTest_Http2(ITestOutputHelper output) : base(output) { }
+        protected override Version UseVersion => HttpVersion.Version20;
     }
 
     public sealed class SocketsHttpHandler_HttpClient_SelectedSites_Test : HttpClient_SelectedSites_Test
@@ -158,24 +164,25 @@ namespace System.Net.Http.Functional.Tests
     }
 #endif
 
+    [SkipOnPlatform(TestPlatforms.Browser, "AutomaticDecompression not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Decompression_Tests : HttpClientHandler_Decompression_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Decompression_Tests(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Proxy is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test
     {
         public SocketsHttpHandler_HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
@@ -192,8 +199,7 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    // set_MaxConnectionsPerServer - System.PlatformNotSupportedException
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxConnectionsPerServer not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
@@ -242,13 +248,13 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Certificates are not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test
     {
         public SocketsHttpHandler_HttpClientHandler_ServerCertificates_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "ResponseDrainTimeout is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ResponseDrain_Test : HttpClientHandler_ResponseDrain_Test
     {
         protected override void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time)
@@ -548,19 +554,19 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNotBrowser))]
     public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
     {
         public SocketsHttpHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
     public sealed class SocketsHttpHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test
     {
         public SocketsHttpHandler_HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseProxy not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
@@ -582,8 +588,7 @@ namespace System.Net.Http.Functional.Tests
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
     }
 
-    // System.Net.Sockets is not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/54156", TestPlatforms.Browser)]
     public class SocketsHttpHandler_Http1_TrailingHeaders_Test : SocketsHttpHandler_TrailingHeaders_Test
     {
         public SocketsHttpHandler_Http1_TrailingHeaders_Test(ITestOutputHelper output) : base(output) { }
@@ -603,6 +608,7 @@ namespace System.Net.Http.Functional.Tests
                         getResponseTask,
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
+                            LoopbackServer.CorsHeaders +
                             "Connection: close\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader, Hello\r\n" : "") +
@@ -656,6 +662,7 @@ namespace System.Net.Http.Functional.Tests
                         getResponseTask,
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
+                            LoopbackServer.CorsHeaders +
                             "Connection: close\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             "Trailer: MyCoolTrailerHeader\r\n" +
@@ -745,6 +752,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
                 "HTTP/1.1 200 OK\r\n" +
+                LoopbackServer.CorsHeaders +
                 "Connection: close\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 $"Trailer: Set-Cookie, MyCoolTrailerHeader, {name}, Hello\r\n" +
@@ -774,6 +782,7 @@ namespace System.Net.Http.Functional.Tests
                         server.AcceptConnectionSendCustomResponseAndCloseAsync(
                             "HTTP/1.1 200 OK\r\n" +
                             "Connection: close\r\n" +
+                            LoopbackServer.CorsHeaders +
                             "Transfer-Encoding: chunked\r\n" +
                             "Trailer: MyCoolTrailerHeader\r\n" +
                             "\r\n" +
@@ -976,12 +985,6 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    public sealed class SocketsHttpHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest
-    {
-        public SocketsHttpHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
-    }
-
-    [SkipOnPlatform(TestPlatforms.Browser, "Tests hang with chrome. To be investigated")]
     public sealed class SocketsHttpHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public SocketsHttpHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }
@@ -1011,22 +1014,22 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandlerTest_RequestRetry(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
     public sealed class SocketsHttpHandlerTest_Cookies : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "UseCookies is not supported on Browser")]
     public sealed class SocketsHttpHandlerTest_Cookies_Http11 : HttpClientHandlerTest_Cookies_Http11
     {
         public SocketsHttpHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test : HttpClientHandler_Http11_Cancellation_Test
+    [SkipOnPlatform(TestPlatforms.Browser, "ConnectTimeout is not supported on Browser")]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test : SocketsHttpHandler_Cancellation_Test
     {
-        public SocketsHttpHandler_HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
+        public SocketsHttpHandler_HttpClientHandler_Http11_Cancellation_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public void ConnectTimeout_Default()
@@ -1124,15 +1127,13 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // BrowserHttpHandler.set_MaxResponseHeadersLength - Not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "MaxResponseHeadersLength is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         public SocketsHttpHandler_HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    //System.Net.Sockets is not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Authentication_Test : HttpClientHandler_Authentication_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
@@ -1152,7 +1153,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     // We need to use ResponseHeadersRead here, otherwise we will hang trying to buffer the response body.
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-                    await server.AcceptConnectionAsync(async connection =>
+                    await server.AcceptConnectionAsync(async (LoopbackServer.Connection connection) =>
                     {
                         Task<List<string>> serverTask = connection.ReadRequestHeaderAndSendCustomResponseAsync($"HTTP/1.1 101 Switching Protocols\r\nDate: {DateTimeOffset.UtcNow:R}\r\n\r\n");
 
@@ -1246,7 +1247,7 @@ namespace System.Net.Http.Functional.Tests
                             Task copyTask = clientStream.CopyToAsync(ms);
 
                             string bigString = string.Concat(Enumerable.Repeat("abcdefghijklmnopqrstuvwxyz", 1000));
-                            Task lotsOfDataSent = connection.Socket.SendAsync(Encoding.ASCII.GetBytes(bigString), SocketFlags.None);
+                            Task lotsOfDataSent = connection.SendResponseAsync(Encoding.ASCII.GetBytes(bigString));
                             connection.Socket.Shutdown(SocketShutdown.Send);
                             await copyTask;
                             await lotsOfDataSent;
@@ -1264,8 +1265,7 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_Connect_Test(ITestOutputHelper output) : base(output) { }
     }
 
-    // System.Net.Sockets is not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
     public sealed class SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test : HttpClientHandlerTestBase
     {
         public SocketsHttpHandler_HttpClientHandler_ConnectionPooling_Test(ITestOutputHelper output) : base(output) { }
@@ -1462,7 +1462,7 @@ namespace System.Net.Http.Functional.Tests
                     // Wait a small amount of time before making the second request, to give the first request time to timeout.
                     await Task.Delay(100);
                     // Grab reference to underlying socket and stream to make sure they are not disposed and closed.
-                    (Socket socket, Stream stream) = connection.ResetNetwork();
+                    (SocketWrapper socket, Stream stream) = connection.ResetNetwork();
 
                     // Make second request and expect it to be served from a different connection.
                     Task<string> request2 = client.GetStringAsync(url);
@@ -1774,7 +1774,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(TimeSpan.FromMinutes(1), handler.PooledConnectionIdleTimeout);
 
                 handler.PooledConnectionIdleTimeout = Timeout.InfiniteTimeSpan;
                 Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionIdleTimeout);
@@ -1927,6 +1927,30 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void InitialHttp2StreamWindowSize_GetSet_Roundtrips()
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize); // default value
+
+            handler.InitialHttp2StreamWindowSize = 1048576;
+            Assert.Equal(1048576, handler.InitialHttp2StreamWindowSize);
+
+            handler.InitialHttp2StreamWindowSize = HttpClientHandlerTestBase.DefaultInitialWindowSize;
+            Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(65534)]
+        [InlineData(32 * 1024 * 1024)]
+        public void InitialHttp2StreamWindowSize_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
+        {
+            using var handler = new SocketsHttpHandler();
+            Assert.Throws<ArgumentOutOfRangeException>(() => handler.InitialHttp2StreamWindowSize = value);
+        }
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -1957,7 +1981,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(int.MaxValue, handler.MaxConnectionsPerServer);
                 Assert.Equal(64, handler.MaxResponseHeadersLength);
                 Assert.False(handler.PreAuthenticate);
-                Assert.Equal(TimeSpan.FromMinutes(2), handler.PooledConnectionIdleTimeout);
+                Assert.Equal(TimeSpan.FromMinutes(1), handler.PooledConnectionIdleTimeout);
                 Assert.Equal(Timeout.InfiniteTimeSpan, handler.PooledConnectionLifetime);
                 Assert.NotNull(handler.Properties);
                 Assert.Null(handler.Proxy);
@@ -1966,6 +1990,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.UseProxy);
                 Assert.Null(handler.ConnectCallback);
                 Assert.Null(handler.PlaintextStreamFilter);
+                Assert.Equal(HttpClientHandlerTestBase.DefaultInitialWindowSize, handler.InitialHttp2StreamWindowSize);
 
                 Assert.Throws(expectedExceptionType, () => handler.AllowAutoRedirect = false);
                 Assert.Throws(expectedExceptionType, () => handler.AutomaticDecompression = DecompressionMethods.GZip);
@@ -1987,12 +2012,12 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Throws(expectedExceptionType, () => handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests);
                 Assert.Throws(expectedExceptionType, () => handler.ConnectCallback = (context, token) => default);
                 Assert.Throws(expectedExceptionType, () => handler.PlaintextStreamFilter = (context, token) => default);
+                Assert.Throws(expectedExceptionType, () => handler.InitialHttp2StreamWindowSize = 128 * 1024);
             }
         }
     }
 
-    // System.Net.Sockets is not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Headers.Location are not supported on Browser")]
     public sealed class SocketsHttpHandlerTest_LocationHeader
     {
         private static readonly byte[] s_redirectResponseBefore = Encoding.ASCII.GetBytes(
@@ -2090,6 +2115,63 @@ namespace System.Net.Http.Functional.Tests
                 await Task.WhenAll(sendTasks).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
 
                 await VerifySendTasks(sendTasks).ConfigureAwait(false);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_MultipleConnectionsEnabled_ManyRequestsEnqueuedSimultaneously_SufficientConnectionsCreated()
+        {
+            // This is equal to Http2Connection.InitialMaxConcurrentStreams, which is the limit we impose before we have received the peer's initial SETTINGS frame.
+            // Setting it to this value avoids any complexity that would occur from having to retry requests if the actual limit from the peer is lower.
+            const int MaxConcurrentStreams = 100;
+
+            const int ConnectionCount = 3;
+
+            // Just enough to force the third connection to be created.
+            const int RequestCount = (ConnectionCount - 1) * MaxConcurrentStreams + 1;
+
+            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
+            server.AllowMultipleConnections = true;
+
+            using SocketsHttpHandler handler = CreateHandler();
+            using HttpClient client = CreateHttpClient(handler);
+
+            List<Task<HttpResponseMessage>> sendTasks = new List<Task<HttpResponseMessage>>();
+            for (int i = 0; i < RequestCount; i++)
+            {
+                var sendTask = client.GetAsync(server.Address);
+                sendTasks.Add(sendTask);
+            }
+
+            List<(Http2LoopbackConnection connection, int streamId)> acceptedRequests = new List<(Http2LoopbackConnection connection, int streamId)>();
+
+            using Http2LoopbackConnection c1 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            for (int i = 0; i < MaxConcurrentStreams; i++)
+            {
+                (int streamId, _) = await c1.ReadAndParseRequestHeaderAsync();
+                acceptedRequests.Add((c1, streamId));
+            }
+
+            using Http2LoopbackConnection c2 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            for (int i = 0; i < MaxConcurrentStreams; i++)
+            {
+                (int streamId, _) = await c2.ReadAndParseRequestHeaderAsync();
+                acceptedRequests.Add((c2, streamId));
+            }
+
+            using Http2LoopbackConnection c3 = await server.EstablishConnectionAsync(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 });
+            (int finalStreamId, _) = await c3.ReadAndParseRequestHeaderAsync();
+            acceptedRequests.Add((c3, finalStreamId));
+
+            foreach ((Http2LoopbackConnection connection, int streamId) request in acceptedRequests)
+            {
+                await request.connection.SendDefaultResponseAsync(request.streamId);
+            }
+
+            foreach (Task<HttpResponseMessage> t in sendTasks)
+            {
+                HttpResponseMessage response = await t;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             }
         }
 
@@ -2218,15 +2300,6 @@ namespace System.Net.Http.Functional.Tests
 
                 // Wait until the idle connection timeout expires.
                 await connection1.WaitForClientDisconnectAsync(false).WaitAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-                // Client connection might be still alive, so send an extra request which will either land on the shutting down connection or on a new one.
-                try
-                {
-                    await client.GetAsync(server.Address).WaitAsync(handler.PooledConnectionIdleTimeout).ConfigureAwait(false);
-                }
-                catch (Exception)
-                {
-                    // Suppress all exceptions.
-                }
 
                 Assert.True(connection1.IsInvalid);
                 Assert.False(connection0.IsInvalid);
@@ -2269,6 +2342,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Task<HttpResponseMessage> warmUpTask = client.GetAsync(server.Address);
             Http2LoopbackConnection connection = await GetConnection(server, maxConcurrentStreams, readTimeout).WaitAsync(TestHelper.PassingTestTimeout * 2).ConfigureAwait(false);
+
             // Wait until the client confirms MaxConcurrentStreams setting took into effect.
             Task settingAckReceived = connection.SettingAckWaiter;
             while (true)
@@ -2411,9 +2485,13 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [Fact]
-        public async Task ConnectCallback_BindLocalAddress_Success()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ConnectCallback_BindLocalAddress_Success(bool useSsl)
         {
+            GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
@@ -2438,7 +2516,7 @@ namespace System.Net.Http.Functional.Tests
                 async server =>
                 {
                     await server.AcceptConnectionSendResponseAndCloseAsync(content: "foo");
-                });
+                }, options: options);
         }
 
         [Theory]
@@ -2590,6 +2668,35 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        public async Task ConnectCallback_StreamThrowsOnWrite_ExceptionAndStreamDisposed(bool useSsl)
+        {
+            const string ExceptionMessage = "THROWONWRITE";
+
+            bool disposeCalled = false;
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+            socketsHandler.ConnectCallback = (context, token) =>
+            {
+                var throwOnWriteStream = new DelegateDelegatingStream(Stream.Null);
+                throwOnWriteStream.WriteAsyncMemoryFunc = (buffer, token) => ValueTask.FromException(new IOException(ExceptionMessage));
+                throwOnWriteStream.DisposeFunc = (_) => { disposeCalled = true; };
+                throwOnWriteStream.DisposeAsyncFunc = () => { disposeCalled = true; return default; };
+                return ValueTask.FromResult<Stream>(throwOnWriteStream);
+            };
+
+            using HttpClient client = CreateHttpClient(handler);
+            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+            HttpRequestException hre = await Assert.ThrowsAnyAsync<HttpRequestException>(async () => await client.GetStringAsync($"{(useSsl ? "https" : "http")}://nowhere.invalid/foo"));
+
+            Debug.Assert(disposeCalled);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         public async Task ConnectCallback_ExceptionDuringCallback_ThrowsHttpRequestExceptionWithInnerException(bool useSsl)
         {
             Exception e = new Exception("hello!");
@@ -2631,8 +2738,7 @@ namespace System.Net.Http.Functional.Tests
         private static bool PlatformSupportsUnixDomainSockets => Socket.OSSupportsUnixDomainSockets;
    }
 
-    // System.Net.Sockets is not supported on this platform
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
     public sealed class SocketsHttpHandlerTest_ConnectCallback_Http11 : SocketsHttpHandlerTest_ConnectCallback
     {
         public SocketsHttpHandlerTest_ConnectCallback_Http11(ITestOutputHelper output) : base(output) { }
@@ -3017,7 +3123,6 @@ namespace System.Net.Http.Functional.Tests
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11 : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http11(ITestOutputHelper output) : base(output) { }
@@ -3031,19 +3136,22 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2 : HttpClientHandler_Cancellation_Test
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2 : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http2(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version20;
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_Http3_MsQuic : HttpClientHandlerTest_Http3
     {
         public SocketsHttpHandlerTest_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_Http3_Mock : HttpClientHandlerTest_Http3
     {
         public SocketsHttpHandlerTest_Http3_Mock(ITestOutputHelper output) : base(output) { }
@@ -3051,6 +3159,7 @@ namespace System.Net.Http.Functional.Tests
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_MsQuic : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -3058,6 +3167,8 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_Mock : HttpClientHandlerTest
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Http3_Mock(ITestOutputHelper output) : base(output) { }
@@ -3065,8 +3176,8 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-#if false // TODO: Many Cookie tests are failing for HTTP3.
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_MsQuic : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -3074,15 +3185,17 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3_Mock : HttpClientHandlerTest_Cookies
     {
         public SocketsHttpHandlerTest_Cookies_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
-#endif
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_MsQuic : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -3090,6 +3203,8 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_Mock : HttpClientHandlerTest_Headers
     {
         public SocketsHttpHandlerTest_HttpClientHandlerTest_Headers_Http3_Mock(ITestOutputHelper output) : base(output) { }
@@ -3097,25 +3212,26 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
 
-#if false   // TODO: Many cancellation tests are failing for HTTP3.
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : HttpClientHandler_Cancellation_Test
+    [Collection("NoParallelTests")]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
-    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : HttpClientHandler_Cancellation_Test
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
+    public sealed class SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock : SocketsHttpHandler_Cancellation_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Cancellation_Test_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
-#endif
 
-#if false   // TODO: Many AltSvc tests are failing for HTTP3.
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_MsQuic : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -3123,15 +3239,17 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_Mock : HttpClientHandler_AltSvc_Test
     {
         public SocketsHttpHandler_HttpClientHandler_AltSvc_Test_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
     }
-#endif
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMsQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_MsQuic : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_MsQuic(ITestOutputHelper output) : base(output) { }
@@ -3139,10 +3257,112 @@ namespace System.Net.Http.Functional.Tests
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.MsQuic;
     }
 
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsMockQuicSupported))]
+    [Collection("NoParallelTests")]
     public sealed class SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Mock : HttpClientHandler_Finalization_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Finalization_Http3_Mock(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
         protected override QuicImplementationProvider UseQuicImplementationProvider => QuicImplementationProviders.Mock;
+    }
+
+    // Define test collection for tests to avoid all other tests.
+    [CollectionDefinition("NoParallelTests", DisableParallelization = true)]
+    public partial class NoParallelTests { }
+
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    public abstract class SocketsHttpHandler_RequestValidationTest
+    {
+        protected abstract bool TestAsync { get; }
+
+        [Fact]
+        public void Send_NullRequest_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("request", () =>
+            {
+                var invoker = new HttpMessageInvoker(new SocketsHttpHandler());
+                if (TestAsync)
+                {
+                    invoker.SendAsync(null, CancellationToken.None);
+                }
+                else
+                {
+                    invoker.Send(null, CancellationToken.None);
+                }
+            });
+        }
+
+        [Fact]
+        public void Send_NullRequestUri_ThrowsInvalidOperationException()
+        {
+            Throws<InvalidOperationException>(new HttpRequestMessage());
+        }
+
+        [Fact]
+        public void Send_RelativeRequestUri_ThrowsInvalidOperationException()
+        {
+            Throws<InvalidOperationException>(new HttpRequestMessage(HttpMethod.Get, new Uri("/relative", UriKind.Relative)));
+        }
+
+        [Fact]
+        public void Send_UnsupportedRequestUriScheme_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage(HttpMethod.Get, "foo://foo.bar"));
+        }
+
+        [Fact]
+        public void Send_MajorVersionZero_ThrowsNotSupportedException()
+        {
+            Throws<NotSupportedException>(new HttpRequestMessage { Version = new Version(0, 42) });
+        }
+
+        [Fact]
+        public void Send_TransferEncodingChunkedWithNoContent_ThrowsHttpRequestException()
+        {
+            var request = new HttpRequestMessage();
+            request.Headers.TransferEncodingChunked = true;
+
+            HttpRequestException exception = Throws<HttpRequestException>(request);
+            Assert.IsType<InvalidOperationException>(exception.InnerException);
+        }
+
+        [Fact]
+        public void Send_Http10WithTransferEncodingChunked_ThrowsNotSupportedException()
+        {
+            var request = new HttpRequestMessage
+            {
+                Content = new StringContent("foo"),
+                Version = new Version(1, 0)
+            };
+            request.Headers.TransferEncodingChunked = true;
+
+            Throws<NotSupportedException>(request);
+        }
+
+        private TException Throws<TException>(HttpRequestMessage request)
+            where TException : Exception
+        {
+            var invoker = new HttpMessageInvoker(new SocketsHttpHandler());
+            if (TestAsync)
+            {
+                Task<HttpResponseMessage> task = invoker.SendAsync(request, CancellationToken.None);
+                Assert.Equal(TaskStatus.Faulted, task.Status);
+                return Assert.IsType<TException>(task.Exception.InnerException);
+            }
+            else
+            {
+                return Assert.Throws<TException>(() => invoker.Send(request, CancellationToken.None));
+            }
+        }
+    }
+
+    public sealed class SocketsHttpHandler_RequestValidationTest_Async : SocketsHttpHandler_RequestValidationTest
+    {
+        protected override bool TestAsync => true;
+    }
+
+    public sealed class SocketsHttpHandler_RequestValidationTest_Sync : SocketsHttpHandler_RequestValidationTest
+    {
+        protected override bool TestAsync => false;
     }
 }

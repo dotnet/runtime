@@ -26,7 +26,7 @@ bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
         return false;
 
     path.resize(dwModuleFileName);
-    *recv = path;
+    recv->assign(path);
     return true;
 }
 
@@ -38,13 +38,6 @@ bool GetModuleHandleFromAddress(void *addr, HMODULE *hModule)
         hModule);
 
     return (res != FALSE);
-}
-
-pal::string_t pal::to_lower(const pal::string_t& in)
-{
-    pal::string_t ret = in;
-    std::transform(ret.begin(), ret.end(), ret.begin(), ::towlower);
-    return ret;
 }
 
 pal::string_t pal::get_timestamp()
@@ -299,6 +292,11 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
+    if (pal::is_emulating_x64())
+    {
+        // Install location for emulated x64 should be %ProgramFiles%\dotnet\x64.
+        append_path(recv, _X("x64"));
+    }
 
     return true;
 }
@@ -329,27 +327,18 @@ namespace
     }
 }
 
-bool pal::get_dotnet_self_registered_config_location(pal::string_t* recv)
+pal::string_t pal::get_dotnet_self_registered_config_location()
 {
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
-    return false;
-#else
     HKEY key_hive;
     pal::string_t sub_key;
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
-    *recv = (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
-    return true;
-#endif
+    return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 {
-#if !defined(TARGET_AMD64) && !defined(TARGET_X86)
-    //  Self-registered SDK installation directory is only supported for x64 and x86 architectures.
-    return false;
-#else
     recv->clear();
 
     //  ***Used only for testing***
@@ -399,7 +388,6 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     recv->assign(buffer.data());
     ::RegCloseKey(hkey);
     return true;
-#endif
 }
 
 bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
@@ -409,11 +397,14 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
     bool dir_found = false;
     if (pal::get_dotnet_self_registered_dir(&custom_dir))
     {
+        remove_trailing_dir_seperator(&custom_dir);
         dirs->push_back(custom_dir);
         dir_found = true;
     }
     if (get_default_installation_dir(&default_dir))
     {
+        remove_trailing_dir_seperator(&default_dir);
+
         // Avoid duplicate global dirs.
         if (!dir_found || !are_paths_equal_with_normalized_casing(custom_dir, default_dir))
         {
@@ -569,7 +560,7 @@ bool pal::get_module_path(dll_t mod, string_t* recv)
     return GetModuleFileNameWrapper(mod, recv);
 }
 
-bool pal::get_temp_directory(pal::string_t& tmp_dir)
+bool get_extraction_base_parent_directory(pal::string_t& directory)
 {
     const size_t max_len = MAX_PATH + 1;
     pal::char_t temp_path[max_len];
@@ -581,15 +572,16 @@ bool pal::get_temp_directory(pal::string_t& tmp_dir)
     }
 
     assert(len < max_len);
-    tmp_dir.assign(temp_path);
+    directory.assign(temp_path);
 
-    return realpath(&tmp_dir);
+    return pal::realpath(&directory);
 }
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
 {
-    if (!get_temp_directory(extraction_dir))
+    if (!get_extraction_base_parent_directory(extraction_dir))
     {
+        trace::error(_X("Failed to determine default extraction location. Check if 'TMP' or 'TEMP' points to existing path."));
         return false;
     }
 
@@ -605,6 +597,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     if (CreateDirectoryW(extraction_dir.c_str(), NULL) == 0 &&
         GetLastError() != ERROR_ALREADY_EXISTS)
     {
+        trace::error(_X("Failed to create default extraction directory [%s]. %s, error code: %d"), extraction_dir.c_str(), pal::strerror(errno), GetLastError());
         return false;
     }
 
@@ -652,11 +645,15 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 // Return if path is valid and file exists, return true and adjust path as appropriate.
 bool pal::realpath(string_t* path, bool skip_error_logging)
 {
+    if (path->empty())
+    {
+        return false;
+    }
+
     if (LongFile::IsNormalized(*path))
     {
         WIN32_FILE_ATTRIBUTE_DATA data;
-        if (path->empty() // An empty path doesn't exist
-            || GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
+        if (GetFileAttributesExW(path->c_str(), GetFileExInfoStandard, &data) != 0)
         {
             return true;
         }
@@ -720,11 +717,6 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
 
 bool pal::file_exists(const string_t& path)
 {
-    if (path.empty())
-    {
-        return false;
-    }
-
     string_t tmp(path);
     return pal::realpath(&tmp, true);
 }
@@ -796,6 +788,42 @@ bool pal::is_running_in_wow64()
         return false;
     }
     return (fWow64Process != FALSE);
+}
+
+typedef BOOL (WINAPI* is_wow64_process2)(
+  HANDLE hProcess,
+  USHORT *pProcessMachine,
+  USHORT *pNativeMachine
+);
+
+bool pal::is_emulating_x64()
+{
+    USHORT pProcessMachine, pNativeMachine;
+    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (kernel32)
+    {
+        is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
+        if (!isWow64Process2Func)
+        {
+            // Could not find IsWow64Process2.
+            return false;
+        }
+
+        if (!isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine))
+        {
+            // IsWow64Process2 failed. Log the error and continue.
+            trace::info(_X("Call to IsWow64Process2 failed: %s"), GetLastError());
+            return false;
+        }
+
+        // Check if we are running an x64 process on a non-x64 windows machine.
+        return pProcessMachine != pNativeMachine && pProcessMachine == IMAGE_FILE_MACHINE_AMD64;
+    }
+
+    // Loading kernel32.dll failed, log the error and continue.
+    trace::info(_X("Could not load 'kernel32.dll': %s"), GetLastError());
+
+    return false;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

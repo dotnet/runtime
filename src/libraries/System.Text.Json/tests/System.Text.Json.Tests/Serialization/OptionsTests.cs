@@ -328,12 +328,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void Options_GetConverterForObjectJsonElement_GivesCorrectConverter()
         {
-            GenericObjectOrJsonElementConverterTestHelper<object>("ObjectConverter", new object(), "[3]", true);
+            GenericObjectOrJsonElementConverterTestHelper<object>("ObjectConverter", new object(), "{}");
             JsonElement element = JsonDocument.Parse("[3]").RootElement;
-            GenericObjectOrJsonElementConverterTestHelper<JsonElement>("JsonElementConverter", element, "[3]", false);
+            GenericObjectOrJsonElementConverterTestHelper<JsonElement>("JsonElementConverter", element, "[3]");
         }
 
-        private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue, bool throws)
+        private static void GenericObjectOrJsonElementConverterTestHelper<T>(string converterName, object objectValue, string stringValue)
         {
             var options = new JsonSerializerOptions();
 
@@ -343,14 +343,11 @@ namespace System.Text.Json.Serialization.Tests
             ReadOnlySpan<byte> data = Encoding.UTF8.GetBytes(stringValue);
             Utf8JsonReader reader = new Utf8JsonReader(data);
             reader.Read();
-            T readValue = converter.Read(ref reader, typeof(T), null);
+            T readValue = converter.Read(ref reader, typeof(T), options);
 
             if (readValue is JsonElement element)
             {
-                Assert.Equal(JsonValueKind.Array, element.ValueKind);
-                JsonElement.ArrayEnumerator iterator = element.EnumerateArray();
-                Assert.True(iterator.MoveNext());
-                Assert.Equal(3, iterator.Current.GetInt32());
+                JsonTestHelper.AssertJsonEqual(stringValue, element.ToString());
             }
             else
             {
@@ -360,22 +357,14 @@ namespace System.Text.Json.Serialization.Tests
             using (var stream = new MemoryStream())
             using (var writer = new Utf8JsonWriter(stream))
             {
-                if (throws)
-                {
-                    Assert.Throws<InvalidOperationException>(() => converter.Write(writer, (T)objectValue, options));
-                    Assert.Throws<InvalidOperationException>(() => converter.Write(writer, (T)objectValue, null));
-                }
-                else
-                {
-                    converter.Write(writer, (T)objectValue, options);
-                    writer.Flush();
-                    Assert.Equal(stringValue, Encoding.UTF8.GetString(stream.ToArray()));
+                converter.Write(writer, (T)objectValue, options);
+                writer.Flush();
+                Assert.Equal(stringValue, Encoding.UTF8.GetString(stream.ToArray()));
 
-                    writer.Reset(stream);
-                    converter.Write(writer, (T)objectValue, null); // Test with null option
-                    writer.Flush();
-                    Assert.Equal(stringValue + stringValue, Encoding.UTF8.GetString(stream.ToArray()));
-                }
+                writer.Reset(stream);
+                converter.Write(writer, (T)objectValue, null); // Test with null option
+                writer.Flush();
+                Assert.Equal(stringValue + stringValue, Encoding.UTF8.GetString(stream.ToArray()));
             }
         }
 

@@ -10,10 +10,7 @@
 
 PALEXPORT RSA* AndroidCryptoNative_RsaCreate()
 {
-    RSA* rsa = malloc(sizeof(RSA));
-    rsa->privateKey = NULL;
-    rsa->publicKey = NULL;
-    rsa->keyWidthInBits = 0;
+    RSA* rsa = xcalloc(1, sizeof(RSA));
     atomic_init(&rsa->refCount, 1);
     return rsa;
 }
@@ -47,7 +44,10 @@ PALEXPORT void AndroidCryptoNative_RsaDestroy(RSA* rsa)
 
 PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
 {
-    assert(rsa != NULL);
+    abort_if_invalid_pointer_argument (from);
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (rsa);
+
     JNIEnv* env = GetJNIEnv();
 
     int32_t ret = RSA_FAIL;
@@ -55,20 +55,20 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPublicEncrypt(int32_t flen, uint8_t* fr
 
     if (padding == Pkcs1)
     {
-        loc[algName] = JSTRING("RSA/ECB/PKCS1Padding");
+        loc[algName] = make_java_string(env, "RSA/ECB/PKCS1Padding");
     }
     else if (padding == OaepSHA1)
     {
-        loc[algName] = JSTRING("RSA/ECB/OAEPPadding");
+        loc[algName] = make_java_string(env, "RSA/ECB/OAEPPadding");
     }
     else
     {
-        loc[algName] = JSTRING("RSA/ECB/NoPadding");
+        loc[algName] = make_java_string(env, "RSA/ECB/NoPadding");
     }
 
     loc[cipher] = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, loc[algName]);
     (*env)->CallVoidMethod(env, loc[cipher], g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->publicKey);
-    loc[fromBytes] = (*env)->NewByteArray(env, flen);
+    loc[fromBytes] = make_java_byte_array(env, flen);
     (*env)->SetByteArrayRegion(env, loc[fromBytes], 0, flen, (jbyte*)from);
     loc[encryptedBytes] = (jbyteArray)(*env)->CallObjectMethod(env, loc[cipher], g_cipherDoFinal2Method, loc[fromBytes]);
     ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
@@ -91,19 +91,22 @@ PALEXPORT int32_t AndroidCryptoNative_RsaPrivateDecrypt(int32_t flen, uint8_t* f
     if (!rsa->privateKey)
         return RSA_FAIL;
 
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (from);
+
     JNIEnv* env = GetJNIEnv();
 
     jobject algName;
     if (padding == Pkcs1)
-        algName = JSTRING("RSA/ECB/PKCS1Padding"); // TODO: is ECB needed here?
+        algName = make_java_string(env, "RSA/ECB/PKCS1Padding"); // TODO: is ECB needed here?
     else if (padding == OaepSHA1)
-        algName = JSTRING("RSA/ECB/OAEPPadding");
+        algName = make_java_string(env, "RSA/ECB/OAEPPadding");
     else
-        algName = JSTRING("RSA/ECB/NoPadding");
+        algName = make_java_string(env, "RSA/ECB/NoPadding");
 
     jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
     (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_DECRYPT_MODE, rsa->privateKey);
-    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
+    jbyteArray fromBytes = make_java_byte_array(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
 
@@ -135,7 +138,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSize(RSA* rsa)
 
 PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, int32_t len)
 {
-    if (!buf || !len)
+    if (!buf || len <= 0)
     {
         return FAIL;
     }
@@ -146,9 +149,9 @@ PALEXPORT RSA* AndroidCryptoNative_DecodeRsaSubjectPublicKeyInfo(uint8_t* buf, i
     // X509EncodedKeySpec x509keySpec = new X509EncodedKeySpec(bytes);
     // PublicKey publicKey = keyFactory.generatePublic(x509keySpec);
 
-    jobject algName = JSTRING("RSA");
+    jobject algName = make_java_string(env, "RSA");
     jobject keyFactory = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, algName);
-    jbyteArray bytes = (*env)->NewByteArray(env, len);
+    jbyteArray bytes = make_java_byte_array(env, len);
     (*env)->SetByteArrayRegion(env, bytes, 0, len, (jbyte*)buf);
     jobject x509keySpec = (*env)->NewObject(env, g_X509EncodedKeySpecClass, g_X509EncodedKeySpecCtor, bytes);
 
@@ -180,13 +183,16 @@ PALEXPORT int32_t AndroidCryptoNative_RsaSignPrimitive(int32_t flen, uint8_t* fr
         return RSA_FAIL;
     }
 
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (from);
+
     JNIEnv* env = GetJNIEnv();
 
-    jobject algName = JSTRING("RSA/ECB/NoPadding");
+    jobject algName = make_java_string(env, "RSA/ECB/NoPadding");
 
     jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
     (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_ENCRYPT_MODE, rsa->privateKey);
-    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
+    jbyteArray fromBytes = make_java_byte_array(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray encryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
     if (CheckJNIExceptions(env))
@@ -212,13 +218,16 @@ PALEXPORT int32_t AndroidCryptoNative_RsaVerificationPrimitive(int32_t flen, uin
     if (!rsa)
         return RSA_FAIL;
 
+    abort_if_invalid_pointer_argument (to);
+    abort_if_invalid_pointer_argument (from);
+
     JNIEnv* env = GetJNIEnv();
 
-    jobject algName = JSTRING("RSA/ECB/NoPadding");
+    jobject algName = make_java_string(env, "RSA/ECB/NoPadding");
 
     jobject cipher = (*env)->CallStaticObjectMethod(env, g_cipherClass, g_cipherGetInstanceMethod, algName);
     (*env)->CallVoidMethod(env, cipher, g_cipherInit2Method, CIPHER_DECRYPT_MODE, rsa->publicKey);
-    jbyteArray fromBytes = (*env)->NewByteArray(env, flen);
+    jbyteArray fromBytes = make_java_byte_array(env, flen);
     (*env)->SetByteArrayRegion(env, fromBytes, 0, flen, (jbyte*)from);
     jbyteArray decryptedBytes = (jbyteArray)(*env)->CallObjectMethod(env, cipher, g_cipherDoFinal2Method, fromBytes);
     if (CheckJNIExceptions(env))
@@ -251,7 +260,7 @@ PALEXPORT int32_t AndroidCryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits)
     // KeyPair kp = kpg.genKeyPair();
 
     JNIEnv* env = GetJNIEnv();
-    jobject rsaStr = JSTRING("RSA");
+    jobject rsaStr = make_java_string(env, "RSA");
     jobject kpgObj = (*env)->CallStaticObjectMethod(env, g_keyPairGenClass, g_keyPairGenGetInstanceMethod, rsaStr);
     (*env)->CallVoidMethod(env, kpgObj, g_keyPairGenInitializeMethod, bits);
     jobject keyPair = (*env)->CallObjectMethod(env, kpgObj, g_keyPairGenGenKeyPairMethod);
@@ -346,7 +355,7 @@ PALEXPORT int32_t AndroidCryptoNative_SetRsaParameters(RSA* rsa,
 
     rsa->keyWidthInBits = nLength * 8;
 
-    loc[algName] = JSTRING("RSA");
+    loc[algName] = make_java_string(env, "RSA");
     loc[keyFactory] = (*env)->CallStaticObjectMethod(env, g_KeyFactoryClass, g_KeyFactoryGetInstanceMethod, loc[algName]);
 
     if (dLength > 0)

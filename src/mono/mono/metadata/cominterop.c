@@ -302,7 +302,7 @@ cominterop_method_signature (MonoMethod* method)
 		// last arg is return type
 		if (!MONO_TYPE_IS_VOID (sig->ret)) {
 			res->params[param_count-1] = mono_metadata_type_dup (image, sig->ret);
-			res->params[param_count-1]->byref = 1;
+			res->params[param_count-1]->byref__ = 1;
 			res->params[param_count-1]->attrs = PARAM_ATTRIBUTE_OUT;
 		}
 
@@ -1337,17 +1337,17 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		mono_mb_emit_stloc (mb, conv_arg);	
 
 		/* we dont need any conversions for out parameters */
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT)
+		if (m_type_is_byref (t) && t->attrs & PARAM_ATTRIBUTE_OUT)
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);	
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		/* if null just break, conv arg was already inited to 0 */
 		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 
 		if (klass && klass != mono_defaults.object_class) {
@@ -1369,7 +1369,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	}
 
 	case MARSHAL_ACTION_CONV_OUT: {
-		if (t->byref && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
+		if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			int ccw_obj;
 			guint32 pos_null = 0, pos_ccw = 0, pos_end = 0;
 			ccw_obj = mono_mb_add_local (mb, mono_get_object_type ());
@@ -1420,7 +1420,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 		break;
 	}
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -1489,12 +1489,12 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 			break;
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		pos_null = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_icon (mb, TRUE);
 		mono_mb_emit_icall (mb, cominterop_get_ccw_object);
@@ -1504,7 +1504,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 
 
 		mono_mb_emit_ldarg (mb, argnum);
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		mono_mb_emit_managed_call (mb, get_object_for_iunknown, NULL);
 
@@ -1527,7 +1527,7 @@ mono_cominterop_emit_marshal_com_interface (EmitMarshalContext *m, int argnum,
 	}
 
 	case MARSHAL_ACTION_MANAGED_CONV_OUT: {
-		if (t->byref && t->attrs & PARAM_ATTRIBUTE_OUT) {
+		if (m_type_is_byref (t) && t->attrs & PARAM_ATTRIBUTE_OUT) {
 			guint32 pos_null = 0;
 
 			mono_mb_emit_ldarg (mb, argnum);
@@ -1844,53 +1844,6 @@ ves_icall_System_ComObject_GetInterfaceInternal (MonoComObjectHandle obj, MonoRe
 	return itf;
 #else
 	g_assert_not_reached ();
-#endif
-}
-
-void
-ves_icall_Mono_Interop_ComInteropProxy_AddProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
-{
-#ifndef DISABLE_COM
-	MonoGCHandle gchandle = mono_gchandle_new_weakref_internal ((MonoObject*)*proxy_handle, FALSE);
-
-	mono_cominterop_lock ();
-	if (!rcw_hash)
-		rcw_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-	g_hash_table_insert (rcw_hash, pUnk, gchandle);
-	mono_cominterop_unlock ();
-#else
-	g_assert_not_reached ();
-#endif
-}
-
-void
-ves_icall_Mono_Interop_ComInteropProxy_FindProxy (gpointer pUnk, MonoComInteropProxy *volatile* proxy_handle)
-{
-	*proxy_handle = NULL;
-
-#ifndef DISABLE_COM
-
-	MonoGCHandle gchandle = NULL;
-
-	mono_cominterop_lock ();
-	if (rcw_hash)
-		gchandle = (MonoGCHandle)g_hash_table_lookup (rcw_hash, pUnk);
-	mono_cominterop_unlock ();
-	if (!gchandle)
-		return;
-
-	MonoComInteropProxy *proxy = (MonoComInteropProxy*)mono_gchandle_get_target_internal (gchandle);
-	// proxy_handle is assumed to be on the stack, so no barrier is needed.
-	*proxy_handle = proxy;
-	/* proxy is null means we need to free up old RCW */
-	if (!proxy) {
-		mono_gchandle_free_internal (gchandle);
-		g_hash_table_remove (rcw_hash, pUnk);
-	}
-
-#else
-	g_assert_not_reached ();
-
 #endif
 }
 
@@ -2604,7 +2557,7 @@ cominterop_get_managed_wrapper_adjusted (MonoMethod *method)
 	/* handler code */
 	main_clause->handler_offset = mono_mb_get_label (mb);
 	
-	if (!preserve_sig || (sig->ret && !sig->ret->byref && (sig->ret->type == MONO_TYPE_U4 || sig->ret->type == MONO_TYPE_I4))) {
+	if (!preserve_sig || (sig->ret && !m_type_is_byref (sig->ret) && (sig->ret->type == MONO_TYPE_U4 || sig->ret->type == MONO_TYPE_I4))) {
 		mono_mb_emit_managed_call (mb, get_hr_for_exception, NULL);
 		mono_mb_emit_stloc (mb, hr);
 	}
@@ -3347,7 +3300,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 		indices_var = mono_mb_add_local (mb, int_type);
 		empty_var = mono_mb_add_local (mb, int_type);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		} else
@@ -3380,7 +3333,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 		g_assert (get_value_impl);
 
-		if (t->byref) {
+		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
 		} else
@@ -3420,7 +3373,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 	}
 
 	case MARSHAL_ACTION_PUSH:
-		if (t->byref)
+		if (m_type_is_byref (t))
 			mono_mb_emit_ldloc_addr (mb, conv_arg);
 		else
 			mono_mb_emit_ldloc (mb, conv_arg);
@@ -3433,7 +3386,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 					Array result;   // result_var
 					IntPtr indices; // indices_var
 					int empty;      // empty_var
-					bool byValue = !t->byref && (t->attrs & PARAM_ATTRIBUTE_IN);
+					bool byValue = !m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_IN);
 					if (mono_marshal_safearray_begin(safearray, out result, out indices, out empty, parameter, byValue)) {
 						if (!empty) {
 							int index=0; // index_var
@@ -3454,7 +3407,7 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 
 			int result_var, indices_var, empty_var, elem_var, index_var;
 			guint32 label1 = 0, label2 = 0, label3 = 0, label4 = 0;
-			gboolean byValue = !t->byref && (t->attrs & PARAM_ATTRIBUTE_IN);
+			gboolean byValue = !m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_IN);
 
 			MonoType *object_type = mono_get_object_type ();
 			MonoType *int_type = mono_get_int_type ();

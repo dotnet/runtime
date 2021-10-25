@@ -66,11 +66,12 @@ namespace System.Diagnostics
         /// <param name="traceParent">W3C trace parent header.</param>
         /// <param name="traceState">W3C trace state.</param>
         /// <param name="context">The ActivityContext object created from the parsing operation.</param>
-        public static bool TryParse(string traceParent, string? traceState, out ActivityContext context)
+        public static bool TryParse(string? traceParent, string? traceState, out ActivityContext context)
         {
-            if (traceParent == null)
+            if (traceParent is null)
             {
-                throw new ArgumentNullException(nameof(traceParent));
+                context = default;
+                return false;
             }
 
             return Activity.TryConvertIdToContext(traceParent, traceState, out context);
@@ -86,7 +87,12 @@ namespace System.Diagnostics
         /// </returns>
         public static ActivityContext Parse(string traceParent, string? traceState)
         {
-            if (!TryParse(traceParent, traceState, out ActivityContext context))
+            if (traceParent is null)
+            {
+                throw new ArgumentNullException(nameof(traceParent));
+            }
+
+            if (!Activity.TryConvertIdToContext(traceParent, traceState, out ActivityContext context))
             {
                 throw new ArgumentException(SR.InvalidTraceParent);
             }

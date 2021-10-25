@@ -66,7 +66,7 @@ class Test
 
         GetZero_Local1();
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             GetZero_Local2();
 
@@ -80,7 +80,7 @@ class Test
     {
         string strManaged = "Managed";
         string native = " Native";
-        bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        bool isWindows = OperatingSystem.IsWindows();
 
         if (!isWindows) // We need to ensure that the subdirectory exists for off-Windows.
         {        
@@ -98,7 +98,7 @@ class Test
             GetZero_Relative1Unix();
         }
         
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             GetZero_Relative2();
         }
@@ -112,7 +112,7 @@ class Test
             GetZero_Relative3Unix();
         }
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
         {
             GetZero_Relative4();
         }
@@ -174,12 +174,12 @@ class Test
         {
             TestNativeLibraryProbingOnLocalPath();
             TestNativeLibraryProbingOnRelativePath();
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) // This test fails due to a bug in OSX 10.12 combined with the weird way that HFS+ handles unicode file names
+            if (!OperatingSystem.IsMacOS()) // This test fails due to a bug in OSX 10.12 combined with the weird way that HFS+ handles unicode file names
             {
                 TestNativeLibraryProbingUnicode();
             }
             TestNativeLibraryProbingOnPathEnv();
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 TestNativeExeProbing();
             }

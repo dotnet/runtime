@@ -8,7 +8,6 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
-        private static char[] s_delimiter = new char[1] { ' ' };
         // /proc/net/route contains some information about gateway addresses,
         // and separates the information about by each interface.
         internal static List<GatewayIPAddressInformation> ParseIPv4GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string[] fileLines, string interfaceName)
@@ -58,7 +57,7 @@ namespace System.Net.NetworkInformation
             {
                 if (line.StartsWith("00000000000000000000000000000000", StringComparison.Ordinal))
                 {
-                   string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
+                   string[] token = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                    if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
                    {
                         if (!string.IsNullOrEmpty(interfaceName) && interfaceName != token[9])
@@ -99,8 +98,8 @@ namespace System.Net.NetworkInformation
                         int interfaceIndex = fileContents.IndexOf("interface", firstBrace, blockLength, StringComparison.Ordinal);
                         int afterName = fileContents.IndexOf(';', interfaceIndex);
                         int beforeName = fileContents.LastIndexOf(' ', afterName);
-                        string interfaceName = fileContents.Substring(beforeName + 2, afterName - beforeName - 3);
-                        if (interfaceName != name)
+                        ReadOnlySpan<char> interfaceName = fileContents.AsSpan(beforeName + 2, afterName - beforeName - 3);
+                        if (!interfaceName.SequenceEqual(name))
                         {
                             continue;
                         }
@@ -108,9 +107,8 @@ namespace System.Net.NetworkInformation
                         int indexOfDhcp = fileContents.IndexOf("dhcp-server-identifier", firstBrace, blockLength, StringComparison.Ordinal);
                         int afterAddress = fileContents.IndexOf(';', indexOfDhcp);
                         int beforeAddress = fileContents.LastIndexOf(' ', afterAddress);
-                        string dhcpAddressString = fileContents.Substring(beforeAddress + 1, afterAddress - beforeAddress - 1);
-                        IPAddress? dhcpAddress;
-                        if (IPAddress.TryParse(dhcpAddressString, out dhcpAddress))
+                        ReadOnlySpan<char> dhcpAddressSpan = fileContents.AsSpan(beforeAddress + 1, afterAddress - beforeAddress - 1);
+                        if (IPAddress.TryParse(dhcpAddressSpan, out IPAddress? dhcpAddress))
                         {
                             collection.Add(dhcpAddress);
                         }
@@ -143,8 +141,8 @@ namespace System.Net.NetworkInformation
                         }
                     }
                     int endOfLine = fileContents.IndexOf(Environment.NewLine, labelIndex, StringComparison.Ordinal);
-                    string addressString = fileContents.Substring(labelIndex + label.Length, endOfLine - (labelIndex + label.Length));
-                    IPAddress address = IPAddress.Parse(addressString);
+                    ReadOnlySpan<char> addressSpan = fileContents.AsSpan(labelIndex + label.Length, endOfLine - (labelIndex + label.Length));
+                    IPAddress address = IPAddress.Parse(addressSpan);
                     collection.Add(address);
                 }
             }

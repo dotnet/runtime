@@ -3,16 +3,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -51,7 +46,7 @@ public class WasmAppBuilder : Task
     public ITaskItem[]? ExtraFilesToDeploy { get; set; }
 
     // <summary>
-    // Extra json elements to add to mono-config.js
+    // Extra json elements to add to mono-config.json
     //
     // Metadata:
     // - Value: can be a number, bool, quoted string, or json string
@@ -64,7 +59,7 @@ public class WasmAppBuilder : Task
     // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
 
-    private class WasmAppConfig
+    private sealed class WasmAppConfig
     {
         [JsonPropertyName("assembly_root")]
         public string AssemblyRoot { get; set; } = "managed";
@@ -91,12 +86,12 @@ public class WasmAppBuilder : Task
         public string Name { get; init; }
     }
 
-    private class AssemblyEntry : AssetEntry
+    private sealed class AssemblyEntry : AssetEntry
     {
         public AssemblyEntry(string name) : base(name, "assembly") {}
     }
 
-    private class SatelliteAssemblyEntry : AssetEntry
+    private sealed class SatelliteAssemblyEntry : AssetEntry
     {
         public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
         {
@@ -107,14 +102,14 @@ public class WasmAppBuilder : Task
         public string CultureName { get; set; }
     }
 
-    private class VfsEntry : AssetEntry
+    private sealed class VfsEntry : AssetEntry
     {
         public VfsEntry(string name) : base(name, "vfs") {}
         [JsonPropertyName("virtual_path")]
         public string? VirtualPath { get; set; }
     }
 
-    private class IcuData : AssetEntry
+    private sealed class IcuData : AssetEntry
     {
         public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]
@@ -123,10 +118,23 @@ public class WasmAppBuilder : Task
 
     public override bool Execute ()
     {
+        try
+        {
+            return ExecuteInternal();
+        }
+        catch (LogAsErrorException laee)
+        {
+            Log.LogError(laee.Message);
+            return false;
+        }
+    }
+
+    private bool ExecuteInternal ()
+    {
         if (!File.Exists(MainJS))
-            throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+            throw new LogAsErrorException($"File MainJS='{MainJS}' doesn't exist.");
         if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
-            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
+            throw new LogAsErrorException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         if (Assemblies?.Length == 0)
         {
@@ -144,18 +152,18 @@ public class WasmAppBuilder : Task
         var config = new WasmAppConfig ();
 
         // Create app
-        var asmRootPath = Path.Join(AppDir, config.AssemblyRoot);
+        var asmRootPath = Path.Combine(AppDir, config.AssemblyRoot);
         Directory.CreateDirectory(AppDir!);
         Directory.CreateDirectory(asmRootPath);
         foreach (var assembly in _assemblies)
         {
-            FileCopyChecked(assembly, Path.Join(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
+            FileCopyChecked(assembly, Path.Combine(asmRootPath, Path.GetFileName(assembly)), "Assemblies");
             if (DebugLevel != 0)
             {
                 var pdb = assembly;
                 pdb = Path.ChangeExtension(pdb, ".pdb");
                 if (File.Exists(pdb))
-                    FileCopyChecked(pdb, Path.Join(asmRootPath, Path.GetFileName(pdb)), "Assemblies");
+                    FileCopyChecked(pdb, Path.Combine(asmRootPath, Path.GetFileName(pdb)), "Assemblies");
             }
         }
 
@@ -165,10 +173,14 @@ public class WasmAppBuilder : Task
             if (!FileCopyChecked(item.ItemSpec, dest, "NativeAssets"))
                 return false;
         }
-        FileCopyChecked(MainJS!, Path.Join(AppDir, "runtime.js"), string.Empty);
+        FileCopyChecked(MainJS!, Path.Combine(AppDir, "runtime.js"), string.Empty);
 
-        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
-        File.WriteAllText(Path.Join(AppDir, "index.html"), html);
+        string indexHtmlPath = Path.Combine(AppDir, "index.html");
+        if (!File.Exists(indexHtmlPath))
+        {
+            var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+            File.WriteAllText(indexHtmlPath, html);
+        }
 
         foreach (var assembly in _assemblies)
         {
@@ -189,17 +201,24 @@ public class WasmAppBuilder : Task
             {
                 string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
                 string fullPath = assembly.GetMetadata("Identity");
+                if (string.IsNullOrEmpty(culture))
+                {
+                    Log.LogWarning($"Missing CultureName metadata for satellite assembly {fullPath}");
+                    continue;
+                }
+                // FIXME: validate the culture?
+
                 string name = Path.GetFileName(fullPath);
-                string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
+                string directory = Path.Combine(AppDir, config.AssemblyRoot, culture);
                 Directory.CreateDirectory(directory);
-                FileCopyChecked(fullPath, Path.Join(directory, name), "SatelliteAssemblies");
+                FileCopyChecked(fullPath, Path.Combine(directory, name), "SatelliteAssemblies");
                 config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
             }
         }
 
         if (FilesToIncludeInFileSystem != null)
         {
-            string supportFilesDir = Path.Join(AppDir, "supportFiles");
+            string supportFilesDir = Path.Combine(AppDir, "supportFiles");
             Directory.CreateDirectory(supportFilesDir);
 
             var i = 0;
@@ -216,7 +235,7 @@ public class WasmAppBuilder : Task
 
                 var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
 
-                FileCopyChecked(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), "FilesToIncludeInFileSystem");
+                FileCopyChecked(item.ItemSpec, Path.Combine(supportFilesDir, generatedFileName), "FilesToIncludeInFileSystem");
 
                 var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
                     VirtualPath = targetPath
@@ -246,12 +265,14 @@ public class WasmAppBuilder : Task
             config.Extra[name] = valueObject;
         }
 
-        string monoConfigPath = Path.Join(AppDir, "mono-config.js");
-        using (var sw = File.CreateText(monoConfigPath))
+        string tmpMonoConfigPath = Path.GetTempFileName();
+        using (var sw = File.CreateText(tmpMonoConfigPath))
         {
             var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
-            sw.Write($"config = {json};");
+            sw.Write(json);
         }
+        string monoConfigPath = Path.Combine(AppDir, "mono-config.json");
+        Utils.CopyIfDifferent(tmpMonoConfigPath, monoConfigPath, useHash: false);
         _fileWrites.Add(monoConfigPath);
 
         if (ExtraFilesToDeploy != null)
@@ -284,9 +305,9 @@ public class WasmAppBuilder : Task
             return true;
 
         // Try parsing as a quoted string
-        if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![^1] == '"')
+        if (rawValue!.Length > 1 && rawValue![0] == '"' && rawValue![rawValue!.Length - 1] == '"')
         {
-            valueObject = rawValue![1..^1];
+            valueObject = rawValue!.Substring(1, rawValue!.Length - 2);
             return true;
         }
 

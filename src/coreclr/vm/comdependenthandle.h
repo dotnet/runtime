@@ -16,16 +16,16 @@
 
 // A dependent handle is conceputally a tuple containing two object reference
 //
-//     * A Primary object (think key)
-//     * A Secondary Object (think value)
+//     * A Target object (think key)
+//     * A Dependent Object (think value)
 //
-// The reference to both the primary object is (long) weak (will not keep the object alive). However the
-// reference to the secondary object is (long) weak if the primary object is dead, and strong if the primary
-// object is alive. (Hence it is a 'Dependent' handle since the strength of the secondary reference depends
-// on the primary).
+// The reference to both the target object is (long) weak (will not keep the object alive). However the
+// reference to the dependent object is (long) weak if the target object is dead, and strong if the target
+// object is alive. (Hence it is a 'Dependent' handle since the strength of the dependent reference depends
+// on the target).
 //
 // The effect of this semantics is that it seems that while the DependentHandle exists, the system behaves as
-// if there was a normal strong reference from the primary object to the secondary one.
+// if there was a normal strong reference from the target object to the dependent one.
 //
 // The usefulness of a DependentHandle is to allow other objects to be 'attached' to a given object. By
 // having a hash table where the entries are dependent handles you can attach arbitrary objects to another
@@ -40,13 +40,13 @@
 class DependentHandle
 {
 public:
-    static FCDECL2(OBJECTHANDLE, nInitialize, Object *primary, Object *secondary);
-    static FCDECL1(Object *, nGetPrimary, OBJECTHANDLE handle);
-    static FCDECL2(Object *, nGetPrimaryAndSecondary, OBJECTHANDLE handle, Object **outSecondary);
-    static FCDECL1(VOID, nFree, OBJECTHANDLE handle);
-    static FCDECL2(VOID, nSetPrimary, OBJECTHANDLE handle, Object *primary);
-    static FCDECL2(VOID, nSetSecondary, OBJECTHANDLE handle, Object *secondary);
+    static FCDECL2(OBJECTHANDLE, InternalInitialize, Object *target, Object *dependent);
+    static FCDECL1(Object *, InternalGetTarget, OBJECTHANDLE handle);
+    static FCDECL1(Object *, InternalGetDependent, OBJECTHANDLE handle);
+    static FCDECL2(Object *, InternalGetTargetAndDependent, OBJECTHANDLE handle, Object **outDependent);
+    static FCDECL1(VOID, InternalSetTargetToNull, OBJECTHANDLE handle);
+    static FCDECL2(VOID, InternalSetDependent, OBJECTHANDLE handle, Object *dependent);
+    static FCDECL1(VOID, InternalFree, OBJECTHANDLE handle);
 };
 
 #endif
-

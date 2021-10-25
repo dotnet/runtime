@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk" DefaultTargets="Test">
+
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <FileSeparatorChar>\</FileSeparatorChar>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <FileSeparatorChar>/</FileSeparatorChar>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AGENT_OS)' == 'Windows_NT'">
+    <Python>%HELIX_PYTHONPATH%</Python>
+    <OutputDirectory>%HELIX_WORKITEM_UPLOAD_ROOT%</OutputDirectory>
+    <CoreRoot>%HELIX_CORRELATION_PAYLOAD%\CoreRoot</CoreRoot>
+    <ToolPath>%HELIX_CORRELATION_PAYLOAD%\exploratory</ToolPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)\artifacts\helixresults</HelixResultsDestinationDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(AGENT_OS)' != 'Windows_NT'">
+    <Python>$HELIX_PYTHONPATH</Python>
+    <OutputDirectory>$HELIX_WORKITEM_UPLOAD_ROOT</OutputDirectory>
+    <CoreRoot>$HELIX_CORRELATION_PAYLOAD/CoreRoot</CoreRoot>
+    <ToolPath>$HELIX_CORRELATION_PAYLOAD/exploratory</ToolPath>
+    <!-- Workaround until https://github.com/dotnet/arcade/pull/6179 is not available -->
+    <HelixResultsDestinationDir>$(BUILD_SOURCESDIRECTORY)/artifacts/helixresults</HelixResultsDestinationDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EnableAzurePipelinesReporter>false</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>false</EnableXUnitReporter>
+    <Creator>$(_Creator)</Creator>
+    <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
+    <HelixBuild>$(_HelixBuild)</HelixBuild>
+    <HelixSource>$(_HelixSource)</HelixSource>
+    <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
+    <HelixType>$(_HelixType)</HelixType>
+  </PropertyGroup>
+
+  <!-- For Scheduled= 3 hours. For PRs= 1 hour -->
+  <PropertyGroup Condition=" '$(RunReason)' == 'Scheduled' ">
+      <WorkItemTimeout>3:30</WorkItemTimeout>
+      <RunDuration>180</RunDuration>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(RunReason)' != 'Scheduled' ">
+      <WorkItemTimeout>1:30</WorkItemTimeout>
+      <RunDuration>60</RunDuration>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(AGENT_OS)' == 'Windows_NT' ">
+    <HelixPreCommand Include="taskkill.exe /f /im corerun.exe"/>
+    <HelixPostCommand Include="taskkill.exe /f /im corerun.exe&amp;del /s /q %HELIX_DUMP_FOLDER%\*"/>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(AGENT_OS)' != 'Windows_NT' ">
+    <HelixPostCommand Include="rm -r -f $HELIX_DUMP_FOLDER/*"/>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>
+    <HelixPostCommands>@(HelixPostCommand)</HelixPostCommands>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(ToolName)' == 'Antigen' ">
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)antigen_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -antigen_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration) </WorkItemCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(ToolName)' == 'Fuzzlyn' ">
+    <WorkItemCommand>$(Python) $(CoreRoot)$(FileSeparatorChar)fuzzlyn_run.py -run_configuration $(RunConfiguration) -output_directory $(OutputDirectory) -fuzzlyn_directory $(ToolPath) -core_root $(CoreRoot) -run_duration $(RunDuration)</WorkItemCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(CorrelationPayloadDirectory)">
+      <PayloadDirectory>%(Identity)</PayloadDirectory>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Run_Partition Include="Partition0" Index="0" />
+    <Run_Partition Include="Partition1" Index="1" />
+    <Run_Partition Include="Partition2" Index="2" />
+    <Run_Partition Include="Partition3" Index="3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="@(Run_Partition)">
+      <PartitionName>Partition%(HelixWorkItem.Index)</PartitionName>
+      <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+      <Command>$(WorkItemCommand) -partition %(PartitionName)</Command>
+      <Timeout>$(WorkItemTimeout)</Timeout>
+      <DownloadFilesFromResults>AllIssues-$(RunConfiguration)-%(PartitionName).zip;issues-summary-$(RunConfiguration)-%(PartitionName).txt;$(ToolName)-$(RunConfiguration)-%(PartitionName).log</DownloadFilesFromResults>
+    </HelixWorkItem>
+  </ItemGroup>
+
+</Project>

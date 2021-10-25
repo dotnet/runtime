@@ -49,6 +49,7 @@ namespace System.Tests
             Assert.True(Activator.CreateInstance<StructWithPublicDefaultConstructor>().ConstructorInvoked);
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void CreateInstanceT_StructWithPrivateDefaultConstructor_ThrowsMissingMethodException() =>
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance<StructWithPrivateDefaultConstructor>());
 

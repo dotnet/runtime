@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
     public static class NullableMetadataTests
     {
         private const string NullableAttributeFullName = "System.Runtime.CompilerServices.NullableAttribute";

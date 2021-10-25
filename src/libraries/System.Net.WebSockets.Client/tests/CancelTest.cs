@@ -13,23 +13,23 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public CancelTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())
             {
-                var cts = new CancellationTokenSource(500);
+                var cts = new CancellationTokenSource(100);
 
                 var ub = new UriBuilder(server);
-                ub.Query = "delay10sec";
+                ub.Query = PlatformDetection.IsBrowser ? "delay20sec" : "delay10sec";
 
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
-                Assert.Equal(WebSocketState.Closed, cws.State);
+                var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
+                Assert.True(WebSocketState.Closed == cws.State, $"Actual {cws.State} when {ex}");
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_Cancel_Success(Uri server)
         {
@@ -44,7 +44,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/19217")]
         public async Task ReceiveAsync_Cancel_Success(Uri server)
@@ -67,7 +67,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseAsync_Cancel_Success(Uri server)
         {
@@ -89,7 +89,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseOutputAsync_Cancel_Success(Uri server)
         {
@@ -112,7 +112,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
         {
@@ -128,7 +128,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
         {
@@ -144,7 +144,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop("Uses external servers")]
+        [OuterLoop("Uses external servers", typeof(PlatformDetection), nameof(PlatformDetection.LocalEchoServerIsNotAvailable))]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
         {

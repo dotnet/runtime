@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Net.NetworkInformation
 {
@@ -55,6 +57,7 @@ namespace System.Net.NetworkInformation
 
         public override long OutputPacketRequests { get { return _table.OutRequests; } }
 
+        [UnsupportedOSPlatform("linux")]
         public override long OutputPacketRoutingDiscards { get { throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform); } }
 
         public override long OutputPacketsDiscarded { get { return _table.OutDiscards; } }
@@ -87,21 +90,26 @@ namespace System.Net.NetworkInformation
 
         public override long ReceivedPacketsWithUnknownProtocol { get { return _table.InUnknownProtocols; } }
 
+        [UnmanagedCallersOnly]
+        private static unsafe void ProcessIpv4Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr)
+        {
+            (*(int*)pContext)++;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void ProcessIpv6Address(void* pContext, byte* ifaceName, Interop.Sys.IpAddressInfo* ipAddr, uint* scopeId)
+        {
+            (*(int*)pContext)++;
+        }
+
         private static unsafe int GetNumIPAddresses()
         {
             int count = 0;
-            Interop.Sys.EnumerateInterfaceAddresses(
-                (name, ipAddressInfo) =>
-                {
-                    count++;
-                },
-                (name, ipAddressInfo, scopeId) =>
-                {
-                    count++;
-                },
+            Interop.Sys.EnumerateInterfaceAddresses(&count,
+                &ProcessIpv4Address,
+                &ProcessIpv6Address,
                 // Ignore link-layer addresses that are discovered; don't create a callback.
                 null);
-
             return count;
         }
     }

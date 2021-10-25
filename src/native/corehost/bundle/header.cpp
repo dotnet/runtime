@@ -29,7 +29,7 @@ header_t header_t::read(reader_t& reader)
     if (!fixed_header->is_valid())
     {
         trace::error(_X("Failure processing application bundle."));
-        trace::error(_X("Bundle header version compatibility check failed."));
+        trace::error(_X("Bundle header version compatibility check failed. Header version: %d.%d"), fixed_header->major_version, fixed_header->minor_version);
 
         throw StatusCode::BundleExtractionFailure;
     }

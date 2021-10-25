@@ -117,4 +117,14 @@ Function :
 --*/
 void SEHCleanupSignals();
 
+/*++
+Function :
+    SEHCleanupAbort()
+
+    Restore default SIGABORT signal handlers
+
+    (no parameters, no return value)
+--*/
+void SEHCleanupAbort();
+
 #endif /* _PAL_SIGNAL_HPP_ */

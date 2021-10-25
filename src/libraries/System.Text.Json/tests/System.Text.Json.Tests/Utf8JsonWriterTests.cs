@@ -17,7 +17,7 @@ using Xunit;
 
 namespace System.Text.Json.Tests
 {
-    public class Utf8JsonWriterTests
+    public partial class Utf8JsonWriterTests
     {
         private const int MaxExpansionFactorWhileEscaping = 6;
         private const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
@@ -734,10 +734,13 @@ namespace System.Text.Json.Tests
             return stringBuilder.ToString();
         }
 
-        // NOTE: WritingTooLargeProperty test is constrained to run on Windows and MacOSX because it causes
-        //       problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
-        //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
-        //       time the memory is accessed which triggers the full memory allocation.
+        /// <summary>
+        /// This test is constrained to run on Windows and MacOSX because it causes
+        /// problems on Linux due to the way deferred memory allocation works. On Linux, the allocation can
+        /// succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
+        /// time the memory is accessed which triggers the full memory allocation.
+        /// Also see <see cref="WriteRawLargeJsonToStreamWithoutFlushing"/>
+        /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [ConditionalFact(nameof(IsX64))]
         [OuterLoop]

@@ -55,22 +55,24 @@ namespace Internal.JitInterface
         X64_POPCNT=16,
         X64_Vector128=17,
         X64_Vector256=18,
-        X64_X86Base_X64=19,
-        X64_SSE_X64=20,
-        X64_SSE2_X64=21,
-        X64_SSE3_X64=22,
-        X64_SSSE3_X64=23,
-        X64_SSE41_X64=24,
-        X64_SSE42_X64=25,
-        X64_AVX_X64=26,
-        X64_AVX2_X64=27,
-        X64_AES_X64=28,
-        X64_BMI1_X64=29,
-        X64_BMI2_X64=30,
-        X64_FMA_X64=31,
-        X64_LZCNT_X64=32,
-        X64_PCLMULQDQ_X64=33,
-        X64_POPCNT_X64=34,
+        X64_AVXVNNI=19,
+        X64_X86Base_X64=20,
+        X64_SSE_X64=21,
+        X64_SSE2_X64=22,
+        X64_SSE3_X64=23,
+        X64_SSSE3_X64=24,
+        X64_SSE41_X64=25,
+        X64_SSE42_X64=26,
+        X64_AVX_X64=27,
+        X64_AVX2_X64=28,
+        X64_AES_X64=29,
+        X64_BMI1_X64=30,
+        X64_BMI2_X64=31,
+        X64_FMA_X64=32,
+        X64_LZCNT_X64=33,
+        X64_PCLMULQDQ_X64=34,
+        X64_POPCNT_X64=35,
+        X64_AVXVNNI_X64=36,
         X86_X86Base=1,
         X86_SSE=2,
         X86_SSE2=3,
@@ -89,22 +91,24 @@ namespace Internal.JitInterface
         X86_POPCNT=16,
         X86_Vector128=17,
         X86_Vector256=18,
-        X86_X86Base_X64=19,
-        X86_SSE_X64=20,
-        X86_SSE2_X64=21,
-        X86_SSE3_X64=22,
-        X86_SSSE3_X64=23,
-        X86_SSE41_X64=24,
-        X86_SSE42_X64=25,
-        X86_AVX_X64=26,
-        X86_AVX2_X64=27,
-        X86_AES_X64=28,
-        X86_BMI1_X64=29,
-        X86_BMI2_X64=30,
-        X86_FMA_X64=31,
-        X86_LZCNT_X64=32,
-        X86_PCLMULQDQ_X64=33,
-        X86_POPCNT_X64=34,
+        X86_AVXVNNI=19,
+        X86_X86Base_X64=20,
+        X86_SSE_X64=21,
+        X86_SSE2_X64=22,
+        X86_SSE3_X64=23,
+        X86_SSSE3_X64=24,
+        X86_SSE41_X64=25,
+        X86_SSE42_X64=26,
+        X86_AVX_X64=27,
+        X86_AVX2_X64=28,
+        X86_AES_X64=29,
+        X86_BMI1_X64=30,
+        X86_BMI2_X64=31,
+        X86_FMA_X64=32,
+        X86_LZCNT_X64=33,
+        X86_PCLMULQDQ_X64=34,
+        X86_POPCNT_X64=35,
+        X86_AVXVNNI_X64=36,
 
     }
 
@@ -298,6 +302,10 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_POPCNT_X64);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_POPCNT_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI_X64);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
                         resultflags.AddInstructionSet(InstructionSet.X64_X86Base);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE2))
@@ -449,6 +457,8 @@ namespace Internal.JitInterface
                         resultflags.AddInstructionSet(InstructionSet.X64_PCLMULQDQ);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_POPCNT_X64))
                         resultflags.AddInstructionSet(InstructionSet.X64_POPCNT);
+                    if (resultflags.HasInstructionSet(InstructionSet.X64_AVXVNNI_X64))
+                        resultflags.AddInstructionSet(InstructionSet.X64_AVXVNNI);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_X86Base))
                         resultflags.AddInstructionSet(InstructionSet.X64_SSE);
                     if (resultflags.HasInstructionSet(InstructionSet.X64_SSE))
@@ -574,6 +584,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X64_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X64_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X64_Vector256, false);
+                    yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X64_AVXVNNI, true);
                     break;
 
                 case TargetArchitecture.X86:
@@ -595,6 +606,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("popcnt", "Popcnt", InstructionSet.X86_POPCNT, true);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.X86_Vector128, false);
                     yield return new InstructionSetInfo("Vector256", "", InstructionSet.X86_Vector256, false);
+                    yield return new InstructionSetInfo("avxvnni", "AvxVnni", InstructionSet.X86_AVXVNNI, true);
                     break;
 
             }
@@ -657,6 +669,8 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.X64_PCLMULQDQ_X64);
                     if (HasInstructionSet(InstructionSet.X64_POPCNT))
                         AddInstructionSet(InstructionSet.X64_POPCNT_X64);
+                    if (HasInstructionSet(InstructionSet.X64_AVXVNNI))
+                        AddInstructionSet(InstructionSet.X64_AVXVNNI_X64);
                     break;
 
                 case TargetArchitecture.X86:
@@ -698,6 +712,7 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X64_LZCNT_X64);
                     AddInstructionSet(InstructionSet.X64_PCLMULQDQ_X64);
                     AddInstructionSet(InstructionSet.X64_POPCNT_X64);
+                    AddInstructionSet(InstructionSet.X64_AVXVNNI_X64);
                     break;
 
                 case TargetArchitecture.X86:
@@ -717,6 +732,7 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.X86_LZCNT_X64);
                     AddInstructionSet(InstructionSet.X86_PCLMULQDQ_X64);
                     AddInstructionSet(InstructionSet.X86_POPCNT_X64);
+                    AddInstructionSet(InstructionSet.X86_AVXVNNI_X64);
                     break;
 
             }

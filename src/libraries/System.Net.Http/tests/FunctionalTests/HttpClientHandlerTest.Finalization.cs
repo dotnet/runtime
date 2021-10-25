@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -27,6 +28,11 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task IncompleteResponseStream_ResponseDropped_CancelsRequestToServer()
         {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 bool stopGCs = false;

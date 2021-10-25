@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 
 using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
+#pragma warning disable CA1844 // lack of ReadAsync(Memory) override in .NET Standard 2.1 build
+
 namespace System.Net.Http
 {
     internal sealed class WinHttpResponseStream : Stream
@@ -111,7 +113,7 @@ namespace System.Net.Http
         private async Task CopyToAsyncCore(Stream destination, byte[] buffer, CancellationToken cancellationToken)
         {
             _state.PinReceiveBuffer(buffer);
-            CancellationTokenRegistration ctr = cancellationToken.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            CancellationTokenRegistration ctr = cancellationToken.Register(s => ((WinHttpResponseStream)s!).CancelPendingResponseStreamReadOperation(), this);
             _state.AsyncReadInProgress = true;
             try
             {
@@ -152,7 +154,7 @@ namespace System.Net.Http
                     Debug.Assert(bytesRead > 0);
 
                     // Write that data out to the output stream
-#if NETSTANDARD2_1
+#if NETSTANDARD2_1 || NETCOREAPP
                     await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
 #else
                     await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
@@ -221,7 +223,7 @@ namespace System.Net.Http
             }
 
             _state.PinReceiveBuffer(buffer);
-            var ctr = token.Register(s => ((WinHttpResponseStream)s).CancelPendingResponseStreamReadOperation(), this);
+            var ctr = token.Register(s => ((WinHttpResponseStream)s!).CancelPendingResponseStreamReadOperation(), this);
             _state.AsyncReadInProgress = true;
             try
             {
@@ -328,7 +330,7 @@ namespace System.Net.Http
                     if (_requestHandle != null)
                     {
                         _requestHandle.Dispose();
-                        _requestHandle = null;
+                        _requestHandle = null!;
                     }
                 }
             }

@@ -13,14 +13,14 @@
 
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [mscorlib]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
-
+/*  Re-enable once the fix to https://github.com/dotnet/msbuild/issues/6734 propagates to this repo.
   .custom instance void class SingleAttribute`1<int32>::.ctor() = ( 01 00 00 00 ) 
   .custom instance void class SingleAttribute`1<bool>::.ctor() = ( 01 00 00 00 ) 
   .custom instance void class MultiAttribute`1<int32>::.ctor() = ( 01 00 00 00 ) 
   .custom instance void class MultiAttribute`1<int32>::.ctor(!0) = ( 01 00 01 00 00 00 00 00 ) 
   .custom instance void class MultiAttribute`1<int32>::.ctor() = ( 01 00 01 00 54 08 05 56 61 6C 75 65 02 00 00 00 ) // ....T..Value....
   .custom instance void class MultiAttribute`1<bool>::.ctor() = ( 01 00 00 00 ) 
-  .custom instance void class MultiAttribute`1<bool>::.ctor(!0) = ( 01 00 01 00 00 ) 
+  .custom instance void class MultiAttribute`1<bool>::.ctor(!0) = ( 01 00 01 00 00 ) */
   .hash algorithm 0x00008004
   .ver 0:0:0:0
 }

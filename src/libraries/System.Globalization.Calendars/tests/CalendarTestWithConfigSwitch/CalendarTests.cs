@@ -10,7 +10,6 @@ namespace System.Globalization.Tests
     public static class CalendarTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36883", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android)]
         public static void TestJapaneseCalendarDateParsing()
         {
             CultureInfo ciJapanese = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() } };

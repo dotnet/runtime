@@ -9,16 +9,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal unsafe sealed class MsQuicApi
     {
+        private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
+
         public SafeMsQuicRegistrationHandle Registration { get; }
 
         // This is workaround for a bug in ILTrimmer.
         // Without these DynamicDependency attributes, .ctor() will be removed from the safe handles.
         // Remove once fixed: https://github.com/mono/linker/issues/1660
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicListenerHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicConnectionHandle))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicConstructors, typeof(SafeMsQuicStreamHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicRegistrationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConfigurationHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicListenerHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicConnectionHandle))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(SafeMsQuicStreamHandle))]
         private MsQuicApi(NativeApi* vtable)
         {
             uint status;
@@ -119,18 +121,29 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static bool IsQuicSupported { get; }
 
+        private const int MsQuicVersion = 1;
+
         static MsQuicApi()
         {
-            // TODO: Consider updating all of these delegates to instead use function pointers.
+            if (OperatingSystem.IsWindows() && !IsWindowsVersionSupported())
+            {
+                if (NetEventSource.Log.IsEnabled())
+                {
+                    NetEventSource.Info(null, $"Current Windows version ({Environment.OSVersion}) is not supported by QUIC. Minimal supported version is {MinWindowsVersion}");
+                }
+
+                return;
+            }
+
             if (NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle))
             {
                 try
                 {
-                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpen", out IntPtr msQuicOpenAddress))
+                    if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
                     {
-                        MsQuicOpenDelegate msQuicOpen =
-                            Marshal.GetDelegateForFunctionPointer<MsQuicOpenDelegate>(msQuicOpenAddress);
-                        uint status = msQuicOpen(out NativeApi* vtable);
+                        delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint> msQuicOpenVersion =
+                            (delegate* unmanaged[Cdecl]<uint, out NativeApi*, uint>)msQuicOpenVersionAddress;
+                        uint status = msQuicOpenVersion(MsQuicVersion, out NativeApi* vtable);
                         if (MsQuicStatusHelper.SuccessfulStatusCode(status))
                         {
                             IsQuicSupported = true;
@@ -148,6 +161,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
             }
         }
 
+        private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
+            MinWindowsVersion.Minor, MinWindowsVersion.Build, MinWindowsVersion.Revision);
+
+        // TODO: Consider updating all of these delegates to instead use function pointers.
         internal RegistrationOpenDelegate RegistrationOpenDelegate { get; }
         internal RegistrationCloseDelegate RegistrationCloseDelegate { get; }
 

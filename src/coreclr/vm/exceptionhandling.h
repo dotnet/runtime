@@ -352,9 +352,7 @@ public:
                            StackTraceState* pSTState);
 
     static void
-        ResumeExecution(T_CONTEXT*            pContextRecord,
-                        EXCEPTION_RECORD*   pExceptionRecord
-                        );
+        ResumeExecution(T_CONTEXT* pContextRecord);
 
     void ResetLimitFrame();
 

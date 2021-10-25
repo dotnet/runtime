@@ -498,6 +498,8 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 		prev_native_offset = lne->native_offset;
 	}
 
+	mono_debug_free_method_jit_info (jit);
+
 	g_assert (p - buf < size);
 
 	*out_buf = buf;

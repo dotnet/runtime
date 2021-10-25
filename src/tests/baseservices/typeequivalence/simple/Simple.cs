@@ -216,7 +216,7 @@ public class Simple
 
     public static int Main(string[] noArgs)
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!OperatingSystem.IsWindows())
         {
             return 100;
         }

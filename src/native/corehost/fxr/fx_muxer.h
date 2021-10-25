@@ -47,6 +47,7 @@ private:
         const pal::char_t* argv[],
         int argoff,
         host_mode_t mode,
+        const bool is_sdk_command,
         pal::char_t result_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size);

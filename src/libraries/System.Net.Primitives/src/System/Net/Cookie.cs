@@ -742,7 +742,7 @@ namespace System.Net
             {
                 sb.Append(SpecialAttributeLiteral + CookieFields.VersionAttributeName + EqualsLiteral); // const strings
                 if (IsQuotedVersion) sb.Append('"');
-                sb.Append(m_version.ToString(NumberFormatInfo.InvariantInfo));
+                sb.Append(NumberFormatInfo.InvariantInfo, $"{m_version}");
                 if (IsQuotedVersion) sb.Append('"');
                 sb.Append(SeparatorLiteral);
             }

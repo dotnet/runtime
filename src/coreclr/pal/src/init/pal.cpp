@@ -39,7 +39,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PAL); // some headers have code with asserts, so do th
 #include "pal/numa.h"
 #include "pal/stackstring.hpp"
 #include "pal/cgroup.h"
-#include <getexepath.h>
+#include <common/getexepath.h>
 
 #if HAVE_MACH_EXCEPTIONS
 #include "../exception/machexception.h"
@@ -88,7 +88,12 @@ int CacheLineSize;
 #endif
 #endif
 
+#ifdef __FreeBSD__
+#include <sys/user.h>
+#endif
+
 #include <algorithm>
+#include <clrconfignocache.h>
 
 using namespace CorUnix;
 
@@ -268,17 +273,13 @@ Abstract:
 void
 InitializeDefaultStackSize()
 {
-    char* defaultStackSizeStr = getenv("COMPlus_DefaultStackSize");
-    if (defaultStackSizeStr != NULL)
+    CLRConfigNoCache defStackSize = CLRConfigNoCache::Get("DefaultStackSize", /*noprefix*/ false, &getenv);
+    if (defStackSize.IsSet())
     {
-        errno = 0;
-        // Like all numeric values specific by the COMPlus_xxx variables, it is a
-        // hexadecimal string without any prefix.
-        long int size = strtol(defaultStackSizeStr, NULL, 16);
-
-        if (errno == 0)
+        DWORD size;
+        if (defStackSize.TryAsInteger(16, size))
         {
-            g_defaultStackSize = std::max(size, (long int)PTHREAD_STACK_MIN);
+            g_defaultStackSize = std::max(size, (DWORD)PTHREAD_STACK_MIN);
         }
     }
 
@@ -406,15 +407,11 @@ Initialize(
 #endif // ENSURE_PRIMARY_STACK_SIZE
 
 #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
-        char* useDefaultBaseAddr = getenv("COMPlus_UseDefaultBaseAddr");
-        if (useDefaultBaseAddr != NULL)
+        CLRConfigNoCache useDefaultBaseAddr = CLRConfigNoCache::Get("UseDefaultBaseAddr", /*noprefix*/ false, &getenv);
+        if (useDefaultBaseAddr.IsSet())
         {
-            errno = 0;
-            // Like all numeric values specific by the COMPlus_xxx variables, it is a
-            // hexadecimal string without any prefix.
-            long int flag = strtol(useDefaultBaseAddr, NULL, 16);
-
-            if (errno == 0)
+            DWORD flag;
+            if (useDefaultBaseAddr.TryAsInteger(16, flag))
             {
                 g_useDefaultBaseAddr = (BOOL) flag;
             }
@@ -854,14 +851,18 @@ PAL_IsDebuggerPresent()
     close(status_fd);
 
     return debugger_present;
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(__FreeBSD__)
     struct kinfo_proc info = {};
     size_t size = sizeof(info);
     int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid() };
     int ret = sysctl(mib, sizeof(mib)/sizeof(*mib), &info, &size, NULL, 0);
 
     if (ret == 0)
+#if defined(__APPLE__)
         return ((info.kp_proc.p_flag & P_TRACED) != 0);
+#else // __FreeBSD__
+        return ((info.ki_flag & P_TRACED) != 0);
+#endif
 
     return FALSE;
 #elif defined(__NetBSD__)
@@ -1271,7 +1272,7 @@ static LPWSTR INIT_GetCurrentEXEPath()
     LPWSTR return_value;
     INT return_size;
 
-    char* path = getexepath();
+    char* path = minipal_getexepath();
     if (!path)
     {
         ERROR( "Cannot get current exe path\n" );

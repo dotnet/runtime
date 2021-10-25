@@ -281,12 +281,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         ThrowHR(COR_E_OVERFLOW);
     }
 
-#ifdef FEATURE_PREJIT
-    Module *pComputedPZM = Module::ComputePreferredZapModule(pTypeKey);
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pOldMT, pLoaderModule, pComputedPZM);
-#else
     BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pOldMT, pLoaderModule);
-#endif // FEATURE_PREJIT
 
     SIZE_T offsetOfUnsharedVtableChunks = allocSize.Value();
 
@@ -330,15 +325,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     pMT->ClearFlag(MethodTable::enum_flag_GenericsMask);
     pMT->SetFlag(MethodTable::enum_flag_GenericsMask_GenericInst);
 
-#ifdef FEATURE_PREJIT
-    // Freshly allocated - does not need restore
-    pMT->ClearFlag(MethodTable::enum_flag_IsZapped);
-    pMT->ClearFlag(MethodTable::enum_flag_IsPreRestored);
-
-    pMT->ClearFlag(MethodTable::enum_flag_HasIndirectParent);
-#endif
-
-    pMT->m_pParentMethodTable.SetValueMaybeNull(NULL);
+    pMT->m_pParentMethodTable = NULL;
 
     // Non non-virtual slots
     pMT->ClearFlag(MethodTable::enum_flag_HasSingleNonVirtualSlot);
@@ -414,7 +401,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
         if (canShareVtableChunks)
         {
             // Share the canonical chunk
-            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()].GetValueMaybeNull());
+            it.SetIndirectionSlot(pOldMT->GetVtableIndirections()[it.GetIndex()]);
         }
         else
         {
@@ -459,7 +446,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     // dictionary pointers.
     Dictionary * pDict = (Dictionary*) (pMemory + cbMT + cbOptional + cbIMap + cbPerInst);
     MethodTable::PerInstInfoElem_t *pPInstInfo = (MethodTable::PerInstInfoElem_t *) (pMT->GetPerInstInfo() + (pOldMT->GetNumDicts()-1));
-    pPInstInfo->SetValueMaybeNull(pDict);
+    *pPInstInfo = pDict;
 
     // Fill in the instantiation section of the generic dictionary.  The remainder of the
     // generic dictionary will be zeroed, which is the correct initial state.
@@ -473,7 +460,7 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     if (pLayout != NULL)
     {
         _ASSERTE(pLayout->GetMaxSlots() > 0);
-        PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1].GetValue();
+        PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[pOldMT->GetNumDicts() - 1];
         DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + ntypars);
         *pSizeSlot = cbInstAndDictSlotSize;
     }
@@ -591,10 +578,6 @@ ClassLoader::CreateTypeHandleForNonCanonicalGenericInstantiation(
     }
 #endif //_DEBUG
 
-#ifdef FEATURE_PREJIT
-    _ASSERTE(pComputedPZM == Module::GetPreferredZapModuleForMethodTable(pMT));
-#endif //FEATURE_PREJIT
-
     // We never have non-virtual slots in this method table (set SetNumVtableSlots and SetNumVirtuals above)
     _ASSERTE(!pMT->HasNonVirtualSlots());
 
@@ -705,7 +688,11 @@ BOOL RecursionGraph::CheckForIllegalRecursion()
     MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
     while (it.Next())
     {
-        AddDependency(it.GetInterface());
+        MethodTable *pItfApprox = it.GetInterfaceApprox();
+        if (!pItfApprox->IsTypicalTypeDefinition())
+        {
+            AddDependency(pItfApprox);
+        }
     }
 
     // Check all owned nodes for expanding cycles. The edges recorded above must all

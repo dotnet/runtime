@@ -1,8 +1,11 @@
 <Project>
   <!-- Property overrides -->
   <PropertyGroup>
-    <WasmAppBuilderTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
-    <WasmBuildTasksAssemblyPath>$(MSBuildThisFileDirectory)..\tasks\WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net6.0\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\net472\</_TasksDir>
+
+    <WasmAppBuilderTasksAssemblyPath>$(_TasksDir)WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
+    <WasmBuildTasksAssemblyPath>$(_TasksDir)WasmBuildTasks.dll</WasmBuildTasksAssemblyPath>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)\WasmApp.props" />

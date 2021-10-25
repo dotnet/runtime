@@ -259,7 +259,8 @@ int verbMerge::FilterDirectory(LPCWSTR                      searchPattern,
         }
         else
         {
-            LogError("Failed to find pattern '%s'. GetLastError()=%u", searchPattern, GetLastError());
+            LogError("Failed to find pattern '%S'. GetLastError()=%u", searchPattern, GetLastError());
+            result = -1;
         }
         goto CLEAN_UP;
     }

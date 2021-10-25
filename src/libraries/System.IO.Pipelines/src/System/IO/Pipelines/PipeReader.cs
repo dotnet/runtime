@@ -15,13 +15,58 @@ namespace System.IO.Pipelines
         /// <summary>Attempts to synchronously read data from the <see cref="System.IO.Pipelines.PipeReader" />.</summary>
         /// <param name="result">When this method returns <see langword="true" />, this value is set to a <see cref="System.IO.Pipelines.ReadResult" /> instance that represents the result of the read call; otherwise, this value is set to <see langword="default" />.</param>
         /// <returns><see langword="true" /> if data was available, or if the call was canceled or the writer was completed; otherwise, <see langword="false" />.</returns>
-        /// <remarks>If the pipe returns <see langword="false" />, there is no need to call <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" />.</remarks>
+        /// <remarks><format type="text/markdown"><![CDATA[
+        /// If the pipe returns <see langword="false" />, there is no need to call <see cref="System.IO.Pipelines.PipeReader.AdvanceTo(System.SequencePosition,System.SequencePosition)" />.
+        /// [!IMPORTANT]
+        /// The `System.IO.Pipelines.PipeReader` implementation returned by `System.IO.Pipelines.PipeReader.Create(System.IO.Stream, System.IO.Pipelines.StreamPipeReaderOptions?)`
+        /// will not read new data from the backing `System.IO.Stream` when `System.IO.Pipelines.PipeReader.TryRead(out System.IO.Pipelines.ReadResult)` is called.
+        ///
+        /// `System.IO.Pipelines.PipeReader.ReadAsync(System.Threading.CancellationToken)` must be called to read new data from the backing `System.IO.Stream`.
+        /// Any unconsumed data from a previous asynchronous read will be available to `System.IO.Pipelines.PipeReader.TryRead(out System.IO.Pipelines.ReadResult)`.
+        /// ]]></format></remarks>
         public abstract bool TryRead(out ReadResult result);
 
         /// <summary>Asynchronously reads a sequence of bytes from the current <see cref="System.IO.Pipelines.PipeReader" />.</summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see langword="default" />.</param>
         /// <returns>A <see cref="System.Threading.Tasks.ValueTask{T}" /> representing the asynchronous read operation.</returns>
         public abstract ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>Asynchronously reads a sequence of bytes from the current <see cref="System.IO.Pipelines.PipeReader" />.</summary>
+        /// <param name="minimumSize">The minimum length that needs to be buffered in order to for the call to return.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see langword="default" />.</param>
+        /// <returns>A <see cref="System.Threading.Tasks.ValueTask{T}" /> representing the asynchronous read operation.</returns>
+        /// <remarks>The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.</remarks>
+        public ValueTask<ReadResult> ReadAtLeastAsync(int minimumSize, CancellationToken cancellationToken = default)
+        {
+            if (minimumSize < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumSize);
+            }
+
+            return ReadAtLeastAsyncCore(minimumSize, cancellationToken);
+        }
+
+        /// <summary>Asynchronously reads a sequence of bytes from the current <see cref="System.IO.Pipelines.PipeReader" />.</summary>
+        /// <param name="minimumSize">The minimum length that needs to be buffered in order to for the call to return.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see langword="default" />.</param>
+        /// <returns>A <see cref="System.Threading.Tasks.ValueTask{T}" /> representing the asynchronous read operation.</returns>
+        /// <remarks>The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.</remarks>
+        protected virtual async ValueTask<ReadResult> ReadAtLeastAsyncCore(int minimumSize, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                ReadResult result = await ReadAsync(cancellationToken).ConfigureAwait(false);
+                ReadOnlySequence<byte> buffer = result.Buffer;
+
+                if (buffer.Length >= minimumSize || result.IsCompleted || result.IsCanceled)
+                {
+                    return result;
+                }
+
+                // Keep buffering until we get more data
+                AdvanceTo(buffer.Start, buffer.End);
+            }
+        }
 
         /// <summary>Moves forward the pipeline's read cursor to after the consumed data, marking the data as processed.</summary>
         /// <param name="consumed">Marks the extent of the data that has been successfully processed.</param>
@@ -89,7 +134,7 @@ namespace System.IO.Pipelines
         /// > [!IMPORTANT]
         /// > `OnWriterCompleted` may not be invoked on all implementations of <xref:System.IO.Pipelines.PipeWriter>. This method will be removed in a future release.
         /// ]]></format></remarks>
-        [Obsolete("OnWriterCompleted may not be invoked on all implementations of PipeReader. This will be removed in a future release.")]
+        [Obsolete("OnWriterCompleted has been deprecated and may not be invoked on all implementations of PipeReader.")]
         public virtual void OnWriterCompleted(Action<Exception?, object?> callback, object? state)
         {
 

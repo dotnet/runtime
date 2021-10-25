@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -149,6 +150,10 @@ namespace System.Runtime.Serialization
             if (type == Globals.TypeOfDateTimeOffset)
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffsetAdapter((DateTimeOffset)obj);
+            }
+            else if (type == Globals.TypeOfMemoryStream)
+            {
+                obj = MemoryStreamAdapter.GetMemoryStreamAdapter((MemoryStream)obj);
             }
             else if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
             {

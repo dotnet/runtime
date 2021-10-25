@@ -20,7 +20,7 @@ typedef struct
     uint32_t InterfaceIndex; // The index of the interface to which this address belongs.
     uint8_t AddressBytes[8]; // A pointer to the bytes containing the address.
     uint8_t NumAddressBytes; // The number of bytes actually stored in the address.
-    uint8_t __padding;
+    uint8_t _padding;
     uint16_t HardwareType;
 } LinkLayerAddressInfo;
 
@@ -30,7 +30,7 @@ typedef struct
     uint8_t AddressBytes[16];
     uint8_t NumAddressBytes;
     uint8_t PrefixLength;
-    uint8_t __padding[2];
+    uint8_t _padding[2];
 } IpAddressInfo;
 
 typedef struct
@@ -44,16 +44,16 @@ typedef struct
     uint8_t NumAddressBytes;    // The number of bytes actually stored in the address.
     uint8_t AddressBytes[8];    // Link address.
     uint8_t SupportsMulticast;  // Interface supports multicast.
-    uint8_t __padding[3];
+    uint8_t _padding[3];
 } NetworkInterfaceInfo;
 
-typedef void (*IPv4AddressFound)(const char* interfaceName, IpAddressInfo* addressInfo);
-typedef void (*IPv6AddressFound)(const char* interfaceName, IpAddressInfo* info, uint32_t* scopeId);
-typedef void (*LinkLayerAddressFound)(const char* interfaceName, LinkLayerAddressInfo* llAddress);
-typedef void (*GatewayAddressFound)(IpAddressInfo* addressInfo);
+typedef void (*IPv4AddressFound)(void* context, const char* interfaceName, IpAddressInfo* addressInfo);
+typedef void (*IPv6AddressFound)(void* context, const char* interfaceName, IpAddressInfo* info, uint32_t* scopeId);
+typedef void (*LinkLayerAddressFound)(void* context, const char* interfaceName, LinkLayerAddressInfo* llAddress);
+typedef void (*GatewayAddressFound)(void* context, IpAddressInfo* addressInfo);
 
 PALEXPORT  int32_t SystemNative_EnumerateInterfaceAddresses(
-    IPv4AddressFound onIpv4Found, IPv6AddressFound onIpv6Found, LinkLayerAddressFound onLinkLayerFound);
+    void* context, IPv4AddressFound onIpv4Found, IPv6AddressFound onIpv6Found, LinkLayerAddressFound onLinkLayerFound);
 PALEXPORT int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo** interfaces, int32_t * addressCount, IpAddressInfo **addressList);
 
-PALEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);
+PALEXPORT int32_t SystemNative_EnumerateGatewayAddressesForInterface(void* context, uint32_t interfaceIndex, GatewayAddressFound onGatewayFound);

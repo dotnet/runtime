@@ -7,6 +7,9 @@
     <Compile Include="WebSocketExceptionTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />
     <Compile Include="WebSocketCreateTest.cs" />
+    <Compile Include="WebSocketTestStream.cs" />
+    <Compile Include="WebSocketDeflateOptionsTests.cs" />
+    <Compile Include="WebSocketDeflateTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
              Link="Common\System\Net\Configuration.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.WebSockets.cs"

@@ -8,28 +8,31 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable
+    internal sealed class ServiceProviderEngineScope : IServiceScope, IServiceProvider, IAsyncDisposable, IServiceScopeFactory
     {
         // For testing only
-        internal Action<object> _captureDisposableCallback;
+        internal IList<object> Disposables => _disposables ?? (IList<object>)Array.Empty<object>();
 
         private bool _disposed;
-        private readonly ScopeState _state;
+        private List<object> _disposables;
 
-        public ServiceProviderEngineScope(ServiceProviderEngine engine, bool isRoot = false)
+        public ServiceProviderEngineScope(ServiceProvider provider, bool isRootScope)
         {
-            Engine = engine;
-            _state = new ScopeState(isRoot);
+            ResolvedServices = new Dictionary<ServiceCacheKey, object>();
+            RootProvider = provider;
+            IsRootScope = isRootScope;
         }
 
-        internal IDictionary<ServiceCacheKey, object> ResolvedServices => _state.ResolvedServices;
+        internal Dictionary<ServiceCacheKey, object> ResolvedServices { get; }
 
         // This lock protects state on the scope, in particular, for the root scope, it protects
-        // the list of disposable entries only, since ResolvedServices is a concurrent dictionary.
+        // the list of disposable entries only, since ResolvedServices are cached on CallSites
         // For other scopes, it protects ResolvedServices and the list of disposables
-        internal object Sync => _state;
+        internal object Sync => ResolvedServices;
 
-        public ServiceProviderEngine Engine { get; }
+        public bool IsRootScope { get; }
+
+        internal ServiceProvider RootProvider { get; }
 
         public object GetService(Type serviceType)
         {
@@ -38,40 +41,49 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return Engine.GetService(serviceType, this);
+            return RootProvider.GetService(serviceType, this);
         }
 
         public IServiceProvider ServiceProvider => this;
 
+        public IServiceScope CreateScope() => RootProvider.CreateScope();
+
         internal object CaptureDisposable(object service)
         {
-            _captureDisposableCallback?.Invoke(service);
-
             if (ReferenceEquals(this, service) || !(service is IDisposable || service is IAsyncDisposable))
             {
                 return service;
             }
 
+            bool disposed = false;
             lock (Sync)
             {
                 if (_disposed)
                 {
-                    if (service is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
-                    else
-                    {
-                        // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
-                        Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
-                    }
+                    disposed = true;
+                }
+                else
+                {
+                    _disposables ??= new List<object>();
 
-                    ThrowHelper.ThrowObjectDisposedException();
+                    _disposables.Add(service);
+                }
+            }
+
+            // Don't run customer code under the lock
+            if (disposed)
+            {
+                if (service is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+                else
+                {
+                    // sync over async, for the rare case that an object only implements IAsyncDisposable and may end up starving the thread pool.
+                    Task.Run(() => ((IAsyncDisposable)service).DisposeAsync().AsTask()).GetAwaiter().GetResult();
                 }
 
-                _state.Disposables ??= new List<object>();
-
-                _state.Disposables.Add(service);
+                ThrowHelper.ThrowObjectDisposedException();
             }
 
             return service;
@@ -166,7 +178,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
 
                 // Track statistics about the scope (number of disposable objects and number of disposed services)
-                _state.Track(Engine);
+                DependencyInjectionEventSource.Log.ScopeDisposed(RootProvider.GetHashCode(), ResolvedServices.Count, _disposables?.Count ?? 0);
 
                 // We've transitioned to the disposed state, so future calls to
                 // CaptureDisposable will immediately dispose the object.
@@ -177,7 +189,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // trying to get a cached singleton service. If it doesn't find it
                 // it will try to create a new one which will result in an ObjectDisposedException.
 
-                return _state.Disposables;
+                return _disposables;
             }
         }
     }

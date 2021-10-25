@@ -11,6 +11,8 @@ using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
+#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
+
 namespace System.Net.Security
 {
     internal sealed class SafeDeleteSslContext : SafeDeleteContext
@@ -32,12 +34,7 @@ namespace System.Net.Security
 
             try
             {
-                _sslContext = Interop.OpenSsl.AllocateSslContext(
-                    credential.Protocols,
-                    credential.CertHandle,
-                    credential.CertKeyHandle,
-                    credential.Policy,
-                    sslAuthenticationOptions);
+                _sslContext = Interop.OpenSsl.AllocateSslHandle(credential, sslAuthenticationOptions);
             }
             catch (Exception ex)
             {

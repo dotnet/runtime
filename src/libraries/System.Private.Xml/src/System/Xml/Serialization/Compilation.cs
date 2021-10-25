@@ -139,7 +139,10 @@ namespace System.Xml.Serialization
         /// </devdoc>
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
-        [RequiresUnreferencedCode("calls LoadFile")]
+        [RequiresUnreferencedCode("calls LoadFrom")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Annotating this as dangerous will make the core of the serializer to be marked as not safe, instead " +
+            "this pattern is only dangerous if using sgen only. See https://github.com/dotnet/runtime/issues/50820")]
         internal static Assembly? LoadGeneratedAssembly(Type type, string? defaultNamespace, out XmlSerializerImplementation? contract)
         {
             Assembly? serializer = null;
@@ -158,38 +161,19 @@ namespace System.Xml.Serialization
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
 
-                string? serializerPath = null;
-
                 try
                 {
-                    if (!string.IsNullOrEmpty(type.Assembly.Location))
-                    {
-                        serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, serializerName + ".dll");
-                    }
-
-                    if ((string.IsNullOrEmpty(serializerPath) || !File.Exists(serializerPath)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly()?.Location))
-                    {
-                        serializerPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, serializerName + ".dll");
-                    }
-
-                    if (!string.IsNullOrEmpty(serializerPath))
-                    {
-                        serializer = Assembly.LoadFile(serializerPath);
-                    }
+                    serializer = Assembly.Load(name);
                 }
                 catch (Exception e)
                 {
-                    if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
+                    if (e is OutOfMemoryException)
                     {
                         throw;
                     }
-                    byte[]? token = name.GetPublicKeyToken();
-                    if (token != null && token.Length > 0)
-                    {
-                        // the parent assembly was signed, so do not try to LoadWithPartialName
-                        return null;
-                    }
                 }
+
+                serializer ??= LoadAssemblyByPath(type, serializerName);
 
                 if (serializer == null)
                 {
@@ -217,9 +201,7 @@ namespace System.Xml.Serialization
                 if (assemblyAttribute.AssemblyName != null)
                 {
                     serializerName = assemblyAttribute.AssemblyName;
-#pragma warning disable 618
-                    serializer = Assembly.LoadWithPartialName(serializerName);
-#pragma warning restore 618
+                    serializer = Assembly.Load(serializerName); // LoadWithPartialName just does this in .Net Core; changing the obsolete call.
                 }
                 else if (assemblyAttribute.CodeBase != null && assemblyAttribute.CodeBase.Length > 0)
                 {
@@ -242,6 +224,48 @@ namespace System.Xml.Serialization
                 return serializer;
 
             return null;
+        }
+
+        [RequiresUnreferencedCode("calls LoadFile")]
+        [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
+            Justification = "Annotating this as dangerous will make the core of the serializer to be marked as not safe, instead " +
+            "this pattern is only dangerous if using sgen only. See https://github.com/dotnet/runtime/issues/50820")]
+        private static Assembly? LoadAssemblyByPath(Type type, string assemblyName)
+        {
+            Assembly? assembly = null;
+            string? path = null;
+
+            try
+            {
+                if (!string.IsNullOrEmpty(type.Assembly.Location))
+                {
+                    path = Path.Combine(Path.GetDirectoryName(type.Assembly.Location)!, assemblyName + ".dll");
+                }
+
+                if ((string.IsNullOrEmpty(path) || !File.Exists(path)) && !string.IsNullOrEmpty(Assembly.GetEntryAssembly()?.Location))
+                {
+                    path = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!, assemblyName + ".dll");
+                }
+
+                if ((string.IsNullOrEmpty(path) || !File.Exists(path)) && !string.IsNullOrEmpty(AppContext.BaseDirectory))
+                {
+                    path = Path.Combine(Path.GetDirectoryName(AppContext.BaseDirectory)!, assemblyName + ".dll");
+                }
+
+                if (!string.IsNullOrEmpty(path))
+                {
+                    assembly = Assembly.LoadFile(path);
+                }
+            }
+            catch (Exception e)
+            {
+                if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException)
+                {
+                    throw;
+                }
+            }
+
+            return assembly;
         }
 
         private static bool IsSerializerVersionMatch(Assembly serializer, Type type, string? defaultNamespace)

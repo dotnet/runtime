@@ -13,13 +13,21 @@ configurations but their defaults might vary as any SDK can set the defaults dif
 | EnableUnsafeBinaryFormatterSerialization | System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization | BinaryFormatter serialization support is trimmed when set to false |
 | EventSourceSupport | System.Diagnostics.Tracing.EventSource.IsSupported | Any EventSource related code or logic is trimmed when set to false |
 | InvariantGlobalization | System.Globalization.Invariant | All globalization specific code and data is trimmed when set to true |
+| PredefinedCulturesOnly | System.Globalization.PredefinedCulturesOnly |  Don't allow creating a culture for which the platform does not have data |
 | UseSystemResourceKeys | System.Resources.UseSystemResourceKeys |  Any localizable resources for system assemblies is trimmed when set to true |
 | HttpActivityPropagationSupport | System.Net.Http.EnableActivityPropagation | Any dependency related to diagnostics support for System.Net.Http is trimmed when set to false |
-| HttpNativeHandler | System.Net.Http.UseNativeHttpHandler | HttpClient uses by default platform native implementation of HttpMessageHandler if set to true. |
+| UseNativeHttpHandler | System.Net.Http.UseNativeHttpHandler | HttpClient uses by default platform native implementation of HttpMessageHandler if set to true. |
 | StartupHookSupport | System.StartupHookProvider.IsSupported | Startup hooks are disabled when set to false. Startup hook related functionality can be trimmed. |
-| TBD | System.Threading.ThreadPool.EnableDispatchAutoreleasePool | When set to true, creates an NSAutoreleasePool around each thread pool work item on applicable platforms. |
+| AutoreleasePoolSupport | System.Threading.Thread.EnableAutoreleasePool | When set to true, creates an NSAutoreleasePool for each thread and thread pool work item on applicable platforms. |
 | CustomResourceTypesSupport | System.Resources.ResourceManager.AllowCustomResourceTypes | Use of custom resource types is disabled when set to false. ResourceManager code paths that use reflection for custom types can be trimmed. |
 | EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | System.ComponentModel.TypeConverter.EnableUnsafeBinaryFormatterInDesigntimeLicenseContextSerialization | BinaryFormatter serialization support is trimmed when set to false. |
+| BuiltInComInteropSupport | System.Runtime.InteropServices.BuiltInComInterop.IsSupported | Built-in COM support is trimmed when set to false. |
+| EnableCppCLIHostActivation | System.Runtime.InteropServices.EnableCppCLIHostActivation | C++/CLI host activation code is disabled when set to false and related functionality can be trimmed. |
+| MetadataUpdaterSupport | System.Reflection.Metadata.MetadataUpdater.IsSupported | Metadata update related code to be trimmed when set to false |
+| _EnableConsumingManagedCodeFromNativeHosting | System.Runtime.InteropServices.EnableConsumingManagedCodeFromNativeHosting | Getting a managed function from native hosting is disabled when set to false and related functionality can be trimmed. |
+| VerifyDependencyInjectionOpenGenericServiceTrimmability | Microsoft.Extensions.DependencyInjection.VerifyOpenGenericServiceTrimmability | When set to true, DependencyInjection will verify trimming annotations applied to open generic services are correct |
+| NullabilityInfoContextSupport | System.Reflection.NullabilityInfoContext.IsSupported | Nullable attributes can be trimmed when set to false |
+| _AggressiveAttributeTrimming | System.AggressiveAttributeTrimming | When set to true, aggressively trims attributes to allow for the most size savings possible, even if it could result in runtime behavior changes |
 
 Any feature-switch which defines property can be set in csproj file or
 on the command line as any other MSBuild property. Those without predefined property name

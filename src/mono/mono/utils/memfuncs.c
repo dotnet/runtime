@@ -240,6 +240,8 @@ mono_gc_memmove_atomic (void *dest, const void *src, size_t size)
 		mono_gc_memmove_aligned (dest, src, size);
 }
 
+#define _DEFAULT_MEM_SIZE 134217728
+
 guint64
 mono_determine_physical_ram_size (void)
 {
@@ -267,30 +269,30 @@ mono_determine_physical_ram_size (void)
 
 	sysctl (mib, 2, &value, &size_sys, NULL, 0);
 	if (value == 0)
-		return 134217728;
+		return _DEFAULT_MEM_SIZE;
 
 	return (guint64)value;
 #elif defined (HAVE_SYSCONF)
-	guint64 page_size = 0, num_pages = 0;
+	gint64 page_size = -1, num_pages = -1;
 
 	/* sysconf works on most *NIX operating systems, if your system doesn't have it or if it
 	 * reports invalid values, please add your OS specific code below. */
 #ifdef _SC_PAGESIZE
-	page_size = (guint64)sysconf (_SC_PAGESIZE);
+	page_size = (gint64)sysconf (_SC_PAGESIZE);
 #endif
 
 #ifdef _SC_PHYS_PAGES
-	num_pages = (guint64)sysconf (_SC_PHYS_PAGES);
+	num_pages = (gint64)sysconf (_SC_PHYS_PAGES);
 #endif
 
-	if (!page_size || !num_pages) {
+	if (page_size == -1 || num_pages == -1) {
 		g_warning ("Your operating system's sysconf (3) function doesn't correctly report physical memory size!");
-		return 134217728;
+		return _DEFAULT_MEM_SIZE;
 	}
 
-	return page_size * num_pages;
+	return (guint64)page_size * (guint64)num_pages;
 #else
-	return 134217728;
+	return _DEFAULT_MEM_SIZE;
 #endif
 }
 
@@ -342,25 +344,25 @@ mono_determine_physical_ram_available_size (void)
 	return (guint64) vmstat.free_count * page_size;
 
 #elif defined (HAVE_SYSCONF)
-	guint64 page_size = 0, num_pages = 0;
+	gint64 page_size = -1, num_pages = -1;
 
 	/* sysconf works on most *NIX operating systems, if your system doesn't have it or if it
 	 * reports invalid values, please add your OS specific code below. */
 #ifdef _SC_PAGESIZE
-	page_size = (guint64)sysconf (_SC_PAGESIZE);
+	page_size = (gint64)sysconf (_SC_PAGESIZE);
 #endif
 
 #ifdef _SC_AVPHYS_PAGES
-	num_pages = (guint64)sysconf (_SC_AVPHYS_PAGES);
+	num_pages = (gint64)sysconf (_SC_AVPHYS_PAGES);
 #endif
 
-	if (!page_size || !num_pages) {
+	if (page_size == -1 || num_pages == -1) {
 		g_warning ("Your operating system's sysconf (3) function doesn't correctly report physical memory size!");
-		return 0;
+		return _DEFAULT_MEM_SIZE;
 	}
 
-	return page_size * num_pages;
+	return (guint64)page_size * (guint64)num_pages;
 #else
-	return 0;
+	return _DEFAULT_MEM_SIZE;
 #endif
 }

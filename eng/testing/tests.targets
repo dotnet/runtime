@@ -1,13 +1,15 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(RunScriptInputName)' == ''">
     <RunScriptInputName Condition="'$(TargetOS)' == 'windows'">RunnerTemplate.cmd</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
+  </PropertyGroup>
 
-    <RunScriptInputPath>$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
+  <PropertyGroup>
+    <RunScriptInputPath Condition="'$(RunScriptInputPath)' == ''">$(MSBuildThisFileDirectory)$(RunScriptInputName)</RunScriptInputPath>
 
     <RunScriptOutputName Condition="'$(TargetOS)' != 'windows'">RunTests.sh</RunScriptOutputName>
     <RunScriptOutputName Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT')">RunTests.cmd</RunScriptOutputName>
@@ -19,6 +21,15 @@
     <RunScriptHost Condition="'$(TargetOS)' == 'windows'">$(RunScriptHostDir)dotnet.exe</RunScriptHost>
     <RunScriptHost Condition="'$(TargetOS)' != 'windows'">$(RunScriptHostDir)dotnet</RunScriptHost>
   </PropertyGroup>
+
+  <!-- For both tests.mobile.targets and tests.wasm.targets -->
+  <PropertyGroup>
+    <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
+    <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
+  </ItemGroup>
 
   <PropertyGroup>
     <ArchiveTestsAfterTargets>PrepareForRun</ArchiveTestsAfterTargets>
@@ -96,7 +107,7 @@
       <RunTestsCommand>"$(RunScriptOutputPath)"</RunTestsCommand>
       <!-- Use runtime path only for the live built shared framework (NetCoreAppCurrent). -->
       <RunTestsCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
-                                  $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(TestHostRootPath.TrimEnd('\/'))"</RunTestsCommand>
+                                  $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)'))">$(RunTestsCommand) --runtime-path "$(NetCoreAppCurrentTestHostPath.TrimEnd('\/'))"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TestRspFile)' != '' and '$(RuntimeFlavor)' != 'Mono'">$(RunTestsCommand) --rsp-file "$(TestRspFile)"</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetsMobile)' == 'true'">"$(RunScriptOutputPath)" $(AssemblyName) $(TargetArchitecture) $(TargetOS.ToLowerInvariant()) $(TestProjectName) $(AdditionalXHarnessArguments)</RunTestsCommand>
       <RunTestsCommand Condition="'$(TargetOS)' == 'Browser'">"$(RunScriptOutputPath)" $(JSEngine) $(AssemblyName).dll $(Scenario)</RunTestsCommand>

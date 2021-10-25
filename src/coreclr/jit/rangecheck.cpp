@@ -204,19 +204,19 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     GenTree*          comma   = treeParent->OperIs(GT_COMMA) ? treeParent : nullptr;
     GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
     m_pCurBndsChk             = bndsChk;
-    GenTree* treeIndex        = bndsChk->gtIndex;
+    GenTree* treeIndex        = bndsChk->GetIndex();
 
     // Take care of constant index first, like a[2], for example.
     ValueNum idxVn    = m_pCompiler->vnStore->VNConservativeNormalValue(treeIndex->gtVNPair);
-    ValueNum arrLenVn = m_pCompiler->vnStore->VNConservativeNormalValue(bndsChk->gtArrLen->gtVNPair);
+    ValueNum arrLenVn = m_pCompiler->vnStore->VNConservativeNormalValue(bndsChk->GetArrayLength()->gtVNPair);
     int      arrSize  = 0;
 
     if (m_pCompiler->vnStore->IsVNConstant(arrLenVn))
     {
-        ssize_t  constVal  = -1;
-        unsigned iconFlags = 0;
+        ssize_t      constVal  = -1;
+        GenTreeFlags iconFlags = GTF_EMPTY;
 
-        if (m_pCompiler->optIsTreeKnownIntValue(true, bndsChk->gtArrLen, &constVal, &iconFlags))
+        if (m_pCompiler->optIsTreeKnownIntValue(true, bndsChk->GetArrayLength(), &constVal, &iconFlags))
         {
             arrSize = (int)constVal;
         }
@@ -249,8 +249,8 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     JITDUMP("ArrSize for lengthVN:%03X = %d\n", arrLenVn, arrSize);
     if (m_pCompiler->vnStore->IsVNConstant(idxVn) && (arrSize > 0))
     {
-        ssize_t  idxVal    = -1;
-        unsigned iconFlags = 0;
+        ssize_t      idxVal    = -1;
+        GenTreeFlags iconFlags = GTF_EMPTY;
         if (!m_pCompiler->optIsTreeKnownIntValue(true, treeIndex, &idxVal, &iconFlags))
         {
             return;
@@ -299,7 +299,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree*
     }
 
     // Is the range between the lower and upper bound values.
-    if (BetweenBounds(range, bndsChk->gtArrLen, arrSize))
+    if (BetweenBounds(range, bndsChk->GetArrayLength(), arrSize))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
         m_pCompiler->optRemoveRangeCheck(bndsChk, comma, stmt);
@@ -734,7 +734,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             }
         }
 
-        ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->gtArrLen->gtVNPair);
+        ValueNum arrLenVN = m_pCompiler->vnStore->VNConservativeNormalValue(m_pCurBndsChk->GetArrayLength()->gtVNPair);
 
         if (m_pCompiler->vnStore->IsVNConstant(arrLenVN))
         {
@@ -865,16 +865,16 @@ void RangeCheck::MergeAssertion(BasicBlock* block, GenTree* op, Range* pRange DE
         if (pred->bbFallsThrough() && pred->bbNext == block)
         {
             assertions = pred->bbAssertionOut;
-            JITDUMP("Merge assertions from pred " FMT_BB " edge: %s\n", pred->bbNum,
-                    BitVecOps::ToString(m_pCompiler->apTraits, assertions));
+            JITDUMP("Merge assertions from pred " FMT_BB " edge: ", pred->bbNum);
+            Compiler::optDumpAssertionIndices(assertions, "\n");
         }
         else if ((pred->bbJumpKind == BBJ_COND || pred->bbJumpKind == BBJ_ALWAYS) && pred->bbJumpDest == block)
         {
             if (m_pCompiler->bbJtrueAssertionOut != nullptr)
             {
                 assertions = m_pCompiler->bbJtrueAssertionOut[pred->bbNum];
-                JITDUMP("Merge assertions from pred " FMT_BB " JTrue edge: %s\n", pred->bbNum,
-                        BitVecOps::ToString(m_pCompiler->apTraits, assertions));
+                JITDUMP("Merge assertions from pred " FMT_BB " JTrue edge: ", pred->bbNum);
+                Compiler::optDumpAssertionIndices(assertions, "\n");
             }
         }
     }
@@ -1012,9 +1012,10 @@ Range RangeCheck::ComputeRangeForLocalDef(BasicBlock*          block,
     Range range = GetRange(ssaDef->GetBlock(), ssaDef->GetAssignment()->gtGetOp2(), monIncreasing DEBUGARG(indent));
     if (!BitVecOps::MayBeUninit(block->bbAssertionIn) && (m_pCompiler->GetAssertionCount() > 0))
     {
-        JITDUMP("Merge assertions from " FMT_BB ":%s for assignment about [%06d]\n", block->bbNum,
-                BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),
-                Compiler::dspTreeID(ssaDef->GetAssignment()->gtGetOp1()));
+        JITDUMP("Merge assertions from " FMT_BB ": ", block->bbNum);
+        Compiler::optDumpAssertionIndices(block->bbAssertionIn, " ");
+        JITDUMP("for assignment about [%06d]\n", Compiler::dspTreeID(ssaDef->GetAssignment()->gtGetOp1()))
+
         MergeEdgeAssertions(ssaDef->GetAssignment()->gtGetOp1()->AsLclVarCommon(), block->bbAssertionIn, &range);
         JITDUMP("done merging\n");
     }
@@ -1445,9 +1446,9 @@ Compiler::fgWalkResult MapMethodDefsVisitor(GenTree** ptr, Compiler::fgWalkData*
 void RangeCheck::MapMethodDefs()
 {
     // First, gather where all definitions occur in the program and store it in a map.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             MapMethodDefsData data(this, block, stmt);
             m_pCompiler->fgWalkTreePre(stmt->GetRootNodePointer(), MapMethodDefsVisitor, &data, false, true);
@@ -1474,11 +1475,11 @@ void RangeCheck::OptimizeRangeChecks()
 #endif
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
-    for (BasicBlock* block = m_pCompiler->fgFirstBB; block; block = block->bbNext)
+    for (BasicBlock* const block : m_pCompiler->Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
-            for (GenTree* tree = stmt->GetTreeList(); tree; tree = tree->gtNext)
+            for (GenTree* const tree : stmt->TreeList())
             {
                 if (IsOverBudget())
                 {

@@ -1,11 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http.Headers;
-using System.Text;
 
 using Xunit;
 
@@ -52,9 +48,9 @@ namespace System.Net.Http.Tests
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {
             NameValueWithParametersHeaderValue expected = new NameValueWithParametersHeaderValue("custom");
-            CheckValidParsedValue("\r\n custom  ", 0, expected, 11);
+            CheckValidParsedValue(" custom  ", 0, expected, 9);
             CheckValidParsedValue("custom", 0, expected, 6);
-            CheckValidParsedValue(",, ,\r\n custom  , chunked", 0, expected, 17);
+            CheckValidParsedValue(",, , custom  , chunked", 0, expected, 15);
 
             // Note that even if the whole string is invalid, the first "Expect" value is valid. When the parser
             // gets called again using the result-index (9), then it fails: I.e. we have 1 valid "Expect" value
@@ -65,7 +61,7 @@ namespace System.Net.Http.Tests
             // The purpose of this test is to verify that these other parsers are combined correctly to build a
             // transfer-coding parser.
             expected.Parameters.Add(new NameValueHeaderValue("name", "value"));
-            CheckValidParsedValue("\r\n custom ;  name =   value ", 0, expected, 28);
+            CheckValidParsedValue(" custom ;  name =   value ", 0, expected, 26);
             CheckValidParsedValue("  custom;name=value", 2, expected, 19);
             CheckValidParsedValue("  custom ; name=value", 2, expected, 21);
 
@@ -81,6 +77,12 @@ namespace System.Net.Http.Tests
             CheckInvalidParsedValue("custom\u4F1A", 0);
             CheckInvalidParsedValue("custom; name=value;", 0);
             CheckInvalidParsedValue("custom; name1=value1; name2=value2;", 0);
+            CheckInvalidParsedValue("\r\n custom  ", 0);
+            CheckInvalidParsedValue(",, ,\r\n custom  , chunked", 0);
+            CheckInvalidParsedValue("\r\n custom ;  name =   value ", 0);
+            CheckInvalidParsedValue("custom; name=value\r", 0);
+            CheckInvalidParsedValue("custom; name=value;\r", 0);
+            CheckInvalidParsedValue("custom; name=value;\r foo=bar", 0);
         }
 
         #region Helper methods

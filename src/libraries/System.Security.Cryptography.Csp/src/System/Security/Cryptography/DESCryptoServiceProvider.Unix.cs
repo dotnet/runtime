@@ -6,6 +6,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class DESCryptoServiceProvider : DES
     {

@@ -3,6 +3,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <TestRuntime>true</TestRuntime>
+    <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc</WasmXHarnessArgs>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
@@ -15,6 +16,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\DelegateTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Part of the shared framework but not exposed. -->

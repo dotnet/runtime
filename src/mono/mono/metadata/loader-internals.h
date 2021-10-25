@@ -120,6 +120,8 @@ struct _MonoAssemblyLoadContext {
 	MonoCoopMutex pinvoke_lock;
 	// Maps malloc-ed char* pinvoke scope -> MonoDl*
 	GHashTable *pinvoke_scopes;
+	// The managed name, owned by this structure
+	char *name;
 };
 
 struct _MonoMemoryManager {
@@ -252,6 +254,7 @@ mono_alc_invoke_resolve_using_resolving_event_nofail (MonoAssemblyLoadContext *a
 MonoAssembly*
 mono_alc_invoke_resolve_using_resolve_satellite_nofail (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname);
 
+MONO_COMPONENT_API
 MonoAssemblyLoadContext *
 mono_alc_get_default (void);
 
@@ -264,6 +267,19 @@ mono_alc_get_ambient (void)
 	 * passed to them from their callers.
 	 */
 	return mono_alc_get_default ();
+}
+
+static inline MonoGCHandle
+mono_alc_get_gchandle_for_resolving (MonoAssemblyLoadContext *alc)
+{
+	/* for the default ALC, pass NULL to ask for the Default ALC - see
+	 * AssemblyLoadContext.GetAssemblyLoadContext(IntPtr gchManagedAssemblyLoadContext) - which
+	 * will create the managed ALC object if it hasn't been created yet
+	 */
+	if (alc->gchandle == mono_alc_get_default ()->gchandle)
+		return NULL;
+	else
+		return GUINT_TO_POINTER (alc->gchandle);
 }
 
 MonoAssemblyLoadContext *
@@ -293,12 +309,13 @@ mono_mem_manager_free (MonoMemoryManager *memory_manager, gboolean debug_unload)
 void
 mono_mem_manager_free_objects (MonoMemoryManager *memory_manager);
 
-void
+MONO_COMPONENT_API void
 mono_mem_manager_lock (MonoMemoryManager *memory_manager);
 
-void
+MONO_COMPONENT_API void
 mono_mem_manager_unlock (MonoMemoryManager *memory_manager);
 
+MONO_COMPONENT_API
 void *
 mono_mem_manager_alloc (MonoMemoryManager *memory_manager, guint size);
 

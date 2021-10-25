@@ -201,6 +201,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
@@ -414,18 +415,16 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory,
-            MemberData(nameof(PathsWithReservedDeviceNames))]
-        [PlatformSpecific(TestPlatforms.Windows)] // device name prefixes
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked))] // device name prefixes
+        [MemberData(nameof(PathsWithReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsPath_ThrowsDirectoryNotFoundException(string path)
         {
             // Throws DirectoryNotFoundException, when the behavior really should be an invalid path
             Assert.Throws<DirectoryNotFoundException>(() => Create(path));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
-            MemberData(nameof(ReservedDeviceNames))]
-        [PlatformSpecific(TestPlatforms.Windows)] // device name prefixes
+        [ConditionalTheory(nameof(ReservedDeviceNamesAreBlocked), nameof(UsingNewNormalization))] // device name prefixes
+        [MemberData(nameof(ReservedDeviceNames))]
         public void PathWithReservedDeviceNameAsExtendedPath(string path)
         {
             Assert.True(Create(IOInputs.ExtendedPrefix + Path.Combine(TestDirectory, path)).Exists, path);

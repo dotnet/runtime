@@ -145,6 +145,7 @@ namespace System.Reflection.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "entry assembly won't be xunit.console on browser")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -268,6 +269,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50715", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public void GetType_DefaultsToItself()
         {
             Assembly a = typeof(AssemblyTests).Assembly;
@@ -508,7 +510,7 @@ namespace System.Reflection.Tests
         }
 
 #pragma warning disable SYSLIB0012
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // single file
         public void CodeBase()
         {
             Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);
@@ -651,6 +653,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         [MemberData(nameof(GetCallingAssembly_TestData))]
         public void GetCallingAssembly(Assembly assembly1, Assembly assembly2, bool expected)
         {
@@ -707,6 +710,12 @@ namespace System.Reflection.Tests
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
+
+            System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly);
+            string expectedName = "Assembly.Load(byte[], ...)";
+            Assert.Equal(expectedName, alc.Name);
+            Assert.Contains(expectedName, alc.ToString());
+            Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
         }
 
         [Fact]
@@ -717,6 +726,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void AssemblyLoadFromBytesWithSymbols()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;

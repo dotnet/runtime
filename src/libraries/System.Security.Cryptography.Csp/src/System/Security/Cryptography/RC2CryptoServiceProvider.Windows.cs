@@ -4,10 +4,12 @@
 using Internal.Cryptography;
 using Internal.NativeCrypto;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
+    [Obsolete(Obsoletions.DerivedCryptographicTypesMessage, DiagnosticId = Obsoletions.DerivedCryptographicTypesDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class RC2CryptoServiceProvider : RC2
     {
@@ -100,8 +102,8 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_InvalidIVSize);
             }
 
-            int effectiveKeySize = EffectiveKeySizeValue == 0 ? (int)keySize : EffectiveKeySize;
-            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_RC2, Mode, BlockSize / BitsPerByte, rgbKey, effectiveKeySize, !UseSalt, rgbIV, encrypting, 0, 0);
+            Debug.Assert(EffectiveKeySize == KeySize);
+            BasicSymmetricCipher cipher = new BasicSymmetricCipherCsp(CapiHelper.CALG_RC2, Mode, BlockSize / BitsPerByte, rgbKey, !UseSalt, rgbIV, encrypting, 0, 0);
             return UniversalCryptoTransform.Create(Padding, cipher, encrypting);
         }
     }

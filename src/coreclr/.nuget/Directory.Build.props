@@ -18,7 +18,7 @@
     <SkipIndexCheck>true</SkipIndexCheck>
 
     <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">6.0.0</PackageVersion>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">7.0.0</PackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
   </PropertyGroup>
 
@@ -119,8 +119,8 @@
   <ItemGroup>
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set, but
          don't build the RID-specific package if we're in an unsupported os family -->
-    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
-    <BuildRID Include="$(PackageRID)"
+    <BuildRID Include="@(OfficialBuildRID)" Exclude="$(OutputRid)"/>
+    <BuildRID Include="$(OutputRid)"
               Condition="'$(_isSupportedOSGroup)' == 'true'">
       <Platform Condition="'$(TargetArchitecture)' == 'x64'">amd64</Platform>
       <Platform Condition="'$(TargetArchitecture)' != 'x64'">$(TargetArchitecture)</Platform>

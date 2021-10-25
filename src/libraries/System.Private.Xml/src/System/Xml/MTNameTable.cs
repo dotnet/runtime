@@ -219,7 +219,7 @@ namespace System.Xml {
 #else
 
     // XmlNameTable implemented as a multi-threaded splay tree.
-    [Obsolete("This class is going away")]
+    [Obsolete("MTNameTable has been deprecated and is not supported.")]
     public class MTNameTable : XmlNameTable {
         internal MTNameTableNode rootNode;
         internal ReaderWriterLock rwLock;

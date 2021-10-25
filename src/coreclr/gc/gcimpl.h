@@ -307,6 +307,9 @@ protected:
 
     virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p);
 
+    virtual void DiagGetGCSettings(EtwGCSettingsInfo* etw_settings);
+
+    virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved);
 public:
     Object * NextObj (Object * object);
 

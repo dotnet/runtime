@@ -947,6 +947,21 @@ namespace System.Collections.Generic
             {
                 return keyComparer.Compare(x.Key, y.Key);
             }
+
+            public override bool Equals(object? obj)
+            {
+                if (obj is KeyValuePairComparer other)
+                {
+                    // Commonly, both comparers will be the default comparer (and reference-equal). Avoid a virtual method call to Equals() in that case.
+                    return this.keyComparer == other.keyComparer || this.keyComparer.Equals(other.keyComparer);
+                }
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return this.keyComparer.GetHashCode();
+            }
         }
     }
 

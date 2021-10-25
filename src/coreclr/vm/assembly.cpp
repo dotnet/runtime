@@ -31,13 +31,8 @@
 
 #include "eeconfig.h"
 
-#include "ceefilegenwriter.h"
 #include "assemblynative.hpp"
 #include "threadsuspend.h"
-
-#ifdef FEATURE_PREJIT
-#include "corcompile.h"
-#endif
 
 #include "appdomainnative.hpp"
 #include "customattribute.h"
@@ -66,35 +61,56 @@
 
 #ifndef DACCESS_COMPILE
 
-// This value is to make it easier to diagnose Assembly Loader "grant set" crashes.
-// See Dev11 bug 358184 for more details.
-
-// This value is not thread safe and is not intended to be. It is just a best
-// effort to collect more data on the problem. Is is possible, though unlikely,
-// that thread A would record a reason for an upcoming crash,
-// thread B would then record a different reason, and we would then
-// crash on thread A, thus ending up with the recorded reason not matching
-// the thread we crash in. Be aware of this when using this value
-// to help your debugging.
-DWORD g_dwLoaderReasonForNotSharing = 0; // See code:DomainFile::m_dwReasonForRejectingNativeImage for a similar variable.
-
 volatile uint32_t g_cAssemblies = 0;
-
-// These will sometimes result in a crash with error code 0x80131401 SECURITY_E_INCOMPATIBLE_SHARE
-// "Loading this assembly would produce a different grant set from other instances."
-enum ReasonForNotSharing
-{
-    ReasonForNotSharing_NoInfoRecorded = 0x1,
-    ReasonForNotSharing_NullDomainassembly = 0x2,
-    ReasonForNotSharing_DebuggerFlagMismatch = 0x3,
-    ReasonForNotSharing_NullPeassembly = 0x4,
-    ReasonForNotSharing_MissingAssemblyClosure1 = 0x5,
-    ReasonForNotSharing_MissingAssemblyClosure2 = 0x6,
-    ReasonForNotSharing_MissingDependenciesResolved = 0x7,
-    ReasonForNotSharing_ClosureComparisonFailed = 0x8,
-};
-
 static CrstStatic g_friendAssembliesCrst;
+
+namespace
+{
+    void DefineEmitScope(GUID iid, void** ppEmit)
+    {
+        CONTRACT_VOID
+        {
+            PRECONDITION(CheckPointer(ppEmit));
+            POSTCONDITION(CheckPointer(*ppEmit));
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+            INJECT_FAULT(COMPlusThrowOM(););
+        }
+        CONTRACT_END;
+
+        SafeComHolder<IMetaDataDispenserEx> pDispenser;
+
+        // Get the Dispenser interface.
+        MetaDataGetDispenser(
+            CLSID_CorMetaDataDispenser,
+            IID_IMetaDataDispenserEx,
+            (void**)&pDispenser);
+        if (pDispenser == NULL)
+        {
+            ThrowOutOfMemory();
+        }
+
+        // Set the option on the dispenser turn on duplicate check for TypeDef and moduleRef
+        VARIANT varOption;
+        V_VT(&varOption) = VT_UI4;
+        V_I4(&varOption) = MDDupDefault | MDDupTypeDef | MDDupModuleRef | MDDupExportedType | MDDupAssemblyRef | MDDupPermission | MDDupFile;
+        IfFailThrow(pDispenser->SetOption(MetaDataCheckDuplicatesFor, &varOption));
+
+        // Set minimal MetaData size
+        V_VT(&varOption) = VT_UI4;
+        V_I4(&varOption) = MDInitialSizeMinimal;
+        IfFailThrow(pDispenser->SetOption(MetaDataInitialSize, &varOption));
+
+        // turn on the thread safety!
+        V_I4(&varOption) = MDThreadSafetyOn;
+        IfFailThrow(pDispenser->SetOption(MetaDataThreadSafetyOptions, &varOption));
+
+        IfFailThrow(pDispenser->DefineScope(CLSID_CorMetaDataRuntime, 0, iid, (IUnknown**)ppEmit));
+
+        RETURN;
+    }
+}
 
 void Assembly::Initialize()
 {
@@ -106,12 +122,12 @@ void Assembly::Initialize()
 // It cannot do any allocations or operations that might fail. Those operations should be done
 // in Assembly::Init()
 //----------------------------------------------------------------------------------------------
-Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
+Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pPEAssembly, DebuggerAssemblyControlFlags debuggerFlags, BOOL fIsCollectible) :
     m_pDomain(pDomain),
     m_pClassLoader(NULL),
     m_pEntryPoint(NULL),
     m_pManifest(NULL),
-    m_pManifestFile(clr::SafeAddRef(pFile)),
+    m_pManifestFile(clr::SafeAddRef(pPEAssembly)),
     m_pFriendAssemblyDescriptor(NULL),
     m_isDynamic(false),
 #ifdef FEATURE_COLLECTIBLE_TYPES
@@ -127,9 +143,9 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #endif
     m_debuggerFlags(debuggerFlags),
     m_fTerminated(FALSE),
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#if FEATURE_READYTORUN
     m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
-#endif
+#endif // FEATURE_READYTORUN
 {
     STANDARD_VM_CONTRACT;
 }
@@ -173,12 +189,10 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     m_pClassLoader = new ClassLoader(this);
     m_pClassLoader->Init(pamTracker);
 
-#ifndef CROSSGEN_COMPILE
     if (GetManifestFile()->IsDynamic())
         // manifest modules of dynamic assemblies are always transient
-        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME, TRUE);
+        m_pManifest = ReflectionModule::Create(this, GetManifestFile(), pamTracker, REFEMIT_MANIFEST_MODULE_NAME);
     else
-#endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
 
     FastInterlockIncrement((LONG*)&g_cAssemblies);
@@ -194,18 +208,16 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     //  loading it entirely.
     //CacheFriendAssemblyInfo();
 
-#ifndef CROSSGEN_COMPILE
     if (IsCollectible())
     {
         COUNT_T size;
-        BYTE *start = (BYTE*)m_pManifest->GetFile()->GetLoadedImageContents(&size);
+        BYTE *start = (BYTE*)m_pManifest->GetPEAssembly()->GetLoadedImageContents(&size);
         if (start != NULL)
         {
             GCX_COOP();
             LoaderAllocator::AssociateMemoryWithLoaderAllocator(start, start + size, m_pLoaderAllocator);
         }
     }
-#endif
 
     {
         CANNOTTHROWCOMPLUSEXCEPTION();
@@ -218,7 +230,6 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     }
 }
 
-#ifndef CROSSGEN_COMPILE
 Assembly::~Assembly()
 {
     CONTRACTL
@@ -247,33 +258,15 @@ Assembly::~Assembly()
 #endif // FEATURE_COMINTEROP
 }
 
-#ifdef  FEATURE_PREJIT
-void Assembly::DeleteNativeCodeRanges()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    ModuleIterator i = IterateModules();
-    while (i.Next())
-            i.GetModule()->DeleteNativeCodeRanges();
-}
-#endif
-
 #ifdef PROFILING_SUPPORTED
 void ProfilerCallAssemblyUnloadStarted(Assembly* assemblyUnloaded)
 {
     WRAPPER_NO_CONTRACT;
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AssemblyUnloadStarted((AssemblyID)assemblyUnloaded);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyUnloadStarted((AssemblyID)assemblyUnloaded);
+        END_PROFILER_CALLBACK();
     }
 }
 
@@ -281,10 +274,10 @@ void ProfilerCallAssemblyUnloadFinished(Assembly* assemblyUnloaded)
 {
     WRAPPER_NO_CONTRACT;
     {
-        BEGIN_PIN_PROFILER(CORProfilerPresent());
+        BEGIN_PROFILER_CALLBACK(CORProfilerPresent());
         GCX_PREEMP();
-        g_profControlBlock.pProfInterface->AssemblyUnloadFinished((AssemblyID) assemblyUnloaded, S_OK);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyUnloadFinished((AssemblyID) assemblyUnloaded, S_OK);
+        END_PROFILER_CALLBACK();
     }
 }
 #endif
@@ -331,7 +324,6 @@ void Assembly::Terminate( BOOL signalProfiler )
 
     this->m_fTerminated = TRUE;
 }
-#endif // CROSSGEN_COMPILE
 
 Assembly * Assembly::Create(
     BaseDomain *                 pDomain,
@@ -347,10 +339,10 @@ Assembly * Assembly::Create(
 
 #ifdef PROFILING_SUPPORTED
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
         GCX_COOP();
-        g_profControlBlock.pProfInterface->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
-        END_PIN_PROFILER();
+        (&g_profControlBlock)->AssemblyLoadStarted((AssemblyID)(Assembly *) pAssembly);
+        END_PROFILER_CALLBACK();
     }
 
     // Need TRY/HOOK instead of holder so we can get HR of exception thrown for profiler callback
@@ -363,11 +355,11 @@ Assembly * Assembly::Create(
     EX_HOOK
     {
         {
-            BEGIN_PIN_PROFILER(CORProfilerTrackAssemblyLoads());
+            BEGIN_PROFILER_CALLBACK(CORProfilerTrackAssemblyLoads());
             GCX_COOP();
-            g_profControlBlock.pProfInterface->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
+            (&g_profControlBlock)->AssemblyLoadFinished((AssemblyID)(Assembly *) pAssembly,
                                                                     GET_EXCEPTION()->GetHR());
-            END_PIN_PROFILER();
+            END_PROFILER_CALLBACK();
         }
     }
     EX_END_HOOK;
@@ -377,9 +369,7 @@ Assembly * Assembly::Create(
     return pAssembly;
 } // Assembly::Create
 
-
-#ifndef CROSSGEN_COMPILE
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderContext, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -438,14 +428,14 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
     // Set up the assembly manifest metadata
     // When we create dynamic assembly, we always use a working copy of IMetaDataAssemblyEmit
     // to store temporary runtime assembly information. This is to preserve the invariant that
-    // an assembly must have a PEFile with proper metadata.
+    // an assembly must have a PEAssembly with proper metadata.
     // This working copy of IMetaDataAssemblyEmit will store every AssemblyRef as a simple name
     // reference as we must have an instance of Assembly(can be dynamic assembly) before we can
     // add such a reference. Also because the referenced assembly if dynamic strong name, it may
     // not be ready to be hashed!
 
     SafeComHolder<IMetaDataAssemblyEmit> pAssemblyEmit;
-    PEFile::DefineEmitScope(
+    DefineEmitScope(
         IID_IMetaDataAssemblyEmit,
         &pAssemblyEmit);
 
@@ -510,7 +500,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
     DWORD dwFlags = args->assemblyName->GetFlags();
 
     // Now create a dynamic PE file out of the name & metadata
-    PEAssemblyHolder pFile;
+    PEAssemblyHolder pPEAssembly;
 
     {
         GCX_PREEMP();
@@ -519,12 +509,12 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
         IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
                                                    name, &assemData, dwFlags,
                                                    &ma));
-        pFile = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
+        pPEAssembly = PEAssembly::Create(pCallerAssembly->GetManifestFile(), pAssemblyEmit);
 
-        ICLRPrivBinder* pFallbackLoadContextBinder = pBinderContext;
+        AssemblyBinder* pFallbackBinder = pBinder;
 
         // If ALC is not specified
-        if (pFallbackLoadContextBinder == nullptr)
+        if (pFallbackBinder == nullptr)
         {
             // Dynamically created modules (aka RefEmit assemblies) do not have a LoadContext associated with them since they are not bound
             // using an actual binder. As a result, we will assume the same binding/loadcontext information for the dynamic assembly as its
@@ -534,43 +524,33 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
             // and will have a fallback load context binder associated with it.
 
             // There is always a manifest file - wehther working with static or dynamic assemblies.
-            PEFile* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
+            PEAssembly* pCallerAssemblyManifestFile = pCallerAssembly->GetManifestFile();
             _ASSERTE(pCallerAssemblyManifestFile != NULL);
 
             if (!pCallerAssemblyManifestFile->IsDynamic())
             {
                 // Static assemblies with do not have fallback load context
-                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackLoadContextBinder() == nullptr);
+                _ASSERTE(pCallerAssemblyManifestFile->GetFallbackBinder() == nullptr);
 
-                if (pCallerAssemblyManifestFile->IsSystem())
-                {
-                    // CoreLibrary is always bound to TPA binder
-                    pFallbackLoadContextBinder = pDomain->GetTPABinderContext();
-                }
-                else
-                {
-                    // Fetch the binder from the host assembly
-                    PTR_ICLRPrivAssembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
-                    _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
+                // Fetch the binder from the host assembly
+                PTR_BINDER_SPACE_Assembly pCallerAssemblyHostAssembly = pCallerAssemblyManifestFile->GetHostAssembly();
+                _ASSERTE(pCallerAssemblyHostAssembly != nullptr);
 
-                    UINT_PTR assemblyBinderID = 0;
-                    IfFailThrow(pCallerAssemblyHostAssembly->GetBinderID(&assemblyBinderID));
-                    pFallbackLoadContextBinder = reinterpret_cast<ICLRPrivBinder*>(assemblyBinderID);
-                }
+                pFallbackBinder = pCallerAssemblyHostAssembly->GetBinder();
             }
             else
             {
                 // Creator assembly is dynamic too, so use its fallback load context for the one
                 // we are creating.
-                pFallbackLoadContextBinder = pCallerAssemblyManifestFile->GetFallbackLoadContextBinder();
+                pFallbackBinder = pCallerAssemblyManifestFile->GetFallbackBinder();
             }
         }
 
         // At this point, we should have a fallback load context binder to work with
-        _ASSERTE(pFallbackLoadContextBinder != nullptr);
+        _ASSERTE(pFallbackBinder != nullptr);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
-        pFile->SetFallbackLoadContextBinder(pFallbackLoadContextBinder);
+        pPEAssembly->SetFallbackBinder(pFallbackBinder);
     }
 
     NewHolder<DomainAssembly> pDomainAssembly;
@@ -579,33 +559,37 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
     {
         GCX_PREEMP();
 
+        AssemblyLoaderAllocator* pBinderLoaderAllocator = nullptr;
+        if (pBinder != nullptr)
+        {
+            pBinderLoaderAllocator = pBinder->GetLoaderAllocator();
+        }
+
         // Create a new LoaderAllocator if appropriate
         if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
-            AssemblyLoaderAllocator *pAssemblyLoaderAllocator = new AssemblyLoaderAllocator();
-            pAssemblyLoaderAllocator->SetCollectible();
-            pLoaderAllocator = pAssemblyLoaderAllocator;
+            AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
+            pCollectibleLoaderAllocator->SetCollectible();
+            pLoaderAllocator = pCollectibleLoaderAllocator;
 
             // Some of the initialization functions are not virtual. Call through the derived class
             // to prevent calling the base class version.
-            pAssemblyLoaderAllocator->Init(pDomain);
+            pCollectibleLoaderAllocator->Init(pDomain);
 
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
-            pAssemblyLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
+            pCollectibleLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
             createdNewAssemblyLoaderAllocator = TRUE;
+
+            if(pBinderLoaderAllocator != nullptr)
+            {
+                pCollectibleLoaderAllocator->EnsureReference(pBinderLoaderAllocator);
+            }
         }
         else
         {
-            AssemblyLoaderAllocator* pAssemblyLoaderAllocator = nullptr;
-
-            if (pBinderContext != nullptr)
-            {
-                pBinderContext->GetLoaderAllocator((LPVOID*)&pAssemblyLoaderAllocator);
-            }
-
-            pLoaderAllocator = pAssemblyLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pAssemblyLoaderAllocator;
+            pLoaderAllocator = pBinderLoaderAllocator == nullptr ? pDomain->GetLoaderAllocator() : pBinderLoaderAllocator;
         }
 
         if (!createdNewAssemblyLoaderAllocator)
@@ -614,7 +598,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
         }
 
         // Create a domain assembly
-        pDomainAssembly = new DomainAssembly(pDomain, pFile, pLoaderAllocator);
+        pDomainAssembly = new DomainAssembly(pDomain, pPEAssembly, pLoaderAllocator);
         if (pDomainAssembly->IsCollectible())
         {
             // We add the assembly to the LoaderAllocator only when we are sure that it can be added
@@ -632,7 +616,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
         {
             GCX_PREEMP();
             // Assembly::Create will call SuppressRelease on the NewHolder that holds the LoaderAllocator when it transfers ownership
-            pAssem = Assembly::Create(pDomain, pFile, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
+            pAssem = Assembly::Create(pDomain, pPEAssembly, pDomainAssembly->GetDebuggerInfoBits(), pLoaderAllocator->IsCollectible(), pamTracker, pLoaderAllocator);
 
             ReflectionModule* pModule = (ReflectionModule*) pAssem->GetManifestModule();
             pModule->SetCreatingAssembly( pCallerAssembly );
@@ -693,7 +677,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, ICLRPrivBinder* pBinderCon
 } // Assembly::CreateDynamic
 
 
-#endif // CROSSGEN_COMPILE
 
 void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 {
@@ -881,7 +864,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 
             // Note that we don't want to attempt a LoadModule if a GetModuleIfLoaded will
             // succeed, because it has a stronger contract.
-            Module *pModule = GetManifestModule()->GetModuleIfLoaded(mdLinkRef, TRUE, FALSE);
+            Module *pModule = GetManifestModule()->GetModuleIfLoaded(mdLinkRef);
 #ifdef DACCESS_COMPILE
             return pModule;
 #else
@@ -894,7 +877,11 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
             // We should never get here in the GC case - the above should have succeeded.
             CONSISTENCY_CHECK(!FORBIDGC_LOADER_USE_ENABLED());
 
-            DomainFile * pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef, FALSE, loadFlag!=Loader::Load);
+            DomainFile* pDomainModule = NULL;
+            if (loadFlag == Loader::Load)
+            {
+                pDomainModule = GetManifestModule()->LoadModule(::GetAppDomain(), mdLinkRef);
+            }
 
             if (pDomainModule == NULL)
                 RETURN NULL;
@@ -1017,18 +1004,18 @@ Module * Assembly::FindModuleByTypeRef(
                 // Either we're not supposed to load, or we're doing a GC or stackwalk
                 // in which case we shouldn't need to load.  So just look up the module
                 // and return what we find.
-                RETURN(pModule->LookupModule(tkType,FALSE));
+                RETURN(pModule->LookupModule(tkType));
             }
 
 #ifndef DACCESS_COMPILE
-            DomainFile * pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType, FALSE, loadFlag!=Loader::Load);
-            if (pActualDomainFile == NULL)
+            if (loadFlag == Loader::Load)
             {
-                RETURN NULL;
+                DomainFile* pActualDomainFile = pModule->LoadModule(::GetAppDomain(), tkType);
+                RETURN(pActualDomainFile->GetModule());
             }
             else
             {
-                RETURN(pActualDomainFile->GetModule());
+                RETURN NULL;
             }
 
 #else //DACCESS_COMPILE
@@ -1120,7 +1107,7 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
         ThrowHR(COR_E_UNAUTHORIZEDACCESS);
 
     if (this == SystemDomain::SystemAssembly())
-        RETURN m_pManifest->GetModuleIfLoaded(kFile, TRUE, TRUE);
+        RETURN m_pManifest->GetModuleIfLoaded(kFile);
     else
         RETURN m_pManifest->LoadModule(::GetAppDomain(), kFile)->GetModule();
 }
@@ -1188,7 +1175,7 @@ void Assembly::PrepareModuleForAssembly(Module* module, AllocMemTracker *pamTrac
     module->SetDebuggerInfoBits(GetDebuggerInfoBits());
 
     LOG((LF_CORDB, LL_INFO10, "Module %s: bits=0x%x\n",
-         module->GetFile()->GetSimpleName(),
+         module->GetPEAssembly()->GetSimpleName(),
          module->GetDebuggerInfoBits()));
 #endif // DEBUGGING_SUPPORTED
 
@@ -1337,7 +1324,6 @@ bool Assembly::IgnoresAccessChecksTo(Assembly *pAccessedAssembly)
 }
 
 
-#ifndef CROSSGEN_COMPILE
 
 enum CorEntryPointType
 {
@@ -1656,9 +1642,17 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             AppDomain * pDomain = pThread->GetDomain();
             pDomain->SetRootAssembly(pMeth->GetAssembly());
 
+            // Perform additional managed thread initialization.
+            // This would is normally done in the runtime when a managed
+            // thread is started, but is done here instead since the
+            // Main thread wasn't started by the runtime.
+            Thread::InitializationForManagedThreadInNative(pThread);
+
             RunStartupHooks();
 
             hr = RunMain(pMeth, 1, &iRetVal, stringArgs);
+
+            Thread::CleanUpForManagedThreadInNative(pThread);
         }
     }
 
@@ -1681,7 +1675,6 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
     END_ENTRYPOINT_THROWS;
     return iRetVal;
 }
-#endif // CROSSGEN_COMPILE
 
 MethodDesc* Assembly::GetEntryPoint()
 {
@@ -1706,7 +1699,7 @@ MethodDesc* Assembly::GetEntryPoint()
     Module *pModule = NULL;
     switch(TypeFromToken(mdEntry)) {
     case mdtFile:
-        pModule = m_pManifest->LoadModule(::GetAppDomain(), mdEntry, FALSE)->GetModule();
+        pModule = m_pManifest->LoadModule(::GetAppDomain(), mdEntry)->GetModule();
 
         mdEntry = pModule->GetEntryPointToken();
         if ( (TypeFromToken(mdEntry) != mdtMethodDef) ||
@@ -1715,7 +1708,7 @@ MethodDesc* Assembly::GetEntryPoint()
         break;
 
     case mdtMethodDef:
-        if (m_pManifestFile->GetPersistentMDImport()->IsValidToken(mdEntry))
+        if (m_pManifestFile->GetMDImport()->IsValidToken(mdEntry))
             pModule = m_pManifest;
         break;
     }
@@ -1773,7 +1766,6 @@ MethodDesc* Assembly::GetEntryPoint()
     RETURN m_pEntryPoint;
 }
 
-#ifndef CROSSGEN_COMPILE
 OBJECTREF Assembly::GetExposedObject()
 {
     CONTRACT(OBJECTREF)
@@ -1787,7 +1779,6 @@ OBJECTREF Assembly::GetExposedObject()
 
     RETURN GetDomainAssembly()->GetExposedAssemblyObject();
 }
-#endif // CROSSGEN_COMPILE
 
 /* static */
 BOOL Assembly::FileNotFound(HRESULT hr)
@@ -1825,7 +1816,7 @@ BOOL Assembly::GetResource(LPCSTR szName, DWORD *cbResource,
     return result;
 }
 
-#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+#ifdef FEATURE_READYTORUN
 BOOL Assembly::IsInstrumented()
 {
     STATIC_CONTRACT_THROWS;
@@ -1876,7 +1867,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->HasNativeOrReadyToRunImage())
+    if (!GetManifestFile()->IsReadyToRun())
         return false;
 
     // @Consider using the full name instead of the short form
@@ -1935,7 +1926,7 @@ BOOL Assembly::IsInstrumentedHelper()
 
     return false;
 }
-#endif // FEATURE_PREJIT
+#endif // FEATURE_READYTORUN
 
 
 #ifdef FEATURE_COMINTEROP
@@ -2300,7 +2291,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
     ReleaseHolder<FriendAssemblyDescriptor> pFriendAssemblies = new FriendAssemblyDescriptor;
 
     // We're going to do this twice, once for InternalsVisibleTo and once for IgnoresAccessChecks
-    ReleaseHolder<IMDInternalImport> pImport(pAssembly->GetMDImportWithRef());
+    IMDInternalImport* pImport = pAssembly->GetMDImport();
     for(int count = 0 ; count < 2 ; ++count)
     {
         _ASSERTE(pImport != NULL);

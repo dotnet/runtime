@@ -26,7 +26,7 @@ void Compiler::gsGSChecksInitCookie()
     lvaGSSecurityCookie = lvaGrabTempWithImplicitUse(false DEBUGARG("GSSecurityCookie"));
 
     // Prevent cookie init/check from being optimized
-    lvaSetVarAddrExposed(lvaGSSecurityCookie);
+    lvaSetVarAddrExposed(lvaGSSecurityCookie DEBUGARG(AddressExposedReason::TOO_CONSERVATIVE));
     lvaTable[lvaGSSecurityCookie].lvType = type;
 
     info.compCompHnd->getGSCookie(&gsGlobalSecurityCookieVal, &gsGlobalSecurityCookieAddr);
@@ -333,7 +333,7 @@ bool Compiler::gsFindVulnerableParams()
         for (UINT lclNum = assignGroup->bitVectGetFirst(); lclNum != (unsigned)-1;
              lclNum      = assignGroup->bitVectGetNext(lclNum))
         {
-            lvaTable[lclNum].lvIsPtr = TRUE;
+            lvaTable[lclNum].lvIsPtr = true;
             propagated->bitVectSet(lclNum);
         }
 
@@ -402,13 +402,10 @@ void Compiler::gsParamsToShadows()
 #endif
         shadowVarDsc->lvRegStruct = varDsc->lvRegStruct;
 
-        shadowVarDsc->lvAddrExposed     = varDsc->lvAddrExposed;
+        shadowVarDsc->SetAddressExposed(varDsc->IsAddressExposed() DEBUGARG(varDsc->GetAddrExposedReason()));
         shadowVarDsc->lvDoNotEnregister = varDsc->lvDoNotEnregister;
 #ifdef DEBUG
-        shadowVarDsc->lvVMNeedsStackAddr = varDsc->lvVMNeedsStackAddr;
-        shadowVarDsc->lvLiveInOutOfHndlr = varDsc->lvLiveInOutOfHndlr;
-        shadowVarDsc->lvLclFieldExpr     = varDsc->lvLclFieldExpr;
-        shadowVarDsc->lvLiveAcrossUCall  = varDsc->lvLiveAcrossUCall;
+        shadowVarDsc->SetDoNotEnregReason(varDsc->GetDoNotEnregReason());
 #endif
         shadowVarDsc->lvVerTypeInfo = varDsc->lvVerTypeInfo;
         if (varTypeIsStruct(type))
@@ -480,9 +477,9 @@ void Compiler::gsParamsToShadows()
         }
     };
 
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
+    for (BasicBlock* const block : Blocks())
     {
-        for (Statement* stmt : block->Statements())
+        for (Statement* const stmt : block->Statements())
         {
             ReplaceShadowParamsVisitor replaceShadowParamsVisitor(this);
             replaceShadowParamsVisitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
@@ -530,7 +527,7 @@ void Compiler::gsParamsToShadows()
     {
         // There could be more than one basic block ending with a "Jmp" type tail call.
         // We would have to insert assignments in all such blocks, just before GT_JMP stmnt.
-        for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
+        for (BasicBlock* const block : Blocks())
         {
             if (block->bbJumpKind != BBJ_RETURN)
             {

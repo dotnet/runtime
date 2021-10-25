@@ -8,11 +8,17 @@
       <method signature="System.Void .ctor(System.Object,System.Object,System.Object)" />
     </type>
     <type fullname="Xunit.Sdk.FactDiscoverer" />
+    <type fullname="Xunit.Sdk.CollectionPerAssemblyTestCollectionFactory" />
   </assembly>
   <assembly fullname="Microsoft.DotNet.XUnitExtensions" />
   <assembly fullname="xunit.core">
     <namespace fullname="Xunit" />
     <namespace fullname="Xunit.Sdk" />
+  </assembly>
+  <assembly fullname="xunit.assert">
+    <type fullname="Xunit.Sdk.AssertEqualityComparer`1">
+      <method signature="System.Boolean CompareTypedSets(System.Collections.IEnumerable,System.Collections.IEnumerable)" />
+    </type>
   </assembly>
   <assembly fullname="xunit.runner.utility.netcoreapp10" />
 </linker>

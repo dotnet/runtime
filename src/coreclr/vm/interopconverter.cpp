@@ -113,6 +113,9 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, MethodTable *pMT, BOOL bEnable
         RETURN pvObj;
     }
 
+    if (!g_pConfig->IsBuiltInCOMSupported())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
+
     SyncBlock* pBlock = (*poref)->GetSyncBlock();
 
     InteropSyncBlockInfo* pInteropInfo = pBlock->GetInteropInfo();
@@ -185,21 +188,35 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, ComIpType ReqIpType, ComIpType
         if (ReqIpType & ComIpType_Dispatch)
         {
             hr = SafeQueryInterface(pUnk, IID_IDispatch, &pvObj);
-            pUnk->Release();
+            if (SUCCEEDED(hr))
+            {
+                pUnk->Release();
+                FetchedIpType = ComIpType_Dispatch;
+            }
+            else if (ReqIpType & ComIpType_Unknown)
+            {
+                hr = S_OK;
+                pvObj = pUnk;
+                FetchedIpType = ComIpType_Unknown;
+            }
         }
         else
         {
             pvObj = pUnk;
+            FetchedIpType = ComIpType_Unknown;
         }
 
         if (FAILED(hr))
             COMPlusThrowHR(hr);
 
         if (pFetchedIpType != NULL)
-            *pFetchedIpType = ReqIpType;
+            *pFetchedIpType = FetchedIpType;
 
         RETURN pvObj;
     }
+
+    if (!g_pConfig->IsBuiltInCOMSupported())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
 
     MethodTable *pMT = (*poref)->GetMethodTable();
 
@@ -358,7 +375,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 // pMTClass : specifies the type of instance to be returned
 // NOTE:**  As per COM Rules, the IUnknown passed in shouldn't be AddRef'ed
 //+----------------------------------------------------------------------------
-void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, MethodTable *pItfMT, DWORD dwFlags)
+void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, DWORD dwFlags)
 {
     CONTRACTL
     {
@@ -369,7 +386,6 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         PRECONDITION(CheckPointer(*ppUnk, NULL_OK));
         PRECONDITION(CheckPointer(pMTClass, NULL_OK));
         PRECONDITION(IsProtectedByGCFrame(pObjOut));
-        PRECONDITION(pItfMT == NULL || pItfMT->IsInterface());
     }
     CONTRACTL_END;
 
@@ -386,6 +402,9 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
 
         return;
     }
+
+    if (!g_pConfig->IsBuiltInCOMSupported())
+        COMPlusThrow(kNotSupportedException, W("NotSupported_COM"));
 
     Thread * pThread = GetThread();
 
@@ -437,7 +456,7 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
             COMInterfaceMarshaler marshaler;
 
             marshaler.Init(pOuter, pComClassMT, pThread, flags);
-            *pObjOut = marshaler.FindOrCreateObjectRef(pUnk, pItfMT);
+            *pObjOut = marshaler.FindOrCreateObjectRef(pUnk);
         }
     }
 

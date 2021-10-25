@@ -11,13 +11,13 @@ namespace System.IO.MemoryMappedFiles.Tests
     /// <summary>
     /// Tests for MemoryMappedViewAccessor.
     /// </summary>
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/49104", typeof(PlatformDetection), nameof(PlatformDetection.IsMacOsAppleSilicon))]
     public class MemoryMappedViewAccessorTests : MemoryMappedFilesTestBase
     {
         /// <summary>
         /// Test to validate the offset, size, and access parameters to MemoryMappedFile.CreateViewAccessor.
         /// </summary>
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51375", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void InvalidArguments()
         {
             int mapLength = s_pageSize.Value;
@@ -90,10 +90,10 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    if ((OperatingSystem.IsMacOS() || PlatformDetection.IsInContainer) &&
+                    if ((OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || PlatformDetection.IsInContainer) &&
                        (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
-                        // Containers and OSX with SIP enabled do not have execute permissions by default.
+                        // Containers and OSXlike platforms with SIP enabled do not have execute permissions by default.
                         throw new SkipTestException("Insufficient execute permission.");
                     }
 

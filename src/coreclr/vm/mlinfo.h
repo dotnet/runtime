@@ -182,8 +182,6 @@ struct NativeTypeParamInfo
 #endif // FEATURE_COMINTEROP
 };
 
-HRESULT CheckForCompressedData(PCCOR_SIGNATURE pvNativeTypeStart, PCCOR_SIGNATURE pvNativeType, ULONG cbNativeType);
-
 BOOL ParseNativeTypeInfo(mdToken                    token,
                          IMDInternalImport*         pScope,
                          NativeTypeParamInfo*       pParamInfo);
@@ -257,10 +255,8 @@ public:
 #endif // FEATURE_COMINTEROP
 
 private:
-#ifndef CROSSGEN_COMPILE
     EECMHelperHashTable                 m_CMHelperHashtable;
     EEPtrHashTable                      m_SharedCMHelperToCMInfoMap;
-#endif // CROSSGEN_COMPILE
     LoaderAllocator*                    m_pAllocator;
     LoaderHeap*                         m_pHeap;
     CMINFOLIST                          m_pCMInfoList;
@@ -460,10 +456,6 @@ public:
 
     // Helper functions used to map the specified type to its interface marshalling info.
     static void GetItfMarshalInfo(TypeHandle th, BOOL fDispItf, MarshalScenario ms, ItfMarshalInfo *pInfo);
-    static HRESULT TryGetItfMarshalInfo(TypeHandle th, BOOL fDispItf, ItfMarshalInfo *pInfo);
-
-    VOID MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpecified);
-    static VOID VarTypeToString(VARTYPE vt, SString& strVarType);
 
     // Returns true if the specified marshaler requires COM to have been started.
     bool MarshalerRequiresCOM();
@@ -484,6 +476,12 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_ms == MarshalInfo::MARSHAL_SCENARIO_FIELD;
+    }
+
+    UINT GetErrorResourceId()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_resID;
     }
 
 private:
@@ -700,9 +698,6 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx);
 
 VOID CollateParamTokens(IMDInternalImport *pInternalImport, mdMethodDef md, ULONG numargs, mdParamDef *aParams);
 bool IsUnsupportedTypedrefReturn(MetaSig& msig);
-
-void FindCopyCtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
-void FindDtor(Module *pModule, MethodTable *pMT, MethodDesc **pMDOut);
 
 // We'll cap the total native size at a (somewhat) arbitrary limit to ensure
 // that we don't expose some overflow bug later on.

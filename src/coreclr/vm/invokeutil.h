@@ -71,14 +71,6 @@ public:
     // Validate that the field can be widened for Set
     static void ValidField(TypeHandle th, OBJECTREF* value);
 
-    // ChangeType
-    // This method will invoke the Binder change type method on the object
-    //  binder -- The Binder object
-    //  srcObj -- The source object to be changed
-    //  th -- The TypeHandel of the target type
-    //  locale -- The locale passed to the class.
-    static OBJECTREF ChangeType(OBJECTREF binder,OBJECTREF srcObj,TypeHandle th,OBJECTREF locale);
-
     // CreatePrimitiveValue
     // This routine will validate the object and then place the value into
     //  the destination
@@ -164,10 +156,6 @@ public:
 
 private:
     static void* CreateByRef(TypeHandle dstTh,CorElementType srcType, TypeHandle srcTH,OBJECTREF srcObj, OBJECTREF *pIncomingObj);
-
-    // GetBoxedObject
-    // Given an address of a primitve type, this will box that data...
-    static OBJECTREF GetBoxedObject(TypeHandle th,void* pData);
 
 private:
     // The Attributes Table

@@ -46,6 +46,8 @@ namespace System.Reflection
         }
         public sealed override Type MakeByRefType() => new SignatureByRefType(this);
         public sealed override Type MakePointerType() => new SignaturePointerType(this);
+
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SignatureType); // There is no SignatureType for type definition types so it would never be legal to call this.
 
         // Dissectors
@@ -79,6 +81,7 @@ namespace System.Reflection
         public sealed override Type ReflectedType => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type BaseType => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public sealed override Type[] GetInterfaces() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override int MetadataToken => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -165,6 +168,11 @@ namespace System.Reflection
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
+            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public sealed override Type GetInterface(string name, bool ignoreCase) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
@@ -173,8 +181,10 @@ namespace System.Reflection
         protected sealed override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsPrimitiveImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public sealed override Type[] FindInterfaces(TypeFilter filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override InterfaceMapping GetInterfaceMap([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)] Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEquivalentTo([NotNullWhen(true)] Type? other) => throw new NotSupportedException(SR.NotSupported_SignatureType);

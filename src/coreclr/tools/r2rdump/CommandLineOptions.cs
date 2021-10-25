@@ -40,6 +40,7 @@ namespace R2RDump
             command.AddOption(new Option<string>(new[] { "--pdb-path" }, "PDB output path for --create-pdb"));
             command.AddOption(new Option<bool>(new[] { "--create-perfmap" }, "Create PerfMap"));
             command.AddOption(new Option<string>(new[] { "--perfmap-path" }, "PerfMap output path for --create-perfmap"));
+            command.AddOption(new Option<int>(new[] { "--perfmap-format-version" }, "PerfMap format version for --create-perfmap"));
             return command;
         }
     }

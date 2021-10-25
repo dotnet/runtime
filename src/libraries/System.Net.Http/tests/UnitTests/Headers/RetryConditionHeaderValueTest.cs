@@ -143,6 +143,8 @@ namespace System.Net.Http.Tests
 
             CheckInvalidGetRetryConditionLength("", 0);
             CheckInvalidGetRetryConditionLength(null, 0);
+
+            CheckInvalidGetRetryConditionLength(" 1234567890\n ", 0);
         }
 
         [Fact]
@@ -164,49 +166,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse(string.Empty);
         }
 
-        [Fact]
-        public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
-        {
-            CheckValidTryParse("  123456789 ", new RetryConditionHeaderValue(new TimeSpan(0, 0, 123456789)));
-            CheckValidTryParse("  Sun, 06 Nov 1994 08:49:37 GMT ",
-                new RetryConditionHeaderValue(new DateTimeOffset(1994, 11, 6, 8, 49, 37, TimeSpan.Zero)));
-        }
-
-        [Fact]
-        public void TryParse_SetOfInvalidValueStrings_ReturnsFalse()
-        {
-            CheckInvalidTryParse("123 ,"); // no delimiter allowed
-            CheckInvalidTryParse("Sun, 06 Nov 1994 08:49:37 GMT ,"); // no delimiter allowed
-            CheckInvalidTryParse("123 Sun, 06 Nov 1994 08:49:37 GMT");
-            CheckInvalidTryParse("Sun, 06 Nov 1994 08:49:37 GMT \"x\"");
-            CheckInvalidTryParse(null);
-            CheckInvalidTryParse(string.Empty);
-        }
-
         #region Helper methods
 
         private void CheckValidParse(string input, RetryConditionHeaderValue expectedResult)
         {
             RetryConditionHeaderValue result = RetryConditionHeaderValue.Parse(input);
             Assert.Equal(expectedResult, result);
+
+            Assert.True(RetryConditionHeaderValue.TryParse(input, out result));
+            Assert.Equal(expectedResult, result);
         }
 
         private void CheckInvalidParse(string input)
         {
             Assert.Throws<FormatException>(() => { RetryConditionHeaderValue.Parse(input); });
-        }
 
-        private void CheckValidTryParse(string input, RetryConditionHeaderValue expectedResult)
-        {
-            RetryConditionHeaderValue result = null;
-            Assert.True(RetryConditionHeaderValue.TryParse(input, out result));
-            Assert.Equal(expectedResult, result);
-        }
-
-        private void CheckInvalidTryParse(string input)
-        {
-            RetryConditionHeaderValue result = null;
-            Assert.False(RetryConditionHeaderValue.TryParse(input, out result));
+            Assert.False(RetryConditionHeaderValue.TryParse(input, out RetryConditionHeaderValue result));
             Assert.Null(result);
         }
 

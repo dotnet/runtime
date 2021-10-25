@@ -60,6 +60,7 @@ namespace Internal.NativeCrypto
 
         public const string BCRYPT_3DES_ALGORITHM = "3DES";
         public const string BCRYPT_AES_ALGORITHM = "AES";
+        public const string BCRYPT_CHACHA20_POLY1305_ALGORITHM = "CHACHA20_POLY1305";
         public const string BCRYPT_DES_ALGORITHM = "DES";
         public const string BCRYPT_RC2_ALGORITHM = "RC2";
 
@@ -118,16 +119,16 @@ namespace Internal.NativeCrypto
 
     internal static partial class Cng
     {
-        internal static class Interop
+        internal static partial class Interop
         {
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
+            [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+            public static partial NTSTATUS BCryptOpenAlgorithmProvider(out SafeAlgorithmHandle phAlgorithm, string pszAlgId, string? pszImplementation, int dwFlags);
 
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-            public static extern NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
+            [GeneratedDllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
+            public static partial NTSTATUS BCryptSetProperty(SafeAlgorithmHandle hObject, string pszProperty, string pbInput, int cbInput, int dwFlags);
 
-            [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode, EntryPoint = "BCryptSetProperty")]
-            private static extern NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
+            [GeneratedDllImport(Libraries.BCrypt, EntryPoint = "BCryptSetProperty", CharSet = CharSet.Unicode)]
+            private static partial NTSTATUS BCryptSetIntPropertyPrivate(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int cbInput, int dwFlags);
 
             public static unsafe NTSTATUS BCryptSetIntProperty(SafeBCryptHandle hObject, string pszProperty, ref int pdwInput, int dwFlags)
             {

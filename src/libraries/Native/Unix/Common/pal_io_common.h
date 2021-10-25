@@ -90,7 +90,7 @@ inline static int32_t Common_Poll(PollEvent* pollEvents, uint32_t eventCount, in
     }
     else
     {
-        pollfds = calloc(eventCount, sizeof(*pollfds));
+        pollfds = (struct pollfd*)calloc(eventCount, sizeof(*pollfds));
         if (pollfds == NULL)
         {
             return Error_ENOMEM;

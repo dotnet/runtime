@@ -2,14 +2,21 @@
 
   <PropertyGroup>
     <RootNamespace>Microsoft.Extensions.FileProviders.Physical</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <IncludePlatformAttributes>false</IncludePlatformAttributes>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
+             Link="Common\System\IO\TempDirectory.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs"
              Link="Common\System\Threading\Tasks\TaskTimeoutExtensions.cs" />
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Remove="PhysicalFileProviderTests.netcoreapp.cs" />
   </ItemGroup>
 
   <ItemGroup>

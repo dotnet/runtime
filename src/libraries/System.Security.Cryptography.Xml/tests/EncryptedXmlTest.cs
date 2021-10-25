@@ -89,6 +89,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample1.xml")]
         [InlineData("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample3.xml")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void RsaDecryption(string resourceName)
         {
             XmlDocument doc = new XmlDocument();
@@ -245,6 +246,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Encrypt_X509()
         {
             XmlDocument doc = new XmlDocument();
@@ -269,6 +271,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void Encrypt_X509_XmlNull()
         {
             using (X509Certificate2 certificate = TestHelpers.GetSampleX509Certificate())

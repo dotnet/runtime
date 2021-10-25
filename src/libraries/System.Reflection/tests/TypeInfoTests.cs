@@ -5,6 +5,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -1565,6 +1567,70 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
         }
 
+        public static IEnumerable<object[]> GetMemberWithSameMetadataDefinitionAsData()
+        {
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<int>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true};
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<int>), false };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembers<ClassWithMultipleConstructors>), false };
+
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), typeof(TI_TypeDerivedFromGenericTypeWithAllMembersClosed), false };
+
+            static TypeInfo GetTypeDelegator(Type t) => new TypeDelegator(t);
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>), true };
+            yield return new object[] { typeof(TI_GenericTypeWithAllMembers<>), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+            yield return new object[] { GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<>)), GetTypeDelegator(typeof(TI_GenericTypeWithAllMembers<ClassWithMultipleConstructors>)), true };
+
+            if (RuntimeFeature.IsDynamicCodeSupported)
+            {
+                (Type generatedType1, Type generatedType2) = CreateGeneratedTypes();
+
+                yield return new object[] { generatedType1, generatedType2, true };
+                yield return new object[] { generatedType2, generatedType1, true };
+            }
+        }
+
+        private static (Type, Type) CreateGeneratedTypes()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("GetMemberWithSameMetadataDefinitionAsGeneratedAssembly"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("GetMemberWithSameMetadataDefinitionAsGeneratedModule");
+            TypeBuilder genericType = module.DefineType("GenericGeneratedType");
+            genericType.DefineGenericParameters("T0");
+            genericType.DefineField("_int", typeof(int), FieldAttributes.Private);
+            genericType.DefineProperty("Prop", PropertyAttributes.None, typeof(string), null);
+
+            Type builtGenericType = genericType.CreateType();
+            Type closedType = builtGenericType.MakeGenericType(typeof(int));
+
+            return (genericType, closedType);
+        }
+
+        [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
+        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
+        {
+            BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+            foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
+            {
+                MemberInfo closedGenericMember = closedGenericType.GetMemberWithSameMetadataDefinitionAs(openGenericMember);
+                Assert.True(closedGenericMember != null, $"'{openGenericMember.Name}' was not found");
+                Assert.True(closedGenericMember.HasSameMetadataDefinitionAs(openGenericMember));
+                Assert.Equal(closedGenericMember.Name, openGenericMember.Name);
+                if (checkDeclaringType && openGenericMember is not Type)
+                {
+                    Assert.True(closedGenericMember.DeclaringType.Equals(closedGenericType), $"'{closedGenericMember.Name}' doesn't have the right DeclaringType");
+                }
+            }
+
+            MemberInfo toString = closedGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(object).GetMethod("ToString"));
+            Assert.NotNull(toString);
+            Assert.IsAssignableFrom<MethodInfo>(toString);
+            Assert.Equal("ToString", toString.Name);
+
+            Assert.Throws<ArgumentNullException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(null));
+            Assert.Throws<ArgumentException>(() => openGenericType.GetMemberWithSameMetadataDefinitionAs(typeof(string).GetMethod("get_Length")));
+        }
+
 #pragma warning disable 0067, 0169
         public static class ClassWithStaticConstructor
         {
@@ -1815,6 +1881,54 @@ namespace System.Reflection.Tests
         public abstract class AbstractSubClass : AbstractBaseClass { }
         public class AbstractSubSubClass : AbstractSubClass { }
     }
+
+    public class TI_GenericTypeWithAllMembers<T>
+    {
+        private static event EventHandler<T> PrivateStaticEvent;
+        private static T PrivateStaticField;
+        private static T PrivateStaticProperty { get; set; }
+        private static T PrivateStaticMethod(T t) => default;
+        private static T PrivateStaticMethod(T t, T t2) => default;
+
+        public static event EventHandler<T> PublicStaticEvent;
+        public static T PublicStaticField;
+        public static T PublicStaticProperty { get; set; }
+        public static T PublicStaticMethod(T t) => default;
+        public static T PublicStaticMethod(T t, T t2) => default;
+
+        static TI_GenericTypeWithAllMembers() { }
+
+        public TI_GenericTypeWithAllMembers(T t) { }
+        private TI_GenericTypeWithAllMembers() { }
+
+        public event EventHandler<T> PublicInstanceEvent;
+        public T PublicInstanceField;
+        public T PublicInstanceProperty { get; set; }
+        public T PublicInstanceMethod(T t) => default;
+        public T PublicInstanceMethod(T t, T t2) => default;
+
+        private event EventHandler<T> PrivateInstanceEvent;
+        private T PrivateInstanceField;
+        private T PrivateInstanceProperty { get; set; }
+        private T PrivateInstanceMethod(T t) => default;
+        private T PrivateInstanceMethod(T t1, T t2) => default;
+
+        public class Nested
+        {
+            public T NestedField;
+        }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembers<T> : TI_GenericTypeWithAllMembers<T>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembers(T t) : base(t) { }
+    }
+
+    public class TI_TypeDerivedFromGenericTypeWithAllMembersClosed : TI_TypeDerivedFromGenericTypeWithAllMembers<int>
+    {
+        public TI_TypeDerivedFromGenericTypeWithAllMembersClosed(int t) : base(t) { }
+    }
+
 #pragma warning restore 0067, 0169
 
     public class OutsideTypeInfoTests

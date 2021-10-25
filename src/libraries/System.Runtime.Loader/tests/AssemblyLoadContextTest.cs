@@ -69,6 +69,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByPath_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -83,6 +84,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51893", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void LoadAssemblyByStream_ValidUserAssembly()
         {
             var asmName = new AssemblyName(TestAssembly);
@@ -215,6 +217,19 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(name, alc.Name);
             Assert.Contains(name, alc.ToString());
             Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        [Fact]
+        public static void SubclassAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = new ResourceAssemblyLoadContext();
+
+            Assert.False(alc.IsCollectible);
+            Assert.Null(alc.Name);
+            Assert.Contains("\"\"", alc.ToString());
+            Assert.Contains(typeof(ResourceAssemblyLoadContext).ToString(), alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
             Assert.Empty(alc.Assemblies);
         }

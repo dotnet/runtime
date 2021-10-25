@@ -9,12 +9,24 @@ namespace Internal.Cryptography
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "We are providing the implementation for RC2, not consuming it.")]
     internal sealed partial class RC2Implementation : RC2
     {
-        private static ICryptoTransform CreateTransformCore(
+        private static UniversalCryptoTransform CreateTransformCore(
             CipherMode cipherMode,
             PaddingMode paddingMode,
             byte[] key,
-            int effectiveKeyLength,
             byte[]? iv,
+            int blockSize,
+            int feedbackSizeInBytes,
+            int paddingSize,
+            bool encrypting)
+        {
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(RC2)));
+        }
+
+        private static ILiteSymmetricCipher CreateLiteCipher(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            ReadOnlySpan<byte> key,
+            ReadOnlySpan<byte> iv,
             int blockSize,
             int feedbackSizeInBytes,
             int paddingSize,

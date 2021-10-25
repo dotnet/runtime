@@ -45,6 +45,8 @@ extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #elif defined(HOST_ARM64)
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
+#elif defined(HOST_S390X)
+#define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #else
 #error Unexpected architecture.
 #endif
@@ -168,6 +170,30 @@ typedef int __ptrace_request;
 	ASSIGN_REG(X26)     \
 	ASSIGN_REG(X27)     \
 	ASSIGN_REG(X28)
+
+#elif defined(HOST_S390X)
+#define ASSIGN_CONTROL_REGS \
+        ASSIGN_REG(PSWMask) \
+        ASSIGN_REG(PSWAddr) \
+        ASSIGN_REG(R15)     \
+
+#define ASSIGN_INTEGER_REGS \
+        ASSIGN_REG(R0)      \
+        ASSIGN_REG(R1)      \
+        ASSIGN_REG(R2)      \
+        ASSIGN_REG(R3)      \
+        ASSIGN_REG(R4)      \
+        ASSIGN_REG(R5)      \
+        ASSIGN_REG(R5)      \
+        ASSIGN_REG(R6)      \
+        ASSIGN_REG(R7)      \
+        ASSIGN_REG(R8)      \
+        ASSIGN_REG(R9)      \
+        ASSIGN_REG(R10)     \
+        ASSIGN_REG(R11)     \
+        ASSIGN_REG(R12)     \
+        ASSIGN_REG(R13)     \
+        ASSIGN_REG(R14)
 
 #else
 #error "Don't know how to assign registers on this architecture"
@@ -436,7 +462,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #undef ASSIGN_REG
 
 #if !HAVE_FPREGS_WITH_CW
-#if HAVE_GREGSET_T || HAVE_GREGSET_T
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X)
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -448,7 +474,7 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
         // whether CONTEXT_FLOATING_POINT is set in the CONTEXT's flags.
         return;
     }
-#endif // HAVE_GREGSET_T || HAVE_GREGSET_T
+#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X
 #endif // !HAVE_FPREGS_WITH_CW
 
     if ((lpContext->ContextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
@@ -509,6 +535,10 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 fp->D[i] = lpContext->D[i];
             }
         }
+#elif defined(HOST_S390X)
+        fpregset_t *fp = &native->uc_mcontext.fpregs;
+        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        memcpy(fp->fprs, lpContext->Fpr, sizeof(lpContext->Fpr));
 #endif
     }
 
@@ -562,7 +592,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #undef ASSIGN_REG
 
 #if !HAVE_FPREGS_WITH_CW
-#if HAVE_GREGSET_T || HAVE___GREGSET_T
+#if (HAVE_GREGSET_T || HAVE___GREGSET_T) && !defined(HOST_S390X)
 #if HAVE_GREGSET_T
     if (native->uc_mcontext.fpregs == nullptr)
 #elif HAVE___GREGSET_T
@@ -584,7 +614,7 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
         // Bail out regardless of whether the caller wanted CONTEXT_FLOATING_POINT or CONTEXT_XSTATE
         return;
     }
-#endif // HAVE_GREGSET_T || HAVE___GREGSET_T
+#endif // (HAVE_GREGSET_T || HAVE___GREGSET_T) && !HOST_S390X
 #endif // !HAVE_FPREGS_WITH_CW
 
     if ((contextFlags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
@@ -650,6 +680,10 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
             // Mark the context correctly
             lpContext->ContextFlags &= ~(ULONG)CONTEXT_FLOATING_POINT;
         }
+#elif defined(HOST_S390X)
+        const fpregset_t *fp = &native->uc_mcontext.fpregs;
+        static_assert_no_msg(sizeof(fp->fprs) == sizeof(lpContext->Fpr));
+        memcpy(lpContext->Fpr, fp->fprs, sizeof(lpContext->Fpr));
 #endif
     }
 
@@ -699,6 +733,8 @@ LPVOID GetNativeContextPC(const native_context_t *context)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
 #elif defined(HOST_ARM64)
     return (LPVOID) MCREG_Pc(context->uc_mcontext);
+#elif defined(HOST_S390X)
+    return (LPVOID) MCREG_PSWAddr(context->uc_mcontext);
 #else
 #   error implement me for this architecture
 #endif
@@ -727,6 +763,8 @@ LPVOID GetNativeContextSP(const native_context_t *context)
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
 #elif defined(HOST_ARM64)
     return (LPVOID) MCREG_Sp(context->uc_mcontext);
+#elif defined(HOST_S390X)
+    return (LPVOID) MCREG_R15(context->uc_mcontext);
 #else
 #   error implement me for this architecture
 #endif

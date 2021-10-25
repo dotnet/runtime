@@ -26,13 +26,16 @@ HRESULT EnsureEEStarted();
 //    shutdown normally ends. "Shutdown" methods that take this action as an argument
 //    do not return when SCA_ExitProcessWhenShutdownComplete is passed.
 //
-// 2. Return after performing all shutdown processing. This is a special case used
+// 2. Terminate process and generate a dump if enabled.
+//
+// 3. Return after performing all shutdown processing. This is a special case used
 //    by a shutdown initiated via the Shim, and is used to ensure that all runtimes
 //    loaded SxS are shutdown gracefully. "Shutdown" methods that take this action
 //    as an argument return when SCA_ReturnWhenShutdownComplete is passed.
 enum ShutdownCompleteAction
 {
     SCA_ExitProcessWhenShutdownComplete,
+    SCA_TerminateProcessWhenShutdownComplete,
     SCA_ReturnWhenShutdownComplete
 };
 

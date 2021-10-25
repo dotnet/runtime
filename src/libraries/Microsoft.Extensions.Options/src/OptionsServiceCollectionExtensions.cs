@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static IEnumerable<Type> FindConfigurationServices(Type type)
         {
-            foreach (Type t in type.GetInterfaces())
+            foreach (Type t in GetInterfacesOnType(type))
             {
                 if (t.IsGenericType)
                 {
@@ -159,6 +159,16 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
             }
+
+            // Extracted the suppression to a local function as trimmer currently doesn't handle suppressions
+            // on iterator methods correctly.
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
+                Justification="This method only looks for interfaces referenced in its code. " +
+                    "The trimmer will keep the interface and thus all of its implementations in that case. " +
+                    "The call to GetInterfaces may return less results in trimmed apps, but it will " +
+                    "include the interfaces this method looks for if they should be there.")]
+            static Type[] GetInterfacesOnType(Type t)
+                => t.GetInterfaces();
         }
 
         private static void ThrowNoConfigServices(Type type) =>

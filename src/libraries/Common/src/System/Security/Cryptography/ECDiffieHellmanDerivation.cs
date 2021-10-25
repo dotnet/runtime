@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
                     // If useSecretAsKey is false then hmacKey is owned by the caller, not ours to clear.
                     if (useSecretAsKey)
                     {
-                        Array.Clear(hmacKey, 0, hmacKey.Length);
+                        Array.Clear(hmacKey);
                     }
                 }
             }
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(secretAgreement, 0, secretAgreement.Length);
+                    Array.Clear(secretAgreement);
                 }
             }
         }
@@ -189,76 +189,53 @@ namespace System.Security.Cryptography
             // A(i) = HMAC_hash(secret, A(i-1))
             //
             // This is called via PRF, which turns (label || seed) into seed.
+            Span<byte> retSpan = ret;
 
-#if NETFRAMEWORK || NETCOREAPP3_0
-            byte[] secretTmp = new byte[secret.Length];
-
-            // Keep secretTmp pinned the whole time it has a secret in it, so it
-            // doesn't get copied around during heap compaction.
-            fixed (byte* pinnedSecretTmp = secretTmp)
+            using (IncrementalHash hasher = IncrementalHash.CreateHMAC(algorithmName, secret))
             {
-                secret.CopyTo(secretTmp);
+                Span<byte> a = stackalloc byte[hashOutputSize];
+                Span<byte> p = stackalloc byte[hashOutputSize];
 
-                try
+                // A(1)
+                hasher.AppendData(prfLabel);
+                hasher.AppendData(prfSeed);
+
+                if (!hasher.TryGetHashAndReset(a, out int bytesWritten) || bytesWritten != hashOutputSize)
                 {
-#else
-                    ReadOnlySpan<byte> secretTmp = secret;
-#endif
-                    Span<byte> retSpan = ret;
-
-                    using (IncrementalHash hasher = IncrementalHash.CreateHMAC(algorithmName, secretTmp))
-                    {
-                        Span<byte> a = stackalloc byte[hashOutputSize];
-                        Span<byte> p = stackalloc byte[hashOutputSize];
-
-                        // A(1)
-                        hasher.AppendData(prfLabel);
-                        hasher.AppendData(prfSeed);
-
-                        if (!hasher.TryGetHashAndReset(a, out int bytesWritten) || bytesWritten != hashOutputSize)
-                        {
-                            throw new CryptographicException();
-                        }
-
-                        while (true)
-                        {
-                            // HMAC_hash(secret, A(i) || seed) => p
-                            hasher.AppendData(a);
-                            hasher.AppendData(prfLabel);
-                            hasher.AppendData(prfSeed);
-
-                            if (!hasher.TryGetHashAndReset(p, out bytesWritten) || bytesWritten != hashOutputSize)
-                            {
-                                throw new CryptographicException();
-                            }
-
-                            int len = Math.Min(p.Length, retSpan.Length);
-
-                            p.Slice(0, len).CopyTo(retSpan);
-                            retSpan = retSpan.Slice(len);
-
-                            if (retSpan.Length == 0)
-                            {
-                                return;
-                            }
-
-                            // Build the next A(i)
-                            hasher.AppendData(a);
-
-                            if (!hasher.TryGetHashAndReset(a, out bytesWritten) || bytesWritten != hashOutputSize)
-                            {
-                                throw new CryptographicException();
-                            }
-                        }
-                    }
-#if NETFRAMEWORK || NETCOREAPP3_0
+                    throw new CryptographicException();
                 }
-                finally
+
+                while (true)
                 {
-                    Array.Clear(secretTmp, 0, secretTmp.Length);
+                    // HMAC_hash(secret, A(i) || seed) => p
+                    hasher.AppendData(a);
+                    hasher.AppendData(prfLabel);
+                    hasher.AppendData(prfSeed);
+
+                    if (!hasher.TryGetHashAndReset(p, out bytesWritten) || bytesWritten != hashOutputSize)
+                    {
+                        throw new CryptographicException();
+                    }
+
+                    int len = Math.Min(p.Length, retSpan.Length);
+
+                    p.Slice(0, len).CopyTo(retSpan);
+                    retSpan = retSpan.Slice(len);
+
+                    if (retSpan.Length == 0)
+                    {
+                        return;
+                    }
+
+                    // Build the next A(i)
+                    hasher.AppendData(a);
+
+                    if (!hasher.TryGetHashAndReset(a, out bytesWritten) || bytesWritten != hashOutputSize)
+                    {
+                        throw new CryptographicException();
+                    }
                 }
             }
-#endif
         }
     }
 }

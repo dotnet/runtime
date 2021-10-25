@@ -48,6 +48,9 @@ MONO_API char*           mono_method_get_reflection_name (MonoMethod *method);
 
 MONO_API char*           mono_field_full_name (MonoClassField *field);
 
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_debugger_agent_unhandled_exception (MonoException *e);
+
 MONO_END_DECLS
 
 #endif /* __MONO_DEBUG_HELPERS_H__ */

@@ -4,7 +4,6 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -333,7 +332,7 @@ namespace System.Net.Http
             }
 
             // Add headers.
-            foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
+            foreach (KeyValuePair<string, HeaderStringValues> headerPair in content.Headers.NonValidated)
             {
                 Encoding headerValueEncoding = HeaderEncodingSelector?.Invoke(headerPair.Key, content) ?? HttpRuleParser.DefaultHttpEncoding;
 
@@ -388,7 +387,7 @@ namespace System.Net.Http
             foreach (HttpContent content in _nestedContent)
             {
                 // Headers.
-                foreach (KeyValuePair<string, IEnumerable<string>> headerPair in content.Headers)
+                foreach (KeyValuePair<string, HeaderStringValues> headerPair in content.Headers.NonValidated)
                 {
                     currentLength += headerPair.Key.Length + ColonSpaceLength;
 

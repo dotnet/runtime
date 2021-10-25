@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -30,7 +31,7 @@ namespace Microsoft.Extensions.Logging
                 return;
             }
 
-            options.CaptureScopes = _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
+            options.CaptureScopes = GetCaptureScopesValue(options);
 
             foreach (IConfigurationSection configurationSection in _configuration.GetChildren())
             {
@@ -50,6 +51,10 @@ namespace Microsoft.Extensions.Logging
                     }
                 }
             }
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "IConfiguration.GetValue is safe when T is a bool.")]
+            bool GetCaptureScopesValue(LoggerFilterOptions options) => _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
         }
 
         private void LoadRules(LoggerFilterOptions options, IConfigurationSection configurationSection, string logger)

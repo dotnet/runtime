@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
+#include <mono/metadata/mono-private-unstable.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-forward.h>
 #include <mono/utils/mono-error.h>
@@ -43,8 +44,6 @@ typedef struct MonoQCallFunc {
     void           *implementation;
     const char     *method_name;
 } MonoQCallFunc;
-
-typedef void * (*PInvokeOverrideFn) (const char *libraryName, const char *entrypointName);
 
 void
 mono_loader_install_pinvoke_override (PInvokeOverrideFn override_fn);

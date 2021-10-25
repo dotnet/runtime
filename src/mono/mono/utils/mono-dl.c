@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#include <common/getexepath.h>
 
 #if defined(TARGET_ANDROID) && !defined(WIN32)
 #include <dlfcn.h>
@@ -174,7 +175,7 @@ fix_libc_name (const char *name)
  * mono_dl_open_self:
  * \param error_msg pointer for error message on failure
  *
- * Returns a handle to the main program, on android x86 it's not possible to 
+ * Returns a handle to the main program, on android x86 it's not possible to
  * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
  * handle in this platform.
  */
@@ -197,9 +198,9 @@ mono_dl_open_self (char **error_msg)
 	module->dl_fallback = NULL;
 	module->full_name = NULL;
 	return module;
-#else 
+#else
 	return mono_dl_open (NULL, MONO_DL_LAZY, error_msg);
-#endif	
+#endif
 }
 
 /**
@@ -257,11 +258,11 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 			MonoDlFallbackHandler *handler = (MonoDlFallbackHandler *) node->data;
 			if (error_msg)
 				*error_msg = NULL;
-			
+
 			lib = handler->load_func (name, lflags, error_msg, handler->user_data);
 			if (error_msg && *error_msg != NULL)
 				g_free (*error_msg);
-			
+
 			if (lib != NULL){
 				dl_fallback = handler;
 				found_name = g_strdup (name);
@@ -279,7 +280,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 			g_free (module);
 			return NULL;
 		}
-		
+
 		suff = ".la";
 		ext = strrchr (name, '.');
 		if (ext && strcmp (ext, ".la") == 0)
@@ -379,35 +380,89 @@ void
 mono_dl_close (MonoDl *module)
 {
 	MonoDlFallbackHandler *dl_fallback = module->dl_fallback;
-	
+
 	if (dl_fallback){
 		if (dl_fallback->close_func != NULL)
 			dl_fallback->close_func (module->handle, dl_fallback->user_data);
 	} else
 		mono_dl_close_handle (module);
-	
+
 	g_free (module->full_name);
 	g_free (module);
 }
 
-/**
- * mono_dl_build_path:
- * \param directory optional directory
- * \param name base name of the library
- * \param iter iterator token
- * Given a directory name and the base name of a library, iterate
- * over the possible file names of the library, taking into account
- * the possible different suffixes and prefixes on the host platform.
- *
- * The returned file name must be freed by the caller.
- * \p iter must point to a NULL pointer the first time the function is called
- * and then passed unchanged to the following calls.
- * \returns the filename or NULL at the end of the iteration
- */
-char*
-mono_dl_build_path (const char *directory, const char *name, void **iter)
+typedef gboolean (*dl_library_name_formatting_func)(int idx, gboolean *need_prefix, gboolean *need_suffix, const char **suffix);
+
+static
+gboolean
+dl_default_library_name_formatting (int idx, gboolean *need_prefix, gboolean *need_suffix, const char **suffix)
 {
-	int idx;
+	/*
+	  The first time we are called, idx = 0 (as *iter is initialized to NULL). This is our
+	  "bootstrap" phase in which we check the passed name verbatim and only if we fail to find
+	  the dll thus named, we start appending suffixes, each time increasing idx twice (since now
+	  the 0 value became special and we need to offset idx to a 0-based array index). This is
+	  done to handle situations when mapped dll name is specified as libsomething.so.1 or
+	  libsomething.so.1.1 or libsomething.so - testing it algorithmically would be an overkill
+	  here.
+	 */
+	if (idx == 0) {
+		/* Name */
+		*need_prefix = FALSE;
+		*need_suffix = FALSE;
+		*suffix = "";
+	} else if (idx == 1) {
+		/* netcore system libs have a suffix but no prefix */
+		*need_prefix = FALSE;
+		*need_suffix = TRUE;
+		*suffix = mono_dl_get_so_suffixes () [0];
+	} else {
+		/* Prefix.Name.suffix */
+		*need_prefix = TRUE;
+		*need_suffix = TRUE;
+		*suffix = mono_dl_get_so_suffixes () [idx - 2];
+		if ((*suffix) [0] == '\0')
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+static
+gboolean
+dl_reverse_library_name_formatting (int idx, gboolean *need_prefix, gboolean *need_suffix, const char **suffix)
+{
+	const char ** suffixes = mono_dl_get_so_suffixes ();
+	int suffix_count = 0;
+
+	while (suffixes [suffix_count][0] != '\0')
+		suffix_count++;
+
+	if (idx < suffix_count) {
+		/* Prefix.Name.suffix */
+		*need_prefix = TRUE;
+		*need_suffix = TRUE;
+		*suffix = suffixes [idx];
+	} else if (idx == suffix_count) {
+		/* netcore system libs have a suffix but no prefix */
+		*need_prefix = FALSE;
+		*need_suffix = TRUE;
+		*suffix = suffixes [0];
+	} else if (idx == suffix_count + 1) {
+		/* Name */
+		*need_prefix = FALSE;
+		*need_suffix = FALSE;
+		*suffix = "";
+	} else {
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+static char*
+dl_build_path (const char *directory, const char *name, void **iter, dl_library_name_formatting_func func)
+{
 	const char *prefix;
 	const char *suffix;
 	gboolean need_prefix = TRUE, need_suffix = TRUE;
@@ -419,34 +474,10 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	if (!iter)
 		return NULL;
 
-	/*
-	  The first time we are called, idx = 0 (as *iter is initialized to NULL). This is our
-	  "bootstrap" phase in which we check the passed name verbatim and only if we fail to find
-	  the dll thus named, we start appending suffixes, each time increasing idx twice (since now
-	  the 0 value became special and we need to offset idx to a 0-based array index). This is
-	  done to handle situations when mapped dll name is specified as libsomething.so.1 or
-	  libsomething.so.1.1 or libsomething.so - testing it algorithmically would be an overkill
-	  here.
-	 */
+
 	iteration = GPOINTER_TO_UINT (*iter);
-	idx = iteration;
-	if (idx == 0) {
-		/* Name */
-		need_prefix = FALSE;
-		need_suffix = FALSE;
-		suffix = "";
-	} else if (idx == 1) {
-		/* netcore system libs have a suffix but no prefix */
-		need_prefix = FALSE;
-		need_suffix = TRUE;
-		suffix = mono_dl_get_so_suffixes () [0];
-		suffixlen = strlen (suffix);
-	} else {
-		/* Prefix.Name.suffix */
-		suffix = mono_dl_get_so_suffixes () [idx - 2];
-		if (suffix [0] == '\0')
-			return NULL;
-	}
+	if (!func (iteration, &need_prefix, &need_suffix, &suffix))
+		return NULL;
 
 	if (need_prefix) {
 		prlen = strlen (mono_dl_get_so_prefix ());
@@ -471,6 +502,64 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	return res;
 }
 
+/**
+ * mono_dl_build_path:
+ * \param directory optional directory
+ * \param name base name of the library
+ * \param iter iterator token
+ * Given a directory name and the base name of a library, iterate
+ * over the possible file names of the library, taking into account
+ * the possible different suffixes and prefixes on the host platform.
+ *
+ * The returned file name must be freed by the caller.
+ * \p iter must point to a NULL pointer the first time the function is called
+ * and then passed unchanged to the following calls.
+ * \returns the filename or NULL at the end of the iteration
+ */
+char*
+mono_dl_build_path (const char *directory, const char *name, void **iter)
+{
+#ifdef HOST_ANDROID
+	return dl_build_path (directory, name, iter, dl_reverse_library_name_formatting);
+#else
+	return dl_build_path (directory, name, iter, dl_default_library_name_formatting);
+#endif
+}
+
+static
+gboolean
+dl_prefix_suffix_library_name_formatting (int idx, gboolean *need_prefix, gboolean *need_suffix, const char **suffix)
+{
+	/* Prefix.Name.suffix */
+	*need_prefix = TRUE;
+	*need_suffix = TRUE;
+	*suffix = mono_dl_get_so_suffixes () [idx];
+	if ((*suffix) [0] == '\0')
+		return FALSE;
+
+	return TRUE;
+}
+
+/**
+ * mono_dl_build_platform_path:
+ * \param directory optional directory
+ * \param name base name of the library
+ * \param iter iterator token
+ * Given a directory name and the base name of a library, iterate
+ * over platform prefix and suffixes generating a library name
+ * suitable for the platform. Function won't try additional fallbacks.
+ *
+ * The returned file name must be freed by the caller.
+ * \p iter must point to a NULL pointer the first time the function is called
+ * and then passed unchanged to the following calls.
+ * \returns the filename or NULL at the end of the iteration
+ */
+char*
+mono_dl_build_platform_path (const char *directory, const char *name, void **iter)
+{
+	return dl_build_path (directory, name, iter, dl_prefix_suffix_library_name_formatting);
+}
+
 MonoDlFallbackHandler *
 mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
 {
@@ -485,7 +574,7 @@ mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol sy
 	handler->user_data = user_data;
 
 	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
-	
+
 leave:
 	return handler;
 }
@@ -525,18 +614,14 @@ MonoDl*
 mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 {
 	MonoDl *runtime_lib = NULL;
-	char buf [4096];
-	int binl;
 	*error_msg = NULL;
 
-	binl = mono_dl_get_executable_path (buf, sizeof (buf));
+	char *resolvedname = minipal_getexepath();
 
-	if (binl != -1) {
+	if (!resolvedname) {
 		char *base;
-		char *resolvedname, *name;
+		char *name;
 		char *baseparent = NULL;
-		buf [binl] = 0;
-		resolvedname = mono_path_resolve_symlinks (buf);
 		base = g_path_get_dirname (resolvedname);
 		name = g_strdup_printf ("%s/.libs", base);
 		runtime_lib = try_load (lib_name, name, flags, error_msg);

@@ -41,14 +41,22 @@ namespace System.Globalization.Tests
 
             // Slovak
             yield return new object[] { s_slovakCompare, "ch", "h", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 7, 2 };
+            // Android has its own ICU, which doesn't work well with slovak
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_slovakCompare, "chodit hore", "HO", 0, 11, CompareOptions.IgnoreCase, 7, 2 };
+            }
             yield return new object[] { s_slovakCompare, "chh", "h", 0, 3, CompareOptions.None, 2, 1 };
 
             // Turkish
+            // Android has its own ICU, which doesn't work well with tr
+            if (!PlatformDetection.IsAndroid)
+            {
+                yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
+                yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
+            }
             yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
             yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.None, -1, 0 };
-            yield return new object[] { s_turkishCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 0, 2, CompareOptions.None, -1, 0 };
             yield return new object[] { s_invariantCompare, "Hi", "I", 0, 2, CompareOptions.IgnoreCase, 1, 1 };
             yield return new object[] { s_invariantCompare, "Hi", "\u0130", 0, 2, CompareOptions.IgnoreCase, -1, 0 };
@@ -64,6 +72,7 @@ namespace System.Globalization.Tests
             yield return new object[] { s_invariantCompare, "FooBar", "Foo\u0400Bar", 0, 6, CompareOptions.Ordinal, -1, 0 };
             yield return new object[] { s_invariantCompare, "TestFooBA\u0300R", "FooB\u00C0R", 0, 11, CompareOptions.IgnoreNonSpace, 4, 7 };
             yield return new object[] { s_invariantCompare, "o\u0308", "o", 0, 2, CompareOptions.None, -1, 0 };
+            yield return new object[] { s_invariantCompare, "\r\n", "\n", 0, 2, CompareOptions.None, 1, 1 };
 
             // Weightless characters
             yield return new object[] { s_invariantCompare, "", "\u200d", 0, 0, CompareOptions.None, 0, 0 };

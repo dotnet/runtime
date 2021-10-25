@@ -345,7 +345,7 @@ public:
     {
         if (IsShort(env))
         {
-            (size_t&)out = (size_t)out & ((size_t)gen | (size_t)in);
+            (size_t&)(int&) out = (size_t)out & ((size_t)gen | (size_t)in);
         }
         else
         {
@@ -361,7 +361,7 @@ public:
     {
         if (IsShort(env))
         {
-            (size_t&)in = (size_t)use | ((size_t)out & ~(size_t)def);
+            (size_t&)(int&) in = (size_t)use | ((size_t)out & ~(size_t)def);
         }
         else
         {
@@ -509,7 +509,7 @@ public:
             for (;;)
             {
                 DWORD nextBit;
-                BOOL  hasBit;
+                bool  hasBit;
 #ifdef HOST_64BIT
                 static_assert_no_msg(sizeof(size_t) == 8);
                 hasBit = BitScanForward64(&nextBit, m_bits);

@@ -166,6 +166,53 @@ namespace System.Threading
             return safeWaitHandle;
         }
 
+        public static SafeWaitHandle? CreateNamedMutex(bool initiallyOwned, string name, out bool createdNew)
+        {
+            // For initially owned, newly created named mutexes, there is a potential race
+            // between adding the mutex to the named object table and initially acquiring it.
+            // To avoid the possibility of another thread retrieving the mutex via its name
+            // before we managed to acquire it, we perform both steps while holding s_lock.
+            s_lock.Acquire();
+            bool holdingLock = true;
+            try
+            {
+                WaitableObject? waitableObject = WaitableObject.CreateNamedMutex_Locked(name, out createdNew);
+                if (waitableObject == null)
+                {
+                    return null;
+                }
+                SafeWaitHandle safeWaitHandle = NewHandle(waitableObject);
+                if (!initiallyOwned || !createdNew)
+                {
+                    return safeWaitHandle;
+                }
+
+                // Acquire the mutex. A thread's <see cref="ThreadWaitInfo"/> has a reference to all <see cref="Mutex"/>es locked
+                // by the thread. See <see cref="ThreadWaitInfo.LockedMutexesHead"/>. So, acquire the lock only after all
+                // possibilities for exceptions have been exhausted.
+                ThreadWaitInfo waitInfo = Thread.CurrentThread.WaitInfo;
+                int status = waitableObject.Wait_Locked(waitInfo, timeoutMilliseconds: 0, interruptible: false, prioritize: false);
+                Debug.Assert(status == 0);
+                // Wait_Locked has already released s_lock, so we no longer hold it here.
+                holdingLock = false;
+                return safeWaitHandle;
+            }
+            finally
+            {
+                if (holdingLock)
+                {
+                    s_lock.Release();
+                }
+            }
+        }
+
+        public static OpenExistingResult OpenNamedMutex(string name, out SafeWaitHandle? result)
+        {
+            OpenExistingResult status = WaitableObject.OpenNamedMutex(name, out WaitableObject? mutex);
+            result = status == OpenExistingResult.Success ? NewHandle(mutex!) : null;
+            return status;
+        }
+
         public static void DeleteHandle(IntPtr handle)
         {
             HandleManager.DeleteHandle(handle);

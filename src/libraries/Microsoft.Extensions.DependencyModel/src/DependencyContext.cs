@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
@@ -10,7 +11,10 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContext
     {
-        private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
+
+        [UnconditionalSuppressMessage("SingleFile", "IL3002:Avoid calling members marked with 'RequiresAssemblyFilesAttribute' when publishing as a single-file",
+            Justification = "The annotation should be on the static constructor but is Compiler Generated, annotating the caller Default method instead")]
+        private static readonly Lazy<DependencyContext?> _defaultContext = new(LoadDefault);
 
         public DependencyContext(TargetInfo target,
             CompilationOptions compilationOptions,
@@ -46,7 +50,8 @@ namespace Microsoft.Extensions.DependencyModel
             RuntimeGraph = runtimeGraph.ToArray();
         }
 
-        public static DependencyContext Default => _defaultContext.Value;
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        public static DependencyContext? Default => _defaultContext.Value;
 
         public TargetInfo Target { get; }
 
@@ -74,7 +79,8 @@ namespace Microsoft.Extensions.DependencyModel
                 );
         }
 
-        private static DependencyContext LoadDefault()
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        private static DependencyContext? LoadDefault()
         {
             var entryAssembly = Assembly.GetEntryAssembly();
             if (entryAssembly == null)
@@ -85,16 +91,17 @@ namespace Microsoft.Extensions.DependencyModel
             return Load(entryAssembly);
         }
 
-        public static DependencyContext Load(Assembly assembly)
+        [RequiresAssemblyFiles("DependencyContext for an assembly from a application published as single-file is not supported. The method will return null. Make sure the calling code can handle this case.")]
+        public static DependencyContext? Load(Assembly assembly)
         {
             return DependencyContextLoader.Default.Load(assembly);
         }
 
         private sealed class LibraryMergeEqualityComparer<T> : IEqualityComparer<T> where T : Library
         {
-            public bool Equals(T x, T y)
+            public bool Equals(T? x, T? y)
             {
-                return StringComparer.OrdinalIgnoreCase.Equals(x.Name, y.Name);
+                return StringComparer.OrdinalIgnoreCase.Equals(x?.Name, y?.Name);
             }
 
             public int GetHashCode(T obj)

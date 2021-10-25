@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.ComponentModel
@@ -43,7 +44,7 @@ namespace System.ComponentModel
             return previous == 0 ? 1 : previous << 1;
         }
 
-        public override bool Equals(object o) => o is InterlockedBitVector32 vector && _data == vector._data;
+        public override bool Equals([NotNullWhen(true)] object? o) => o is InterlockedBitVector32 vector && _data == vector._data;
 
         public override int GetHashCode() => base.GetHashCode();
     }

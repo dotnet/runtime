@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -19,6 +20,7 @@ namespace System.Text.Json
             object obj,
             ReadOnlySpan<byte> unescapedPropertyName,
             ref ReadStack state,
+            JsonSerializerOptions options,
             out bool useExtensionProperty,
             bool createExtensionProperty = true)
         {
@@ -47,7 +49,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
-                        CreateDataExtensionProperty(obj, dataExtProperty);
+                        CreateDataExtensionProperty(obj, dataExtProperty, options);
                     }
 
                     jsonPropertyInfo = dataExtProperty;
@@ -93,7 +95,8 @@ namespace System.Text.Json
 
         internal static void CreateDataExtensionProperty(
             object obj,
-            JsonPropertyInfo jsonPropertyInfo)
+            JsonPropertyInfo jsonPropertyInfo,
+            JsonSerializerOptions options)
         {
             Debug.Assert(jsonPropertyInfo != null);
 
@@ -110,14 +113,26 @@ namespace System.Text.Json
                 Debug.Assert(genericArgs[0].UnderlyingSystemType == typeof(string));
                 Debug.Assert(
                     genericArgs[1].UnderlyingSystemType == JsonTypeInfo.ObjectType ||
-                    genericArgs[1].UnderlyingSystemType == typeof(JsonElement));
+                    genericArgs[1].UnderlyingSystemType == typeof(JsonElement) ||
+                    genericArgs[1].UnderlyingSystemType == typeof(Nodes.JsonNode));
 #endif
                 if (jsonPropertyInfo.RuntimeTypeInfo.CreateObject == null)
                 {
-                    ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                    // Avoid a reference to the JsonNode type for trimming
+                    if (jsonPropertyInfo.DeclaredPropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
+                    {
+                        extensionData = jsonPropertyInfo.ConverterBase.CreateObject(options);
+                    }
+                    else
+                    {
+                        ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(jsonPropertyInfo.DeclaredPropertyType);
+                    }
+                }
+                else
+                {
+                    extensionData = jsonPropertyInfo.RuntimeTypeInfo.CreateObject();
                 }
 
-                extensionData = jsonPropertyInfo.RuntimeTypeInfo.CreateObject();
                 jsonPropertyInfo.SetExtensionDictionaryAsObject(obj, extensionData);
             }
 

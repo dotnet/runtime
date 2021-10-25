@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -284,7 +285,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         public static FluentAssertions.AndConstraint<CommandResultAssertions> ExecuteComponentEntryPointWithException(this CommandResultAssertions assertion, string methodName, int componentCallCount)
         {
             var constraint = assertion.ExecuteComponentEntryPoint(methodName, componentCallCount);
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return constraint.And.HaveStdOutContaining($"{methodName} delegate threw exception: 0x{Constants.ErrorCode.COMPlusException.ToString("x")}");
             }

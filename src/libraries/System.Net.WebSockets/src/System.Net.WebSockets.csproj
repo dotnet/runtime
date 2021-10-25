@@ -1,26 +1,49 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\Net\WebSockets\AsyncMutex.cs" />
+    <Compile Include="System\Net\WebSockets\Compression\WebSocketDeflater.cs" />
+    <Compile Include="System\Net\WebSockets\Compression\WebSocketInflater.cs" />
+    <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ValueWebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocket.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketCloseStatus.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketContext.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketCreationOptions.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketDeflateOptions.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketError.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketException.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />
+    <Compile Include="System\Net\WebSockets\WebSocketMessageFlags.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
-    <Compile Include="System\Net\WebSockets\ManagedWebSocket.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs"
              Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.cs"
+             Link="Common\System\IO\Compression\ZLibNative.cs" />
+    <Compile Include="$(CommonPath)System\IO\Compression\ZLibNative.ZStream.cs"
+             Link="Common\System\IO\Compression\ZLibNative.ZStream.cs" />
+    <Compile Include="$(CommonPath)Interop\Interop.zlib.cs"
+             Link="Common\Interop\Interop.zlib.cs" />
+  </ItemGroup>
+  <!-- Windows specific files -->
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
+             Link="Common\Interop\Windows\Interop.Libraries.cs" />
+  </ItemGroup>
+  <!-- Unix specific files -->
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+    <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
+             Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Numerics.Vectors" />

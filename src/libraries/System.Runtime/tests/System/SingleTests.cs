@@ -11,14 +11,9 @@ using Xunit;
 
 namespace System.Tests
 {
-    public partial class SingleTests
+    public class SingleTests
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
-
-        private static uint SingleToUInt32Bits(float value)
-        {
-            return Unsafe.As<float, uint>(ref value);
-        }
 
         [Theory]
         [InlineData("a")]
@@ -44,6 +39,10 @@ namespace System.Tests
         [InlineData(float.NegativeInfinity, float.MinValue, -1)]
         [InlineData(-0f, float.NegativeInfinity, 1)]
         [InlineData(float.NegativeInfinity, -0f, -1)]
+        [InlineData(float.NegativeInfinity, float.NegativeInfinity, 0)]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, -1)]
+        [InlineData(float.PositiveInfinity, float.PositiveInfinity, 0)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, 1)]
         public static void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
             if (value is float f2)
@@ -105,7 +104,7 @@ namespace System.Tests
         public static void Epsilon()
         {
             Assert.Equal(1.40129846E-45f, float.Epsilon);
-            Assert.Equal(0x00000001u, SingleToUInt32Bits(float.Epsilon));
+            Assert.Equal(0x00000001u, BitConverter.SingleToUInt32Bits(float.Epsilon));
         }
 
         [Theory]
@@ -223,28 +222,28 @@ namespace System.Tests
         public static void MaxValue()
         {
             Assert.Equal(3.40282347E+38f, float.MaxValue);
-            Assert.Equal(0x7F7FFFFFu, SingleToUInt32Bits(float.MaxValue));
+            Assert.Equal(0x7F7FFFFFu, BitConverter.SingleToUInt32Bits(float.MaxValue));
         }
 
         [Fact]
         public static void MinValue()
         {
             Assert.Equal(-3.40282347E+38f, float.MinValue);
-            Assert.Equal(0xFF7FFFFFu, SingleToUInt32Bits(float.MinValue));
+            Assert.Equal(0xFF7FFFFFu, BitConverter.SingleToUInt32Bits(float.MinValue));
         }
 
         [Fact]
         public static void NaN()
         {
             Assert.Equal(0.0f / 0.0f, float.NaN);
-            Assert.Equal(0xFFC00000u, SingleToUInt32Bits(float.NaN));
+            Assert.Equal(0xFFC00000u, BitConverter.SingleToUInt32Bits(float.NaN));
         }
 
         [Fact]
         public static void NegativeInfinity()
         {
             Assert.Equal(-1.0f / 0.0f, float.NegativeInfinity);
-            Assert.Equal(0xFF800000u, SingleToUInt32Bits(float.NegativeInfinity));
+            Assert.Equal(0xFF800000u, BitConverter.SingleToUInt32Bits(float.NegativeInfinity));
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
@@ -273,6 +272,11 @@ namespace System.Tests
             yield return new object[] { (567.89f).ToString(), defaultStyle, null, 567.89f };
             yield return new object[] { (-567.89f).ToString(), defaultStyle, null, -567.89f };
             yield return new object[] { "1E23", defaultStyle, null, 1E23f };
+
+            yield return new object[] { emptyFormat.NumberDecimalSeparator + "234", defaultStyle, null, 0.234f };
+            yield return new object[] { "234" + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 234.0f };
+            yield return new object[] { new string('0', 72) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 3E38f };
+            yield return new object[] { new string('0', 73) + "3" + new string('0', 38) + emptyFormat.NumberDecimalSeparator, defaultStyle, null, 3E38f };
 
             // 2^24 + 1. Not exactly representable
             yield return new object[] { "16777217.0", defaultStyle, invariantFormat, 16777216.0f };
@@ -479,7 +483,7 @@ namespace System.Tests
         public static void PositiveInfinity()
         {
             Assert.Equal(1.0f / 0.0f, float.PositiveInfinity);
-            Assert.Equal(0x7F800000u, SingleToUInt32Bits(float.PositiveInfinity));
+            Assert.Equal(0x7F800000u, BitConverter.SingleToUInt32Bits(float.PositiveInfinity));
         }
 
         public static IEnumerable<object[]> ToString_TestData()

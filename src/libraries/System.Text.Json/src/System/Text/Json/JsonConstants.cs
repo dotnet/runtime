@@ -3,7 +3,7 @@
 
 namespace System.Text.Json
 {
-    internal static class JsonConstants
+    internal static partial class JsonConstants
     {
         public const byte OpenBrace = (byte)'{';
         public const byte CloseBrace = (byte)'}';
@@ -51,7 +51,8 @@ namespace System.Text.Json
         public const int MaxWriterDepth = 1_000;
         public const int RemoveFlagsBitMask = 0x7FFFFFFF;
 
-        public const int StackallocThreshold = 256;
+        public const int StackallocByteThreshold = 256;
+        public const int StackallocCharThreshold = StackallocByteThreshold / 2;
 
         // In the worst case, an ASCII character represented as a single utf-8 byte could expand 6x when escaped.
         // For example: '+' becomes '\u0043'
@@ -60,9 +61,16 @@ namespace System.Text.Json
         public const int MaxExpansionFactorWhileEscaping = 6;
 
         // In the worst case, a single UTF-16 character could be expanded to 3 UTF-8 bytes.
-        // Only surrogate pairs expand to 4 UTF-8 bytes but that is a transformation of 2 UTF-16 characters goign to 4 UTF-8 bytes (factor of 2).
+        // Only surrogate pairs expand to 4 UTF-8 bytes but that is a transformation of 2 UTF-16 characters going to 4 UTF-8 bytes (factor of 2).
         // All other UTF-16 characters can be represented by either 1 or 2 UTF-8 bytes.
         public const int MaxExpansionFactorWhileTranscoding = 3;
+
+        // When transcoding from UTF8 -> UTF16, the byte count threshold where we rent from the array pool before performing a normal alloc.
+        public const long ArrayPoolMaxSizeBeforeUsingNormalAlloc = 1024 * 1024;
+
+        // The maximum number of characters allowed when writing raw UTF-16 JSON. This is the maximum length that we can guarantee can
+        // be safely transcoded to UTF-8 and fit within an integer-length span, given the max expansion factor of a single character (3).
+        public const int MaxUtf16RawValueLength = int.MaxValue / MaxExpansionFactorWhileTranscoding;
 
         public const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         public const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
@@ -88,6 +96,8 @@ namespace System.Text.Json
         public const int MinimumDateTimeParseLength = 10; // YYYY-MM-DD
         public const int MaximumEscapedDateTimeOffsetParseLength = MaxExpansionFactorWhileEscaping * MaximumDateTimeOffsetParseLength;
 
+        public const int MaximumLiteralLength = 5; // Must be able to fit null, true, & false.
+
         // Encoding Helpers
         public const char HighSurrogateStart = '\ud800';
         public const char HighSurrogateEnd = '\udbff';
@@ -104,8 +114,5 @@ namespace System.Text.Json
         // The maximum number of parameters a constructor can have where it can be considered
         // for a path on deserialization where we don't box the constructor arguments.
         public const int UnboxedParameterCountThreshold = 4;
-
-        // The maximum number of parameters a constructor can have where it can be supported.
-        public const int MaxParameterCount = 64;
     }
 }

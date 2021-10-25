@@ -84,6 +84,11 @@
     </ItemGroup>
   </Target>
 
+  <!-- Add PlatformNeutralAssembly property for targeted builds of cross platform assemblies -->
+  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true' and '$(IsTestProject)' != 'true' and '@(SupportedOSPlatforms)' == ''">
+    <CompilerVisibleProperty Include="PlatformNeutralAssembly" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- corefx has never generated these attributes so don't let the SDK generate them -->
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>

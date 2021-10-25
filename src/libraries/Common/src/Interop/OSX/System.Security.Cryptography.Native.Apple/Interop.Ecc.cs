@@ -11,42 +11,42 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_EccGenerateKey(
+        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        private static partial int AppleCryptoNative_EccGenerateKey(
             int keySizeInBits,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey,
             out SafeCFErrorHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
-        internal static extern long EccGetKeySizeInBits(SafeSecKeyRefHandle publicKey);
+        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
+        internal static partial long EccGetKeySizeInBits(SafeSecKeyRefHandle publicKey);
 
         internal static void EccGenerateKey(
             int keySizeInBits,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey)
         {
-            SafeSecKeyRefHandle keychainPublic;
-            SafeSecKeyRefHandle keychainPrivate;
+            SafeSecKeyRefHandle publicKey;
+            SafeSecKeyRefHandle privateKey;
             SafeCFErrorHandle error;
 
             int result = AppleCryptoNative_EccGenerateKey(
                 keySizeInBits,
-                out keychainPublic,
-                out keychainPrivate,
+                out publicKey,
+                out privateKey,
                 out error);
 
             using (error)
             {
                 if (result == kSuccess)
                 {
-                    pPublicKey = keychainPublic;
-                    pPrivateKey = keychainPrivate;
+                    pPublicKey = publicKey;
+                    pPrivateKey = privateKey;
                     return;
                 }
 
-                using (keychainPrivate)
-                using (keychainPublic)
+                using (privateKey)
+                using (publicKey)
                 {
                     if (result == kErrorSeeError)
                     {

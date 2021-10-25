@@ -10,13 +10,13 @@ namespace System.Net.Http
 {
     internal sealed class WinHttpTransportContext : TransportContext
     {
-        private WinHttpChannelBinding _channelBinding;
+        private WinHttpChannelBinding? _channelBinding;
 
         internal WinHttpTransportContext()
         {
         }
 
-        public override ChannelBinding GetChannelBinding(ChannelBindingKind kind)
+        public override ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
         {
             // WinHTTP only supports retrieval of ChannelBindingKind.Endpoint for CBT.
             if (kind == ChannelBindingKind.Endpoint)

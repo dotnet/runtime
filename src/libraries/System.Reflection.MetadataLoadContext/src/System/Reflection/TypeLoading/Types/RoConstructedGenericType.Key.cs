@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Reflection.TypeLoading
 {
@@ -35,7 +36,7 @@ namespace System.Reflection.TypeLoading
                 return true;
             }
 
-            public override bool Equals(object? obj) => obj is Key other && Equals(other);
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is Key other && Equals(other);
 
             public override int GetHashCode()
             {

@@ -129,8 +129,6 @@
 		</type>
 
 		<type fullname="System.Environment">
-			<!-- appdomain.c: mono_get_corlib_version -->
-			<field name="mono_corlib_version" />
 			<method name="get_StackTrace" />
 		</type>
 
@@ -642,12 +640,6 @@
 		<type fullname="Mono.NullByRefReturnException">
 			<!-- marshal-ilgen.c:emit_invoke_call -->
 			<method signature="System.Void .ctor()" />
-		</type>
-
-    <!-- Used by metadata update -->
-    <!-- TODO: Remove this and add a debugger-libs command to invoke updates, see https://github.com/dotnet/runtime/issues/48458 -->
-		<type fullname="System.Reflection.Metadata.AssemblyExtensions">
-			<method name="ApplyUpdateSdb" />
 		</type>
 
 		<type fullname="System.ValueType">

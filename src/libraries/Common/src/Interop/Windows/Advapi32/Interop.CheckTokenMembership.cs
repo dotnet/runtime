@@ -9,7 +9,15 @@ internal static partial class Interop
 {
     internal static partial class Advapi32
     {
+#if DLLIMPORTGENERATOR_ENABLED
+        [GeneratedDllImport(Interop.Libraries.Advapi32, SetLastError = true)]
+        internal static partial bool CheckTokenMembership(
+#else
         [DllImport(Interop.Libraries.Advapi32, SetLastError = true)]
-        internal static extern bool CheckTokenMembership(SafeAccessTokenHandle TokenHandle, byte[] SidToCheck, ref bool IsMember);
+        internal static extern bool CheckTokenMembership(
+#endif
+            SafeAccessTokenHandle TokenHandle,
+            byte[] SidToCheck,
+            ref bool IsMember);
     }
 }

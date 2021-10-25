@@ -4,11 +4,14 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 
 namespace System.Net.Http.Json
 {
     internal static class JsonHelpers
     {
+        internal static readonly JsonSerializerOptions s_defaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
         internal static MediaTypeHeaderValue GetDefaultMediaType() => new("application/json") { CharSet = "utf-8" };
 
         internal static Encoding? GetEncoding(string? charset)

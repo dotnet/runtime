@@ -434,16 +434,16 @@ namespace System.Net
                     if (domain_count > min_count)
                     {
                         // This case requires sorting all domain collections by timestamp.
-                        Array cookies;
-                        Array stamps;
+                        CookieCollection[] cookies;
+                        DateTime[] stamps;
                         lock (pathList.SyncRoot)
                         {
-                            cookies = Array.CreateInstance(typeof(CookieCollection), pathList.Count);
-                            stamps = Array.CreateInstance(typeof(DateTime), pathList.Count);
+                            cookies = new CookieCollection[pathList.Count];
+                            stamps = new DateTime[pathList.Count];
                             foreach (CookieCollection? cc in pathList.Values)
                             {
-                                stamps.SetValue(cc!.TimeStamp(CookieCollection.Stamp.Check), itemp);
-                                cookies.SetValue(cc, itemp);
+                                stamps[itemp] = cc!.TimeStamp(CookieCollection.Stamp.Check);
+                                cookies[itemp] = cc;
                                 ++itemp;
                             }
                         }
@@ -452,7 +452,7 @@ namespace System.Net
                         itemp = 0;
                         for (int i = 0; i < cookies.Length; ++i)
                         {
-                            CookieCollection cc = (CookieCollection)cookies.GetValue(i)!;
+                            CookieCollection cc = cookies[i];
 
                             lock (cc)
                             {
@@ -785,6 +785,32 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(uri));
             }
             return InternalGetCookies(uri) ?? new CookieCollection();
+        }
+
+        /// <summary>Gets a <see cref="CookieCollection"/> that contains all of the <see cref="Cookie"/> instances in the container.</summary>
+        /// <returns>A <see cref="CookieCollection"/> that contains all of the <see cref="Cookie"/> instances in the container.</returns>
+        public CookieCollection GetAllCookies()
+        {
+            var result = new CookieCollection();
+
+            lock (m_domainTable.SyncRoot)
+            {
+                IDictionaryEnumerator lists = m_domainTable.GetEnumerator();
+                while (lists.MoveNext())
+                {
+                    PathList list = (PathList)lists.Value!;
+                    lock (list.SyncRoot)
+                    {
+                        IDictionaryEnumerator collections = list.List.GetEnumerator();
+                        while (collections.MoveNext())
+                        {
+                            result.Add((CookieCollection)collections.Value!);
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
 
         internal CookieCollection? InternalGetCookies(Uri uri)

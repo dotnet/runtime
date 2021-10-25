@@ -12,6 +12,30 @@ namespace System.Security.Cryptography.RNG.Tests
 {
     public class RandomNumberGeneratorTests
     {
+        [Fact]
+        public static void Create_ReturnsSingleton()
+        {
+            RandomNumberGenerator rng1 = RandomNumberGenerator.Create();
+            RandomNumberGenerator rng2 = RandomNumberGenerator.Create();
+
+            Assert.Same(rng1, rng2);
+        }
+
+        [Fact]
+        public static void Singleton_NoopsDispose()
+        {
+            byte[] random = new byte[1024];
+            RandomNumberGenerator rng = RandomNumberGenerator.Create();
+            rng.GetBytes(random);
+            RandomDataGenerator.VerifyRandomDistribution(random);
+            rng.Dispose(); // should no-op if called once
+
+            random = new byte[1024];
+            rng.GetBytes(random); // should still work even after earlier Dispose call
+            RandomDataGenerator.VerifyRandomDistribution(random);
+            rng.Dispose(); // should no-op if called twice
+        }
+
         [Theory]
         [InlineData(2048)]
         [InlineData(65536)]

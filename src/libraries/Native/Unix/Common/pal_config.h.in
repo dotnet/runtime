@@ -5,6 +5,8 @@
 #cmakedefine01 HAVE_MMAP64
 #cmakedefine01 HAVE_FTRUNCATE64
 #cmakedefine01 HAVE_POSIX_FADVISE64
+#cmakedefine01 HAVE_STATFS_VFS
+#cmakedefine01 HAVE_STATFS_MOUNT
 #cmakedefine01 HAVE_FLOCK64
 #cmakedefine01 HAVE_F_DUPFD_CLOEXEC
 #cmakedefine01 HAVE_F_FULLFSYNC
@@ -34,6 +36,9 @@
 #cmakedefine01 HAVE_STRLCAT
 #cmakedefine01 HAVE_SHM_OPEN_THAT_WORKS_WELL_ENOUGH_WITH_MMAP
 #cmakedefine01 HAVE_POSIX_ADVISE
+#cmakedefine01 HAVE_FALLOCATE
+#cmakedefine01 HAVE_PREADV
+#cmakedefine01 HAVE_PWRITEV
 #cmakedefine01 PRIORITY_REQUIRES_INT_WHO
 #cmakedefine01 KEVENT_REQUIRES_INT_PARAMS
 #cmakedefine01 HAVE_IOCTL
@@ -72,6 +77,10 @@
 #cmakedefine01 HAVE_NETINET_IP_VAR_H
 #cmakedefine01 HAVE_NETINET_ICMP_VAR_H
 #cmakedefine01 HAVE_IOS_NET_ROUTE_H
+#cmakedefine01 HAVE_IOS_NETINET_IP_VAR_H
+#cmakedefine01 HAVE_IOS_NETINET_ICMP_VAR_H
+#cmakedefine01 HAVE_IOS_NETINET_TCPFSM_H
+#cmakedefine01 HAVE_IOS_NETINET_UDP_VAR_H
 #cmakedefine01 HAVE_RT_MSGHDR
 #cmakedefine01 HAVE_RT_MSGHDR2
 #cmakedefine01 HAVE_IF_MSGHDR2
@@ -82,6 +91,7 @@
 #cmakedefine01 HAVE_NET_IF_ARP_H
 #cmakedefine01 HAVE_SYS_MNTENT_H
 #cmakedefine01 HAVE_NET_IFMEDIA_H
+#cmakedefine01 HAVE_IOS_NET_IFMEDIA_H
 #cmakedefine01 HAVE_LINUX_RTNETLINK_H
 #cmakedefine01 HAVE_LINUX_CAN_H
 #cmakedefine01 HAVE_GETDOMAINNAME_SIZET
@@ -118,6 +128,11 @@
 #cmakedefine01 HAVE_GETGROUPLIST
 #cmakedefine01 HAVE_SYS_PROCINFO_H
 #cmakedefine01 HAVE_IOSS_H
+#cmakedefine01 HAVE_ALIGNED_ALLOC
+#cmakedefine01 HAVE_MALLOC_SIZE
+#cmakedefine01 HAVE_MALLOC_USABLE_SIZE
+#cmakedefine01 HAVE_MALLOC_USABLE_SIZE_NP
+#cmakedefine01 HAVE_POSIX_MEMALIGN
 
 // Mac OS X has stat64, but it is deprecated since plain stat now
 // provides the same 64-bit aware struct when targeting OS X > 10.5

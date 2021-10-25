@@ -87,13 +87,13 @@ namespace System.Net.Test.Common
                     if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2)
                     {
                         // Do not pass original options so the CreateConnectionAsync won't try to do ALPN again.
-                        return connection = await Http2LoopbackServerFactory.Singleton.CreateConnectionAsync(socket, stream, options).ConfigureAwait(false);
+                        return connection = await Http2LoopbackServerFactory.Singleton.CreateConnectionAsync(new SocketWrapper(socket), stream, options).ConfigureAwait(false);
                     }
                     if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http11 ||
                         sslStream.NegotiatedApplicationProtocol == default)
                     {
                         // Do not pass original options so the CreateConnectionAsync won't try to do ALPN again.
-                        return connection = await Http11LoopbackServerFactory.Singleton.CreateConnectionAsync(socket, stream, options).ConfigureAwait(false);
+                        return connection = await Http11LoopbackServerFactory.Singleton.CreateConnectionAsync(new SocketWrapper(socket), stream, options).ConfigureAwait(false);
                     }
                     else
                     {
@@ -103,11 +103,11 @@ namespace System.Net.Test.Common
 
                 if (_options.ClearTextVersion == HttpVersion.Version11)
                 {
-                    return connection = await Http11LoopbackServerFactory.Singleton.CreateConnectionAsync(socket, stream, options).ConfigureAwait(false);
+                    return connection = await Http11LoopbackServerFactory.Singleton.CreateConnectionAsync(new SocketWrapper(socket), stream, options).ConfigureAwait(false);
                 }
                 else if (_options.ClearTextVersion == HttpVersion.Version20)
                 {
-                    return connection = await Http2LoopbackServerFactory.Singleton.CreateConnectionAsync(socket, stream, options).ConfigureAwait(false);
+                    return connection = await Http2LoopbackServerFactory.Singleton.CreateConnectionAsync(new SocketWrapper(socket), stream, options).ConfigureAwait(false);
                 }
                 else 
                 {
@@ -187,7 +187,7 @@ namespace System.Net.Test.Common
             return HttpAgnosticLoopbackServer.CreateServer(CreateOptions(options));
         }
 
-        public override Task<GenericLoopbackConnection> CreateConnectionAsync(Socket socket, Stream stream, GenericLoopbackOptions options = null)
+        public override Task<GenericLoopbackConnection> CreateConnectionAsync(SocketWrapper socket, Stream stream, GenericLoopbackOptions options = null)
         {
             // This method is always unacceptable to call for an agnostic server.
             throw new NotImplementedException("HttpAgnosticLoopbackServerFactory cannot create connection.");

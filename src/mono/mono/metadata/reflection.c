@@ -27,8 +27,8 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/object-internals.h"
 #include <mono/metadata/exception.h>
+#include <mono/metadata/tokentype.h>
 #include <mono/metadata/marshal.h>
-#include <mono/metadata/security-manager.h>
 #include <mono/metadata/reflection-cache.h>
 #include <mono/metadata/sre-internals.h>
 #include <stdio.h>
@@ -42,7 +42,6 @@
 #include "mono-endian.h"
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mempool-internals.h>
-#include <mono/metadata/security-core-clr.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-ptr-array.h>
@@ -233,7 +232,7 @@ MonoReflectionAssemblyHandle
 mono_assembly_get_object_handle (MonoAssembly *assembly, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssembly, assembly, NULL, assembly_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssembly, m_image_get_mem_manager (assembly->image), assembly, NULL, assembly_object_construct, NULL);
 }
 
 /**
@@ -242,10 +241,13 @@ mono_assembly_get_object_handle (MonoAssembly *assembly, MonoError *error)
 MonoReflectionModule*   
 mono_module_get_object (MonoDomain *domain, MonoImage *image)
 {
+	MonoReflectionModuleHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionModuleHandle result = mono_module_get_object_handle (image, error);
+	result = mono_module_get_object_handle (image, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -299,7 +301,7 @@ MonoReflectionModuleHandle
 mono_module_get_object_handle (MonoImage *image, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionModule, image, NULL, module_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionModule, m_image_get_mem_manager (image), image, NULL, module_object_construct, NULL);
 }
 
 /**
@@ -308,10 +310,13 @@ mono_module_get_object_handle (MonoImage *image, MonoError *error)
 MonoReflectionModule*
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
+	MonoReflectionModuleHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionModuleHandle result = mono_module_file_get_object_handle (image, table_index, error);
+	result = mono_module_file_get_object_handle (image, table_index, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -398,11 +403,11 @@ mono_type_normalize (MonoType *type)
 	}
 
 	if (is_denorm_gtd)
-		return type->byref == m_class_get_byval_arg (gtd)->byref ? m_class_get_byval_arg (gtd) : m_class_get_this_arg (gtd);
+		return m_type_is_byref (type) == m_type_is_byref (m_class_get_byval_arg (gtd)) ? m_class_get_byval_arg (gtd) : m_class_get_this_arg (gtd);
 
 	if (requires_rebind) {
 		MonoClass *klass = mono_class_bind_generic_parameters (gtd, ginst->type_argc, argv, gclass->is_dynamic);
-		return type->byref == m_class_get_byval_arg (klass)->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
+		return m_type_is_byref (type) == m_type_is_byref (m_class_get_byval_arg (klass)) ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 	}
 
 	return type;
@@ -430,7 +435,7 @@ MonoReflectionType*
 mono_type_get_object_checked (MonoType *type, MonoError *error)
 {
 	MonoType *norm_type;
-	MonoReflectionType *res;
+	MonoReflectionType *res, *cached;
 	MonoClass *klass;
 	MonoDomain *domain = mono_get_root_domain ();
 
@@ -438,14 +443,14 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 
 	g_assert (type != NULL);
 	klass = mono_class_from_mono_type_internal (type);
-	MonoMemoryManager *memory_manager = mono_mem_manager_get_ambient ();
+	MonoMemoryManager *memory_manager = m_class_get_mem_manager (klass);
 
 	/*we must avoid using @type as it might have come
 	 * from a mono_metadata_type_dup and the caller
 	 * expects that is can be freed.
 	 * Using the right type from 
 	 */
-	type = m_class_get_byval_arg (klass)->byref == type->byref ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
+	type = m_type_is_byref (m_class_get_byval_arg (klass)) == m_type_is_byref (type) ? m_class_get_byval_arg (klass) : m_class_get_this_arg (klass);
 
 	/* We don't want to return types with custom modifiers to the managed
 	 * world since they're hard to distinguish from plain types using the
@@ -458,7 +463,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	g_assert (!type->has_cmods);
 
 	/* void is very common */
-	if (!type->byref && type->type == MONO_TYPE_VOID && domain->typeof_void)
+	if (!m_type_is_byref (type) && type->type == MONO_TYPE_VOID && domain->typeof_void)
 		return (MonoReflectionType*)domain->typeof_void;
 
 	/*
@@ -476,7 +481,9 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 
 	mono_loader_lock (); /*FIXME mono_class_init_internal and mono_class_vtable acquire it*/
 	mono_mem_manager_lock (memory_manager);
-	if ((res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type)))
+	res = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	mono_mem_manager_unlock (memory_manager);
+	if (res)
 		goto leave;
 
 	/*Types must be normalized so a generic instance of the GTD get's the same inner type.
@@ -491,7 +498,14 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		res = mono_type_get_object_checked (norm_type, error);
 		goto_if_nok (error, leave);
 
-		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		mono_mem_manager_lock (memory_manager);
+		cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+		if (cached) {
+			res = cached;
+		} else {
+			mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		}
+		mono_mem_manager_unlock (memory_manager);
 		goto leave;
 	}
 
@@ -517,7 +531,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		goto leave;
 	}
 
-	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !type->byref) {
+	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !m_type_is_byref (type)) {
 		res = &mono_class_get_ref_info_raw (klass)->type; /* FIXME use handles */
 		goto leave;
 	}
@@ -526,13 +540,19 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	goto_if_nok (error, leave);
 
 	res->type = type;
-	mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
 
-	if (type->type == MONO_TYPE_VOID && !type->byref)
-		domain->typeof_void = (MonoObject*)res;
+	mono_mem_manager_lock (memory_manager);
+	cached = (MonoReflectionType *)mono_g_hash_table_lookup (memory_manager->type_hash, type);
+	if (cached) {
+		res = cached;
+	} else {
+		mono_g_hash_table_insert_internal (memory_manager->type_hash, type, res);
+		if (type->type == MONO_TYPE_VOID && !m_type_is_byref (type))
+			domain->typeof_void = (MonoObject*)res;
+	}
+	mono_mem_manager_unlock (memory_manager);
 
 leave:
-	mono_mem_manager_unlock (memory_manager);
 	mono_loader_unlock ();
 	return res;
 }
@@ -619,7 +639,8 @@ mono_method_get_object_handle (MonoMethod *method, MonoClass *refclass, MonoErro
 	if (!refclass)
 		refclass = method->klass;
 
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethod, method, refclass, method_object_construct, NULL);
+	// FIXME: For methods/params etc., use the mem manager for refclass or a merged one ?
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethod, m_method_get_mem_manager (method), method, refclass, method_object_construct, NULL);
 }
 /*
  * mono_method_get_object_checked:
@@ -649,7 +670,7 @@ mono_method_clear_object (MonoMethod *method)
 	MonoClass *klass;
 	g_assert (method_is_dynamic (method));
 
-	MonoMemoryManager *mem_manager = mono_mem_manager_get_ambient ();
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (method);
 
 	klass = method->klass;
 	while (klass) {
@@ -676,10 +697,13 @@ mono_method_clear_object (MonoMethod *method)
 MonoReflectionField*
 mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
 {
+	MonoReflectionFieldHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionFieldHandle result = mono_field_get_object_handle (klass, field, error);
+	result = mono_field_get_object_handle (klass, field, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -722,9 +746,8 @@ MonoReflectionFieldHandle
 mono_field_get_object_handle (MonoClass *klass, MonoClassField *field, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, field, klass, field_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, m_class_get_mem_manager (field->parent), field, klass, field_object_construct, NULL);
 }
-
 
 /*
  * mono_field_get_object_checked:
@@ -755,10 +778,13 @@ mono_field_get_object_checked (MonoClass *klass, MonoClassField *field, MonoErro
 MonoReflectionProperty*
 mono_property_get_object (MonoDomain *domain, MonoClass *klass, MonoProperty *property)
 {
+	MonoReflectionPropertyHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionPropertyHandle result = mono_property_get_object_handle (klass, property, error);
+	result = mono_property_get_object_handle (klass, property, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -788,7 +814,7 @@ fail:
 MonoReflectionPropertyHandle
 mono_property_get_object_handle (MonoClass *klass, MonoProperty *property, MonoError *error)
 {
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionProperty, property, klass, property_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionProperty, m_class_get_mem_manager (property->parent), property, klass, property_object_construct, NULL);
 }
 
 /**
@@ -819,10 +845,13 @@ mono_property_get_object_checked (MonoClass *klass, MonoProperty *property, Mono
 MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)
 {
+	MonoReflectionEventHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionEventHandle result = mono_event_get_object_handle (klass, event, error);
+	result = mono_event_get_object_handle (klass, event, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -850,7 +879,7 @@ MonoReflectionEventHandle
 mono_event_get_object_handle (MonoClass *klass, MonoEvent *event, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionEvent, event, klass, event_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionEvent, m_class_get_mem_manager (event->parent), event, klass, event_object_construct, NULL);
 }
 
 
@@ -1108,7 +1137,7 @@ mono_param_get_objects_internal (MonoMethod *method, MonoClass *refclass, MonoEr
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoArray, &method->signature, refclass, param_objects_construct, method);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoArray, m_method_get_mem_manager (method), &method->signature, refclass, param_objects_construct, method);
 fail:
 	return MONO_HANDLE_NEW (MonoArray, NULL);
 }
@@ -1119,10 +1148,13 @@ fail:
 MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
+	MonoArrayHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoArrayHandle result = mono_param_get_objects_internal (method, NULL, error);
+	result = mono_param_get_objects_internal (method, NULL, error);
 	mono_error_assert_ok (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -1187,10 +1219,13 @@ leave:
 MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)
 {
+	MonoReflectionMethodBodyHandle result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoReflectionMethodBodyHandle result = mono_method_body_get_object_handle (method, error);
+	result = mono_method_body_get_object_handle (method, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
@@ -1328,7 +1363,7 @@ MonoReflectionMethodBodyHandle
 mono_method_body_get_object_handle (MonoMethod *method, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethodBody, method, NULL, method_body_object_construct, NULL);
+	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethodBody, m_method_get_mem_manager (method), method, NULL, method_body_object_construct, NULL);
 }
 
 /**
@@ -1887,9 +1922,12 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 {
+	gboolean result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	gboolean result = mono_reflection_parse_type_checked (name, info, error);
+	result = mono_reflection_parse_type_checked (name, info, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result ? 1 : 0;
 }
 
@@ -1939,7 +1977,7 @@ _mono_reflection_get_type_from_info (MonoAssemblyLoadContext *alc, MonoTypeNameP
 		if (!assembly) {
 			/* then we must load the assembly ourselve - see #60439 */
 			MonoAssemblyByNameRequest req;
-			mono_assembly_request_prepare_byname (&req, MONO_ASMCTX_DEFAULT, alc);
+			mono_assembly_request_prepare_byname (&req, alc);
 			req.requesting_assembly = NULL;
 			req.basedir = image ? image->assembly->basedir : NULL;
 			assembly = mono_assembly_request_byname (&info->assembly, &req, NULL);
@@ -2088,7 +2126,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 	for (mod = info->modifiers; mod; mod = mod->next) {
 		modval = GPOINTER_TO_UINT (mod->data);
 		if (!modval) { /* byref: must be last modifier */
-			type = m_class_get_this_arg (klass);
+			type = mono_class_get_byref_type (klass);
 			goto leave;
 		} else if (modval == -1) {
 			klass = mono_class_create_ptr (m_class_get_byval_arg (klass));
@@ -2118,9 +2156,12 @@ leave:
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve)
 {
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
-	MonoType *result = mono_reflection_get_type_with_rootimage (mono_alc_get_default (), image, image, info, ignorecase, TRUE, type_resolve, error);
+	result = mono_reflection_get_type_with_rootimage (mono_alc_get_default (), image, image, info, ignorecase, TRUE, type_resolve, error);
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -2318,13 +2359,16 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 MonoType*
 mono_reflection_type_from_name (char *name, MonoImage *image)
 {
+	MonoType *result;
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 
 	MonoAssemblyLoadContext *alc = mono_alc_get_default ();
 
-	MonoType * const result = mono_reflection_type_from_name_checked (name, alc, image, error);
+	result = mono_reflection_type_from_name_checked (name, alc, image, error);
 
 	mono_error_cleanup (error);
+	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
@@ -2370,11 +2414,15 @@ leave:
 guint32
 mono_reflection_get_token (MonoObject *obj_raw)
 {
+	guint32 result;
 	HANDLE_FUNCTION_ENTER ();
+	MONO_ENTER_GC_UNSAFE;
 	MONO_HANDLE_DCL (MonoObject, obj);
 	ERROR_DECL (error);
-	guint32 result = mono_reflection_get_token_checked (obj, error);
+	result = mono_reflection_get_token_checked (obj, error);
 	mono_error_assert_ok (error);
+	
+	MONO_EXIT_GC_UNSAFE;
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 

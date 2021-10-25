@@ -341,19 +341,20 @@ namespace System.Drawing
     public partial class FontConverter : System.ComponentModel.TypeConverter
     {
         public FontConverter() { }
-        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type? sourceType) { throw null; }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
-        public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
-        public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext? context, object? value, System.Attribute[]? attributes) { throw null; }
-        public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext context) { throw null; }
+        [Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
+        public override System.ComponentModel.PropertyDescriptorCollection? GetProperties(System.ComponentModel.ITypeDescriptorContext? context, object? value, System.Attribute[]? attributes) { throw null; }
+        public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
         public sealed partial class FontNameConverter : System.ComponentModel.TypeConverter, System.IDisposable
         {
             public FontNameConverter() { }
-            public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type? sourceType) { throw null; }
-            public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+            public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+            public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
             public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
             public override bool GetStandardValuesExclusive(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
             public override bool GetStandardValuesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
@@ -381,7 +382,7 @@ namespace System.Drawing
         public int GetCellAscent(System.Drawing.FontStyle style) { throw null; }
         public int GetCellDescent(System.Drawing.FontStyle style) { throw null; }
         public int GetEmHeight(System.Drawing.FontStyle style) { throw null; }
-        [System.ObsoleteAttribute("Do not use method GetFamilies, use property Families instead")]
+        [System.ObsoleteAttribute("FontFamily.GetFamilies has been deprecated. Use Families instead.")]
         public static System.Drawing.FontFamily[] GetFamilies(System.Drawing.Graphics graphics) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetLineSpacing(System.Drawing.FontStyle style) { throw null; }
@@ -418,7 +419,6 @@ namespace System.Drawing
         public int TextContrast { get { throw null; } set { } }
         public System.Drawing.Text.TextRenderingHint TextRenderingHint { get { throw null; } set { } }
         public System.Drawing.Drawing2D.Matrix Transform { get { throw null; } set { } }
-        public System.Numerics.Matrix3x2 TransformElements { get { throw null; } set { } }
         public System.Drawing.RectangleF VisibleClipBounds { get { throw null; } }
         public void AddMetafileComment(byte[] data) { }
         public System.Drawing.Drawing2D.GraphicsContainer BeginContainer() { throw null; }
@@ -594,14 +594,6 @@ namespace System.Drawing
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Drawing.Graphics FromHwndInternal(System.IntPtr hwnd) { throw null; }
         public static System.Drawing.Graphics FromImage(System.Drawing.Image image) { throw null; }
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        [System.ObsoleteAttribute("Use the Graphics.GetContextInfo overloads that accept arguments for better performance and fewer allocations.", DiagnosticId = "SYSLIB0016", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        public object GetContextInfo() { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public void GetContextInfo(out PointF offset) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public void GetContextInfo(out PointF offset, out Region? clip) { throw null; }
         public static System.IntPtr GetHalftonePalette() { throw null; }
         public System.IntPtr GetHdc() { throw null; }
         public System.Drawing.Color GetNearestColor(System.Drawing.Color color) { throw null; }
@@ -700,10 +692,10 @@ namespace System.Drawing
     public partial class IconConverter : System.ComponentModel.ExpandableObjectConverter
     {
         public IconConverter() { }
-        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType) { throw null; }
-        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
-        public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value) { throw null; }
-        public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, System.Type destinationType) { throw null; }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
     public partial interface IDeviceContext : System.IDisposable
     {
@@ -789,10 +781,11 @@ namespace System.Drawing
     public partial class ImageConverter : System.ComponentModel.TypeConverter
     {
         public ImageConverter() { }
-        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type? sourceType) { throw null; }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
-        public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        [Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The Type of value cannot be statically discovered. The public parameterless constructor or the 'Default' static field may be trimmed from the Attribute's Type.")]
         public override System.ComponentModel.PropertyDescriptorCollection GetProperties(System.ComponentModel.ITypeDescriptorContext? context, object? value, System.Attribute[]? attributes) { throw null; }
         public override bool GetPropertiesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
     }
@@ -801,8 +794,8 @@ namespace System.Drawing
         public ImageFormatConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type? sourceType) { throw null; }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
-        public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
-        public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override System.ComponentModel.TypeConverter.StandardValuesCollection GetStandardValues(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
         public override bool GetStandardValuesSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
     }
@@ -1660,9 +1653,7 @@ namespace System.Drawing.Drawing2D
         public Matrix(System.Drawing.Rectangle rect, System.Drawing.Point[] plgpts) { }
         public Matrix(System.Drawing.RectangleF rect, System.Drawing.PointF[] plgpts) { }
         public Matrix(float m11, float m12, float m21, float m22, float dx, float dy) { }
-        public Matrix(System.Numerics.Matrix3x2 matrix) { }
         public float[] Elements { get { throw null; } }
-        public System.Numerics.Matrix3x2 MatrixElements { get { throw null; } set { } }
         public bool IsIdentity { get { throw null; } }
         public bool IsInvertible { get { throw null; } }
         public float OffsetX { get { throw null; } }
@@ -2185,7 +2176,7 @@ namespace System.Drawing.Imaging
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, short[] value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numberValues, System.Drawing.Imaging.EncoderParameterValueType type, System.IntPtr value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator, int denominator) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This constructor has been deprecated. Use EncoderParameter(Encoder encoder, int numberValues, EncoderParameterValueType type, IntPtr value) instead.")]
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int NumberOfValues, int Type, int Value) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int numerator1, int demoninator1, int numerator2, int demoninator2) { }
         public EncoderParameter(System.Drawing.Imaging.Encoder encoder, int[] numerator, int[] denominator) { }
@@ -2575,10 +2566,10 @@ namespace System.Drawing.Printing
     public partial class MarginsConverter : System.ComponentModel.ExpandableObjectConverter
     {
         public MarginsConverter() { }
-        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type? sourceType) { throw null; }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Type? destinationType) { throw null; }
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
-        public override object ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
         public override object CreateInstance(System.ComponentModel.ITypeDescriptorContext? context, System.Collections.IDictionary propertyValues) { throw null; }
         public override bool GetCreateInstanceSupported(System.ComponentModel.ITypeDescriptorContext? context) { throw null; }
     }
