@@ -211,10 +211,10 @@ jobs:
         displayName: Disk Usage after Build
 
     # Build CoreCLR Managed Components
-    - ${{ if or(ne(parameters.archType, 'Linux'), ne(parameters.archType, 'x86')) }}:
+    - ${{ if or(ne(parameters.osGroup, 'Linux'), ne(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
-    - ${{ if and(eq(parameters.archType, 'Linux'), eq(parameters.archType, 'x86')) }}:
+    - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'x86')) }}:
       - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(pgoInstrumentArg) $(officialBuildIdArg) -ci
         displayName: Build managed product components and packages
 
