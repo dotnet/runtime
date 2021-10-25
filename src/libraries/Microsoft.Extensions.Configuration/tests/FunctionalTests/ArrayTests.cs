@@ -107,7 +107,7 @@ i=ini_i.i.i.i
         {
             string basePath;
 
-            if (PlatformDetection.IsAppleMobile)
+            if (PlatformDetection.IsAppleMobile && !PlatformDetection.IsMacCatalyst)
             {
                 basePath = Path.GetTempPath();
             }
