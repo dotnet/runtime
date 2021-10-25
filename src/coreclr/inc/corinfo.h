@@ -607,6 +607,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_PATCHPOINT,                // Notify runtime that code has reached a patchpoint
     CORINFO_HELP_CLASSPROFILE32,            // Update 32-bit class profile for a call site
     CORINFO_HELP_CLASSPROFILE64,            // Update 64-bit class profile for a call site
+    CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT,  // Notify runtime that code has reached a part of the method that wasn't originally jitted.
 
     CORINFO_HELP_COUNT,
 };
