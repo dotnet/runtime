@@ -27,17 +27,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private static readonly MethodInfo CallSiteRuntimeResolverInstanceField = typeof(CallSiteRuntimeResolver).GetProperty(
             nameof(CallSiteRuntimeResolver.Instance), BindingFlags.Static | BindingFlags.Public | BindingFlags.Instance).GetMethod;
 
-        private static readonly FieldInfo FactoriesField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Factories));
-        private static readonly FieldInfo ConstantsField = typeof(ILEmitResolverBuilderRuntimeContext).GetField(nameof(ILEmitResolverBuilderRuntimeContext.Constants));
         private static readonly MethodInfo GetTypeFromHandleMethod = typeof(Type).GetMethod(nameof(Type.GetTypeFromHandle));
 
         private static readonly ConstructorInfo CacheKeyCtor = typeof(ServiceCacheKey).GetConstructors()[0];
-
-        private sealed class ILEmitResolverBuilderRuntimeContext
-        {
-            public object[] Constants;
-            public Func<IServiceProvider, object>[] Factories;
-        }
 
         private struct GeneratedFactory
         {
@@ -141,7 +133,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             var module = assemblyBuilder.DefineDynamicModule(assemblyName);
             var serviceTypeBuilder = module.DefineType(callSite.ServiceType.Name + "ServiceFactory", TypeAttributes.Public | TypeAttributes.Sealed, typeof(ServiceFactory));
 
-            var f1 = serviceTypeBuilder.DefineField("_resolverContext", typeof(ILEmitResolverBuilderRuntimeContext), FieldAttributes.Private);
             var createParameters = createMethod.GetParameters();
 
             var parameterTypes = new Type[createParameters.Length];
@@ -162,11 +153,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             // so there'll be allocations but we could potentially change ILGenerator to use the array pool
             ILGenerator ilGenerator = createMethodOverride.GetILGenerator(512);
 
-            ILEmitResolverBuilderRuntimeContext runtimeContext = GenerateMethodBody(callSite, ilGenerator, f1, out var dependentAssemblies);
+            ILEmitResolverBuilderContext builderContext = GenerateMethodBody(callSite, ilGenerator, serviceTypeBuilder);
 
-            if (dependentAssemblies is not null)
+            if (builderContext.Assemblies is not null)
             {
-                foreach (var a in dependentAssemblies)
+                foreach (var a in builderContext.Assemblies)
                 {
                     IgnoreAccessChecks(a);
                 }
@@ -178,8 +169,14 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             var factory = (ServiceFactory)Activator.CreateInstance(type);
 
-            // Set the field
-            type.GetField("_resolverContext", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(factory, runtimeContext);
+            // Set the fields
+            if (builderContext.Fields is not null)
+            {
+                foreach (var field in builderContext.Fields)
+                {
+                    type.GetField(field.Key, BindingFlags.NonPublic | BindingFlags.Instance).SetValue(factory, field.Value);
+                }
+            }
 
 #if SAVE_ASSEMBLIES
             // Assembly.Save is only available in .NET Framework (https://github.com/dotnet/runtime/issues/15704)
@@ -216,24 +213,33 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
                 VisitCallSite(parameterCallSite, argument);
+
+                Type implementationType = argument.Types.Pop();
+
+                // Unbox if we can't tell what the implementation type is
                 if (parameterCallSite.ServiceType.IsValueType)
                 {
-                    argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                    if (implementationType == typeof(object))
+                    {
+                        argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                    }
+                }
+                // Box if we're setting the service type to a non value type
+                else if (implementationType.IsValueType)
+                {
+                    argument.Generator.Emit(OpCodes.Box, implementationType);
                 }
             }
 
             argument.Generator.Emit(OpCodes.Newobj, constructorCallSite.ConstructorInfo);
-            if (constructorCallSite.ImplementationType.IsValueType)
-            {
-                argument.Generator.Emit(OpCodes.Box, constructorCallSite.ImplementationType);
-            }
+            argument.Types.Push(constructorCallSite.ImplementationType);
 
             return null;
         }
 
         protected override object VisitRootCache(ServiceCallSite callSite, ILEmitResolverBuilderContext argument)
         {
-            AddConstant(argument, CallSiteRuntimeResolver.Instance.Resolve(callSite, _rootScope));
+            AddConstant(argument, CallSiteRuntimeResolver.Instance.Resolve(callSite, _rootScope), callSite.ImplementationType ?? callSite.ServiceType);
             return null;
         }
 
@@ -246,16 +252,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             AddConstant(argument, generatedFactory.Factory);
             // ProviderScope
-            argument.Generator.Emit(OpCodes.Castclass, typeof(ServiceFactory));
             argument.Generator.Emit(OpCodes.Ldarg_1);
             argument.Generator.Emit(OpCodes.Callvirt, generatedFactory.CreateMethod);
 
+            argument.Types.Push(typeof(object));
             return null;
         }
 
         protected override object VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
         {
-            AddConstant(argument, constantCallSite.DefaultValue);
+            AddConstant(argument, constantCallSite.DefaultValue, constantCallSite.ImplementationType ?? constantCallSite.ServiceType);
             return null;
         }
 
@@ -263,6 +269,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // [return] ProviderScope
             argument.Generator.Emit(OpCodes.Ldarg_1);
+
+            argument.Types.Push(serviceProviderCallSite.ImplementationType);
             return null;
         }
 
@@ -289,9 +297,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     // create parameter
                     ServiceCallSite parameterCallSite = enumerableCallSite.ServiceCallSites[i];
                     VisitCallSite(parameterCallSite, argument);
+
+                    Type implementationType = argument.Types.Pop();
+
                     if (parameterCallSite.ServiceType.IsValueType)
                     {
-                        argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                        if (implementationType == typeof(object))
+                        {
+                            argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                        }
+                    }
+                    // Box if we're setting the service type to a non value type
+                    else if (implementationType.IsValueType)
+                    {
+                        argument.Generator.Emit(OpCodes.Box, implementationType);
                     }
 
                     // store
@@ -299,46 +318,49 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
+            argument.Types.Push(enumerableCallSite.ImplementationType);
+
             return null;
         }
 
         protected override object VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
         {
-            if (argument.Factories == null)
-            {
-                argument.Factories = new List<Func<IServiceProvider, object>>();
-            }
+            argument.Fields ??= new();
 
-            // this.Factories[i](ProviderScope)
+            // Define this field
+            var fieldName = $"_factory_{factoryCallSite.ServiceType}_{argument.Fields.Count}";
+
+            FieldBuilder field = argument.TypeBuilder.DefineField(fieldName, typeof(Func<IServiceProvider, object>), FieldAttributes.Private);
+            argument.Fields.Add(new(fieldName, factoryCallSite.Factory));
+
+            // this._fieldN(scope)
             argument.Generator.Emit(OpCodes.Ldarg_0);
-            argument.Generator.Emit(OpCodes.Ldfld, argument.RuntimeContextField);
-            argument.Generator.Emit(OpCodes.Ldfld, FactoriesField);
-
-            argument.Generator.Emit(OpCodes.Ldc_I4, argument.Factories.Count);
-            argument.Generator.Emit(OpCodes.Ldelem, typeof(Func<IServiceProvider, object>));
+            argument.Generator.Emit(OpCodes.Ldfld, field);
 
             argument.Generator.Emit(OpCodes.Ldarg_1);
             argument.Generator.Emit(OpCodes.Call, ServiceLookupHelpers.InvokeFactoryMethodInfo);
 
-            argument.Factories.Add(factoryCallSite.Factory);
+            argument.Types.Push(typeof(object));
+
             return null;
         }
 
-        private void AddConstant(ILEmitResolverBuilderContext argument, object value)
+        private void AddConstant(ILEmitResolverBuilderContext argument, object value, Type type = null)
         {
-            if (argument.Constants == null)
-            {
-                argument.Constants = new List<object>();
-            }
+            argument.Fields ??= new();
 
-            // this.Constants[i]
+            type ??= value.GetType();
+
+            var fieldName = $"_constant_{type.Name}_{argument.Fields.Count}";
+
+            FieldBuilder field = argument.TypeBuilder.DefineField(fieldName, type, FieldAttributes.Private);
+            argument.Fields.Add(new(fieldName, value));
+
+            // this._fieldN
             argument.Generator.Emit(OpCodes.Ldarg_0);
-            argument.Generator.Emit(OpCodes.Ldfld, argument.RuntimeContextField);
-            argument.Generator.Emit(OpCodes.Ldfld, ConstantsField);
+            argument.Generator.Emit(OpCodes.Ldfld, field);
 
-            argument.Generator.Emit(OpCodes.Ldc_I4, argument.Constants.Count);
-            argument.Generator.Emit(OpCodes.Ldelem, typeof(object));
-            argument.Constants.Add(value);
+            argument.Types.Push(type);
         }
 
         private void AddCacheKey(ILEmitResolverBuilderContext argument, ServiceCacheKey key)
@@ -350,14 +372,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             argument.Generator.Emit(OpCodes.Newobj, CacheKeyCtor);
         }
 
-        private ILEmitResolverBuilderRuntimeContext GenerateMethodBody(ServiceCallSite callSite, ILGenerator generator, FieldInfo runtimeResolverContextField, out HashSet<Assembly> assemblies)
+        private ILEmitResolverBuilderContext GenerateMethodBody(ServiceCallSite callSite, ILGenerator generator, TypeBuilder typeBuilder)
         {
             var context = new ILEmitResolverBuilderContext()
             {
                 Generator = generator,
-                Constants = null,
-                Factories = null,
-                RuntimeContextField = runtimeResolverContextField
+                TypeBuilder = typeBuilder
             };
 
             // if (scope.IsRootScope)
@@ -455,6 +475,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
                 // Create value
                 VisitCallSiteMain(callSite, context);
+
+                context.Types.Pop();
+
                 context.Generator.Emit(OpCodes.Stloc, resultLocal);
 
                 if (callSite.CaptureDisposable)
@@ -500,17 +523,19 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             else
             {
                 VisitCallSite(callSite, context);
+
+                Type boxType = context.Types.Pop();
+
+                if (boxType.IsValueType)
+                {
+                    context.Generator.Emit(OpCodes.Box, boxType);
+                }
+
                 // return
                 context.Generator.Emit(OpCodes.Ret);
             }
 
-            assemblies = context.Assemblies;
-
-            return new ILEmitResolverBuilderRuntimeContext
-            {
-                Constants = context.Constants?.ToArray(),
-                Factories = context.Factories?.ToArray()
-            };
+            return context;
         }
 
         private static void BeginCaptureDisposable(ILEmitResolverBuilderContext argument)
@@ -522,6 +547,8 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             // When calling CaptureDisposable we expect callee and arguments to be on the stackcontext.Generator.BeginExceptionBlock
             argument.Generator.Emit(OpCodes.Callvirt, ServiceLookupHelpers.CaptureDisposableMethodInfo);
+
+            argument.Types.Push(typeof(object));
         }
     }
 }

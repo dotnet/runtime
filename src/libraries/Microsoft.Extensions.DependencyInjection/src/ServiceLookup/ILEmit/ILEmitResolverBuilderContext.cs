@@ -10,10 +10,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal sealed class ILEmitResolverBuilderContext
     {
-        public FieldInfo RuntimeContextField { get; set; }
+        public TypeBuilder TypeBuilder { get; set; }
         public ILGenerator Generator { get; set; }
-        public List<object> Constants { get; set; }
-        public List<Func<IServiceProvider, object>> Factories { get; set; }
+        public List<KeyValuePair<string, object>> Fields { get; set; }
         public HashSet<Assembly> Assemblies { get; set; }
+        public Stack<Type> Types { get; set; } = new();
     }
 }
