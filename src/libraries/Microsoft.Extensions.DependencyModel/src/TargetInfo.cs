@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class TargetInfo
     {
-        public TargetInfo(string framework,
+        public TargetInfo(string? framework,
             string? runtime,
             string? runtimeSignature,
             bool isPortable)
