@@ -33,7 +33,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 // For simplicity, we'll use top-level statements for the generated Main method.
                 StringBuilder builder = new();
                 builder.AppendLine("try {");
-                builder.Append(string.Join("\n", methods.Select(m => m.ExecutionStatement)));
+                builder.AppendLine(string.Join("\n", methods.Select(m => m.ExecutionStatement)));
                 builder.AppendLine("} catch(System.Exception) { return 101; }");
                 builder.AppendLine("return 100;");
                 context.AddSource("Main.g.cs", builder.ToString());
