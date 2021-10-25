@@ -101,7 +101,7 @@ void ExecutableAllocator::InitPreferredRange()
 {
 #ifdef TARGET_UNIX
     void *start, *end;
-    PAL_GetExecutableMemoryAllocatorReservedRange(&start, &end);
+    PAL_GetExecutableMemoryAllocatorPreferredRange(&start, &end);
     g_preferredRangeMin = (BYTE *)start;
     g_preferredRangeMax = (BYTE *)end;
 #endif

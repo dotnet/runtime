@@ -145,10 +145,19 @@ public:
     --*/
     void *AllocateMemoryWithinRange(const void *beginAddress, const void *endAddress, SIZE_T allocationSize);
 
-    void GetReservedRange(void **start, void **end)
+    /*++
+    Function:
+        GetPreferredRange
+
+        Gets the preferred range, which is the range that the allocator will try to put code into.
+        When this range is close to libcoreclr, it will additionally include libcoreclr's memory
+        range, the purpose being that this can be used to check if we expect code to be close enough
+        to libcoreclr to use IP-relative addressing.
+    --*/
+    void GetPreferredRange(void **start, void **end)
     {
-        *start = m_startAddress;
-        *end = (void*)((char*)m_startAddress + m_totalSizeOfReservedMemory);
+        *start = m_preferredRangeStart;
+        *end = m_preferredRangeEnd;
     }
 
 private:
@@ -196,6 +205,10 @@ private:
 
     // Remaining size of the reserved virtual memory that can be used to satisfy allocation requests.
     int32_t m_remainingReservedMemory = 0;
+
+    // Preferred range to report back to EE for where the allocator will put code.
+    void* m_preferredRangeStart = NULL;
+    void* m_preferredRangeEnd = NULL;
 };
 
 #endif // __cplusplus

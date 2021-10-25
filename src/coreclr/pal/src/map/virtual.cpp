@@ -1321,9 +1321,11 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 
 /*++
 Function:
-  PAL_GetExecutableMemoryAllocatorReservedRange
+  PAL_GetExecutableMemoryAllocatorPreferredRange
 
-  This function gets the reserved range allocated by the executable memory allocator.
+  This function gets the preferred range used by the executable memory allocator.
+  This is the range that the memory allocator will prefer to allocate memory in,
+  including (if nearby) the libcoreclr memory range.
 
   lpBeginAddress - Inclusive beginning of range
   lpEndAddress - Exclusive end of range
@@ -1331,11 +1333,11 @@ Function:
 --*/
 void
 PALAPI
-PAL_GetExecutableMemoryAllocatorReservedRange(
+PAL_GetExecutableMemoryAllocatorPreferredRange(
     OUT LPVOID *start,
     OUT LPVOID *end)
 {
-    g_executableMemoryAllocator.GetReservedRange(start, end);
+    g_executableMemoryAllocator.GetPreferredRange(start, end);
 }
 
 /*++
@@ -2203,6 +2205,26 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         {
             return;
         }
+
+        m_preferredRangeStart = m_startAddress;
+        m_preferredRangeEnd = (char*)m_startAddress + sizeOfAllocation;
+    }
+    else
+    {
+        // We managed to allocate memory close to libcoreclr, so include its memory address in the preferred range to allow
+        // generated code to use IP-relative addressing.
+        if ((char*)m_startAddress < (char*)coreclrLoadAddress)
+        {
+            m_preferredRangeStart = (void*)m_startAddress;
+            m_preferredRangeEnd = (char*)coreclrLoadAddress + CoreClrLibrarySize;
+        }
+        else
+        {
+            m_preferredRangeStart = (void*)coreclrLoadAddress;
+            m_preferredRangeEnd = (char*)m_startAddress + sizeOfAllocation;
+        }
+
+        _ASSERTE((char*)m_preferredRangeEnd - (char*)m_preferredRangeStart <= INT_MAX);
     }
 
     // Memory has been successfully reserved.

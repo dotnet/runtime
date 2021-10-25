@@ -2746,7 +2746,7 @@ PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
 PALIMPORT
 void
 PALAPI
-PAL_GetExecutableMemoryAllocatorReservedRange(
+PAL_GetExecutableMemoryAllocatorPreferredRange(
     OUT PVOID *start,
     OUT PVOID *end);
 
