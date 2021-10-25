@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class RuntimeFile
     {
-        public RuntimeFile(string path, string? assemblyVersion, string? fileVersion)
+        public RuntimeFile(string? path, string? assemblyVersion, string? fileVersion)
         {
             if (string.IsNullOrEmpty(path))
             {
