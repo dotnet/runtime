@@ -2059,7 +2059,7 @@ alloc_type_with_cmods (MonoImage *m, gboolean transient, int count)
  * If \p transient is true, free \p type, otherwise no-op
  */
 static void
-free_parsed_type(MonoType *type, gboolean transient)
+free_parsed_type (MonoType *type, gboolean transient)
 {
 	if (transient)
 		mono_metadata_free_type (type);
