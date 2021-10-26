@@ -24,7 +24,7 @@ namespace DllImportGenerator.UnitTests
             Net
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(TargetFramework.Framework)]
         [InlineData(TargetFramework.Core)]
         [InlineData(TargetFramework.Standard)]
@@ -61,7 +61,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(TargetFramework.Framework)]
         [InlineData(TargetFramework.Core)]
         [InlineData(TargetFramework.Standard)]
@@ -85,7 +85,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ParameterTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -123,7 +123,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ReturnTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -161,7 +161,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ParameterTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
             string source = @"
@@ -189,7 +189,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ReturnTypeNotSupportedWithDetails_ReportsDiagnostic()
         {
             string source = @"
@@ -220,7 +220,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ParameterConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -253,7 +253,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task ReturnConfigurationNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -288,7 +288,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task MarshalAsUnmanagedTypeNotSupported_ReportsDiagnostic()
         {
             string source = @"
@@ -328,7 +328,7 @@ partial class Test
             Assert.Empty(newCompDiags);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task MarshalAsFieldNotSupported_ReportsDiagnostic()
         {
             string source = @"

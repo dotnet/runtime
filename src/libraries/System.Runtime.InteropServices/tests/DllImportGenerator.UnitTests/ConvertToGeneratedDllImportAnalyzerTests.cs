@@ -37,7 +37,7 @@ namespace DllImportGenerator.UnitTests
             new object[] { typeof(ConsoleKey) }, // enum
         };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
@@ -53,7 +53,7 @@ namespace DllImportGenerator.UnitTests
                     .WithArguments("Method_Return"));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task ByRef_ReportsDiagnostic(Type type)
@@ -86,7 +86,7 @@ unsafe partial class Test
                     .WithArguments("Method_Ref"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task PreserveSigFalse_ReportsDiagnostic()
         {
             string source = @$"
@@ -110,7 +110,7 @@ partial class Test
                     .WithArguments("Method2"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SetLastErrorTrue_ReportsDiagnostic()
         {
             string source = @$"
@@ -134,7 +134,7 @@ partial class Test
                     .WithArguments("Method2"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task NotDllImport_NoDiagnostic()
         {
             string source = @$"

@@ -267,7 +267,27 @@ namespace System.Text.RegularExpressions.Generator
                 };
             using (EmitBlock(writer, clause))
             {
-                EmitAnchorAndLeadingChecks();
+                EmitAnchors();
+
+                if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null })
+                {
+                    EmitBoyerMoore();
+                }
+                else if (lcc is not null)
+                {
+                    if (rtl)
+                    {
+                        EmitLeadingCharacter_RightToLeft();
+                    }
+                    else
+                    {
+                        EmitLeadingCharacter_LeftToRight();
+                    }
+                }
+                else
+                {
+                    writer.WriteLine("return true;");
+                }
             }
             writer.WriteLine();
 
@@ -276,7 +296,7 @@ namespace System.Text.RegularExpressions.Generator
             writer.WriteLine(!rm.Code.RightToLeft ? "base.runtextpos = runtextend;" : "base.runtextpos = runtextbeg;");
             writer.WriteLine("return false;");
 
-            void EmitAnchorAndLeadingChecks()
+            void EmitAnchors()
             {
                 // Generate anchor checks.
                 if ((code.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
@@ -386,281 +406,281 @@ namespace System.Text.RegularExpressions.Generator
                             break;
                     }
                 }
+            }
 
-                if (code.BoyerMoorePrefix is RegexBoyerMoore rbm && rbm.NegativeUnicode is null)
+            void EmitBoyerMoore()
+            {
+                RegexBoyerMoore? rbm = code.BoyerMoorePrefix;
+                Debug.Assert(rbm is RegexBoyerMoore { NegativeUnicode: null });
+
+                writer.WriteLine("// Boyer-Moore prefix matching");
+
+                EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
+
+                int beforefirst;
+                int last;
+                if (!rtl)
                 {
-                    // Compiled Boyer-Moore string matching
-                    writer.WriteLine("// Boyer-Moore prefix matching");
+                    //limitLocal = "runtextend";
+                    beforefirst = -1;
+                    last = rbm.Pattern.Length - 1;
+                }
+                else
+                {
+                    //limitLocal = "runtextbeg";
+                    beforefirst = rbm.Pattern.Length;
+                    last = 0;
+                }
 
-                    EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
+                int chLast = rbm.Pattern[last];
 
-                    int beforefirst;
-                    int last;
-                    if (!rtl)
+                EmitAdd(writer, "runtextpos", !rtl ? rbm.Pattern.Length - 1 : -rbm.Pattern.Length);
+
+                using (EmitBlock(writer, $"while ({(!rtl ? "runtextpos < runtextend" : "runtextpos >= runtextbeg")})"))
+                {
+                    writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
+
+                    using (EmitBlock(writer, $"if (ch != {Literal((char)chLast)})"))
                     {
-                        //limitLocal = "runtextend";
-                        beforefirst = -1;
-                        last = rbm.Pattern.Length - 1;
-                    }
-                    else
-                    {
-                        //limitLocal = "runtextbeg";
-                        beforefirst = rbm.Pattern.Length;
-                        last = 0;
-                    }
-
-                    int chLast = rbm.Pattern[last];
-
-                    EmitAdd(writer, "runtextpos", !rtl ? rbm.Pattern.Length - 1 : -rbm.Pattern.Length);
-
-                    using (EmitBlock(writer, $"while ({(!rtl ? "runtextpos < runtextend" : "runtextpos >= runtextbeg")})"))
-                    {
-                        writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
-
-                        using (EmitBlock(writer, $"if (ch != {Literal((char)chLast)})"))
+                        writer.WriteLine($"ch -= {Literal((char)rbm.LowASCII)};");
+                        using (EmitBlock(writer, $"if ((uint)ch > ({Literal((char)rbm.HighASCII)} - {Literal((char)rbm.LowASCII)}))"))
                         {
-                            writer.WriteLine($"ch -= {Literal((char)rbm.LowASCII)};");
-                            using (EmitBlock(writer, $"if ((uint)ch > ({Literal((char)rbm.HighASCII)} - {Literal((char)rbm.LowASCII)}))"))
-                            {
-                                EmitAdd(writer, "runtextpos", (!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length));
-                                writer.WriteLine("continue;");
-                            }
-
-                            int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
-                            if (negativeRange > 1) // High > Low
-                            {
-                                // Create a string to store the lookup table we use to find the offset.
-                                // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
-                                // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
-                                Debug.Assert(rbm.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
-                                Span<char> span = new char[negativeRange];
-                                for (int i = 0; i < span.Length; i++)
-                                {
-                                    int offset = rbm.NegativeASCII[i + rbm.LowASCII];
-                                    if (offset == beforefirst)
-                                    {
-                                        offset = rbm.Pattern.Length;
-                                    }
-                                    else if (rtl)
-                                    {
-                                        offset = -offset;
-                                    }
-                                    Debug.Assert(offset >= 0 && offset <= char.MaxValue);
-                                    span[i] = (char)offset;
-                                }
-
-                                writer.WriteLine($"runtextpos {(rtl ? "-=" : "+=")} {Literal(span.ToString())}[ch];");
-                            }
-                            else
-                            {
-                                Debug.Assert(negativeRange == 1); // High == Low
-                                int offset = rbm.NegativeASCII[rbm.LowASCII];
-                                if (offset == beforefirst)
-                                {
-                                    offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
-                                }
-                                EmitAdd(writer, "runtextpos", offset);
-                            }
+                            EmitAdd(writer, "runtextpos", (!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length));
                             writer.WriteLine("continue;");
                         }
-                        writer.WriteLine();
-                        writer.WriteLine("int test = runtextpos;");
-                        writer.WriteLine();
 
-                        for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
+                        int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
+                        if (negativeRange > 1) // High > Low
                         {
-                            int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
-                            bool sameAsPrev = i < rbm.Pattern.Length - 2 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i + 1 : rbm.Pattern.Length - 1 - (i + 1)];
-                            bool sameAsNext = i > 0 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i - 1 : rbm.Pattern.Length - 1 - (i - 1)];
-
-                            string condition = $"{ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]))} != {Literal(rbm.Pattern[charIndex])}";
-                            switch ((sameAsPrev, sameAsNext))
+                            // Create a string to store the lookup table we use to find the offset.
+                            // Store the offsets into the string.  RightToLeft has negative offsets, so to support it with chars (unsigned), we negate
+                            // the values to be stored in the string, and then at run time after looking up the offset in the string, negate it again.
+                            Debug.Assert(rbm.Pattern.Length <= char.MaxValue, "RegexBoyerMoore should have limited the size allowed.");
+                            Span<char> span = new char[negativeRange];
+                            for (int i = 0; i < span.Length; i++)
                             {
-                                case (true, true):
-                                    writer.WriteLine($"    {condition} ||");
-                                    break;
-
-                                case (false, true):
-                                    writer.WriteLine($"if ({condition} ||");
-                                    break;
-
-                                case (true, false):
-                                    writer.WriteLine($"    {condition})");
-                                    using (EmitBlock(writer, null))
-                                    {
-                                        EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
-                                        writer.WriteLine("continue;");
-                                    }
-                                    writer.WriteLine();
-                                    break;
-
-                                case (false, false):
-                                    using (EmitBlock(writer, $"if ({condition})"))
-                                    {
-                                        EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
-                                        writer.WriteLine("continue;");
-                                    }
-                                    writer.WriteLine();
-                                    break;
+                                int offset = rbm.NegativeASCII[i + rbm.LowASCII];
+                                if (offset == beforefirst)
+                                {
+                                    offset = rbm.Pattern.Length;
+                                }
+                                else if (rtl)
+                                {
+                                    offset = -offset;
+                                }
+                                Debug.Assert(offset >= 0 && offset <= char.MaxValue);
+                                span[i] = (char)offset;
                             }
-                        }
 
-                        writer.WriteLine(!rtl ?
-                            "base.runtextpos = test;" :
-                            "base.runtextpos = test + 1;");
-                        writer.WriteLine("return true;");
+                            writer.WriteLine($"runtextpos {(rtl ? "-=" : "+=")} {Literal(span.ToString())}[ch];");
+                        }
+                        else
+                        {
+                            Debug.Assert(negativeRange == 1); // High == Low
+                            int offset = rbm.NegativeASCII[rbm.LowASCII];
+                            if (offset == beforefirst)
+                            {
+                                offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
+                            }
+                            EmitAdd(writer, "runtextpos", offset);
+                        }
+                        writer.WriteLine("continue;");
                     }
-                }
-                else if (lcc is null)
-                {
+                    writer.WriteLine();
+                    writer.WriteLine("int test = runtextpos;");
+                    writer.WriteLine();
+
+                    for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
+                    {
+                        int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
+                        bool sameAsPrev = i < rbm.Pattern.Length - 2 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i + 1 : rbm.Pattern.Length - 1 - (i + 1)];
+                        bool sameAsNext = i > 0 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i - 1 : rbm.Pattern.Length - 1 - (i - 1)];
+
+                        string condition = $"{ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]))} != {Literal(rbm.Pattern[charIndex])}";
+                        switch ((sameAsPrev, sameAsNext))
+                        {
+                            case (true, true):
+                                writer.WriteLine($"    {condition} ||");
+                                break;
+
+                            case (false, true):
+                                writer.WriteLine($"if ({condition} ||");
+                                break;
+
+                            case (true, false):
+                                writer.WriteLine($"    {condition})");
+                                using (EmitBlock(writer, null))
+                                {
+                                    EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                    writer.WriteLine("continue;");
+                                }
+                                writer.WriteLine();
+                                break;
+
+                            case (false, false):
+                                using (EmitBlock(writer, $"if ({condition})"))
+                                {
+                                    EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                    writer.WriteLine("continue;");
+                                }
+                                writer.WriteLine();
+                                break;
+                        }
+                    }
+
+                    writer.WriteLine(!rtl ?
+                        "base.runtextpos = test;" :
+                        "base.runtextpos = test + 1;");
                     writer.WriteLine("return true;");
                 }
-                else if (rtl)
-                {
-                    EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
+            }
 
-                    Debug.Assert(lcc.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
-                    string set = lcc[0].CharClass;
-                    if (RegexCharClass.IsSingleton(set))
+            void EmitLeadingCharacter_RightToLeft()
+            {
+                EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
+
+                Debug.Assert(lcc.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
+                string set = lcc[0].CharClass;
+                if (RegexCharClass.IsSingleton(set))
+                {
+                    char ch = RegexCharClass.SingletonChar(set);
+                    using (EmitBlock(writer, "for (int i = runtextpos - 1; i >= runtextbeg; i--)"))
                     {
-                        char ch = RegexCharClass.SingletonChar(set);
-                        using (EmitBlock(writer, "for (int i = runtextpos - 1; i >= runtextbeg; i--)"))
+                        using (EmitBlock(writer, $"if (runtext[i] == {ToLowerIfNeeded(hasTextInfo, options, Literal(ch), lcc[0].CaseInsensitive)})"))
                         {
-                            using (EmitBlock(writer, $"if (runtext[i] == {ToLowerIfNeeded(hasTextInfo, options, Literal(ch), lcc[0].CaseInsensitive)})"))
-                            {
-                                writer.WriteLine("base.runtextpos = i + 1;");
-                                writer.WriteLine("return true;");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        using (EmitBlock(writer, "for (int i = runtextpos - 1; i >= runtextbeg; i--)"))
-                        {
-                            using (EmitBlock(writer, $"if ({MatchCharacterClass(hasTextInfo, options, "runtext[i]", set, lcc[0].CaseInsensitive)})"))
-                            {
-                                writer.WriteLine("runtextpos = i + 1;");
-                                writer.WriteLine("return true;");
-                            }
+                            writer.WriteLine("base.runtextpos = i + 1;");
+                            writer.WriteLine("return true;");
                         }
                     }
                 }
                 else
                 {
-                    Debug.Assert(lcc is not null && lcc.Length > 0);
-
-                    // If minRequiredLength > 0, we already output a more stringent check.  In the rare case
-                    // where we were unable to get an accurate enough min required length to ensure it's larger
-                    // than the prefixes we calculated, we also need to ensure we have enough space for those,
-                    // as they also represent a min required length.
-                    if (minRequiredLength < lcc.Length)
+                    using (EmitBlock(writer, "for (int i = runtextpos - 1; i >= runtextbeg; i--)"))
                     {
-                        writer.WriteLine($"// Validate at least {lcc.Length} characters are available to match");
-                        string endExpr = lcc.Length > 1 ? $"runtextend - {lcc.Length - 1}" : "runtextend";
-                        using (EmitBlock(writer, $"if (runtextpos >= {endExpr})"))
+                        using (EmitBlock(writer, $"if ({MatchCharacterClass(hasTextInfo, options, "runtext[i]", set, lcc[0].CaseInsensitive)})"))
+                        {
+                            writer.WriteLine("runtextpos = i + 1;");
+                            writer.WriteLine("return true;");
+                        }
+                    }
+                }
+            }
+
+            void EmitLeadingCharacter_LeftToRight()
+            {
+                Debug.Assert(lcc is not null && lcc.Length > 0);
+
+                // If minRequiredLength > 0, we already output a more stringent check.  In the rare case
+                // where we were unable to get an accurate enough min required length to ensure it's larger
+                // than the prefixes we calculated, we also need to ensure we have enough space for those,
+                // as they also represent a min required length.
+                if (minRequiredLength < lcc.Length)
+                {
+                    writer.WriteLine($"// Validate at least {lcc.Length} characters are available to match");
+                    string endExpr = lcc.Length > 1 ? $"runtextend - {lcc.Length - 1}" : "runtextend";
+                    using (EmitBlock(writer, $"if (runtextpos >= {endExpr})"))
+                    {
+                        writer.WriteLine("goto ReturnFalse;");
+                    }
+                    writer.WriteLine();
+                }
+
+                writer.WriteLine("global::System.ReadOnlySpan<char> span = global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos);");
+
+                // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
+                // We can use it if this is a case-sensitive class with a small number of characters in the class.
+                Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
+                int setCharsCount = 0, charClassIndex = 0;
+                bool canUseIndexOf =
+                    !lcc[0].CaseInsensitive &&
+                    (setCharsCount = RegexCharClass.GetSetChars(lcc[0].CharClass, setChars)) > 0 &&
+                    !RegexCharClass.IsNegated(lcc[0].CharClass);
+                bool needLoop = !canUseIndexOf || lcc.Length > 1;
+
+                FinishEmitScope loopBlock = default;
+                if (needLoop)
+                {
+                    EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
+                    writer.WriteLine();
+                    string upperBound = lcc.Length > 1 ? $"span.Length - {lcc.Length - 1}" : "span.Length";
+                    loopBlock = EmitBlock(writer, $"for (int i = 0; i < {upperBound}; i++)");
+                }
+
+                if (canUseIndexOf)
+                {
+                    charClassIndex = 1;
+
+                    string span = needLoop ? "span.Slice(i)" : "span";
+                    string indexOf = setCharsCount switch
+                    {
+                        1 => $"global::System.MemoryExtensions.IndexOf({span}, {Literal(setChars[0])})",
+                        2 => $"global::System.MemoryExtensions.IndexOfAny({span}, {Literal(setChars[0])}, {Literal(setChars[1])})",
+                        _ => $"global::System.MemoryExtensions.IndexOfAny({span}, {Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])})",
+                    };
+
+                    if (needLoop)
+                    {
+                        writer.WriteLine($"int indexOfPos = {indexOf};");
+                        using (EmitBlock(writer, "if (indexOfPos < 0)"))
                         {
                             writer.WriteLine("goto ReturnFalse;");
                         }
+                        writer.WriteLine("i += indexOfPos;");
                         writer.WriteLine();
-                    }
 
-                    writer.WriteLine("global::System.ReadOnlySpan<char> span = global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos);");
-
-                    // If we can use IndexOf{Any}, try to accelerate the skip loop via vectorization to match the first prefix.
-                    // We can use it if this is a case-sensitive class with a small number of characters in the class.
-                    Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
-                    int setCharsCount = 0, charClassIndex = 0;
-                    bool canUseIndexOf =
-                        !lcc[0].CaseInsensitive &&
-                        (setCharsCount = RegexCharClass.GetSetChars(lcc[0].CharClass, setChars)) > 0 &&
-                        !RegexCharClass.IsNegated(lcc[0].CharClass);
-                    bool needLoop = !canUseIndexOf || lcc.Length > 1;
-
-                    FinishEmitScope loopBlock = default;
-                    if (needLoop)
-                    {
-                        EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
-                        writer.WriteLine();
-                        string upperBound = lcc.Length > 1 ? $"span.Length - {lcc.Length - 1}" : "span.Length";
-                        loopBlock = EmitBlock(writer, $"for (int i = 0; i < {upperBound}; i++)");
-                    }
-
-                    if (canUseIndexOf)
-                    {
-                        charClassIndex = 1;
-
-                        string span = needLoop ? "span.Slice(i)" : "span";
-                        string indexOf = setCharsCount switch
+                        if (lcc.Length > 1)
                         {
-                            1 => $"global::System.MemoryExtensions.IndexOf({span}, {Literal(setChars[0])})",
-                            2 => $"global::System.MemoryExtensions.IndexOfAny({span}, {Literal(setChars[0])}, {Literal(setChars[1])})",
-                            _ => $"global::System.MemoryExtensions.IndexOfAny({span}, {Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])})",
-                        };
-
-                        if (needLoop)
-                        {
-                            writer.WriteLine($"int indexOfPos = {indexOf};");
-                            using (EmitBlock(writer, "if (indexOfPos < 0)"))
+                            using (EmitBlock(writer, $"if (i >= span.Length - {lcc.Length - 1})"))
                             {
                                 writer.WriteLine("goto ReturnFalse;");
                             }
-                            writer.WriteLine("i += indexOfPos;");
-                            writer.WriteLine();
+                        }
+                    }
+                    else
+                    {
+                        writer.WriteLine($"int i = {indexOf};");
+                        using (EmitBlock(writer, "if (i < 0)"))
+                        {
+                            writer.WriteLine("goto ReturnFalse;");
+                        }
+                    }
+                    writer.WriteLine();
+                }
 
-                            if (lcc.Length > 1)
-                            {
-                                using (EmitBlock(writer, $"if (i >= span.Length - {lcc.Length - 1})"))
-                                {
-                                    writer.WriteLine("goto ReturnFalse;");
-                                }
-                            }
+                Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
+                bool hasCharClassConditions = false;
+                if (charClassIndex < lcc.Length)
+                {
+                    // if (CharInClass(textSpan[i + charClassIndex], prefix[0], "...") &&
+                    //     ...)
+                    Debug.Assert(needLoop);
+                    int start = charClassIndex;
+                    for (; charClassIndex < lcc.Length; charClassIndex++)
+                    {
+                        string spanIndex = charClassIndex > 0 ? $"span[i + {charClassIndex}]" : "span[i]";
+                        string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, lcc[charClassIndex].CharClass, lcc[charClassIndex].CaseInsensitive);
+
+                        if (charClassIndex == start)
+                        {
+                            writer.Write($"if ({charInClassExpr}");
                         }
                         else
                         {
-                            writer.WriteLine($"int i = {indexOf};");
-                            using (EmitBlock(writer, "if (i < 0)"))
-                            {
-                                writer.WriteLine("goto ReturnFalse;");
-                            }
+                            writer.WriteLine(" &&");
+                            writer.Write($"    {charInClassExpr}");
                         }
-                        writer.WriteLine();
                     }
-
-                    Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
-                    bool hasCharClassConditions = false;
-                    if (charClassIndex < lcc.Length)
-                    {
-                        // if (CharInClass(textSpan[i + charClassIndex], prefix[0], "...") &&
-                        //     ...)
-                        Debug.Assert(needLoop);
-                        int start = charClassIndex;
-                        for (; charClassIndex < lcc.Length; charClassIndex++)
-                        {
-                            string spanIndex = charClassIndex > 0 ? $"span[i + {charClassIndex}]" : "span[i]";
-                            string charInClassExpr = MatchCharacterClass(hasTextInfo, options, spanIndex, lcc[charClassIndex].CharClass, lcc[charClassIndex].CaseInsensitive);
-
-                            if (charClassIndex == start)
-                            {
-                                writer.Write($"if ({charInClassExpr}");
-                            }
-                            else
-                            {
-                                writer.WriteLine(" &&");
-                                writer.Write($"    {charInClassExpr}");
-                            }
-                        }
-                        writer.WriteLine(")");
-                        hasCharClassConditions = true;
-                    }
-
-                    using (hasCharClassConditions ? EmitBlock(writer, null) : default)
-                    {
-                        writer.WriteLine("base.runtextpos = runtextpos + i;");
-                        writer.WriteLine("return true;");
-                    }
-
-                    loopBlock.Dispose();
+                    writer.WriteLine(")");
+                    hasCharClassConditions = true;
                 }
+
+                using (hasCharClassConditions ? EmitBlock(writer, null) : default)
+                {
+                    writer.WriteLine("base.runtextpos = runtextpos + i;");
+                    writer.WriteLine("return true;");
+                }
+
+                loopBlock.Dispose();
             }
         }
 
@@ -719,8 +739,8 @@ namespace System.Text.RegularExpressions.Generator
         private static void EmitSimplifiedGo(IndentedTextWriter writer, RegexMethod rm, string id)
         {
             RegexOptions options = (RegexOptions)rm.Options;
-            var code = rm.Code;
-            var lcc = code.LeadingCharClasses;
+            RegexCode code = rm.Code;
+            (string CharClass, bool CaseInsensitive)[]? lcc = code.LeadingCharClasses;
             bool rtl = code.RightToLeft;
             bool hasTimeout = false;
 
