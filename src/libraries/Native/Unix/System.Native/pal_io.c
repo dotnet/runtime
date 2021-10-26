@@ -61,6 +61,8 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #endif
 #endif
 
+// The portable build is performed on RHEL7 which doesn't define FICLONE yet.
+// Ensure FICLONE is defined for all Linux builds.
 #ifdef __linux__
 #ifndef FICLONE
 #define FICLONE _IOW(0x94, 9, int)
@@ -1172,8 +1174,8 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     int ret;
     bool copied = false;
 
-    // Certain files (e.g. procfs) may return a size of 0 even though reading from then will
-    // produce data.  We use plain read/write for those.
+    // Certain files (e.g. procfs) may return a size of 0 even though reading them will
+    // produce data. We use plain read/write for those.
 #ifdef FICLONE
     if (sourceLength != 0)
     {

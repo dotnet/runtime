@@ -69,7 +69,7 @@ namespace Microsoft.Win32.SafeHandles
                 Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
                 handle.Dispose();
 
-                if (createOpenException?.Invoke(error, flags, path) is { } ex)
+                if (createOpenException?.Invoke(error, flags, path) is Exception ex)
                 {
                     throw ex;
                 }
