@@ -15,7 +15,6 @@ import { get_js_owned_object_by_gc_handle, js_owned_gc_handle_symbol, mono_wasm_
 import { mono_method_get_call_signature, call_method, wrap_error } from "./method-calls";
 import { _js_to_mono_obj } from "./js-to-cs";
 import { _are_promises_supported, _create_cancelable_promise } from "./cancelable-promise";
-import { extract_js_obj_root_with_converter, extract_js_obj_root_with_possible_converter } from "./custom-marshaler";
 
 // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx and Runtime.cs MarshalType
 export enum MarshalType {
