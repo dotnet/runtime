@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="optimization.$(_NativeOptimizationDataPackageTarget).PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
-      Condition="'$(optimizationPGOCoreCLRVersion)'!='' And '$(NativeOptimizationDataSupported)'!=''"
+      Condition="'$(optimizationPGOCoreCLRVersion)'!='' And '$(NativeOptimizationDataSupported)'=='true'"
       GeneratePathProperty="true" />
   </ItemGroup>
 
