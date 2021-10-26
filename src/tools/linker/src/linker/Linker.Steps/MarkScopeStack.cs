@@ -40,7 +40,7 @@ namespace Mono.Linker.Steps
 				// we will store the suppression context in the SuppressionContextMember.
 				// For code which is not compiler generated the suppression context
 				// is the same as the message's origin member.
-				IMemberDefinition suppressionContextMember = _scopeStack.GetSuppressionContext (origin.Provider);
+				IMemberDefinition? suppressionContextMember = _scopeStack.GetSuppressionContext (origin.Provider);
 				_scopeStack.Push (new Scope (new MessageOrigin (origin, suppressionContextMember)));
 			}
 
@@ -137,7 +137,7 @@ namespace Mono.Linker.Steps
 		[Conditional ("DEBUG")]
 		public void AssertIsEmpty () => Debug.Assert (_scopeStack.Count == 0);
 
-		IMemberDefinition GetSuppressionContext (ICustomAttributeProvider provider)
+		IMemberDefinition? GetSuppressionContext (ICustomAttributeProvider? provider)
 		{
 			if (provider is not IMemberDefinition sourceMember)
 				return null;

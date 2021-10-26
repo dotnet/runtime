@@ -274,7 +274,7 @@ namespace Mono.Linker
 		public bool Equals (MessageContainer other) =>
 			(Category, Text, Code, SubCategory, Origin) == (other.Category, other.Text, other.Code, other.SubCategory, other.Origin);
 
-		public override bool Equals (object obj) => obj is MessageContainer messageContainer && Equals (messageContainer);
+		public override bool Equals (object? obj) => obj is MessageContainer messageContainer && Equals (messageContainer);
 		public override int GetHashCode () => (Category, Text, Code, SubCategory, Origin).GetHashCode ();
 
 		public int CompareTo (MessageContainer other)

@@ -49,7 +49,7 @@ namespace Mono.Linker
 		/// This can be null if there's no logical instruction to assign to the pattern.</param>
 		/// <param name="accessedItem">The item accessed through reflection. This can be one of:
 		///   TypeDefinition, MethodDefinition, PropertyDefinition, FieldDefinition, EventDefinition, InterfaceImplementation.</param>
-		void RecognizedReflectionAccessPattern (ICustomAttributeProvider source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem);
+		void RecognizedReflectionAccessPattern (ICustomAttributeProvider? source, Instruction? sourceInstruction, IMetadataTokenProvider accessedItem);
 
 		/// <summary>
 		/// Called when the linker detected a reflection access but was not able to recognize the entire pattern.
@@ -64,6 +64,6 @@ namespace Mono.Linker
 		/// <param name="messageCode">Message code to use when reporting the unrecognized pattern as a warning.</param>
 		/// <remarks>This effectively means that there's a potential hole in the linker marking - some items which are accessed only through
 		/// reflection may not be marked correctly and thus may fail at runtime.</remarks>
-		void UnrecognizedReflectionAccessPattern (in MessageOrigin origin, ICustomAttributeProvider source, Instruction sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode);
+		void UnrecognizedReflectionAccessPattern (in MessageOrigin origin, ICustomAttributeProvider? source, Instruction? sourceInstruction, IMetadataTokenProvider accessedItem, string message, int messageCode);
 	}
 }

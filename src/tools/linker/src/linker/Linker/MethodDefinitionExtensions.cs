@@ -1,4 +1,6 @@
-﻿using Mono.Cecil;
+﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using Mono.Cecil;
 
 namespace Mono.Linker
 {
@@ -46,24 +48,36 @@ namespace Mono.Linker
 				(md.SemanticsAttributes & MethodSemanticsAttributes.RemoveOn) != 0;
 		}
 
-		public static PropertyDefinition GetProperty (this MethodDefinition md)
+		public static bool TryGetProperty (this MethodDefinition md, [NotNullWhen (true)] out PropertyDefinition? property)
 		{
+			property = null;
+			if (!md.IsPropertyMethod ())
+				return false;
+
 			TypeDefinition declaringType = md.DeclaringType;
 			foreach (PropertyDefinition prop in declaringType.Properties)
-				if (prop.GetMethod == md || prop.SetMethod == md)
-					return prop;
+				if (prop.GetMethod == md || prop.SetMethod == md) {
+					property = prop;
+					return true;
+				}
 
-			return null;
+			return false;
 		}
 
-		public static EventDefinition GetEvent (this MethodDefinition md)
+		public static bool TryGetEvent (this MethodDefinition md, [NotNullWhen (true)] out EventDefinition? @event)
 		{
+			@event = null;
+			if (!md.IsEventMethod ())
+				return false;
+
 			TypeDefinition declaringType = md.DeclaringType;
 			foreach (EventDefinition evt in declaringType.Events)
-				if (evt.AddMethod == md || evt.InvokeMethod == md || evt.RemoveMethod == md)
-					return evt;
+				if (evt.AddMethod == md || evt.InvokeMethod == md || evt.RemoveMethod == md) {
+					@event = evt;
+					return true;
+				}
 
-			return null;
+			return false;
 		}
 
 		public static bool IsStaticConstructor (this MethodDefinition method)

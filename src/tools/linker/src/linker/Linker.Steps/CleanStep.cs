@@ -58,7 +58,7 @@ namespace Mono.Linker.Steps
 					CleanType (nested);
 		}
 
-		static MethodDefinition CheckMethod (TypeDefinition type, MethodDefinition method)
+		static MethodDefinition? CheckMethod (TypeDefinition type, MethodDefinition method)
 		{
 			if (method == null)
 				return null;
