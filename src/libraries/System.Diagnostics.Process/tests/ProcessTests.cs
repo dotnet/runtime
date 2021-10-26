@@ -2218,7 +2218,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void ArgumentListArgumentNullThrowsOnStart()
         {
             ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());
