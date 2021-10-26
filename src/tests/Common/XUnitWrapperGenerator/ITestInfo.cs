@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
 namespace XUnitWrapperGenerator;
@@ -12,33 +13,27 @@ interface ITestInfo
     string ExecutionStatement { get; }
 }
 
-sealed class StaticFactMethod : ITestInfo
+sealed class BasicTestMethod : ITestInfo
 {
-    public StaticFactMethod(IMethodSymbol method)
+    public BasicTestMethod(IMethodSymbol method, string externAlias, ImmutableArray<string> arguments = default)
     {
-        ExecutionStatement = $"{method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{method.Name}();";
+        var args = arguments.IsDefaultOrEmpty ? "" : string.Join(", ", arguments);
+        string containingType = method.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+        if (method.IsStatic)
+        {
+            ExecutionStatement = $"{externAlias}::{containingType}.{method.Name}({args});";
+        }
+        else
+        {
+            ExecutionStatement = $"using ({externAlias}::{containingType} obj = new()) obj.{method.Name}({args});";
+        }
     }
 
     public string ExecutionStatement { get; }
 
     public override bool Equals(object obj)
     {
-        return obj is StaticFactMethod other && ExecutionStatement == other.ExecutionStatement;
-    }
-}
-
-sealed class InstanceFactMethod : ITestInfo
-{
-    public InstanceFactMethod(IMethodSymbol method)
-    {
-        ExecutionStatement = $"using ({method.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)} obj = new()) obj.{method.Name}();";
-    }
-
-    public string ExecutionStatement { get; }
-
-    public override bool Equals(object obj)
-    {
-        return obj is InstanceFactMethod other && ExecutionStatement == other.ExecutionStatement;
+        return obj is BasicTestMethod other && ExecutionStatement == other.ExecutionStatement;
     }
 }
 
@@ -114,5 +109,31 @@ sealed class PlatformSpecificTest : ITestInfo
     }
 
     public string ExecutionStatement { get; }
+
+    public override bool Equals(object obj)
+    {
+        return obj is PlatformSpecificTest other && ExecutionStatement == other.ExecutionStatement;
+    }
 }
 
+sealed class MemberDataTest : ITestInfo
+{
+    public MemberDataTest(ISymbol referencedMember, ITestInfo innerTest, string externAlias, string argumentLoopVarIdentifier)
+    {
+        string containingType = referencedMember.ContainingType.ToDisplayString(XUnitWrapperGenerator.FullyQualifiedWithoutGlobalNamespace);
+        string memberInvocation = referencedMember switch
+        {
+            IPropertySymbol { IsStatic: true } => $"{externAlias}::{containingType}.{referencedMember.Name}",
+            IMethodSymbol { IsStatic: true, Parameters: { Length: 0 } } => $"{externAlias}::{containingType}.{referencedMember.Name}()",
+            _ => throw new ArgumentException()
+        };
+        ExecutionStatement = $@"
+foreach (object[] {argumentLoopVarIdentifier} in {memberInvocation})
+{{
+    {innerTest.ExecutionStatement}
+}}
+";
+    }
+
+    public string ExecutionStatement { get; }
+}
