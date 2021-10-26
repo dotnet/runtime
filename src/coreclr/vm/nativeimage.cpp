@@ -146,8 +146,9 @@ NativeImage *NativeImage::Open(
     BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(fullPath, /*pathIsBundleRelative */ true);
     if (bundleFileLocation.IsValid())
     {
-        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
-        peLoadedImage = pImage->GetLayout(PEImageLayout::LAYOUT_MAPPED, PEImage::LAYOUT_CREATEIFNEEDED);
+        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_Default, bundleFileLocation);
+        peLoadedImage = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
+        peLoadedImage.SuppressRelease();
     }
 
     if (peLoadedImage.IsNull())

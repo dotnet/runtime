@@ -9,10 +9,10 @@ internal static partial class Interop
 {
     internal static partial class WebSocket
     {
-        [DllImport(Libraries.WebSocket)]
-        internal static extern void WebSocketCompleteAction(
-            [In] SafeHandle webSocketHandle,
-            [In] IntPtr actionContext,
-            [In] uint bytesTransferred);
+        [GeneratedDllImport(Libraries.WebSocket)]
+        internal static partial void WebSocketCompleteAction(
+            SafeHandle webSocketHandle,
+            IntPtr actionContext,
+            uint bytesTransferred);
     }
 }

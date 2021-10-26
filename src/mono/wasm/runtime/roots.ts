@@ -3,6 +3,7 @@
 
 import cwraps from "./cwraps";
 import { Module } from "./modules";
+import { VoidPtr, ManagedPointer, NativePointer } from "./types";
 
 const maxScratchRoots = 8192;
 let _scratch_root_buffer: WasmRootBuffer | null = null;
@@ -229,7 +230,7 @@ export class WasmRootBuffer {
     }
 
     toString(): string {
-        return "[root buffer @" + this.get_address(0) + ", size " + this.__count + "]";
+        return `[root buffer @${this.get_address(0)}, size ${this.__count} ]`;
     }
 }
 
@@ -289,6 +290,6 @@ export class WasmRoot<T extends ManagedPointer | NativePointer> {
     }
 
     toString(): string {
-        return "[root @" + this.get_address() + "]";
+        return `[root @${this.get_address()}]`;
     }
 }

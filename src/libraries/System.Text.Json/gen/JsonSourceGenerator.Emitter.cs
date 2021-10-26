@@ -804,14 +804,19 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 {
                     ParameterInfo reflectionInfo = parameters[i].ParameterInfo;
 
+                    string parameterTypeRef = reflectionInfo.ParameterType.GetCompilableName();
+
+                    object? defaultValue = reflectionInfo.GetDefaultValue();
+                    string defaultValueAsStr = GetParamDefaultValueAsString(defaultValue, parameterTypeRef);
+
                     sb.Append(@$"
     {InfoVarName} = new()
     {{
         Name = ""{reflectionInfo.Name!}"",
-        ParameterType = typeof({reflectionInfo.ParameterType.GetCompilableName()}),
+        ParameterType = typeof({parameterTypeRef}),
         Position = {reflectionInfo.Position},
         HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)},
-        DefaultValue = {GetParamDefaultValueAsString(reflectionInfo.DefaultValue)}
+        DefaultValue = {defaultValueAsStr}
     }};
     {parametersVarName}[{i}] = {InfoVarName};
 ");
@@ -1313,12 +1318,12 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
 
         private static string ToCSharpKeyword(bool value) => value.ToString().ToLowerInvariant();
 
-        private static string GetParamDefaultValueAsString(object? value)
+        private static string GetParamDefaultValueAsString(object? value, string objectTypeAsStr)
         {
             switch (value)
             {
                 case null:
-                    return "null";
+                    return $"default({objectTypeAsStr})";
                 case bool boolVal:
                     return ToCSharpKeyword(boolVal);
                 default:

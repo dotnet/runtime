@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoArray, MonoAssembly, MonoClass, MonoMethod, MonoObject, MonoString } from "./types";
+import { CharPtr, CharPtrPtr, Int32Ptr, MonoArray, MonoAssembly, MonoClass, MonoMethod, MonoObject, MonoString, VoidPtr } from "./types";
 import { Module } from "./modules";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
@@ -48,6 +48,13 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
 
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
+
+    //INTERNAL
+    ["mono_wasm_exit", "void", ["number"]],
+    ["mono_wasm_set_main_args", "void", ["number", "number"]],
+    ["mono_wasm_enable_on_demand_gc", "void", ["number"]],
+    ["mono_profiler_init_aot", "void", ["number"]],
+    ["mono_wasm_exec_regression", "number", ["number", "string"]],
 ];
 
 export interface t_Cwraps {
@@ -68,7 +75,6 @@ export interface t_Cwraps {
     mono_wasm_add_assembly(name: string, data: VoidPtr, size: number): number;
     mono_wasm_add_satellite_assembly(name: string, culture: string, data: VoidPtr, size: number): void;
     mono_wasm_load_runtime(unused: string, debug_level: number): void;
-    mono_wasm_exit(exit_code: number): number;
 
     // BINDING
     mono_wasm_assembly_load(name: string): MonoAssembly
@@ -94,6 +100,13 @@ export interface t_Cwraps {
 
     //DOTNET
     mono_wasm_string_from_js(str: string): MonoString
+
+    //INTERNAL
+    mono_wasm_exit(exit_code: number): number;
+    mono_wasm_enable_on_demand_gc(enable: number): void;
+    mono_wasm_set_main_args(argc: number, argv: VoidPtr): void;
+    mono_profiler_init_aot(desc: string): void;
+    mono_wasm_exec_regression(verbose_level: number, image: string): number;
 }
 
 const wrapped_c_functions: t_Cwraps = <any>{};

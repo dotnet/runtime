@@ -98,7 +98,7 @@ internal static partial class Interop
         {
         }
 
-        // Called by the AOT profiler to save profile data into Module.aot_profile_data
+        // Called by the AOT profiler to save profile data into INTERNAL.aot_profile_data
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {

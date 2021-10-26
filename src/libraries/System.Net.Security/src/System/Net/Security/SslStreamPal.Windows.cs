@@ -141,9 +141,9 @@ namespace System.Net.Security
             {
                 clientCertPolicy.pwszSslCtlStoreName = ptr;
                 Interop.SECURITY_STATUS errorCode = Interop.SspiCli.SetCredentialsAttributesW(
-                            ref cred._handle,
+                            cred._handle,
                             (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY,
-                            ref clientCertPolicy,
+                            clientCertPolicy,
                             sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
 
                 if (errorCode != Interop.SECURITY_STATUS.OK)

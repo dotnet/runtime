@@ -1,10 +1,10 @@
-#include "ep-rt-config.h"
+#include <eventpipe/ep-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
-#include "ep-types.h"
-#include "ep.h"
-#include "ep-stack-contents.h"
-#include "ep-rt.h"
+#include <eventpipe/ep-types.h>
+#include <eventpipe/ep.h>
+#include <eventpipe/ep-stack-contents.h>
+#include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;

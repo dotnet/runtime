@@ -99,7 +99,16 @@ struct _InterpBasicBlock {
 	gint16 out_count;
 	InterpBasicBlock **out_bb;
 
+	/* The real native offset of this bblock, computed when emitting the instructions in the code stream */
 	int native_offset;
+	/*
+	 * Estimated native offset computed before the final code stream is generated. These offsets are used
+	 * to determine whether we will use a long or short branch when branching to this bblock. Native offset
+	 * estimates must respect the following condition: |bb1->n_o_e - bb2->n_o_e| >= |bb1->n_o - bb2->n_o|.
+	 * The real native offset between two instructions is always smaller or equal to the estimate, allowing
+	 * us to safely insert short branches based on the estimated offset.
+	 */
+	int native_offset_estimate;
 
 	/*
 	 * The state of the stack when entering this basic block. By default, the stack height is

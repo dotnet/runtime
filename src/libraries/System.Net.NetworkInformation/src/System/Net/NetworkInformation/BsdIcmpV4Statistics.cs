@@ -30,10 +30,10 @@ namespace System.Net.NetworkInformation
         private readonly long _timestampRequestsReceived;
         private readonly long _timestampRequestsSent;
 
-        public BsdIcmpV4Statistics()
+        public unsafe BsdIcmpV4Statistics()
         {
             Interop.Sys.Icmpv4GlobalStatistics statistics;
-            if (Interop.Sys.GetIcmpv4GlobalStatistics(out statistics) != 0)
+            if (Interop.Sys.GetIcmpv4GlobalStatistics(&statistics) != 0)
             {
                 throw new NetworkInformationException(SR.net_PInvokeError);
             }

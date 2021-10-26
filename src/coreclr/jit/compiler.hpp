@@ -4390,23 +4390,6 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
         }
 
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-        {
-            GenTreeBoundsChk* const boundsChk = this->AsBoundsChk();
-            if (visitor(boundsChk->gtIndex) == VisitResult::Abort)
-            {
-                return;
-            }
-            visitor(boundsChk->gtArrLen);
-            return;
-        }
-
         case GT_ARR_ELEM:
         {
             GenTreeArrElem* const arrElem = this->AsArrElem();

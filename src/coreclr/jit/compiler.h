@@ -1216,6 +1216,11 @@ public:
         return (m_lowerBound <= other.m_lowerBound) && (other.m_upperBound <= m_upperBound);
     }
 
+    bool IsPositive()
+    {
+        return m_lowerBound >= SymbolicIntegerValue::Zero;
+    }
+
     bool Equals(IntegralRange other) const
     {
         return (m_lowerBound == other.m_lowerBound) && (m_upperBound == other.m_upperBound);
@@ -1230,6 +1235,7 @@ public:
         return {LowerBoundForType(type), UpperBoundForType(type)};
     }
 
+    static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
 
@@ -1632,26 +1638,6 @@ struct FuncInfoDsc
     // Eventually we may want to move rsModifiedRegsMask, lvaOutgoingArgSize, and anything else
     // that isn't shared between the main function body and funclets.
 };
-
-enum class NonStandardArgKind : unsigned
-{
-    None,
-    PInvokeFrame,
-    PInvokeTarget,
-    PInvokeCookie,
-    WrapperDelegateCell,
-    ShiftLow,
-    ShiftHigh,
-    FixedRetBuffer,
-    VirtualStubCell,
-    R2RIndirectionCell,
-
-    // If changing this enum also change getNonStandardArgKindName and isNonStandardArgAddedLate below
-};
-
-#ifdef DEBUG
-const char* getNonStandardArgKindName(NonStandardArgKind kind);
-#endif
 
 struct fgArgTabEntry
 {
@@ -4360,6 +4346,11 @@ protected:
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+
+#ifdef DEBUG
+    const char* impGetIntrinsicName(CorInfoIntrinsics intrinsicID);
+#endif // DEBUG
+
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -5498,6 +5489,9 @@ public:
     // Does value-numbering for a call.  We interpret some helper calls.
     void fgValueNumberCall(GenTreeCall* call);
 
+    // Does value-numbering for a helper representing a cast operation.
+    void fgValueNumberCastHelper(GenTreeCall* call);
+
     // Does value-numbering for a helper "call" that has a VN function symbol "vnf".
     void fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueNumPair vnpExc);
 
@@ -6363,7 +6357,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
-    GenTree* fgOptimizeCast(GenTree* tree);
+    GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp);
     GenTree* fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow, GenTreeFlags precedingSideEffects);
@@ -6376,6 +6370,7 @@ private:
 
     GenTreeLclVar* fgMorphTryFoldObjAsLclVar(GenTreeObj* obj);
     GenTree* fgMorphCommutative(GenTreeOp* tree);
+    GenTree* fgMorphCastedBitwiseOp(GenTreeOp* tree);
 
 public:
     GenTree* fgMorphTree(GenTree* tree, MorphAddrContext* mac = nullptr);
@@ -6556,14 +6551,6 @@ public:
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
     GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
-    bool optIsRangeCheckRemovable(GenTree* tree);
-
-protected:
-    static fgWalkPreFn optValidRangeCheckIndex;
-
-    /**************************************************************************
-     *
-     *************************************************************************/
 
 protected:
     // Do hoisting for all loops.
@@ -7329,6 +7316,7 @@ public:
 #define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
 #define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
+#define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 
     bool doesMethodHaveFatPointer()
     {
@@ -7414,6 +7402,16 @@ public:
         optMethodFlags |= OMF_HAS_PATCHPOINT;
     }
 
+    bool doesMethodHavePartialCompilationPatchpoints()
+    {
+        return (optMethodFlags & OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT) != 0;
+    }
+
+    void setMethodHasPartialCompilationPatchpoint()
+    {
+        optMethodFlags |= OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT;
+    }
+
     unsigned optMethodFlags;
 
     bool doesMethodHaveNoReturnCalls()
@@ -7471,7 +7469,7 @@ public:
     //
     PhaseStatus optRedundantBranches();
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
 
 #if ASSERTION_PROP
@@ -8054,9 +8052,16 @@ public:
     CORINFO_EE_INFO* eeGetEEInfo();
 
     // Gets the offset of a SDArray's first element
-    unsigned eeGetArrayDataOffset(var_types type);
-    // Gets the offset of a MDArray's first element
-    unsigned eeGetMDArrayDataOffset(var_types type, unsigned rank);
+    static unsigned eeGetArrayDataOffset();
+
+    // Get the offset of a MDArray's first element
+    static unsigned eeGetMDArrayDataOffset(unsigned rank);
+
+    // Get the offset of a MDArray's dimension length for a given dimension.
+    static unsigned eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension);
+
+    // Get the offset of a MDArray's lower bound for a given dimension.
+    static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
     GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
 
@@ -11345,29 +11350,6 @@ public:
                     return result;
                 }
                 result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                break;
-            }
-
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            {
-                GenTreeBoundsChk* const boundsChk = node->AsBoundsChk();
-
-                result = WalkTree(&boundsChk->gtIndex, boundsChk);
-                if (result == fgWalkResult::WALK_ABORT)
-                {
-                    return result;
-                }
-                result = WalkTree(&boundsChk->gtArrLen, boundsChk);
                 if (result == fgWalkResult::WALK_ABORT)
                 {
                     return result;

@@ -35,7 +35,7 @@ extern MonoString* mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_
 // Note: code snippet is not a function definition. Instead it must create and return a function instance.
 EM_JS(MonoObject*, compile_function, (int snippet_ptr, int len, int *is_exception), {
 	try {
-		var data = MONO.string_decoder.decode (snippet_ptr, snippet_ptr + len);
+		var data = INTERNAL.string_decoder.decode (snippet_ptr, snippet_ptr + len);
 		var wrapper = '(function () { ' + data + ' })';
 		var funcFactory = eval(wrapper);
 		var func = funcFactory();

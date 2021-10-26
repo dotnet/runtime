@@ -28,6 +28,7 @@ public class SetOut
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/57935", TestPlatforms.AnyUnix)]
     public static void SetOutReadToEnd()
     {
         Helpers.SetAndReadHelper(tw => Console.SetOut(tw), () => Console.Out, sr => sr.ReadToEnd());

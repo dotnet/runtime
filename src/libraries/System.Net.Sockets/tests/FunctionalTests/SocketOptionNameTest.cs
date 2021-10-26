@@ -562,6 +562,132 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Fact]
+        public void GetUnsupportedSocketOption_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1)));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void GetUnsupportedSocketOptionBytesArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                var optionValue = new byte[4];
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void GetUnsupportedSocketOptionLengthArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionLength: 4));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedSocketOptionIntArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue: 1));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedSocketOptionBytesArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                var optionValue = new byte[4];
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedSocketOptionBoolArg_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                bool optionValue = true;
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)(-1), optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void GetUnsupportedRawSocketOption_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                var optionValue = new byte[4];
+                SocketException se = Assert.Throws<SocketException>(() => socket1.GetRawSocketOption(SOL_SOCKET, -1, optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        [Fact]
+        public void SetUnsupportedRawSocketOption_DoesNotDisconnectSocket()
+        {
+            (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+            using (socket1)
+            using (socket2)
+            {
+                var optionValue = new byte[4];
+                SocketException se = Assert.Throws<SocketException>(() => socket1.SetRawSocketOption(SOL_SOCKET, -1, optionValue));
+                Assert.True(se.SocketErrorCode == SocketError.ProtocolOption ||
+                            se.SocketErrorCode == SocketError.OperationNotSupported, $"SocketError: {se.SocketErrorCode}");
+
+                Assert.True(socket1.Connected, "Connected");
+            }
+        }
+
+        private static int SOL_SOCKET = OperatingSystem.IsLinux() ? 1 : (int)SocketOptionLevel.Socket;
     }
 
     [Collection("NoParallelTests")]

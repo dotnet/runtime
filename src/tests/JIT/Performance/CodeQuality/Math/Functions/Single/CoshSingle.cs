@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const float coshSingleDelta = 0.0004f;
         private const float coshSingleExpectedResult = 5876.02588f;
-
-        [Benchmark(InnerIterationCount = CoshSingleIterations)]
-        public static void CoshSingleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        CoshSingleTest();
-                    }
-                }
-            }
-        }
 
         public static void CoshSingleTest()
         {

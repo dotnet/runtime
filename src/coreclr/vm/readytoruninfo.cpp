@@ -93,6 +93,9 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
     LPCUTF8 pszName = NULL;
     LPCUTF8 pszNameSpace = NULL;
+    // Reserve stack space for parsing out the namespace in a name-based lookup
+    // at this scope so the stack space is in scope for all usages in this method.
+    CQuickBytes namespaceBuffer;
 
     //
     // Compute the hashcode of the type (hashcode based on type name and namespace name)
@@ -105,7 +108,6 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
 
         pszName = pName->GetName();
         pszNameSpace = "";
-
         if (pName->GetNameSpace() != NULL)
         {
             pszNameSpace = pName->GetNameSpace();
@@ -113,14 +115,13 @@ BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken
         else
         {
             LPCUTF8 p;
-            CQuickBytes szNamespace;
 
             if ((p = ns::FindSep(pszName)) != NULL)
             {
                 SIZE_T d = p - pszName;
 
                 FAULT_NOT_FATAL();
-                pszNameSpace = szNamespace.SetStringNoThrow(pszName, d);
+                pszNameSpace = namespaceBuffer.SetStringNoThrow(pszName, d);
 
                 if (pszNameSpace == NULL)
                     return FALSE;
@@ -392,7 +393,7 @@ BOOL ReadyToRunInfo::IsReadyToRunEnabled()
 // Any other value: Handle of the log file.
 static  FILE * volatile s_r2rLogFile = (FILE *)(-1);
 
-static void LogR2r(const char *msg, PEFile *pFile)
+static void LogR2r(const char *msg, PEAssembly *pPEAssembly)
 {
     STANDARD_VM_CONTRACT;
 
@@ -430,7 +431,7 @@ static void LogR2r(const char *msg, PEFile *pFile)
     if (r2rLogFile == NULL)
         return;
 
-    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pFile->GetPath().GetUnicode());
+    fprintf(r2rLogFile, "%s: \"%S\".\n", msg, pPEAssembly->GetPath().GetUnicode());
     fflush(r2rLogFile);
 }
 
@@ -503,7 +504,7 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
 
     if (ownerCompositeExecutableName != NULL)
     {
-        AssemblyBinder *binder = pModule->GetFile()->GetAssemblyBinder();
+        AssemblyBinder *binder = pModule->GetPEAssembly()->GetAssemblyBinder();
         return binder->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
 
@@ -514,7 +515,7 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
 {
     STANDARD_VM_CONTRACT;
 
-    PEFile * pFile = pModule->GetFile();
+    PEAssembly * pFile = pModule->GetPEAssembly();
 
     if (!IsReadyToRunEnabled())
     {
@@ -529,13 +530,13 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
         return NULL;
     }
 
-    if (!pFile->HasLoadedIL())
+    if (!pFile->HasLoadedPEImage())
     {
-        DoLog("Ready to Run disabled - no loaded IL image");
+        DoLog("Ready to Run disabled - no loaded PE image");
         return NULL;
     }
 
-    PEImageLayout * pLayout = pFile->GetLoadedIL();
+    PEImageLayout * pLayout = pFile->GetLoadedLayout();
     if (!pLayout->HasReadyToRunHeader())
     {
         DoLog("Ready to Run header not found");

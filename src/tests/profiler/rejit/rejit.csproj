@@ -2,9 +2,7 @@
   <PropertyGroup>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <CLRTestPriority>0</CLRTestPriority>
     <Optimize>true</Optimize>
     <JitOptimizationSensitive>True</JitOptimizationSensitive>
     <!-- This test provides no interesting scenarios for GCStress -->
