@@ -372,6 +372,8 @@ mono_class_is_magic_assembly (MonoClass *klass)
 		return TRUE;
 	if (!strcmp ("Xamarin.WatchOS", aname))
 		return TRUE;
+	if (!strcmp ("Xamarin.MacCatalyst", aname))
+		return TRUE;
 	/* regression test suite */
 	if (!strcmp ("builtin-types", aname))
 		return TRUE;
@@ -427,7 +429,7 @@ mono_class_is_magic_float (MonoClass *klass)
 	if (!mono_class_is_magic_assembly (klass))
 		return FALSE;
 
-	if (strcmp ("System", m_class_get_name_space (klass)) != 0)
+	if (strcmp ("System", m_class_get_name_space (klass)) != 0 && strcmp ("ObjCRuntime", m_class_get_name_space (klass)) != 0)
 		return FALSE;
 
 	if (strcmp ("nfloat", m_class_get_name (klass)) == 0) {
