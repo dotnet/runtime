@@ -12,6 +12,7 @@ namespace SimpleConsole
         public static int Main(string[] args)
         {
             Console.WriteLine ($"from pinvoke: {SimpleConsole.Test.print_line(100)}");
+            new Helper();
             return 0;
         }
 
