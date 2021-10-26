@@ -1210,6 +1210,12 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
                     break;
                 }
             }
+            else if (sent == 0)
+            {
+                // The file was truncated (or maybe some other condition occurred).
+                // Perform the remaining copying using read/write.
+                break;
+            }
             else
             {
                 assert(sent <= sourceLength);
@@ -1217,7 +1223,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
             }
         } while (sourceLength > 0);
 
-        copied = true;
+        copied = sourceLength == 0;
     }
 #endif // HAVE_SENDFILE_4
 
