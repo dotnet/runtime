@@ -116,6 +116,18 @@ namespace DllImportGenerator.UnitTests.Verifiers
 
             protected override ParseOptions CreateParseOptions()
                 => ((CSharpParseOptions)base.CreateParseOptions()).WithPreprocessorSymbols("DLLIMPORTGENERATOR_ENABLED");
+
+            protected override async Task RunImplAsync(CancellationToken cancellationToken)
+            {
+                try
+                {
+                    await base.RunImplAsync(cancellationToken);
+                }
+                catch(NuGet.Packaging.Core.PackagingException e)
+                {
+                    throw TestUtils.GetSkipException(e);
+                }
+            }
         }
     }
 }
