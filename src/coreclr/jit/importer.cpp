@@ -14427,12 +14427,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         BADCODE("tailcall. has to be followed by call, callvirt or calli");
                     }
-                    else if ((impGetNonPrefixOpcode(codeAddr + sizeof(mdToken) + 1, codeEndp + 1) == CEE_POP) &&
-                             (impGetNonPrefixOpcode(codeAddr + sizeof(mdToken) + 2, codeEndp + 2) == CEE_RET))
-                    {
-                        prefixFlags &= ~PREFIX_TAILCALL_EXPLICIT;
-                        goto PREFIX;
-                    }
                 }
                 assert(sz == 0);
                 goto PREFIX;
@@ -14866,8 +14860,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                                                        // have created a new BB after the "call"
                 // instruction in fgMakeBasicBlocks(). So we need to jump to RET regardless.
                 {
-                    assert(!compIsForInlining());
-                    goto RET;
+                    if (impGetNonPrefixOpcode(codeAddr + sz, codeEndp) != CEE_POP)
+                    {
+                        assert(!compIsForInlining());
+                        goto RET;
+                    }
                 }
 
                 break;

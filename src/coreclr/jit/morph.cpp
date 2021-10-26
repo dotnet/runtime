@@ -8090,7 +8090,17 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     unsigned int newRetLcl        = BAD_VAR_NUM;
     GenTree*     copyToRetBufNode = nullptr;
 
-    if (origCall->HasRetBufArg())
+    if (origCall->HasRetBufArg() && (info.compRetType == TYP_VOID))
+    {
+        // Allocate a buffer for unused return value on stack
+        unsigned int tmpRetBufNum = lvaGrabTemp(true DEBUGARG("substitute local for return buffer"));
+        constexpr bool unsafeValueClsCheck = false;
+        lvaSetStruct(tmpRetBufNum, origCall->gtRetClsHnd, unsafeValueClsCheck);
+        lvaSetVarAddrExposed(tmpRetBufNum DEBUGARG(AddressExposedReason::DISPATCH_RET_BUF));
+        var_types tmpRetBufType = lvaGetDesc(tmpRetBufNum)->TypeGet();
+        retValArg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(tmpRetBufNum, tmpRetBufType));
+    }
+    else if (origCall->HasRetBufArg())
     {
         JITDUMP("Transferring retbuf\n");
         GenTree* retBufArg = origCall->gtCallArgs->GetNode();
