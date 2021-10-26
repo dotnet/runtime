@@ -122,8 +122,8 @@
       <_WasmPropertyNames Include="WasmDedup" />
       <_WasmPropertyNames Include="IncludeSatelliteAssembliesInVFS" />
       <_WasmPropertyNames Include="AssemblyName" />
-      <_WasmPropertyNames Include="EmccCompileOptimizationFlag" />
-      <_WasmPropertyNames Include="EmccLinkOptimizationFlag" />
+      <!--<_WasmPropertyNames Include="EmccCompileOptimizationFlag" />-->
+      <!--<_WasmPropertyNames Include="EmccLinkOptimizationFlag" />-->
       <_WasmPropertyNames Include="DisableParallelAot" />
       <_WasmPropertyNames Include="DisableParallelEmccCompile" />
 
