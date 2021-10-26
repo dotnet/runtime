@@ -508,6 +508,7 @@ set -e
       <CLRTestExecutionScriptHeader Condition=" $(TargetOS) != 'Android' ">
         <![CDATA[
 %23%21/usr/bin/env bash
+set -x
       ]]></CLRTestExecutionScriptHeader>
 
       <!-- NOTE! semicolons must be escaped with %3B boooo -->
