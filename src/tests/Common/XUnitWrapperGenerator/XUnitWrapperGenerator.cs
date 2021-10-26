@@ -33,17 +33,32 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         var allMethods = methodsInSource.Collect().Combine(methodsInReferencedAssemblies.Collect()).SelectMany((methods, ct) => methods.Left.AddRange(methods.Right));
 
+        var aliasMap = context.CompilationProvider.Select((comp, ct) =>
+        {
+            var aliasMap = ImmutableDictionary.CreateBuilder<string, string>();
+            aliasMap.Add(comp.Assembly.MetadataName, "global");
+            foreach (var reference in comp.References)
+            {
+                aliasMap.Add(comp.GetAssemblyOrModuleSymbol(reference)!.MetadataName, reference.Properties.Aliases.FirstOrDefault() ?? "global");
+            }
+
+            return aliasMap.ToImmutable();
+        }).WithComparer(new ImmutableDictionaryValueComparer<string, string>(EqualityComparer<string>.Default));
+
         context.RegisterImplementationSourceOutput(
             allMethods
             .Combine(context.AnalyzerConfigOptionsProvider)
-            .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left, data.Right)))
-            .Collect(),
-            static (context, methods) =>
+            .Combine(aliasMap)
+            .SelectMany((data, ct) => ImmutableArray.CreateRange(GetTestMethodInfosForMethod(data.Left.Left, data.Left.Right, data.Right)))
+            .Collect()
+            .Combine(aliasMap),
+            static (context, methodsAndAliasMap) =>
             {
                 // For simplicity, we'll use top-level statements for the generated Main method.
                 StringBuilder builder = new();
+                builder.AppendLine(string.Join("\n", methodsAndAliasMap.Right.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
                 builder.AppendLine("try {");
-                builder.AppendLine(string.Join("\n", methods.Select(m => m.ExecutionStatement)));
+                builder.AppendLine(string.Join("\n", methodsAndAliasMap.Left.Select(m => m.ExecutionStatement)));
                 builder.AppendLine("} catch(System.Exception) { return 101; }");
                 builder.AppendLine("return 100;");
                 context.AddSource("Main.g.cs", builder.ToString());
@@ -54,10 +69,6 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         public override IEnumerable<IMethodSymbol>? VisitAssembly(IAssemblySymbol symbol)
         {
-            if (symbol.Name.StartsWith("autoinit.exe"))
-            {
-
-            }
             return Visit(symbol.GlobalNamespace);
         }
 
@@ -102,7 +113,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
     }
 
-    private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options)
+    private static IEnumerable<ITestInfo> GetTestMethodInfosForMethod(IMethodSymbol method, AnalyzerConfigOptionsProvider options, ImmutableDictionary<string, string> aliasMap)
     {
         bool factAttribute = false;
         bool theoryAttribute = false;
@@ -130,6 +141,10 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 case "Xunit.ActiveIssueAttribute":
                     filterAttributes.Add(attr);
                     break;
+                case "Xunit.InlineDataAttribute":
+                case "Xunit.MemberDataAttribute":
+                    theoryDataAttributes.Add(attr);
+                    break;
             }
         }
 
@@ -143,8 +158,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             }
             else
             {
-                testInfos = ImmutableArray.Create(method.IsStatic ? (ITestInfo)new StaticFactMethod(method) : new InstanceFactMethod(method));
+                testInfos = ImmutableArray.Create((ITestInfo)new BasicTestMethod(method, aliasMap[method.ContainingAssembly.MetadataName]));
             }
+        }
+        else if (theoryAttribute)
+        {
+            testInfos = CreateTestCases(method, theoryDataAttributes, aliasMap[method.ContainingAssembly.MetadataName]);
         }
 
         foreach (var filterAttribute in filterAttributes)
@@ -153,13 +172,24 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 case "Xunit.ConditionalFactAttribute":
                 case "Xunit.ConditionalTheoryAttribute":
-                    string conditionTypeName = ((ITypeSymbol)filterAttribute.ConstructorArguments[0].Value!).ToDisplayString();
-                    testInfos = DecorateWithUserDefinedCondition(testInfos, (ITypeSymbol)filterAttribute.ConstructorArguments[0].Value!, filterAttribute.ConstructorArguments[1].Values);
-                    break;
+                    {
+                        ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[0].Value!;
+                        testInfos = DecorateWithUserDefinedCondition(
+                            testInfos,
+                            conditionType,
+                            filterAttribute.ConstructorArguments[1].Values,
+                            aliasMap[conditionType.ContainingAssembly.MetadataName]);
+                        break;
+                    }
                 case "Xunit.ActiveIssueAttribute":
                     if (filterAttribute.AttributeConstructor!.Parameters.Length == 3)
                     {
-                        testInfos = DecorateWithUserDefinedCondition(testInfos, (ITypeSymbol)filterAttribute.ConstructorArguments[1].Value!, filterAttribute.ConstructorArguments[2].Values);
+                        ITypeSymbol conditionType = (ITypeSymbol)filterAttribute.ConstructorArguments[1].Value!;
+                        testInfos = DecorateWithUserDefinedCondition(
+                            testInfos,
+                            conditionType,
+                            filterAttribute.ConstructorArguments[2].Values,
+                            aliasMap[conditionType.ContainingAssembly.MetadataName]);
                     }
                     switch (filterAttribute.AttributeConstructor.Parameters[1].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
                     {
@@ -180,6 +210,52 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
 
         return testInfos;
+    }
+
+    private static ImmutableArray<ITestInfo> CreateTestCases(IMethodSymbol method, List<AttributeData> theoryDataAttributes, string alias)
+    {
+        var testCasesBuilder = ImmutableArray.CreateBuilder<ITestInfo>();
+        foreach (var attr in theoryDataAttributes)
+        {
+            switch (attr.AttributeClass!.ToDisplayString())
+            {
+                case "Xunit.InlineDataAttribute":
+                    {
+                        var args = attr.ConstructorArguments[0].Values;
+                        if (method.Parameters.Length != args.Length)
+                        {
+                            // Emit diagnostic
+                            continue;
+                        }
+                        var argsAsCode = ImmutableArray.CreateRange(args.Select(a => a.ToCSharpString()));
+                        testCasesBuilder.Add(new BasicTestMethod(method, alias, arguments: argsAsCode));
+                        break;
+                    }
+                case "Xunit.MemberDataAttribute":
+                    {
+                        string? memberName = (string?)attr.ConstructorArguments[0].Value;
+                        if (string.IsNullOrEmpty(memberName))
+                        {
+                            // Emit diagnostic
+                            continue;
+                        }
+                        var membersByName = method.ContainingType.GetMembers(memberName!);
+                        if (membersByName.Length != 1)
+                        {
+                            // Emit diagnostic
+                            continue;
+                        }
+                        int numArguments = method.Parameters.Length;
+                        const string argumentVariableIdentifier = "testArguments";
+                        var argsAsCode = Enumerable.Range(0, numArguments).Select(i => $"{argumentVariableIdentifier}[{i}]").ToImmutableArray();
+                        testCasesBuilder.Add(new MemberDataTest(membersByName[0], new BasicTestMethod(method, alias, argsAsCode), alias, argumentVariableIdentifier));
+                        break;
+                    }
+                default:
+                    break;
+            }
+        }
+        return testCasesBuilder.ToImmutable();
     }
 
     private static ImmutableArray<ITestInfo> FilterForSkippedRuntime(ImmutableArray<ITestInfo> testInfos, int v, AnalyzerConfigOptionsProvider options)
@@ -246,9 +322,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     private static ImmutableArray<ITestInfo> DecorateWithUserDefinedCondition(
         ImmutableArray<ITestInfo> testInfos,
         ITypeSymbol conditionType,
-        ImmutableArray<TypedConstant> values)
+        ImmutableArray<TypedConstant> values,
+        string externAlias)
     {
-        string condition = string.Join("&&", values.Select(v => $"{conditionType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{v.Value}"));
+        string condition = string.Join("&&", values.Select(v => $"{externAlias}::{conditionType.ToDisplayString(FullyQualifiedWithoutGlobalNamespace)}.{v.Value}"));
         return ImmutableArray.CreateRange<ITestInfo>(testInfos.Select(m => new ConditionalTest(m, condition)));
     }
+
+    public static readonly SymbolDisplayFormat FullyQualifiedWithoutGlobalNamespace = SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted);
 }
