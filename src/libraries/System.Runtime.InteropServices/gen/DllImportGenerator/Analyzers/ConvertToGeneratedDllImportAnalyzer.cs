@@ -48,7 +48,7 @@ namespace Microsoft.Interop.Analyzers
                     if (generatedDllImportAttrType == null)
                         return;
 
-                    List<ITypeSymbol> knownUnsupportedTypes = new List<ITypeSymbol>();
+                    var knownUnsupportedTypes = new List<ITypeSymbol>(s_unsupportedTypeNames.Length);
                     foreach (string typeName in s_unsupportedTypeNames)
                     {
                         INamedTypeSymbol? unsupportedType = compilationContext.Compilation.GetTypeByMetadataName(typeName);
