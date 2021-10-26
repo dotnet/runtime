@@ -15,6 +15,8 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
+#elif defined(_WIN32)
+#include <windows.h>
 #endif
 
 #ifdef __cplusplus
@@ -23,7 +25,7 @@ extern "C" {
 
 // Returns the full path to the executable for the current process, resolving symbolic links.
 // The caller is responsible for releasing the buffer. Returns null on error.
-extern inline char* getexepath(void)
+static inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)
     uint32_t path_length = 0;
@@ -59,6 +61,17 @@ extern inline char* getexepath(void)
     }
 
     return realpath(path, NULL);
+#elif defined(_WIN32)
+    char path[MAX_PATH];
+    if (GetModuleFileNameA(NULL, path, MAX_PATH) == 0)
+    {
+        return NULL;
+    }
+
+    return strdup(path);
+#elif defined(TARGET_WASM)
+    // This is a packaging convention that our tooling should enforce.
+    return strdup("/managed");
 #else
 #if HAVE_GETAUXVAL && defined(AT_EXECFN)
     const char* path = (const char *)getauxval(AT_EXECFN);

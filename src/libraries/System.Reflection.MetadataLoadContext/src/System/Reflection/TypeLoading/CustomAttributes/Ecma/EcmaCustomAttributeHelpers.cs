@@ -200,7 +200,11 @@ namespace System.Reflection.TypeLoading.Ecma
                     ma.ArraySubType = (UnmanagedType)br.ReadCompressedInteger();
 
                     break;
-
+                case UnmanagedType.ByValTStr:
+                    if (br.RemainingBytes == 0)
+                        break;
+                    ma.SizeConst = br.ReadCompressedInteger();
+                    break;
                 case UnmanagedType.SafeArray:
                     if (br.RemainingBytes == 0)
                         break;

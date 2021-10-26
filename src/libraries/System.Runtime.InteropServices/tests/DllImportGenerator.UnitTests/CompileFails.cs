@@ -130,7 +130,7 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.RefReturn("int"), 2, 2 };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
         {
@@ -153,7 +153,7 @@ namespace DllImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MutuallyRecursiveImplicitlyBlittableStruct, 5, 2 };
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(CodeSnippetsToCompile_InvalidCode))]
         public async Task ValidateSnippets_InvalidCodeGracefulFailure(string source, int expectedGeneratorErrors, int expectedCompilerErrors)
         {

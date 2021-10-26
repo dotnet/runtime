@@ -43,15 +43,6 @@ mono_dl_get_so_suffixes (void)
 	return suffixes;
 }
 
-int
-mono_dl_get_executable_path (char *buf, int buflen)
-{
-	uint32_t bsize = buflen;
-	if (_NSGetExecutablePath (buf, &bsize) == 0)
-		return strlen (buf);
-	return -1;
-}
-
 const char*
 mono_dl_get_system_dir (void)
 {
