@@ -265,7 +265,9 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
 #endif //MEMORY_MAPPED_STRESSLOG
 
 #if !defined (STRESS_LOG_READONLY) && defined(HOST_WINDOWS)
+#ifdef MEMORY_MAPPED_STRESSLOG
     if (theLog.hMapView == nullptr)
+#endif //MEMORY_MAPPED_STRESSLOG
     {
         StressLogChunk::s_LogChunkHeap = HeapCreate(0, STRESSLOG_CHUNK_SIZE * 128, 0);
         if (StressLogChunk::s_LogChunkHeap == NULL)
