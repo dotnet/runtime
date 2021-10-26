@@ -97,6 +97,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
         public void SettingUpdatesPropertiesOnSymlink()
         {
             // This test is in this class since it needs all of the time functions.
@@ -110,6 +111,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SettingUpdatesPropertiesOnNonexistentSymlink()
         {
             if (IsDirectory && !OperatingSystem.IsWindows())
@@ -126,6 +128,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SettingUpdatesPropertiesOnRelativeSymlink()
         {
             // Same as the SettingUpdatesPropertiesOnSymlink function,
@@ -135,6 +138,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)]
         public void SettingUpdatesPropertiesOnRelativeNonexistentSymlink()
         {
             if (IsDirectory && !OperatingSystem.IsWindows())
