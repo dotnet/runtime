@@ -10,6 +10,10 @@ extern "C" {
 
 int print_line(int x);
 
+typedef int (*ManagedIntIntCallback)(int x);
+
+int native_intint_callback_acceptor(ManagedIntIntCallback fn, int i);
+
 #ifdef __cplusplus
 }
 #endif

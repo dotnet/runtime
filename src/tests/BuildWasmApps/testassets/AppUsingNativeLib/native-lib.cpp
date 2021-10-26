@@ -9,3 +9,8 @@ int print_line(int x)
     printf("print_line: %d\n", x);
     return 42 + x;
 }
+
+int native_intint_callback_acceptor(ManagedIntIntCallback fn, int i)
+{
+    return fn(i + 100);
+}

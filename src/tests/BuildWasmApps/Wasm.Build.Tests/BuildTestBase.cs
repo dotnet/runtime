@@ -253,6 +253,7 @@ namespace Wasm.Build.Tests
               <PropertyGroup>
                 <TargetFramework>{s_targetFramework}</TargetFramework>
                 <OutputType>Exe</OutputType>
+                <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
                 <WasmGenerateRunV8Script>true</WasmGenerateRunV8Script>
                 <WasmMainJSPath>runtime-test.js</WasmMainJSPath>
                 ##EXTRA_PROPERTIES##

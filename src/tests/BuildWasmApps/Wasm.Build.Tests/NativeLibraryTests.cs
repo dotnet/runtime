@@ -17,14 +17,14 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+	[Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
         {
             string projectName = $"AppUsingNativeLib-a";
             buildArgs = buildArgs with { ProjectName = projectName };
-            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeFileReference Include=\"native-lib.o\" />");
+            buildArgs = ExpandBuildArgs(buildArgs, extraItems: "<NativeFileReference Include=\"native-lib.cpp\" />");
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? _))
             {
@@ -33,7 +33,6 @@ namespace Wasm.Build.Tests
                     Directory.Delete(_projectDir, recursive: true);
 
                 Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir);
-                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "native-lib.o"), Path.Combine(_projectDir, "native-lib.o"));
             }
 
             BuildProject(buildArgs,
@@ -45,6 +44,7 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
 
             Assert.Contains("print_line: 100", output);
+	    Assert.Contains("total in helper: 253", output);
             Assert.Contains("from pinvoke: 142", output);
         }
 
