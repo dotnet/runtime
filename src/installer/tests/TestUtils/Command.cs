@@ -206,9 +206,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                     Process.Start();
                     break;
                 }
-                catch (Win32Exception e) when (i < 3 && e.Message.Contains("Text file busy"))
+                catch (Win32Exception e) when (i < 4 && e.Message.Contains("Text file busy"))
                 {
-                    Thread.Sleep(50);
+                    Thread.Sleep(i * 20);
                 }
             }
 
