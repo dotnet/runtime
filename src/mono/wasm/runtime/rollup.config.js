@@ -9,7 +9,13 @@ import dts from "rollup-plugin-dts";
 const outputFileName = "runtime.iffe.js";
 const isDebug = process.env.Configuration !== "Release";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
-const plugins = isDebug ? [writeOnChangePlugin()] : [terser(), writeOnChangePlugin()];
+const terserConfig = {
+    compress: {
+        ecma: 2016,
+        unused: false,
+    },
+};
+const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 
 export default defineConfig([
     {

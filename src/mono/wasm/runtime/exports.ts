@@ -73,7 +73,7 @@ export const MONO: MONO = <any>{
     mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
 
     config: runtimeHelpers.config,
-    loaded_files: runtimeHelpers.loaded_files,
+    loaded_files: [],
 
     // generated bindings closure `library_mono`
     mono_wasm_new_root_buffer_from_pointer,
