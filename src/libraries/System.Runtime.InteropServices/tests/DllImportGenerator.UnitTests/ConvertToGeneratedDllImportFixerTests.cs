@@ -17,7 +17,7 @@ namespace DllImportGenerator.UnitTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToGeneratedDllImportFixerTests
     {
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Basic(bool usePreprocessorDefines)
@@ -56,7 +56,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task Comments(bool usePreprocessorDefines)
@@ -119,7 +119,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task MultipleAttributes(bool usePreprocessorDefines)
@@ -180,7 +180,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task NamedArguments(bool usePreprocessorDefines)
@@ -232,7 +232,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task RemoveableNamedArguments(bool usePreprocessorDefines)
@@ -284,7 +284,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true)]
         [InlineData(false)]
         public async Task ReplaceableExplicitPlatformDefaultCallingConvention(bool usePreprocessorDefines)
@@ -322,7 +322,7 @@ partial class Test
                 usePreprocessorDefines ? WithPreprocessorDefinesKey : NoPreprocessorDefinesKey);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl), true)]
         [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl), false)]
         [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall), true)]

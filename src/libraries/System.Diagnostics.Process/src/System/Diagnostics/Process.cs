@@ -1691,10 +1691,7 @@ namespace System.Diagnostics
         /// <exception cref="System.ObjectDisposedException">If the Proces has been disposed.</exception>
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
 
         private static Win32Exception CreateExceptionForErrorStartingProcess(string errorMessage, int errorCode, string fileName, string? workingDirectory)

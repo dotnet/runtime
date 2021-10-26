@@ -128,23 +128,42 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
             if (domCmpTree->OperKind() & GTK_RELOP)
             {
-                // We can use liberal VNs as bounds checks are not yet
+                // We can use liberal VNs here, as bounds checks are not yet
                 // manifest explicitly as relops.
                 //
-                ValueNum domCmpVN = domCmpTree->GetVN(VNK_Liberal);
+                // Look for an exact match and also try the various swapped/reversed forms.
+                //
+                const ValueNum treeVN   = tree->GetVN(VNK_Liberal);
+                const ValueNum domCmpVN = domCmpTree->GetVN(VNK_Liberal);
+                const ValueNum domCmpSwpVN =
+                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Swap);
+                const ValueNum domCmpRevVN =
+                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_Reverse);
+                const ValueNum domCmpSwpRevVN =
+                    vnStore->GetRelatedRelop(domCmpVN, ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse);
 
-                // Note we could also infer the tree relop's value from similar relops higher in the dom tree.
-                // For example, (x >= 0) dominating (x > 0), or (x < 0) dominating (x > 0).
+                const bool matchCmp       = ((domCmpVN != ValueNumStore::NoVN) && (domCmpVN == treeVN));
+                const bool matchSwp       = ((domCmpSwpVN != ValueNumStore::NoVN) && (domCmpSwpVN == treeVN));
+                const bool matchRev       = ((domCmpRevVN != ValueNumStore::NoVN) && (domCmpRevVN == treeVN));
+                const bool matchSwpRev    = ((domCmpSwpRevVN != ValueNumStore::NoVN) && (domCmpSwpRevVN == treeVN));
+                const bool domIsSameRelop = matchCmp || matchSwp;
+                const bool domIsRevRelop  = matchRev || matchSwpRev;
+
+                // Note we could also infer the tree relop's value from relops higher in the dom tree
+                // that involve the same operands but are not swaps or reverses.
+                //
+                // For example, (x >= 0) dominating (x > 0).
                 //
                 // That is left as a future enhancement.
                 //
-                if (domCmpVN == tree->GetVN(VNK_Liberal))
+                if (domIsSameRelop || domIsRevRelop)
                 {
                     // The compare in "tree" is redundant.
                     // Is there a unique path from the dominating compare?
                     //
-                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has relop with same liberal VN:\n", domBlock->bbNum,
-                            block->bbNum);
+                    JITDUMP("\nDominator " FMT_BB " of " FMT_BB " has %srelop with %s liberal VN\n", domBlock->bbNum,
+                            block->bbNum, matchSwp || matchSwpRev ? "swapped " : "",
+                            domIsSameRelop ? "the same" : "a reverse");
                     DISPTREE(domCmpTree);
                     JITDUMP(" Redundant compare; current relop:\n");
                     DISPTREE(tree);
@@ -162,7 +181,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
                         //
-                        const bool wasThreaded = optJumpThread(block, domBlock);
+                        const bool wasThreaded = optJumpThread(block, domBlock, domIsSameRelop);
 
                         if (wasThreaded)
                         {
@@ -171,20 +190,20 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     }
                     else if (trueReaches)
                     {
-                        // Taken jump in dominator reaches, fall through doesn't; relop must be true.
+                        // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
-                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop must be true\n",
-                                domBlock->bbJumpDest->bbNum, domBlock->bbNum);
-                        relopValue = 1;
+                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
+                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, domIsSameRelop ? "true" : "false");
+                        relopValue = domIsSameRelop ? 1 : 0;
                         break;
                     }
                     else if (falseReaches)
                     {
-                        // Fall through from dominator reaches, taken jump doesn't; relop must be false.
+                        // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
-                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop must be false\n",
-                                domBlock->bbNext->bbNum, domBlock->bbNum);
-                        relopValue = 0;
+                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
+                                domBlock->bbNext->bbNum, domBlock->bbNum, domIsSameRelop ? "false" : "true");
+                        relopValue = domIsSameRelop ? 0 : 1;
                         break;
                     }
                     else
@@ -259,6 +278,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 // Arguments:
 //   block - block with branch to optimize
 //   domBlock - a dominating block that has an equivalent branch
+//   domIsSameRelop - if true, dominating block does the same compare;
+//                    if false, dominating block does a reverse compare
 //
 // Returns:
 //   True if the branch was optimized.
@@ -273,7 +294,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 //     /     \           |     |
 //    C       D          C     D
 //
-bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock)
+bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
 {
     assert(block->bbJumpKind == BBJ_COND);
     assert(domBlock->bbJumpKind == BBJ_COND);
@@ -370,8 +391,13 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // are correlated exclusively with a true value for block's relop, and which
     // are correlated exclusively with a false value (aka true preds and false preds).
     //
-    // To do this we try and follow the flow from domBlock to block; any block pred
-    // reachable from domBlock's true edge is a true pred, and vice versa.
+    // To do this we try and follow the flow from domBlock to block. When domIsSameRelop
+    // is true, any block pred reachable from domBlock's true edge is a true pred of block,
+    // and any block pred reachable from domBlock's false edge is a false pred of block.
+    //
+    // If domIsSameRelop is false, then the roles of the of the paths from domBlock swap:
+    // any block pred reachable from domBlock's true edge is a false pred of block,
+    // and any block pred reachable from domBlock's false edge is a true pred of block.
     //
     // However, there are some exceptions:
     //
@@ -400,8 +426,8 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     int               numTruePreds      = 0;
     int               numFalsePreds     = 0;
     BasicBlock*       fallThroughPred   = nullptr;
-    BasicBlock* const trueSuccessor     = domBlock->bbJumpDest;
-    BasicBlock* const falseSuccessor    = domBlock->bbNext;
+    BasicBlock* const trueSuccessor     = domIsSameRelop ? domBlock->bbJumpDest : domBlock->bbNext;
+    BasicBlock* const falseSuccessor    = domIsSameRelop ? domBlock->bbNext : domBlock->bbJumpDest;
     BasicBlock* const trueTarget        = block->bbJumpDest;
     BasicBlock* const falseTarget       = block->bbNext;
     BlockSet          truePreds         = BlockSetOps::MakeEmpty(this);

@@ -44,7 +44,7 @@ namespace DllImportGenerator.UnitTests
             new object[] { typeof(System.Text.StringBuilder) },
         };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
@@ -60,7 +60,7 @@ namespace DllImportGenerator.UnitTests
                     .WithArguments("Method_Return"));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task ByRef_ReportsDiagnostic(Type type)
@@ -93,7 +93,7 @@ unsafe partial class Test
                     .WithArguments("Method_Ref"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task PreserveSigFalse_ReportsDiagnostic()
         {
             string source = @$"
@@ -117,7 +117,7 @@ partial class Test
                     .WithArguments("Method2"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SetLastErrorTrue_ReportsDiagnostic()
         {
             string source = @$"
@@ -141,7 +141,7 @@ partial class Test
                     .WithArguments("Method2"));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(UnsupportedTypes))]
         public async Task UnsupportedType_NoDiagnostic(Type type)
         {
@@ -149,7 +149,7 @@ partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task NotDllImport_NoDiagnostic()
         {
             string source = @$"
