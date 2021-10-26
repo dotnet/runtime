@@ -4450,6 +4450,161 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
     return c->m_attribs == CEA_Handle;
 }
 
+//------------------------------------------------------------------------
+// GetRelatedRelop: return value number for reversed/swapped comparison
+//
+// Arguments:
+//    vn - vn to base things on
+//    vrk - whether the new vn should swap, reverse, or both
+//
+// Returns:
+//    vn for reversed/swapped comparsion, or NoVN.
+//
+// Note:
+//    If "vn" corresponds to (x > y), the resulting VN corresponds to
+//    VRK_Swap               (y < x)
+//    VRK_Reverse            (x <= y)
+//    VRK_SwapReverse        (y >= x)
+//
+//    Will return NoVN for all float comparisons.
+//
+ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
+{
+    if (vn == NoVN)
+    {
+        return NoVN;
+    }
+
+    // Pull out any exception set.
+    //
+    ValueNum valueVN;
+    ValueNum excepVN;
+    VNUnpackExc(vn, &valueVN, &excepVN);
+
+    // Verify we have a binary func application
+    //
+    VNFuncApp funcAttr;
+    if (!GetVNFunc(valueVN, &funcAttr))
+    {
+        return NoVN;
+    }
+
+    if (funcAttr.m_arity != 2)
+    {
+        return NoVN;
+    }
+
+    // Don't try and model float compares.
+    //
+    if (varTypeIsFloating(TypeOfVN(funcAttr.m_args[0])))
+    {
+        return NoVN;
+    }
+
+    const bool reverse = (vrk == VN_RELATION_KIND::VRK_Reverse) || (vrk == VN_RELATION_KIND::VRK_SwapReverse);
+    const bool swap    = (vrk == VN_RELATION_KIND::VRK_Swap) || (vrk == VN_RELATION_KIND::VRK_SwapReverse);
+
+    // Set up the new function
+    //
+    VNFunc newFunc = funcAttr.m_func;
+
+    // Swap the predicate, if so asked.
+    //
+    if (swap)
+    {
+        if (newFunc >= VNF_Boundary)
+        {
+            switch (newFunc)
+            {
+                case VNF_LT_UN:
+                    newFunc = VNF_GT_UN;
+                    break;
+                case VNF_LE_UN:
+                    newFunc = VNF_GE_UN;
+                    break;
+                case VNF_GE_UN:
+                    newFunc = VNF_LE_UN;
+                    break;
+                case VNF_GT_UN:
+                    newFunc = VNF_LT_UN;
+                    break;
+                default:
+                    return NoVN;
+            }
+        }
+        else
+        {
+            const genTreeOps op = (genTreeOps)newFunc;
+
+            if (!GenTree::OperIsRelop(op))
+            {
+                return NoVN;
+            }
+
+            newFunc = (VNFunc)GenTree::SwapRelop(op);
+        }
+    }
+
+    // Reverse the predicate, if so asked.
+    //
+    if (reverse)
+    {
+        if (newFunc >= VNF_Boundary)
+        {
+            switch (newFunc)
+            {
+                case VNF_LT_UN:
+                    newFunc = VNF_GE_UN;
+                    break;
+                case VNF_LE_UN:
+                    newFunc = VNF_GT_UN;
+                    break;
+                case VNF_GE_UN:
+                    newFunc = VNF_LT_UN;
+                    break;
+                case VNF_GT_UN:
+                    newFunc = VNF_LE_UN;
+                    break;
+                default:
+                    return NoVN;
+            }
+        }
+        else
+        {
+            const genTreeOps op = (genTreeOps)newFunc;
+
+            if (!GenTree::OperIsRelop(op))
+            {
+                return NoVN;
+            }
+
+            newFunc = (VNFunc)GenTree::ReverseRelop(op);
+        }
+    }
+
+    // Create the resulting VN, swapping arguments if needed.
+    //
+    ValueNum newVN  = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
+    ValueNum result = VNWithExc(newVN, excepVN);
+
+#ifdef DEBUG
+    if (m_pComp->verbose)
+    {
+        printf("%s of ", swap ? (reverse ? "swap-reverse" : "swap") : "reverse");
+        m_pComp->vnPrint(vn, 1);
+        printf(" => ");
+        m_pComp->vnPrint(newVN, 1);
+        if (result != newVN)
+        {
+            m_pComp->vnPrint(result, 1);
+        }
+        printf("\n");
+    }
+#endif
+
+    return result;
+}
+
 bool ValueNumStore::IsVNConstantBound(ValueNum vn)
 {
     // Do we have "var < 100"?
@@ -5835,6 +5990,12 @@ static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memo
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ADDR, GT_ARR_BOUNDS_CHECK,
+#ifdef FEATURE_SIMD
+                                                 GT_SIMD_CHK,
+#endif
+#ifdef FEATURE_HW_INTRINSICS
+                                                 GT_HW_INTRINSIC_CHK,
+#endif
                                                  GT_OBJ,      // May reference heap memory.
                                                  GT_BLK,      // May reference heap memory.
                                                  GT_INIT_VAL, // Not strictly a pass-through.
@@ -5863,11 +6024,7 @@ void ValueNumStore::InitValueNumStoreStatics()
         {
             arity = 2;
         }
-        // Since GT_ARR_BOUNDS_CHECK is not currently GTK_BINOP
-        else if (gtOper == GT_ARR_BOUNDS_CHECK)
-        {
-            arity = 2;
-        }
+
         vnfOpAttribs[i] |= ((arity << VNFOA_ArityShift) & VNFOA_ArityMask);
 
         if (GenTree::OperIsCommutative(gtOper))
@@ -8922,6 +9079,39 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     }
                     break;
 
+                    case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+                    case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+                    case GT_HW_INTRINSIC_CHK:
+#endif // FEATURE_HW_INTRINSICS
+                    {
+                        ValueNumPair vnpIndex  = tree->AsBoundsChk()->GetIndex()->gtVNPair;
+                        ValueNumPair vnpArrLen = tree->AsBoundsChk()->GetArrayLength()->gtVNPair;
+
+                        ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+
+                        // And collect the exceptions  from Index and ArrLen
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
+                        vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
+
+                        // A bounds check node has no value, but may throw exceptions.
+                        tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
+
+                        // next add the bounds check exception set for the current tree node
+                        fgValueNumberAddExceptionSet(tree);
+
+                        // Record non-constant value numbers that are used as the length argument to bounds checks, so
+                        // that assertion prop will know that comparisons against them are worth analyzing.
+                        ValueNum lengthVN = tree->AsBoundsChk()->GetArrayLength()->gtVNPair.GetConservative();
+                        if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
+                        {
+                            vnStore->SetVNIsCheckedBound(lengthVN);
+                        }
+                    }
+                    break;
+
                     case GT_NULLCHECK:
                     {
                         // An Explicit null check, produces no value
@@ -9002,39 +9192,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_CALL:
                 fgValueNumberCall(tree->AsCall());
                 break;
-
-            case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-            case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-            case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-            {
-                ValueNumPair vnpIndex  = tree->AsBoundsChk()->gtIndex->gtVNPair;
-                ValueNumPair vnpArrLen = tree->AsBoundsChk()->gtArrLen->gtVNPair;
-
-                ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
-
-                // And collect the exceptions  from Index and ArrLen
-                vnpExcSet = vnStore->VNPUnionExcSet(vnpIndex, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(vnpArrLen, vnpExcSet);
-
-                // A bounds check node has no value, but may throw exceptions.
-                tree->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
-
-                // next add the bounds check exception set for the current tree node
-                fgValueNumberAddExceptionSet(tree);
-
-                // Record non-constant value numbers that are used as the length argument to bounds checks, so that
-                // assertion prop will know that comparisons against them are worth analyzing.
-                ValueNum lengthVN = tree->AsBoundsChk()->gtArrLen->gtVNPair.GetConservative();
-                if ((lengthVN != ValueNumStore::NoVN) && !vnStore->IsVNConstant(lengthVN))
-                {
-                    vnStore->SetVNIsCheckedBound(lengthVN);
-                }
-            }
-            break;
 
             case GT_CMPXCHG: // Specialop
             {
@@ -10587,8 +10744,8 @@ void Compiler::fgValueNumberAddExceptionSetForBoundsCheck(GenTree* tree)
     GenTreeBoundsChk* node = tree->AsBoundsChk();
     assert(node != nullptr);
 
-    ValueNumPair vnpIndex  = node->gtIndex->gtVNPair;
-    ValueNumPair vnpArrLen = node->gtArrLen->gtVNPair;
+    ValueNumPair vnpIndex  = node->GetIndex()->gtVNPair;
+    ValueNumPair vnpArrLen = node->GetArrayLength()->gtVNPair;
 
     // Unpack, Norm,Exc for the tree's VN
     //

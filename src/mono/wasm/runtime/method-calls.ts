@@ -86,7 +86,7 @@ function _convert_exception_for_method_call(result: MonoString, exception: MonoO
 
     const msg = conv_string(result);
     const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
-    // console.warn ("error", msg, "at location", err.stack);
+    // console.warn (`error ${msg} at location ${err.stack});
     return err;
 }
 

@@ -1141,7 +1141,7 @@ mono_interp_jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 		return FALSE;
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL)
 		return FALSE;
-	if (method->is_inflated)
+	if (!mono_llvm_only && method->is_inflated)
 		return FALSE;
 	if (method->string_ctor)
 		return FALSE;
@@ -2238,8 +2238,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_EXP;
 			} else if (strcmp (tm, "Floor") == 0) {
 				*op = MINT_FLOOR;
-			} else if (strcmp (tm, "ILogB") == 0) {
-				*op = MINT_ILOGB;
 			} else if (tm [0] == 'L') {
 				if (strcmp (tm, "Log") == 0) {
 					*op = MINT_LOG;

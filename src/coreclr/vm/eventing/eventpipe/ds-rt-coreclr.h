@@ -2,13 +2,13 @@
 #ifndef __DIAGNOSTICS_RT_MONO_H__
 #define __DIAGNOSTICS_RT_MONO_H__
 
-#include "ds-rt-config.h"
+#include <eventpipe/ds-rt-config.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-coreclr.h"
-#include "ds-process-protocol.h"
-#include "ds-profiler-protocol.h"
-#include "ds-dump-protocol.h"
+#include <eventpipe/ds-process-protocol.h>
+#include <eventpipe/ds-profiler-protocol.h>
+#include <eventpipe/ds-dump-protocol.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ALWAYS, msg "\n")
@@ -300,7 +300,7 @@ ds_rt_profiler_startup (DiagnosticsStartupProfilerCommandPayload *payload)
 	STATIC_CONTRACT_NOTHROW;
 
 	HRESULT hr = S_OK;
-	EX_TRY {        
+	EX_TRY {
 		StoredProfilerNode *profilerData = new StoredProfilerNode();
 		profilerData->guid = *(reinterpret_cast<const CLSID *>(ds_startup_profiler_command_payload_get_profiler_guid_cref (payload)));
 		profilerData->path.Set(reinterpret_cast<LPCWSTR>(ds_startup_profiler_command_payload_get_profiler_path (payload)));

@@ -3906,6 +3906,12 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 				if (!template_->data)
 					goto cleanup;
 				break;
+			case MONO_PATCH_INFO_METHOD:
+				template_->data = decode_resolve_method_ref (aot_module, p, &p, error);
+				mono_error_cleanup (error); /* FIXME don't swallow the error */
+				if (!template_->data)
+					goto cleanup;
+				break;
 			default:
 				g_assert_not_reached ();
 				break;

@@ -5545,7 +5545,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     // Currently we morph the tree to perform some folding operations prior
     // to attaching fieldSeq info and labeling constant array index contributions
     //
-    fgMorphTree(tree);
+    tree = fgMorphTree(tree);
 
     JITDUMP("fgMorphArrayIndex (after remorph):\n");
     DISPTREE(tree);
@@ -5570,6 +5570,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     }
 
     assert(!fgGlobalMorph || (arrElem->gtDebugFlags & GTF_DEBUG_NODE_MORPHED));
+    DBEXEC(fgGlobalMorph && (arrElem == tree), tree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     addr = arrElem->AsOp()->gtOp1;
 
@@ -12655,6 +12656,16 @@ DONE_MORPHING_CHILDREN:
             fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_ARITH_EXCPN);
             break;
 
+        case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+        case GT_SIMD_CHK:
+#endif
+#ifdef FEATURE_HW_INTRINSICS
+        case GT_HW_INTRINSIC_CHK:
+#endif
+            fgSetRngChkTarget(tree);
+            break;
+
         case GT_OBJ:
             // If we have GT_OBJ(GT_ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
             // the GT_OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
@@ -14804,35 +14815,6 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
             }
             tree = fgMorphCall(tree->AsCall());
             break;
-
-        case GT_ARR_BOUNDS_CHECK:
-#ifdef FEATURE_SIMD
-        case GT_SIMD_CHK:
-#endif // FEATURE_SIMD
-#ifdef FEATURE_HW_INTRINSICS
-        case GT_HW_INTRINSIC_CHK:
-#endif // FEATURE_HW_INTRINSICS
-        {
-            fgSetRngChkTarget(tree);
-
-            GenTreeBoundsChk* bndsChk = tree->AsBoundsChk();
-            bndsChk->gtIndex          = fgMorphTree(bndsChk->gtIndex);
-            bndsChk->gtArrLen         = fgMorphTree(bndsChk->gtArrLen);
-            // If the index is a comma(throw, x), just return that.
-            if (!optValnumCSE_phase && fgIsCommaThrow(bndsChk->gtIndex))
-            {
-                tree = bndsChk->gtIndex;
-            }
-
-            bndsChk->gtFlags &= ~GTF_CALL;
-
-            // Propagate effects flags upwards
-            bndsChk->gtFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
-            bndsChk->gtFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
-
-            // Otherwise, we don't change the tree.
-        }
-        break;
 
         case GT_ARR_ELEM:
             tree->AsArrElem()->gtArrObj = fgMorphTree(tree->AsArrElem()->gtArrObj);

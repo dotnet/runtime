@@ -42,7 +42,7 @@ export class StringDecoder {
                 interned_string_table.has(<any>mono_string) //TODO remove 2x lookup
             ) {
                 result = interned_string_table.get(<any>mono_string)!;
-                // console.log("intern table cache hit", mono_string, result.length);
+                // console.log(`intern table cache hit ${mono_string} ${result.length}`);
             } else {
                 result = this.decode(<any>pChars, <any>pChars + lengthBytes);
                 if (isInterned) {

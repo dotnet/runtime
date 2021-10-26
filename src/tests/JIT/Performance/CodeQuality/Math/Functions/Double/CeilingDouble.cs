@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double ceilingDoubleDelta = 0.0004;
         private const double ceilingDoubleExpectedResult = 2500;
-
-        [Benchmark(InnerIterationCount = CeilingDoubleIterations)]
-        public static void CeilingDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        CeilingDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void CeilingDoubleTest()
         {

@@ -94,10 +94,7 @@ endif()
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/socket-dbi)
 
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configuretools.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurepaths.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configureplatform.cmake)
-include(${PROJECT_SOURCE_DIR}/../../../../eng/native/configurecompiler.cmake)
+include(${CLR_ENG_NATIVE_DIR}/configurecompiler.cmake)
 
 if (CLR_CMAKE_HOST_UNIX)
   # Add custom targets that the pal build expects.

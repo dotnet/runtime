@@ -6925,6 +6925,9 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 			case MONO_PATCH_INFO_FIELD:
 				encode_field_info (acfg, (MonoClassField *)template_->data, p, &p);
 				break;
+			case MONO_PATCH_INFO_METHOD:
+				encode_method_ref (acfg, (MonoMethod*)template_->data, p, &p);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
@@ -8766,7 +8769,7 @@ get_concrete_sig (MonoMethodSignature *sig)
 	//printf ("%s\n", mono_signature_full_name (sig));
 
 	if (m_type_is_byref (sig->ret))
-		copy->ret = m_class_get_this_arg (mono_defaults.int_class);
+		copy->ret = mono_class_get_byref_type (mono_defaults.int_class);
 	else
 		copy->ret = mini_get_underlying_type (sig->ret);
 	if (!is_concrete_type (copy->ret))

@@ -2214,6 +2214,18 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void ArgumentListArgumentNullThrowsOnStart()
+        {
+            ProcessStartInfo psi = new ProcessStartInfo(GetCurrentProcessName());
+            psi.ArgumentList.Add(null);
+
+            Process testProcess = CreateProcess();
+            testProcess.StartInfo = psi;
+
+            AssertExtensions.Throws<ArgumentNullException>("item", () => testProcess.Start());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartProcessWithSameArgumentList()

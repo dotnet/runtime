@@ -583,6 +583,7 @@ protected:
         instruction _idIns : 10;
 #define MAX_ENCODED_SIZE 15
 #elif defined(TARGET_ARM64)
+#define INSTR_ENCODED_SIZE 4
         static_assert_no_msg(INS_count <= 512);
         instruction _idIns : 9;
 #else  // !(defined(TARGET_XARCH) || defined(TARGET_ARM64))
@@ -890,6 +891,12 @@ protected:
         }
 
 #elif defined(TARGET_ARM64)
+
+        inline bool idIsEmptyAlign() const
+        {
+            return (idIns() == INS_align) && (idInsOpt() == INS_OPTS_NONE);
+        }
+
         unsigned idCodeSize() const
         {
             int size = 4;
@@ -911,6 +918,12 @@ protected:
                     {
                         // adrp + ldr
                         size = 8;
+                    }
+                    break;
+                case IF_SN_0A:
+                    if (idIsEmptyAlign())
+                    {
+                        size = 0;
                     }
                     break;
                 default:
@@ -1371,7 +1384,11 @@ protected:
         instrDescAlign* idaNext; // next align in the group/method
         insGroup*       idaIG;   // containing group
     };
-#endif
+
+    void emitLoopAlign(unsigned short paddingBytes);
+    void emitLongLoopAlign(unsigned short alignmentBoundary);
+
+#endif // FEATURE_LOOP_ALIGN
 
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
     struct instrDescLbl : instrDescJmp
@@ -2569,6 +2586,11 @@ inline emitter::instrDescAlign* emitter::emitNewInstrAlign()
 {
     instrDescAlign* newInstr = emitAllocInstrAlign();
     newInstr->idIns(INS_align);
+
+#ifdef TARGET_ARM64
+    newInstr->idInsFmt(IF_SN_0A);
+    newInstr->idInsOpt(INS_OPTS_ALIGN);
+#endif
     return newInstr;
 }
 #endif

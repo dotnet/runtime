@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false, EntryPoint = "CreateProcessW")]
-        internal static extern unsafe bool CreateProcess(
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateProcessW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static unsafe partial bool CreateProcess(
             string? lpApplicationName,
             char* lpCommandLine,
             ref SECURITY_ATTRIBUTES procSecAttrs,
