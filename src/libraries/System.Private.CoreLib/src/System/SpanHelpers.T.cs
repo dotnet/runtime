@@ -315,8 +315,6 @@ namespace System
             }
             while (length >= 8)
             {
-                length -= 8;
-
                 if (value.Equals(Unsafe.Add(ref searchSpace, index)))
                     goto Found;
                 if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
@@ -334,13 +332,12 @@ namespace System
                 if (value.Equals(Unsafe.Add(ref searchSpace, index + 7)))
                     goto Found7;
 
+                length -= 8;
                 index += 8;
             }
 
-            if (length >= 4)
+            while (length >= 4)
             {
-                length -= 4;
-
                 if (value.Equals(Unsafe.Add(ref searchSpace, index)))
                     goto Found;
                 if (value.Equals(Unsafe.Add(ref searchSpace, index + 1)))
@@ -350,6 +347,7 @@ namespace System
                 if (value.Equals(Unsafe.Add(ref searchSpace, index + 3)))
                     goto Found3;
 
+                length -= 4;
                 index += 4;
             }
 
