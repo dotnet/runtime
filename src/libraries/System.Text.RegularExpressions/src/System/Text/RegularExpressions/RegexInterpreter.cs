@@ -45,11 +45,11 @@ namespace System.Text.RegularExpressions
                     (_, true) => FindFirstCharMode.LeadingAnchor_RightToLeft_EndZ,
                 };
             }
-            else if (code.BoyerMoorePrefix is not null)
+            else if (code.BoyerMoorePrefix is RegexBoyerMoore rbm)
             {
-                _findFirstCharMode =
-                    code.BoyerMoorePrefix.CaseInsensitive || code.BoyerMoorePrefix.RightToLeft ? FindFirstCharMode.BoyerMoore :
-                    FindFirstCharMode.IndexOf;
+                _findFirstCharMode = rbm.PatternSupportsIndexOf ?
+                    FindFirstCharMode.IndexOf :
+                    FindFirstCharMode.BoyerMoore;
             }
             else if (code.LeadingCharClasses is not null)
             {

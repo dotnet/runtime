@@ -1016,13 +1016,13 @@ namespace System.Text.RegularExpressions
 
             if (_boyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
             {
-                if (rbm.CaseInsensitive || rbm.RightToLeft)
+                if (rbm.PatternSupportsIndexOf)
                 {
-                    GenerateBoyerMoore(rbm);
+                    GenerateIndexOf(rbm.Pattern);
                 }
                 else
                 {
-                    GenerateIndexOf(rbm.Pattern);
+                    GenerateBoyerMoore(rbm);
                 }
             }
             else if (_leadingCharClasses is not null)

@@ -271,13 +271,13 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
                 {
-                    if (rbm.CaseInsensitive || rbm.RightToLeft)
+                    if (rbm.PatternSupportsIndexOf)
                     {
-                        EmitBoyerMoore(rbm);
+                        EmitIndexOf(rbm.Pattern);
                     }
                     else
                     {
-                        EmitIndexOf(rbm.Pattern);
+                        EmitBoyerMoore(rbm);
                     }
                 }
                 else if (lcc is not null)
