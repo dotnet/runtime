@@ -1277,7 +1277,6 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 {
 	if (!obj)
 		return NULL;
-	MonoClass * klass = mono_object_get_class(obj);
 	return mono_object_unbox (obj);
 }
 

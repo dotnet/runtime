@@ -1,8 +1,9 @@
-import { MonoAssembly, MonoClass, MonoType, MonoTypeNull } from "./types";
+import { MonoAssembly, MonoClass, MonoType, MonoTypeNull, MonoAssemblyNull } from "./types";
 import cwraps from "./cwraps";
 
 const _assembly_cache_by_name = new Map<string, MonoAssembly>();
 const _class_cache_by_assembly = new Map<MonoAssembly, Map<string, Map<string, MonoClass>>>();
+let _corlib : MonoAssembly = MonoAssemblyNull;
 
 export function assembly_load (name : string) : MonoAssembly {
     if (_assembly_cache_by_name.has(name))
@@ -38,14 +39,15 @@ function _set_cached_class (assembly : MonoAssembly, namespace : string, name : 
 }
 
 export function find_corlib_class (namespace : string, name : string, throw_on_failure? : boolean | undefined) : MonoClass {
-    const corlib = cwraps.mono_wasm_get_corlib();
-    let result = _find_cached_class (corlib, namespace, name);
+    if (!_corlib)
+        _corlib = cwraps.mono_wasm_get_corlib();
+    let result = _find_cached_class (_corlib, namespace, name);
     if (result !== undefined)
         return result;
-    result = cwraps.mono_wasm_assembly_find_class(corlib, namespace, name);
+    result = cwraps.mono_wasm_assembly_find_class(_corlib, namespace, name);
     if (throw_on_failure && !result)
         throw new Error(`Failed to find corlib class ${namespace}.${name}`);
-    _set_cached_class(corlib, namespace, name, result);
+    _set_cached_class(_corlib, namespace, name, result);
     return result;
 }
 
