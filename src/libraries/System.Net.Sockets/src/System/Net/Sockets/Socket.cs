@@ -3817,14 +3817,8 @@ namespace System.Net.Sockets
 
         private void ThrowIfDisposed()
         {
-            if (Disposed)
-            {
-                ThrowObjectDisposedException();
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
         }
-
-        [DoesNotReturn]
-        private void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().FullName);
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;
 

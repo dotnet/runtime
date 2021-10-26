@@ -1502,46 +1502,6 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 }
 
 //------------------------------------------------------------------------
-// genOffsetOfMDArrayLowerBound: Returns the offset from the Array object to the
-//   lower bound for the given dimension.
-//
-// Arguments:
-//    elemType  - the element type of the array
-//    rank      - the rank of the array
-//    dimension - the dimension for which the lower bound offset will be returned.
-//
-// Return Value:
-//    The offset.
-// TODO-Cleanup: move to CodeGenCommon.cpp
-
-// static
-unsigned CodeGen::genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension)
-{
-    // Note that the lower bound and length fields of the Array object are always TYP_INT
-    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * (dimension + rank);
-}
-
-//------------------------------------------------------------------------
-// genOffsetOfMDArrayLength: Returns the offset from the Array object to the
-//   size for the given dimension.
-//
-// Arguments:
-//    elemType  - the element type of the array
-//    rank      - the rank of the array
-//    dimension - the dimension for which the lower bound offset will be returned.
-//
-// Return Value:
-//    The offset.
-// TODO-Cleanup: move to CodeGenCommon.cpp
-
-// static
-unsigned CodeGen::genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension)
-{
-    // Note that the lower bound and length fields of the Array object are always TYP_INT
-    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * dimension;
-}
-
-//------------------------------------------------------------------------
 // genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
 //                     producing the effective index by subtracting the lower bound.
 //
@@ -1571,11 +1531,11 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     var_types elemType = arrIndex->gtArrElemType;
     unsigned  offset;
 
-    offset = genOffsetOfMDArrayLowerBound(elemType, rank, dim);
+    offset = compiler->eeGetMDArrayLowerBoundOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
     emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tgtReg, indexReg, tmpReg);
 
-    offset = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
+    offset = compiler->eeGetMDArrayLengthOffset(rank, dim);
     emit->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, arrReg, offset);
     emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
 
@@ -1623,7 +1583,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         unsigned  dim      = arrOffset->gtCurrDim;
         unsigned  rank     = arrOffset->gtArrRank;
         var_types elemType = arrOffset->gtArrElemType;
-        unsigned  offset   = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
+        unsigned  offset   = compiler->eeGetMDArrayLengthOffset(rank, dim);
 
         // Load tmpReg with the dimension size and evaluate
         // tgtReg = offsetReg*tmpReg + indexReg.

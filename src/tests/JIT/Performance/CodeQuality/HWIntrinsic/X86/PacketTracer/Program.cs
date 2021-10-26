@@ -9,9 +9,6 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-//using Microsoft.Xunit.Performance;
-
-//[assembly: OptimizeForBenchmarks]
 
 class Program
 {
