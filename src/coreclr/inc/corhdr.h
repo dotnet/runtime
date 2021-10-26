@@ -1721,8 +1721,8 @@ typedef enum CorAttributeTargets
 #define INTEROP_COMEMULATE_TYPE                 "System.Runtime.InteropServices.ComEmulateAttribute"
 #define INTEROP_COMEMULATE_SIG                  {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_PRESERVESIG_TYPE_W              W("System.Runtime.InteropServices.PreserveSigAttribure")
-#define INTEROP_PRESERVESIG_TYPE                "System.Runtime.InteropServices.PreserveSigAttribure"
+#define INTEROP_PRESERVESIG_TYPE_W              W("System.Runtime.InteropServices.PreserveSigAttribute")
+#define INTEROP_PRESERVESIG_TYPE                "System.Runtime.InteropServices.PreserveSigAttribute"
 #define INTEROP_PRESERVESIG_SIG                 {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_BOOLEAN}
 
 #define INTEROP_IN_TYPE_W                       W("System.Runtime.InteropServices.InAttribute")
