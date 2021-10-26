@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <EnablePackageValidation>true</EnablePackageValidation>
+    <!--
+      Package validation causes flaky errors during the build. Validation isn't useful during
+      source-build (it is only a guardrail for devs), so disable it during source-build to avoid the
+      impact on build reliability.
+    -->
+    <EnablePackageValidation Condition="'$(DotNetBuildFromSource)' == 'true'">false</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$([MSBuild]::Subtract($(MajorVersion), 1)).0.0</PackageValidationBaselineVersion>
