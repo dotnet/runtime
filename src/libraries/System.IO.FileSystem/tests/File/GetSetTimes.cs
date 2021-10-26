@@ -22,7 +22,7 @@ namespace System.IO.Tests
             return path;
         }
 
-        protected override FileInfo CreateSymlink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget).FullName;
+        protected override string CreateSymlink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget).FullName;
 
         protected override bool IsDirectory => false;
 
