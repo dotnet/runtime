@@ -5,7 +5,8 @@
     <!--
       Package validation causes flaky errors during the build. Validation isn't useful during
       source-build (it is only a guardrail for devs), so disable it during source-build to avoid the
-      impact on build reliability.
+      impact on build reliability. https://github.com/dotnet/runtime/issues/60883 tracks fixing the
+      flakiness and removing this.
     -->
     <EnablePackageValidation Condition="'$(DotNetBuildFromSource)' == 'true'">false</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
