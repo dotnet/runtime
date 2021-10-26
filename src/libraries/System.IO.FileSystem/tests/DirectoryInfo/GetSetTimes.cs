@@ -11,6 +11,10 @@ namespace System.IO.Tests
 
         protected override DirectoryInfo GetMissingItem() => new DirectoryInfo(GetTestFilePath());
 
+        protected override DirectoryInfo CreateSymlink(string path, string pathToTarget) => (DirectoryInfo)Directory.CreateSymbolicLink(path, pathToTarget);
+
+        protected override bool IsDirectory => true;
+
         protected override string GetItemPath(DirectoryInfo item) => item.FullName;
 
         protected override void InvokeCreate(DirectoryInfo item) => item.Create();
@@ -57,7 +61,5 @@ namespace System.IO.Tests
                 ((testDir) => testDir.LastWriteTimeUtc),
                 DateTimeKind.Utc);
         }
-
-        protected override DirectoryInfo CreateSymlinkToItem(DirectoryInfo item) => (DirectoryInfo)Directory.CreateSymbolicLink(item.FullName + ".link", item.FullName);
     }
 }

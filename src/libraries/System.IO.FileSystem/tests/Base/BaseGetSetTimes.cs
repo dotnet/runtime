@@ -23,7 +23,26 @@ namespace System.IO.Tests
 
         protected abstract T GetExistingItem();
         protected abstract T GetMissingItem();
-        protected abstract T CreateSymlinkToItem(T item);
+
+        protected abstract T CreateSymlink(string path, string pathToTarget);
+        protected abstract bool IsDirectory { get; }
+
+        protected T CreateSymlinkToItem(T item, bool isRelative)
+        {
+            // Creates a Symlink to 'item' (may or may not exist) that is optionally
+            // a relative path rather than an absolute path.
+            var itemPath = GetItemPath(item);
+            var linkPath = itemPath + ".link";
+
+            // If a symlink was a directory on unix and references a non-existent
+            // path, then it manifests as a file. If a symlink was a file that now
+            // has a target that is a directory, it manifests as a directory.
+            if (Directory.Exists(linkPath)) Directory.Delete(linkPath);
+            else if (File.Exists(linkPath)) File.Exists(linkPath);
+
+            string target = isRelative ? Path.GetFileName(itemPath) : itemPath;
+            return CreateSymlink(linkPath, target);
+        }
 
         protected abstract string GetItemPath(T item);
 
@@ -44,16 +63,14 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        [Fact]
-        public void SettingUpdatesProperties()
+        private void SettingUpdatesPropertiesCore(T item, int year)
         {
-            T item = GetExistingItem();
-
+            // Pass the year as a parameter so it changes between different tests (in case of the same file)
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
-                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(year, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
@@ -70,6 +87,67 @@ namespace System.IO.Tests
                     Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
                 }
             });
+        }
+
+        [Fact]
+        public void SettingUpdatesProperties()
+        {
+            T item = GetExistingItem();
+            SettingUpdatesPropertiesCore(item, 2014);
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesOnSymlink()
+        {
+            // This test is in this class since it needs all of the time functions.
+            // This test makes sure that the times are set on the symlink itself.
+            // It is needed as on OSX for example, the default for most APIs is
+            // to follow the symlink to completion and set the time on that entry
+            // instead (eg. the setattrlist will do this without the flag set).
+            // It is also the same case on unix, with the utimensat function.
+            T item = CreateSymlinkToItem(GetExistingItem(), false);
+            SettingUpdatesPropertiesCore(item, 2004);
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesOnNonexistentSymlink()
+        {
+            if (IsDirectory && !OperatingSystem.IsWindows())
+            {
+                // On Unix, symlinks that are created as 'directories' need their
+                // directory target to exist for it to count as a directory symlink.
+                return;
+            }
+
+            // Same as the above SettingUpdatesPropertiesOnSymlink test,
+            // except that the target of the symlink doesn't exist.
+            T item = CreateSymlinkToItem(GetMissingItem(), false);
+            SettingUpdatesPropertiesCore(item, 2005);
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesOnRelativeSymlink()
+        {
+            // Same as the SettingUpdatesPropertiesOnSymlink function,
+            // except that the symlink target is relative rather than absolute.
+            T item = CreateSymlinkToItem(GetExistingItem(), true);
+            SettingUpdatesPropertiesCore(item, 2006);
+        }
+
+        [Fact]
+        public void SettingUpdatesPropertiesOnRelativeNonexistentSymlink()
+        {
+            if (IsDirectory && !OperatingSystem.IsWindows())
+            {
+                // On Unix, symlinks that are created as 'directories' need their
+                // directory target to exist for it to count as a directory symlink.
+                return;
+            }
+
+            // Same as the SettingUpdatesPropertiesOnNonexistentSymlink function,
+            // except that the symlink target is relative rather than absolute.
+            T item = CreateSymlinkToItem(GetMissingItem(), true);
+            SettingUpdatesPropertiesCore(item, 2007);
         }
 
         [Fact]
@@ -125,40 +203,6 @@ namespace System.IO.Tests
                 DateTime result2 = function2.Getter(item);
                 Assert.Equal(dt3, result1);
                 Assert.Equal(dt2, result2);
-            });
-        }
-
-        [Fact]
-        [PlatformSpecific(~(TestPlatforms.Browser))] // Browser is excluded as there is only 1 effective time store.
-        public void SettingUpdatesPropertiesOnSymlink()
-        {
-            // This test is in this class since it needs all of the time functions.
-            // This test makes sure that the times are set on the symlink itself.
-            // It is needed as on OSX for example, the default for most APIs is
-            // to follow the symlink to completion and set the time on that entry
-            // instead (eg. the setattrlist will do this without the flag set).
-            // It is also the same case on unix, with the utimensat function.
-            T item = CreateSymlinkToItem(GetExistingItem());
-
-            Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
-            {
-                // Checking that milliseconds are not dropped after setter on supported platforms.
-                DateTime dt = new DateTime(2004, 12, 9, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
-                function.Setter(item, dt);
-                DateTime result = function.Getter(item);
-                Assert.Equal(dt, result);
-                Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
-
-                // File and Directory UTC APIs treat a DateTimeKind.Unspecified as UTC whereas
-                // ToUniversalTime treats it as local.
-                if (function.Kind == DateTimeKind.Unspecified)
-                {
-                    Assert.Equal(dt, result.ToUniversalTime());
-                }
-                else
-                {
-                    Assert.Equal(dt.ToUniversalTime(), result.ToUniversalTime());
-                }
             });
         }
 

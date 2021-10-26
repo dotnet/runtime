@@ -17,6 +17,10 @@ namespace System.IO.Tests
             return new FileInfo(path);
         }
 
+        protected override FileInfo CreateSymlink(string path, string pathToTarget) => (FileInfo)File.CreateSymbolicLink(path, pathToTarget);
+
+        protected override bool IsDirectory => false;
+
         private static bool HasNonZeroNanoseconds(DateTime dt) => dt.Ticks % 10 != 0;
 
         public FileInfo GetNonZeroMilliseconds()
@@ -102,8 +106,6 @@ namespace System.IO.Tests
                 ((testFile) => testFile.LastWriteTimeUtc),
                 DateTimeKind.Utc);
         }
-
-        protected override FileInfo CreateSymlinkToItem(FileInfo item) => (FileInfo)File.CreateSymbolicLink(item.FullName + ".link", item.FullName);
 
         [ConditionalFact(nameof(HighTemporalResolution))]
         public void CopyToMillisecondPresent()

@@ -22,6 +22,10 @@ namespace System.IO.Tests
             return path;
         }
 
+        protected override FileInfo CreateSymlink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget).FullName;
+
+        protected override bool IsDirectory => false;
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
@@ -102,8 +106,6 @@ namespace System.IO.Tests
                 ((path) => File.GetLastWriteTimeUtc(path)),
                 DateTimeKind.Utc);
         }
-
-        protected override string CreateSymlinkToItem(string item) => File.CreateSymbolicLink(item + ".link", item).FullName;
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
         [PlatformSpecific(TestPlatforms.Windows)]
