@@ -227,8 +227,8 @@
     <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Unit.Tests\System.Text.Json.SourceGeneration.Roslyn4.0.Unit.Tests.csproj" />-->
 
     <!-- hhttps://github.com/dotnet/runtime/issues/60048 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Generators.Tests\System.Text.RegularExpressions.Generators.Tests.csproj" />
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Tests.csproj" />-->
+    <!--<ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\System.Text.RegularExpressions.Generators.Tests\System.Text.RegularExpressions.Generators.Tests.csproj" />-->
   </ItemGroup>
 
   <!-- Aggressive Trimming related failures -->
@@ -290,6 +290,8 @@
                       <!--Exclude="@(ProjectExclusions)"-->
                       <!--Condition="'$(TestAssemblies)' == 'true'" />-->
       <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/**/*Tests.csproj"
+                      Condition="'$(TestAssemblies)' == 'true'" />
+      <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/System.Text.RegularExpressions.Generators.Tests/*.csproj"
                       Condition="'$(TestAssemblies)' == 'true'" />
     <!--<ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"-->
                       <!--Condition="'$(TestPackages)' == 'true'" />-->
