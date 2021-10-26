@@ -220,24 +220,5 @@ namespace System.Reflection.Tests
                 Assert.Equal(typeof(GuidAttribute).Project(), attributeType);
             }
         }
-
-        public struct StructWithMarshalByByValTStr
-        {
-            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 65)]
-            public string Name = string.Empty;
-        }
-
-        [Fact]
-        public static void TestMarshalCustomAttributeSizeConst_UnmanagedTypeByValTStr()
-        {
-            Type structType = typeof(StructWithMarshalByByValTStr).Project();
-            CustomAttributeData attribute = structType
-                .GetField(nameof(StructWithMarshalByByValTStr.Name))
-                .GetCustomAttributesData().FirstOrDefault(a => a.AttributeType.FullName == typeof(MarshalAsAttribute).FullName);
-
-            Assert.NotNull(attribute);
-            object size = attribute.NamedArguments.First(x => x.MemberName == nameof(MarshalAsAttribute.SizeConst)).TypedValue.Value;
-            Assert.Equal(65, size);
-        }
     }
 }
