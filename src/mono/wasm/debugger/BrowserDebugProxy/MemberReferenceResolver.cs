@@ -206,6 +206,45 @@ namespace Microsoft.WebAssembly.Diagnostics
             return rootObject;
         }
 
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, CancellationToken token)
+        {
+            try
+            {
+                JObject rootObject = null;
+                rootObject = await Resolve(elementAccess.Expression.ToString(), token);
+
+                if (rootObject != null)
+                {
+                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                    switch (objectId.Scheme)
+                    {
+                        case "array":
+                            rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
+                            return rootObject;
+                        case "object":
+                            var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                            int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
+                            var commandParamsObj = new MemoryStream();
+                            var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                            commandParamsObjWriter.WriteObj(objectId, sdbHelper);
+                            var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
+                            rootObject = await GetValueFromObject(toArrayRetMethod, token);
+                            DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
+                            rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
+                            return rootObject;
+                        default:
+                            throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                var e = ex;
+                throw new Exception($"Unable to evaluate method '{elementAccess}'");
+            }
+        }
+
         public async Task<JObject> Resolve(InvocationExpressionSyntax method, Dictionary<string, JObject> memberAccessValues, CancellationToken token)
         {
             var methodName = "";
