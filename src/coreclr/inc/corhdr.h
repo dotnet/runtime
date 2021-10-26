@@ -90,8 +90,8 @@ typedef enum ReplacesGeneralNumericDefines
 // prefers to be loaded into 32-bit environment for perf reasons, but is still compatible with 64-bit
 // environments.
 //
-// In order to retain maximum backwards compatibility you cannot simply read or write one of these flags
-// however. You must treat them as a pair, a two-bit field with the following meanings:
+// In order to retain maximum backwards compatibility you cannot simply read or write one of these flags.
+// You must treat them as a pair, a two-bit field with the following meanings:
 //
 //  32BITREQUIRED  32BITPREFERRED
 //        0               0         :   no special meaning, MachineType and ILONLY flag determine image requirements
@@ -220,7 +220,7 @@ typedef struct IMAGE_COR20_HEADER
 	// The main program if it is an EXE (not used if a DLL?)
     // If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is not set, EntryPointToken represents a managed entrypoint.
 	// If COMIMAGE_FLAGS_NATIVE_ENTRYPOINT is set, EntryPointRVA represents an RVA to a native entrypoint
-	// (depricated for DLLs, use modules constructors intead).
+	// (deprecated for DLLs, use modules constructors instead).
     union {
         uint32_t            EntryPointToken;
         uint32_t            EntryPointRVA;
@@ -375,7 +375,7 @@ typedef enum CorMethodAttr
 {
     // member access mask - Use this mask to retrieve accessibility information.
     mdMemberAccessMask          =   0x0007,
-    mdPrivateScope              =   0x0000,     // Member not referenceable.
+    mdPrivateScope              =   0x0000,     // Member not referencable.
     mdPrivate                   =   0x0001,     // Accessible only by the parent type.
     mdFamANDAssem               =   0x0002,     // Accessible by sub-types only in this Assembly.
     mdAssem                     =   0x0003,     // Accessibly by anyone in the Assembly.
@@ -450,7 +450,7 @@ typedef enum CorFieldAttr
 {
     // member access mask - Use this mask to retrieve accessibility information.
     fdFieldAccessMask           =   0x0007,
-    fdPrivateScope              =   0x0000,     // Member not referenceable.
+    fdPrivateScope              =   0x0000,     // Member not referencable.
     fdPrivate                   =   0x0001,     // Accessible only by the parent type.
     fdFamANDAssem               =   0x0002,     // Accessible by sub-types only in this Assembly.
     fdAssembly                  =   0x0003,     // Accessibly by anyone in the Assembly.
@@ -659,7 +659,7 @@ typedef enum CorMethodImpl
     miMaxMethodImplVal   =   0xffff,   // Range check value
 } CorMethodImpl;
 
-// Macros for accesing the members of CorMethodImpl.
+// Macros for accessing the members of CorMethodImpl.
 #define IsMiIL(x)                           (((x) & miCodeTypeMask) == miIL)
 #define IsMiNative(x)                       (((x) & miCodeTypeMask) == miNative)
 #define IsMiOPTIL(x)                        (((x) & miCodeTypeMask) == miOPTIL)
@@ -894,7 +894,7 @@ typedef enum CorElementType
     ELEMENT_TYPE_VAR            = 0x13,     // a class type variable VAR <number>
     ELEMENT_TYPE_ARRAY          = 0x14,     // MDARRAY <type> <rank> <bcount> <bound1> ... <lbcount> <lb1> ...
     ELEMENT_TYPE_GENERICINST    = 0x15,     // GENERICINST <generic type> <argCnt> <arg1> ... <argn>
-    ELEMENT_TYPE_TYPEDBYREF     = 0x16,     // TYPEDREF  (it takes no args) a typed referece to some other type
+    ELEMENT_TYPE_TYPEDBYREF     = 0x16,     // TYPEDREF  (it takes no args) a typed reference to some other type
 
     ELEMENT_TYPE_I              = 0x18,     // native integer size
     ELEMENT_TYPE_U              = 0x19,     // native unsigned integer size
@@ -1017,7 +1017,7 @@ typedef enum CorArgType
 typedef enum CorNativeType
 {
 
-    // Kepp this in-synch with ndp\clr\src\BCL\System\runtime\interopservices\attributes.cs
+    // Keep this in-sync with ndp\clr\src\BCL\System\runtime\interopservices\attributes.cs
 
     NATIVE_TYPE_END         = 0x0,    //DEPRECATED
     NATIVE_TYPE_VOID        = 0x1,    //DEPRECATED
@@ -1098,7 +1098,7 @@ enum
 // a COR_ILMETHOD_SECT is a generic container for attributes that are private
 // to a particular method.  The COR_ILMETHOD structure points to one of these
 // (see GetSect()).  COR_ILMETHOD_SECT can decode the Kind of attribute (but not
-// its internal data layout, and can skip past the current attibute to find the
+// its internal data layout), and can skip past the current attribute to find the
 // Next one.   The overhead for COR_ILMETHOD_SECT is a minimum of 2 bytes.
 
 typedef enum CorILMethodSect                             // codes that identify attributes
@@ -1422,7 +1422,7 @@ typedef enum CorImportOptions
 typedef enum CorThreadSafetyOptions
 {
     // default behavior is to have thread safety turn off. This means that MetaData APIs will not take reader/writer
-    // lock. Clients is responsible to make sure the properly thread synchornization when using MetaData APIs.
+    // lock. Clients are responsible to make sure the properly thread synchronization when using MetaData APIs.
     MDThreadSafetyDefault       = 0x00000000,
     MDThreadSafetyOff           = 0x00000000,
     MDThreadSafetyOn            = 0x00000001,
