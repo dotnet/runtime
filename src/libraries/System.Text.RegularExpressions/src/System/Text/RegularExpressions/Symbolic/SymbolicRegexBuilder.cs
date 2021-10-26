@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -295,6 +297,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal SymbolicRegexNode<T> Transform<T>(SymbolicRegexNode<TElement> sr, SymbolicRegexBuilder<T> builderT, Func<TElement, T> predicateTransformer) where T : notnull
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Transform, sr, builderT, predicateTransformer);
+            }
+
             switch (sr._kind)
             {
                 case SymbolicRegexKind.StartAnchor:

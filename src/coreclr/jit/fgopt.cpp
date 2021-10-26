@@ -1443,6 +1443,16 @@ void Compiler::fgPostImportationCleanup()
                         newTryEntry->clearHndIndex();
                         fgInsertBBafter(tryEntryPrev, newTryEntry);
 
+                        // Generally this (unreachable) empty new try entry block can fall through
+                        // to the next block, but in cases where there's a nested try with an
+                        // out of order handler, the next block may be a handler. So even though
+                        // this new try entry block is unreachable, we need to give it a
+                        // plausible flow target. Simplest is to just mark it as a throw.
+                        if (bbIsHandlerBeg(newTryEntry->bbNext))
+                        {
+                            newTryEntry->bbJumpKind = BBJ_THROW;
+                        }
+
                         JITDUMP("OSR: changing start of try region #%u from " FMT_BB " to new " FMT_BB "\n",
                                 XTnum + delCnt, oldTryEntry->bbNum, newTryEntry->bbNum);
                     }
