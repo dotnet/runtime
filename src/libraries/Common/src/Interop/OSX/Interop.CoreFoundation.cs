@@ -47,8 +47,8 @@ internal static partial class Interop
         /// <param name="encoding">The encoding type.</param>
         /// <param name="isExternalRepresentation">Whether or not a BOM is present.</param>
         /// <returns>A CFStringRef on success, otherwise a SafeCreateHandle(IntPtr.Zero).</returns>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        private static extern SafeCreateHandle CFStringCreateWithBytes(
+        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary)]
+        private static partial SafeCreateHandle CFStringCreateWithBytes(
             IntPtr alloc,
             IntPtr bytes,
             CFIndex numBytes,
@@ -63,8 +63,8 @@ internal static partial class Interop
         /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
-        private static extern SafeCreateHandle CFStringCreateWithCString(
+        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
+        private static partial SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator,
             string str,
             CFStringBuiltInEncodings encoding);
@@ -77,8 +77,8 @@ internal static partial class Interop
         /// <param name="encoding">The encoding of the str variable. This should be UTF 8 for OS X</param>
         /// <returns>Returns a pointer to a CFString on success; otherwise, returns IntPtr.Zero</returns>
         /// <remarks>For *nix systems, the CLR maps ANSI to UTF-8, so be explicit about that</remarks>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
-        private static extern SafeCreateHandle CFStringCreateWithCString(
+        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary, CharSet = CharSet.Ansi)]
+        private static partial SafeCreateHandle CFStringCreateWithCString(
             IntPtr allocator,
             IntPtr str,
             CFStringBuiltInEncodings encoding);
@@ -130,8 +130,8 @@ internal static partial class Interop
         /// <param name="numValues">The number of values in the array</param>
         /// <param name="callbacks">Should be IntPtr.Zero</param>
         /// <returns>Returns a pointer to a CFArray on success; otherwise, returns IntPtr.Zero</returns>
-        [DllImport(Interop.Libraries.CoreFoundationLibrary)]
-        private static extern SafeCreateHandle CFArrayCreate(
+        [GeneratedDllImport(Interop.Libraries.CoreFoundationLibrary)]
+        private static partial SafeCreateHandle CFArrayCreate(
             IntPtr allocator,
             [MarshalAs(UnmanagedType.LPArray)]
             IntPtr[] values,

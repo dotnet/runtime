@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using Microsoft.Xunit.Performance;
 
 namespace Functions
 {
@@ -12,21 +11,6 @@ namespace Functions
 
         private const double sinhDoubleDelta = 0.0004;
         private const double sinhDoubleExpectedResult = 1.17520119337903;
-
-        [Benchmark(InnerIterationCount = SinhDoubleIterations)]
-        public static void SinhDoubleBenchmark()
-        {
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        SinhDoubleTest();
-                    }
-                }
-            }
-        }
 
         public static void SinhDoubleTest()
         {

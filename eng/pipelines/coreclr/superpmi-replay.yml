@@ -8,10 +8,6 @@ trigger:
     - src/coreclr/jit/*
     - src/coreclr/inc/jiteeversionguid.h
 
-# This pipeline is supposed to be run only on merged changes
-# and should not be triggerable from a PR. 
-pr: none
-
 jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import cwraps from "./cwraps";
-import { GlobalizationMode } from "./types";
+import { GlobalizationMode, VoidPtr } from "./types";
 
 let num_icu_assets_loaded_successfully = 0;
 
@@ -41,7 +41,7 @@ export function mono_wasm_globalization_init(globalization_mode: GlobalizationMo
             invariantMode = true;
         } else {
             const msg = "invariant globalization mode is inactive and no ICU data archives were loaded";
-            console.error("MONO_WASM: ERROR: " + msg);
+            console.error(`MONO_WASM: ERROR: ${msg}`);
             throw new Error(msg);
         }
     }

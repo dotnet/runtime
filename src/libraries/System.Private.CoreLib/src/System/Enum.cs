@@ -1504,7 +1504,7 @@ namespace System
             if (enumType is not RuntimeType rtType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
 #if CORERT
-            // Check for the unfortunate "typeof(Outer<>).InnerEnum" corner case.
+            // Check for the unfortunate "typeof(Outer<>.InnerEnum)" corner case.
             // https://github.com/dotnet/runtime/issues/7976
             if (enumType.ContainsGenericParameters)
                 throw new InvalidOperationException(SR.Format(SR.Arg_OpenType, enumType.ToString()));

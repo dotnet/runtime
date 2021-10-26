@@ -40,11 +40,14 @@ namespace System.Text.RegularExpressions.Generator
                 // Use a custom comparer that ignores the compilation. We want to avoid regenerating for regex methods
                 // that haven't been changed, but any change to a regex method will change the Compilation, so we ignore
                 // the Compilation for purposes of caching.
-                .WithComparer(new LambdaComparer<(MethodDeclarationSyntax, Compilation)>(static (left, right) => left.Item1.Equals(left.Item2), static o => o.Item1.GetHashCode()))
+                .WithComparer(new LambdaComparer<(MethodDeclarationSyntax?, Compilation)>(
+                    static (left, right) => EqualityComparer<MethodDeclarationSyntax>.Default.Equals(left.Item1, right.Item1),
+                    static o => o.Item1?.GetHashCode() ?? 0))
 
                 // Get the resulting code string or error Diagnostic for each MethodDeclarationSyntax/Compilation pair
                 .Select((state, cancellationToken) =>
                 {
+                    Debug.Assert(state.Item1 is not null);
                     object? result = GetRegexTypeToEmit(state.Item2, state.Item1, cancellationToken);
                     return result is RegexType regexType ? EmitRegexType(regexType) : result;
                 })
@@ -79,16 +82,16 @@ namespace System.Text.RegularExpressions.Generator
 
         private sealed class LambdaComparer<T> : IEqualityComparer<T>
         {
-            private readonly Func<T, T, bool> _equal;
-            private readonly Func<T, int> _getHashCode;
+            private readonly Func<T?, T?, bool> _equal;
+            private readonly Func<T?, int> _getHashCode;
 
-            public LambdaComparer(Func<T, T, bool> equal, Func<T, int> getHashCode)
+            public LambdaComparer(Func<T?, T?, bool> equal, Func<T?, int> getHashCode)
             {
                 _equal = equal;
                 _getHashCode = getHashCode;
             }
 
-            public bool Equals(T x, T y) => _equal(x, y);
+            public bool Equals(T? x, T? y) => _equal(x, y);
 
             public int GetHashCode(T obj) => _getHashCode(obj);
         }

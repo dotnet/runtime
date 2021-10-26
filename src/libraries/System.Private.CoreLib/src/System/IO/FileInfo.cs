@@ -7,11 +7,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.Versioning;
 
-#if MS_IO_REDIST
-namespace Microsoft.IO
-#else
 namespace System.IO
-#endif
 {
     // Class for creating FileStream objects, and some basic file management
     // routines such as Delete, etc.

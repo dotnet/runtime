@@ -154,7 +154,7 @@ void LIR::Use::AssertIsValid() const
 //
 //    GenTree* constantOne = compiler->gtNewIconNode(1);
 //    range.InsertAfter(opEq.Def(), constantOne);
-//    opEq.ReplaceWith(compiler, constantOne);
+//    opEq.ReplaceWith(constantOne);
 //
 // Which would produce something like the following LIR:
 //
@@ -179,13 +179,11 @@ void LIR::Use::AssertIsValid() const
 //          *  jmpTrue   void
 //
 // Arguments:
-//    compiler - The Compiler context.
 //    replacement - The replacement node.
 //
-void LIR::Use::ReplaceWith(Compiler* compiler, GenTree* replacement)
+void LIR::Use::ReplaceWith(GenTree* replacement)
 {
     assert(IsInitialized());
-    assert(compiler != nullptr);
     assert(replacement != nullptr);
     assert(IsDummyUse() || m_range->Contains(m_user));
     assert(m_range->Contains(replacement));
@@ -273,7 +271,7 @@ unsigned LIR::Use::ReplaceWithLclVar(Compiler* compiler, unsigned lclNum, GenTre
 
     m_range->InsertAfter(node, store, load);
 
-    ReplaceWith(compiler, load);
+    ReplaceWith(load);
 
     JITDUMP("ReplaceWithLclVar created store :\n");
     DISPNODE(store);

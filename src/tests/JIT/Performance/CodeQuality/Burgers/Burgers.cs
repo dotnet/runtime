@@ -7,13 +7,10 @@
 // https://github.com/taumuon/SIMD-Vectorisation-Burgers-Equation-CSharp
 // http://www.taumuon.co.uk/2014/10/net-simd-to-solve-burgers-equation.html
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-
-[assembly: OptimizeForBenchmarks]
 
 public class Burgers
 {
@@ -240,99 +237,6 @@ public class Burgers
         }
 
         return 100;
-    }
-
-    static volatile object VolatileObject;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Escape(object obj)
-    {
-        VolatileObject = obj;
-    }
-
-    [Benchmark]
-    public static void Test0()
-    {
-        int nx = 10001;
-        int nt = 10000;
-        double dx = 2.0 * Math.PI / (nx - 1.0);
-        double nu = 0.07;
-        double dt = dx * nu;
-        double[] x = linspace(0.0, 2.0 * Math.PI, nx);
-        double[] initial = GetAnalytical(x, 0.0, nu);
-
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                double[] results = GetCalculated0(nt, nx, dx, dt, nu, initial);
-                Escape(results);
-            }
-        }
-    }
-
-    [Benchmark]
-    public static void Test1()
-    {
-        int nx = 10001;
-        int nt = 10000;
-        double dx = 2.0 * Math.PI / (nx - 1.0);
-        double nu = 0.07;
-        double dt = dx * nu;
-        double[] x = linspace(0.0, 2.0 * Math.PI, nx);
-        double[] initial = GetAnalytical(x, 0.0, nu);
-
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                double[] results = GetCalculated1(nt, nx, dx, dt, nu, initial);
-                Escape(results);
-            }
-        }
-    }
-
-    [Benchmark]
-    public static void Test2()
-    {
-        int nx = 10001;
-        int nt = 10000;
-        double dx = 2.0 * Math.PI / (nx - 1.0);
-        double nu = 0.07;
-        double dt = dx * nu;
-        double[] x = linspace(0.0, 2.0 * Math.PI, nx);
-        double[] initial = GetAnalytical(x, 0.0, nu);
-
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                double[] results = GetCalculated2(nt, nx, dx, dt, nu, initial);
-                Escape(results);
-            }
-        }
-    }
-
-    [Benchmark]
-    public static void Test3()
-    {
-        // Make SIMD version work a bit harder....
-        int nx = 10001;
-        int nt = 2 * 10000;
-        double dx = 2.0 * Math.PI / (nx - 1.0);
-        double nu = 0.07;
-        double dt = dx * nu;
-        double[] x = linspace(0.0, 2.0 * Math.PI, nx);
-        double[] initial = GetAnalytical(x, 0.0, nu);
-
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                double[] results = GetCalculated3(nt, nx, dx, dt, nu, initial);
-                Escape(results);
-            }
-        }
     }
 }
 

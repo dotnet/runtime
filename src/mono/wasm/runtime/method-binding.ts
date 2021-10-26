@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { WasmRootBuffer } from "./roots";
-import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull } from "./types";
+import { MonoClass, MonoMethod, MonoObject, coerceNull, VoidPtrNull, VoidPtr } from "./types";
 import { BINDING, MONO, runtimeHelpers } from "./modules";
 import { js_to_mono_enum, _js_to_mono_obj, _js_to_mono_uri } from "./js-to-cs";
 import { js_string_to_mono_string, js_string_to_mono_string_interned } from "./strings";
@@ -313,13 +313,13 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
         (argc === converter.result_unmarshaled_if_argc)
     ) {
         if (argc < converter.result_unmarshaled_if_argc)
-            throw new Error(["Expected >= ", converter.result_unmarshaled_if_argc, "argument(s) but got", argc, "for signature " + converter.args_marshal].join(" "));
+            throw new Error(`Expected >= ${converter.result_unmarshaled_if_argc} argument(s) but got ${argc} for signature '${converter.args_marshal}'`);
 
         _maybe_produce_signature_warning(converter);
         return false;
     } else {
         if (argc < converter.steps.length)
-            throw new Error(["Expected", converter.steps.length, "argument(s) but got", argc, "for signature " + converter.args_marshal].join(" "));
+            throw new Error(`Expected ${converter.steps.length} argument(s) but got ${argc} for signature '${converter.args_marshal}'`);
 
         return !converter.is_result_definitely_unmarshaled;
     }

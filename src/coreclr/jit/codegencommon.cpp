@@ -1794,7 +1794,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     {
         // load the GS cookie constant into a reg
         //
-        genSetRegToIcon(regGSConst, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, regGSConst, compiler->gsGlobalSecurityCookieVal);
     }
     else
     {
@@ -7802,6 +7802,55 @@ GenTree* CodeGen::getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* 
     return call->gtControlExpr;
 }
 
+//------------------------------------------------------------------------
+// getCallIndirectionCellReg - Get the register containing the indirection cell for a call
+//
+// Arguments:
+//    call - the node
+//
+// Returns:
+//   The register containing the indirection cell, or REG_NA if this call does not use an indirection cell argument.
+//
+// Notes:
+//   We currently use indirection cells for VSD on all platforms and for R2R calls on ARM architectures.
+//
+regNumber CodeGen::getCallIndirectionCellReg(const GenTreeCall* call)
+{
+    regNumber result = REG_NA;
+    switch (call->GetIndirectionCellArgKind())
+    {
+        case NonStandardArgKind::None:
+            break;
+        case NonStandardArgKind::R2RIndirectionCell:
+            result = REG_R2R_INDIRECT_PARAM;
+            break;
+        case NonStandardArgKind::VirtualStubCell:
+            result = compiler->virtualStubParamInfo->GetReg();
+            break;
+        default:
+            unreached();
+    }
+
+#ifdef DEBUG
+    regNumber       foundReg = REG_NA;
+    unsigned        argCount = call->fgArgInfo->ArgCount();
+    fgArgTabEntry** argTable = call->fgArgInfo->ArgTable();
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        NonStandardArgKind kind = argTable[i]->nonStandardArgKind;
+        if ((kind == NonStandardArgKind::R2RIndirectionCell) || (kind == NonStandardArgKind::VirtualStubCell))
+        {
+            foundReg = argTable[i]->GetRegNum();
+            break;
+        }
+    }
+
+    assert(foundReg == result);
+#endif
+
+    return result;
+}
+
 /*****************************************************************************
  *
  *  Generates code for a function epilog.
@@ -12565,9 +12614,9 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         if (!hasPoisonImm)
         {
 #ifdef TARGET_64BIT
-            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd, TYP_LONG);
+            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcdcdcdcdcd);
 #else
-            genSetRegToIcon(REG_SCRATCH, (ssize_t)0xcdcdcdcd, TYP_INT);
+            instGen_Set_Reg_To_Imm(EA_4BYTE, REG_SCRATCH, (ssize_t)0xcdcdcdcd);
 #endif
             hasPoisonImm = true;
         }

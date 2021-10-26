@@ -1850,7 +1850,7 @@ mono_type_hash (gconstpointer data)
 	if (type->type == MONO_TYPE_GENERICINST)
 		return mono_generic_class_hash (type->data.generic_class);
 	else
-		return type->type | (type->byref << 8) | (type->attrs << 9);
+		return type->type | ((m_type_is_byref (type) ? 1 : 0) << 8) | (type->attrs << 9);
 }
 
 static gint
@@ -1859,7 +1859,7 @@ mono_type_equal (gconstpointer ka, gconstpointer kb)
 	const MonoType *a = (const MonoType *) ka;
 	const MonoType *b = (const MonoType *) kb;
 	
-	if (a->type != b->type || a->byref != b->byref || a->attrs != b->attrs || a->pinned != b->pinned)
+	if (a->type != b->type || m_type_is_byref (a) != m_type_is_byref (b) || a->attrs != b->attrs || a->pinned != b->pinned)
 		return 0;
 	/* need other checks */
 	return 1;
@@ -1970,6 +1970,188 @@ mono_metadata_init (void)
 	mono_metadata_update_init ();
 }
 
+/*
+ * Make a pass over the metadata signature blob starting at \p tmp_ptr and count the custom modifiers. 
+ */
+static int
+count_custom_modifiers (MonoImage *m, const char *tmp_ptr)
+{
+	int count = 0;
+	gboolean found = TRUE;
+	while (found) {
+		switch (*tmp_ptr) {
+		case MONO_TYPE_PINNED:
+		case MONO_TYPE_BYREF:
+			++tmp_ptr;
+			break;
+		case MONO_TYPE_CMOD_REQD:
+		case MONO_TYPE_CMOD_OPT:
+			count ++;
+			mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr);
+			break;
+		default:
+			found = FALSE;
+		}
+	}
+	return count;
+}
+
+/*
+ * Decode the (expected \p count, possibly 0) custom modifiers as well as the "byref" and "pinned"
+ * markers from the metadata stream \p ptr and put them into \p cmods
+ *
+ * Sets \p rptr past the end of the parsed metadata.  Sets \p pinned and \p byref if those modifiers
+ * were present.
+ */
+static void
+decode_custom_modifiers (MonoImage *m, MonoCustomModContainer *cmods, int count, const char *ptr, const char **rptr, gboolean *pinned, gboolean *byref)
+{
+	gboolean found = TRUE;
+	/* cmods are encoded in reverse order from how we normally see them.
+	 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
+	 */
+	while (found) {
+		switch (*ptr) {
+		case MONO_TYPE_PINNED:
+			*pinned = TRUE;
+			++ptr;
+			break;
+		case MONO_TYPE_BYREF:
+			*byref = TRUE;
+			++ptr;
+			break;
+		case MONO_TYPE_CMOD_REQD:
+		case MONO_TYPE_CMOD_OPT:
+			g_assert (count > 0);
+			mono_metadata_parse_custom_mod (m, &(cmods->modifiers [--count]), ptr, &ptr);
+			break;
+		default:
+			found = FALSE;
+		}
+	}
+
+	// either there were no cmods, or else we iterated through all of cmods backwards to populate it.
+	g_assert (count == 0);
+	*rptr = ptr;
+}
+
+/*
+ * Allocate the memory necessary to hold a \c MonoType with \p count custom modifiers.
+ * If \p transient is true, allocate from the heap, otherwise allocate from the mempool of image \p m
+ */
+static MonoType *
+alloc_type_with_cmods (MonoImage *m, gboolean transient, int count)
+{
+	g_assert (count > 0);
+	MonoType *type;
+	size_t size = mono_sizeof_type_with_mods (count, FALSE);
+	type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
+	type->has_cmods = TRUE;
+
+	MonoCustomModContainer *cmods = mono_type_get_cmods (type);
+	cmods->count = count;
+	cmods->image = m;
+
+	return type;
+}
+
+/*
+ * If \p transient is true, free \p type, otherwise no-op
+ */
+static void
+free_parsed_type (MonoType *type, gboolean transient)
+{
+	if (transient)
+		mono_metadata_free_type (type);
+}
+
+/*
+ * Try to find a pre-allocated version of the given \p type.
+ * Returns true and sets \p canonical_type if found, otherwise return false.
+ *
+ * For classes and valuetypes, this returns their embedded byval_arg or
+ * this_arg types.  For base types, it returns the global versions.
+ */
+static gboolean
+try_get_canonical_type (MonoType *type, MonoType **canonical_type)
+{
+	/* Note: If the type has any attribtues or modifiers the function currently returns false,
+	 * although there's no fundamental reason we can't have cached copies in those instances (or
+	 * indeed cached arrays, pointers or some generic instances).  However in that case there's
+	 * limited utility in returning a cached copy because the parsing code in
+	 * do_mono_metadata_parse_type could have allocated some mempool or heap memory already.
+	 *
+	 * This function should be kept closely in sync with mono_metadata_free_type so that it
+	 * doesn't try to free canonical MonoTypes (which might not even be heap allocated).
+	 */
+	g_assert (!type->has_cmods);
+	if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
+		MonoType *ret = m_type_is_byref (type) ? m_class_get_this_arg (type->data.klass) : m_class_get_byval_arg (type->data.klass);
+
+		/* Consider the case:
+
+		   class Foo<T> { class Bar {} }
+		   class Test : Foo<Test>.Bar {}
+
+		   When Foo<Test> is being expanded, 'Test' isn't yet initialized.  It's actually in
+		   a really pristine state: it doesn't even know whether 'Test' is a reference or a value type.
+
+		   We ensure that the MonoClass is in a state that we can canonicalize to:
+
+		   klass->_byval_arg.data.klass == klass
+		   klass->this_arg.data.klass == klass
+
+		   If we can't canonicalize 'type', it doesn't matter, since later users of 'type' will do it.
+
+		   LOCKING: even though we don't explicitly hold a lock, in the problematic case 'ret' is a field
+		   of a MonoClass which currently holds the loader lock.  'type' is local.
+		*/
+		if (ret->data.klass == type->data.klass) {
+			*canonical_type = ret;
+			return TRUE;
+		}
+	}
+
+	/* Maybe it's one of the globaly-known basic types */
+	MonoType *cached;
+	/* No need to use locking since nobody is modifying the hash table */
+	if ((cached = (MonoType *)g_hash_table_lookup (type_cache, type))) {
+		*canonical_type = cached;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+/*
+ * Fill in \p type (expecting \p cmod_count custom modifiers) by parsing it from the metadata stream pointed at by \p ptr.
+ *
+ * On success returns true and sets \p rptr past the parsed stream data.  On failure return false and sets \p error.
+ */
+static gboolean
+do_mono_metadata_parse_type_with_cmods (MonoType *type, int cmod_count, MonoImage *m, MonoGenericContainer *container,
+					short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
+{
+	gboolean byref= FALSE;
+	gboolean pinned = FALSE;
+
+	error_init (error);
+
+	/* Iterate again, but now parse pinned, byref and custom modifiers */
+	decode_custom_modifiers (m, mono_type_get_cmods (type), cmod_count, ptr, &ptr, &pinned, &byref);
+
+	type->attrs = opt_attrs;
+	type->byref__ = byref;
+	type->pinned = pinned ? 1 : 0;
+
+	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, error))
+		return FALSE;
+
+	if (rptr)
+		*rptr = ptr;
+	return TRUE;
+}
+
 /**
  * mono_metadata_parse_type:
  * \param m metadata context
@@ -1999,15 +2181,21 @@ static MonoType*
 mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container,
 								   short opt_attrs, gboolean transient, const char *ptr, const char **rptr, MonoError *error)
 {
-	MonoType *type, *cached;
+	MonoType *type;
 	MonoType stype;
-	gboolean byref = FALSE;
-	gboolean pinned = FALSE;
-	const char *tmp_ptr;
 	int count = 0; // Number of mod arguments
-	gboolean found;
+
+	gboolean allocated = FALSE;
 
 	error_init (error);
+
+	/*
+	 * Q: What's going on with `stype` and `allocated`?  A: A very common case is that we're
+	 * parsing "int" or "string" or "Dictionary<K,V>" non-transiently.  In that case we don't
+	 * want to flood the mempool with millions of copies of MonoType 'int' (etc).  So we parse
+	 * it into a stack variable and try_get_canonical_type, below.  As long as the type is
+	 * normal, we will avoid having to make an extra copy in the mempool.
+	 */
 
 	/*
 	 * According to the spec, custom modifiers should come before the byref
@@ -2022,121 +2210,43 @@ mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container
 	 */
 
 	/* Count the modifiers first */
-	tmp_ptr = ptr;
-	found = TRUE;
-	while (found) {
-		switch (*tmp_ptr) {
-		case MONO_TYPE_PINNED:
-		case MONO_TYPE_BYREF:
-			++tmp_ptr;
-			break;
-		case MONO_TYPE_CMOD_REQD:
-		case MONO_TYPE_CMOD_OPT:
-			count ++;
-			mono_metadata_parse_custom_mod (m, NULL, tmp_ptr, &tmp_ptr);
-			break;
-		default:
-			found = FALSE;
-		}
-	}
-
-	MonoCustomModContainer *cmods = NULL;
+	count = count_custom_modifiers (m, ptr);
 
 	if (count) { // There are mods, so the MonoType will be of nonstandard size.
+		allocated = TRUE;
 		if (count > 64) {
 			mono_error_set_bad_image (error, m, "Invalid type with more than 64 modifiers");
 			return NULL;
 		}
-
-		size_t size = mono_sizeof_type_with_mods (count, FALSE);
-		type = transient ? (MonoType *)g_malloc0 (size) : (MonoType *)mono_image_alloc0 (m, size);
-		type->has_cmods = TRUE;
-
-		cmods = mono_type_get_cmods (type);
-		cmods->count = count;
-		cmods->image = m;
+		type = alloc_type_with_cmods (m, transient, count);
 	} else {     // The type is of standard size, so we can allocate it on the stack.
 		type = &stype;
 		memset (type, 0, MONO_SIZEOF_TYPE);
 	}
 
-	/* Iterate again, but now parse pinned, byref and custom modifiers */
-	found = TRUE;
-	/* cmods are encoded in reverse order from how we normally see them.
-	 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
-	 */
-	while (found) {
-		switch (*ptr) {
-		case MONO_TYPE_PINNED:
-			pinned = TRUE;
-			++ptr;
-			break;
-		case MONO_TYPE_BYREF:
-			byref = TRUE;
-			++ptr;
-			break;
-		case MONO_TYPE_CMOD_REQD:
-		case MONO_TYPE_CMOD_OPT:
-			mono_metadata_parse_custom_mod (m, &(cmods->modifiers [--count]), ptr, &ptr);
-			break;
-		default:
-			found = FALSE;
-		}
-	}
-	
-	// either there were no cmods, or else we iterated through all of cmods backwards to populate it.
-	g_assert (count == 0);
-
-	type->attrs = opt_attrs;
-	type->byref = byref;
-	type->pinned = pinned ? 1 : 0;
-
-	if (!do_mono_metadata_parse_type (type, m, container, transient, ptr, &ptr, error))
+	if (!do_mono_metadata_parse_type_with_cmods (type, count, m, container, opt_attrs, transient, ptr, rptr, error)) {
+		if (allocated)
+			free_parsed_type (type, transient);
 		return NULL;
-
-	if (rptr)
-		*rptr = ptr;
+	}
+		
 
 	// Possibly we can return an already-allocated type instead of the one we decoded
-	if (!type->has_cmods && !transient) {
+	if (!allocated && !transient) {
 		/* no need to free type here, because it is on the stack */
-		if ((type->type == MONO_TYPE_CLASS || type->type == MONO_TYPE_VALUETYPE) && !type->pinned && !type->attrs) {
-			MonoType *ret = type->byref ? m_class_get_this_arg (type->data.klass) : m_class_get_byval_arg (type->data.klass);
-
-			/* Consider the case:
-
-			     class Foo<T> { class Bar {} }
-			     class Test : Foo<Test>.Bar {}
-
-			   When Foo<Test> is being expanded, 'Test' isn't yet initialized.  It's actually in
-			   a really pristine state: it doesn't even know whether 'Test' is a reference or a value type.
-
-			   We ensure that the MonoClass is in a state that we can canonicalize to:
-
-			     klass->_byval_arg.data.klass == klass
-			     klass->this_arg.data.klass == klass
-
-			   If we can't canonicalize 'type', it doesn't matter, since later users of 'type' will do it.
-
-			   LOCKING: even though we don't explicitly hold a lock, in the problematic case 'ret' is a field
-			            of a MonoClass which currently holds the loader lock.  'type' is local.
-			*/
-			if (ret->data.klass == type->data.klass) {
-				return ret;
-			}
-		}
-		/* No need to use locking since nobody is modifying the hash table */
-		if ((cached = (MonoType *)g_hash_table_lookup (type_cache, type))) {
-			return cached;
-		}
+		MonoType *ret_type = NULL;
+		if (try_get_canonical_type (type, &ret_type))
+			return ret_type;
 	}
 	
 	/* printf ("%x %x %c %s\n", type->attrs, type->num_mods, type->pinned ? 'p' : ' ', mono_type_full_name (type)); */
-	
-	if (type == &stype) { // Type was allocated on the stack, so we need to copy it to safety
+
+	// Otherwise return the type we decoded
+	if (!allocated) { // Type was allocated on the stack, so we need to copy it to safety
 		type = transient ? (MonoType *)g_malloc (MONO_SIZEOF_TYPE) : (MonoType *)mono_image_alloc (m, MONO_SIZEOF_TYPE);
 		memcpy (type, &stype, MONO_SIZEOF_TYPE);
 	}
+	g_assert (type != &stype);
 	return type;
 }
 
@@ -3977,6 +4087,8 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 void
 mono_metadata_free_type (MonoType *type)
 {
+	/* Note: keep in sync with do_mono_metadata_parse_type and try_get_canonical_type which
+	 * allocate memory or try to avoid allocating memory. */
 	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
 		return;
 	
@@ -5100,7 +5212,7 @@ mono_type_size (MonoType *t, int *align)
 		*align = 1;
 		return 0;
 	}
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*align = MONO_ABI_ALIGNOF (gpointer);
 		return MONO_ABI_SIZEOF (gpointer);
 	}
@@ -5215,7 +5327,7 @@ mono_type_stack_size_internal (MonoType *t, int *align, gboolean allow_open)
 	if (!align)
 		align = &tmp;
 
-	if (t->byref) {
+	if (m_type_is_byref (t)) {
 		*align = stack_slot_align;
 		return stack_slot_size;
 	}
@@ -5408,7 +5520,7 @@ mono_metadata_type_hash (MonoType *t1)
 {
 	guint hash = t1->type;
 
-	hash |= t1->byref << 6; /* do not collide with t1->type values */
+	hash |= (m_type_is_byref (t1) ? 1 : 0) << 6; /* do not collide with t1->type values */
 	switch (t1->type) {
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
@@ -5423,7 +5535,7 @@ mono_metadata_type_hash (MonoType *t1)
 		 * inserted in a bunch of hash tables before been finished.
 		 */
 		if (image_is_dynamic (m_class_get_image (klass)))
-			return (t1->byref << 6) | mono_metadata_str_hash (m_class_get_name (klass));
+			return ((m_type_is_byref (t1) ? 1 : 0) << 6) | mono_metadata_str_hash (m_class_get_name (klass));
 		return ((hash << 5) - hash) ^ mono_metadata_str_hash (m_class_get_name (klass));
 	}
 	case MONO_TYPE_PTR:
@@ -5598,7 +5710,7 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
 static gboolean
 do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
-	if (t1->type != t2->type || t1->byref != t2->byref)
+	if (t1->type != t2->type || m_type_is_byref (t1) != m_type_is_byref (t2))
 		return FALSE;
 
 	gboolean cmod_reject = FALSE;
@@ -6552,7 +6664,7 @@ mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_fiel
 
 	*conv = MONO_MARSHAL_CONV_NONE;
 
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MONO_NATIVE_UINT;
 
 handle_enum:
@@ -7147,7 +7259,7 @@ mono_type_is_byref (MonoType *type)
 {
 	mono_bool result;
 	MONO_ENTER_GC_UNSAFE; // FIXME slow
-	result = mono_type_is_byref_internal (type);
+	result = m_type_is_byref (type);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
@@ -7239,7 +7351,7 @@ mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 mono_bool
 mono_type_is_struct (MonoType *type)
 {
-	return (!type->byref && ((type->type == MONO_TYPE_VALUETYPE &&
+	return (!m_type_is_byref (type) && ((type->type == MONO_TYPE_VALUETYPE &&
 		!m_class_is_enumtype (type->data.klass)) || (type->type == MONO_TYPE_TYPEDBYREF) ||
 		((type->type == MONO_TYPE_GENERICINST) && 
 		mono_metadata_generic_class_is_valuetype (type->data.generic_class) &&
@@ -7254,7 +7366,7 @@ mono_type_is_struct (MonoType *type)
 mono_bool
 mono_type_is_void (MonoType *type)
 {
-	return (type && (type->type == MONO_TYPE_VOID) && !type->byref);
+	return (type && (type->type == MONO_TYPE_VOID) && !m_type_is_byref (type));
 }
 
 /**
@@ -7265,7 +7377,7 @@ mono_type_is_void (MonoType *type)
 mono_bool
 mono_type_is_pointer (MonoType *type)
 {
-	return (type && ((type->byref || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING)
+	return (type && ((m_type_is_byref (type) || (type->type == MONO_TYPE_I) || type->type == MONO_TYPE_STRING)
 		|| (type->type == MONO_TYPE_SZARRAY) || (type->type == MONO_TYPE_CLASS) ||
 		(type->type == MONO_TYPE_U) || (type->type == MONO_TYPE_OBJECT) ||
 		(type->type == MONO_TYPE_ARRAY) || (type->type == MONO_TYPE_PTR) ||
@@ -7295,7 +7407,7 @@ mono_type_is_reference (MonoType *type)
 mono_bool
 mono_type_is_generic_parameter (MonoType *type)
 {
-	return !type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
+	return !m_type_is_byref (type) && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR);
 }
 
 /**
@@ -7736,7 +7848,7 @@ mono_guid_signature_append_type (GString *res, MonoType *type)
 	default:
 		break;
 	}
-	if (type->byref) g_string_append_c (res, '&');
+	if (m_type_is_byref (type)) g_string_append_c (res, '&');
 }
 
 static void

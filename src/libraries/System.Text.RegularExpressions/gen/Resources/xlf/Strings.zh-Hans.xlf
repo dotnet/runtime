@@ -192,6 +192,11 @@
         <target state="translated">不能对失败的匹配调用结果。</target>
         <note />
       </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">集合是只读的。</target>

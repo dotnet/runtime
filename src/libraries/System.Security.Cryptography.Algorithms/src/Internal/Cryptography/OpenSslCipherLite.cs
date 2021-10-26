@@ -28,7 +28,6 @@ namespace Internal.Cryptography
             int blockSizeInBytes,
             int paddingSizeInBytes,
             ReadOnlySpan<byte> key,
-            int effectiveKeyLength,
             ReadOnlySpan<byte> iv,
             bool encrypting)
         {
@@ -40,7 +39,6 @@ namespace Internal.Cryptography
                 algorithm,
                 ref MemoryMarshal.GetReference(key),
                 key.Length * 8,
-                effectiveKeyLength,
                 ref MemoryMarshal.GetReference(iv),
                 encrypting ? 1 : 0);
 
