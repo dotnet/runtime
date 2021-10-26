@@ -242,9 +242,9 @@
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>44b5783b3a2713108b624ae91633447808b53dda</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Compatibility" Version="1.0.0-rc.2.21501.51">
+    <Dependency Name="Microsoft.DotNet.Compatibility" Version="2.0.0-alpha.1.21525.11">
       <Uri>https://github.com/dotnet/sdk</Uri>
-      <Sha>29887967f1f33474b2814d492b3a0dbcf9ce4864</Sha>
+      <Sha>957ae5ca599fdeaee425d23928d42da711373a5e</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
