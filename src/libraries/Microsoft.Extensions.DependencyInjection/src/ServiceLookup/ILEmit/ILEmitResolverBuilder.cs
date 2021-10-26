@@ -198,6 +198,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 BeginCaptureDisposable(argument);
                 VisitCallSiteMain(transientCallSite, argument);
+
+                // Pop the return type off the stack since EndCaptureDisposable pushes object into the stack
+                argument.Types.Pop();
+
                 EndCaptureDisposable(argument);
             }
             else
@@ -485,6 +489,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     BeginCaptureDisposable(context);
                     context.Generator.Emit(OpCodes.Ldloc, resultLocal);
                     EndCaptureDisposable(context);
+
+                    context.Types.Pop();
+
                     // Pop value returned by CaptureDisposable off the stack
                     generator.Emit(OpCodes.Pop);
                 }
