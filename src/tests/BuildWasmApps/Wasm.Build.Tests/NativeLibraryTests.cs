@@ -17,7 +17,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-	[Theory]
+        [Theory]
         [BuildAndRun(aot: false)]
         [BuildAndRun(aot: true)]
         public void ProjectWithNativeReference(BuildArgs buildArgs, RunHost host, string id)
@@ -44,7 +44,7 @@ namespace Wasm.Build.Tests
                                 host: host, id: id);
 
             Assert.Contains("print_line: 100", output);
-	    Assert.Contains("total in helper: 253", output);
+            Assert.Contains("total in helper: 253", output);
             Assert.Contains("from pinvoke: 142", output);
         }
 

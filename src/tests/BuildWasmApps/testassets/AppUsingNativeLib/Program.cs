@@ -44,8 +44,8 @@ namespace SimpleConsole
         [DllImport("native-lib")]
         public static extern int print_line(int x);
 
-	// FIXME: support function pointers in pinvoke arguments
-	[DllImport("native-lib")]
-	public static unsafe extern int native_intint_callback_acceptor(/*delegate *unmanaged<int,int>*/ IntPtr fn, int i);
+        // FIXME: support function pointers in pinvoke arguments
+        [DllImport("native-lib")]
+        public static unsafe extern int native_intint_callback_acceptor(/*delegate *unmanaged<int,int>*/ IntPtr fn, int i);
     }
 }
