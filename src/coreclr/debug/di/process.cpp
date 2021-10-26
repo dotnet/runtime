@@ -5206,12 +5206,9 @@ void CordbProcess::RawDispatchEvent(
             }
             pClass->SetLoadEventSent(TRUE);
 
-
-            if (pClass != NULL)
-            {
-                PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
-                pCallback1->LoadClass(pAppDomain, pClass);
-            }
+            
+            PUBLIC_CALLBACK_IN_THIS_SCOPE(this, pLockHolder, pEvent);
+            pCallback1->LoadClass(pAppDomain, pClass);
         }
         break;
 

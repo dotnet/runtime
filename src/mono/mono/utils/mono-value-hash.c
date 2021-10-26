@@ -221,9 +221,8 @@ mono_value_hash_table_insert_replace (MonoValueHashTable *hash, gpointer key, gp
 	guint step = 0;
 
 	g_assert (value);
-	g_assert (hash->key_extract_func (value) == key);
-	
 	g_return_if_fail (hash != NULL);
+	g_assert (hash->key_extract_func (value) == key);
 
 	hashcode = HASH (hash, key);
 

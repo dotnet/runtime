@@ -644,8 +644,12 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
                                                                           pJITFuncData->nativeStartAddressPtr);
         IfFailThrow(hr);
 
+        _ASSERTE(pNativeCode != NULL);
+        
         // The native code object will create the function object if needed
         CordbFunction * pFunction = pNativeCode->GetFunction();
+
+        _ASSERTE(pFunction != NULL);
 
         // A CordbFunction is theoretically the uninstantiated method, yet for back-compat we allow
         // debuggers to assume that it corresponds to exactly 1 native code blob. In order for
@@ -658,8 +662,6 @@ HRESULT CordbStackWalk::GetFrameWorker(ICorDebugFrame ** ppFrame)
         pFunction->NotifyCodeCreated(pNativeCode);
 
         IfFailThrow(hr);
-
-        _ASSERTE((pFunction != NULL) && (pNativeCode != NULL));
 
         // initialize the auxiliary info required for funclets
         CordbMiscFrame miscFrame(pJITFuncData);
