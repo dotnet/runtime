@@ -1,11 +1,12 @@
 <!-- This project requires an explicit SDK version number because it is used on Helix,
       and global.json is not available. -->
-<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="WasmBuildApp">
+<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="WasmBuildApp">
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existant</MicrosoftNetCoreAppRuntimePackDir>
     <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\build\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- TODO: Target frameowkr should not be hard coded, but I need to propagate NetCoreAppToolCurrent? -->
+    <TargetFramework>net6.0</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
     <AppDir>$(TestBinDir)/WasmApp/</AppDir>
     <PackageRID>browser-wasm</PackageRID>
@@ -15,7 +16,6 @@
     <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
     <MonoTargetsTasksAssemblyPath>$(CORE_ROOT)\MonoTargetsTasks\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
-
     <JsonToItemsTaskFactoryTasksAssemblyPath>$(CORE_ROOT)\JsonToItemsTaskFactory\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
     <RuntimeConfigParserTasksAssemblyPath>$(CORE_ROOT)\RuntimeConfigParser\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
     <EMSDK_PATH>$(CORE_ROOT)\build\emsdk</EMSDK_PATH>
