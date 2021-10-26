@@ -745,7 +745,7 @@ namespace System.Threading
             public ConfiguredNoThrowAwaiter(Task<T> task) => _task = task;
             public ConfiguredNoThrowAwaiter<T> GetAwaiter() => this;
             public bool IsCompleted => _task.IsCompleted;
-            public void GetResult() { }
+            public void GetResult() => _task.MarkExceptionsAsHandled();
             public void UnsafeOnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().UnsafeOnCompleted(continuation);
             public void OnCompleted(Action continuation) => _task.ConfigureAwait(false).GetAwaiter().OnCompleted(continuation);
         }
