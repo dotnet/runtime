@@ -28,19 +28,19 @@ namespace Mono.Linker
 		{
 			switch (member.MetadataToken.TokenType) {
 			case TokenType.TypeDef:
-				VisitTypeDefinition (member as TypeDefinition, builder, resolver);
+				VisitTypeDefinition ((TypeDefinition) member, builder, resolver);
 				break;
 			case TokenType.Method:
-				VisitMethod (member as MethodDefinition, builder, resolver);
+				VisitMethod ((MethodDefinition) member, builder, resolver);
 				break;
 			case TokenType.Property:
-				VisitProperty (member as PropertyDefinition, builder, resolver);
+				VisitProperty ((PropertyDefinition) member, builder, resolver);
 				break;
 			case TokenType.Field:
-				VisitField (member as FieldDefinition, builder, resolver);
+				VisitField ((FieldDefinition) member, builder, resolver);
 				break;
 			case TokenType.Event:
-				VisitEvent (member as EventDefinition, builder, resolver);
+				VisitEvent ((EventDefinition) member, builder, resolver);
 				break;
 			default:
 				break;

@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -9,13 +11,19 @@ namespace Mono.Linker.Steps
 	{
 		protected AnnotationStore Annotations => Context.Annotations;
 
-		protected LinkContext Context { get; private set; }
+		LinkContext? _context { get; set; }
+		protected LinkContext Context {
+			get {
+				Debug.Assert (_context != null);
+				return _context;
+			}
+		}
 
 		public abstract SubStepTargets Targets { get; }
 
 		public virtual void Initialize (LinkContext context)
 		{
-			Context = context;
+			_context = context;
 		}
 
 		public virtual bool IsActiveFor (AssemblyDefinition assembly) => true;

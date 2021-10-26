@@ -34,51 +34,10 @@ namespace ILLink.RoslynAnalyzer.Tests
 		public static DiagnosticResult Diagnostic (DiagnosticDescriptor descriptor)
 			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (descriptor);
 
-		public static Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
-			string src,
-			(string, string)[]? globalAnalyzerOptions = null,
-			IEnumerable<MetadataReference>? additionalReferences = null,
-			IEnumerable<SyntaxTree>? additionalSources = null)
-			=> CreateCompilation (CSharpSyntaxTree.ParseText (src), globalAnalyzerOptions, additionalReferences, additionalSources);
-
-		public static async Task<Compilation> GetCompilation (string source, IEnumerable<MetadataReference>? additionalReferences = null, IEnumerable<SyntaxTree>? additionalSources = null)
-			=> (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.CreateCompilation (source, additionalReferences: additionalReferences ?? Array.Empty<MetadataReference> ())).Compilation.Compilation;
-
-		public static async Task<(CompilationWithAnalyzers Compilation, SemanticModel SemanticModel)> CreateCompilation (
-			SyntaxTree src,
-			(string, string)[]? globalAnalyzerOptions = null,
-			IEnumerable<MetadataReference>? additionalReferences = null,
-			IEnumerable<SyntaxTree>? additionalSources = null)
-		{
-			var mdRef = MetadataReference.CreateFromFile (typeof (Mono.Linker.Tests.Cases.Expectations.Metadata.BaseMetadataAttribute).Assembly.Location);
-			additionalReferences ??= Array.Empty<MetadataReference> ();
-			var sources = new List<SyntaxTree> () { src };
-			sources.AddRange (additionalSources ?? Array.Empty<SyntaxTree> ());
-			var comp = CSharpCompilation.Create (
-				assemblyName: Guid.NewGuid ().ToString ("N"),
-				syntaxTrees: sources,
-				references: (await TestCaseUtils.GetNet6References ()).Add (mdRef).AddRange (additionalReferences),
-				new CSharpCompilationOptions (OutputKind.DynamicallyLinkedLibrary));
-
-			var analyzerOptions = new AnalyzerOptions (
-				ImmutableArray<AdditionalText>.Empty,
-				new SimpleAnalyzerOptions (globalAnalyzerOptions));
-
-			var compWithAnalyzerOptions = new CompilationWithAnalyzersOptions (
-				analyzerOptions,
-				(_1, _2, _3) => { },
-				concurrentAnalysis: true,
-				logAnalyzerExecutionTime: false);
-
-			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
-			return (new CompilationWithAnalyzers (comp, analyzers, compWithAnalyzerOptions), comp.GetSemanticModel (src));
-		}
-
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
 		public static async Task VerifyAnalyzerAsync (string src, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
 		{
-			var diags = await (await CreateCompilation (src, analyzerOptions, additionalReferences)).Compilation.GetAllDiagnosticsAsync ();
-
+			var diags = await (await TestCaseCompilation.CreateCompilation (src, analyzerOptions, additionalReferences)).Compilation.GetAllDiagnosticsAsync ();
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);
 		}
@@ -673,44 +632,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 			return (IReadOnlyList<object?>?) diagnostic.GetType ().GetProperty ("Arguments", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue (diagnostic)
 				?? Array.Empty<object> ();
 		}
-
-		class SimpleAnalyzerOptions : AnalyzerConfigOptionsProvider
-		{
-			public SimpleAnalyzerOptions ((string, string)[]? globalOptions)
-			{
-				globalOptions ??= Array.Empty<(string, string)> ();
-				GlobalOptions = new SimpleAnalyzerConfigOptions (ImmutableDictionary.CreateRange (
-					StringComparer.OrdinalIgnoreCase,
-					globalOptions.Select (x => new KeyValuePair<string, string> (x.Item1, x.Item2))));
-			}
-
-			public override AnalyzerConfigOptions GlobalOptions { get; }
-
-			public override AnalyzerConfigOptions GetOptions (SyntaxTree tree)
-				=> SimpleAnalyzerConfigOptions.Empty;
-
-			public override AnalyzerConfigOptions GetOptions (AdditionalText textFile)
-				=> SimpleAnalyzerConfigOptions.Empty;
-
-			class SimpleAnalyzerConfigOptions : AnalyzerConfigOptions
-			{
-				public static readonly SimpleAnalyzerConfigOptions Empty = new SimpleAnalyzerConfigOptions (ImmutableDictionary<string, string>.Empty);
-
-				private readonly ImmutableDictionary<string, string> _dict;
-				public SimpleAnalyzerConfigOptions (ImmutableDictionary<string, string> dict)
-				{
-					_dict = dict;
-				}
-
-				// Suppress warning about missing nullable attributes
-#pragma warning disable 8765
-				public override bool TryGetValue (string key, out string? value)
-					=> _dict.TryGetValue (key, out value);
-#pragma warning restore 8765
-			}
-		}
-
-
 	}
 
 	internal static class IEnumerableExtensions

@@ -382,7 +382,7 @@ namespace ILLink.Tasks.Tests
 				}
 			}
 		}
-#nullable disable
+#nullable restore
 
 		public static IEnumerable<object[]> CustomDataCases => new List<object[]> {
 			new object [] {

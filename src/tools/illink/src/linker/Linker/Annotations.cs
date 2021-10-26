@@ -25,7 +25,6 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
-#nullable enable
 
 using System;
 using System.Collections.Generic;
@@ -402,12 +401,12 @@ namespace Mono.Linker
 			return preserved_exportedtype_members.TryGetValue (type, out preserve);
 		}
 
-		public bool TryGetMethodStubValue (MethodDefinition method, out object value)
+		public bool TryGetMethodStubValue (MethodDefinition method, out object? value)
 		{
 			return MemberActions.TryGetMethodStubValue (method, out value);
 		}
 
-		public bool TryGetFieldUserValue (FieldDefinition field, out object value)
+		public bool TryGetFieldUserValue (FieldDefinition field, out object? value)
 		{
 			return MemberActions.TryGetFieldUserValue (field, out value);
 		}
@@ -438,17 +437,17 @@ namespace Mono.Linker
 			return public_api.Contains (provider);
 		}
 
-		public IEnumerable<OverrideInformation> GetOverrides (MethodDefinition method)
+		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			return TypeMapInfo.GetOverrides (method);
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)> GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			return TypeMapInfo.GetDefaultInterfaceImplementations (method);
 		}
 
-		public List<MethodDefinition> GetBaseMethods (MethodDefinition method)
+		public List<MethodDefinition>? GetBaseMethods (MethodDefinition method)
 		{
 			return TypeMapInfo.GetBaseMethods (method);
 		}

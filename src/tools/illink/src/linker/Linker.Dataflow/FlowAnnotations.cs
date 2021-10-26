@@ -8,8 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
-#nullable enable
-
 namespace Mono.Linker.Dataflow
 {
 	class FlowAnnotations
@@ -588,15 +586,15 @@ namespace Mono.Linker.Dataflow
 		{
 			readonly TypeDefinition _type;
 			readonly DynamicallyAccessedMemberTypes _typeAnnotation;
-			readonly MethodAnnotations[] _annotatedMethods;
-			readonly FieldAnnotation[] _annotatedFields;
+			readonly MethodAnnotations[]? _annotatedMethods;
+			readonly FieldAnnotation[]? _annotatedFields;
 			readonly DynamicallyAccessedMemberTypes[]? _genericParameterAnnotations;
 
 			public TypeAnnotations (
 				TypeDefinition type,
 				DynamicallyAccessedMemberTypes typeAnnotation,
-				MethodAnnotations[] annotatedMethods,
-				FieldAnnotation[] annotatedFields,
+				MethodAnnotations[]? annotatedMethods,
+				FieldAnnotation[]? annotatedFields,
 				DynamicallyAccessedMemberTypes[]? genericParameterAnnotations)
 				=> (_type, _typeAnnotation, _annotatedMethods, _annotatedFields, _genericParameterAnnotations)
 				 = (type, typeAnnotation, annotatedMethods, annotatedFields, genericParameterAnnotations);

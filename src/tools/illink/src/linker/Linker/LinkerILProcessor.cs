@@ -43,7 +43,7 @@ namespace Mono.Linker
 
 		public void Append (Instruction instruction)
 		{
-			Instruction lastInstruction = Instructions.Count == 0 ? null : Instructions[Instructions.Count - 1];
+			Instruction? lastInstruction = Instructions.Count == 0 ? null : Instructions[Instructions.Count - 1];
 			RedirectScopeEnd (lastInstruction, instruction);
 			_ilProcessor.Append (instruction);
 		}
@@ -64,8 +64,8 @@ namespace Mono.Linker
 			if (index == -1)
 				throw new ArgumentOutOfRangeException (nameof (instruction));
 
-			Instruction nextInstruction = Instructions.Count == index + 1 ? null : Instructions[index + 1];
-			Instruction previousInstruction = index == 0 ? null : Instructions[index - 1];
+			Instruction? nextInstruction = Instructions.Count == index + 1 ? null : Instructions[index + 1];
+			Instruction? previousInstruction = index == 0 ? null : Instructions[index - 1];
 
 			RedirectScopeStart (instruction, nextInstruction);
 			RedirectScopeEnd (instruction, previousInstruction);
@@ -75,7 +75,7 @@ namespace Mono.Linker
 
 		public void RemoveAt (int index) => Remove (Instructions[index]);
 
-		void RedirectScopeStart (Instruction oldTarget, Instruction newTarget)
+		void RedirectScopeStart (Instruction oldTarget, Instruction? newTarget)
 		{
 			// In Cecil "start" pointers point to the first instruction in a given scope
 			// and the "end" pointers point to the first instruction after the given block
@@ -96,14 +96,14 @@ namespace Mono.Linker
 		}
 
 #pragma warning disable IDE0060 // Remove unused parameter
-		static void RedirectScopeEnd (Instruction oldTarget, Instruction newTarget)
+		static void RedirectScopeEnd (Instruction? oldTarget, Instruction? newTarget)
 #pragma warning restore IDE0060 // Remove unused parameter
 		{
 			// Currently Cecil treats all block boundaries as "starts"
 			// so nothing to do here.
 		}
 
-		void ReplaceInstructionReference (Instruction oldTarget, Instruction newTarget)
+		void ReplaceInstructionReference (Instruction oldTarget, Instruction? newTarget)
 		{
 			foreach (var instr in Instructions) {
 				switch (instr.OpCode.FlowControl) {

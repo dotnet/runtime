@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -17,7 +18,7 @@ namespace Mono.Linker.Steps
 	public class UnreachableBlocksOptimizer
 	{
 		readonly LinkContext _context;
-		MethodDefinition IntPtrSize, UIntPtrSize;
+		MethodDefinition? IntPtrSize, UIntPtrSize;
 
 		readonly struct ProcessingNode
 		{
@@ -166,7 +167,7 @@ namespace Mono.Linker.Steps
 
 					// To fix this go over the stack and find the "oldest" node with the current version - the "oldest" node which
 					// is part of the loop:
-					LinkedListNode<ProcessingNode> lastNodeWithCurrentVersion = null;
+					LinkedListNode<ProcessingNode>? lastNodeWithCurrentVersion = null;
 					var candidateNodeToMoveToTop = _processingStack.Last;
 					bool foundNodesWithNonCurrentVersion = false;
 					while (candidateNodeToMoveToTop != stackNode) {
@@ -265,7 +266,7 @@ namespace Mono.Linker.Steps
 			Debug.Assert (_processingMethods.Count == 0);
 		}
 
-		Instruction AnalyzeMethodForConstantResult (MethodDefinition method, Collection<Instruction> instructions)
+		Instruction? AnalyzeMethodForConstantResult (MethodDefinition method, Collection<Instruction>? instructions)
 		{
 			if (method.ReturnType.MetadataType == MetadataType.Void)
 				return null;
@@ -306,9 +307,9 @@ namespace Mono.Linker.Steps
 		///   constantResultInstruction is set to an instance if the method returns a constant, otherwise it's set to null
 		/// false - if the method has not yet been analyzed and the caller should retry later
 		/// </returns>
-		bool TryGetConstantResultForMethod (MethodDefinition method, out Instruction constantResultInstruction)
+		bool TryGetConstantResultForMethod (MethodDefinition method, out Instruction? constantResultInstruction)
 		{
-			if (!_processedMethods.TryGetValue (method, out Instruction methodValue)) {
+			if (!_processedMethods.TryGetValue (method, out Instruction? methodValue)) {
 				if (_processingMethods.TryGetValue (method, out var stackNode)) {
 					// Method is already in the stack - not yet processed
 					// Move it to the top of the stack
@@ -350,7 +351,7 @@ namespace Mono.Linker.Steps
 			changed = false;
 			bool hasUnprocessedDependencies = false;
 			var instructions = reducer.Body.Instructions;
-			Instruction targetResult;
+			Instruction? targetResult;
 
 			for (int i = 0; i < instructions.Count; ++i) {
 				var instr = instructions[i];
@@ -416,7 +417,7 @@ namespace Mono.Linker.Steps
 					if (field == null)
 						break;
 
-					if (_context.Annotations.TryGetFieldUserValue (field, out object value)) {
+					if (_context.Annotations.TryGetFieldUserValue (field, out object? value)) {
 						targetResult = CodeRewriterStep.CreateConstantResultInstruction (_context, field.FieldType, value);
 						if (targetResult == null)
 							break;
@@ -431,7 +432,7 @@ namespace Mono.Linker.Steps
 					// which are simple static properties commonly overwritten. Instead of forcing C# code style
 					// we handle both via static Size property
 					//
-					MethodDefinition sizeOfImpl = null;
+					MethodDefinition? sizeOfImpl = null;
 
 					var operand = (TypeReference) instr.Operand;
 					if (operand.MetadataType == MetadataType.UIntPtr) {
@@ -460,7 +461,7 @@ namespace Mono.Linker.Steps
 			return !hasUnprocessedDependencies;
 		}
 
-		static MethodDefinition FindSizeMethod (TypeDefinition type)
+		static MethodDefinition? FindSizeMethod (TypeDefinition? type)
 		{
 			if (type == null)
 				return null;
@@ -471,13 +472,13 @@ namespace Mono.Linker.Steps
 		struct BodyReducer
 		{
 			readonly LinkContext context;
-			Dictionary<Instruction, int> mapping;
+			Dictionary<Instruction, int>? mapping;
 
 			//
 			// Sorted list of body instruction indexes which were
 			// replaced pass-through nop
 			// 
-			List<int> conditionInstrsToRemove;
+			List<int>? conditionInstrsToRemove;
 
 			public BodyReducer (MethodBody body, LinkContext context)
 			{
@@ -494,7 +495,7 @@ namespace Mono.Linker.Steps
 
 			public int InstructionsReplaced { get; set; }
 
-			public Collection<Instruction> FoldedInstructions { get; private set; }
+			public Collection<Instruction>? FoldedInstructions { get; private set; }
 
 			public void Rewrite (int index, Instruction newInstruction)
 			{
@@ -502,6 +503,7 @@ namespace Mono.Linker.Steps
 					FoldedInstructions = new Collection<Instruction> (Body.Instructions);
 					mapping = new Dictionary<Instruction, int> ();
 				}
+				Debug.Assert (mapping != null);
 
 				// Tracks mapping for replaced instructions for easier
 				// branch targets resolution later
@@ -687,8 +689,9 @@ namespace Mono.Linker.Steps
 
 			bool RemoveConditions ()
 			{
+				Debug.Assert (FoldedInstructions != null);
 				bool changed = false;
-				object left, right;
+				object? left, right;
 
 				//
 				// Finds any branchable instruction and checks if the operand or operands
@@ -825,12 +828,13 @@ namespace Mono.Linker.Steps
 				return changed;
 			}
 
-			BitArray GetReachableInstructionsMap (out List<ExceptionHandler> unreachableHandlers)
+			BitArray GetReachableInstructionsMap (out List<ExceptionHandler>? unreachableHandlers)
 			{
+				Debug.Assert (FoldedInstructions != null);
 				unreachableHandlers = null;
 				var reachable = new BitArray (FoldedInstructions.Count);
 
-				Stack<int> condBranches = null;
+				Stack<int>? condBranches = null;
 				bool exceptionHandlersChecked = !Body.HasExceptionHandlers;
 				Instruction target;
 				int i = 0;
@@ -934,6 +938,7 @@ namespace Mono.Linker.Steps
 			//
 			int GetInstructionIndex (Instruction instruction)
 			{
+				Debug.Assert (FoldedInstructions != null && mapping != null);
 				if (mapping.TryGetValue (instruction, out int idx))
 					return idx;
 
@@ -942,8 +947,9 @@ namespace Mono.Linker.Steps
 				return idx;
 			}
 
-			bool GetOperandsConstantValues (int index, out object left, out object right)
+			bool GetOperandsConstantValues (int index, out object? left, out object? right)
 			{
+				Debug.Assert (FoldedInstructions != null);
 				left = default;
 				right = default;
 
@@ -954,7 +960,7 @@ namespace Mono.Linker.Steps
 					GetConstantValue (FoldedInstructions[index - 1], out right);
 			}
 
-			static bool GetConstantValue (Instruction instruction, out object value)
+			static bool GetConstantValue (Instruction instruction, out object? value)
 			{
 				switch (instruction.OpCode.Code) {
 				case Code.Ldc_I4_0:
@@ -1084,6 +1090,7 @@ namespace Mono.Linker.Steps
 
 			bool IsJumpTargetRange (int firstInstr, int lastInstr)
 			{
+				Debug.Assert (FoldedInstructions != null);
 				foreach (var instr in FoldedInstructions) {
 					switch (instr.OpCode.FlowControl) {
 					case FlowControl.Branch:
@@ -1112,11 +1119,17 @@ namespace Mono.Linker.Steps
 		{
 			readonly MethodBody body;
 			readonly BitArray reachable;
-			readonly List<ExceptionHandler> unreachableExceptionHandlers;
+			readonly List<ExceptionHandler>? unreachableExceptionHandlers;
 			readonly LinkContext context;
-			LinkerILProcessor ilprocessor;
+			LinkerILProcessor? ilprocessor;
+			LinkerILProcessor ILProcessor {
+				get {
+					Debug.Assert (ilprocessor != null);
+					return ilprocessor;
+				}
+			}
 
-			public BodySweeper (MethodBody body, BitArray reachable, List<ExceptionHandler> unreachableEH, LinkContext context)
+			public BodySweeper (MethodBody body, BitArray reachable, List<ExceptionHandler>? unreachableEH, LinkContext context)
 			{
 				this.body = body;
 				this.reachable = reachable;
@@ -1159,9 +1172,9 @@ namespace Mono.Linker.Steps
 				return true;
 			}
 
-			public void Process (List<int> conditionInstrsToRemove, out List<Instruction> sentinelNops)
+			public void Process (List<int>? conditionInstrsToRemove, out List<Instruction>? sentinelNops)
 			{
-				List<VariableDefinition> removedVariablesReferences = null;
+				List<VariableDefinition>? removedVariablesReferences = null;
 
 				//
 				// Initial pass which replaces unreachable instructions with nops or
@@ -1181,10 +1194,10 @@ namespace Mono.Linker.Steps
 						newInstr = Instruction.Create (OpCodes.Nop);
 					}
 
-					ilprocessor.Replace (i, newInstr);
+					ILProcessor.Replace (i, newInstr);
 					InstructionsReplaced++;
 
-					VariableDefinition variable = GetVariableReference (instr);
+					VariableDefinition? variable = GetVariableReference (instr);
 					if (variable != null) {
 						if (removedVariablesReferences == null)
 							removedVariablesReferences = new List<VariableDefinition> ();
@@ -1223,12 +1236,12 @@ namespace Mono.Linker.Steps
 									sentinelNops = new List<Instruction> ();
 								sentinelNops.Add (nop);
 
-								ilprocessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
-								ilprocessor.Replace (index, nop);
+								ILProcessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
+								ILProcessor.Replace (index, nop);
 							} else {
 								var pop = Instruction.Create (OpCodes.Pop);
-								ilprocessor.Replace (index, pop);
-								ilprocessor.InsertAfter (pop, Instruction.Create (OpCodes.Pop));
+								ILProcessor.Replace (index, pop);
+								ILProcessor.InsertAfter (pop, Instruction.Create (OpCodes.Pop));
 
 								//
 								// conditionInstrsToRemove is always sorted and instead of
@@ -1238,7 +1251,7 @@ namespace Mono.Linker.Steps
 							}
 							break;
 						case StackBehaviour.Popi:
-							ilprocessor.Replace (index, Instruction.Create (OpCodes.Pop));
+							ILProcessor.Replace (index, Instruction.Create (OpCodes.Pop));
 							InstructionsReplaced++;
 							break;
 						}
@@ -1257,7 +1270,7 @@ namespace Mono.Linker.Steps
 			void CleanRemovedVariables (List<VariableDefinition> variables)
 			{
 				foreach (var instr in body.Instructions) {
-					VariableDefinition variable = GetVariableReference (instr);
+					VariableDefinition? variable = GetVariableReference (instr);
 					if (variable == null)
 						continue;
 
@@ -1297,7 +1310,7 @@ namespace Mono.Linker.Steps
 					body.ExceptionHandlers.Remove (eh);
 			}
 
-			VariableDefinition GetVariableReference (Instruction instruction)
+			VariableDefinition? GetVariableReference (Instruction instruction)
 			{
 				switch (instruction.OpCode.Code) {
 				case Code.Stloc_0:
@@ -1360,8 +1373,8 @@ namespace Mono.Linker.Steps
 			readonly Collection<Instruction> instructions;
 			readonly LinkContext context;
 
-			Stack<Instruction> stack_instr;
-			Dictionary<int, Instruction> locals;
+			Stack<Instruction>? stack_instr;
+			Dictionary<int, Instruction>? locals;
 
 			public ConstantExpressionMethodAnalyzer (LinkContext context, MethodDefinition method)
 			{
@@ -1379,8 +1392,9 @@ namespace Mono.Linker.Steps
 				this.instructions = instructions;
 			}
 
-			public Instruction Result { get; private set; }
+			public Instruction? Result { get; private set; }
 
+			[MemberNotNullWhen (true, "Result")]
 			public bool Analyze ()
 			{
 				var body = method.Body;
@@ -1388,8 +1402,8 @@ namespace Mono.Linker.Steps
 					return false;
 
 				VariableReference vr;
-				Instruction jmpTarget = null;
-				Instruction linstr;
+				Instruction? jmpTarget = null;
+				Instruction? linstr;
 
 				foreach (var instr in instructions) {
 					if (jmpTarget != null) {
@@ -1403,6 +1417,8 @@ namespace Mono.Linker.Steps
 					case Code.Nop:
 						continue;
 					case Code.Pop:
+						if (stack_instr == null)
+							Debug.Fail ("Invalid IL?");
 						stack_instr.Pop ();
 						continue;
 
@@ -1501,6 +1517,7 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
+			[MemberNotNullWhen (true, "Result")]
 			bool ConvertStackToResult ()
 			{
 				if (stack_instr == null)
@@ -1534,9 +1551,9 @@ namespace Mono.Linker.Steps
 				return false;
 			}
 
-			Instruction GetLocalsValue (int index, MethodBody body)
+			Instruction? GetLocalsValue (int index, MethodBody body)
 			{
-				if (locals != null && locals.TryGetValue (index, out Instruction instruction))
+				if (locals != null && locals.TryGetValue (index, out Instruction? instruction))
 					return instruction;
 
 				if (!body.InitLocals)
@@ -1559,6 +1576,8 @@ namespace Mono.Linker.Steps
 				if (locals == null)
 					locals = new Dictionary<int, Instruction> ();
 
+				if (stack_instr == null)
+					Debug.Fail ("Invalid IL?");
 				locals[index] = stack_instr.Pop ();
 			}
 		}
