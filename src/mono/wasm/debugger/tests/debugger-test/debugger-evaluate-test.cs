@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 namespace DebuggerTests
 {
@@ -411,6 +412,65 @@ namespace DebuggerTests
         public static int StaticField1 = 10;
         public static string StaticProperty1 => "StaticProperty1";
 		public static string StaticPropertyWithError => throw new Exception("not implemented");
+    }
+
+    public class EvaluateLocalsWithElementAccessTests
+    {
+        public class TestEvaluate
+        {
+            public List<int> numList;
+            public List<string> textList;
+            public int[] numArray;
+            public string[] textArray;
+            public int idx0 = 0;
+            public int idx1 = 1;
+
+            public void run()
+            {
+                numList = new List<int> { 1, 2 };
+                textList = new List<string> { "1", "2" };
+                numArray = new int[] { 1, 2 };
+                textArray = new string[] { "1", "2" };
+                idx0 = 0;
+                idx1 = 1;
+            }
+        
+            public int GetNumberListElementOfIndex(int idx)
+            {
+                return this.numList[idx];
+            }
+
+            public string GetTextListElementOfIndex(int idx)
+            {
+                return this.textList[idx];
+            }
+
+            public int GetNumberArrayElementOfIndex(int idx)
+            {
+                return this.numArray[idx];
+            }
+
+            public string GetTextArrayElementOfIndex(int idx)
+            {
+                return this.textArray[idx];
+            }
+
+            public int GetNumberListItemsElementOfIndex(int idx)
+            {
+                return (this.numList.ToArray())[idx];
+            }
+
+            public string GetTextListItemsElementOfIndex(int idx)
+            {
+                return (this.textList.ToArray())[idx];
+            }
+        }
+
+        public static void EvaluateLocals()
+        {
+            TestEvaluate f = new TestEvaluate();
+            f.run();
+        }
     }
 
 }
