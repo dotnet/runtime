@@ -150,6 +150,33 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins)
 }
 
 //------------------------------------------------------------------------
+// HasSBit: check if the instruction has the 's' (sign extend) bit.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has the 's' bit, false otherwise
+bool emitter::HasSBit(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Sbit) != 0) ;
+}
+
+//------------------------------------------------------------------------
+// HasSBit: check if the instruction has the 'w' bit required to use the
+//          full operand size.
+//
+// Arguments:
+//    ins - instruction to test
+//
+// Return Value:
+//    true if instruction has the 'w' bit, false otherwise
+bool emitter::HasWBit(instruction ins)
+{
+    return ((CodeGenInterface::instInfo[ins] & INS_FLAGS_Has_Wbit) != 0) ;
+}
+
+//------------------------------------------------------------------------
 // DoesWriteZeroFlag: check if the instruction write the
 //     ZF flag.
 //
@@ -10336,10 +10363,9 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte. This trick will not
         // work in case of SSE2 and AVX instructions.
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && !IsSSEInstruction(ins) &&
-            !IsAVXInstruction(ins))
+        if ((size != EA_1BYTE) && HasWBit(ins))
         {
-            code++;
+            code |= 0x1;
         }
     }
     else if (CodeGen::instIsFP(ins))
@@ -11104,8 +11130,9 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         // Use the large version if this is not a byte
         // TODO-XArch-Cleanup Can the need for the 'w' size bit be encoded in the instruction flags?
-        if ((size != EA_1BYTE) && (ins != INS_imul) && (ins != INS_bsf) && (ins != INS_bsr) && (!insIsCMOV(ins)) &&
-            !IsSSEInstruction(ins) && !IsAVXInstruction(ins))
+        // Anthony: I believe we may remove !insIsCMOV check, but leaving for comparison purposes with another
+        // similar check below
+        if ((size != EA_1BYTE) && HasWBit(ins) && !insIsCMOV(ins))
         {
             code |= 0x1;
         }
@@ -11568,12 +11595,12 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
             code &= 0x0000FFFF;
         }
 
-        if ((ins == INS_movsx || ins == INS_movzx || ins == INS_cmpxchg || ins == INS_xchg || ins == INS_xadd ||
-             insIsCMOV(ins)) &&
-            size != EA_1BYTE)
+        // Anthony: Per L10986, why is this insIsCMOV (which does not have a w bit)
+        // and above is !insIsCMOV
+        if (size != EA_1BYTE && (HasWBit(ins) || insIsCMOV(ins)))
         {
             // movsx and movzx are 'big' opcodes but also have the 'w' bit
-            code++;
+            code |= 0x1;
         }
     }
     else if (CodeGen::instIsFP(ins))
@@ -12740,7 +12767,7 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
     }
 
     // "test" has no 's' bit
-    if (ins == INS_test)
+    if (!HasSBit(ins))
     {
         useSigned = false;
     }
