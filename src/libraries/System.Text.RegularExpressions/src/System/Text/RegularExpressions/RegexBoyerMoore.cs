@@ -26,7 +26,8 @@ namespace System.Text.RegularExpressions
         public readonly int HighASCII;
         public readonly bool RightToLeft;
         public readonly bool CaseInsensitive;
-        private readonly CultureInfo _culture;
+        private readonly TextInfo _textInfo;
+        private readonly bool _usePatternLengthForDefaultAdvance;
 
         /// <summary>The maximum prefix string length for which we'll attempt to create a Boyer-Moore table.</summary>
         /// <remarks>This is limited in order to minimize the overhead of constructing a Regex.</remarks>
@@ -57,7 +58,7 @@ namespace System.Text.RegularExpressions
             Pattern = pattern;
             RightToLeft = rightToLeft;
             CaseInsensitive = caseInsensitive;
-            _culture = culture;
+            _textInfo = culture.TextInfo;
 
             int beforefirst;
             int last;
@@ -76,6 +77,9 @@ namespace System.Text.RegularExpressions
                 bump = -1;
             }
 
+            char ch = pattern[last];
+            _usePatternLengthForDefaultAdvance = rightToLeft || (caseInsensitive && RegexCharClass.ParticipatesInCaseConversion(ch));
+
             // PART I - the good-suffix shift table
             //
             // compute the positive requirement:
@@ -88,7 +92,6 @@ namespace System.Text.RegularExpressions
             Positive = new int[pattern.Length];
 
             int examine = last;
-            char ch = pattern[examine];
             Positive[examine] = bump;
             examine -= bump;
             int scan;
@@ -223,26 +226,32 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public bool IsMatch(string text, int index, int beglimit, int endlimit)
         {
+            string pattern = Pattern;
+
             if (!RightToLeft)
             {
-                if (index < beglimit || endlimit - index < Pattern.Length)
+                if (index < beglimit || endlimit - index < pattern.Length)
+                {
                     return false;
+                }
             }
             else
             {
-                if (index > endlimit || index - beglimit < Pattern.Length)
+                if (index > endlimit || index - beglimit < pattern.Length)
+                {
                     return false;
+                }
 
-                index -= Pattern.Length;
+                index -= pattern.Length;
             }
 
             if (CaseInsensitive)
             {
-                TextInfo textinfo = _culture.TextInfo;
+                TextInfo textinfo = _textInfo;
 
-                for (int i = 0; i < Pattern.Length; i++)
+                for (int i = 0; i < pattern.Length; i++)
                 {
-                    if (Pattern[i] != textinfo.ToLower(text[index + i]))
+                    if (pattern[i] != textinfo.ToLower(text[index + i]))
                     {
                         return false;
                     }
@@ -264,7 +273,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public int Scan(string text, int index, int beglimit, int endlimit)
         {
-            int defadv;
+            string pattern = Pattern;
+            int defaultAdvance;
             int test;
             int startmatch;
             int endmatch;
@@ -272,89 +282,112 @@ namespace System.Text.RegularExpressions
 
             if (!RightToLeft)
             {
-                defadv = Pattern.Length;
-                startmatch = Pattern.Length - 1;
+                defaultAdvance = pattern.Length;
+                startmatch = pattern.Length - 1;
                 endmatch = 0;
-                test = index + defadv - 1;
+                test = index + defaultAdvance - 1;
                 bump = 1;
             }
             else
             {
-                defadv = -Pattern.Length;
+                defaultAdvance = -pattern.Length;
                 startmatch = 0;
-                endmatch = -defadv - 1;
-                test = index + defadv;
+                endmatch = -defaultAdvance - 1;
+                test = index + defaultAdvance;
                 bump = -1;
             }
 
-            char chMatch = Pattern[startmatch];
-            char chTest;
-            int test2;
-            int match;
-            int advance;
-            int[] unicodeLookup;
+            char chMatch = pattern[startmatch];
+            int[] negativeAscii = NegativeASCII;
 
-            while (true)
+            while (test >= beglimit && test < endlimit)
             {
-                if (test >= endlimit || test < beglimit)
-                    return -1;
-
-                chTest = text[test];
-
+                // Get the next character from the input
+                char chTest = text[test];
                 if (CaseInsensitive)
-                    chTest = _culture.TextInfo.ToLower(chTest);
+                {
+                    chTest = _textInfo.ToLower(chTest);
+                }
 
+                // If it doesn't match our target character, skip ahead an amount dictated by the character's value.
                 if (chTest != chMatch)
                 {
-                    if (chTest < 128)
-                        advance = NegativeASCII[chTest];
-                    else if (null != NegativeUnicode && (null != (unicodeLookup = NegativeUnicode[chTest >> 8])))
-                        advance = unicodeLookup[chTest & 0xFF];
-                    else
-                        advance = defadv;
-
-                    test += advance;
-                }
-                else
-                { // if (chTest == chMatch)
-                    test2 = test;
-                    match = startmatch;
-
-                    while (true)
+                    if (chTest < negativeAscii.Length)
                     {
-                        if (match == endmatch)
-                            return (RightToLeft ? test2 + 1 : test2);
+                        test += negativeAscii[chTest];
+                        continue;
+                    }
 
-                        match -= bump;
-                        test2 -= bump;
+                    if (NegativeUnicode is int[][] negativeUnicode && negativeUnicode[chTest >> 8] is int[] unicodeLookup)
+                    {
+                        test += unicodeLookup[chTest & 0xFF];
+                        continue;
+                    }
 
-                        chTest = text[test2];
+                    if (_usePatternLengthForDefaultAdvance)
+                    {
+                        test += defaultAdvance;
+                        continue;
+                    }
 
-                        if (CaseInsensitive)
-                            chTest = _culture.TextInfo.ToLower(chTest);
+                    Debug.Assert(!CaseInsensitive || !RegexCharClass.ParticipatesInCaseConversion(chMatch), $"{chMatch}");
+                    Debug.Assert(!RightToLeft);
+                    if (test >= endlimit - defaultAdvance ||
+                        (test = text.IndexOf(chMatch, test + defaultAdvance, endlimit - test - defaultAdvance)) < 0)
+                    {
+                        break;
+                    }
+                }
 
-                        if (chTest != Pattern[match])
+                // It does match the target character.
+                Debug.Assert(text[test] == chMatch || (CaseInsensitive && _textInfo.ToLower(text[test]) == chMatch), $"{text[test]} != {chMatch}");
+                int test2 = test;
+                int match = startmatch;
+                while (true)
+                {
+                    if (match == endmatch)
+                    {
+                        return RightToLeft ? test2 + 1 : test2;
+                    }
+
+                    match -= bump;
+                    test2 -= bump;
+
+                    chTest = text[test2];
+                    if (CaseInsensitive)
+                    {
+                        chTest = _textInfo.ToLower(chTest);
+                    }
+
+                    if (chTest != pattern[match])
+                    {
+                        int advance = Positive[match];
+                        if (chTest < negativeAscii.Length)
                         {
-                            advance = Positive[match];
-                            if ((chTest & 0xFF80) == 0)
-                                test2 = (match - startmatch) + NegativeASCII[chTest];
-                            else if (null != NegativeUnicode && (null != (unicodeLookup = NegativeUnicode[chTest >> 8])))
-                                test2 = (match - startmatch) + unicodeLookup[chTest & 0xFF];
-                            else
-                            {
-                                test += advance;
-                                break;
-                            }
-
-                            if (RightToLeft ? test2 < advance : test2 > advance)
-                                advance = test2;
-
+                            test2 = match - startmatch + negativeAscii[chTest];
+                        }
+                        else if (NegativeUnicode is int[][] negativeUnicode && negativeUnicode[chTest >> 8] is int[] unicodeLookup)
+                        {
+                            test2 = match - startmatch + unicodeLookup[chTest & 0xFF];
+                        }
+                        else
+                        {
                             test += advance;
                             break;
                         }
+
+                        if (RightToLeft ? test2 < advance : test2 > advance)
+                        {
+                            advance = test2;
+                        }
+
+                        test += advance;
+                        break;
                     }
                 }
             }
+
+            return -1;
         }
 
 #if DEBUG

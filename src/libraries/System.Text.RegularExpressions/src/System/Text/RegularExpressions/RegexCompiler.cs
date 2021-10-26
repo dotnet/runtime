@@ -68,6 +68,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringAsSpanIntIntMethod = typeof(MemoryExtensions).GetMethod("AsSpan", new Type[] { typeof(string), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_stringIndexOfCharInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int) })!;
+        private static readonly MethodInfo s_stringIndexOfCharIntInt = typeof(string).GetMethod("IndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_stringLastIndexOfCharIntInt = typeof(string).GetMethod("LastIndexOf", new Type[] { typeof(char), typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_textInfoToLowerMethod = typeof(TextInfo).GetMethod("ToLower", new Type[] { typeof(char) })!;
 
@@ -1013,9 +1014,9 @@ namespace System.Text.RegularExpressions
 
             GenerateAnchorChecks();
 
-            if (_boyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null })
+            if (_boyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
             {
-                GenerateBoyerMoore();
+                GenerateBoyerMoore(rbm);
             }
             else if (_leadingCharClasses is not null)
             {
@@ -1212,11 +1213,8 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            void GenerateBoyerMoore()
+            void GenerateBoyerMoore(RegexBoyerMoore rbm)
             {
-                RegexBoyerMoore? rbm = _boyerMoorePrefix;
-                Debug.Assert(rbm is RegexBoyerMoore { NegativeUnicode: null });
-
                 // Compiled Boyer-Moore string matching
                 LocalBuilder limitLocal;
                 int beforefirst;
@@ -1256,11 +1254,19 @@ namespace System.Text.RegularExpressions
                 Label lStart = DefineLabel();
                 Br(lStart);
 
-                // DefaultAdvance:
-                // offset = pattern.Length;
-                Label lDefaultAdvance = DefineLabel();
-                MarkLabel(lDefaultAdvance);
-                Ldc(_code.RightToLeft ? -rbm.Pattern.Length : rbm.Pattern.Length);
+                // The found character not only isn't the target/last character, it's nowhere in the pattern.
+                // Advance by the length of the pattern, and then, if possible, use IndexOf to find the
+                // next occurrence of the target character.
+                bool defaultAdvanceWithIndexOf = !_code.RightToLeft && (!rbm.CaseInsensitive || !RegexCharClass.ParticipatesInCaseConversion(chLast));
+                Label lDefaultAdvance = default;
+                if (!defaultAdvanceWithIndexOf)
+                {
+                    // DefaultAdvance:
+                    // offset = pattern.Length;
+                    lDefaultAdvance = DefineLabel();
+                    MarkLabel(lDefaultAdvance);
+                    Ldc(_code.RightToLeft ? -rbm.Pattern.Length : rbm.Pattern.Length);
+                }
 
                 // Advance:
                 // runtextpos += offset;
@@ -1302,14 +1308,63 @@ namespace System.Text.RegularExpressions
                     BeqFar(lPartialMatch);
 
                     // ch -= lowAscii;
-                    // if (ch > (highAscii - lowAscii)) goto defaultAdvance;
                     Ldloc(chLocal);
                     Ldc(rbm.LowASCII);
                     Sub();
                     Stloc(chLocal);
-                    Ldloc(chLocal);
-                    Ldc(rbm.HighASCII - rbm.LowASCII);
-                    BgtUn(lDefaultAdvance);
+
+                    if (!defaultAdvanceWithIndexOf)
+                    {
+                        // if ((uint)ch > (highAscii - lowAscii)) goto defaultAdvance;
+                        Ldloc(chLocal);
+                        Ldc(rbm.HighASCII - rbm.LowASCII);
+                        BgtUn(lDefaultAdvance);
+                    }
+                    else
+                    {
+                        // if ((uint)ch <= (highAscii - lowAscii)) goto NegativeRange;
+                        Label negativeRangeLabel = DefineLabel();
+                        Ldc(rbm.HighASCII - rbm.LowASCII);
+                        Ldloc(chLocal);
+                        BgeUn(negativeRangeLabel);
+
+                        // if (runtextpos >= runtextend - pattern.Length) goto returnFalse;
+                        Label setEndReturnFalse = DefineLabel();
+                        Ldloc(_runtextposLocal);
+                        Ldloc(_runtextendLocal);
+                        Ldc(rbm.Pattern.Length);
+                        Sub();
+                        Bge(setEndReturnFalse);
+
+                        // runtextpos = runtext.IndexOf(chLast, runtextpos + pattern.Length, runtextend - runtextpos - pattern.Length);
+                        Ldloc(_runtextLocal);
+                        Ldc(chLast);
+                        Ldloc(_runtextposLocal);
+                        Ldc(rbm.Pattern.Length);
+                        Add();
+                        Ldloc(_runtextendLocal);
+                        Ldloc(_runtextposLocal);
+                        Sub();
+                        Ldc(rbm.Pattern.Length);
+                        Sub();
+                        Call(s_stringIndexOfCharIntInt);
+                        Stloc(_runtextposLocal);
+
+                        // if (runtextpos >= 0) goto lPartialMatch;
+                        Ldloc(_runtextposLocal);
+                        Ldc(0);
+                        Bge(lPartialMatch);
+
+                        // SetEndReturnFalse:
+                        // runtextpos = runtextend;
+                        // goto ReturnFalse;
+                        MarkLabel(setEndReturnFalse);
+                        Ldloc(_runtextendLocal);
+                        Stloc(_runtextposLocal);
+                        BrFar(returnFalse);
+
+                        MarkLabel(negativeRangeLabel);
+                    }
 
                     // int offset = "lookupstring"[num];
                     // goto advance;

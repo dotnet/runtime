@@ -269,9 +269,9 @@ namespace System.Text.RegularExpressions.Generator
             {
                 EmitAnchors();
 
-                if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null })
+                if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
                 {
-                    EmitBoyerMoore();
+                    EmitBoyerMoore(rbm);
                 }
                 else if (lcc is not null)
                 {
@@ -408,34 +408,27 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            void EmitBoyerMoore()
+            void EmitBoyerMoore(RegexBoyerMoore rbm)
             {
-                RegexBoyerMoore? rbm = code.BoyerMoorePrefix;
-                Debug.Assert(rbm is RegexBoyerMoore { NegativeUnicode: null });
-
+                Debug.Assert(rbm.Pattern.Length >= 2);
                 writer.WriteLine("// Boyer-Moore prefix matching");
 
                 EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
 
                 int beforefirst;
-                int last;
+                int chLast;
                 if (!rtl)
                 {
-                    //limitLocal = "runtextend";
                     beforefirst = -1;
-                    last = rbm.Pattern.Length - 1;
+                    chLast = rbm.Pattern[rbm.Pattern.Length - 1];
                 }
                 else
                 {
-                    //limitLocal = "runtextbeg";
                     beforefirst = rbm.Pattern.Length;
-                    last = 0;
+                    chLast = rbm.Pattern[0];
                 }
 
-                int chLast = rbm.Pattern[last];
-
                 EmitAdd(writer, "runtextpos", !rtl ? rbm.Pattern.Length - 1 : -rbm.Pattern.Length);
-
                 using (EmitBlock(writer, $"while ({(!rtl ? "runtextpos < runtextend" : "runtextpos >= runtextbeg")})"))
                 {
                     writer.WriteLine($"ch = {ToLowerIfNeeded(hasTextInfo, options, "runtext[runtextpos]", rbm.CaseInsensitive)};");
@@ -445,8 +438,24 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine($"ch -= {Literal((char)rbm.LowASCII)};");
                         using (EmitBlock(writer, $"if ((uint)ch > ({Literal((char)rbm.HighASCII)} - {Literal((char)rbm.LowASCII)}))"))
                         {
-                            EmitAdd(writer, "runtextpos", (!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length));
-                            writer.WriteLine("continue;");
+                            // The found character not only isn't the target/last character, it's nowhere in the pattern.
+                            // Advance by the length of the pattern, and then, if possible, use IndexOf to find the
+                            // next occurrence of the target character.
+                            if (!rtl && (!rbm.CaseInsensitive || !RegexCharClass.ParticipatesInCaseConversion(chLast)))
+                            {
+                                writer.WriteLine($"if (runtextpos >= runtextend - {rbm.Pattern.Length} ||");
+                                using (EmitBlock(writer, $"    (runtextpos = runtext.IndexOf({Literal((char)chLast)}, runtextpos + {rbm.Pattern.Length}, runtextend - runtextpos - {rbm.Pattern.Length})) < 0)"))
+                                {
+                                    writer.WriteLine("runtextpos = runtextend;");
+                                    writer.WriteLine("break;");
+                                }
+                                writer.WriteLine("goto PatternMatch;");
+                            }
+                            else
+                            {
+                                EmitAdd(writer, "runtextpos", (!rtl ? rbm.Pattern.Length : -rbm.Pattern.Length));
+                                writer.WriteLine("continue;");
+                            }
                         }
 
                         int negativeRange = rbm.HighASCII - rbm.LowASCII + 1;
@@ -472,7 +481,7 @@ namespace System.Text.RegularExpressions.Generator
                                 span[i] = (char)offset;
                             }
 
-                            writer.WriteLine($"runtextpos {(rtl ? "-=" : "+=")} {Literal(span.ToString())}[ch];");
+                            writer.WriteLine($"runtextpos {(!rtl ? "+=" : "-=")} {Literal(span.ToString())}[ch];");
                         }
                         else
                         {
@@ -480,58 +489,133 @@ namespace System.Text.RegularExpressions.Generator
                             int offset = rbm.NegativeASCII[rbm.LowASCII];
                             if (offset == beforefirst)
                             {
-                                offset = rtl ? -rbm.Pattern.Length : rbm.Pattern.Length;
+                                offset = !rtl ? rbm.Pattern.Length : -rbm.Pattern.Length;
                             }
                             EmitAdd(writer, "runtextpos", offset);
                         }
                         writer.WriteLine("continue;");
                     }
                     writer.WriteLine();
-                    writer.WriteLine("int test = runtextpos;");
-                    writer.WriteLine();
+                    writer.WriteLine("PatternMatch:");
 
-                    for (int i = rbm.Pattern.Length - 2; i >= 0; i--)
+                    if (rtl)
                     {
-                        int charIndex = !rtl ? i : rbm.Pattern.Length - 1 - i;
-                        bool sameAsPrev = i < rbm.Pattern.Length - 2 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i + 1 : rbm.Pattern.Length - 1 - (i + 1)];
-                        bool sameAsNext = i > 0 && rbm.Positive[charIndex] == rbm.Positive[!rtl ? i - 1 : rbm.Pattern.Length - 1 - (i - 1)];
-
-                        string condition = $"{ToLowerIfNeeded(hasTextInfo, options, (!rtl ? "runtext[--test]" : "runtext[++test]"), rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[charIndex]))} != {Literal(rbm.Pattern[charIndex])}";
-                        switch ((sameAsPrev, sameAsNext))
+                        // For RightToLeft, just emit the simplest correct comparisons.
+                        writer.WriteLine("int test = runtextpos;");
+                        for (int i = 1; i < rbm.Pattern.Length; i++)
                         {
-                            case (true, true):
-                                writer.WriteLine($"    {condition} ||");
-                                break;
+                            string condition = $"{ToLowerIfNeeded(hasTextInfo, options, "runtext[++test]", rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[i]))} != {Literal(rbm.Pattern[i])}";
+                            using (EmitBlock(writer, $"if ({condition})"))
+                            {
+                                EmitAdd(writer, "runtextpos", rbm.Positive[i]);
+                                writer.WriteLine("continue;");
+                            }
+                            writer.WriteLine();
+                        }
 
-                            case (false, true):
-                                writer.WriteLine($"if ({condition} ||");
-                                break;
+                        writer.WriteLine("base.runtextpos = test + 1;");
+                        writer.WriteLine("return true;");
+                    }
+                    else
+                    {
+                        // Try to emit as few reads/comparisons as possible, by emitting reads of four, two, or one at a time as is feasible.
+                        bool wroteIf = false;
+                        void EmitClause(string clause)
+                        {
+                            if (!wroteIf)
+                            {
+                                wroteIf = true;
+                                writer.Write($"if ({clause}");
+                            }
+                            else
+                            {
+                                writer.WriteLine(" ||");
+                                writer.Write($"    {clause}");
+                            }
+                        }
 
-                            case (true, false):
-                                writer.WriteLine($"    {condition})");
+                        if (rbm.Pattern.Length == 2)
+                        {
+                            // For the shortest possible pattern, where we've already validated one character and only have one more to compare,
+                            // there's no chance to read multiple characters, so emit a single if.
+                            using (EmitBlock(writer, $"if ({ToLowerIfNeeded(hasTextInfo, options, $"runtext[runtextpos - 1]", rbm.CaseInsensitive && RegexCharClass.ParticipatesInCaseConversion(rbm.Pattern[0]))} != {Literal(rbm.Pattern[0])})"))
+                            {
+                                EmitAdd(writer, "runtextpos", rbm.Positive[0]);
+                                writer.WriteLine("continue;");
+                            }
+                        }
+                        else if (rbm.CaseInsensitive)
+                        {
+                            // For case-insensitive, emit comparisons of characters one by one.
+                            writer.WriteLine($"global::System.ReadOnlySpan<char> chars = global::System.MemoryExtensions.AsSpan(runtext, runtextpos - {rbm.Pattern.Length - 1}, {rbm.Pattern.Length - 1});");
+                            ReadOnlySpan<char> charSpan = rbm.Pattern.AsSpan(0, rbm.Pattern.Length - 1);
+                            int pos = 0;
+                            while (pos < charSpan.Length)
+                            {
+                                int next = rbm.Positive[pos];
+                                wroteIf = false;
+
+                                while (pos < charSpan.Length && next == rbm.Positive[pos])
+                                {
+                                    EmitClause($"{ToLowerIfNeeded(hasTextInfo, options, $"chars[{pos}]", RegexCharClass.ParticipatesInCaseConversion(charSpan[pos]))} != {Literal(charSpan[pos])}");
+                                    pos++;
+                                }
+
+                                writer.WriteLine(")");
                                 using (EmitBlock(writer, null))
                                 {
-                                    EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
+                                    EmitAdd(writer, "runtextpos", next);
                                     writer.WriteLine("continue;");
                                 }
-                                writer.WriteLine();
-                                break;
-
-                            case (false, false):
-                                using (EmitBlock(writer, $"if ({condition})"))
-                                {
-                                    EmitAdd(writer, "runtextpos", rbm.Positive[charIndex]);
-                                    writer.WriteLine("continue;");
-                                }
-                                writer.WriteLine();
-                                break;
+                            }
                         }
-                    }
+                        else
+                        {
+                            // For left-to-right and at least two characters to be compared, compare them four, two, or one at a time.
+                            // Different characters in the pattern may need different Boyer-Moore advance distances, so we only
+                            // group contiguous reads that have the same advance distance.
+                            writer.WriteLine($"global::System.ReadOnlySpan<byte> bytes = global::System.Runtime.InteropServices.MemoryMarshal.AsBytes(global::System.MemoryExtensions.AsSpan(runtext, runtextpos - {rbm.Pattern.Length - 1}, {rbm.Pattern.Length - 1}));");
+                            ReadOnlySpan<char> charSpan = rbm.Pattern.AsSpan(0, rbm.Pattern.Length - 1);
+                            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(charSpan);
+                            int pos = 0;
+                            while (!byteSpan.IsEmpty)
+                            {
+                                int next = rbm.Positive[pos];
+                                wroteIf = false;
 
-                    writer.WriteLine(!rtl ?
-                        "base.runtextpos = test;" :
-                        "base.runtextpos = test + 1;");
-                    writer.WriteLine("return true;");
+                                while (byteSpan.Length >= sizeof(ulong) && next == rbm.Positive[pos] && next == rbm.Positive[pos + 1] && next == rbm.Positive[pos + 2] && next == rbm.Positive[pos + 3])
+                                {
+                                    EmitClause($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes.Slice({pos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt64LittleEndian(byteSpan):X}ul /* {Literal(charSpan[pos])} {Literal(charSpan[pos + 1])} {Literal(charSpan[pos + 2])} {Literal(charSpan[pos + 3])} */");
+                                    pos += sizeof(ulong) / sizeof(char);
+                                    byteSpan = byteSpan.Slice(sizeof(ulong));
+                                }
+
+                                while (byteSpan.Length >= sizeof(uint) && next == rbm.Positive[pos] && next == rbm.Positive[pos + 1])
+                                {
+                                    EmitClause($"global::System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice({pos * sizeof(char)})) != 0x{BinaryPrimitives.ReadUInt32LittleEndian(byteSpan):X}u /* {Literal(charSpan[pos])} {Literal(charSpan[pos + 1])} */");
+                                    pos += sizeof(uint) / sizeof(char);
+                                    byteSpan = byteSpan.Slice(sizeof(uint));
+                                }
+
+                                while (!byteSpan.IsEmpty && next == rbm.Positive[pos])
+                                {
+                                    EmitClause($"(char)global::System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice({pos * sizeof(char)})) != {Literal(charSpan[pos])}");
+                                    pos += sizeof(ushort) / sizeof(char);
+                                    byteSpan = byteSpan.Slice(sizeof(ushort));
+                                }
+
+                                writer.WriteLine(")");
+                                using (EmitBlock(writer, null))
+                                {
+                                    EmitAdd(writer, "runtextpos", next);
+                                    writer.WriteLine("continue;");
+                                }
+                            }
+                        }
+
+                        writer.WriteLine($"base.runtextpos = runtextpos - {rbm.Pattern.Length - 1};");
+                        writer.WriteLine("return true;");
+                    }
                 }
             }
 
