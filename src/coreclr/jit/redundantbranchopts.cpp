@@ -286,14 +286,35 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 //
 // Notes:
 //
-//    A       B          A     B
-//     \     /           |     |
-//      \   /            |     |
-//      block     ==>    |     |
-//      /   \            |     |
-//     /     \           |     |
-//    C       D          C     D
+// Conceptually this just transforms flow as follows:
 //
+//     domBlock           domBlock
+//    /       \          /        \
+//    Ts      Fs         Ts       Fs    True/False successor
+//   ....    ....       ....    ....
+//    Tp      Fp         Tp       Fp    True/False pred
+//     \     /           |        |
+//      \   /            |        |
+//      block     ==>    |        |
+//      /   \            |        |
+//     /     \           |        |
+//    Tt     Ft          Tt       Ft    True/false target
+//
+// However we may try to re-purpose block, and so end up producing flow more like this:
+//
+//     domBlock           domBlock
+//    /       \          /        \
+//    Ts      Fs         Ts       Fs    True/False successor
+//   ....    ....       ....    ....
+//    Tp      Fp         Tp       Fp    True/False pred
+//     \     /           |        |
+//      \   /            |        |
+//      block     ==>    |      block   (repurposed)
+//      /   \            |        |
+//     /     \           |        |
+//    Tt     Ft          Tt       Ft    True/false target
+//
+
 bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
 {
     assert(block->bbJumpKind == BBJ_COND);
@@ -415,7 +436,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // * It's also possible that the pred is a switch; we will treat switch
     // preds as ambiguous as well.
     //
-    // * We note if there is an un-ambiguous that pred falls through to block.
+    // * We note if there is an un-ambiguous pred that falls through to block.
     // This is the "fall through pred", and the (true/false) pred set it belongs to
     // is the "fall through set".
     //
@@ -435,7 +456,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     // per (4) below.
     //
     // (4) If we don't have an ambiguous pred, and we have a fall through, we leave
-    // all preds in the fall through set alone -- they contiuue branching to block.
+    // all preds in the fall through set alone -- they continue branching to block.
     // We modify block to branch to the appropriate successor for the fall through set.
     // Note block will be empty other than phis and the branch, so this is ok.
     // The preds in the other set target the other successor.
