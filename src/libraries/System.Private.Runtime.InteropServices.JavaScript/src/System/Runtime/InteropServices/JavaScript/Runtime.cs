@@ -55,19 +55,6 @@ namespace System.Runtime.InteropServices.JavaScript
             internal RuntimeTypeHandle typeHandle;
         }
 
-        [StructLayout(LayoutKind.Explicit)]
-        private struct IntPtrAndHandle
-        {
-            [FieldOffset(0)]
-            internal IntPtr ptr;
-
-            [FieldOffset(0)]
-            internal RuntimeMethodHandle handle;
-
-            [FieldOffset(0)]
-            internal RuntimeTypeHandle typeHandle;
-        }
-
         // see src/mono/wasm/driver.c MARSHAL_TYPE_xxx
         public enum MarshalType : int {
             NULL = 0,
