@@ -31,6 +31,7 @@ parameters:
   enableRichCodeNavigation: false
   richCodeNavigationLanguage: 'csharp'
   richCodeNavigationEnvironment: 'production'
+  matchNameSuffix: ''
 
 jobs:
 - template: /eng/common/templates/job/job.yml

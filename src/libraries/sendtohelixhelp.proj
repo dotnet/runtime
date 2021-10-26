@@ -334,7 +334,9 @@
       <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(AspNetCoreAppCurrent)-$(Configuration)'))</RemoteLoopMiddleware>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildWasmApps' and '$(TestUsingWorkloads)' != 'true'">EMSDK-</WorkItemPrefix>
+      <WorkItemPrefix Condition="'$(Scenario)' == 'normal' and '$(NeedsToBuildWasmAppsOnHelix)' == 'true' and '$(RunAOTCompilation)' == 'true'">Flag-$(EmccLinkOptimizationFlag)-</WorkItemPrefix>
     </PropertyGroup>
+
     <PropertyGroup Condition="'$(TargetOS)' == 'Browser' and '$(BrowserHost)' != 'windows'">
       <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ -->
       <!-- 84.0.4147.105 is 768962 for example -->
@@ -393,8 +395,8 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
-      <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
-      <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
+      <!--<HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />-->
+      <!--<HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />-->
     </ItemGroup>
 
     <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(Scenario)' == 'BuildWasmApps'">
@@ -415,6 +417,7 @@
 
       <HelixWorkItem Include="@(_WorkItem -> '$(WorkItemPrefix)%(FileName)')" Condition="'$(Scenario)' != 'BuildWasmApps'">
         <PayloadArchive>%(Identity)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;EmccLinkOptimizationFlag=$(EmccLinkOptimizationFlag)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
