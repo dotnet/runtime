@@ -1182,12 +1182,6 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
         // Try copying data using a copy-on-write clone. This shares storage between the files.
         while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
         copied = ret == 0;
-        if (!copied && errno != EOPNOTSUPP // not supported
-                    && errno != EXDEV      // not same file system
-                    && errno != ETXTBSY)   // swapfiles can't be reflinked
-        {
-            return -1;
-        }
     }
 #endif
 #if HAVE_SENDFILE_4
