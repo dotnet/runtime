@@ -20,9 +20,6 @@
       <CoverageInclude Include="@(AssembliesBeingTested)" />
       <CoverageInclude Include="$(CoverageAssemblies)" Condition="'$(CoverageAssemblies)' != ''" />
       <!-- Include analyzer assemblies which are referenced via the P2P protocol. -->
-      <_a1 Include="@(ReferencePath->WithMetadataValue('OutputItemType', 'Analyzer'))" />
-      <_a2 Include="@(ReferencePath->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))" />
-      <_a3 Include="@(ReferencePath->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->Metadata('Filename'))" />
       <CoverageInclude Include="@(ReferencePath->WithMetadataValue('OutputItemType', 'Analyzer')->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference')->Metadata('Filename'))" />
     </ItemGroup>
 
