@@ -92,8 +92,7 @@
     <HelixPostCommand Include="taskkill.exe /f /im corerun.exe"/>
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator'">
-    <HelixPreCommand Include="export XHARNESS_COMMAND=test" />
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
@@ -290,7 +289,7 @@
       <AppleTestTarget Condition="'$(TargetOS)' == 'MacCatalyst'">maccatalyst</AppleTestTarget>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
+    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <iOSLikeBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'msbuild', 'apple', 'build'))</iOSLikeBuildTargetsDir>
       <WorkItemPrefix Condition="'$(Scenario)' == 'BuildiOSApps' and '$(TestUsingWorkloads)' != 'true'">$(TargetOS)-</WorkItemPrefix>
 
@@ -301,7 +300,7 @@
       </_XHarnessAppleCustomCommand>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
+    <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <!-- Create work items for test apps -->
       <XHarnessAppBundleToTest
         Include="$([System.IO.Directory]::GetDirectories('$(TestArchiveTestsRoot)', '*.app', System.IO.SearchOption.AllDirectories))">

@@ -12,6 +12,10 @@
     <PublishTestAsSelfContainedDependsOn>Publish</PublishTestAsSelfContainedDependsOn>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true' or '$(EnableSoftTrimming)' == 'true'">
     <PublishTrimmed>true</PublishTrimmed>
     <!-- Suppress linker warnings as these are tests -->
@@ -52,7 +56,7 @@
   <Import Condition="'$(RunAOTCompilation)' == 'true'" Project="$(MonoAOTCompilerDir)MonoAOTCompiler.props" />
 
   <Import Project="$(MSBuildThisFileDirectory)tests.ioslike.targets" 
-          Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'" />
+          Condition="'$(TargetsAppleMobile)' == 'true'" />
   <Import Project="$(MSBuildThisFileDirectory)tests.wasm.targets" 
           Condition="'$(TargetOS)' == 'Browser'" />
 

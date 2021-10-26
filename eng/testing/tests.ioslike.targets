@@ -1,8 +1,6 @@
 <Project>
   <PropertyGroup>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestAppleApp</BundleTestAppTargets>
-
-    <RunAOTCompilation Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'">true</RunAOTCompilation>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -81,7 +79,7 @@
     <Copy SourceFiles="@(BundleFiles)"         DestinationFolder="$(BundleDir)%(TargetDir)" />
     <Copy SourceFiles="@(ExtraFiles)"          DestinationFolder="$(BundleDir)\%(TargetDir)" />
 
-    <!-- Only publish artifacts minus runtime pack assets -->
+    <!-- Only publish artifacts minus runtime pack assets (move to dotnet build later as opposed to publish)-->
     <ItemGroup Condition="'$(UsePortableRuntimePack)' == 'true'">
       <_PublishBundleFiles Include="@(BundleFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
 
@@ -94,7 +92,7 @@
       <_RuntimePackFilesToDelete Include="@(_RuntimePackFiles->'$(AppBundlePath)/%(FileName)%(Extension)')" />
     </ItemGroup>
 
-    <!-- Capture what we removed to get it back on helix -->
+    <!-- Remove the runtime pack parts from the self contained app.  We'll restore on helix -->
     <Delete Condition="'$(UsePortableRuntimePack)' == 'true'" Files="@(_RuntimePackFilesToDelete)" />
 
     <!-- To recreate the original project on helix, we need to set the apple properties also, same as the
