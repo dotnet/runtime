@@ -1232,9 +1232,10 @@ namespace System.Diagnostics
             }
             if (startInfo.HasArgumentList)
             {
-                foreach (string arg in startInfo.ArgumentList)
+                int argumentCount = startInfo.ArgumentList.Count;
+                for (int i = 0; i < argumentCount; i++)
                 {
-                    if (arg is null)
+                    if (startInfo.ArgumentList[i] is null)
                     {
                         throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
                     }

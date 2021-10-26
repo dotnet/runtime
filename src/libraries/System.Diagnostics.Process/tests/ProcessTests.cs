@@ -2223,7 +2223,7 @@ namespace System.Diagnostics.Tests
             Process testProcess = CreateProcess();
             testProcess.StartInfo = psi;
 
-            Assert.Throws<ArgumentNullException>(() => testProcess.Start());
+            AssertExtensions.Throws<ArgumentNullException>("item", () => testProcess.Start());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
