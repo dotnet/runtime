@@ -220,12 +220,6 @@ mono_dl_current_error_string (void)
 }
 #endif /* HAVE_API_SUPPORT_WIN32_FORMAT_MESSAGE */
 
-int
-mono_dl_get_executable_path (char *buf, int buflen)
-{
-	return -1; //TODO
-}
-
 const char*
 mono_dl_get_system_dir (void)
 {

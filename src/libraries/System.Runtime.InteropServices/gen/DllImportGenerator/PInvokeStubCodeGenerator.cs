@@ -217,6 +217,18 @@ namespace Microsoft.Interop
 
         public BlockSyntax GeneratePInvokeBody(string dllImportName)
         {
+            bool invokeReturnsVoid = _retMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
+
+            // Handle GuaranteedUnmarshal and Cleanup first since whether or not those stages produce statements affects multiple other stages.
+            var guaranteedUnmarshalStatements = new List<StatementSyntax>();
+            GenerateStatementsForStage(Stage.GuaranteedUnmarshal, guaranteedUnmarshalStatements);
+            bool hasGuaranteedUnmarshalStatements = guaranteedUnmarshalStatements.Count > 0;
+
+            var cleanupStatements = new List<StatementSyntax>();
+            GenerateStatementsForStage(Stage.Cleanup, cleanupStatements);
+
+            bool shouldInitializeVariables = hasGuaranteedUnmarshalStatements || cleanupStatements.Count > 0;
+
             var setupStatements = new List<StatementSyntax>();
 
             foreach (BoundGenerator marshaller in _paramMarshallers)
@@ -238,10 +250,8 @@ namespace Microsoft.Interop
                 }
 
                 // Declare variables for parameters
-                AppendVariableDeclations(setupStatements, info, marshaller.Generator);
+                AppendVariableDeclations(setupStatements, info, marshaller.Generator, initializeToDefault: shouldInitializeVariables);
             }
-
-            bool invokeReturnsVoid = _retMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
 
             // Stub return is not the same as invoke return
             if (!_stubReturnsVoid && !_retMarshaller.TypeInfo.IsManagedReturnPosition)
@@ -252,47 +262,41 @@ namespace Microsoft.Interop
                 (TypePositionInfo stubRetTypeInfo, IMarshallingGenerator stubRetGenerator) = _paramMarshallers.Last();
 
                 // Declare variables for stub return value
-                AppendVariableDeclations(setupStatements, stubRetTypeInfo, stubRetGenerator);
+                AppendVariableDeclations(setupStatements, stubRetTypeInfo, stubRetGenerator, initializeToDefault: shouldInitializeVariables);
             }
 
             if (!invokeReturnsVoid)
             {
                 // Declare variables for invoke return value
-                AppendVariableDeclations(setupStatements, _retMarshaller.TypeInfo, _retMarshaller.Generator);
+                AppendVariableDeclations(setupStatements, _retMarshaller.TypeInfo, _retMarshaller.Generator, initializeToDefault: shouldInitializeVariables);
             }
 
-            // Do not manually handle SetLastError when generating forwarders.
-            // We want the runtime to handle everything.
             if (_setLastError)
             {
                 // Declare variable for last error
-                setupStatements.Add(MarshallerHelpers.DeclareWithDefault(
+                setupStatements.Add(MarshallerHelpers.Declare(
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
-                    LastErrorIdentifier));
+                    LastErrorIdentifier,
+                    initializeToDefault: false));
+            }
+
+            if (hasGuaranteedUnmarshalStatements)
+            {
+                setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
             var tryStatements = new List<StatementSyntax>();
-            var guaranteedUnmarshalStatements = new List<StatementSyntax>();
-            var cleanupStatements = new List<StatementSyntax>();
             InvocationExpressionSyntax invoke = InvocationExpression(IdentifierName(dllImportName));
-
-            // Handle GuaranteedUnmarshal first since that stage producing statements affects multiple other stages.
-            GenerateStatementsForStage(Stage.GuaranteedUnmarshal, guaranteedUnmarshalStatements);
-            if (guaranteedUnmarshalStatements.Count > 0)
-            {
-                setupStatements.Add(MarshallerHelpers.DeclareWithDefault(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier));
-            }
 
             GenerateStatementsForStage(Stage.Setup, setupStatements);
             GenerateStatementsForStage(Stage.Marshal, tryStatements);
             GenerateStatementsForInvoke(tryStatements, invoke);
             GenerateStatementsForStage(Stage.KeepAlive, tryStatements);
             GenerateStatementsForStage(Stage.Unmarshal, tryStatements);
-            GenerateStatementsForStage(Stage.Cleanup, cleanupStatements);
 
             List<StatementSyntax> allStatements = setupStatements;
             List<StatementSyntax> finallyStatements = new List<StatementSyntax>();
-            if (guaranteedUnmarshalStatements.Count > 0)
+            if (hasGuaranteedUnmarshalStatements)
             {
                 finallyStatements.Add(IfStatement(IdentifierName(InvokeSucceededIdentifier), Block(guaranteedUnmarshalStatements)));
             }
@@ -477,24 +481,26 @@ namespace Microsoft.Interop
             );
         }
 
-        private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator)
+        private void AppendVariableDeclations(List<StatementSyntax> statementsToUpdate, TypePositionInfo info, IMarshallingGenerator generator, bool initializeToDefault)
         {
             (string managed, string native) = GetIdentifiers(info);
 
             // Declare variable for return value
             if (info.IsManagedReturnPosition || info.IsNativeReturnPosition)
             {
-                statementsToUpdate.Add(MarshallerHelpers.DeclareWithDefault(
+                statementsToUpdate.Add(MarshallerHelpers.Declare(
                     info.ManagedType.Syntax,
-                    managed));
+                    managed,
+                    false));
             }
 
             // Declare variable with native type for parameter or return value
             if (generator.UsesNativeIdentifier(info, this))
             {
-                statementsToUpdate.Add(MarshallerHelpers.DeclareWithDefault(
+                statementsToUpdate.Add(MarshallerHelpers.Declare(
                     generator.AsNativeType(info),
-                    native));
+                    native,
+                    initializeToDefault));
             }
         }
     }

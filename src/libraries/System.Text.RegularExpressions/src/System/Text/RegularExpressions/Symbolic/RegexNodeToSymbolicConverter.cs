@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
@@ -30,6 +31,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private BDD CreateConditionFromSet(bool ignoreCase, string set)
         {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(CreateConditionFromSet, ignoreCase, set);
+            }
+
             (bool ignoreCase, string set) key = (ignoreCase, set);
             if (!_createConditionFromSet_Cache.TryGetValue(key, out BDD? result))
             {
@@ -201,11 +207,9 @@ namespace System.Text.RegularExpressions.Symbolic
         public SymbolicRegexNode<BDD> Convert(RegexNode node, bool topLevel)
         {
             // Guard against stack overflow due to deep recursion
-            if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                RegexNode localNode = node;
-                bool localTopLevel = topLevel;
-                return StackHelper.CallOnEmptyStack(() => Convert(localNode, localTopLevel));
+                return StackHelper.CallOnEmptyStack(Convert, node, topLevel);
             }
 
             switch (node.Type)

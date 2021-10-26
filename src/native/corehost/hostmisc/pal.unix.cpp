@@ -5,7 +5,6 @@
 #define _WITH_GETLINE
 #endif
 
-#include <getexepath.h>
 #include "pal.h"
 #include "utils.h"
 #include "trace.h"
@@ -20,6 +19,7 @@
 #include <locale>
 #include <pwd.h>
 #include "config.h"
+#include <common/getexepath.h>
 
 #if defined(TARGET_OSX)
 #include <mach-o/dyld.h>
@@ -837,7 +837,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
 bool pal::get_own_executable_path(pal::string_t* recv)
 {
-    char* path = getexepath();
+    char* path = minipal_getexepath();
     if (!path)
     {
         return false;

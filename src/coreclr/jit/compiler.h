@@ -7311,6 +7311,7 @@ public:
 #define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
 #define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
+#define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 
     bool doesMethodHaveFatPointer()
     {
@@ -7396,6 +7397,16 @@ public:
         optMethodFlags |= OMF_HAS_PATCHPOINT;
     }
 
+    bool doesMethodHavePartialCompilationPatchpoints()
+    {
+        return (optMethodFlags & OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT) != 0;
+    }
+
+    void setMethodHasPartialCompilationPatchpoint()
+    {
+        optMethodFlags |= OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT;
+    }
+
     unsigned optMethodFlags;
 
     bool doesMethodHaveNoReturnCalls()
@@ -7453,7 +7464,7 @@ public:
     //
     PhaseStatus optRedundantBranches();
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
 
 #if ASSERTION_PROP

@@ -54,10 +54,7 @@ namespace System.DirectoryServices.Protocols
 
         private bool GetBoolValueHelper(LdapOption option)
         {
-            if (_connection._disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
 
             bool outValue = false;
             int error = LdapPal.GetBoolOption(_connection._ldapHandle, option, ref outValue);
@@ -68,10 +65,7 @@ namespace System.DirectoryServices.Protocols
 
         private void SetBoolValueHelper(LdapOption option, bool value)
         {
-            if (_connection._disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            if (_connection._disposed) throw new ObjectDisposedException(GetType().Name);
 
             int error = LdapPal.SetBoolOption(_connection._ldapHandle, option, value);
 

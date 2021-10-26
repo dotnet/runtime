@@ -162,16 +162,40 @@ namespace DllImportGenerator.UnitTests
 
         private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)
         {
-            const string envVar = "NUGET_PACKAGES";
             try
             {
-                // Set the NuGet package cache location to a subdirectory such that we should always have access to it
-                Environment.SetEnvironmentVariable(envVar, Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "packages"));
+                ResolveRedirect.Instance.Start();
                 return await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
             }
             finally
             {
-                Environment.SetEnvironmentVariable(envVar, null);
+                ResolveRedirect.Instance.Stop();
+            }
+        }
+
+        private class ResolveRedirect
+        {
+            private const string EnvVarName = "NUGET_PACKAGES";
+
+            private static readonly ResolveRedirect s_instance = new ResolveRedirect();
+            public static ResolveRedirect Instance => s_instance;
+
+            private int _count = 0;
+
+            public void Start()
+            {
+                // Set the NuGet package cache location to a subdirectory such that we should always have access to it
+                Environment.SetEnvironmentVariable(EnvVarName, Path.Combine(Path.GetDirectoryName(typeof(TestUtils).Assembly.Location)!, "packages"));
+                Interlocked.Increment(ref _count);
+            }
+
+            public void Stop()
+            {
+                int count = Interlocked.Decrement(ref _count);
+                if (count == 0)
+                {
+                   Environment.SetEnvironmentVariable(EnvVarName, null);
+                }
             }
         }
     }
