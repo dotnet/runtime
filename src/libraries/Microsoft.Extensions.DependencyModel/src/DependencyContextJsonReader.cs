@@ -477,6 +477,8 @@ namespace Microsoft.Extensions.DependencyModel
                 {
                     throw new ArgumentException(null, nameof(libraryName));
                 }
+
+                runtimes.Add(libraryName);
             }
 
             reader.CheckEndObject();
