@@ -327,7 +327,7 @@ namespace System.Threading.Tests
             Assert.False(Mutex.TryOpenExisting(name, out m));
             Assert.Null(m);
 
-            using (var m = new Mutex(false, name)) { }
+            using (m = new Mutex(false, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Mutex.OpenExisting(name));
             Assert.False(Mutex.TryOpenExisting(name, out m));
             Assert.Null(m);

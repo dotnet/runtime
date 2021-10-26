@@ -359,7 +359,7 @@ namespace System.Threading.Tests
             Assert.False(Semaphore.TryOpenExisting(name, out s));
             Assert.Null(s);
 
-            using (var s = new Semaphore(0, 1, name)) { }
+            using (s = new Semaphore(0, 1, name)) { }
             Assert.Throws<WaitHandleCannotBeOpenedException>(() => Semaphore.OpenExisting(name));
             Assert.False(Semaphore.TryOpenExisting(name, out s));
             Assert.Null(s);
