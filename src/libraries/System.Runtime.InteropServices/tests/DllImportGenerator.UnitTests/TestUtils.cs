@@ -164,9 +164,10 @@ namespace DllImportGenerator.UnitTests
         // The non-configurable test-packages folder may be incomplete/corrupt.
         // - https://github.com/dotnet/roslyn-sdk/issues/487
         // - https://github.com/dotnet/roslyn-sdk/issues/590
-        internal static SkipTestException GetSkipException(NuGet.Packaging.Core.PackagingException e)
+        internal static void ThrowSkipExceptionIfPackagingException(Exception e)
         {
-            throw new SkipTestException($"Skipping test due to issue with test-packages ({e.Message}). See https://github.com/dotnet/roslyn-sdk/issues/590.");
+            if (e.GetType().FullName == "NuGet.Packaging.Core.PackagingException")
+                throw new SkipTestException($"Skipping test due to issue with test-packages ({e.Message}). See https://github.com/dotnet/roslyn-sdk/issues/590.");
         }
 
         private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)
@@ -176,9 +177,10 @@ namespace DllImportGenerator.UnitTests
                 ResolveRedirect.Instance.Start();
                 return await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
             }
-            catch (NuGet.Packaging.Core.PackagingException e)
+            catch (Exception e)
             {
-                throw GetSkipException(e);
+                ThrowSkipExceptionIfPackagingException(e);
+                throw;
             }
             finally
             {

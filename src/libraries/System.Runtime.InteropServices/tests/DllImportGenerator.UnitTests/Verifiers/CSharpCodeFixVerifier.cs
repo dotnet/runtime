@@ -123,9 +123,10 @@ namespace DllImportGenerator.UnitTests.Verifiers
                 {
                     await base.RunImplAsync(cancellationToken);
                 }
-                catch(NuGet.Packaging.Core.PackagingException e)
+                catch (System.Exception e)
                 {
-                    throw TestUtils.GetSkipException(e);
+                    TestUtils.ThrowSkipExceptionIfPackagingException(e);
+                    throw;
                 }
             }
         }
