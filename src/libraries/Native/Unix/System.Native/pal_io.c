@@ -1143,14 +1143,6 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd, int64_t fileLength)
             assert(bytesWritten >= 0);
             bytesRead -= bytesWritten;
             offset += bytesWritten;
-            if (fileLength > 0)
-            {
-                fileLength -= bytesWritten;
-                if (fileLength == 0)
-                {
-                    break;
-                }
-            }
         }
     }
 
