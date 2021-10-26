@@ -209,6 +209,23 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        static void TestArrayMethodsGetSetAddressAreNotEquals()
+        {
+           void test(Type type)
+            {
+                var v1 = type.GetMethod("Get");
+                var v2 = type.GetMethod("Set");
+                var v3 = type.GetMethod("Address");
+                Assert.NotEqual(v1, v2);
+                Assert.NotEqual(v1, v3);
+                Assert.NotEqual(v2, v3);
+            }
+
+            test(typeof(int[]));
+            test((typeof(int[])).Project());
+        }
+
+        [Fact]
         public static void TestArrayAddressMethod()
         {
             bool expectedDefaultValue = true;
