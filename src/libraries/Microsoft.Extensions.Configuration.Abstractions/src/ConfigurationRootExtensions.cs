@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         var value = processValue != null
                             ? processValue(new ConfigurationDebugViewContext(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider))
-                            : valueAndProvider.Value;
+                            : valueAndProvider.Value!;
 
                         stringBuilder
                             .Append(indent)
