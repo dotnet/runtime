@@ -594,11 +594,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCounting, W("TC_CallCounting"), 1, "Ena
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_UseCallCountingStubs, W("TC_UseCallCountingStubs"), 1, "Uses call counting stubs for faster call counting.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), TC_DeleteCallCountingStubsAfter, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
 #ifdef _DEBUG
-#undef TC_BackgroundWorkerTimeoutMs (100)
-#undef TC_CallCountThreshold (2)
-#undef TC_CallCountingDelayMs (1)
-#undef TC_DelaySingleProcMultiplier (1)
-#undef TC_DeleteCallCountingStubsAfter (1)
+#undef TC_BackgroundWorkerTimeoutMs
+#undef TC_CallCountThreshold
+#undef TC_CallCountingDelayMs
+#undef TC_DelaySingleProcMultiplier
+#undef TC_DeleteCallCountingStubsAfter
 #endif // _DEBUG
 #endif // FEATURE_TIERED_COMPILATION
 
