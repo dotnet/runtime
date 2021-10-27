@@ -567,7 +567,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateExpressionsWithElementAccessByConstant() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 3, "EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -582,7 +582,23 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateExpressionsWithElementAccessByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 3, "EvaluateLocals",
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("f.numList[i]", TNumber(1)),
+                   ("f.textList[j]", TString("2")),
+                   ("f.numArray[j]", TNumber(2)),
+                   ("f.textArray[i]", TString("1")));
+                
+           });
+
+        [Fact]
+        public async Task EvaluateExpressionsWithElementAccessByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -592,8 +608,8 @@ namespace DebuggerTests
                    ("f.idx0", TNumber(0)),
                    ("f.idx1", TNumber(1)),
                    ("f.numList[f.idx0]", TNumber(1)),
-                   ("f.textList[f.idx1]", TString("2")), //FAIL
-                   ("f.numArray[f.idx1]", TNumber(2)), //FAIL
+                   ("f.textList[f.idx1]", TString("2")),
+                   ("f.numArray[f.idx1]", TNumber(2)),
                    ("f.textArray[f.idx0]", TString("1")));
                 
            });

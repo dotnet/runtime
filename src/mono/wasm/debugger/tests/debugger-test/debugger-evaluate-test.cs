@@ -438,6 +438,8 @@ namespace DebuggerTests
 
         public static void EvaluateLocals()
         {
+            int i = 0;
+            int j = 1;
             TestEvaluate f = new TestEvaluate();
             f.run();
         }

@@ -222,8 +222,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (isCorrectIndex)
                     {
                         string elementIdxStr = argument.Substring(1, argument.Length - 2);
+                        JObject indexObject = await Resolve(elementIdxStr, token);
                         int elementIdx;
-                        int.TryParse(elementIdxStr, out elementIdx);
+                        if (indexObject == null)
+                        {
+                            int.TryParse(elementIdxStr, out elementIdx);
+                        }
+                        else
+                        {
+                            elementIdxStr = indexObject["value"].ToString();
+                            int.TryParse(elementIdxStr, out elementIdx);
+                        }
                         if (elementIdx >= 0)
                         {
                             DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
