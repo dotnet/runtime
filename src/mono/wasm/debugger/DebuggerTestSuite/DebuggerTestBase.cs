@@ -357,10 +357,10 @@ namespace DebuggerTests
             return l;
         }
 
-        internal void CheckArray(JToken locals, string name, string class_name, int length)
+        internal void CheckArray(JToken locals, string name, string class_name, string description)
            => CheckValue(
                 GetAndAssertObjectWithName(locals, name)["value"],
-                TArray(class_name, length), name).Wait();
+                TArray(class_name, description), name).Wait();
 
         internal JToken GetAndAssertObjectWithName(JToken obj, string name, string label = "")
         {
@@ -979,7 +979,7 @@ namespace DebuggerTests
             JObject.FromObject(new { type = "object", className = className, description = description ?? className, subtype = is_null ? "null" : null }) :
             JObject.FromObject(new { type = "object", className = className, description = description ?? className });
 
-        internal static JObject TArray(string className, int length = 0) => JObject.FromObject(new { type = "object", className = className, description = $"{className}({length})", subtype = "array" });
+        internal static JObject TArray(string className, string description) => JObject.FromObject(new { type = "object", className, description, subtype = "array" });
 
         internal static JObject TBool(bool value) => JObject.FromObject(new { type = "boolean", value = @value, description = @value ? "true" : "false" });
 

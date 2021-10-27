@@ -354,7 +354,7 @@ namespace DebuggerTests
                     CheckObject(locals, "this", "Math.NestedInMath");
                     //FIXME: check fields
                     CheckValueType(locals, "ss", "Math.SimpleStruct");
-                    CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", 0);
+                    CheckArray(locals, "ss_arr", "Math.SimpleStruct[]", "Math.SimpleStruct[0]");
                     // TODO: struct fields
                 }
             );
@@ -584,7 +584,7 @@ namespace DebuggerTests
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 await CheckProps(locals, new
                 {
-                    ssta = TArray("DebuggerTests.StructForToStringTests[]", 1)
+                    ssta = TArray("DebuggerTests.StructForToStringTests[]", "DebuggerTests.StructForToStringTests[1]")
                 }, "locals");
 
                 var ssta = await GetObjectOnLocals(locals, "ssta");

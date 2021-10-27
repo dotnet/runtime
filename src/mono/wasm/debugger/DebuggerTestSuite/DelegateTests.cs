@@ -32,19 +32,19 @@ namespace DebuggerTests
                    {
                        fn_func = TDelegate("System.Func<Math, bool>", "bool <DelegatesTest>|(Math)"),
                        fn_func_null = TObject("System.Func<Math, bool>", is_null: true),
-                       fn_func_arr = TArray("System.Func<Math, bool>[]", 1),
+                       fn_func_arr = TArray("System.Func<Math, bool>[]", "System.Func<Math, bool>[1]"),
                        fn_del = TDelegate("Math.IsMathNull", "bool IsMathNullDelegateTarget (Math)"),
                        fn_del_null = TObject("Math.IsMathNull", is_null: true),
-                       fn_del_arr = TArray("Math.IsMathNull[]", 1),
+                       fn_del_arr = TArray("Math.IsMathNull[]", "Math.IsMathNull[1]"),
 
                        // Unused locals
                        fn_func_unused = TDelegate("System.Func<Math, bool>", "bool <DelegatesTest>|(Math)"),
                        fn_func_null_unused = TObject("System.Func<Math, bool>", is_null: true),
-                       fn_func_arr_unused = TArray("System.Func<Math, bool>[]", 1),
+                       fn_func_arr_unused = TArray("System.Func<Math, bool>[]", "System.Func<Math, bool>[1]"),
 
                        fn_del_unused = TDelegate("Math.IsMathNull", "bool IsMathNullDelegateTarget (Math)"),
                        fn_del_null_unused = TObject("Math.IsMathNull", is_null: true),
-                       fn_del_arr_unused = TArray("Math.IsMathNull[]", 1),
+                       fn_del_arr_unused = TArray("Math.IsMathNull[]", "Math.IsMathNull[1]"),
 
                        res = TBool(false),
                        m_obj = TObject("Math")
@@ -105,7 +105,7 @@ namespace DebuggerTests
 
                    fn_func_null = TObject("System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>", is_null: true),
                    fn_func_only_ret = TDelegate("System.Func<bool>", "bool <DelegatesSignatureTest>|()"),
-                   fn_func_arr = TArray("System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>[]", 1),
+                   fn_func_arr = TArray("System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>[]", "System.Func<Math, Math.GenericStruct<Math.GenericStruct<int[]>>, Math.GenericStruct<bool[]>>[1]"),
 
                    fn_del = TDelegate("Math.DelegateForSignatureTest",
                            "Math.GenericStruct<bool[]> DelegateTargetForSignatureTest (Math,Math.GenericStruct<Math.GenericStruct<int[]>>)"),
@@ -114,16 +114,16 @@ namespace DebuggerTests
                            "Math.GenericStruct<bool[]> <DelegatesSignatureTest>|(Math,Math.GenericStruct<Math.GenericStruct<int[]>>)"),
 
                    fn_del_null = TObject("Math.DelegateForSignatureTest", is_null: true),
-                   fn_del_arr = TArray("Math.DelegateForSignatureTest[]", 2),
+                   fn_del_arr = TArray("Math.DelegateForSignatureTest[]", "Math.DelegateForSignatureTest[2]"),
                    m_obj = TObject("Math"),
                    gs_gs = TValueType("Math.GenericStruct<Math.GenericStruct<int[]>>"),
                    fn_void_del = TDelegate("Math.DelegateWithVoidReturn",
                            "void DelegateTargetWithVoidReturn (Math.GenericStruct<int[]>)"),
 
-                   fn_void_del_arr = TArray("Math.DelegateWithVoidReturn[]", 1),
+                   fn_void_del_arr = TArray("Math.DelegateWithVoidReturn[]", "Math.DelegateWithVoidReturn[1]"),
                    fn_void_del_null = TObject("Math.DelegateWithVoidReturn", is_null: true),
                    gs = TValueType("Math.GenericStruct<int[]>"),
-                   rets = TArray("Math.GenericStruct<bool[]>[]", 6)
+                   rets = TArray("Math.GenericStruct<bool[]>[]", "Math.GenericStruct<bool[]>[6]")
                }, "locals");
 
                await CompareObjectPropertiesFor(locals, "fn_func_arr", new[]
@@ -176,7 +176,7 @@ namespace DebuggerTests
 
                    fn_action_null = TObject("System.Action<Math.GenericStruct<int[]>>", is_null: true),
 
-                   fn_action_arr = TArray("System.Action<Math.GenericStruct<int[]>>[]", 3),
+                   fn_action_arr = TArray("System.Action<Math.GenericStruct<int[]>>[]", "System.Action<Math.GenericStruct<int[]>>[3]"),
 
                    gs = TValueType("Math.GenericStruct<int[]>"),
                }, "locals");
@@ -212,8 +212,8 @@ namespace DebuggerTests
                    fn_func = TDelegate("System.Func<System.Func<int, bool>, bool>",
                            "bool <NestedDelegatesTest>|(Func<int, bool>)"),
                    fn_func_null = TObject("System.Func<System.Func<int, bool>, bool>", is_null: true),
-                   fn_func_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", 1),
-                   fn_del_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", 1),
+                   fn_func_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", "System.Func<System.Func<int, bool>, bool>[1]"),
+                   fn_del_arr = TArray("System.Func<System.Func<int, bool>, bool>[]", "System.Func<System.Func<int, bool>, bool>[1]"),
 
                    m_obj = TObject("Math"),
                    fn_del_null = TObject("System.Func<System.Func<int, bool>, bool>", is_null: true),
@@ -253,7 +253,7 @@ namespace DebuggerTests
                await CheckProps(locals, new
                {
                    @this = TObject("Math"),
-                   dst_arr = TArray("Math.DelegateForSignatureTest[]", 2),
+                   dst_arr = TArray("Math.DelegateForSignatureTest[]", "Math.DelegateForSignatureTest[2]"),
                    fn_func = TDelegate("System.Func<char[], bool>",
                            "bool <DelegatesAsMethodArgsTest>|(char[])"),
                    fn_action = TDelegate("System.Action<Math.GenericStruct<int>[]>",
@@ -284,7 +284,7 @@ namespace DebuggerTests
                await CheckProps(locals, new
                {
                    @this = TObject("Math"),
-                   _dst_arr = TArray("Math.DelegateForSignatureTest[]", 2),
+                   _dst_arr = TArray("Math.DelegateForSignatureTest[]", "Math.DelegateForSignatureTest[2]"),
                    _fn_func = TDelegate("System.Func<char[], bool>",
                            "bool <MethodWithDelegatesAsync>|(char[])"),
                    _fn_action = TDelegate("System.Action<Math.GenericStruct<int>[]>",

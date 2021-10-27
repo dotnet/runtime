@@ -140,7 +140,7 @@ namespace DebuggerTests
                         str_spaces,
                         str_esc,
 
-                        strings = TArray("string[]", 4)
+                        strings = TArray("string[]", "string[4]")
                     }, "locals");
 
                     var strings_arr = await GetObjectOnLocals(locals, "strings");
@@ -204,14 +204,14 @@ namespace DebuggerTests
                     CheckObject(locals, "list", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
-                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
+                    CheckArray(locals, "list_arr", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
                     CheckObject(locals, "list_arr_null", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
 
                     // Unused locals
                     CheckObject(locals, "list_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", description: "Count = 0");
                     CheckObject(locals, "list_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>", is_null: true);
 
-                    CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", 1);
+                    CheckArray(locals, "list_arr_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[1]");
                     CheckObject(locals, "list_arr_null_unused", "System.Collections.Generic.Dictionary<Math[], Math.IsMathNull>[]", is_null: true);
                 }
             );
@@ -367,7 +367,7 @@ namespace DebuggerTests
                     o_n_dt = TDateTime(dt),
 
                     o_null = TObject("object", is_null: true),
-                    o_ia = TArray("int[]", 2),
+                    o_ia = TArray("int[]", "int[2]"),
                 }, "locals");
 
                 foreach (var name in new[] { "n_gs", "o_gs", "o_n_gs" })
@@ -541,7 +541,7 @@ namespace DebuggerTests
                 ts = TValueType("System.TimeSpan", ts.ToString()),
                 dec = TValueType("System.Decimal", "123987123"),
                 guid = TValueType("System.Guid", "3D36E07E-AC90-48C6-B7EC-A481E289D014"),
-                dts = TArray("System.DateTime[]", 2),
+                dts = TArray("System.DateTime[]", "System.DateTime[2]"),
                 obj = TObject("DebuggerTests.ClassForToStringTests"),
                 sst = TObject("DebuggerTests.StructForToStringTests")
             }, "locals#0");
@@ -712,7 +712,7 @@ namespace DebuggerTests
                      mi = TObject("System.Reflection.RuntimeMethodInfo"), //this is what is returned when debugging desktop apps using VS
                      dt = TDateTime(new DateTime(4210, 3, 4, 5, 6, 7)),
                      i = TNumber(4),
-                     strings = TArray("string[]", 1),
+                     strings = TArray("string[]", "string[1]"),
                      cs = TValueType("DebuggerTests.GetPropertiesTests.CloneableStruct"),
 
                      num = TNumber(10),
