@@ -189,17 +189,16 @@ jobs:
           df -h
         displayName: Disk Usage before Build
 
-    # Build DacTableGen (Windows-only)
-    - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.dactools $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/DacTools.binlog
-        displayName: Build DAC utility tools
+    # Build/Generate native prerequisites
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.nativeprereqs $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci /bl:$(Build.SourcesDirectory)artifacts/log/$(buildConfig)/CoreCLRNativePrereqs.binlog
+      displayName: Build and generate native prerequisites
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(clrRuntimePortableBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'windows') }}:
-      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(pgoInstrumentArg) $(officialBuildIdArg) $(clrInterpreterBuildArg) $(CoreClrPgoDataArg)
         displayName: Build CoreCLR Runtime
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:

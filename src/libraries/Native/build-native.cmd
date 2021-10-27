@@ -49,6 +49,8 @@ if NOT [%errorlevel%] == [0] goto :Failure
 echo Commencing build of native components
 echo.
 
+call "%__engNativeDir%\version\copy_version_files.cmd"
+
 :: cmake requires forward slashes in paths
 set __cmakeRepoRoot=%__repoRoot:\=/%
 set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
@@ -84,10 +86,6 @@ set MSBUILD_EMPTY_PROJECT_CONTENT= ^
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.props"
 echo %MSBUILD_EMPTY_PROJECT_CONTENT% > "%__artifactsDir%\obj\native\Directory.Build.targets"
 
-:: generate version file
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__repoRoot%\eng\common\msbuild.ps1" /clp:nosummary %__ArcadeScriptArgs%^
-    "%__repoRoot%\eng\empty.csproj" /p:NativeVersionFile="%__artifactsDir%\obj\_version.h"^
-    /t:GenerateNativeVersionFile /restore
 :: Regenerate the VS solution
 
 pushd "%__IntermediatesDir%"
