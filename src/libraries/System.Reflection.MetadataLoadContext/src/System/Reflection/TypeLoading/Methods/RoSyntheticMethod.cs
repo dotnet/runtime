@@ -72,6 +72,9 @@ namespace System.Reflection.TypeLoading
             if (!(obj is RoSyntheticMethod other))
                 return false;
 
+            if (DeclaringType != other.DeclaringType)
+                return false;
+
             if (ReturnType != other.ReturnType)
                 return false;
 
