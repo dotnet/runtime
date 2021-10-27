@@ -37,6 +37,10 @@ namespace Microsoft.Extensions.Configuration
     public readonly partial struct ConfigurationDebugViewContext
     {
         public ConfigurationDebugViewContext(string path, string key, string? value, IConfigurationProvider configurationProvider) { throw null; }
+        public string Path { get; }
+        public string Key { get; }
+        public string? Value { get; }
+        public IConfigurationProvider ConfigurationProvider { get; }
     }
     public partial interface IConfiguration
     {
