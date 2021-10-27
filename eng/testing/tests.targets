@@ -4,7 +4,8 @@
     <RunScriptInputName Condition="'$(TargetOS)' != 'windows'">RunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator'">AppleRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Android'">AndroidRunnerTemplate.sh</RunScriptInputName>
-    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' == 'true'">WasmRunnerAOTTemplate.sh</RunScriptInputName>
+    <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' != 'Windows_NT' and '$(BuildAOTTestsOnHelix)' != 'true'">WasmRunnerTemplate.sh</RunScriptInputName>
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
   </PropertyGroup>
 
