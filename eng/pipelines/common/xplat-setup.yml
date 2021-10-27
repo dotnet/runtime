@@ -49,9 +49,9 @@ jobs:
         value: $(buildConfigUpper)
       
       - name: _runSmokeTestsOnlyArg
-        ${{ if eq(variables['isFullMatrix'], false) }}:
+        ${{ if eq(parameters.variables['isFullMatrix'], false) }}:
           value: /p:RunSmokeTestsOnly=true
-        ${{ if eq(variables['isFullMatrix'], true) }}:
+        ${{ if eq(parameters.variables['isFullMatrix'], true) }}:
           value: ''
 
       - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
