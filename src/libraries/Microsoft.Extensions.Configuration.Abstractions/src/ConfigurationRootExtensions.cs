@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Configuration
 
                     if (valueAndProvider.Provider != null)
                     {
-                        string value = processValue != null
+                        string? value = processValue != null
                             ? processValue(new ConfigurationDebugViewContext(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider))
                             : valueAndProvider.Value;
 
