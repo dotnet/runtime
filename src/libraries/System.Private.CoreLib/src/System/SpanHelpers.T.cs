@@ -299,19 +299,38 @@ namespace System
             if (Vector.IsHardwareAccelerated && CanVectorizeIndexOfForType<T>() && (Vector<T>.Count * 2) <= length)
             {
                 Vector<T> valueVector = new Vector<T>(value);
-                while (length >= Vector<T>.Count)
+                Vector<T> compareVector = default;
+                Vector<T> matchVector = default;
+                if (length % Vector<T>.Count != 0)
                 {
-                    Vector<T> compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
-                    Vector<T> matchVector = Vector.Equals(valueVector, compareVector);
+                    // Number of elements is not a multiple of Vector<T>.Count, so do one
+                    // check and shift only enough for the remaining set to be a multiple
+                    // of Vecotr<T>.Count.
+                    compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    matchVector = Vector.Equals(valueVector, compareVector);
                     if (matchVector != Vector<T>.Zero)
                     {
-                        for (int i = 0; i < Vector<T>.Count; i++)
-                            if (compareVector[i].Equals(value))
-                                return (int)(index + i);
+                        goto VectorMatch;
+                    }
+                    index += length % Vector<T>.Count;
+                    length -= length % Vector<T>.Count;
+                }
+                while (length > 0)
+                {
+                    compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
+                    matchVector = Vector.Equals(valueVector, compareVector);
+                    if (matchVector != Vector<T>.Zero)
+                    {
+                        goto VectorMatch;
                     }
                     index += Vector<T>.Count;
                     length -= Vector<T>.Count;
                 }
+                goto NotFound;
+            VectorMatch:
+                for (int i = 0; i < Vector<T>.Count; i++)
+                    if (compareVector[i].Equals(value))
+                        return (int)(index + i);
             }
             while (length >= 8)
             {
@@ -359,6 +378,7 @@ namespace System
                 index += 1;
                 length--;
             }
+        NotFound:
             return -1;
 
         Found: // Workaround for https://github.com/dotnet/runtime/issues/8795
