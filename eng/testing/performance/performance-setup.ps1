@@ -124,7 +124,7 @@ if ($RunFromPerformanceRepo) {
     robocopy $SourceDirectory $PerformanceDirectory /E /XD $PayloadDirectory $SourceDirectory\artifacts $SourceDirectory\.git
 }
 else {
-    git clone --branch add-android-scenario --depth 1 https://github.com/billwert/performance $PerformanceDirectory
+    git clone --branch add-android-startup --depth 1 https://github.com/loopedbard3/performance $PerformanceDirectory
 }
 
 if($MonoDotnet -ne "")
