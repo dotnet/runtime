@@ -18017,11 +18017,13 @@ bool Compiler::fgCheckStmtAfterTailCall()
             Statement* retStmt = nextMorphStmt;
             GenTree*   retExpr = retStmt->GetRootNode();
 
-            if (retExpr->gtOper != GT_RETURN)
+            while (retExpr->gtOper == GT_NOP)
             {
-                return true;
+                retStmt = retStmt->GetNextStmt();
+                retExpr = retStmt->GetRootNode();
             }
 
+            noway_assert(retExpr->gtOper == GT_RETURN);
             nextMorphStmt = retStmt->GetNextStmt();
         }
         else
