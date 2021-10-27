@@ -1924,6 +1924,29 @@ namespace System.Net.Tests
             request.Abort();
         }
 
+        [Fact]
+        public async Task SendGetRequest_NoCacheNoStorePolicy_AddNoCacheNoStoreHeaders()
+        {
+            await LoopbackServer.CreateServerAsync(async (server, uri) =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.CachePolicy = new RequestCachePolicy(RequestCacheLevel.NoCacheNoStore);
+                Task<WebResponse> getResponse = GetResponseAsync(request);
+
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
+                    Assert.Contains($"Pragma: no-cache", headers);
+                    Assert.Contains($"Cache-Control: no-store, no-cache", headers);
+                });
+
+                using (var response = (HttpWebResponse)await getResponse)
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            });
+        }
+
         private void RequestStreamCallback(IAsyncResult asynchronousResult)
         {
             RequestState state = (RequestState)asynchronousResult.AsyncState;

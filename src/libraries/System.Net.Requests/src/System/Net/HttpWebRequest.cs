@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Serialization;
@@ -1135,6 +1136,18 @@ namespace System.Net
                 if (_hostUri != null)
                 {
                     request.Headers.Host = Host;
+                }
+
+                if (CachePolicy != null && CachePolicy.Level == RequestCacheLevel.NoCacheNoStore)
+                {
+                    if (request.Headers.CacheControl == null)
+                    {
+                        request.Headers.CacheControl = new CacheControlHeaderValue();
+                    }
+
+                    request.Headers.CacheControl.NoCache = true;
+                    request.Headers.CacheControl.NoStore = true;
+                    request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
                 }
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
