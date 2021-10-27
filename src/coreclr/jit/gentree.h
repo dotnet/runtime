@@ -6134,16 +6134,122 @@ struct GenTreeRetExpr : public GenTree
 
 class InlineContext;
 
+// Represents information about the location of an IL instruction.
+class ILLocation
+{
+public:
+    ILLocation()
+        : m_offset(BAD_IL_OFFSET)
+        , m_isStackEmpty(false)
+        , m_isCall(false)
+    {
+    }
+
+    ILLocation(IL_OFFSET offset, bool isStackEmpty, bool isCall)
+        : m_offset(offset)
+        , m_isStackEmpty(isStackEmpty)
+        , m_isCall(isCall)
+    {
+    }
+
+    IL_OFFSET GetOffset() const
+    {
+        return m_offset;
+    }
+
+    // Is this source location at a stack empty point? We need to be able to
+    // report this information back to the debugger since we only allow EnC
+    // transitions at stack empty points.
+    bool IsStackEmpty() const
+    {
+        return m_isStackEmpty;
+    }
+
+    bool IsCall() const
+    {
+        return m_isCall;
+    }
+
+    bool IsValid() const
+    {
+        return m_offset != BAD_IL_OFFSET;
+    }
+
+    inline bool operator==(const ILLocation& other) const
+    {
+        return (m_offset == other.m_offset) && (m_isStackEmpty == other.m_isStackEmpty) && (m_isCall == other.m_isCall);
+    }
+
+    inline bool operator!=(const ILLocation& other) const
+    {
+        return !(*this == other);
+    }
+
+private:
+    IL_OFFSET m_offset;
+    bool m_isStackEmpty : 1;
+    bool m_isCall : 1;
+};
+
+// Represents debug information about a statement.
+class DebugInfo
+{
+public:
+    DebugInfo()
+        : m_inlineContext(nullptr)
+    {
+    }
+
+    DebugInfo(InlineContext* inlineContext, ILLocation loc)
+        : m_inlineContext(inlineContext)
+        , m_location(loc)
+    {
+    }
+
+    InlineContext* GetInlineContext() const
+    {
+        return m_inlineContext;
+    }
+
+    ILLocation GetLocation() const
+    {
+        return m_location;
+    }
+
+    // Retrieve information about the location that inlined this statement.
+    bool GetParent(DebugInfo* par) const;
+
+    // Get debug info in the root. If this debug info is in the root, then
+    // returns *this. Otherwise returns information of the call in the root that
+    // eventually produced this statement through inlines.
+    DebugInfo GetRoot() const;
+
+    inline bool operator==(const DebugInfo& other) const
+    {
+        return (m_inlineContext == other.m_inlineContext) && (m_location == other.m_location);
+    }
+
+    inline bool operator!=(const DebugInfo& other) const
+    {
+        return !(*this == other);
+    }
+
+private:
+    InlineContext* m_inlineContext;
+    ILLocation m_location;
+};
+
+// In LIR there are no longer statements so debug information is inserted linearly using these nodes.
 struct GenTreeILOffset : public GenTree
 {
-    IL_OFFSETX gtStmtILoffsx; // instr offset (if available)
+    DebugInfo gtStmtDI; // debug info
 #ifdef DEBUG
     IL_OFFSET gtStmtLastILoffs; // instr offset at end of stmt
 #endif
 
-    GenTreeILOffset(IL_OFFSETX offset DEBUGARG(IL_OFFSET lastOffset = BAD_IL_OFFSET))
+    GenTreeILOffset(const DebugInfo& di DEBUGARG(IL_OFFSET lastOffset = BAD_IL_OFFSET))
         : GenTree(GT_IL_OFFSET, TYP_VOID)
-        , gtStmtILoffsx(offset)
+        , gtStmtDI(di)
 #ifdef DEBUG
         , gtStmtLastILoffs(lastOffset)
 #endif
@@ -6216,13 +6322,11 @@ public:
 struct Statement
 {
 public:
-    Statement(GenTree* expr, IL_OFFSETX offset DEBUGARG(unsigned stmtID))
+    Statement(GenTree* expr DEBUGARG(unsigned stmtID))
         : m_rootNode(expr)
         , m_treeList(nullptr)
         , m_next(nullptr)
         , m_prev(nullptr)
-        , m_inlineContext(nullptr)
-        , m_ILOffsetX(offset)
 #ifdef DEBUG
         , m_lastILOffset(BAD_IL_OFFSET)
         , m_stmtID(stmtID)
@@ -6265,24 +6369,27 @@ public:
         return GenTreeList(GetTreeList());
     }
 
-    InlineContext* GetInlineContext() const
+    const DebugInfo& GetDebugInfo() const
     {
-        return m_inlineContext;
+        return m_debugInfo;
+    }
+
+    void SetDebugInfo(const DebugInfo& di)
+    {
+        m_debugInfo = di;
+    }
+
+    // During inlining we require the inline context to be maintained. We use
+    // the storage in the debug info for it. After inlining is over we no
+    // longer require inline contexts for statements without debug information.
+    InlineContext* GetInlineContext()
+    {
+        return m_debugInfo.GetInlineContext();
     }
 
     void SetInlineContext(InlineContext* inlineContext)
     {
-        m_inlineContext = inlineContext;
-    }
-
-    IL_OFFSETX GetILOffsetX() const
-    {
-        return m_ILOffsetX;
-    }
-
-    void SetILOffsetX(IL_OFFSETX offsetX)
-    {
-        m_ILOffsetX = offsetX;
+        m_debugInfo = DebugInfo(inlineContext, m_debugInfo.GetLocation());
     }
 
 #ifdef DEBUG
@@ -6363,9 +6470,7 @@ private:
     Statement* m_next;
     Statement* m_prev;
 
-    InlineContext* m_inlineContext; // The inline context for this statement.
-
-    IL_OFFSETX m_ILOffsetX; // The instr offset (if available).
+    DebugInfo m_debugInfo; // Debug info for the statement, including inline context
 
 #ifdef DEBUG
     IL_OFFSET m_lastILOffset; // The instr offset at the end of this statement.

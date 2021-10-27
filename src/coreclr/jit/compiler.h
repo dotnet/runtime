@@ -2515,6 +2515,26 @@ inline LoopFlags& operator&=(LoopFlags& a, LoopFlags b)
     return a = (LoopFlags)((unsigned short)a & (unsigned short)b);
 }
 
+//  The following holds information about instr offsets in terms of generated code.
+
+enum class IPmappingDscKind
+{
+    Prolog,    // The mapping represents the start of a prolog.
+    Epilog,    // The mapping represents the start of an epilog.
+    NoMapping, // This does not map to any IL offset.
+    Normal,    // The mapping maps to an IL offset.
+};
+
+struct IPmappingDsc
+{
+    IPmappingDsc*    ipmdNext;      // next line# record
+    emitLocation     ipmdNativeLoc; // the emitter location of the native code corresponding to the IL offset
+    IPmappingDscKind ipmdKind;      // The kind of mapping
+    ILLocation       ipmdLoc;       // The location for normal mappings
+    bool             ipmdIsLabel;   // Can this code be a branch label?
+};
+
+
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -2987,7 +3007,8 @@ public:
     */
 
     // Functions to create nodes
-    Statement* gtNewStmt(GenTree* expr = nullptr, IL_OFFSETX offset = BAD_IL_OFFSET);
+    Statement* gtNewStmt(GenTree* expr = nullptr);
+    Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications = TRUE);
@@ -3071,12 +3092,12 @@ public:
                                CORINFO_METHOD_HANDLE handle,
                                var_types             type,
                                GenTreeCall::Use*     args,
-                               IL_OFFSETX            ilOffset = BAD_IL_OFFSET);
+                               const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewIndCallNode(GenTree*          addr,
                                   var_types         type,
                                   GenTreeCall::Use* args,
-                                  IL_OFFSETX        ilOffset = BAD_IL_OFFSET);
+                                  const DebugInfo& di = DebugInfo());
 
     GenTreeCall* gtNewHelperCallNode(unsigned helper, var_types type, GenTreeCall::Use* args = nullptr);
 
@@ -3084,8 +3105,8 @@ public:
                                                   GenTree*                ctxTree,
                                                   void*                   compileTimeHandle);
 
-    GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
-    GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSETX ILoffs = BAD_IL_OFFSET));
+    GenTreeLclVar* gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
+    GenTreeLclVar* gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL_OFFSET offs = BAD_IL_OFFSET));
 
     GenTreeLclVar* gtNewLclVarAddrNode(unsigned lclNum, var_types type = TYP_I_IMPL);
     GenTreeLclFld* gtNewLclFldAddrNode(unsigned      lclNum,
@@ -3331,7 +3352,7 @@ public:
     GenTree* gtNewTempAssign(unsigned    tmp,
                              GenTree*    val,
                              Statement** pAfterStmt = nullptr,
-                             IL_OFFSETX  ilOffset   = BAD_IL_OFFSET,
+                             const DebugInfo&  di   = DebugInfo(),
                              BasicBlock* block      = nullptr);
 
     GenTree* gtNewRefCOMfield(GenTree*                objPtr,
@@ -3387,7 +3408,7 @@ public:
     Statement* gtCloneStmt(Statement* stmt)
     {
         GenTree* exprClone = gtCloneExpr(stmt->GetRootNode());
-        return gtNewStmt(exprClone, stmt->GetILOffsetX());
+        return gtNewStmt(exprClone, stmt->GetDebugInfo());
     }
 
     // Internal helper for cloning a call
@@ -4251,7 +4272,7 @@ public:
                              CORINFO_CONTEXT_HANDLE* exactContextHandle,
                              bool                    isLateDevirtualization,
                              bool                    isExplicitTailCall,
-                             IL_OFFSETX              ilOffset = BAD_IL_OFFSET);
+                             IL_OFFSET               ilOffset = BAD_IL_OFFSET);
 
     //=========================================================================
     //                          PROTECTED
@@ -4298,7 +4319,7 @@ protected:
     bool impCanPInvokeInlineCallSite(BasicBlock* block);
     void impCheckForPInvokeCall(
         GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block);
-    GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX ilOffset = BAD_IL_OFFSET);
+    GenTreeCall* impImportIndirectCall(CORINFO_SIG_INFO* sig, const DebugInfo& di = DebugInfo());
     void impPopArgsForUnmanagedCall(GenTree* call, CORINFO_SIG_INFO* sig);
 
     void impInsertHelperCall(CORINFO_HELPER_DESC* helperCall);
@@ -4462,20 +4483,20 @@ public:
     void impAppendStmt(Statement* stmt, unsigned chkLevel);
     void impAppendStmt(Statement* stmt);
     void impInsertStmtBefore(Statement* stmt, Statement* stmtBefore);
-    Statement* impAppendTree(GenTree* tree, unsigned chkLevel, IL_OFFSETX offset);
-    void impInsertTreeBefore(GenTree* tree, IL_OFFSETX offset, Statement* stmtBefore);
+    Statement* impAppendTree(GenTree* tree, unsigned chkLevel, const DebugInfo& di);
+    void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned    tmp,
                           GenTree*    val,
                           unsigned    curLevel,
                           Statement** pAfterStmt = nullptr,
-                          IL_OFFSETX  ilOffset   = BAD_IL_OFFSET,
+                          const DebugInfo& di = DebugInfo(),
                           BasicBlock* block      = nullptr);
     void impAssignTempGen(unsigned             tmpNum,
                           GenTree*             val,
                           CORINFO_CLASS_HANDLE structHnd,
                           unsigned             curLevel,
                           Statement**          pAfterStmt = nullptr,
-                          IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
+                          const DebugInfo& di = DebugInfo(),
                           BasicBlock*          block      = nullptr);
 
     Statement* impExtractLastStmt();
@@ -4489,14 +4510,14 @@ public:
                              CORINFO_CLASS_HANDLE structHnd,
                              unsigned             curLevel,
                              Statement**          pAfterStmt = nullptr,
-                             IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
+                             const DebugInfo&    di   = DebugInfo(),
                              BasicBlock*          block      = nullptr);
     GenTree* impAssignStructPtr(GenTree*             dest,
                                 GenTree*             src,
                                 CORINFO_CLASS_HANDLE structHnd,
                                 unsigned             curLevel,
                                 Statement**          pAfterStmt = nullptr,
-                                IL_OFFSETX           ilOffset   = BAD_IL_OFFSET,
+                                const DebugInfo&    di   = DebugInfo(),
                                 BasicBlock*          block      = nullptr);
 
     GenTree* impGetStructAddr(GenTree* structVal, CORINFO_CLASS_HANDLE structHnd, unsigned curLevel, bool willDeref);
@@ -4573,15 +4594,17 @@ private:
     void       impNoteLastILoffs();
 #endif
 
-    /* IL offset of the stmt currently being imported. It gets set to
-       BAD_IL_OFFSET after it has been set in the appended trees. Then it gets
-       updated at IL offsets for which we have to report mapping info.
-       It also includes flag bits, so use jitGetILoffs()
-       to get the actual IL offset value.
+    /* Debug info of the stmt currently being imported. It gets set to empty information
+       (DebugInfo()) after it has been set in the appended trees. Then it gets updated at
+       IL instructions for which we have to report mapping info.
     */
+    DebugInfo impCurStmtDI;
 
-    IL_OFFSETX impCurStmtOffs;
     void impCurStmtOffsSet(IL_OFFSET offs);
+    /*
+     * Get current debug info with stack info and call instruction info incoporated
+     */
+    DebugInfo impCurDebugInfo(IL_OFFSET offs, bool callInstruction = false);
 
     void impNoteBranchOffs();
 
@@ -4602,11 +4625,6 @@ private:
     bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
 
     GenTreeCall::Use* impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, unsigned skipReverseCount = 0);
-
-    /*
-     * Get current IL offset with stack-empty info incoporated
-     */
-    IL_OFFSETX impCurILOffset(IL_OFFSET offs, bool callInstruction = false);
 
     //---------------- Spilling the importer stack ----------------------------
 
@@ -5210,10 +5228,10 @@ public:
     BasicBlock* fgSplitBlockAfterNode(BasicBlock* curr, GenTree* node); // for LIR
     BasicBlock* fgSplitEdge(BasicBlock* curr, BasicBlock* succ);
 
-    Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFSETX offs);
+    Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di);
     Statement* fgNewStmtFromTree(GenTree* tree);
     Statement* fgNewStmtFromTree(GenTree* tree, BasicBlock* block);
-    Statement* fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs);
+    Statement* fgNewStmtFromTree(GenTree* tree, const DebugInfo& di);
 
     GenTree* fgGetTopLevelQmark(GenTree* expr, GenTree** ppDst = nullptr);
     void fgExpandQmarkForCastInstOf(BasicBlock* block, Statement* stmt);
@@ -6335,7 +6353,7 @@ private:
                                                      fgArgTabEntry* argTabEntry,
                                                      unsigned       lclParamNum,
                                                      BasicBlock*    block,
-                                                     IL_OFFSETX     callILOffset,
+                                                     const DebugInfo& callDI,
                                                      Statement*     tmpAssignmentInsertionPoint,
                                                      Statement*     paramAssignmentInsertionPoint);
     GenTree* fgMorphCall(GenTreeCall* call);
@@ -7363,7 +7381,7 @@ public:
     }
 
     void considerGuardedDevirtualization(GenTreeCall*            call,
-                                         IL_OFFSETX              iloffset,
+                                         IL_OFFSET ilOffset,
                                          bool                    isInterface,
                                          CORINFO_METHOD_HANDLE   baseMethod,
                                          CORINFO_CLASS_HANDLE    baseClass,
@@ -8157,19 +8175,15 @@ public:
 
     unsigned eeBoundariesCount;
 
-    struct boundariesDsc
-    {
-        UNATIVE_OFFSET nativeIP;
-        IL_OFFSET      ilOffset;
-        unsigned       sourceReason;
-    } * eeBoundaries; // Boundaries to report to EE
+    ICorDebugInfo::OffsetMapping* eeBoundaries; // Boundaries to report to the EE
     void eeSetLIcount(unsigned count);
-    void eeSetLIinfo(unsigned which, UNATIVE_OFFSET offs, unsigned srcIP, bool stkEmpty, bool callInstruction);
+    void eeSetLIinfo(unsigned which, UNATIVE_OFFSET offs, IPmappingDscKind kind, const ILLocation& loc);
     void eeSetLIdone();
 
 #ifdef DEBUG
     static void eeDispILOffs(IL_OFFSET offs);
-    static void eeDispLineInfo(const boundariesDsc* line);
+    static void eeDispSourceMappingOffs(uint32_t offs);
+    static void eeDispLineInfo(const ICorDebugInfo::OffsetMapping* line);
     void eeDispLineInfos();
 #endif // DEBUG
 
@@ -8285,34 +8299,24 @@ public:
 public:
     CodeGenInterface* codeGen;
 
-    //  The following holds information about instr offsets in terms of generated code.
-
-    struct IPmappingDsc
-    {
-        IPmappingDsc* ipmdNext;      // next line# record
-        emitLocation  ipmdNativeLoc; // the emitter location of the native code corresponding to the IL offset
-        IL_OFFSETX    ipmdILoffsx;   // the instr offset
-        bool          ipmdIsLabel;   // Can this code be a branch label?
-    };
-
     // Record the instr offset mapping to the generated code
 
     IPmappingDsc* genIPmappingList;
     IPmappingDsc* genIPmappingLast;
 
     // Managed RetVal - A side hash table meant to record the mapping from a
-    // GT_CALL node to its IL offset.  This info is used to emit sequence points
+    // GT_CALL node to its debug info.  This info is used to emit sequence points
     // that can be used by debugger to determine the native offset at which the
     // managed RetVal will be available.
     //
-    // In fact we can store IL offset in a GT_CALL node.  This was ruled out in
-    // favor of a side table for two reasons: 1) We need IL offset for only those
+    // In fact we can store debug info in a GT_CALL node.  This was ruled out in
+    // favor of a side table for two reasons: 1) We need debug info for only those
     // GT_CALL nodes (created during importation) that correspond to an IL call and
     // whose return type is other than TYP_VOID. 2) GT_CALL node is a frequently used
     // structure and IL offset is needed only when generating debuggable code. Therefore
     // it is desirable to avoid memory size penalty in retail scenarios.
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, IL_OFFSETX> CallSiteILOffsetTable;
-    CallSiteILOffsetTable* genCallSite2ILOffsetMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, DebugInfo> CallSiteDebugInfoTable;
+    CallSiteDebugInfoTable* genCallSite2DebugInfoMap;
 
     unsigned    genReturnLocal; // Local number for the return value when applicable.
     BasicBlock* genReturnBB;    // jumped to when not optimizing for speed.
@@ -10453,6 +10457,7 @@ public:
     VarName compVarName(regNumber reg, bool isFloatReg = false);
     const char* compRegVarName(regNumber reg, bool displayVar = false, bool isFloatReg = false);
     const char* compRegNameForSize(regNumber reg, size_t size);
+    const char* compFPregVarName(unsigned fpReg, bool displayVar = false);
     void compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP);
     void compDspSrcLinesByLineNum(unsigned line, bool seek = false);
 #endif // DEBUG

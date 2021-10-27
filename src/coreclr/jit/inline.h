@@ -233,7 +233,7 @@ public:
     {
         (void)context;
     }
-    virtual void NoteOffset(IL_OFFSETX offset)
+    virtual void NoteOffset(IL_OFFSET offset)
     {
         (void)offset;
     }
@@ -747,10 +747,10 @@ public:
         return m_CodeSizeEstimate;
     }
 
-    // Get the offset of the call site
-    IL_OFFSETX GetOffset() const
+    // Get the loation of the call site within the parent
+    ILLocation GetLocation() const
     {
-        return m_Offset;
+        return m_Location;
     }
 
     // True if this is the root context
@@ -790,7 +790,7 @@ private:
     const BYTE*       m_Code;              // address of IL buffer for the method
     unsigned          m_ILSize;            // size of IL buffer for the method
     unsigned          m_ImportedILSize;    // estimated size of imported IL
-    IL_OFFSETX        m_Offset;            // call site location within parent
+    ILLocation        m_Location;          // call site location within parent
     InlineObservation m_Observation;       // what lead to this inline
     int               m_CodeSizeEstimate;  // in bytes * 10
     bool              m_Success : 1;       // true if this was a successful inline

@@ -957,13 +957,12 @@ PhaseStatus Rationalizer::DoPhase()
             {
                 BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 
-                // If this statement has correct offset information, change it into an IL offset
+                // If this statement has correct debug information, change it into a debug info
                 // node and insert it into the LIR.
-                if (statement->GetILOffsetX() != BAD_IL_OFFSET)
+                if (statement->GetDebugInfo().GetLocation().IsValid())
                 {
-                    assert(!statement->IsPhiDefnStmt());
                     GenTreeILOffset* ilOffset = new (comp, GT_IL_OFFSET)
-                        GenTreeILOffset(statement->GetILOffsetX() DEBUGARG(statement->GetLastILOffset()));
+                        GenTreeILOffset(statement->GetDebugInfo() DEBUGARG(statement->GetLastILOffset()));
                     BlockRange().InsertBefore(statement->GetTreeList(), ilOffset);
                 }
 

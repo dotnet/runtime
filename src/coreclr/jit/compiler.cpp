@@ -174,128 +174,6 @@ void Compiler::JitLogEE(unsigned level, const char* fmt, ...)
     va_end(args);
 }
 
-void Compiler::compDspSrcLinesByLineNum(unsigned line, bool seek)
-{
-    if (!jitSrcFilePtr)
-    {
-        return;
-    }
-
-    if (jitCurSrcLine == line)
-    {
-        return;
-    }
-
-    if (jitCurSrcLine > line)
-    {
-        if (!seek)
-        {
-            return;
-        }
-
-        if (fseek(jitSrcFilePtr, 0, SEEK_SET) != 0)
-        {
-            printf("Compiler::compDspSrcLinesByLineNum:  fseek returned an error.\n");
-        }
-        jitCurSrcLine = 0;
-    }
-
-    if (!seek)
-    {
-        printf(";\n");
-    }
-
-    do
-    {
-        char   temp[128];
-        size_t llen;
-
-        if (!fgets(temp, sizeof(temp), jitSrcFilePtr))
-        {
-            return;
-        }
-
-        if (seek)
-        {
-            continue;
-        }
-
-        llen = strlen(temp);
-        if (llen && temp[llen - 1] == '\n')
-        {
-            temp[llen - 1] = 0;
-        }
-
-        printf(";   %s\n", temp);
-    } while (++jitCurSrcLine < line);
-
-    if (!seek)
-    {
-        printf(";\n");
-    }
-}
-
-/*****************************************************************************/
-
-void Compiler::compDspSrcLinesByNativeIP(UNATIVE_OFFSET curIP)
-{
-    static IPmappingDsc* nextMappingDsc;
-    static unsigned      lastLine;
-
-    if (!opts.dspLines)
-    {
-        return;
-    }
-
-    if (curIP == 0)
-    {
-        if (genIPmappingList)
-        {
-            nextMappingDsc = genIPmappingList;
-            lastLine       = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            unsigned firstLine = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            unsigned earlierLine = (firstLine < 5) ? 0 : firstLine - 5;
-
-            compDspSrcLinesByLineNum(earlierLine, true); // display previous 5 lines
-            compDspSrcLinesByLineNum(firstLine, false);
-        }
-        else
-        {
-            nextMappingDsc = nullptr;
-        }
-
-        return;
-    }
-
-    if (nextMappingDsc)
-    {
-        UNATIVE_OFFSET offset = nextMappingDsc->ipmdNativeLoc.CodeOffset(GetEmitter());
-
-        if (offset <= curIP)
-        {
-            IL_OFFSET nextOffs = jitGetILoffs(nextMappingDsc->ipmdILoffsx);
-
-            if (lastLine < nextOffs)
-            {
-                compDspSrcLinesByLineNum(nextOffs);
-            }
-            else
-            {
-                // This offset corresponds to a previous line. Rewind to that line
-
-                compDspSrcLinesByLineNum(nextOffs - 2, true);
-                compDspSrcLinesByLineNum(nextOffs);
-            }
-
-            lastLine       = nextOffs;
-            nextMappingDsc = nextMappingDsc->ipmdNext;
-        }
-    }
-}
-
-/*****************************************************************************/
 #endif // DEBUG
 
 /*****************************************************************************/
@@ -2744,6 +2622,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     verboseSsa       = verbose && shouldUseVerboseSsa();
     asciiTrees       = shouldDumpASCIITrees();
     opts.dspDiffable = compIsForInlining() ? impInlineInfo->InlinerCompiler->opts.dspDiffable : false;
+
 #endif
 
     opts.altJit = false;

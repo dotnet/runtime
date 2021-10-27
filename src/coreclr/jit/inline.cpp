@@ -332,7 +332,6 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Code(nullptr)
     , m_ILSize(0)
     , m_ImportedILSize(0)
-    , m_Offset(BAD_IL_OFFSET)
     , m_Observation(InlineObservation::CALLEE_UNUSED_INITIAL)
     , m_CodeSizeEstimate(0)
     , m_Success(true)
@@ -403,14 +402,14 @@ void InlineContext::Dump(unsigned indent)
         const char* guarded       = m_Guarded ? " guarded" : "";
         const char* unboxed       = m_Unboxed ? " unboxed" : "";
 
-        if (m_Offset == BAD_IL_OFFSET)
+        if (!m_Location.IsValid())
         {
             printf("%*s[%u IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, m_TreeID, calleeToken,
                    inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
         }
         else
         {
-            IL_OFFSET offset = jitGetILoffs(m_Offset);
+            IL_OFFSET offset = m_Location.GetOffset();
             printf("%*s[%u IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offset, m_TreeID,
                    calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed, calleeName);
         }
@@ -537,11 +536,7 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
         buf[sizeof(buf) - 1] = 0;
         EscapeNameForXml(buf);
 
-        int offset = -1;
-        if (m_Offset != BAD_IL_OFFSET)
-        {
-            offset = (int)jitGetILoffs(m_Offset);
-        }
+        int offset = m_Location.IsValid() ? m_Location.GetOffset() : -1;
 
         fprintf(file, "%*s<%s>\n", indent, "", inlineType);
         fprintf(file, "%*s<Token>%08x</Token>\n", indent + 2, "", calleeToken);
@@ -636,13 +631,13 @@ InlineResult::InlineResult(Compiler* compiler, GenTreeCall* call, Statement* stm
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {
-        m_InlineContext = stmt->GetInlineContext();
+        m_InlineContext = stmt->GetDebugInfo().GetInlineContext();
         m_Policy->NoteContext(m_InlineContext);
 
 #if defined(DEBUG) || defined(INLINE_DATA)
         m_Policy->NoteOffset(call->gtRawILOffset);
 #else
-        m_Policy->NoteOffset(stmt->GetILOffsetX());
+        m_Policy->NoteOffset(stmt->GetDebugInfo().GetLocation().GetOffset());
 #endif // defined(DEBUG) || defined(INLINE_DATA)
     }
 
@@ -1254,7 +1249,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     Statement*     stmt          = inlineInfo->iciStmt;
     BYTE*          calleeIL      = inlineInfo->inlineCandidateInfo->methInfo.ILCode;
     unsigned       calleeILSize  = inlineInfo->inlineCandidateInfo->methInfo.ILCodeSize;
-    InlineContext* parentContext = stmt->GetInlineContext();
+    InlineContext* parentContext = stmt->GetDebugInfo().GetInlineContext();
     GenTreeCall*   originalCall  = inlineInfo->inlineResult->GetCall();
 
     noway_assert(parentContext != nullptr);
@@ -1267,7 +1262,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     calleeContext->m_Sibling        = parentContext->m_Child;
     parentContext->m_Child          = calleeContext;
     calleeContext->m_Child          = nullptr;
-    calleeContext->m_Offset         = stmt->GetILOffsetX();
+    calleeContext->m_Location = stmt->GetDebugInfo().GetLocation();
     calleeContext->m_Observation    = inlineInfo->inlineResult->GetObservation();
     calleeContext->m_Success        = true;
     calleeContext->m_Devirtualized  = originalCall->IsDevirtualized();
@@ -1285,7 +1280,7 @@ InlineContext* InlineStrategy::NewSuccess(InlineInfo* inlineInfo)
     // +1 here since we set this before calling NoteOutcome.
     calleeContext->m_Ordinal = m_InlineCount + 1;
     // Update offset with more accurate info
-    calleeContext->m_Offset = originalCall->gtRawILOffset;
+    calleeContext->m_Location = ILLocation(originalCall->gtRawILOffset, false, false);
 
 #endif // defined(DEBUG) || defined(INLINE_DATA)
 
@@ -1317,7 +1312,7 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
 {
     // Check for a parent context first. We should now have a parent
     // context for all statements.
-    InlineContext* parentContext = stmt->GetInlineContext();
+    InlineContext* parentContext = stmt->GetDebugInfo().GetInlineContext();
     assert(parentContext != nullptr);
     InlineContext* failedContext = new (m_Compiler, CMK_Inlining) InlineContext(this);
     GenTreeCall*   originalCall  = inlineResult->GetCall();
@@ -1329,7 +1324,7 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
     failedContext->m_Sibling       = parentContext->m_Child;
     parentContext->m_Child         = failedContext;
     failedContext->m_Child         = nullptr;
-    failedContext->m_Offset        = stmt->GetILOffsetX();
+    failedContext->m_Location = stmt->GetDebugInfo().GetLocation();
     failedContext->m_Observation   = inlineResult->GetObservation();
     failedContext->m_Callee        = inlineResult->GetCallee();
     failedContext->m_Success       = false;
@@ -1342,7 +1337,7 @@ InlineContext* InlineStrategy::NewFailure(Statement* stmt, InlineResult* inlineR
 #if defined(DEBUG) || defined(INLINE_DATA)
 
     // Update offset with more accurate info
-    failedContext->m_Offset = originalCall->gtRawILOffset;
+    failedContext->m_Location = ILLocation(originalCall->gtRawILOffset, false, false);
 
 #endif // #if defined(DEBUG) || defined(INLINE_DATA)
 

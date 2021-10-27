@@ -3953,7 +3953,7 @@ bool Compiler::fgOptimizeSwitchJumps()
         //
         GenTree* const   dominantCaseCompare = gtNewOperNode(GT_EQ, TYP_INT, switchValue, gtNewIconNode(dominantCase));
         GenTree* const   jmpTree             = gtNewOperNode(GT_JTRUE, TYP_VOID, dominantCaseCompare);
-        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetILOffsetX());
+        Statement* const jmpStmt             = fgNewStmtFromTree(jmpTree, switchStmt->GetDebugInfo());
         fgInsertStmtAtEnd(block, jmpStmt);
 
         // Reattach switch value to the switch. This may introduce a comma

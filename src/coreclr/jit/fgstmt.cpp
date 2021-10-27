@@ -381,9 +381,9 @@ Statement* Compiler::fgInsertStmtListAfter(BasicBlock* block, Statement* stmtAft
  *
  *  Create a new statement from tree and wire the links up.
  */
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, const DebugInfo& di)
 {
-    Statement* stmt = gtNewStmt(tree, offs);
+    Statement* stmt = gtNewStmt(tree, di);
 
     if (fgStmtListThreaded)
     {
@@ -403,17 +403,17 @@ Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block, IL_OFFS
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree)
 {
-    return fgNewStmtFromTree(tree, nullptr, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, nullptr, DebugInfo());
 }
 
 Statement* Compiler::fgNewStmtFromTree(GenTree* tree, BasicBlock* block)
 {
-    return fgNewStmtFromTree(tree, block, BAD_IL_OFFSET);
+    return fgNewStmtFromTree(tree, block, DebugInfo());
 }
 
-Statement* Compiler::fgNewStmtFromTree(GenTree* tree, IL_OFFSETX offs)
+Statement* Compiler::fgNewStmtFromTree(GenTree* tree, const DebugInfo& di)
 {
-    return fgNewStmtFromTree(tree, nullptr, offs);
+    return fgNewStmtFromTree(tree, nullptr, di);
 }
 
 //------------------------------------------------------------------------
@@ -457,7 +457,7 @@ void Compiler::fgRemoveStmt(BasicBlock* block, Statement* stmt DEBUGARG(bool isU
     }
 #endif // DEBUG
 
-    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetILOffsetX() != BAD_IL_OFFSET)
+    if (opts.compDbgCode && stmt->GetPrevStmt() != stmt && stmt->GetDebugInfo().GetLocation().IsValid())
     {
         /* TODO: For debuggable code, should we remove significant
            statement boundaries. Or should we leave a GT_NO_OP in its place? */
