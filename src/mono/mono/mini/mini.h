@@ -1125,6 +1125,7 @@ typedef struct {
 
 typedef struct
 {
+	MonoClass *klass;
 	MonoMethod *invoke;
 	MonoMethod *method;
 	MonoMethodSignature *invoke_sig;

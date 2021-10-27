@@ -3,12 +3,8 @@
 //
 // Integration by romberg method adapted from Conte and de Boor
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.MDBenchF
 {
@@ -131,18 +127,6 @@ public static class MDRomber
     private static double F(double x)
     {
         return (System.Math.Exp((-(x)) * (x)));
-    }
-
-    [Benchmark]
-    public static void Test()
-    {
-        foreach (var iteration in Benchmark.Iterations)
-        {
-            using (iteration.StartMeasurement())
-            {
-                Bench();
-            }
-        }
     }
 
     private static bool TestBase()
