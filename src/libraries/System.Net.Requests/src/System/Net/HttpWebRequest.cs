@@ -1138,17 +1138,7 @@ namespace System.Net
                     request.Headers.Host = Host;
                 }
 
-                if (CachePolicy != null && CachePolicy.Level == RequestCacheLevel.NoCacheNoStore)
-                {
-                    if (request.Headers.CacheControl == null)
-                    {
-                        request.Headers.CacheControl = new CacheControlHeaderValue();
-                    }
-
-                    request.Headers.CacheControl.NoCache = true;
-                    request.Headers.CacheControl.NoStore = true;
-                    request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
-                }
+                AddCacheControlHeaders(request);
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
                 // HttpRequestMessage.Content.Headers.
@@ -1211,6 +1201,70 @@ namespace System.Net
                 if (disposeRequired)
                 {
                     client?.Dispose();
+                }
+            }
+        }
+
+        private void AddCacheControlHeaders(HttpRequestMessage request)
+        {
+            if (CachePolicy != null)
+            {
+                if (request.Headers.CacheControl == null)
+                {
+                    request.Headers.CacheControl = new CacheControlHeaderValue();
+                }
+
+                if (CachePolicy is HttpRequestCachePolicy httpRequestCachePolicy)
+                {
+                    switch (httpRequestCachePolicy.Level)
+                    {
+                        case HttpRequestCacheLevel.NoCacheNoStore:
+                            request.Headers.CacheControl.NoCache = true;
+                            request.Headers.CacheControl.NoStore = true;
+                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case HttpRequestCacheLevel.Reload:
+                            request.Headers.CacheControl.NoCache = true;
+                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case HttpRequestCacheLevel.CacheOnly:
+                        case HttpRequestCacheLevel.CacheOrNextCacheOnly:
+                            request.Headers.CacheControl.OnlyIfCached = true;
+                            break;
+                        case HttpRequestCacheLevel.Default:
+                            if (httpRequestCachePolicy.MinFresh > TimeSpan.Zero)
+                            {
+                                request.Headers.CacheControl.MinFresh = httpRequestCachePolicy.MinFresh;
+                            }
+
+                            if (httpRequestCachePolicy.MaxAge != TimeSpan.MaxValue)
+                            {
+                                request.Headers.CacheControl.MaxAge = httpRequestCachePolicy.MaxAge;
+                            }
+                            break;
+                        case HttpRequestCacheLevel.Refresh:
+                            request.Headers.CacheControl.MaxAge = TimeSpan.Zero;
+                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                    }
+                }
+                else
+                {
+                    switch (CachePolicy.Level)
+                    {
+                        case RequestCacheLevel.NoCacheNoStore:
+                            request.Headers.CacheControl.NoCache = true;
+                            request.Headers.CacheControl.NoStore = true;
+                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case RequestCacheLevel.Reload:
+                            request.Headers.CacheControl.NoCache = true;
+                            request.Headers.Pragma.Add(new NameValueHeaderValue("no-cache"));
+                            break;
+                        case RequestCacheLevel.CacheOnly:
+                            request.Headers.CacheControl.OnlyIfCached = true;
+                            break;
+                    }
                 }
             }
         }
