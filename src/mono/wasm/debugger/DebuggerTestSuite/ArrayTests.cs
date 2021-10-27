@@ -15,10 +15,10 @@ namespace DebuggerTests
     {
 
         [Theory]
-        //[InlineData(19, 8, "PrimitiveTypeLocals", false, 0, false)]
+        [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, false)]
         [InlineData(19, 8, "PrimitiveTypeLocals", false, 0, true)]
-/*        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
-        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]*/
+        [InlineData(100, 8, "YetAnotherMethod", true, 2, false)]
+        [InlineData(100, 8, "YetAnotherMethod", true, 2, true)]
         public async Task InspectPrimitiveTypeArrayLocals(int line, int col, string method_name, bool test_prev_frame, int frame_idx, bool use_cfo) => await TestSimpleArrayLocals(
             line, col,
             entry_method_name: "[debugger-test] DebuggerTests.ArrayTestsClass:PrimitiveTypeLocals",
