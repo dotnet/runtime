@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
+
 namespace System.Numerics.Tests
 {
     public static class Util
@@ -89,21 +91,16 @@ namespace System.Numerics.Tests
             return value;
         }
 
-        public static T Abs<T>(T value) where T : struct
+        [RequiresPreviewFeatures]
+        public static T Abs<T>(T value) where T : INumber<T>
         {
-            // unsigned types
-            if      (value is byte)   return value;
-            else if (value is ushort) return value;
-            else if (value is uint)   return value;
-            else if (value is ulong)  return value;
-            // signed types
-            else if (value is short)  return (T)(ValueType)(short)  ( Math.Abs((short) (ValueType)value) );
-            else if (value is int)    return (T)(ValueType)(int)    ( Math.Abs((int)   (ValueType)value) );
-            else if (value is long)   return (T)(ValueType)(long)   ( Math.Abs((long)  (ValueType)value) );
-            else if (value is sbyte)  return (T)(ValueType)(sbyte)  ( Math.Abs((sbyte) (ValueType)value) );
-            else if (value is float)  return (T)(ValueType)(float)  ( Math.Abs((float) (ValueType)value) );
-            else if (value is double) return (T)(ValueType)(double) ( Math.Abs((double)(ValueType)value) );
-            else throw new NotImplementedException();
+            return T.Abs(value);
+        }
+
+        [RequiresPreviewFeatures]
+        public static T SqrtGenericMath<T>(T value) where T : IFloatingPoint<T>
+        {
+            return T.Sqrt(value);
         }
 
         public static T Sqrt<T>(T value) where T : struct
@@ -118,121 +115,50 @@ namespace System.Numerics.Tests
                 else if (value is ulong)  return (T)(ValueType)(ulong)  ( Math.Sqrt((ulong) (ValueType)value) );
                 else if (value is byte)   return (T)(ValueType)(byte)   ( Math.Sqrt((byte)  (ValueType)value) );
                 else if (value is sbyte)  return (T)(ValueType)(sbyte)  ( Math.Sqrt((sbyte) (ValueType)value) );
-                else if (value is float)  return (T)(ValueType)(float)  ( Math.Sqrt((float) (ValueType)value) );
-                else if (value is double) return (T)(ValueType)(double) ( Math.Sqrt((double)(ValueType)value) );
                 else throw new NotImplementedException();
             }
         }
 
-        public static T Multiply<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static T Multiply<T>(T left, T right) where T : INumber<T>
         {
-            unchecked
-            {
-                if      (left is short)  return (T)(ValueType)(short)  ( (short) (ValueType)left * (short) (ValueType)right );
-                else if (left is int)    return (T)(ValueType)(int)    ( (int)   (ValueType)left * (int)   (ValueType)right );
-                else if (left is long)   return (T)(ValueType)(long)   ( (long)  (ValueType)left * (long)  (ValueType)right );
-                else if (left is ushort) return (T)(ValueType)(ushort) ( (ushort)(ValueType)left * (ushort)(ValueType)right );
-                else if (left is uint)   return (T)(ValueType)(uint)   ( (uint)  (ValueType)left * (uint)  (ValueType)right );
-                else if (left is ulong)  return (T)(ValueType)(ulong)  ( (ulong) (ValueType)left * (ulong) (ValueType)right );
-                else if (left is byte)   return (T)(ValueType)(byte)   ( (byte)  (ValueType)left * (byte)  (ValueType)right );
-                else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( (sbyte) (ValueType)left * (sbyte) (ValueType)right );
-                else if (left is float)  return (T)(ValueType)(float)  ( (float) (ValueType)left * (float) (ValueType)right );
-                else if (left is double) return (T)(ValueType)(double) ( (double)(ValueType)left * (double)(ValueType)right );
-                else throw new NotImplementedException();
-            }
+            return left * right;
         }
 
-        public static T Divide<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static T Divide<T>(T left, T right) where T : INumber<T>
         {
-            if      (left is short)  return (T)(ValueType)(short)  ( (short) (ValueType)left / (short) (ValueType)right );
-            else if (left is int)    return (T)(ValueType)(int)    ( (int)   (ValueType)left / (int)   (ValueType)right );
-            else if (left is long)   return (T)(ValueType)(long)   ( (long)  (ValueType)left / (long)  (ValueType)right );
-            else if (left is ushort) return (T)(ValueType)(ushort) ( (ushort)(ValueType)left / (ushort)(ValueType)right );
-            else if (left is uint)   return (T)(ValueType)(uint)   ( (uint)  (ValueType)left / (uint)  (ValueType)right );
-            else if (left is ulong)  return (T)(ValueType)(ulong)  ( (ulong) (ValueType)left / (ulong) (ValueType)right );
-            else if (left is byte)   return (T)(ValueType)(byte)   ( (byte)  (ValueType)left / (byte)  (ValueType)right );
-            else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( (sbyte) (ValueType)left / (sbyte) (ValueType)right );
-            else if (left is float)  return (T)(ValueType)(float)  ( (float) (ValueType)left / (float) (ValueType)right );
-            else if (left is double) return (T)(ValueType)(double) ( (double)(ValueType)left / (double)(ValueType)right );
-            else throw new NotImplementedException();
+            return left / right;
         }
 
-        public static T Add<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static T Add<T>(T left, T right) where T : INumber<T>
         {
-            unchecked
-            {
-                if      (left is short)  return (T)(ValueType)(short)  ( (short) (ValueType)left + (short) (ValueType)right );
-                else if (left is int)    return (T)(ValueType)(int)    ( (int)   (ValueType)left + (int)   (ValueType)right );
-                else if (left is long)   return (T)(ValueType)(long)   ( (long)  (ValueType)left + (long)  (ValueType)right );
-                else if (left is ushort) return (T)(ValueType)(ushort) ( (ushort)(ValueType)left + (ushort)(ValueType)right );
-                else if (left is uint)   return (T)(ValueType)(uint)   ( (uint)  (ValueType)left + (uint)  (ValueType)right );
-                else if (left is ulong)  return (T)(ValueType)(ulong)  ( (ulong) (ValueType)left + (ulong) (ValueType)right );
-                else if (left is byte)   return (T)(ValueType)(byte)   ( (byte)  (ValueType)left + (byte)  (ValueType)right );
-                else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( (sbyte) (ValueType)left + (sbyte) (ValueType)right );
-                else if (left is float)  return (T)(ValueType)(float)  ( (float) (ValueType)left + (float) (ValueType)right );
-                else if (left is double) return (T)(ValueType)(double) ( (double)(ValueType)left + (double)(ValueType)right );
-                else throw new NotImplementedException();
-            }
+            return left + right;
         }
 
-        public static T Subtract<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static T Subtract<T>(T left, T right) where T : INumber<T>
         {
-            unchecked
-            {
-                if      (left is short)  return (T)(ValueType)(short)  ( (short) (ValueType)left - (short) (ValueType)right );
-                else if (left is int)    return (T)(ValueType)(int)    ( (int)   (ValueType)left - (int)   (ValueType)right );
-                else if (left is long)   return (T)(ValueType)(long)   ( (long)  (ValueType)left - (long)  (ValueType)right );
-                else if (left is ushort) return (T)(ValueType)(ushort) ( (ushort)(ValueType)left - (ushort)(ValueType)right );
-                else if (left is uint)   return (T)(ValueType)(uint)   ( (uint)  (ValueType)left - (uint)  (ValueType)right );
-                else if (left is ulong)  return (T)(ValueType)(ulong)  ( (ulong) (ValueType)left - (ulong) (ValueType)right );
-                else if (left is byte)   return (T)(ValueType)(byte)   ( (byte)  (ValueType)left - (byte)  (ValueType)right );
-                else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( (sbyte) (ValueType)left - (sbyte) (ValueType)right );
-                else if (left is float)  return (T)(ValueType)(float)  ( (float) (ValueType)left - (float) (ValueType)right );
-                else if (left is double) return (T)(ValueType)(double) ( (double)(ValueType)left - (double)(ValueType)right );
-                else throw new NotImplementedException();
-            }
+            return left - right;
         }
 
-        public static T Xor<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static T Xor<T>(T left, T right) where T : IBitwiseOperators<T, T, T>
         {
-            if      (left is short)  return (T)(ValueType)(short)  ( (short) (ValueType)left ^ (short) (ValueType)right );
-            else if (left is int)    return (T)(ValueType)(int)    ( (int)   (ValueType)left ^ (int)   (ValueType)right );
-            else if (left is long)   return (T)(ValueType)(long)   ( (long)  (ValueType)left ^ (long)  (ValueType)right );
-            else if (left is ushort) return (T)(ValueType)(ushort) ( (ushort)(ValueType)left ^ (ushort)(ValueType)right );
-            else if (left is uint)   return (T)(ValueType)(uint)   ( (uint)  (ValueType)left ^ (uint)  (ValueType)right );
-            else if (left is ulong)  return (T)(ValueType)(ulong)  ( (ulong) (ValueType)left ^ (ulong) (ValueType)right );
-            else if (left is byte)   return (T)(ValueType)(byte)   ( (byte)  (ValueType)left ^ (byte)  (ValueType)right );
-            else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( (sbyte) (ValueType)left ^ (sbyte) (ValueType)right );
-            else throw new NotImplementedException();
+            return left ^ right;
         }
 
-        public static T AndNot<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static T AndNot<T>(T left, T right) where T : IBitwiseOperators<T, T, T>
         {
-            if      (left is short)  return (T)(ValueType)(short)  ( (short) (ValueType)left & ~(short) (ValueType)right );
-            else if (left is int)    return (T)(ValueType)(int)    ( (int)   (ValueType)left & ~(int)   (ValueType)right );
-            else if (left is long)   return (T)(ValueType)(long)   ( (long)  (ValueType)left & ~(long)  (ValueType)right );
-            else if (left is ushort) return (T)(ValueType)(ushort) ( (ushort)(ValueType)left & ~(ushort)(ValueType)right );
-            else if (left is uint)   return (T)(ValueType)(uint)   ( (uint)  (ValueType)left & ~(uint)  (ValueType)right );
-            else if (left is ulong)  return (T)(ValueType)(ulong)  ( (ulong) (ValueType)left & ~(ulong) (ValueType)right );
-            else if (left is byte)   return (T)(ValueType)(byte)   ( (byte)  (ValueType)left & ~(byte)  (ValueType)right );
-            else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( (sbyte) (ValueType)left & ~(sbyte) (ValueType)right );
-            else throw new NotImplementedException();
+            return left & ~ right;
         }
 
-        public static T OnesComplement<T>(T left) where T : struct
+        [RequiresPreviewFeatures]
+        public static T OnesComplement<T>(T left) where T : IBitwiseOperators<T, T, T>
         {
-            unchecked
-            {
-                if      (left is short)  return (T)(ValueType)(short)  ( ~(short) (ValueType)left );
-                else if (left is int)    return (T)(ValueType)(int)    ( ~(int)   (ValueType)left );
-                else if (left is long)   return (T)(ValueType)(long)   ( ~(long)  (ValueType)left );
-                else if (left is ushort) return (T)(ValueType)(ushort) ( ~(ushort)(ValueType)left );
-                else if (left is uint)   return (T)(ValueType)(uint)   ( ~(uint)  (ValueType)left );
-                else if (left is ulong)  return (T)(ValueType)(ulong)  ( ~(ulong) (ValueType)left );
-                else if (left is byte)   return (T)(ValueType)(byte)   ( ~(byte)  (ValueType)left );
-                else if (left is sbyte)  return (T)(ValueType)(sbyte)  ( ~(sbyte) (ValueType)left );
-                else throw new NotImplementedException();
-            }
+            return ~left;
         }
 
         public static float Clamp(float value, float min, float max)
@@ -270,64 +196,28 @@ namespace System.Numerics.Tests
             else throw new NotImplementedException();
         }
 
-        public static bool GreaterThan<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static bool GreaterThan<T>(T left, T right) where T : INumber<T>
         {
-            if      (left is short)  return  (short)(ValueType)  left > (short)(ValueType)  right;
-            else if (left is int)    return  (int)(ValueType)    left > (int)(ValueType)    right;
-            else if (left is long)   return  (long)(ValueType)   left > (long)(ValueType)   right;
-            else if (left is ushort) return  (ushort)(ValueType) left > (ushort)(ValueType) right;
-            else if (left is uint)   return  (uint)(ValueType)   left > (uint)(ValueType)   right;
-            else if (left is ulong)  return  (ulong)(ValueType)  left > (ulong)(ValueType)  right;
-            else if (left is byte)   return  (byte)(ValueType)   left > (byte)(ValueType)   right;
-            else if (left is sbyte)  return  (sbyte)(ValueType)  left > (sbyte)(ValueType)  right;
-            else if (left is float)  return  (float)(ValueType)  left > (float)(ValueType)  right;
-            else if (left is double) return  (double)(ValueType) left > (double)(ValueType) right;
-            else throw new NotImplementedException();
+            return left > right;
         }
 
-        public static bool GreaterThanOrEqual<T>(T left, T right) where T : struct
-        {
-            if      (left is short)  return  (short)(ValueType)  left >= (short)(ValueType)  right;
-            else if (left is int)    return  (int)(ValueType)    left >= (int)(ValueType)    right;
-            else if (left is long)   return  (long)(ValueType)   left >= (long)(ValueType)   right;
-            else if (left is ushort) return  (ushort)(ValueType) left >= (ushort)(ValueType) right;
-            else if (left is uint)   return  (uint)(ValueType)   left >= (uint)(ValueType)   right;
-            else if (left is ulong)  return  (ulong)(ValueType)  left >= (ulong)(ValueType)  right;
-            else if (left is byte)   return  (byte)(ValueType)   left >= (byte)(ValueType)   right;
-            else if (left is sbyte)  return  (sbyte)(ValueType)  left >= (sbyte)(ValueType)  right;
-            else if (left is float)  return  (float)(ValueType)  left >= (float)(ValueType)  right;
-            else if (left is double) return  (double)(ValueType) left >= (double)(ValueType) right;
-            else throw new NotImplementedException();
+        [RequiresPreviewFeatures]
+        public static bool GreaterThanOrEqual<T>(T left, T right) where T : INumber<T> 
+        { 
+            return left >= right;
         }
 
-        public static bool LessThan<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static bool LessThan<T>(T left, T right) where T : INumber<T>
         {
-            if      (left is short)  return  (short)(ValueType)  left < (short)(ValueType)  right;
-            else if (left is int)    return  (int)(ValueType)    left < (int)(ValueType)    right;
-            else if (left is long)   return  (long)(ValueType)   left < (long)(ValueType)   right;
-            else if (left is ushort) return  (ushort)(ValueType) left < (ushort)(ValueType) right;
-            else if (left is uint)   return  (uint)(ValueType)   left < (uint)(ValueType)   right;
-            else if (left is ulong)  return  (ulong)(ValueType)  left < (ulong)(ValueType)  right;
-            else if (left is byte)   return  (byte)(ValueType)   left < (byte)(ValueType)   right;
-            else if (left is sbyte)  return  (sbyte)(ValueType)  left < (sbyte)(ValueType)  right;
-            else if (left is float)  return  (float)(ValueType)  left < (float)(ValueType)  right;
-            else if (left is double) return  (double)(ValueType) left < (double)(ValueType) right;
-            else throw new NotImplementedException();
+            return left < right;
         }
 
-        public static bool LessThanOrEqual<T>(T left, T right) where T : struct
+        [RequiresPreviewFeatures]
+        public static bool LessThanOrEqual<T>(T left, T right) where T : INumber<T>
         {
-            if      (left is short)  return  (short)(ValueType)  left <= (short)(ValueType)  right;
-            else if (left is int)    return  (int)(ValueType)    left <= (int)(ValueType)    right;
-            else if (left is long)   return  (long)(ValueType)   left <= (long)(ValueType)   right;
-            else if (left is ushort) return  (ushort)(ValueType) left <= (ushort)(ValueType) right;
-            else if (left is uint)   return  (uint)(ValueType)   left <= (uint)(ValueType)   right;
-            else if (left is ulong)  return  (ulong)(ValueType)  left <= (ulong)(ValueType)  right;
-            else if (left is byte)   return  (byte)(ValueType)   left <= (byte)(ValueType)   right;
-            else if (left is sbyte)  return  (sbyte)(ValueType)  left <= (sbyte)(ValueType)  right;
-            else if (left is float)  return  (float)(ValueType)  left <= (float)(ValueType)  right;
-            else if (left is double) return  (double)(ValueType) left <= (double)(ValueType) right;
-            else throw new NotImplementedException();
+            return left <= right;
         }
 
         public static bool AnyEqual<T>(T[] left, T[] right) where T : struct
