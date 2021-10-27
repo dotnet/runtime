@@ -3,6 +3,7 @@
   <PropertyGroup>
     <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion)</RoslynApiVersion>
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER</DefineConstants>
+    <DisableParallelEmccCompile Condition="'$(TargetOS)' == 'Browser' and '$(ContinuousIntegrationBuild)' == 'true'">true</DisableParallelEmccCompile>
   </PropertyGroup>
 
   <Import Project="Microsoft.Extensions.Logging.Generators.targets"/>

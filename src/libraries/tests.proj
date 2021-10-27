@@ -289,10 +289,10 @@
     <!--<ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"-->
                       <!--Exclude="@(ProjectExclusions)"-->
                       <!--Condition="'$(TestAssemblies)' == 'true'" />-->
-      <!--<ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/**/*Tests.csproj"-->
-                      <!--Condition="'$(TestAssemblies)' == 'true'" />-->
-      <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/System.Text.RegularExpressions.Generators.Tests/*.csproj"
+      <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions/tests/Microsoft.Extensions.Logging.Generators.Tests/Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj"
                       Condition="'$(TestAssemblies)' == 'true'" />
+      <!--<ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/System.Text.RegularExpressions.Generators.Tests/*.csproj"-->
+                      <!--Condition="'$(TestAssemblies)' == 'true'" />-->
     <!--<ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"-->
                       <!--Condition="'$(TestPackages)' == 'true'" />-->
     <!--<TrimmingTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.TrimmingTests.proj"-->
