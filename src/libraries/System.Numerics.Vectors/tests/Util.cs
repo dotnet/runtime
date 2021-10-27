@@ -96,28 +96,21 @@ namespace System.Numerics.Tests
         {
             return T.Abs(value);
         }
-
         [RequiresPreviewFeatures]
-        public static T SqrtGenericMath<T>(T value) where T : IFloatingPoint<T>
-        {
-            return T.Sqrt(value);
-        }
-
-        public static T Sqrt<T>(T value) where T : struct
+        public static T Sqrt<T>(T value) where T : struct, INumber<T>
         {
             unchecked
             {
-                if      (value is short)  return (T)(ValueType)(short)  ( Math.Sqrt((short) (ValueType)value) );
-                else if (value is int)    return (T)(ValueType)(int)    ( Math.Sqrt((int)   (ValueType)value) );
-                else if (value is long)   return (T)(ValueType)(long)   ( Math.Sqrt((long)  (ValueType)value) );
-                else if (value is ushort) return (T)(ValueType)(ushort) ( Math.Sqrt((ushort)(ValueType)value) );
-                else if (value is uint)   return (T)(ValueType)(uint)   ( Math.Sqrt((uint)  (ValueType)value) );
-                else if (value is ulong)  return (T)(ValueType)(ulong)  ( Math.Sqrt((ulong) (ValueType)value) );
-                else if (value is byte)   return (T)(ValueType)(byte)   ( Math.Sqrt((byte)  (ValueType)value) );
-                else if (value is sbyte)  return (T)(ValueType)(sbyte)  ( Math.Sqrt((sbyte) (ValueType)value) );
-                else throw new NotImplementedException();
+                double dValue = Create<T,double>(value);
+                return (T)(dynamic)Math.Sqrt(dValue);
             }
         }
+
+        [RequiresPreviewFeatures]
+        private static TSelf Create<TOther, TSelf>(TOther value)
+            where TOther : INumber<TOther>
+            where TSelf : INumber<TSelf>
+            => TSelf.Create<TOther>(value);
 
         [RequiresPreviewFeatures]
         public static T Multiply<T>(T left, T right) where T : INumber<T>
@@ -166,34 +159,16 @@ namespace System.Numerics.Tests
             return value > max ? max : value < min ? min : value;
         }
 
-        public static T Zero<T>() where T : struct
+        [RequiresPreviewFeatures]
+        public static T Zero<T>() where T : struct, INumber<T>
         {
-            if      (typeof(T) == typeof(short))  return  (T)(ValueType)(short)  0;
-            else if (typeof(T) == typeof(int))    return  (T)(ValueType)(int)    0;
-            else if (typeof(T) == typeof(long))   return  (T)(ValueType)(long)   0;
-            else if (typeof(T) == typeof(ushort)) return  (T)(ValueType)(ushort) 0;
-            else if (typeof(T) == typeof(uint))   return  (T)(ValueType)(uint)   0;
-            else if (typeof(T) == typeof(ulong))  return  (T)(ValueType)(ulong)  0;
-            else if (typeof(T) == typeof(byte))   return  (T)(ValueType)(byte)   0;
-            else if (typeof(T) == typeof(sbyte))  return  (T)(ValueType)(sbyte)  0;
-            else if (typeof(T) == typeof(float))  return  (T)(ValueType)(float)  0;
-            else if (typeof(T) == typeof(double)) return  (T)(ValueType)(double) 0;
-            else throw new NotImplementedException();
+            return T.Zero;
         }
 
-        public static T One<T>() where T : struct
+        [RequiresPreviewFeatures]
+        public static T One<T>() where T : struct, INumber<T>
         {
-            if      (typeof(T) == typeof(short))  return  (T)(ValueType)(short)  1;
-            else if (typeof(T) == typeof(int))    return  (T)(ValueType)(int)    1;
-            else if (typeof(T) == typeof(long))   return  (T)(ValueType)(long)   1;
-            else if (typeof(T) == typeof(ushort)) return  (T)(ValueType)(ushort) 1;
-            else if (typeof(T) == typeof(uint))   return  (T)(ValueType)(uint)   1;
-            else if (typeof(T) == typeof(ulong))  return  (T)(ValueType)(ulong)  1;
-            else if (typeof(T) == typeof(byte))   return  (T)(ValueType)(byte)   1;
-            else if (typeof(T) == typeof(sbyte))  return  (T)(ValueType)(sbyte)  1;
-            else if (typeof(T) == typeof(float))  return  (T)(ValueType)(float)  1;
-            else if (typeof(T) == typeof(double)) return  (T)(ValueType)(double) 1;
-            else throw new NotImplementedException();
+            return T.One;
         }
 
         [RequiresPreviewFeatures]
@@ -220,11 +195,12 @@ namespace System.Numerics.Tests
             return left <= right;
         }
 
-        public static bool AnyEqual<T>(T[] left, T[] right) where T : struct
+        [RequiresPreviewFeatures]
+        public static bool AnyEqual<T>(T[] left, T[] right) where T : INumber<T>
         {
             for (int g = 0; g < left.Length; g++)
             {
-                if (((IEquatable<T>)left[g]).Equals(right[g]))
+                if(left[g] == right[g])
                 {
                     return true;
                 }
@@ -232,11 +208,12 @@ namespace System.Numerics.Tests
             return false;
         }
 
-        public static bool AllEqual<T>(T[] left, T[] right) where T : struct
+        [RequiresPreviewFeatures]
+        public static bool AllEqual<T>(T[] left, T[] right) where T : INumber<T>
         {
             for (int g = 0; g < left.Length; g++)
             {
-                if (!((IEquatable<T>)left[g]).Equals(right[g]))
+                if (left[g] != right[g])
                 {
                     return false;
                 }
