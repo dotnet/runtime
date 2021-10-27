@@ -48,7 +48,8 @@ public class TestProject
     public readonly int TestClassLine;
     public readonly int MainMethodLine;
 
-    public string? DeduplicatedClassName;
+    public string? TestProjectAlias;
+    // public string? DeduplicatedClassName;
 
     public TestProject(
         string absolutePath,
@@ -86,6 +87,7 @@ public class TestProject
     public static string SanitizeIdentifier(string source)
     {
         StringBuilder output = new StringBuilder();
+        output.Append("_");
         for (int i = 0; i < source.Length; i++)
         {
             char c = source[i];
@@ -110,11 +112,13 @@ class TestProjectStore
 {
     private readonly List<TestProject> _projects;
     private readonly Dictionary<string, List<TestProject>> _classNameMap;
+    private readonly HashSet<string> _rewrittenFiles;
 
     public TestProjectStore()
     {
         _projects = new List<TestProject>();
         _classNameMap = new Dictionary<string, List<TestProject>>();
+        _rewrittenFiles = new HashSet<string>();
     }
 
     public void ScanTree(string rootPath)
@@ -124,6 +128,38 @@ class TestProjectStore
         ScanRecursive(rootPath, "", ref projectCount);
         PopulateClassNameMap();
         Console.WriteLine("Done scanning {0} projects in {1} msecs", projectCount, sw.ElapsedMilliseconds);
+    }
+
+    public void GenerateExternAliases()
+    {
+        Dictionary<string, int> relativePathToProjectCountMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (TestProject project in _projects)
+        {
+            string endPath = Path.GetFileNameWithoutExtension(project.RelativePath);
+            string relativePath = Path.GetDirectoryName(project.RelativePath)!;
+            while (relativePath.Length > 1)
+            {
+                relativePathToProjectCountMap.TryGetValue(endPath, out int projectCount);
+                relativePathToProjectCountMap[endPath] = projectCount + 1;
+                endPath = Path.Combine(Path.GetFileNameWithoutExtension(relativePath), endPath);
+                relativePath = Path.GetDirectoryName(relativePath)!;
+            }
+        }
+        foreach (TestProject project in _projects)
+        {
+            string endPath = Path.GetFileNameWithoutExtension(project.RelativePath);
+            string relativePath = Path.GetDirectoryName(project.RelativePath)!;
+            while (relativePath.Length > 1)
+            {
+                if (relativePathToProjectCountMap[endPath] == 1)
+                {
+                    project.TestProjectAlias = TestProject.SanitizeIdentifier(endPath);
+                    break;
+                }
+                endPath = Path.Combine(Path.GetFileNameWithoutExtension(relativePath), endPath);
+                relativePath = Path.GetDirectoryName(relativePath)!;
+            }
+        }
     }
 
     public void DumpFolderStatistics(TextWriter writer)
@@ -211,9 +247,9 @@ class TestProjectStore
         int index = 0;
         foreach (TestProject project in _projects)
         {
-            new ILRewriter(project, classNameDuplicates).Rewrite();
+            new ILRewriter(project, classNameDuplicates, _rewrittenFiles).Rewrite();
             index++;
-            if (index % 100 == 0)
+            if (index % 500 == 0)
             {
                 Console.WriteLine("Rewritten {0} / {1} projects", index, _projects.Count);
             }
@@ -245,29 +281,37 @@ class TestProjectStore
             File.Delete(preexistingFile);
         }
 
-        string wrapperSourceName = dbgOptName + ".g.cs";
+        string wrapperSourceName = dbgOptName + ".cs";
         string wrapperSourcePath = Path.Combine(outputDir, wrapperSourceName);
 
-        string wrapperProjectName = dbgOptName + ".g.csproj";
+        string wrapperProjectName = dbgOptName + ".csproj";
         string wrapperProjectPath = Path.Combine(outputDir, wrapperProjectName);
 
         using (StreamWriter writer = new StreamWriter(wrapperSourcePath))
         {
+            foreach (TestProject project in _projects.Where(p => p.DebugOptimize.Equals(debugOptimize) && p.TestClassName != ""))
+            {
+                writer.WriteLine("extern alias " + project.TestProjectAlias + ";");
+            }
+            writer.WriteLine();
+
             writer.WriteLine("using System;");
+            writer.WriteLine();
+
             writer.WriteLine("public static class " + dbgOptName);
             writer.WriteLine("{");
             writer.WriteLine("    public static int Main(string[] args)");
             writer.WriteLine("    {");
             writer.WriteLine("        int mainExitCode = 100;");
 
-            foreach (TestProject project in _projects)
+            foreach (TestProject project in _projects.Where(p => p.DebugOptimize.Equals(debugOptimize)))
             {
-                if (project.DebugOptimize.Equals(debugOptimize) && project.TestClassName != "")
+                string testName = project.RelativePath.Replace('\\', '/');
+                if (project.TestClassName != "")
                 {
-                    string testName = project.RelativePath.Replace('\\', '/');
                     writer.WriteLine("        try");
                     writer.WriteLine("        {");
-                    writer.WriteLine("            int exitCode = " + (project.DeduplicatedClassName ?? project.TestClassName) + ".TestEntrypoint(args);");
+                    writer.WriteLine("            int exitCode = " + project.TestProjectAlias + "::" + project.TestClassName + ".TestEntrypoint(args);");
                     writer.WriteLine("            if (exitCode == 100)");
                     writer.WriteLine("            {");
                     writer.WriteLine("                Console.WriteLine(\"Test succeeded: '" + testName + "'\");");
@@ -280,9 +324,13 @@ class TestProjectStore
                     writer.WriteLine("        }");
                     writer.WriteLine("        catch (Exception ex)");
                     writer.WriteLine("        {");
-                    writer.WriteLine("            Console.Error.WriteLine(\"Test crashed: '" + testName  + "' - {0}\", ex.Message);");
+                    writer.WriteLine("            Console.Error.WriteLine(\"Test crashed: '" + testName + "' - {0}\", ex.Message);");
                     writer.WriteLine("            mainExitCode = -1;");
                     writer.WriteLine("        }");
+                }
+                else
+                {
+                    writer.WriteLine("        Console.WriteLine(\"Skipping test: '" + testName + "' - no class name\");");
                 }
             }
 
@@ -307,7 +355,7 @@ class TestProjectStore
                 if (project.DebugOptimize.Equals(debugOptimize))
                 {
                     string relativePath = Path.GetRelativePath(outputDir, project.AbsolutePath);
-                    writer.WriteLine("        <ProjectReference Include=\"" + relativePath + "\" />");
+                    writer.WriteLine("        <ProjectReference Include=\"" + relativePath + "\" Aliases=\"" + project.TestProjectAlias + "\"/>");
                 }
             }
             writer.WriteLine("    </ItemGroup>");
@@ -483,12 +531,14 @@ class TestProjectStore
                         for (int componentIndex = 1; componentIndex < components.Length; componentIndex++)
                         {
                             string component = components[componentIndex];
-                            if (component != "auto" &&
+                            if (!component.StartsWith("/*") &&
+                                component != "auto" &&
                                 component != "ansi" &&
                                 component != "interface" &&
                                 component != "public" &&
                                 component != "private" &&
                                 component != "sealed" &&
+                                component != "nested" &&
                                 component != "value" &&
                                 component != "beforefieldinit" &&
                                 component != "sequential" &&
@@ -498,6 +548,19 @@ class TestProjectStore
                                 testClassName = component;
                                 testClassSourceFile = path;
                                 testClassLine = lineIndex;
+                                while (--lineIndex >= 0)
+                                {
+                                    components = lines[lineIndex].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                    if (components.Length >= 2 && components[0] == ".namespace")
+                                    {
+                                        string namespaceName = components[1];
+                                        if (namespaceName.StartsWith("\'"))
+                                        {
+                                            namespaceName = namespaceName.Substring(1, namespaceName.Length - 2);
+                                        }
+                                        testClassName = namespaceName + "." + testClassName;
+                                    }
+                                }
                                 break;
                             }
                         }
@@ -530,13 +593,16 @@ class TestProjectStore
                 counts[project.DebugOptimize] = count + 1;
             }
 
+            /*
             if (counts.Values.Any(c => c > 1))
             {
                 foreach (TestProject project in projectList)
                 {
-                    project.DeduplicatedClassName = project.TestClassName! + "_" + TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(project.RelativePath));
+                    project.DeduplicatedClassName = project.TestClassName! + "_"
+                        + TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(project.TestClassSourceFile));
                 }
             }
+            */
         }
     }
 }

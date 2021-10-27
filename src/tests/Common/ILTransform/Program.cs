@@ -24,6 +24,7 @@ public class ILTransform
 
             TestProjectStore testStore = new TestProjectStore();
             testStore.ScanTree(testRoot);
+            testStore.GenerateExternAliases();
 
             using (StreamWriter log = new StreamWriter(logPath))
             {

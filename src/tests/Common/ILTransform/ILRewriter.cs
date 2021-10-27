@@ -8,16 +8,18 @@ public class ILRewriter
 {
     private readonly TestProject _testProject;
     private readonly HashSet<string> _classNameDuplicates;
+    private readonly HashSet<string> _rewrittenFiles;
 
-    public ILRewriter(TestProject testProject, HashSet<string> classNameDuplicates)
+    public ILRewriter(TestProject testProject, HashSet<string> classNameDuplicates, HashSet<string> rewrittenFiles)
     {
         _testProject = testProject;
         _classNameDuplicates = classNameDuplicates;
+        _rewrittenFiles = rewrittenFiles;
     }
 
     public void Rewrite()
     {
-        if (!string.IsNullOrEmpty(_testProject.TestClassSourceFile))
+        if (!string.IsNullOrEmpty(_testProject.TestClassSourceFile) && _rewrittenFiles.Add(_testProject.TestClassSourceFile))
         {
             RewriteFile(_testProject.TestClassSourceFile);
         }
@@ -26,6 +28,11 @@ public class ILRewriter
 
     private void RewriteFile(string ilSource)
     {
+        if (Path.GetFileName(ilSource).Equals("b193264.il", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Source: {0}", ilSource);
+        }
+
         List<string> lines = new List<string>(File.ReadAllLines(ilSource));
         bool rewritten = false;
 
@@ -80,12 +87,12 @@ public class ILRewriter
             string line = lines[_testProject.TestClassLine];
             if (line.IndexOf("public") < 0)
             {
-                lines[_testProject.TestClassLine] = line.Replace(".class", ".class public");
+                lines[_testProject.TestClassLine] = line.Replace(" private ", " public ");
                 rewritten = true;
             }
         }
 
-        string testName = TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(_testProject.RelativePath));
+        string testName = _testProject.TestProjectAlias!;
         for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
         {
             string line = lines[lineIndex];
@@ -94,19 +101,50 @@ public class ILRewriter
             if (assemblyIndex >= 0 && line.IndexOf("extern") < 0)
             {
                 int start = assemblyIndex + AssemblyTag.Length;
-                while (start < line.Length && Char.IsWhiteSpace(line[start]))
+                for (; ;)
+                {
+                    while (start < line.Length && Char.IsWhiteSpace(line[start]))
+                    {
+                        start++;
+                    }
+                    const string LibraryTag = "library";
+                    if (start + LibraryTag.Length <= line.Length && line.Substring(start, LibraryTag.Length) == LibraryTag)
+                    {
+                        start += LibraryTag.Length;
+                        continue;
+                    }
+                    const string LegacyTag = "legacy";
+                    if (start + LegacyTag.Length <= line.Length && line.Substring(start, LegacyTag.Length) == LegacyTag)
+                    {
+                        start += LegacyTag.Length;
+                        continue;
+                    }
+
+                    if (start + 2 <= line.Length && line[start] == '/' && line[start + 1] == '*')
+                    {
+                        start += 2;
+                        while (start + 2 <= line.Length && !(line[start] == '*' && line[start + 1] == '/'))
+                        {
+                            start++;
+                        }
+                        continue;
+                    }
+                    break;
+                }
+                bool quoted = (start < line.Length && line[start] == '\'');
+                if (quoted)
                 {
                     start++;
                 }
                 int end = start;
-                while (end < line.Length && TestProject.IsIdentifier(line[end]))
+                while (end < line.Length && line[end] != '\'' && (quoted || TestProject.IsIdentifier(line[end])))
                 {
                     end++;
                 }
                 string ident = line.Substring(start, end - start);
                 if (ident != testName)
                 {
-                    line = line.Substring(0, start) + testName + line.Substring(end);
+                    line = line.Substring(0, start) + (quoted ? "" : "'") + testName + (quoted ? "" : "'") + line.Substring(end);
                     lines[lineIndex] = line;
                     rewritten = true;
                     break;
@@ -123,6 +161,7 @@ public class ILRewriter
             }
         }
 
+        /*
         if (_testProject.DeduplicatedClassName != null)
         {
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
@@ -131,6 +170,7 @@ public class ILRewriter
             }
             rewritten = true;
         }
+        */
 
         if (rewritten)
         {
