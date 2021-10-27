@@ -618,7 +618,7 @@ namespace System.Threading.Tests
             Task.WaitAll(tasks);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void WaitAsync_Timeout_NoUnhandledException()
         {
             RemoteExecutor.Invoke(async () =>
