@@ -58,7 +58,8 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
         private static readonly MethodInfo s_memoryMarshalGetReference = typeof(MemoryMarshal).GetMethod("GetReference", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
-        private static readonly MethodInfo s_spanIndexOf = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfChar = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
+        private static readonly MethodInfo s_spanIndexOfSpan = typeof(MemoryExtensions).GetMethod("IndexOf", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanIndexOfAnyCharCharChar = typeof(MemoryExtensions).GetMethod("IndexOfAny", new Type[] { typeof(ReadOnlySpan<>).MakeGenericType(Type.MakeGenericMethodParameter(0)), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0), Type.MakeGenericMethodParameter(0) })!.MakeGenericMethod(typeof(char));
         private static readonly MethodInfo s_spanSliceIntMethod = typeof(ReadOnlySpan<char>).GetMethod("Slice", new Type[] { typeof(int) })!;
@@ -1013,9 +1014,16 @@ namespace System.Text.RegularExpressions
 
             GenerateAnchorChecks();
 
-            if (_boyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null })
+            if (_boyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
             {
-                GenerateBoyerMoore();
+                if (rbm.PatternSupportsIndexOf)
+                {
+                    GenerateIndexOf(rbm.Pattern);
+                }
+                else
+                {
+                    GenerateBoyerMoore(rbm);
+                }
             }
             else if (_leadingCharClasses is not null)
             {
@@ -1212,12 +1220,8 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            void GenerateBoyerMoore()
+            void GenerateBoyerMoore(RegexBoyerMoore rbm)
             {
-                RegexBoyerMoore? rbm = _boyerMoorePrefix;
-                Debug.Assert(rbm is RegexBoyerMoore { NegativeUnicode: null });
-
-                // Compiled Boyer-Moore string matching
                 LocalBuilder limitLocal;
                 int beforefirst;
                 int last;
@@ -1425,6 +1429,43 @@ namespace System.Text.RegularExpressions
                 }
             }
 
+            void GenerateIndexOf(string prefix)
+            {
+                using RentedLocalBuilder i = RentInt32Local();
+
+                // int i = runtext.AsSpan(runtextpos, runtextend - runtextpos).IndexOf(prefix);
+                Ldthis();
+                Ldfld(s_runtextField);
+                Ldloc(_runtextposLocal);
+                Ldloc(_runtextendLocal);
+                Ldloc(_runtextposLocal);
+                Sub();
+                Call(s_stringAsSpanIntIntMethod);
+                Ldstr(prefix);
+                Call(s_stringAsSpanMethod);
+                Call(s_spanIndexOfSpan);
+                Stloc(i);
+
+                // if (i < 0)
+                // {
+                //     base.runtextpos = runtextend;
+                //     return false;
+                // }
+                Ldloc(i);
+                Ldc(0);
+                BltFar(returnFalse);
+
+                // base.runtextpos = runtextpos + i;
+                // return true;
+                Ldthis();
+                Ldloc(_runtextposLocal);
+                Ldloc(i);
+                Add();
+                Stfld(s_runtextposField);
+                Ldc(1);
+                Ret();
+            }
+
             void GenerateLeadingCharacter_RightToLeft()
             {
                 Debug.Assert(_leadingCharClasses.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
@@ -1585,7 +1626,7 @@ namespace System.Text.RegularExpressions
                         case 1:
                             // tmp = ...IndexOf(setChars[0]);
                             Ldc(setChars[0]);
-                            Call(s_spanIndexOf);
+                            Call(s_spanIndexOfChar);
                             break;
 
                         case 2:
@@ -2849,7 +2890,7 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
                     Ldc(node.Ch);
-                    Call(s_spanIndexOf);
+                    Call(s_spanIndexOfChar);
                     Stloc(iterationLocal);
 
                     // if (i >= 0) goto atomicLoopDoneLabel;
@@ -4553,7 +4594,7 @@ namespace System.Text.RegularExpressions
                             Ldloc(lenLocal);
                             Call(s_stringAsSpanIntIntMethod);
                             Ldc(Operand(0));
-                            Call(s_spanIndexOf);
+                            Call(s_spanIndexOfChar);
                             Stloc(iLocal);
 
                             Label charFound = DefineLabel();
