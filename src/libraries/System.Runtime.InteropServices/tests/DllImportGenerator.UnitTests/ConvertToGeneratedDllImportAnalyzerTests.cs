@@ -47,6 +47,7 @@ namespace DllImportGenerator.UnitTests
         [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
