@@ -88,7 +88,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'normal'))' == 'true' and '$(AOTExperiment)' == 'true'">
-      <_Values Include="-O1;-O2;-Oz" />
+      <_Values Include="-O1;-O2;-O0" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties Condition="'%(_Values.Identity)' != ''">$(_PropertiesToPass);Scenario=normal;NeedsToBuildWasmAppsOnHelix=true;EmccLinkOptimizationFlag=%(_Values.Identity);RunAOTCompilation=true</AdditionalProperties>

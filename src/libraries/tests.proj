@@ -289,8 +289,8 @@
     <!--<ProjectReference Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj"-->
                       <!--Exclude="@(ProjectExclusions)"-->
                       <!--Condition="'$(TestAssemblies)' == 'true'" />-->
-      <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/**/*Tests.csproj"
-                      Condition="'$(TestAssemblies)' == 'true'" />
+      <!--<ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.Json/tests/**/*Tests.csproj"-->
+                      <!--Condition="'$(TestAssemblies)' == 'true'" />-->
       <ProjectReference Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/System.Text.RegularExpressions.Generators.Tests/*.csproj"
                       Condition="'$(TestAssemblies)' == 'true'" />
     <!--<ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"-->
