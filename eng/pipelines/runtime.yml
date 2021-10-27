@@ -536,7 +536,7 @@ jobs:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
         condition: >-
-          eq(variables['isFullMatrix'], true))
+          eq(variables['isFullMatrix'], true)
 
 #
 # Build Mono and Installer on LLVMJIT mode
