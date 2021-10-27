@@ -159,7 +159,7 @@
       <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true'">
+    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
       <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />
