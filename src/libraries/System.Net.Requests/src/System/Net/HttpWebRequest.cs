@@ -1241,6 +1241,13 @@ namespace System.Net
                             {
                                 request.Headers.CacheControl.MaxAge = httpRequestCachePolicy.MaxAge;
                             }
+
+                            if (httpRequestCachePolicy.MaxStale > TimeSpan.Zero)
+                            {
+                                request.Headers.CacheControl.MaxStale = true;
+                                request.Headers.CacheControl.MaxStaleLimit = httpRequestCachePolicy.MaxStale;
+                            }
+
                             break;
                         case HttpRequestCacheLevel.Refresh:
                             request.Headers.CacheControl.MaxAge = TimeSpan.Zero;
