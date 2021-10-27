@@ -84,16 +84,15 @@ CrashReportWriter::WriteCrashReport()
     {
         OpenObject();
         bool crashed = false;
-        if (thread->ManagedExceptionObject() != 0)
+        if (thread->Tid() == m_crashInfo.CrashThread())
         {
             crashed = true;
-            exceptionType = "0x05000000";   // ManagedException
-        }
-        else
-        {
-            if (thread->Tid() == m_crashInfo.CrashThread())
+            if (thread->ManagedExceptionObject() != 0)
             {
-                crashed = true;
+                exceptionType = "0x05000000";   // ManagedException
+            }
+            else
+            {
                 switch (m_crashInfo.Signal())
                 {
                 case SIGILL:
