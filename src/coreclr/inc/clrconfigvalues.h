@@ -567,27 +567,39 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 ///
 /// Tiered Compilation
 ///
+#ifdef _DEBUG
+// Use lower values to exercise more paths sooner
+#define TC_BackgroundWorkerTimeoutMs (100)
+#define TC_CallCountThreshold (2)
+#define TC_CallCountingDelayMs (1)
+#define TC_DelaySingleProcMultiplier (1)
+#define TC_DeleteCallCountingStubsAfter (1)
+#else // !_DEBUG
+#define TC_BackgroundWorkerTimeoutMs (4000)
+#define TC_CallCountThreshold (30)
+#define TC_CallCountingDelayMs (100)
+#define TC_DelaySingleProcMultiplier (10)
+#define TC_DeleteCallCountingStubsAfter (4096)
+#endif // _DEBUG
 #ifdef FEATURE_TIERED_COMPILATION
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_QuickJit, W("TC_QuickJit"), 1, "For methods that would be jitted, enable using quick JIT when appropriate.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 0, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_AggressiveTiering, W("TC_AggressiveTiering"), 0, "Transition through tiers aggressively.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_BackgroundWorkerTimeoutMs"), 4000, "How long in milliseconds the background worker thread may remain idle before exiting.")
-#ifdef _DEBUG
-// Use a lower value to exercise the fast and slow paths sooner
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), 2, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
-#else
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), 30, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
-#endif
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), 100, "A perpetual delay in milliseconds that is applied call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DelaySingleProcMultiplier, W("TC_DelaySingleProcMultiplier"), 10, "Multiplier for TC_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_BackgroundWorkerTimeoutMs"), TC_BackgroundWorkerTimeoutMs, "How long in milliseconds the background worker thread may remain idle before exiting.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), TC_CallCountThreshold, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), TC_CallCountingDelayMs, "A perpetual delay in milliseconds that is applied call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DelaySingleProcMultiplier, W("TC_DelaySingleProcMultiplier"), TC_DelaySingleProcMultiplier, "Multiplier for TC_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCounting, W("TC_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any promotion to higher tiers")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_UseCallCountingStubs, W("TC_UseCallCountingStubs"), 1, "Uses call counting stubs for faster call counting.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), TC_DeleteCallCountingStubsAfter, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
 #ifdef _DEBUG
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), 1, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
-#else
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DeleteCallCountingStubsAfter, W("TC_DeleteCallCountingStubsAfter"), 4096, "Deletes call counting stubs after this many have completed. Zero to disable deleting.")
-#endif
+#undef TC_BackgroundWorkerTimeoutMs (100)
+#undef TC_CallCountThreshold (2)
+#undef TC_CallCountingDelayMs (1)
+#undef TC_DelaySingleProcMultiplier (1)
+#undef TC_DeleteCallCountingStubsAfter (1)
+#endif // _DEBUG
 #endif // FEATURE_TIERED_COMPILATION
 
 ///
