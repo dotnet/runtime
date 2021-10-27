@@ -373,13 +373,25 @@ namespace Microsoft.Extensions.DependencyModel
 
         private Target ReadTarget(ref Utf8JsonReader reader, string? targetName)
         {
+            if (string.IsNullOrEmpty(targetName))
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(targetName)));
+            }
+
             reader.ReadStartObject();
 
             var libraries = new List<TargetLibrary>();
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                libraries.Add(ReadTargetLibrary(ref reader, reader.GetString()));
+                string? targetLibraryName = reader.GetString();
+
+                if (string.IsNullOrEmpty(targetLibraryName))
+                {
+                    throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(targetLibraryName)));
+                }
+
+                libraries.Add(ReadTargetLibrary(ref reader, targetLibraryName));
             }
 
             reader.CheckEndObject();
@@ -387,7 +399,7 @@ namespace Microsoft.Extensions.DependencyModel
             return new Target(targetName, libraries);
         }
 
-        private TargetLibrary ReadTargetLibrary(ref Utf8JsonReader reader, string? targetLibraryName)
+        private TargetLibrary ReadTargetLibrary(ref Utf8JsonReader reader, string targetLibraryName)
         {
             IEnumerable<Dependency>? dependencies = null;
             List<RuntimeFile>? runtimes = null;
@@ -453,7 +465,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.TryReadStringProperty(out string? name, out string? version))
             {
-                dependencies.Add(new Dependency(Pool(name)!, Pool(version)!));
+                dependencies.Add(new Dependency(Pool(name), Pool(version)));
             }
 
             reader.CheckEndObject();
@@ -472,10 +484,9 @@ namespace Microsoft.Extensions.DependencyModel
                 string? libraryName = reader.GetString();
                 reader.Skip();
 
-                // TODO Discuss about other options?
                 if (string.IsNullOrEmpty(libraryName))
                 {
-                    throw new ArgumentException(null, nameof(libraryName));
+                    throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(libraryName)));
                 }
 
                 runtimes.Add(libraryName);
@@ -614,8 +625,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(libraryName))
                 {
-                    // TODO Discuss about other options?
-                    throw new ArgumentException(null, nameof(libraryName));
+                    throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(libraryName)));
                 }
 
                 libraries.Add(libraryName, ReadOneLibrary(ref reader));
@@ -667,10 +677,15 @@ namespace Microsoft.Extensions.DependencyModel
 
             reader.CheckEndObject();
 
+            if (string.IsNullOrEmpty(type))
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(type)));
+            }
+
             return new LibraryStub()
             {
                 Hash = hash,
-                Type = Pool(type)!,
+                Type = Pool(type),
                 Serviceable = serviceable,
                 Path = path,
                 HashPath = hashPath,
@@ -821,11 +836,11 @@ namespace Microsoft.Extensions.DependencyModel
 
         private sealed class Target
         {
-            public string? Name;
+            public string Name;
 
             public IEnumerable<TargetLibrary> Libraries;
 
-            public Target(string? name, IEnumerable<TargetLibrary> libraries)
+            public Target(string name, IEnumerable<TargetLibrary> libraries)
             {
                 Name = name;
                 Libraries = libraries;
@@ -834,7 +849,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private struct TargetLibrary
         {
-            public string? Name;
+            public string Name;
 
             public IEnumerable<Dependency> Dependencies;
 

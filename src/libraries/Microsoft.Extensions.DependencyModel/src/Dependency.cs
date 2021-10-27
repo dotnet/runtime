@@ -9,15 +9,15 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public readonly struct Dependency : IEquatable<Dependency>
     {
-        public Dependency(string name, string version)
+        public Dependency(string? name, string? version)
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentException(null, nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(name)));
             }
             if (string.IsNullOrEmpty(version))
             {
-                throw new ArgumentException(null, nameof(version));
+                throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(version)));
             }
             Name = name;
             Version = version;
