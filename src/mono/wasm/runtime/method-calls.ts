@@ -163,7 +163,6 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
         if (!classPtr)
             throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
 
-        const typePtr = cwraps.mono_wasm_class_get_type(classPtr);
         converter = _compile_converter_for_marshal_string(args_marshal);
 
         is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);

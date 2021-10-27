@@ -376,7 +376,6 @@ export function mono_bind_method(method: MonoMethod, this_arg: MonoObject | null
         let classPtr = cwraps.mono_wasm_get_class_for_bind_or_invoke (this_arg, method);
         if (!classPtr)
             throw new Error (`Could not get class ptr for bind_method with this (${this_arg}) and method (${method})`);
-        let typePtr = cwraps.mono_wasm_class_get_type (classPtr);
         converter = _compile_converter_for_marshal_string (args_marshal);
     }
 
