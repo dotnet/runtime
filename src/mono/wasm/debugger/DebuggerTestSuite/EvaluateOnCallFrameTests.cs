@@ -566,8 +566,23 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccess() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 2, "EvaluateLocals",
+        public async Task EvaluateExpressionsWithElementAccessByConstant() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 3, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("f.numList[0]", TNumber(1)),
+                   ("f.textList[1]", TString("2")),
+                   ("f.numArray[1]", TNumber(2)),
+                   ("f.textArray[0]", TString("1")));
+           });
+
+        [Fact]
+        public async Task EvaluateExpressionsWithElementAccessByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 3, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -575,7 +590,12 @@ namespace DebuggerTests
 
                await EvaluateOnCallFrameAndCheck(id,
                    ("f.idx0", TNumber(0)),
-                   ("f.numArray[f.idx0]", TNumber(1)));
+                   ("f.idx1", TNumber(1)),
+                   ("f.numList[f.idx0]", TNumber(1)),
+                   ("f.textList[f.idx1]", TString("2")), //FAIL
+                   ("f.numArray[f.idx1]", TNumber(2)), //FAIL
+                   ("f.textArray[f.idx0]", TString("1")));
+                
            });
 
         [Fact]

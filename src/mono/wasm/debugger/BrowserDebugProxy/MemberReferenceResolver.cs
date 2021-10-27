@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -211,29 +212,41 @@ namespace Microsoft.WebAssembly.Diagnostics
             try
             {
                 JObject rootObject = null;
-                rootObject = await Resolve(elementAccess.Expression.ToString(), token);
+                string elementAccessStrExpression = elementAccess.Expression.ToString();
+                rootObject = await Resolve(elementAccessStrExpression, token);
 
                 if (rootObject != null)
                 {
-                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                    switch (objectId.Scheme)
+                    var argument = elementAccess.ArgumentList.ToString();
+                    bool isCorrectIndex = argument.StartsWith('[') && argument.EndsWith(']') && argument.Length > 2;
+                    if (isCorrectIndex)
                     {
-                        case "array":
-                            rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
-                            return rootObject;
-                        case "object":
-                            var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
-                            int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
-                            var commandParamsObj = new MemoryStream();
-                            var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
-                            commandParamsObjWriter.WriteObj(objectId, sdbHelper);
-                            var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
-                            rootObject = await GetValueFromObject(toArrayRetMethod, token);
-                            DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
-                            rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
-                            return rootObject;
-                        default:
-                            throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
+                        string elementIdxStr = argument.Substring(1, argument.Length - 2);
+                        int elementIdx;
+                        int.TryParse(elementIdxStr, out elementIdx);
+                        if (elementIdx >= 0)
+                        {
+                            DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                            switch (objectId.Scheme)
+                            {
+                                case "array":
+                                    rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
+                                    return (JObject)rootObject["value"][elementIdx]["value"];
+                                case "object":
+                                    var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                                    int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
+                                    var commandParamsObj = new MemoryStream();
+                                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                                    commandParamsObjWriter.WriteObj(objectId, sdbHelper);
+                                    var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
+                                    rootObject = await GetValueFromObject(toArrayRetMethod, token);
+                                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
+                                    rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
+                                    return (JObject)rootObject["value"][elementIdx]["value"];
+                                default:
+                                    throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
+                            }
+                        }
                     }
                 }
                 return null;

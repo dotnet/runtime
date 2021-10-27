@@ -418,12 +418,12 @@ namespace DebuggerTests
     {
         public class TestEvaluate
         {
-            public List<int> numList = new List<int> { 1, 2 };
-            public List<string> textList = new List<string> { "1", "2" };
-            public int[] numArray = new int[] { 1, 2 };
-            public string[] textArray = new string[] { "1", "2" };
-            public int idx0 = 0;
-            public int idx1 = 1;
+            public List<int> numList;
+            public List<string> textList;
+            public int[] numArray;
+            public string[] textArray;
+            public int idx0;
+            public int idx1;
 
             public void run()
             {
@@ -433,27 +433,7 @@ namespace DebuggerTests
                 textArray = new string[] { "1", "2" };
                 idx0 = 0;
                 idx1 = 1;
-            }
-        
-            public int GetNumberListElementOfIndex(int idx)
-            {
-                return this.numList[idx];
-            }
-
-            public string GetTextListElementOfIndex(int idx)
-            {
-                return this.textList[idx];
-            }
-
-            public int GetNumberArrayElementOfIndex(int idx)
-            {
-                return this.numArray[idx];
-            }
-
-            public string GetTextArrayElementOfIndex(int idx)
-            {
-                return this.textArray[idx];
-            }
+            }        
         }
 
         public static void EvaluateLocals()

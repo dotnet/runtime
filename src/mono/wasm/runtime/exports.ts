@@ -66,7 +66,6 @@ export const MONO: MONO = <any>{
     mono_wasm_release_roots,
 
     config: runtimeHelpers.config,
-    loaded_files: runtimeHelpers.loaded_files,
 
     // generated bindings closure `library_mono`
     mono_wasm_new_root_buffer_from_pointer,
@@ -118,6 +117,8 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
             return mono_bind_static_method(fqn, signature);
         },
     });
+
+    mono.loaded_files = [];
 
     // here we expose objects used in tests to global namespace
     if (!module.no_global_exports) {
