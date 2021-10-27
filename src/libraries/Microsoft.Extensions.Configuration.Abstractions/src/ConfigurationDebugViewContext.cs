@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Configuration.Abstractions
     /// </summary>
     public readonly struct ConfigurationDebugViewContext
     {
-        public ConfigurationDebugViewContext(string path, string key, string value, IConfigurationProvider configurationProvider)
+        public ConfigurationDebugViewContext(string path, string key, string? value, IConfigurationProvider configurationProvider)
         {
             Path = path;
             Key = key;
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration.Abstractions
         /// <summary>
         /// Value of the current item
         /// </summary>
-        public string Value { get; }
+        public string? Value { get; }
 
         /// <summary>
         /// Provider used to get the value of the current item

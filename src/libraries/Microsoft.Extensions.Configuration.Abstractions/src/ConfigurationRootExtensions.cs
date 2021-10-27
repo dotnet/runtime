@@ -47,9 +47,9 @@ namespace Microsoft.Extensions.Configuration
 
                     if (valueAndProvider.Provider != null)
                     {
-                        var value = processValue != null
+                        string value = processValue != null
                             ? processValue(new ConfigurationDebugViewContext(child.Key, child.Path, valueAndProvider.Value, valueAndProvider.Provider))
-                            : valueAndProvider.Value!;
+                            : valueAndProvider.Value;
 
                         stringBuilder
                             .Append(indent)
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            return ("", null);
+            return (null, null);
         }
     }
 }
