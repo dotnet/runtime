@@ -5,7 +5,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
 else(CLR_CMAKE_HOST_WIN32)
-    include_directories("${CLR_SRC_NATIVE_DIR}/common")
     include(configure.cmake)
 endif(CLR_CMAKE_HOST_WIN32)
 

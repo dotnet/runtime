@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestKind>BuildAndRun</CLRTestKind>
   </PropertyGroup>
 
   <ItemGroup>

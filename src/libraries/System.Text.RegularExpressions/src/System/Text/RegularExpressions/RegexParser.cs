@@ -1659,12 +1659,6 @@ namespace System.Text.RegularExpressions
             throw MakeException(RegexParseError.UnrecognizedControlCharacter, SR.UnrecognizedControlCharacter);
         }
 
-        /// <summary>Returns true for options allowed only at the top level</summary>
-        private bool IsOnlyTopOption(RegexOptions options) =>
-            options == RegexOptions.RightToLeft ||
-            options == RegexOptions.CultureInvariant ||
-            options == RegexOptions.ECMAScript;
-
         /// <summary>Scans cimsx-cimsx option string, stops at the first unrecognized char.</summary>
         private void ScanOptions()
         {
@@ -1683,7 +1677,7 @@ namespace System.Text.RegularExpressions
                 else
                 {
                     RegexOptions options = OptionFromCode(ch);
-                    if (options == 0 || IsOnlyTopOption(options))
+                    if (options == 0)
                     {
                         return;
                     }
@@ -1804,7 +1798,6 @@ namespace System.Text.RegularExpressions
             return ch switch
             {
                 'i' => RegexOptions.IgnoreCase,
-                'r' => RegexOptions.RightToLeft,
                 'm' => RegexOptions.Multiline,
                 'n' => RegexOptions.ExplicitCapture,
                 's' => RegexOptions.Singleline,
@@ -1812,7 +1805,6 @@ namespace System.Text.RegularExpressions
 #if DEBUG
                 'd' => RegexOptions.Debug,
 #endif
-                'e' => RegexOptions.ECMAScript,
                 _ => 0,
             };
         }

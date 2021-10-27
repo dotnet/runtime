@@ -138,7 +138,15 @@ size_t emitter::emitSizeOfInsDsc(instrDesc* id)
         if (id->idIsLargeDsp())
             return sizeof(instrDescDsp);
         else
+        {
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                return sizeof(instrDescAlign);
+            }
+#endif
             return sizeof(instrDesc);
+        }
     }
 }
 
@@ -11420,9 +11428,39 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             break;
 
         case IF_SN_0A: // SN_0A   ................ ................
-            code = emitInsCode(ins, fmt);
-            dst += emitOutput_Instr(dst, code);
+        {
+            bool skipIns = false;
+#if FEATURE_LOOP_ALIGN
+            if (id->idIns() == INS_align)
+            {
+                // IG can be marked as not needing alignment after emitting align instruction.
+                // Alternatively, there are fewer align instructions needed than emitted.
+                // If that is the case, skip outputting alignment.
+                if (!ig->isLoopAlign() || id->idIsEmptyAlign())
+                {
+                    skipIns = true;
+                }
+
+#ifdef DEBUG
+                if (!ig->isLoopAlign())
+                {
+                    // Validate if the state is correctly updated
+                    assert(id->idIsEmptyAlign());
+                }
+#endif
+                sz  = sizeof(instrDescAlign);
+                ins = INS_nop;
+            }
+#endif // FEATURE_LOOP_ALIGN
+
+            if (!skipIns)
+            {
+                code = emitInsCode(ins, fmt);
+                dst += emitOutput_Instr(dst, code);
+            }
+
             break;
+        }
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
             imm = emitGetInsSC(id);
@@ -11569,7 +11607,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     /* All instructions are expected to generate code */
 
-    assert(*dp != dst);
+    assert(*dp != dst || id->idIsEmptyAlign());
 
     *dp = dst;
 
@@ -13287,6 +13325,10 @@ void emitter::emitDispIns(
             break;
 
         case IF_SN_0A: // SN_0A   ................ ................
+            if (ins == INS_align)
+            {
+                printf("[%d bytes]", id->idIsEmptyAlign() ? 0 : INSTR_ENCODED_SIZE);
+            }
             break;
 
         case IF_SI_0A: // SI_0A   ...........iiiii iiiiiiiiiii.....               imm16
@@ -14522,8 +14564,17 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_SN_0A: // bkpt, brk, nop
-            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
-            result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            if (id->idIsEmptyAlign())
+            {
+                // We're not going to generate any instruction, so it doesn't count for PerfScore.
+                result.insThroughput = PERFSCORE_THROUGHPUT_ZERO;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
+            else
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency    = PERFSCORE_LATENCY_ZERO;
+            }
             break;
 
         case IF_SI_0B: // dmb, dsb, isb

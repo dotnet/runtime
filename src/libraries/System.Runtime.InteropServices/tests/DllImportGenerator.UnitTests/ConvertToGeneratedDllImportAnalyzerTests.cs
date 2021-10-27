@@ -11,6 +11,7 @@ using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<M
 
 namespace DllImportGenerator.UnitTests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToGeneratedDllImportAnalyzerTests
     {
         public static IEnumerable<object[]> MarshallingRequiredTypes() => new[]
@@ -36,8 +37,17 @@ namespace DllImportGenerator.UnitTests
             new object[] { typeof(ConsoleKey) }, // enum
         };
 
-        [Theory]
+        public static IEnumerable<object[]> UnsupportedTypes() => new[]
+        {
+            new object[] { typeof(System.Runtime.InteropServices.CriticalHandle) },
+            new object[] { typeof(System.Runtime.InteropServices.HandleRef) },
+            new object[] { typeof(System.Text.StringBuilder) },
+        };
+
+        [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
+        [MemberData(nameof(NoMarshallingRequiredTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
@@ -51,7 +61,7 @@ namespace DllImportGenerator.UnitTests
                     .WithArguments("Method_Return"));
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task ByRef_ReportsDiagnostic(Type type)
@@ -84,7 +94,7 @@ unsafe partial class Test
                     .WithArguments("Method_Ref"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task PreserveSigFalse_ReportsDiagnostic()
         {
             string source = @$"
@@ -95,17 +105,20 @@ partial class Test
     public static extern void {{|#0:Method1|}}();
 
     [DllImport(""DoesNotExist"", PreserveSig = true)]
-    public static extern void Method2();
+    public static extern void {{|#1:Method2|}}();
 }}
 ";
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(0)
-                    .WithArguments("Method1"));
+                    .WithArguments("Method1"),
+                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                    .WithLocation(1)
+                    .WithArguments("Method2"));
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task SetLastErrorTrue_ReportsDiagnostic()
         {
             string source = @$"
@@ -113,28 +126,31 @@ using System.Runtime.InteropServices;
 partial class Test
 {{
     [DllImport(""DoesNotExist"", SetLastError = false)]
-    public static extern void Method1();
+    public static extern void {{|#0:Method1|}}();
 
     [DllImport(""DoesNotExist"", SetLastError = true)]
-    public static extern void {{|#0:Method2|}}();
+    public static extern void {{|#1:Method2|}}();
 }}
 ";
             await VerifyCS.VerifyAnalyzerAsync(
                 source,
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(0)
+                    .WithArguments("Method1"),
+                VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
+                    .WithLocation(1)
                     .WithArguments("Method2"));
         }
 
-        [Theory]
-        [MemberData(nameof(NoMarshallingRequiredTypes))]
-        public async Task BlittablePrimitive_NoDiagnostic(Type type)
+        [ConditionalTheory]
+        [MemberData(nameof(UnsupportedTypes))]
+        public async Task UnsupportedType_NoDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [Fact]
+        [ConditionalFact]
         public async Task NotDllImport_NoDiagnostic()
         {
             string source = @$"

@@ -134,7 +134,8 @@ namespace Microsoft.Interop
             }
         }
 
-        public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+        public override bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
+            => info.IsManagedReturnPosition || info.IsByRef || !context.SingleFrameSpansNativeContext;
 
         public override bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
 

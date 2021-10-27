@@ -76,7 +76,7 @@ namespace System.Text.RegularExpressions
             if ((options & RegexOptions.NonBacktracking) != 0)
             {
                 // If we're in non-backtracking mode, create the appropriate factory.
-                factory = SymbolicRegexRunner.CreateFactory(_code, options, matchTimeout, culture);
+                factory = new SymbolicRegexRunnerFactory(_code, options, matchTimeout, culture);
                 _code = null;
             }
             else if (RuntimeFeature.IsDynamicCodeCompiled && UseOptionC())

@@ -25,7 +25,7 @@ namespace System.Text.RegularExpressions.Symbolic
             RandomSeed = randomseed == 0 ? new Random().Next() : randomseed;
             _random = new Random(RandomSeed);
             _solver = root._builder._solver;
-            ICharAlgebra<BDD> bddSolver = SymbolicRegexRunner.s_unicode._solver;
+            ICharAlgebra<BDD> bddSolver = SymbolicRegexRunnerFactory.s_unicode._solver;
             _asciiWordCharacters = bddSolver.Or(new BDD[] {
                 bddSolver.RangeConstraint('A', 'Z'),
                 bddSolver.RangeConstraint('a', 'z'),
@@ -39,7 +39,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Generates up to k random strings accepted by the regex</summary>
         public IEnumerable<string> GenerateRandomMembers(int k)
         {
-            ICharAlgebra<BDD> bddSolver = SymbolicRegexRunner.s_unicode._solver;
             for (int i = 0; i < k; i++)
             {
                 // Holds the generated input so far
@@ -178,7 +177,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(SymbolicRegexRunner.s_unicode._solver, pred);
+        private BDD ToBDD(S pred) => _solver.ConvertToCharSet(SymbolicRegexRunnerFactory.s_unicode._solver, pred);
         private T Choose<T>(IList<T> elems) => elems[_random.Next(elems.Count)];
         private T Choose<T>(IEnumerable<T> elems)
         {
@@ -190,8 +189,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert(!bdd.IsEmpty);
             // Select characters from the visible ASCII range whenever possible
-            BDD bdd1 = SymbolicRegexRunner.s_unicode._solver.And(bdd, _ascii);
-            return ChooseChar(Choose(((CharSetSolver)SymbolicRegexRunner.s_unicode._solver).ToRanges(bdd1.IsEmpty ? bdd : bdd1)));
+            BDD bdd1 = SymbolicRegexRunnerFactory.s_unicode._solver.And(bdd, _ascii);
+            return ChooseChar(Choose(((CharSetSolver)SymbolicRegexRunnerFactory.s_unicode._solver).ToRanges(bdd1.IsEmpty ? bdd : bdd1)));
         }
         private bool ChooseRandomlyTrueOrFalse() => _random.Next(100) < 50;
         /// <summary>Returns true if some state is unconditionally final</summary>

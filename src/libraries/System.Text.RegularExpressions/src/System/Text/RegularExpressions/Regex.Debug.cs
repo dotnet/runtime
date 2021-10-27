@@ -13,7 +13,15 @@ namespace System.Text.RegularExpressions
     {
         /// <summary>True if the regex has debugging enabled.</summary>
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal bool IsDebug => (roptions & RegexOptions.Debug) != 0;
+        internal bool IsDebug
+        {
+            // These members aren't used from IsDebug, but we want to keep them in debug builds for now,
+            // so this is a convient place to include them rather than needing a debug-only illink file.
+            [DynamicDependency(nameof(SaveDGML))]
+            [DynamicDependency(nameof(GenerateUnicodeTables))]
+            [DynamicDependency(nameof(GenerateRandomMembers))]
+            get => (roptions & RegexOptions.Debug) != 0;
+        }
 
         /// <summary>Unwind the regex and save the resulting state graph in DGML</summary>
         /// <param name="bound">roughly the maximum number of states, 0 means no bound</param>
@@ -32,7 +40,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            srmFactory._runner._matcher.SaveDGML(writer, bound, hideStateInfo, addDotStar, inReverse, onlyDFAinfo, maxLabelLength, asNFA);
+            srmFactory._matcher.SaveDGML(writer, bound, hideStateInfo, addDotStar, inReverse, onlyDFAinfo, maxLabelLength, asNFA);
         }
 
         /// <summary>
@@ -61,7 +69,7 @@ namespace System.Text.RegularExpressions
                 throw new NotSupportedException();
             }
 
-            return srmFactory._runner._matcher.GenerateRandomMembers(k, randomseed, negative);
+            return srmFactory._matcher.GenerateRandomMembers(k, randomseed, negative);
         }
     }
 }
