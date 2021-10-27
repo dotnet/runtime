@@ -67,13 +67,13 @@
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - Pizza App - Publish - AOT">
+    <!--<HelixWorkItem Include="SOD - Pizza App - Publish - AOT">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
-      <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
-      <PreCommands>cd $(BlazorPizzaAOTDirectory);$(Python) pre.py publish -f $(PerflabTargetFrameworks)  --msbuild "/p:_TrimmerDumpDependencies=true;;/p:_MonoRuntimeComponentManifestJsonFilePath=$(WASMRuntimeConfigPath)" --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27 --binlog %27./traces/blazor_publish.binlog%27</PreCommands>
-      <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
+      --><!-- Specifying both linker dump msbuild properties in case linker version is not updated --><!--
+      <PreCommands>cd $(BlazorPizzaAOTDirectory);$(Python) pre.py publish -f $(PerflabTargetFrameworks)  -,-msbuild "/p:_TrimmerDumpDependencies=true%3B/p:_MonoRuntimeComponentManifestJsonFilePath=$(WASMRuntimeConfigPath)" -,-msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) -,-dump-dependencies&quot;%27 -,-binlog %27./traces/blazor_publish.binlog%27</PreCommands>
+      <Command>$(Python) test.py sod -,-scenario-name &quot;%(Identity)&quot; -,-dirs $(PizzaAppPubLocation)</Command>
       <PostCommands>$(Python) post.py</PostCommands>
       <Timeout>1:00</Timeout>
-    </HelixWorkItem>
+    </HelixWorkItem>-->
   </ItemGroup>
 </Project>
