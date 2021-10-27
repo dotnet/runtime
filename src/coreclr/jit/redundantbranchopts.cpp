@@ -289,32 +289,31 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 // Conceptually this just transforms flow as follows:
 //
 //     domBlock           domBlock
-//    /       \          /        \
-//    Ts      Fs         Ts       Fs    True/False successor
+//    /       |          /       |
+//    Ts      Fs         Ts      Fs    True/False successor
 //   ....    ....       ....    ....
-//    Tp      Fp         Tp       Fp    True/False pred
-//     \     /           |        |
-//      \   /            |        |
-//      block     ==>    |        |
-//      /   \            |        |
-//     /     \           |        |
-//    Tt     Ft          Tt       Ft    True/false target
+//    Tp      Fp         Tp      Fp    True/False pred
+//     \     /           |       |
+//      \   /            |       |
+//      block     ==>    |       |
+//      /   \            |       |
+//     /     \           |       |
+//    Tt     Ft          Tt      Ft    True/false target
 //
 // However we may try to re-purpose block, and so end up producing flow more like this:
 //
 //     domBlock           domBlock
-//    /       \          /        \
-//    Ts      Fs         Ts       Fs    True/False successor
+//    /       |          /       |
+//    Ts      Fs         Ts      Fs    True/False successor
 //   ....    ....       ....    ....
-//    Tp      Fp         Tp       Fp    True/False pred
-//     \     /           |        |
-//      \   /            |        |
+//    Tp      Fp         Tp      Fp    True/False pred
+//     \     /           |       |
+//      \   /            |       |
 //      block     ==>    |      block   (repurposed)
-//      /   \            |        |
-//     /     \           |        |
-//    Tt     Ft          Tt       Ft    True/false target
+//      /   \            |       |
+//     /     \           |       |
+//    Tt     Ft          Tt      Ft    True/false target
 //
-
 bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
 {
     assert(block->bbJumpKind == BBJ_COND);
