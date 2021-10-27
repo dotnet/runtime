@@ -49,7 +49,7 @@ jobs:
         value: $(buildConfigUpper)
       
       - name: _runSmokeTestsOnlyArg
-        ${{ if eq(parameters.variables['isFullMatrix'], false) }}:
+        ${{ if ne(parameters.variables['isFullMatrix'], true) }}:
           value: /p:RunSmokeTestsOnly=true
         ${{ if eq(parameters.variables['isFullMatrix'], true) }}:
           value: ''
