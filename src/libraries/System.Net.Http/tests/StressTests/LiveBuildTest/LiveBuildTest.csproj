@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+  <Target Name="TestMessage" AfterTargets="Build" >
+    <Message Text="TargetingpacksTargetsImported: $(TargetingpacksTargetsImported)" Importance="High" />
+    <Message Text="NetCoreAppCurrent: $(NetCoreAppCurrent)" Importance="High" />
+  </Target>
+</Project>
