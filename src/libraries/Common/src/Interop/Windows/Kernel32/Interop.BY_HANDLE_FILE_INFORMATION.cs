@@ -4,9 +4,14 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS0649
 internal static partial class Interop
 {
+	// Even though csc will by default use a sequential layout, a CS0649 warning as error
+    // is produced for un-assigned fields when no StructLayout is specified.
+    //
+    // Explicitly saying Sequential disables that warning/error for consumers which only
+    // use Stat in debug builds.
+    [StructLayout(LayoutKind.Sequential)]
     internal static partial class Kernel32
     {
         internal struct BY_HANDLE_FILE_INFORMATION
@@ -24,4 +29,3 @@ internal static partial class Interop
         }
     }
 }
-#pragma warning restore CS0649
