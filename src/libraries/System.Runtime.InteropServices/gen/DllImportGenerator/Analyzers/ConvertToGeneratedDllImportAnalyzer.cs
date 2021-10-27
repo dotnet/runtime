@@ -58,11 +58,11 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
 
-                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes), SymbolKind.Method);
+                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, generatedDllImportAttrType, knownUnsupportedTypes), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol generatedDllImportAttrType, List<ITypeSymbol> knownUnsupportedTypes)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -70,6 +70,16 @@ namespace Microsoft.Interop.Analyzers
             DllImportData? dllImportData = method.GetDllImportData();
             if (dllImportData == null)
                 return;
+
+            // Ignore methods already marked GeneratedDllImport
+            // This can be the case when the generator creates an extern partial function for blittable signatures.
+            foreach (AttributeData attr in method.GetAttributes())
+            {
+                if (SymbolEqualityComparer.Default.Equals(generatedDllImportAttrType, attr.AttributeClass))
+                {
+                    return;
+                }
+            }
 
             // Ignore QCalls
             if (dllImportData.ModuleName == "QCall")
