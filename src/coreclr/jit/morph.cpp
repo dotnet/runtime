@@ -7241,7 +7241,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     assert(lvaIsImplicitByRefLocal(lvaTable[varDsc->lvFieldLclStart].lvParentLcl));
                     assert(fgGlobalMorph);
                 }
-                else if (info.compRetType != TYP_VOID)
+                else // if (info.compRetType != TYP_VOID)
                 {
                     failTailCall("Local address taken", varNum);
                     return nullptr;
