@@ -58,11 +58,11 @@ namespace Microsoft.Interop.Analyzers
                         }
                     }
 
-                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, generatedDllImportAttrType, knownUnsupportedTypes), SymbolKind.Method);
+                    compilationContext.RegisterSymbolAction(symbolContext => AnalyzeSymbol(symbolContext, knownUnsupportedTypes), SymbolKind.Method);
                 });
         }
 
-        private static void AnalyzeSymbol(SymbolAnalysisContext context, INamedTypeSymbol generatedDllImportAttrType, List<ITypeSymbol> knownUnsupportedTypes)
+        private static void AnalyzeSymbol(SymbolAnalysisContext context, List<ITypeSymbol> knownUnsupportedTypes)
         {
             var method = (IMethodSymbol)context.Symbol;
 
@@ -75,7 +75,7 @@ namespace Microsoft.Interop.Analyzers
             // This can be the case when the generator creates an extern partial function for blittable signatures.
             foreach (AttributeData attr in method.GetAttributes())
             {
-                if (SymbolEqualityComparer.Default.Equals(generatedDllImportAttrType, attr.AttributeClass))
+                if (attr.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
                 {
                     return;
                 }
