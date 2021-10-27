@@ -14,7 +14,7 @@ namespace Mono.Linker
 
 		public bool Any (Predicate<T> callback) => _list?.Exists (callback) == true;
 
-		public T[] ToArray () => _list?.ToArray ();
+		public T[]? ToArray () => _list?.ToArray ();
 
 		public int Count => _list?.Count ?? 0;
 	}

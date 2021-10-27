@@ -101,13 +101,13 @@ namespace ILLink.Tasks.Tests
 			SetupContext (Logger);
 		}
 
-		public LinkContext Context => context;
+		public new LinkContext Context => base.Context;
 
 		public CustomLogger Logger { get; private set; }
 
 		public IEnumerable<string> GetRootAssemblies ()
 		{
-			foreach (var step in context.Pipeline.GetSteps ()) {
+			foreach (var step in Context.Pipeline.GetSteps ()) {
 				if (!(step is RootAssemblyInput))
 					continue;
 
@@ -121,7 +121,7 @@ namespace ILLink.Tasks.Tests
 
 		public IEnumerable<string> GetRootDescriptors ()
 		{
-			foreach (var step in context.Pipeline.GetSteps ()) {
+			foreach (var step in Context.Pipeline.GetSteps ()) {
 				if (!(step is ResolveFromXmlStep))
 					continue;
 
@@ -133,7 +133,7 @@ namespace ILLink.Tasks.Tests
 
 		public IEnumerable<string> GetReferenceAssemblies ()
 		{
-			return (IEnumerable<string>) typeof (AssemblyResolver).GetField ("_references", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Resolver);
+			return (IEnumerable<string>) typeof (AssemblyResolver).GetField ("_references", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (Context.Resolver);
 		}
 
 		protected override void AddResolveFromXmlStep (Pipeline pipeline, string file)
@@ -150,7 +150,7 @@ namespace ILLink.Tasks.Tests
 
 		public IEnumerable<IDependencyRecorder> GetDependencyRecorders ()
 		{
-			return (IEnumerable<IDependencyRecorder>) typeof (Tracer).GetField ("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (context.Tracer);
+			return (IEnumerable<IDependencyRecorder>) typeof (Tracer).GetField ("recorders", BindingFlags.NonPublic | BindingFlags.Instance).GetValue (Context.Tracer);
 		}
 
 		public new bool GetOptimizationName (string optimization, out CodeOptimizations codeOptimizations)
@@ -160,13 +160,13 @@ namespace ILLink.Tasks.Tests
 
 		public CodeOptimizations GetDefaultOptimizations ()
 		{
-			return context.Optimizations.Global;
+			return Context.Optimizations.Global;
 		}
 
 		public Dictionary<string, string> GetCustomData ()
 		{
 			var field = typeof (LinkContext).GetField ("_parameters", BindingFlags.NonPublic | BindingFlags.Instance);
-			return (Dictionary<string, string>) field.GetValue (this.context);
+			return (Dictionary<string, string>) field.GetValue (Context);
 		}
 
 		protected override List<BaseStep> CreateDefaultResolvers ()

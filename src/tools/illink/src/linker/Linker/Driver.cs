@@ -29,6 +29,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -66,7 +67,13 @@ namespace Mono.Linker
 
 		readonly Queue<string> arguments;
 		bool _needAddBypassNGenStep;
-		protected LinkContext context;
+		LinkContext? context;
+		protected LinkContext Context {
+			get {
+				Debug.Assert (context != null);
+				return context;
+			}
+		}
 
 		public Driver (Queue<string> arguments)
 		{
@@ -148,7 +155,7 @@ namespace Mono.Linker
 
 		void ErrorMissingArgument (string optionName)
 		{
-			context.LogError ($"Missing argument for '{optionName}' option.", 1018);
+			Context.LogError ($"Missing argument for '{optionName}' option.", 1018);
 		}
 
 		// Perform setup of the LinkContext and parse the arguments.
@@ -156,7 +163,7 @@ namespace Mono.Linker
 		// 0 => successfully set up context with all arguments
 		// 1 => argument processing stopped early without errors
 		// -1 => error setting up context
-		protected int SetupContext (ILogger customLogger = null)
+		protected int SetupContext (ILogger? customLogger = null)
 		{
 			Pipeline p = GetStandardPipeline ();
 			context = GetDefaultContext (p, customLogger);
@@ -164,9 +171,9 @@ namespace Mono.Linker
 			var body_substituter_steps = new Stack<string> ();
 			var xml_custom_attribute_steps = new Stack<string> ();
 			var custom_steps = new List<string> ();
-			var set_optimizations = new List<(CodeOptimizations, string, bool)> ();
+			var set_optimizations = new List<(CodeOptimizations, string?, bool)> ();
 			bool dumpDependencies = false;
-			string dependenciesFileName = null;
+			string? dependenciesFileName = null;
 			context.StripSecurity = true;
 			bool new_mvid_used = false;
 			bool deterministic_used = false;
@@ -253,7 +260,7 @@ namespace Mono.Linker
 							return -1;
 						}
 
-						if (!GetStringParam (token, out string substitutionFile))
+						if (!GetStringParam (token, out string? substitutionFile))
 							return -1;
 
 						body_substituter_steps.Push (substitutionFile);
@@ -266,14 +273,14 @@ namespace Mono.Linker
 						continue;
 
 					case "--action": {
-							if (!GetStringParam (token, out string actionString))
+							if (!GetStringParam (token, out string? actionString))
 								return -1;
 
 							AssemblyAction? action = ParseAssemblyAction (actionString);
 							if (action == null)
 								return -1;
 
-							string assemblyName = GetNextStringValue ();
+							string? assemblyName = GetNextStringValue ();
 							if (assemblyName == null) {
 								context.DefaultAction = action.Value;
 								continue;
@@ -288,7 +295,7 @@ namespace Mono.Linker
 							continue;
 						}
 					case "--trim-mode": {
-							if (!GetStringParam (token, out string actionString))
+							if (!GetStringParam (token, out string? actionString))
 								return -1;
 
 							AssemblyAction? action = ParseAssemblyAction (actionString);
@@ -299,7 +306,7 @@ namespace Mono.Linker
 							continue;
 						}
 					case "--custom-step":
-						if (!GetStringParam (token, out string custom_step))
+						if (!GetStringParam (token, out string? custom_step))
 							return -1;
 
 						custom_steps.Add (custom_step);
@@ -341,7 +348,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--keep-metadata": {
-							if (!GetStringParam (token, out string mname))
+							if (!GetStringParam (token, out string? mname))
 								return -1;
 
 							if (!TryGetMetadataTrimming (mname, out var type))
@@ -382,32 +389,32 @@ namespace Mono.Linker
 						continue;
 
 					case "--disable-opt": {
-							if (!GetStringParam (token, out string optName))
+							if (!GetStringParam (token, out string? optName))
 								return -1;
 
 							if (!GetOptimizationName (optName, out var opt))
 								return -1;
 
-							string assemblyName = GetNextStringValue ();
+							string? assemblyName = GetNextStringValue ();
 							set_optimizations.Add ((opt, assemblyName, false));
 
 							continue;
 						}
 					case "--enable-opt": {
-							if (!GetStringParam (token, out string optName))
+							if (!GetStringParam (token, out string? optName))
 								return -1;
 
 							if (!GetOptimizationName (optName, out var opt))
 								return -1;
 
-							string assemblyName = GetNextStringValue ();
+							string? assemblyName = GetNextStringValue ();
 							set_optimizations.Add ((opt, assemblyName, true));
 
 							continue;
 						}
 
 					case "--feature": {
-							if (!GetStringParam (token, out string featureName))
+							if (!GetStringParam (token, out string? featureName))
 								return -1;
 
 							if (!GetBoolParam (token, value => {
@@ -440,7 +447,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--output-assemblylist":
-						if (!GetStringParam (token, out string assemblyListFile))
+						if (!GetStringParam (token, out string? assemblyListFile))
 							return -1;
 
 						context.AssemblyListFile = assemblyListFile;
@@ -448,7 +455,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--output-pinvokes":
-						if (!GetStringParam (token, out string pinvokesListFile))
+						if (!GetStringParam (token, out string? pinvokesListFile))
 							return -1;
 
 						context.PInvokesListFile = pinvokesListFile;
@@ -461,7 +468,7 @@ namespace Mono.Linker
 							return -1;
 						}
 
-						if (!GetStringParam (token, out string fileList))
+						if (!GetStringParam (token, out string? fileList))
 							return -1;
 
 						foreach (string file in GetFiles (fileList))
@@ -470,7 +477,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--generate-warning-suppressions":
-						if (!GetStringParam (token, out string generateWarningSuppressionsArgument))
+						if (!GetStringParam (token, out string? generateWarningSuppressionsArgument))
 							return -1;
 
 						if (!GetWarningSuppressionWriterFileOutputKind (generateWarningSuppressionsArgument, out var fileOutputKind)) {
@@ -482,7 +489,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--nowarn":
-						if (!GetStringParam (token, out string noWarnArgument))
+						if (!GetStringParam (token, out string? noWarnArgument))
 							return -1;
 
 						context.NoWarn.UnionWith (ProcessWarningCodes (noWarnArgument));
@@ -516,7 +523,7 @@ namespace Mono.Linker
 						continue;
 
 					case "--warn":
-						if (!GetStringParam (token, out string warnVersionArgument))
+						if (!GetStringParam (token, out string? warnVersionArgument))
 							return -1;
 
 						if (!GetWarnVersion (warnVersionArgument, out WarnVersion version))
@@ -528,7 +535,7 @@ namespace Mono.Linker
 
 					case "--singlewarn":
 					case "--singlewarn+": {
-							string assemblyName = GetNextStringValue ();
+							string? assemblyName = GetNextStringValue ();
 							if (assemblyName != null) {
 								if (!IsValidAssemblyName (assemblyName)) {
 									context.LogError ($"Invalid assembly name '{assemblyName}'.", 1036);
@@ -545,7 +552,7 @@ namespace Mono.Linker
 						}
 
 					case "--singlewarn-": {
-							string assemblyName = GetNextStringValue ();
+							string? assemblyName = GetNextStringValue ();
 							if (assemblyName != null) {
 								if (!IsValidAssemblyName (assemblyName)) {
 									context.LogError ($"Invalid assembly name '{assemblyName}'.", 1036);
@@ -575,7 +582,7 @@ namespace Mono.Linker
 
 					switch (token.Substring (1)) {
 					case "d":
-						if (!GetStringParam (token, out string directory))
+						if (!GetStringParam (token, out string? directory))
 							return -1;
 
 						DirectoryInfo info = new DirectoryInfo (directory);
@@ -584,7 +591,7 @@ namespace Mono.Linker
 						continue;
 					case "o":
 					case "out":
-						if (!GetStringParam (token, out string outputDirectory))
+						if (!GetStringParam (token, out string? outputDirectory))
 							return -1;
 
 						context.OutputDirectory = outputDirectory;
@@ -594,7 +601,7 @@ namespace Mono.Linker
 						context.KeepTypeForwarderOnlyAssemblies = true;
 						continue;
 					case "x": {
-							if (!GetStringParam (token, out string xmlFile))
+							if (!GetStringParam (token, out string? xmlFile))
 								return -1;
 
 							if (!File.Exists (xmlFile)) {
@@ -606,7 +613,7 @@ namespace Mono.Linker
 							continue;
 						}
 					case "a": {
-							if (!GetStringParam (token, out string assemblyFile))
+							if (!GetStringParam (token, out string? assemblyFile))
 								return -1;
 
 							if (!File.Exists (assemblyFile) && assemblyFile.EndsWith (".dll", StringComparison.InvariantCultureIgnoreCase)) {
@@ -649,7 +656,7 @@ namespace Mono.Linker
 						return 1;
 
 					case "reference":
-						if (!GetStringParam (token, out string reference))
+						if (!GetStringParam (token, out string? reference))
 							return -1;
 
 						context.Resolver.AddReferenceAssembly (reference);
@@ -756,7 +763,7 @@ namespace Mono.Linker
 		// to the error code.
 		// May propagate exceptions, which will result in the process getting an
 		// exit code determined by dotnet.
-		public int Run (ILogger customLogger = null)
+		public int Run (ILogger? customLogger = null)
 		{
 			int setupStatus = SetupContext (customLogger);
 			if (setupStatus > 0)
@@ -764,32 +771,32 @@ namespace Mono.Linker
 			if (setupStatus < 0)
 				return 1;
 
-			Pipeline p = context.Pipeline;
+			Pipeline p = Context.Pipeline;
 			PreProcessPipeline (p);
 
 			try {
-				p.Process (context);
+				p.Process (Context);
 			} catch (LinkerFatalErrorException lex) {
-				context.LogMessage (lex.MessageContainer);
+				Context.LogMessage (lex.MessageContainer);
 				Console.Error.WriteLine (lex.ToString ());
 				Debug.Assert (lex.MessageContainer.Category == MessageCategory.Error);
 				Debug.Assert (lex.MessageContainer.Code != null);
 				Debug.Assert (lex.MessageContainer.Code.Value != 0);
 				return lex.MessageContainer.Code ?? 1;
 			} catch (ResolutionException e) {
-				context.LogError ($"{e.Message}", 1040);
+				Context.LogError ($"{e.Message}", 1040);
 			} catch (Exception) {
 				// Unhandled exceptions are usually linker bugs. Ask the user to report it.
-				context.LogError ($"IL Trimmer has encountered an unexpected error. Please report the issue at https://github.com/dotnet/linker/issues", 1012);
+				Context.LogError ($"IL Trimmer has encountered an unexpected error. Please report the issue at https://github.com/dotnet/linker/issues", 1012);
 				// Don't swallow the exception and exit code - rethrow it and let the surrounding tooling decide what to do.
 				// The stack trace will go to stderr, and the MSBuild task will surface it with High importance.
 				throw;
 			} finally {
-				context.FlushCachedWarnings ();
-				context.Tracer.Finish ();
+				Context.FlushCachedWarnings ();
+				Context.Tracer.Finish ();
 			}
 
-			return context.ErrorsCount > 0 ? 1 : 0;
+			return Context.ErrorsCount > 0 ? 1 : 0;
 		}
 
 		partial void PreProcessPipeline (Pipeline pipeline);
@@ -815,7 +822,7 @@ namespace Mono.Linker
 			}
 		}
 
-		Assembly GetCustomAssembly (string arg)
+		Assembly? GetCustomAssembly (string arg)
 		{
 			if (Path.IsPathRooted (arg)) {
 				var assemblyPath = Path.GetFullPath (arg);
@@ -824,9 +831,9 @@ namespace Mono.Linker
 					// (or even if a different path specifies the "same" assembly, based on the MVID).
 					return AssemblyLoadContext.Default.LoadFromAssemblyPath (assemblyPath);
 				}
-				context.LogError ($"The assembly '{arg}' specified for '--custom-step' option could not be found.", 1022);
+				Context.LogError ($"The assembly '{arg}' specified for '--custom-step' option could not be found.", 1022);
 			} else
-				context.LogError ($"The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified.", 1023);
+				Context.LogError ($"The path to the assembly '{arg}' specified for '--custom-step' must be fully qualified.", 1023);
 
 			return null;
 		}
@@ -846,14 +853,14 @@ namespace Mono.Linker
 			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (File.OpenRead (file), file));
 		}
 
-		protected virtual void AddXmlDependencyRecorder (LinkContext context, string fileName)
+		protected virtual void AddXmlDependencyRecorder (LinkContext context, string? fileName)
 		{
 			context.Tracer.AddRecorder (new XmlDependencyRecorder (context, fileName));
 		}
 
 		protected bool AddMarkHandler (Pipeline pipeline, string arg)
 		{
-			if (!TryGetCustomAssembly (ref arg, out Assembly custom_assembly))
+			if (!TryGetCustomAssembly (ref arg, out Assembly? custom_assembly))
 				return false;
 
 			var step = ResolveStep<IMarkHandler> (arg, custom_assembly);
@@ -864,12 +871,12 @@ namespace Mono.Linker
 			return true;
 		}
 
-		bool TryGetCustomAssembly (ref string arg, out Assembly assembly)
+		bool TryGetCustomAssembly (ref string arg, [NotNullWhen (true)] out Assembly? assembly)
 		{
 			assembly = null;
 			int pos = arg.IndexOf (",");
 			if (pos == -1)
-				return true;
+				return false;
 
 			assembly = GetCustomAssembly (arg.Substring (pos + 1));
 			if (assembly == null)
@@ -881,24 +888,24 @@ namespace Mono.Linker
 
 		protected bool AddCustomStep (Pipeline pipeline, string arg)
 		{
-			if (!TryGetCustomAssembly (ref arg, out Assembly custom_assembly))
+			if (!TryGetCustomAssembly (ref arg, out Assembly? custom_assembly))
 				return false;
 
 			string customStepName;
-			string targetName = null;
+			string? targetName = null;
 			bool before = false;
 			if (!arg.Contains (':')) {
 				customStepName = arg;
 			} else {
 				string[] parts = arg.Split (':');
 				if (parts.Length != 2) {
-					context.LogError ($"Invalid value '{arg}' specified for '--custom-step' option.", 1024);
+					Context.LogError ($"Invalid value '{arg}' specified for '--custom-step' option.", 1024);
 					return false;
 				}
 				customStepName = parts[1];
 
 				if (!parts[0].StartsWith ("-") && !parts[0].StartsWith ("+")) {
-					context.LogError ($"Expected '+' or '-' to control new step insertion.", 1025);
+					Context.LogError ($"Expected '+' or '-' to control new step insertion.", 1025);
 					return false;
 				}
 
@@ -912,15 +919,15 @@ namespace Mono.Linker
 
 			if (typeof (IStep).IsAssignableFrom (stepType)) {
 
-				var customStep = (IStep) Activator.CreateInstance (stepType);
+				var customStep = (IStep?) Activator.CreateInstance (stepType) ?? throw new InvalidOperationException ();
 				if (targetName == null) {
 					pipeline.AppendStep (customStep);
 					return true;
 				}
 
-				IStep target = FindStep (pipeline, targetName);
+				IStep? target = FindStep (pipeline, targetName);
 				if (target == null) {
-					context.LogError ($"Pipeline step '{targetName}' could not be found.", 1026);
+					Context.LogError ($"Pipeline step '{targetName}' could not be found.", 1026);
 					return false;
 				}
 
@@ -934,15 +941,15 @@ namespace Mono.Linker
 
 			if (typeof (IMarkHandler).IsAssignableFrom (stepType)) {
 
-				var customStep = (IMarkHandler) Activator.CreateInstance (stepType);
+				var customStep = (IMarkHandler?) Activator.CreateInstance (stepType) ?? throw new InvalidOperationException ();
 				if (targetName == null) {
 					pipeline.AppendMarkHandler (customStep);
 					return true;
 				}
 
-				IMarkHandler target = FindMarkHandler (pipeline, targetName);
+				IMarkHandler? target = FindMarkHandler (pipeline, targetName);
 				if (target == null) {
-					context.LogError ($"Pipeline step '{targetName}' could not be found.", 1026);
+					Context.LogError ($"Pipeline step '{targetName}' could not be found.", 1026);
 					return false;
 				}
 
@@ -954,11 +961,11 @@ namespace Mono.Linker
 				return true;
 			}
 
-			context.LogError ($"Custom step '{stepType}' is incompatible with this trimmer version.", 1028);
+			Context.LogError ($"Custom step '{stepType}' is incompatible with this trimmer version.", 1028);
 			return false;
 		}
 
-		protected virtual IStep FindStep (Pipeline pipeline, string name)
+		protected virtual IStep? FindStep (Pipeline pipeline, string name)
 		{
 			foreach (IStep step in pipeline.GetSteps ()) {
 				Type t = step.GetType ();
@@ -969,7 +976,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static IMarkHandler FindMarkHandler (Pipeline pipeline, string name)
+		static IMarkHandler? FindMarkHandler (Pipeline pipeline, string name)
 		{
 			foreach (IMarkHandler step in pipeline.MarkHandlers) {
 				Type t = step.GetType ();
@@ -980,33 +987,33 @@ namespace Mono.Linker
 			return null;
 		}
 
-		Type ResolveStepType (string type, Assembly assembly)
+		Type? ResolveStepType (string type, Assembly assembly)
 		{
-			Type step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
+			Type? step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
 
 			if (step == null) {
-				context.LogError ($"Custom step '{type}' could not be found.", 1027);
+				Context.LogError ($"Custom step '{type}' could not be found.", 1027);
 				return null;
 			}
 
 			return step;
 		}
 
-		TStep ResolveStep<TStep> (string type, Assembly assembly) where TStep : class
+		TStep? ResolveStep<TStep> (string type, Assembly assembly) where TStep : class
 		{
-			Type step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
+			Type? step = assembly != null ? assembly.GetType (type) : Type.GetType (type, false);
 
 			if (step == null) {
-				context.LogError ($"Custom step '{type}' could not be found.", 1027);
+				Context.LogError ($"Custom step '{type}' could not be found.", 1027);
 				return null;
 			}
 
 			if (!typeof (TStep).IsAssignableFrom (step)) {
-				context.LogError ($"Custom step '{type}' is incompatible with this trimmer version.", 1028);
+				Context.LogError ($"Custom step '{type}' is incompatible with this trimmer version.", 1028);
 				return null;
 			}
 
-			return (TStep) Activator.CreateInstance (step);
+			return (TStep?) Activator.CreateInstance (step);
 		}
 
 		static string[] GetFiles (string param)
@@ -1022,7 +1029,7 @@ namespace Mono.Linker
 		{
 			var lines = new List<string> ();
 			using (StreamReader reader = new StreamReader (file)) {
-				string line;
+				string? line;
 				while ((line = reader.ReadLine ()) != null)
 					lines.Add (line);
 			}
@@ -1049,7 +1056,7 @@ namespace Mono.Linker
 				return AssemblyAction.AddBypassNGenUsed;
 			}
 
-			context.LogError ($"Invalid assembly action '{s}'.", 1031);
+			Context.LogError ($"Invalid assembly action '{s}'.", 1031);
 			return null;
 		}
 
@@ -1068,7 +1075,7 @@ namespace Mono.Linker
 				return AssemblyRootMode.Library;
 			}
 
-			context.LogError ($"Invalid assembly root mode '{s}'.", 1037);
+			Context.LogError ($"Invalid assembly root mode '{s}'.", 1037);
 			return null;
 		}
 
@@ -1080,7 +1087,7 @@ namespace Mono.Linker
 					return true;
 			}
 
-			context.LogError ($"Invalid warning version '{text}'.", 1016);
+			Context.LogError ($"Invalid warning version '{text}'.", 1016);
 			version = 0;
 			return false;
 		}
@@ -1111,7 +1118,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			context.LogError ($"Invalid optimization value '{text}'.", 1029);
+			Context.LogError ($"Invalid optimization value '{text}'.", 1029);
 			optimization = 0;
 			return false;
 		}
@@ -1130,7 +1137,7 @@ namespace Mono.Linker
 				return true;
 			}
 
-			context.LogError ($"Invalid metadata value '{text}'.", 1046);
+			Context.LogError ($"Invalid metadata value '{text}'.", 1046);
 			metadataTrimming = 0;
 			return false;
 		}
@@ -1171,11 +1178,11 @@ namespace Mono.Linker
 				return true;
 			}
 
-			context.LogError ($"Invalid argument for '{token}' option.", 1030);
+			Context.LogError ($"Invalid argument for '{token}' option.", 1030);
 			return false;
 		}
 
-		bool GetStringParam (string token, out string value)
+		bool GetStringParam (string token, [NotNullWhen (true)] out string? value)
 		{
 			value = null;
 			if (arguments.Count < 1) {
@@ -1193,7 +1200,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		string GetNextStringValue ()
+		string? GetNextStringValue ()
 		{
 			if (arguments.Count < 1)
 				return null;
@@ -1206,7 +1213,7 @@ namespace Mono.Linker
 			return arg;
 		}
 
-		protected virtual LinkContext GetDefaultContext (Pipeline pipeline, ILogger logger)
+		protected virtual LinkContext GetDefaultContext (Pipeline pipeline, ILogger? logger)
 		{
 			return new LinkContext (pipeline, logger ?? new ConsoleLogger (), "output") {
 				TrimAction = AssemblyAction.Link,

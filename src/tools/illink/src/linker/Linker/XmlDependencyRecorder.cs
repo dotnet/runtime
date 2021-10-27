@@ -39,10 +39,10 @@ namespace Mono.Linker
 		public const string DefaultDependenciesFileName = "linker-dependencies.xml.gz";
 
 		private readonly LinkContext context;
-		private XmlWriter writer;
-		private Stream stream;
+		private XmlWriter? writer;
+		private Stream? stream;
 
-		public XmlDependencyRecorder (LinkContext context, string fileName = null)
+		public XmlDependencyRecorder (LinkContext context, string? fileName = null)
 		{
 			this.context = context;
 
@@ -83,13 +83,16 @@ namespace Mono.Linker
 			writer.WriteEndDocument ();
 			writer.Flush ();
 			writer.Dispose ();
-			stream.Dispose ();
+			stream?.Dispose ();
 			writer = null;
 			stream = null;
 		}
 
 		public void RecordDependency (object target, in DependencyInfo reason, bool marked)
 		{
+			if (writer == null)
+				throw new InvalidOperationException ();
+
 			if (reason.Kind == DependencyKind.Unspecified)
 				return;
 
@@ -97,8 +100,11 @@ namespace Mono.Linker
 			RecordDependency (reason.Source, target, marked);
 		}
 
-		public void RecordDependency (object source, object target, bool marked)
+		public void RecordDependency (object? source, object target, bool marked)
 		{
+			if (writer == null)
+				throw new InvalidOperationException ();
+
 			if (!ShouldRecord (source) && !ShouldRecord (target))
 				return;
 
@@ -136,7 +142,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		string TokenString (object o)
+		string TokenString (object? o)
 		{
 			if (o == null)
 				return "N:null";
@@ -173,7 +179,7 @@ namespace Mono.Linker
 			}
 		}
 
-		bool ShouldRecord (object o)
+		bool ShouldRecord (object? o)
 		{
 			if (!context.EnableReducedTracing)
 				return true;

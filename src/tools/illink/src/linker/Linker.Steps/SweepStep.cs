@@ -39,7 +39,6 @@ namespace Mono.Linker.Steps
 {
 	public class SweepStep : BaseStep
 	{
-		AssemblyDefinition[] assemblies;
 		readonly bool sweepSymbols;
 		readonly HashSet<AssemblyDefinition> BypassNGenToSave = new HashSet<AssemblyDefinition> ();
 
@@ -51,7 +50,7 @@ namespace Mono.Linker.Steps
 		protected override void Process ()
 		{
 			// To keep facades, scan all references so that even unused facades are kept
-			assemblies = Context.KeepTypeForwarderOnlyAssemblies ?
+			var assemblies = Context.KeepTypeForwarderOnlyAssemblies ?
 				Context.GetReferencedAssemblies ().ToArray () : Annotations.GetAssemblies ().ToArray ();
 
 			// Ensure that any assemblies which need to be removed are marked for deletion,
@@ -122,7 +121,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.AddBypassNGen:
 			case AssemblyAction.AddBypassNGenUsed:
 				foreach (var reference in assembly.MainModule.AssemblyReferences) {
-					AssemblyDefinition ad = Context.Resolver.Resolve (reference);
+					AssemblyDefinition? ad = Context.Resolver.Resolve (reference);
 					if (ad == null)
 						continue;
 
@@ -386,7 +385,10 @@ namespace Mono.Linker.Steps
 			if (!providerAsSecurity.HasSecurityDeclarations) {
 				// If the method or type had security before and all attributes were removed, or no remaining attributes are security attributes,
 				// then we need to set HasSecurity to false
-				if (!provider.HasCustomAttributes || provider.CustomAttributes.All (attr => !IsSecurityAttributeType (Context.TryResolve (attr.AttributeType))))
+				if (!provider.HasCustomAttributes || provider.CustomAttributes.All (attr => {
+					TypeDefinition? attributeType = Context.TryResolve (attr.AttributeType);
+					return attributeType == null || !IsSecurityAttributeType (attributeType);
+				}))
 					return true;
 			}
 
@@ -407,11 +409,11 @@ namespace Mono.Linker.Steps
 				};
 			}
 
-			definition = Context.TryResolve (definition.BaseType);
-			if (definition == null)
+			var baseDefinition = Context.TryResolve (definition.BaseType);
+			if (baseDefinition == null)
 				return false;
 
-			return IsSecurityAttributeType (definition);
+			return IsSecurityAttributeType (baseDefinition);
 		}
 
 		protected bool SweepCustomAttributes (ICustomAttributeProvider provider)
@@ -464,7 +466,7 @@ namespace Mono.Linker.Steps
 
 		void SweepDebugInfo (Collection<MethodDefinition> methods)
 		{
-			List<ScopeDebugInformation> sweptScopes = null;
+			List<ScopeDebugInformation>? sweptScopes = null;
 			foreach (var m in methods) {
 				if (m.DebugInformation == null)
 					continue;

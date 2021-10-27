@@ -33,7 +33,10 @@ namespace Mono.Linker
 			if (provider is not IMemberDefinition memberDefinition)
 				return;
 
-			var assemblyName = UnconditionalSuppressMessageAttributeState.GetModuleFromProvider (memberDefinition).Assembly.Name;
+			if (UnconditionalSuppressMessageAttributeState.GetModuleFromProvider (provider) is not ModuleDefinition module)
+				return;
+
+			var assemblyName = module.Assembly.Name;
 			if (!_warnings.TryGetValue (assemblyName, out var warnings)) {
 				warnings = new HashSet<(int, IMemberDefinition)> ();
 				_warnings.Add (assemblyName, warnings);

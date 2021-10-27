@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Mono.Linker
 {
@@ -35,7 +36,7 @@ namespace Mono.Linker
 	{
 		protected readonly LinkContext context;
 
-		List<IDependencyRecorder> recorders;
+		List<IDependencyRecorder>? recorders;
 
 		public Tracer (LinkContext context)
 		{
@@ -63,6 +64,7 @@ namespace Mono.Linker
 			recorders.Add (recorder);
 		}
 
+		[MemberNotNullWhen (true, "recorders")]
 		bool IsRecordingEnabled ()
 		{
 			return recorders != null;

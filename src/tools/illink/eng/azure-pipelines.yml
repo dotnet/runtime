@@ -105,7 +105,7 @@ stages:
         - job: Linux
           condition: eq(variables.officialBuild, 'false')
           pool:
-            name: Hosted Ubuntu 1604
+            vmImage: ubuntu-20.04
           steps:
           - checkout: self
             submodules: true
@@ -137,7 +137,7 @@ stages:
   - ${{ if eq(variables.officialBuild, 'false') }}:
     - job: Lint
       pool:
-          name: Hosted Ubuntu 1604
+        vmImage: ubuntu-20.04
       steps:
       - checkout: self
         submodules: true
