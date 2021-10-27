@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Mono.Cecil;
 using Mono.Collections.Generic;
@@ -19,12 +21,13 @@ namespace Mono.Linker.Steps
 	{
 		readonly List<ISubStep> substeps;
 
-		List<ISubStep> on_assemblies;
-		List<ISubStep> on_types;
-		List<ISubStep> on_fields;
-		List<ISubStep> on_methods;
-		List<ISubStep> on_properties;
-		List<ISubStep> on_events;
+		CategorizedSubSteps? categorized;
+		CategorizedSubSteps Categorized {
+			get {
+				Debug.Assert (categorized.HasValue);
+				return categorized.Value;
+			}
+		}
 
 		public MarkSubStepsDispatcher (IEnumerable<ISubStep> subSteps)
 		{
@@ -43,7 +46,7 @@ namespace Mono.Linker.Steps
 		{
 			CategorizeSubSteps (assembly);
 
-			if (HasSubSteps (on_assemblies))
+			if (HasSubSteps (Categorized.on_assemblies))
 				DispatchAssembly (assembly);
 
 			if (!ShouldDispatchTypes ())
@@ -54,11 +57,11 @@ namespace Mono.Linker.Steps
 
 		bool ShouldDispatchTypes ()
 		{
-			return HasSubSteps (on_types)
-				|| HasSubSteps (on_fields)
-				|| HasSubSteps (on_methods)
-				|| HasSubSteps (on_properties)
-				|| HasSubSteps (on_events);
+			return HasSubSteps (Categorized.on_types)
+				|| HasSubSteps (Categorized.on_fields)
+				|| HasSubSteps (Categorized.on_methods)
+				|| HasSubSteps (Categorized.on_properties)
+				|| HasSubSteps (Categorized.on_events);
 		}
 
 		void BrowseTypes (Collection<TypeDefinition> types)
@@ -66,22 +69,22 @@ namespace Mono.Linker.Steps
 			foreach (TypeDefinition type in types) {
 				DispatchType (type);
 
-				if (type.HasFields && HasSubSteps (on_fields)) {
+				if (type.HasFields && HasSubSteps (Categorized.on_fields)) {
 					foreach (FieldDefinition field in type.Fields)
 						DispatchField (field);
 				}
 
-				if (type.HasMethods && HasSubSteps (on_methods)) {
+				if (type.HasMethods && HasSubSteps (Categorized.on_methods)) {
 					foreach (MethodDefinition method in type.Methods)
 						DispatchMethod (method);
 				}
 
-				if (type.HasProperties && HasSubSteps (on_properties)) {
+				if (type.HasProperties && HasSubSteps (Categorized.on_properties)) {
 					foreach (PropertyDefinition property in type.Properties)
 						DispatchProperty (property);
 				}
 
-				if (type.HasEvents && HasSubSteps (on_events)) {
+				if (type.HasEvents && HasSubSteps (Categorized.on_events)) {
 					foreach (EventDefinition @event in type.Events)
 						DispatchEvent (@event);
 				}
@@ -93,42 +96,42 @@ namespace Mono.Linker.Steps
 
 		void DispatchAssembly (AssemblyDefinition assembly)
 		{
-			foreach (var substep in on_assemblies) {
+			foreach (var substep in Categorized.on_assemblies) {
 				substep.ProcessAssembly (assembly);
 			}
 		}
 
 		void DispatchType (TypeDefinition type)
 		{
-			foreach (var substep in on_types) {
+			foreach (var substep in Categorized.on_types) {
 				substep.ProcessType (type);
 			}
 		}
 
 		void DispatchField (FieldDefinition field)
 		{
-			foreach (var substep in on_fields) {
+			foreach (var substep in Categorized.on_fields) {
 				substep.ProcessField (field);
 			}
 		}
 
 		void DispatchMethod (MethodDefinition method)
 		{
-			foreach (var substep in on_methods) {
+			foreach (var substep in Categorized.on_methods) {
 				substep.ProcessMethod (method);
 			}
 		}
 
 		void DispatchProperty (PropertyDefinition property)
 		{
-			foreach (var substep in on_properties) {
+			foreach (var substep in Categorized.on_properties) {
 				substep.ProcessProperty (property);
 			}
 		}
 
 		void DispatchEvent (EventDefinition @event)
 		{
-			foreach (var substep in on_events) {
+			foreach (var substep in Categorized.on_events) {
 				substep.ProcessEvent (@event);
 			}
 		}
@@ -141,12 +144,14 @@ namespace Mono.Linker.Steps
 
 		void CategorizeSubSteps (AssemblyDefinition assembly)
 		{
-			on_assemblies = new List<ISubStep> ();
-			on_types = new List<ISubStep> ();
-			on_fields = new List<ISubStep> ();
-			on_methods = new List<ISubStep> ();
-			on_properties = new List<ISubStep> ();
-			on_events = new List<ISubStep> ();
+			categorized = new CategorizedSubSteps {
+				on_assemblies = new List<ISubStep> (),
+				on_types = new List<ISubStep> (),
+				on_fields = new List<ISubStep> (),
+				on_methods = new List<ISubStep> (),
+				on_properties = new List<ISubStep> (),
+				on_events = new List<ISubStep> ()
+			};
 
 			foreach (var substep in substeps)
 				CategorizeSubStep (substep, assembly);
@@ -157,12 +162,12 @@ namespace Mono.Linker.Steps
 			if (!substep.IsActiveFor (assembly))
 				return;
 
-			CategorizeTarget (substep, SubStepTargets.Assembly, on_assemblies);
-			CategorizeTarget (substep, SubStepTargets.Type, on_types);
-			CategorizeTarget (substep, SubStepTargets.Field, on_fields);
-			CategorizeTarget (substep, SubStepTargets.Method, on_methods);
-			CategorizeTarget (substep, SubStepTargets.Property, on_properties);
-			CategorizeTarget (substep, SubStepTargets.Event, on_events);
+			CategorizeTarget (substep, SubStepTargets.Assembly, Categorized.on_assemblies);
+			CategorizeTarget (substep, SubStepTargets.Type, Categorized.on_types);
+			CategorizeTarget (substep, SubStepTargets.Field, Categorized.on_fields);
+			CategorizeTarget (substep, SubStepTargets.Method, Categorized.on_methods);
+			CategorizeTarget (substep, SubStepTargets.Property, Categorized.on_properties);
+			CategorizeTarget (substep, SubStepTargets.Event, Categorized.on_events);
 		}
 
 		static void CategorizeTarget (ISubStep substep, SubStepTargets target, List<ISubStep> list)

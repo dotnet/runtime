@@ -183,4 +183,7 @@
   <data name="RequiresUnreferencedCodeOnStaticConstructorTitle" xml:space="preserve">
     <value>The use of 'RequiresUnreferencedCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
   </data>
+  <data name="CorrectnessOfCOMCannotBeGuaranteedMessage" xml:space="preserve">
+    <value>P/invoke method '{0}' declares a parameter with COM marshalling. Correctness of COM interop cannot be guaranteed after trimming. Interfaces and interface members might be removed.</value>
+  </data>
 </root>

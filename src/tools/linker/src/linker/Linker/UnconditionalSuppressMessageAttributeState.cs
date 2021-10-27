@@ -29,7 +29,7 @@ namespace Mono.Linker
 				suppressions = new Dictionary<int, SuppressMessageInfo> ();
 				_suppressions.Add (provider, suppressions);
 			} else if (suppressions.ContainsKey (info.Id)) {
-				string elementName = provider is MemberReference memberRef ? memberRef.GetDisplayName () : provider.ToString ();
+				string? elementName = provider is MemberReference memberRef ? memberRef.GetDisplayName () : provider.ToString ();
 				_context.LogMessage ($"Element '{elementName}' has more than one unconditional suppression. Note that only the last one is used.");
 			}
 
@@ -42,25 +42,24 @@ namespace Mono.Linker
 			// (if they're different). This is to correctly handle compiler generated code
 			// which needs to use suppressions from both the compiler generated scope
 			// as well as the original user defined method.
-			ICustomAttributeProvider suppressionContextMember = warningOrigin.SuppressionContextMember;
+			ICustomAttributeProvider? suppressionContextMember = warningOrigin.SuppressionContextMember;
 
 			if (IsSuppressed (id, suppressionContextMember, out info))
 				return true;
 
-			ICustomAttributeProvider provider = warningOrigin.Provider;
+			ICustomAttributeProvider? provider = warningOrigin.Provider;
 			if (suppressionContextMember != provider && IsSuppressed (id, provider, out info))
 				return true;
 
 			return false;
 		}
 
-		bool IsSuppressed (int id, ICustomAttributeProvider warningOrigin, out SuppressMessageInfo info)
+		bool IsSuppressed (int id, ICustomAttributeProvider? warningOrigin, out SuppressMessageInfo info)
 		{
 			info = default;
 			if (warningOrigin == null)
 				return false;
 
-			ModuleDefinition module = GetModuleFromProvider (warningOrigin);
 			if (warningOrigin is IMemberDefinition warningOriginMember) {
 				while (warningOriginMember != null) {
 					if (IsSuppressedOnElement (id, warningOriginMember, out info))
@@ -70,6 +69,10 @@ namespace Mono.Linker
 				}
 			}
 
+			ModuleDefinition? module = GetModuleFromProvider (warningOrigin);
+			if (module == null)
+				return false;
+
 			// Check if there's an assembly or module level suppression.
 			if (IsSuppressedOnElement (id, module, out info) ||
 				IsSuppressedOnElement (id, module.Assembly, out info))
@@ -78,7 +81,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		bool IsSuppressedOnElement (int id, ICustomAttributeProvider provider, out SuppressMessageInfo info)
+		bool IsSuppressedOnElement (int id, ICustomAttributeProvider? provider, out SuppressMessageInfo info)
 		{
 			info = default;
 			if (provider == null)
@@ -95,12 +98,13 @@ namespace Mono.Linker
 			// Gather assembly-level suppressions if we haven't already. To ensure that we always cache
 			// complete information for a member, we will also scan for attributes on any other members
 			// targeted by the assembly-level suppressions.
-			var module = GetModuleFromProvider (provider);
-			var assembly = module.Assembly;
-			if (InitializedAssemblies.Add (assembly)) {
-				foreach (var suppression in DecodeAssemblyAndModuleSuppressions (module)) {
-					AddSuppression (suppression.Info, suppression.Target);
-					membersToScan.Add (suppression.Target);
+			if (GetModuleFromProvider (provider) is ModuleDefinition module) {
+				var assembly = module.Assembly;
+				if (InitializedAssemblies.Add (assembly)) {
+					foreach (var suppression in DecodeAssemblyAndModuleSuppressions (module)) {
+						AddSuppression (suppression.Info, suppression.Target);
+						membersToScan.Add (suppression.Target);
+					}
 				}
 			}
 
@@ -142,14 +146,14 @@ namespace Mono.Linker
 			if (attribute.HasProperties) {
 				foreach (var p in attribute.Properties) {
 					switch (p.Name) {
-					case ScopeProperty:
-						info.Scope = p.Argument.Value as string;
+					case ScopeProperty when p.Argument.Value is string scope:
+						info.Scope = scope;
 						break;
-					case TargetProperty:
-						info.Target = p.Argument.Value as string;
+					case TargetProperty when p.Argument.Value is string target:
+						info.Target = target;
 						break;
-					case MessageIdProperty:
-						info.MessageId = p.Argument.Value as string;
+					case MessageIdProperty when p.Argument.Value is string messageId:
+						info.MessageId = messageId;
 						break;
 					}
 				}
@@ -158,7 +162,7 @@ namespace Mono.Linker
 			return true;
 		}
 
-		public static ModuleDefinition GetModuleFromProvider (ICustomAttributeProvider provider)
+		public static ModuleDefinition? GetModuleFromProvider (ICustomAttributeProvider provider)
 		{
 			switch (provider.MetadataToken.TokenType) {
 			case TokenType.Module:

@@ -12,9 +12,9 @@ namespace Mono.Linker
 {
 	readonly struct LinkerAttributesInformation
 	{
-		readonly Dictionary<Type, List<Attribute>> _linkerAttributes;
+		readonly Dictionary<Type, List<Attribute>>? _linkerAttributes;
 
-		private LinkerAttributesInformation (Dictionary<Type, List<Attribute>> cache)
+		private LinkerAttributesInformation (Dictionary<Type, List<Attribute>>? cache)
 		{
 			this._linkerAttributes = cache;
 		}
@@ -23,12 +23,12 @@ namespace Mono.Linker
 		{
 			Debug.Assert (context.CustomAttributes.HasAny (provider));
 
-			Dictionary<Type, List<Attribute>> cache = null;
+			Dictionary<Type, List<Attribute>>? cache = null;
 
 			foreach (var customAttribute in context.CustomAttributes.GetCustomAttributes (provider)) {
 				var attributeType = customAttribute.AttributeType;
 
-				Attribute attributeValue;
+				Attribute? attributeValue;
 				switch (attributeType.Name) {
 				case "RequiresUnreferencedCodeAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
 					attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
@@ -84,7 +84,7 @@ namespace Mono.Linker
 			return attributeList.Cast<T> ();
 		}
 
-		static Attribute ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
+		static Attribute? ProcessRequiresUnreferencedCodeAttribute (LinkContext context, ICustomAttributeProvider provider, CustomAttribute customAttribute)
 		{
 			if (!(provider is MethodDefinition || provider is TypeDefinition))
 				return null;
@@ -109,7 +109,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		static RemoveAttributeInstancesAttribute BuildRemoveAttributeInstancesAttribute (LinkContext context, TypeDefinition attributeContext, CustomAttribute ca)
+		static RemoveAttributeInstancesAttribute? BuildRemoveAttributeInstancesAttribute (LinkContext context, TypeDefinition attributeContext, CustomAttribute ca)
 		{
 			switch (ca.ConstructorArguments.Count) {
 			case 0:

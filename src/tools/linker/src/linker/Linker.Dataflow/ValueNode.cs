@@ -12,8 +12,6 @@ using FieldDefinition = Mono.Cecil.FieldDefinition;
 using GenericParameter = Mono.Cecil.GenericParameter;
 using TypeDefinition = Mono.Cecil.TypeDefinition;
 
-#nullable enable
-
 namespace Mono.Linker.Dataflow
 {
 	public enum ValueNodeKind

@@ -2,8 +2,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Mono.Cecil;
 
-#nullable enable
-
 namespace Mono.Linker
 {
 	/// Tracks dependencies created via DynamicDependencyAttribute in the linker.

@@ -65,7 +65,7 @@ namespace Mono.Linker.Dataflow
 
 			// Base should already be marked (since we're marking its derived type now)
 			// so we should already have its cached values filled.
-			TypeDefinition baseType = _context.TryResolve (type.BaseType);
+			TypeDefinition? baseType = _context.TryResolve (type.BaseType);
 			Debug.Assert (baseType == null || _context.Annotations.IsMarked (baseType));
 			if (baseType != null && _typesInDynamicallyAccessedMembersHierarchy.TryGetValue (baseType, out var baseValue)) {
 				annotation |= baseValue.annotation;
@@ -195,7 +195,7 @@ namespace Mono.Linker.Dataflow
 			if (applied)
 				return true;
 
-			TypeDefinition baseType = _context.TryResolve (type.BaseType);
+			TypeDefinition? baseType = _context.TryResolve (type.BaseType);
 			if (baseType != null)
 				applied = ApplyDynamicallyAccessedMembersToTypeHierarchyInner (reflectionMethodBodyScanner, baseType);
 

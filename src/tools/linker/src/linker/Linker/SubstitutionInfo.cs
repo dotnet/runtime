@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using Mono.Cecil;
 
-#nullable enable
-
 namespace Mono.Linker
 {
 	public class SubstitutionInfo

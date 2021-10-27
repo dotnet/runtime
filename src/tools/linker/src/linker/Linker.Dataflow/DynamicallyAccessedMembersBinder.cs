@@ -7,8 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mono.Cecil;
 
-#nullable enable
-
 namespace Mono.Linker
 {
 	// Temporary workaround - should be removed once linker can be upgraded to build against

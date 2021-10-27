@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
@@ -67,17 +68,39 @@ namespace ILLink.RoslynAnalyzer.Tests
 			switch (attribute.Name.ToString ()) {
 			case "ExpectedWarning":
 				var args = TestCaseUtils.GetAttributeArguments (attribute);
-				if (args.TryGetValue ("ProducedBy", out var producedBy) &&
-					producedBy is MemberAccessExpressionSyntax memberAccessExpression &&
-					memberAccessExpression.Name is IdentifierNameSyntax identifierNameSyntax &&
-					identifierNameSyntax.Identifier.ValueText == "Trimmer")
-					return false;
+				if (args.TryGetValue ("ProducedBy", out var producedBy)) {
+					// Skip if this warning is not expected to be produced by any of the analyzers that we are currently testing.
+					return GetProducedBy (producedBy).HasFlag (ProducedBy.Analyzer);
+				}
+
 				return true;
 			case "LogContains":
 			case "UnrecognizedReflectionAccessPattern":
 				return true;
 			default:
 				return false;
+			}
+
+			static ProducedBy GetProducedBy (ExpressionSyntax expression)
+			{
+				var producedBy = (ProducedBy) 0x0;
+				switch (expression) {
+				case BinaryExpressionSyntax binaryExpressionSyntax:
+					Enum.TryParse<ProducedBy> ((binaryExpressionSyntax.Left as MemberAccessExpressionSyntax)!.Name.Identifier.ValueText, out var besProducedBy);
+					producedBy |= besProducedBy;
+					producedBy |= GetProducedBy (binaryExpressionSyntax.Right);
+					break;
+
+				case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
+					Enum.TryParse<ProducedBy> (memberAccessExpressionSyntax.Name.Identifier.ValueText, out var maeProducedBy);
+					producedBy |= maeProducedBy;
+					break;
+
+				default:
+					break;
+				}
+
+				return producedBy;
 			}
 		}
 
