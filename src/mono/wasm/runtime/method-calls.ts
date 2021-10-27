@@ -159,10 +159,6 @@ export function call_method(method: MonoMethod, this_arg: MonoObject | undefined
 
     // check if the method signature needs argument mashalling
     if (needs_converter) {
-        const classPtr = cwraps.mono_wasm_get_class_for_bind_or_invoke(this_arg, method);
-        if (!classPtr)
-            throw new Error (`Could not get class ptr for call_method with this (${this_arg}) and method (${method})`);
-
         converter = _compile_converter_for_marshal_string(args_marshal);
 
         is_result_marshaled = _decide_if_result_is_marshaled(converter, args.length);

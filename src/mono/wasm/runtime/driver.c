@@ -1279,16 +1279,6 @@ mono_wasm_unbox_rooted (MonoObject *obj)
 	return mono_object_unbox (obj);
 }
 
-EMSCRIPTEN_KEEPALIVE MonoClass * 
-mono_wasm_get_class_for_bind_or_invoke (MonoObject *this_arg, MonoMethod *method) {
-	if (this_arg)
-		return mono_object_get_class (this_arg);
-	else if (method)
-		return mono_method_get_class (method);
-	else
-		return NULL;
-}
-
 EMSCRIPTEN_KEEPALIVE char * 
 mono_wasm_get_type_name (MonoType * typePtr) {
 	return mono_type_get_name_full (typePtr, MONO_TYPE_NAME_FORMAT_REFLECTION);
