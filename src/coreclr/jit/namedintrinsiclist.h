@@ -56,6 +56,9 @@ enum NamedIntrinsic : unsigned short
     NI_System_Type_op_Inequality,
     NI_System_Type_GetTypeFromHandle,
     NI_System_Array_Clone,
+    NI_System_Array_GetLength,
+    NI_System_Array_GetLowerBound,
+    NI_System_Array_GetUpperBound,
     NI_System_Object_MemberwiseClone,
 
     NI_System_String_get_Chars,
@@ -73,6 +76,11 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_Threading_Interlocked_And,
     NI_System_Threading_Interlocked_Or,
+    NI_System_Threading_Interlocked_CompareExchange,
+    NI_System_Threading_Interlocked_Exchange,
+    NI_System_Threading_Interlocked_ExchangeAdd,
+    NI_System_Threading_Interlocked_MemoryBarrier,
+    NI_System_Threading_Interlocked_ReadMemoryBarrier,
 
 #ifdef FEATURE_HW_INTRINSICS
     NI_HW_INTRINSIC_START,

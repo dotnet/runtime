@@ -59,7 +59,7 @@ public class WasmAppBuilder : Task
     // </summary>
     public ITaskItem[]? ExtraConfig { get; set; }
 
-    private class WasmAppConfig
+    private sealed class WasmAppConfig
     {
         [JsonPropertyName("assembly_root")]
         public string AssemblyRoot { get; set; } = "managed";
@@ -86,12 +86,12 @@ public class WasmAppBuilder : Task
         public string Name { get; init; }
     }
 
-    private class AssemblyEntry : AssetEntry
+    private sealed class AssemblyEntry : AssetEntry
     {
         public AssemblyEntry(string name) : base(name, "assembly") {}
     }
 
-    private class SatelliteAssemblyEntry : AssetEntry
+    private sealed class SatelliteAssemblyEntry : AssetEntry
     {
         public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
         {
@@ -102,14 +102,14 @@ public class WasmAppBuilder : Task
         public string CultureName { get; set; }
     }
 
-    private class VfsEntry : AssetEntry
+    private sealed class VfsEntry : AssetEntry
     {
         public VfsEntry(string name) : base(name, "vfs") {}
         [JsonPropertyName("virtual_path")]
         public string? VirtualPath { get; set; }
     }
 
-    private class IcuData : AssetEntry
+    private sealed class IcuData : AssetEntry
     {
         public IcuData(string name) : base(name, "icu") {}
         [JsonPropertyName("load_remote")]

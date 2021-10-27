@@ -209,15 +209,7 @@ protected:
 
     static const char* genInsName(instruction ins);
     const char* genInsDisplayName(emitter::instrDesc* id);
-#endif // DEBUG
 
-    //-------------------------------------------------------------------------
-
-    // JIT-time constants for use in multi-dimensional array code generation.
-    unsigned genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension);
-    unsigned genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension);
-
-#ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
 #endif // DEBUG
 
@@ -453,19 +445,20 @@ protected:
                      emitAttr              retSize
                      MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
                      IL_OFFSETX            ilOffset,
-                     regNumber             base   = REG_NA,
-                     bool                  isJump = false);
+                     regNumber             base,
+                     bool                  isJump);
     // clang-format on
 
     // clang-format off
-    void genEmitCall(int                   callType,
-                     CORINFO_METHOD_HANDLE methHnd,
-                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
-                     GenTreeIndir*         indir
-                     X86_ARG(int  argSize),
-                     emitAttr              retSize
-                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX            ilOffset);
+    void genEmitCallIndir(int                   callType,
+                          CORINFO_METHOD_HANDLE methHnd,
+                          INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                          GenTreeIndir*         indir
+                          X86_ARG(int  argSize),
+                          emitAttr              retSize
+                          MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                          IL_OFFSETX            ilOffset,
+                          bool                  isJump);
     // clang-format on
 
     //
@@ -845,11 +838,8 @@ protected:
 
 #if defined(TARGET_ARMARCH)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+    void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
-
-#if defined(TARGET_ARM)
-    void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
-#endif // TARGET_ARM
 
 #if !defined(TARGET_64BIT)
     void genLongToIntCast(GenTree* treeNode);
@@ -1147,10 +1137,6 @@ protected:
     void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
 #endif // FEATURE_HW_INTRINSICS
     void genEmitGSCookieCheck(bool pushReg);
-    void genSetRegToIcon(regNumber reg,
-                         ssize_t   val,
-                         var_types type = TYP_INT,
-                         insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
     void genCodeForShift(GenTree* tree);
 
 #if defined(TARGET_X86) || defined(TARGET_ARM)
@@ -1260,7 +1246,10 @@ protected:
     void genCodeForArrOffset(GenTreeArrOffs* treeNode);
     instruction genGetInsForOper(genTreeOps oper, var_types type);
     bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
-    void genCallInstruction(GenTreeCall* call);
+    GenTree* getCallTarget(const GenTreeCall* call, CORINFO_METHOD_HANDLE* methHnd);
+    regNumber getCallIndirectionCellReg(const GenTreeCall* call);
+    void genCall(GenTreeCall* call);
+    void genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackArgBytes));
     void genJmpMethod(GenTree* jmp);
     BasicBlock* genCallFinally(BasicBlock* block);
     void genCodeForJumpTrue(GenTreeOp* jtrue);

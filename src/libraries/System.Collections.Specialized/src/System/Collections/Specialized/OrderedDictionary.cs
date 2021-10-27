@@ -128,7 +128,8 @@ namespace System.Collections.Specialized
             get
             {
                 ArrayList objectsArray = EnsureObjectsArray();
-                return new OrderedDictionaryKeyValueCollection(objectsArray, true);
+                Hashtable objectsTable = EnsureObjectsTable();
+                return new OrderedDictionaryKeyValueCollection(objectsArray, objectsTable, _comparer);
             }
         }
 
@@ -210,7 +211,7 @@ namespace System.Collections.Specialized
             get
             {
                 ArrayList objectsArray = EnsureObjectsArray();
-                return new OrderedDictionaryKeyValueCollection(objectsArray, false);
+                return new OrderedDictionaryKeyValueCollection(objectsArray);
             }
         }
 
@@ -541,20 +542,29 @@ namespace System.Collections.Specialized
         }
 
         /// <devdoc>
-        /// OrderedDictionaryKeyValueCollection implements a collection for the Values and Keys properties
+        /// OrderedDictionaryKeyValueCollection implements IList for the Values and Keys properties
         /// that is "live"- it will reflect changes to the OrderedDictionary on the collection made after the getter
         /// was called.
         /// </devdoc>
-        private sealed class OrderedDictionaryKeyValueCollection : ICollection
+        private sealed class OrderedDictionaryKeyValueCollection : IList
         {
             private readonly ArrayList _objects;
-            private readonly bool _isKeys;
+            private readonly Hashtable? _objectsTable;
+            private readonly IEqualityComparer? _comparer;
 
-            public OrderedDictionaryKeyValueCollection(ArrayList array, bool isKeys)
+            public OrderedDictionaryKeyValueCollection(ArrayList array, Hashtable objectsTable, IEqualityComparer? comparer)
             {
                 _objects = array;
-                _isKeys = isKeys;
+                _objectsTable = objectsTable;
+                _comparer = comparer;
             }
+
+            public OrderedDictionaryKeyValueCollection(ArrayList array)
+            {
+                _objects = array;
+            }
+
+            private bool IsKeys => _objectsTable is not null;
 
             void ICollection.CopyTo(Array array, int index)
             {
@@ -565,38 +575,111 @@ namespace System.Collections.Specialized
                 foreach (object? o in _objects)
                 {
                     Debug.Assert(o != null);
-                    array.SetValue(_isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
+                    array.SetValue(IsKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
                     index++;
                 }
             }
 
-            int ICollection.Count
-            {
-                get
-                {
-                    return _objects.Count;
-                }
-            }
+            int ICollection.Count => _objects.Count;
 
-            bool ICollection.IsSynchronized
-            {
-                get
-                {
-                    return false;
-                }
-            }
+            bool ICollection.IsSynchronized => false;
 
-            object ICollection.SyncRoot
-            {
-                get
-                {
-                    return _objects.SyncRoot;
-                }
-            }
+            object ICollection.SyncRoot => _objects.SyncRoot;
 
             IEnumerator IEnumerable.GetEnumerator()
             {
-                return new OrderedDictionaryEnumerator(_objects, _isKeys == true ? OrderedDictionaryEnumerator.Keys : OrderedDictionaryEnumerator.Values);
+                return new OrderedDictionaryEnumerator(_objects, IsKeys ? OrderedDictionaryEnumerator.Keys : OrderedDictionaryEnumerator.Values);
+            }
+
+            bool IList.Contains(object? value)
+            {
+                if (IsKeys)
+                {
+                    Debug.Assert(_objectsTable is not null);
+                    return value != null && _objectsTable.ContainsKey(value);
+                }
+
+                foreach (object? o in _objects)
+                {
+                    Debug.Assert(o != null);
+                    if (object.Equals(((DictionaryEntry)o).Value, value))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            int IList.IndexOf(object? value)
+            {
+                for (int i = 0; i < _objects.Count; i++)
+                {
+                    if (IsKeys)
+                    {
+                        object entryKey = ((DictionaryEntry)_objects[i]!).Key;
+                        if (_comparer != null)
+                        {
+                            if (_comparer.Equals(entryKey, value))
+                            {
+                                return i;
+                            }
+                        }
+                        else if (entryKey.Equals(value))
+                        {
+                            return i;
+                        }
+                    }
+                    else if (object.Equals(((DictionaryEntry)_objects[i]!).Value, value))
+                    {
+                        return i;
+                    }
+                }
+
+                return -1;
+            }
+
+            bool IList.IsFixedSize => true;
+            bool IList.IsReadOnly => true;
+
+            object? IList.this[int index]
+            {
+                get
+                {
+                    DictionaryEntry entry = (DictionaryEntry)_objects[index]!;
+                    return IsKeys ? entry.Key : entry.Value;
+                }
+                set => throw new NotSupportedException(GetNotSupportedErrorMessage());
+            }
+
+            void IList.Insert(int index, object? value)
+            {
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
+            }
+
+            void IList.Remove(object? value)
+            {
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
+            }
+
+            void IList.RemoveAt(int index)
+            {
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
+            }
+
+            int IList.Add(object? value)
+            {
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
+            }
+
+            void IList.Clear()
+            {
+                throw new NotSupportedException(GetNotSupportedErrorMessage());
+            }
+
+            private string GetNotSupportedErrorMessage()
+            {
+                return IsKeys ? SR.NotSupported_KeyCollectionSet : SR.NotSupported_ValueCollectionSet;
             }
         }
     }

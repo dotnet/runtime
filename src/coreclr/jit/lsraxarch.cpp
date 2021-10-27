@@ -535,8 +535,8 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(tree->AsBoundsChk()->gtIndex);
-            srcCount += BuildOperandUses(tree->AsBoundsChk()->gtArrLen);
+            srcCount = BuildOperandUses(tree->AsBoundsChk()->GetIndex());
+            srcCount += BuildOperandUses(tree->AsBoundsChk()->GetArrayLength());
             break;
 
         case GT_ARR_ELEM:
@@ -1213,13 +1213,12 @@ int LinearScan::BuildCall(GenTreeCall* call)
         regMaskTP ctrlExprCandidates = RBM_NONE;
 
         // In case of fast tail implemented as jmp, make sure that gtControlExpr is
-        // computed into a register.
+        // computed into appropriate registers.
         if (call->IsFastTailCall())
         {
-            assert(!ctrlExpr->isContained());
-            // Fast tail call - make sure that call target is always computed in RAX
-            // so that epilog sequence can generate "jmp rax" to achieve fast tail call.
-            ctrlExprCandidates = RBM_RAX;
+            // Fast tail call - make sure that call target is always computed in volatile registers
+            // that will not be restored in the epilog sequence.
+            ctrlExprCandidates = RBM_INT_CALLEE_TRASH;
         }
 #ifdef TARGET_X86
         else if (call->IsVirtualStub() && (call->gtCallType == CT_INDIRECT))
@@ -1236,17 +1235,15 @@ int LinearScan::BuildCall(GenTreeCall* call)
         }
 #endif // TARGET_X86
 
-#if FEATURE_VARARG
         // If it is a fast tail call, it is already preferenced to use RAX.
         // Therefore, no need set src candidates on call tgt again.
-        if (call->IsVarargs() && callHasFloatRegArgs && !call->IsFastTailCall())
+        if (compFeatureVarArg() && call->IsVarargs() && callHasFloatRegArgs && (ctrlExprCandidates == RBM_NONE))
         {
             // Don't assign the call target to any of the argument registers because
             // we will use them to also pass floating point arguments as required
             // by Amd64 ABI.
             ctrlExprCandidates = allRegs(TYP_INT) & ~(RBM_ARG_REGS);
         }
-#endif // !FEATURE_VARARG
         srcCount += BuildOperandUses(ctrlExpr, ctrlExprCandidates);
     }
 
@@ -1364,7 +1361,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             switch (blkNode->gtBlkOpKind)
             {
                 case GenTreeBlk::BlkOpKindUnroll:
-                    if (size < XMM_REGSIZE_BYTES)
+                    if ((size % XMM_REGSIZE_BYTES) != 0)
                     {
                         regMaskTP regMask = allRegs(TYP_INT);
 #ifdef TARGET_X86

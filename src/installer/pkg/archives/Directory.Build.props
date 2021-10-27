@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <EnsureRuntimeIdentifierSet>true</EnsureRuntimeIdentifierSet>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props, $(MSBuildThisFileDirectory)..))" />
+</Project>

@@ -227,7 +227,7 @@ typedef struct IMAGE_COR20_HEADER
     };
 
     // This is the blob of managed resources. Fetched using code:AssemblyNative.GetResource and
-    // code:PEFile.GetResource and accessible from managed code from
+    // code:PEAssembly.GetResource and accessible from managed code from
 	// System.Assembly.GetManifestResourceStream.  The meta data has a table that maps names to offsets into
 	// this blob, so logically the blob is a set of resources.
     IMAGE_DATA_DIRECTORY    Resources;

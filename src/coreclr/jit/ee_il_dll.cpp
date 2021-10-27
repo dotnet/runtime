@@ -300,6 +300,27 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
     memcpy(versionIdentifier, &JITEEVersionIdentifier, sizeof(GUID));
 }
 
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+bool TargetOS::OSSettingConfigured = false;
+bool TargetOS::IsWindows           = false;
+bool TargetOS::IsUnix              = false;
+bool TargetOS::IsMacOS             = false;
+#endif
+
+/*****************************************************************************
+ * Set the OS that this JIT should be generating code for. The contract with the VM
+ * is that this must be called before compileMethod is called.
+ */
+void CILJit::setTargetOS(CORINFO_OS os)
+{
+#ifdef TARGET_OS_RUNTIMEDETERMINED
+    TargetOS::IsMacOS             = os == CORINFO_MACOS;
+    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::OSSettingConfigured = true;
+#endif
+}
+
 /*****************************************************************************
  * Determine the maximum length of SIMD vector supported by this JIT.
  */
@@ -418,15 +439,13 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
             if (structSize > (2 * TARGET_POINTER_SIZE))
             {
 
-#ifndef TARGET_UNIX
-                if (info.compIsVarArgs)
+                if (TargetOS::IsWindows && info.compIsVarArgs)
                 {
                     // Arm64 Varargs ABI requires passing in general purpose
                     // registers. Force the decision of whether this is an HFA
                     // to false to correctly pass as if it was not an HFA.
                     isHfa = false;
                 }
-#endif // TARGET_UNIX
                 if (!isHfa)
                 {
                     // This struct is passed by reference using a single 'slot'
@@ -471,22 +490,25 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
 // static
 unsigned Compiler::eeGetArgAlignment(var_types type, bool isFloatHfa)
 {
-#if defined(OSX_ARM64_ABI)
-    if (isFloatHfa)
+    if (compMacOsArm64Abi())
     {
-        assert(varTypeIsStruct(type));
-        return sizeof(float);
+        if (isFloatHfa)
+        {
+            assert(varTypeIsStruct(type));
+            return sizeof(float);
+        }
+        if (varTypeIsStruct(type))
+        {
+            return TARGET_POINTER_SIZE;
+        }
+        const unsigned argSize = genTypeSize(type);
+        assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
+        return argSize;
     }
-    if (varTypeIsStruct(type))
+    else
     {
         return TARGET_POINTER_SIZE;
     }
-    const unsigned argSize = genTypeSize(type);
-    assert((0 < argSize) && (argSize <= TARGET_POINTER_SIZE));
-    return argSize;
-#else
-    return TARGET_POINTER_SIZE;
-#endif
 }
 
 /*****************************************************************************/
@@ -503,13 +525,14 @@ GenTree* Compiler::eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig)
 //------------------------------------------------------------------------
 // eeGetArrayDataOffset: Gets the offset of a SDArray's first element
 //
-// Arguments:
-//    type - The array element type
-//
 // Return Value:
 //    The offset to the first array element.
-
-unsigned Compiler::eeGetArrayDataOffset(var_types type)
+//
+// Notes:
+//    See the comments at the definition of CORINFO_Array for a description of how arrays are laid out in memory.
+//
+// static
+unsigned Compiler::eeGetArrayDataOffset()
 {
     return OFFSETOF__CORINFO_Array__data;
 }
@@ -518,7 +541,6 @@ unsigned Compiler::eeGetArrayDataOffset(var_types type)
 // eeGetMDArrayDataOffset: Gets the offset of a MDArray's first element
 //
 // Arguments:
-//    type - The array element type
 //    rank - The array rank
 //
 // Return Value:
@@ -526,13 +548,56 @@ unsigned Compiler::eeGetArrayDataOffset(var_types type)
 //
 // Assumptions:
 //    The rank should be greater than 0.
-
-unsigned Compiler::eeGetMDArrayDataOffset(var_types type, unsigned rank)
+//
+// static
+unsigned Compiler::eeGetMDArrayDataOffset(unsigned rank)
 {
     assert(rank > 0);
     // Note that below we're specifically using genTypeSize(TYP_INT) because array
     // indices are not native int.
-    return eeGetArrayDataOffset(type) + 2 * genTypeSize(TYP_INT) * rank;
+    return eeGetArrayDataOffset() + 2 * genTypeSize(TYP_INT) * rank;
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayLengthOffset: Returns the offset from the Array object to the
+//   size for the given dimension.
+//
+// Arguments:
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+//
+// static
+unsigned Compiler::eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension)
+{
+    // Note that we don't actually need the `rank` value for this calculation, but we pass it anyway,
+    // to be consistent with other MD array functions.
+    assert(rank > 0);
+    assert(dimension < rank);
+    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+    return eeGetArrayDataOffset() + genTypeSize(TYP_INT) * dimension;
+}
+
+//------------------------------------------------------------------------
+// eeGetMDArrayLowerBoundOffset: Returns the offset from the Array object to the
+//   lower bound for the given dimension.
+//
+// Arguments:
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+//
+// static
+unsigned Compiler::eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension)
+{
+    assert(rank > 0);
+    assert(dimension < rank);
+    // Note that the lower bound and length fields of the Array object are always TYP_INT, even on 64-bit targets.
+    return eeGetArrayDataOffset() + genTypeSize(TYP_INT) * (dimension + rank);
 }
 
 /*****************************************************************************/

@@ -308,6 +308,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_DIV:
         case GT_MULHI:
+        case GT_MUL_LONG:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -484,7 +485,7 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildPutArgSplit(tree->AsPutArgSplit());
             dstCount = tree->AsPutArgSplit()->gtNumRegs;
             break;
-#endif // FEATURE _SPLIT_ARG
+#endif // FEATURE_ARG_SPLIT
 
         case GT_PUTARG_STK:
             srcCount = BuildPutArgStk(tree->AsPutArgStk());
@@ -618,8 +619,8 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTreeBoundsChk* node = tree->AsBoundsChk();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(node->gtIndex);
-            srcCount += BuildOperandUses(node->gtArrLen);
+            srcCount = BuildOperandUses(node->GetIndex());
+            srcCount += BuildOperandUses(node->GetArrayLength());
         }
         break;
 

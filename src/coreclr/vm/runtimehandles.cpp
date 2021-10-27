@@ -286,99 +286,6 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsEquivalentTo, ReflectClassBaseObject *
 }
 FCIMPLEND
 
-// TypeEqualsHelper and TypeNotEqualsHelper are almost identical.
-// Unfortunately we cannot combime them because they need to hardcode the caller's name
-NOINLINE static BOOL TypeEqualSlow(OBJECTREF refL, OBJECTREF refR, LPVOID __me)
-{
-    BOOL ret = FALSE;
-
-    FC_INNER_PROLOG_NO_ME_SETUP();
-
-    _ASSERTE(refL != NULL && refR != NULL);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_2(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, refL, refR);
-
-    MethodDescCallSite TypeEqualsMethod(METHOD__OBJECT__EQUALS, &refL);
-
-    ARG_SLOT args[] =
-    {
-        ObjToArgSlot(refL),
-        ObjToArgSlot(refR)
-    };
-
-    ret = TypeEqualsMethod.Call_RetBool(args);
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_INNER_EPILOG();
-
-    return ret;
-}
-
-
-
-#include <optsmallperfcritical.h>
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::TypeEQ, Object* left, Object* right)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refL = (OBJECTREF)left;
-    OBJECTREF refR = (OBJECTREF)right;
-
-    if (refL == refR)
-    {
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    if (!refL || !refR)
-    {
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    if ((refL->GetMethodTable() == g_pRuntimeTypeClass || refR->GetMethodTable() == g_pRuntimeTypeClass))
-    {
-        // Quick path for negative common case
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    // The fast path didn't get us the result
-    // Let's try the slow path: refL.Equals(refR);
-    FC_INNER_RETURN(FC_BOOL_RET, (FC_BOOL_RET)(!!TypeEqualSlow(refL, refR, __me)));
-}
-FCIMPLEND
-
-FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::TypeNEQ, Object* left, Object* right)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refL = (OBJECTREF)left;
-    OBJECTREF refR = (OBJECTREF)right;
-
-    if (refL == refR)
-    {
-        FC_RETURN_BOOL(FALSE);
-    }
-
-    if (!refL || !refR)
-    {
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    if ((refL->GetMethodTable() == g_pRuntimeTypeClass || refR->GetMethodTable() == g_pRuntimeTypeClass))
-    {
-        // Quick path for negative common case
-        FC_RETURN_BOOL(TRUE);
-    }
-
-    // The fast path didn't get us the result
-    // Let's try the slow path: refL.Equals(refR);
-    FC_INNER_RETURN(FC_BOOL_RET, (FC_BOOL_RET)(!TypeEqualSlow(refL, refR, __me)));
-}
-FCIMPLEND
-
-#include <optdefault.h>
-
 FCIMPL1(MethodDesc *, RuntimeTypeHandle::GetFirstIntroducedMethod, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
@@ -2821,7 +2728,7 @@ void QCALLTYPE ModuleHandle::GetPEKind(QCall::ModuleHandle pModule, DWORD* pdwPE
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    pModule->GetFile()->GetPEKindAndMachine(pdwPEKind, pdwMachine);
+    pModule->GetPEAssembly()->GetPEKindAndMachine(pdwPEKind, pdwMachine);
     END_QCALL;
 }
 
@@ -2835,10 +2742,6 @@ FCIMPL1(INT32, ModuleHandle::GetMDStreamVersion, ReflectModuleBaseObject * pModu
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module *pModule = refModule->GetModule();
-
-    if (pModule->IsResource())
-        return 0;
-
     return pModule->GetMDImport()->GetMetadataStreamVersion();
 }
 FCIMPLEND
@@ -2880,10 +2783,6 @@ FCIMPL1(INT32, ModuleHandle::GetToken, ReflectModuleBaseObject * pModuleUNSAFE) 
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module *pModule = refModule->GetModule();
-
-    if (pModule->IsResource())
-        return mdModuleNil;
-
     return pModule->GetMDImport()->GetModuleFromScope();
 }
 FCIMPLEND
@@ -2898,10 +2797,6 @@ FCIMPL1(IMDInternalImport*, ModuleHandle::GetMetadataImport, ReflectModuleBaseOb
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
     Module *pModule = refModule->GetModule();
-
-    if (pModule->IsResource())
-        return NULL;
-
     return pModule->GetMDImport();
 }
 FCIMPLEND

@@ -710,7 +710,7 @@ decode_type (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError *err
 			t->pinned = TRUE;
 			++p;
 		} else if (*p == MONO_TYPE_BYREF) {
-			t->byref = TRUE;
+			t->byref__ = TRUE;
 			++p;
 		} else {
 			break;
@@ -3903,6 +3903,12 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			}
 			case MONO_PATCH_INFO_FIELD:
 				template_->data = decode_field_info (aot_module, p, &p);
+				if (!template_->data)
+					goto cleanup;
+				break;
+			case MONO_PATCH_INFO_METHOD:
+				template_->data = decode_resolve_method_ref (aot_module, p, &p, error);
+				mono_error_cleanup (error); /* FIXME don't swallow the error */
 				if (!template_->data)
 					goto cleanup;
 				break;

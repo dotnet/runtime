@@ -8,6 +8,7 @@
       <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows)) and '$(CMakeArgs)' != ''" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(Compiler)" />
+      <_CoreClrBuildArg Condition="'$(ConfigureOnly)' == 'true'" Include="-configureonly" />
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />

@@ -97,6 +97,10 @@ typedef enum {
 
 #define PROFILE_INTERP 0
 
+#define INTERP_IMETHOD_TAG_UNBOX(im) ((gpointer)((mono_u)(im) | 1))
+#define INTERP_IMETHOD_IS_TAGGED_UNBOX(im) ((mono_u)(im) & 1)
+#define INTERP_IMETHOD_UNTAG_UNBOX(im) ((InterpMethod*)((mono_u)(im) & ~1))
+
 /* 
  * Structure representing a method transformed for the interpreter 
  */
@@ -125,6 +129,8 @@ struct InterpMethod {
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
 	MonoFtnDesc *ftndesc;
+	MonoFtnDesc *ftndesc_unbox;
+	MonoDelegateTrampInfo *del_info;
 
 	guint32 locals_size;
 	guint32 alloca_size;
@@ -274,7 +280,7 @@ static inline int
 mint_type(MonoType *type_)
 {
 	MonoType *type = mini_native_type_replace_type (type_);
-	if (type->byref)
+	if (m_type_is_byref (type))
 		return MINT_TYPE_I;
 enum_type:
 	switch (type->type) {

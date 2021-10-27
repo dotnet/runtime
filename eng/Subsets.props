@@ -72,7 +72,7 @@
     <DefaultHostSubsets Condition="'$(RuntimeFlavor)' != '$(PrimaryRuntimeFlavor)' and '$(TargetsMobile)' != 'true'">host.native</DefaultHostSubsets>
 
     <DefaultPacksSubsets>packs.product</DefaultPacksSubsets>
-    <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
+    <DefaultPacksSubsets Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">$(DefaultPacksSubsets)+packs.tests</DefaultPacksSubsets>
     <DefaultPacksSubsets Condition="'$(DotNetBuildFromSource)' == 'true'">$(DefaultPacksSubsets)+packs.installers</DefaultPacksSubsets>
   </PropertyGroup>
 
@@ -120,7 +120,14 @@
     <SubsetName Include="Mono.WasmRuntime" Description="The WebAssembly runtime." />
     <SubsetName Include="Mono.MsCorDbi" Description="The implementation of ICorDebug interface." />
     <SubsetName Include="Mono.Workloads" OnDemand="true" Description="Builds the installers and the insertion metadata for Blazor workloads." />
-    
+
+    <!-- Host -->
+    <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests." />
+    <SubsetName Include="Host.Native" Description="The .NET hosts." />
+    <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
+    <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
+    <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
+
     <!-- Libs -->
     <SubsetName Include="Libs" Description="The libraries native part, refs and source assemblies, test infra and packages, but NOT the tests (use Libs.Tests to request those explicitly)" />
     <SubsetName Include="Libs.Native" Description="The native libraries used in the shared framework." />
@@ -129,13 +136,6 @@
     <SubsetName Include="Libs.PreTest" Description="Test assets which are necessary to run tests." />
     <SubsetName Include="Libs.Packages" Description="The projects that produce NuGet packages from libraries." />
     <SubsetName Include="Libs.Tests" OnDemand="true" Description="The test projects. Note that building this doesn't execute tests: you must also pass the '-test' argument." />
-
-    <!-- Host -->
-    <SubsetName Include="Host" Description="The .NET hosts, packages, hosting libraries, and tests." />
-    <SubsetName Include="Host.Native" Description="The .NET hosts." />
-    <SubsetName Include="Host.Pkg" Description="The .NET host packages." />
-    <SubsetName Include="Host.Tools" Description="The .NET hosting libraries." />
-    <SubsetName Include="Host.Tests" Description="The .NET hosting tests." />
 
     <!-- Packs -->
     <SubsetName Include="Packs" Description="Builds the shared framework packs, archives, bundles, installers, and the framework pack tests." />
@@ -259,9 +259,25 @@
   <ItemGroup Condition="$(_subset.Contains('+mono.corelib+'))">
     <ProjectToBuild Include="$(MonoProjectRoot)System.Private.CoreLib\System.Private.CoreLib.csproj" Category="mono" />
   </ItemGroup>
-  
+
   <ItemGroup Condition="$(_subset.Contains('+mono.workloads+'))">
     <ProjectToBuild Include="$(WorkloadsProjectRoot)\workloads.csproj" Category="mono" />
+  </ItemGroup>
+
+  <!-- Host sets -->
+  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
+    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
+    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
+    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
+    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
+  </ItemGroup>
+
+  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(PgoInstrument)' != 'true'">
+    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" BuildInParallel="false" />
+    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
   </ItemGroup>
 
   <!-- Libraries sets -->
@@ -289,22 +305,7 @@
     <ProjectToBuild Include="$(LibrariesProjectRoot)tests.proj" Category="libs" Test="true" />
   </ItemGroup>
 
-  <!-- Host sets -->
-  <ItemGroup Condition="$(_subset.Contains('+host.native+'))">
-    <CorehostProjectToBuild Include="$(SharedNativeRoot)corehost\corehost.proj" SignPhase="Binaries" BuildInParallel="false" />
-    <ProjectToBuild Include="@(CorehostProjectToBuild)" Pack="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.tools+'))">
-    <ManagedProjectToBuild Include="$(InstallerProjectRoot)managed\**\*.csproj" SignPhase="Binaries" />
-    <ProjectToBuild Include="@(ManagedProjectToBuild)" BuildInParallel="true" Pack="true" Category="host" />
-  </ItemGroup>
-
-  <ItemGroup Condition="$(_subset.Contains('+host.pkg+')) and '$(PgoInstrument)' != 'true'">
-    <PkgprojProjectToBuild Include="$(InstallerProjectRoot)pkg\projects\host-packages.proj" SignPhase="MsiFiles" BuildInParallel="false" />
-    <ProjectToBuild Include="@(PkgprojProjectToBuild)" Pack="true" Category="host" />
-  </ItemGroup>
-
+  <!-- Host.tests subset (consumes live built libraries assets so needs to come after libraries) -->
   <ItemGroup Condition="$(_subset.Contains('+host.tests+'))">
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <TestProjectToBuild Include="$(InstallerProjectRoot)tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.AppHost.Tests\Microsoft.NET.HostModel.AppHost.Tests.csproj" />
@@ -329,6 +330,7 @@
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-host.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-hostfxr.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\sfx\installers\dotnet-runtime-deps\*.proj" />
+        <SharedFrameworkProjectToBuild Condition="'$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)'" Include="$(InstallerProjectRoot)pkg\archives\dotnet-nethost.proj" />
         <SharedFrameworkProjectToBuild Condition="'$(MonoCrossAOTTargetOS)' != ''" Include="$(InstallerProjectRoot)pkg\sfx\Microsoft.NETCore.App\monocrossaot.sfxproj" Pack="true" />
       </ItemGroup>
       <ItemGroup>

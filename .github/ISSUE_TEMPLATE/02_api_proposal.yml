@@ -28,10 +28,10 @@ body:
         ```C#
         namespace System.Collections.Generic
         {
-             public class MyFancyCollection<T> : IEnumerable<T>
-             {
-                  public void Fancy(T item);
-             }
+            public class MyFancyCollection<T> : IEnumerable<T>
+            {
+                public void Fancy(T item);
+            }
         }
         ```     
     validations:
@@ -55,6 +55,15 @@ body:
         ```     
     validations:
       required: true
+  - type: textarea
+    id: alternative-designs
+    attributes:
+      label: Alternative Designs
+      description: |
+        Please provide alternative designs. This might not be APIs; for example instead of providing new APIs an option might be to change the behavior of an existing API.
+      placeholder: Alternative designs
+    validations:
+      required: false
   - type: textarea
     id: risks
     attributes:

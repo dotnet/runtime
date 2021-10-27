@@ -710,6 +710,12 @@ namespace System.Reflection.Tests
             Assembly loadedAssembly = Assembly.Load(aBytes);
             Assert.NotNull(loadedAssembly);
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
+
+            System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly);
+            string expectedName = "Assembly.Load(byte[], ...)";
+            Assert.Equal(expectedName, alc.Name);
+            Assert.Contains(expectedName, alc.ToString());
+            Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
         }
 
         [Fact]

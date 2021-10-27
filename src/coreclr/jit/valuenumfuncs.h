@@ -69,16 +69,6 @@ ValueNumFuncDef(InvalidCastExc, 2, false, false, false)     // CastClass check, 
 ValueNumFuncDef(NewArrOverflowExc, 1, false, false, false)  // Raises Integer overflow when Arg 0 is negative
 ValueNumFuncDef(HelperMultipleExc, 0, false, false, false)  // Represents one or more different exceptions that could be thrown by a Jit Helper method
 
-ValueNumFuncDef(Lng2Dbl, 1, false, false, false)
-ValueNumFuncDef(ULng2Dbl, 1, false, false, false)
-ValueNumFuncDef(Dbl2Int, 1, false, false, false)
-ValueNumFuncDef(Dbl2UInt, 1, false, false, false)
-ValueNumFuncDef(Dbl2Lng, 1, false, false, false)
-ValueNumFuncDef(Dbl2ULng, 1, false, false, false)
-ValueNumFuncDef(Dbl2IntOvf, 1, false, false, false)
-ValueNumFuncDef(Dbl2UIntOvf, 1, false, false, false)
-ValueNumFuncDef(Dbl2LngOvf, 1, false, false, false)
-ValueNumFuncDef(Dbl2ULngOvf, 1, false, false, false)
 ValueNumFuncDef(FltRound, 1, false, false, false)
 ValueNumFuncDef(DblRound, 1, false, false, false)
 
@@ -178,13 +168,13 @@ ValueNumFuncDef(SIMD_##id, argCount, false, false, false)   // All of the SIMD i
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for x86/x64
 #include "hwintrinsiclistxarch.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector128_As
+#define VNF_HWI_FIRST VNF_HWI_Vector128_Abs
 
 #elif defined (TARGET_ARM64)
 #define HARDWARE_INTRINSIC(isa, name, size, argCount, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, category, flag) \
 ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of the HARDWARE_INTRINSICS for arm64
 #include "hwintrinsiclistarm64.h"
-#define VNF_HWI_FIRST VNF_HWI_Vector64_As
+#define VNF_HWI_FIRST VNF_HWI_Vector64_Abs
 
 #elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32

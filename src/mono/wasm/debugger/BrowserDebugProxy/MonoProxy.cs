@@ -177,6 +177,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
                                     return true;
                                 }
+                            case "mono_wasm_fire_debugger_agent_message":
                             case "_mono_wasm_fire_debugger_agent_message":
                                 {
                                     try {
@@ -1216,11 +1217,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return await context.ready.Task;
 
             var commandParams = new MemoryStream();
-            var retDebuggerCmdReader = await SdbHelper.SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.ClearAllBreakpoints, commandParams, token);
-            if (retDebuggerCmdReader == null)
-            {
-                Log("verbose", $"Failed to clear breakpoints");
-            }
+            await SdbHelper.SendDebuggerAgentCommand<CmdEventRequest>(sessionId, CmdEventRequest.ClearAllBreakpoints, commandParams, token);
 
             if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
                 await SdbHelper.EnableExceptions(sessionId, context.PauseOnExceptions, token);
@@ -1233,7 +1230,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
             SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
-            SdbHelper.SetStore(store);
+            SdbHelper.ResetStore(store);
             return store;
         }
 

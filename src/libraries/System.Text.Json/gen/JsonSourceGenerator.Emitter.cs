@@ -559,7 +559,7 @@ namespace {@namespace}
                 }
 
                 string elementSerializationLogic = writerMethodToCall == null
-                    ? GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic)
+                    ? GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec, valueToWrite)
                     : $"{writerMethodToCall}Value({valueToWrite});";
 
                 string serializationLogic = $@"{WriterVarName}.WriteStartArray();
@@ -571,11 +571,7 @@ namespace {@namespace}
 
     {WriterVarName}.WriteEndArray();";
 
-                return GenerateFastPathFuncForType(
-                    $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}",
-                    typeGenerationSpec.TypeRef,
-                    serializationLogic,
-                    typeGenerationSpec.CanBeNull);
+                return GenerateFastPathFuncForType(typeGenerationSpec, serializationLogic, emitNullCheck: typeGenerationSpec.CanBeNull);
             }
 
             private string GenerateFastPathFuncForDictionary(TypeGenerationSpec typeGenerationSpec)
@@ -603,7 +599,7 @@ namespace {@namespace}
                 else
                 {
                     elementSerializationLogic = $@"{WriterVarName}.WritePropertyName({keyToWrite});
-        {GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec.TypeInfoPropertyName, valueToWrite, valueTypeGenerationSpec.GenerateSerializationLogic)}";
+        {GetSerializeLogicForNonPrimitiveType(valueTypeGenerationSpec, valueToWrite)}";
                 }
 
                 string serializationLogic = $@"{WriterVarName}.WriteStartObject();
@@ -615,11 +611,7 @@ namespace {@namespace}
 
     {WriterVarName}.WriteEndObject();";
 
-                return GenerateFastPathFuncForType(
-                    $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}",
-                    typeGenerationSpec.TypeRef,
-                    serializationLogic,
-                    typeGenerationSpec.CanBeNull);
+                return GenerateFastPathFuncForType(typeGenerationSpec, serializationLogic, emitNullCheck: typeGenerationSpec.CanBeNull);
             }
 
             private string GenerateForObject(TypeGenerationSpec typeMetadata)
@@ -729,7 +721,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                     string getterValue = memberMetadata switch
                     {
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
-                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}",
+                        { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}{(memberMetadata.TypeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "")}",
                         { CanUseGetter: false, HasJsonInclude: true }
                             => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ClrName)}"")",
                         _ => "null"
@@ -812,14 +804,19 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 {
                     ParameterInfo reflectionInfo = parameters[i].ParameterInfo;
 
+                    string parameterTypeRef = reflectionInfo.ParameterType.GetCompilableName();
+
+                    object? defaultValue = reflectionInfo.GetDefaultValue();
+                    string defaultValueAsStr = GetParamDefaultValueAsString(defaultValue, parameterTypeRef);
+
                     sb.Append(@$"
     {InfoVarName} = new()
     {{
         Name = ""{reflectionInfo.Name!}"",
-        ParameterType = typeof({reflectionInfo.ParameterType.GetCompilableName()}),
+        ParameterType = typeof({parameterTypeRef}),
         Position = {reflectionInfo.Position},
         HasDefaultValue = {ToCSharpKeyword(reflectionInfo.HasDefaultValue)},
-        DefaultValue = {GetParamDefaultValueAsString(reflectionInfo.DefaultValue)}
+        DefaultValue = {defaultValueAsStr}
     }};
     {parametersVarName}[{i}] = {InfoVarName};
 ");
@@ -836,7 +833,6 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
             {
                 JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
                 string typeRef = typeGenSpec.TypeRef;
-                string serializeMethodName = $"{typeGenSpec.TypeInfoPropertyName}{SerializeHandlerPropName}";
 
                 if (!typeGenSpec.TryFilterSerializableProps(
                     options,
@@ -845,11 +841,9 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 {
                     string exceptionMessage = string.Format(ExceptionMessages.InvalidSerializablePropertyConfiguration, typeRef);
 
-                    return GenerateFastPathFuncForType(
-                        serializeMethodName,
-                        typeRef,
+                    return GenerateFastPathFuncForType(typeGenSpec, 
                         $@"throw new {InvalidOperationExceptionTypeRef}(""{exceptionMessage}"");",
-                        canBeNull: false); // Skip null check since we want to throw an exception straightaway.
+                        emitNullCheck: false); // Skip null check since we want to throw an exception straightaway.
                 }
 
                 StringBuilder sb = new();
@@ -905,7 +899,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     {
                         serializationLogic = $@"
     {WriterVarName}.WritePropertyName({propVarName});
-    {GetSerializeLogicForNonPrimitiveType(propertyTypeSpec.TypeInfoPropertyName, propValue, propertyTypeSpec.GenerateSerializationLogic)}";
+    {GetSerializeLogicForNonPrimitiveType(propertyTypeSpec, propValue)}";
                     }
 
                     JsonIgnoreCondition ignoreCondition = propertyGenSpec.DefaultIgnoreCondition ?? options.DefaultIgnoreCondition;
@@ -939,7 +933,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     sb.Append($@"((global::{JsonConstants.IJsonOnSerializedFullName}){ValueVarName}).OnSerialized();");
                 };
 
-                return GenerateFastPathFuncForType(serializeMethodName, typeRef, sb.ToString(), typeGenSpec.CanBeNull);
+                return GenerateFastPathFuncForType(typeGenSpec, sb.ToString(), emitNullCheck: typeGenSpec.CanBeNull);
             }
 
             private static bool ShouldIncludePropertyForFastPath(PropertyGenerationSpec propertyGenSpec, JsonSourceGenerationOptionsAttribute options)
@@ -1039,14 +1033,20 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 return method;
             }
 
-            private string GenerateFastPathFuncForType(string serializeMethodName, string typeInfoTypeRef, string serializationLogic, bool canBeNull)
+            private string GenerateFastPathFuncForType(TypeGenerationSpec typeGenSpec, string serializeMethodBody, bool emitNullCheck)
             {
+                Debug.Assert(!emitNullCheck || typeGenSpec.CanBeNull);
+
+                string serializeMethodName = $"{typeGenSpec.TypeInfoPropertyName}{SerializeHandlerPropName}";
+                // fast path serializers for reference types always support null inputs.
+                string valueTypeRef = $"{typeGenSpec.TypeRef}{(typeGenSpec.IsValueType ? "" : "?")}";
+
                 return $@"
 
-private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {typeInfoTypeRef} {ValueVarName})
+private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName}, {valueTypeRef} {ValueVarName})
 {{
-    {GetEarlyNullCheckSource(canBeNull)}
-    {serializationLogic}
+    {GetEarlyNullCheckSource(emitNullCheck)}
+    {serializeMethodBody}
 }}";
             }
 
@@ -1062,16 +1062,17 @@ private static void {serializeMethodName}({Utf8JsonWriterTypeRef} {WriterVarName
                     : null;
             }
 
-            private string GetSerializeLogicForNonPrimitiveType(string typeInfoPropertyName, string valueToWrite, bool serializationLogicGenerated)
+            private string GetSerializeLogicForNonPrimitiveType(TypeGenerationSpec typeGenerationSpec, string valueExpr)
             {
-                string typeInfoRef = $"{_currentContext.ContextTypeRef}.Default.{typeInfoPropertyName}";
+                string valueExprSuffix = typeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "";
 
-                if (serializationLogicGenerated)
+                if (typeGenerationSpec.GenerateSerializationLogic)
                 {
-                    return $"{typeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueToWrite});";
+                    return $"{typeGenerationSpec.TypeInfoPropertyName}{SerializeHandlerPropName}({WriterVarName}, {valueExpr}{valueExprSuffix});";
                 }
 
-                return $"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueToWrite}, {typeInfoRef});";
+                string typeInfoRef = $"{_currentContext.ContextTypeRef}.Default.{typeGenerationSpec.TypeInfoPropertyName}!";
+                return $"{JsonSerializerTypeRef}.Serialize({WriterVarName}, {valueExpr}{valueExprSuffix}, {typeInfoRef});";
             }
 
             private enum DefaultCheckType
@@ -1317,12 +1318,12 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
 
         private static string ToCSharpKeyword(bool value) => value.ToString().ToLowerInvariant();
 
-        private static string GetParamDefaultValueAsString(object? value)
+        private static string GetParamDefaultValueAsString(object? value, string objectTypeAsStr)
         {
             switch (value)
             {
                 case null:
-                    return "null";
+                    return $"default({objectTypeAsStr})";
                 case bool boolVal:
                     return ToCSharpKeyword(boolVal);
                 default:

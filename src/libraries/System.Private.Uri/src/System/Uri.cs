@@ -3922,6 +3922,12 @@ namespace System
 
             Debug.Assert((_flags & Flags.HasUserInfo) == 0 && (_flags & Flags.HostTypeMask) == 0);
 
+            // need to build new Iri'zed string
+            if (hostNotUnicodeNormalized)
+            {
+                newHost = _originalUnicodeString.Substring(0, startInput);
+            }
+
             //Special case is an empty authority
             if (idx == length || ((ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch == '#' || ch == '?'))
             {
@@ -3942,12 +3948,6 @@ namespace System
                 }
 
                 return idx;
-            }
-
-            // need to build new Iri'zed string
-            if (hostNotUnicodeNormalized)
-            {
-                newHost = _originalUnicodeString.Substring(0, startInput);
             }
 
             string? userInfoString = null;

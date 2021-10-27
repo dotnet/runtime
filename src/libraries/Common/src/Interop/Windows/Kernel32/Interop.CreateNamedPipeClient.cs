@@ -10,8 +10,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true, BestFitMapping = false)]
-        internal static extern SafePipeHandle CreateNamedPipeClient(
+        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]
+        internal static partial SafePipeHandle CreateNamedPipeClient(
             string? lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
