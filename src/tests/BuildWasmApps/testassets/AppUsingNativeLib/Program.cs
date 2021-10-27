@@ -28,7 +28,7 @@ namespace SimpleConsole
                     t += native_intint_callback_acceptor ((IntPtr)fn, 2);
                 }
 
-                Console.WriteLine ("total in helper: {t}");
+                Console.WriteLine ($"total in helper: {t}");
 
                 // local function inside a nested class ctor. Mangled name will be something like
                 //   int32 SimpleConsole.Test/Helper::'<.ctor>g__Helper|1_0'
