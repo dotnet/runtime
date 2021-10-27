@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System;
-
 namespace Microsoft.Extensions.Configuration
 {
     public static partial class ConfigurationExtensions
@@ -34,7 +32,7 @@ namespace Microsoft.Extensions.Configuration
     public static partial class ConfigurationRootExtensions
     {
         public static string GetDebugView(this Microsoft.Extensions.Configuration.IConfigurationRoot root) { throw null; }
-        public static string GetDebugView(this IConfigurationRoot root, Func<ConfigurationDebugViewContext, string>? processValue) { throw null; }
+        public static string GetDebugView(this IConfigurationRoot root, System.Func<ConfigurationDebugViewContext, string>? processValue) { throw null; }
     }
     public readonly partial struct ConfigurationDebugViewContext
     {

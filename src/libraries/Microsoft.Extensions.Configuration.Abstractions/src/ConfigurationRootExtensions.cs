@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Microsoft.Extensions.Configuration.Abstractions;
 
 namespace Microsoft.Extensions.Configuration
 {
