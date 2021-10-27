@@ -120,7 +120,7 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Computes a character class for the first character in <paramref name="tree"/>.</summary>
         /// <remarks>true if a character class could be computed; otherwise, false.</remarks>
-        public static (string CharClass, bool CaseInsensitive)[]? ComputeFirstCharClass(RegexTree tree)
+        public static (string CharClass, bool CaseInsensitive)[]? ComputeFirstCharClass(RegexTree tree, CultureInfo culture)
         {
             var s = new RegexPrefixAnalyzer(stackalloc int[StackBufferSize]);
             RegexFC? fc = s.RegexFCFromRegexTree(tree);
@@ -133,7 +133,7 @@ namespace System.Text.RegularExpressions
 
             if (fc.CaseInsensitive)
             {
-                fc.AddLowercase(((tree.Options & RegexOptions.CultureInvariant) != 0) ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture);
+                fc.AddLowercase(culture);
             }
 
             return new[] { (fc.GetFirstChars(), fc.CaseInsensitive) };
@@ -147,7 +147,7 @@ namespace System.Text.RegularExpressions
         /// alternation itself.  As this computation is intended primarily to handle global alternations, it's currently
         /// a reasonable tradeoff between simplicity, performance, and the fullness of potential optimizations.
         /// </remarks>
-        public static (string CharClass, bool CaseInsensitive)[]? ComputeMultipleCharClasses(RegexTree tree, int maxChars)
+        public static (string CharClass, bool CaseInsensitive)[]? ComputeMultipleCharClasses(RegexTree tree, CultureInfo culture, int maxChars)
         {
             Debug.Assert(maxChars > 1);
 
@@ -274,17 +274,11 @@ namespace System.Text.RegularExpressions
             // Create and return the RegexPrefix objects.
             var prefixes = new (string CharClass, bool CaseInsensitive)[maxChars];
 
-            CultureInfo? ci = null;
-            if (caseInsensitive)
-            {
-                ci = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-            }
-
             for (int i = 0; i < prefixes.Length; i++)
             {
                 if (caseInsensitive)
                 {
-                    classes[i]!.AddLowercase(ci!);
+                    classes[i]!.AddLowercase(culture);
                 }
                 prefixes[i] = (classes[i]!.ToStringClass(), caseInsensitive);
             }

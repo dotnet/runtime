@@ -90,9 +90,6 @@ namespace System.Text.RegularExpressions
         protected RegexCode? _code;                                                // the RegexCode object
         protected int[]? _codes;                                                   // the RegexCodes being translated
         protected string[]? _strings;                                              // the stringtable associated with the RegexCodes
-        protected (string CharClass, bool CaseInsensitive)[]? _leadingCharClasses; // the possible first chars computed by RegexPrefixAnalyzer
-        protected RegexBoyerMoore? _boyerMoorePrefix;                              // a prefix as a boyer-moore machine
-        protected int _leadingAnchor;                                              // the set of anchors
         protected bool _hasTimeout;                                                // whether the regex has a non-infinite timeout
 
         private Label[]? _labels;                                                  // a label for every operation in _codes
@@ -930,12 +927,12 @@ namespace System.Text.RegularExpressions
             _textInfoLocal = null;
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
             {
-                bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase) || _boyerMoorePrefix?.CaseInsensitive == true;
-                if (!needsCulture && _leadingCharClasses != null)
+                bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase) || _code.FindOptimizations.BoyerMoorePrefix?.CaseInsensitive == true;
+                if (!needsCulture && _code.FindOptimizations.LeadingCharClasses is (string CharClass, bool CaseInsensitive)[] lcc)
                 {
-                    for (int i = 0; i < _leadingCharClasses.Length; i++)
+                    for (int i = 0; i < lcc.Length; i++)
                     {
-                        if (_leadingCharClasses[i].CaseInsensitive)
+                        if (lcc[i].CaseInsensitive)
                         {
                             needsCulture = true;
                             break;
@@ -1013,42 +1010,59 @@ namespace System.Text.RegularExpressions
             MarkLabel(finishedLengthCheck);
 
             GenerateAnchorChecks();
+            switch (_code.FindOptimizations.FindMode)
+            {
+                case FindNextStartingPositionMode.BoyerMoore:
+                    Debug.Assert(_code.FindOptimizations.BoyerMoorePrefix is { NegativeUnicode: null });
+                    GenerateBoyerMoore(_code.FindOptimizations.BoyerMoorePrefix);
+                    break;
 
-            if (_boyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
-            {
-                if (rbm.PatternSupportsIndexOf)
-                {
-                    GenerateIndexOf(rbm.Pattern);
-                }
-                else
-                {
-                    GenerateBoyerMoore(rbm);
-                }
-            }
-            else if (_leadingCharClasses is not null)
-            {
-                if (_code.RightToLeft)
-                {
-                    GenerateLeadingCharacter_RightToLeft();
-                }
-                else
-                {
+                case FindNextStartingPositionMode.IndexOf:
+                    GenerateIndexOf(_code.FindOptimizations.LeadingPrefix);
+                    break;
+
+                case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseSensitive_Singleton:
+                case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseSensitive_Set:
+                case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseInsensitive_Singleton:
+                case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseInsensitive_Set:
                     GenerateLeadingCharacter_LeftToRight();
-                }
-            }
-            else
-            {
-                // return true;
-                Ldc(1);
-                Ret();
+                    break;
+
+                case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseSensitive_Singleton:
+                case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseSensitive_Set:
+                case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseInsensitive_Singleton:
+                case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseInsensitive_Set:
+                    GenerateLeadingCharacter_RightToLeft();
+                    break;
+
+                // Already emitted earlier
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
+                case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
+                case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
+                case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
+                    goto case FindNextStartingPositionMode.NoSearch;
+
+                default:
+                    Debug.Fail($"Unexpected mode: {_code.FindOptimizations.FindMode}");
+                    goto case FindNextStartingPositionMode.NoSearch;
+
+                case FindNextStartingPositionMode.NoSearch:
+                    // return true;
+                    Ldc(1);
+                    Ret();
+                    break;
             }
 
             void GenerateAnchorChecks()
             {
                 // Generate anchor checks.
-                if ((_leadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
+                if ((_code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
                 {
-                    switch (_leadingAnchor)
+                    switch (_code.FindOptimizations.LeadingAnchor)
                     {
                         case RegexPrefixAnalyzer.Beginning:
                             {
@@ -1468,7 +1482,7 @@ namespace System.Text.RegularExpressions
 
             void GenerateLeadingCharacter_RightToLeft()
             {
-                Debug.Assert(_leadingCharClasses.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
+                Debug.Assert(_code.FindOptimizations.LeadingCharClasses!.Length == 1, "Only the FirstChars and not MultiFirstChars computation is supported for RightToLeft");
 
                 using RentedLocalBuilder cLocal = RentInt32Local();
 
@@ -1500,14 +1514,15 @@ namespace System.Text.RegularExpressions
 
                 Leftcharnext();
 
-                if (!RegexCharClass.IsSingleton(_leadingCharClasses[0].CharClass))
+                (string CharClass, bool CaseInsensitive) lcc0 = _code.FindOptimizations.LeadingCharClasses[0];
+                if (!RegexCharClass.IsSingleton(lcc0.CharClass))
                 {
-                    EmitMatchCharacterClass(_leadingCharClasses[0].CharClass, _leadingCharClasses[0].CaseInsensitive);
+                    EmitMatchCharacterClass(lcc0.CharClass, lcc0.CaseInsensitive);
                     Brtrue(l2);
                 }
                 else
                 {
-                    Ldc(RegexCharClass.SingletonChar(_leadingCharClasses[0].CharClass));
+                    Ldc(RegexCharClass.SingletonChar(lcc0.CharClass));
                     Beq(l2);
                 }
 
@@ -1515,7 +1530,7 @@ namespace System.Text.RegularExpressions
 
                 Ldloc(cLocal);
                 Ldc(0);
-                if (!RegexCharClass.IsSingleton(_leadingCharClasses[0].CharClass))
+                if (!RegexCharClass.IsSingleton(lcc0.CharClass))
                 {
                     BgtFar(l1);
                 }
@@ -1547,19 +1562,20 @@ namespace System.Text.RegularExpressions
 
             void GenerateLeadingCharacter_LeftToRight()
             {
-                Debug.Assert(_leadingCharClasses != null && _leadingCharClasses.Length > 0);
+                (string CharClass, bool CaseInsensitive)[]? lcc = _code.FindOptimizations.LeadingCharClasses;
+                Debug.Assert(lcc != null && lcc.Length > 0);
 
                 // If minRequiredLength > 0, we already output a more stringent check.  In the rare case
                 // where we were unable to get an accurate enough min required length to ensure it's larger
                 // than the prefixes we calculated, we also need to ensure we have enough spaces for those,
                 // as they also represent a min required length.
-                if (minRequiredLength < _leadingCharClasses.Length)
+                if (minRequiredLength < lcc.Length)
                 {
                     // if (runtextpos >= runtextend - (_leadingCharClasses.Length - 1)) goto returnFalse;
                     Ldloc(_runtextendLocal);
-                    if (_leadingCharClasses.Length > 1)
+                    if (lcc.Length > 1)
                     {
-                        Ldc(_leadingCharClasses.Length - 1);
+                        Ldc(lcc.Length - 1);
                         Sub();
                     }
                     Ldloc(_runtextposLocal);
@@ -1583,10 +1599,10 @@ namespace System.Text.RegularExpressions
                 Span<char> setChars = stackalloc char[3]; // up to 3 characters handled by IndexOf{Any} below
                 int setCharsCount = 0, charClassIndex = 0;
                 bool canUseIndexOf =
-                    !_leadingCharClasses[0].CaseInsensitive &&
-                    (setCharsCount = RegexCharClass.GetSetChars(_leadingCharClasses[0].CharClass, setChars)) > 0 &&
-                    !RegexCharClass.IsNegated(_leadingCharClasses[0].CharClass);
-                bool needLoop = !canUseIndexOf || _leadingCharClasses.Length > 1;
+                    !lcc[0].CaseInsensitive &&
+                    (setCharsCount = RegexCharClass.GetSetChars(lcc[0].CharClass, setChars)) > 0 &&
+                    !RegexCharClass.IsNegated(lcc[0].CharClass);
+                bool needLoop = !canUseIndexOf || lcc.Length > 1;
 
                 Label checkSpanLengthLabel = default;
                 Label charNotInClassLabel = default;
@@ -1673,12 +1689,12 @@ namespace System.Text.RegularExpressions
                     }
 
                     // if (i >= textSpan.Length - (_leadingCharClasses.Length - 1)) goto returnFalse;
-                    if (_leadingCharClasses.Length > 1)
+                    if (lcc.Length > 1)
                     {
                         Debug.Assert(needLoop);
                         Ldloca(textSpanLocal);
                         Call(s_spanGetLengthMethod);
-                        Ldc(_leadingCharClasses.Length - 1);
+                        Ldc(lcc.Length - 1);
                         Sub();
                         Ldloc(iLocal);
                         BleFar(returnFalse);
@@ -1690,7 +1706,7 @@ namespace System.Text.RegularExpressions
                 // if (!CharInClass(textSpan[i + 2], prefix[2], "...")) continue;
                 // ...
                 Debug.Assert(charClassIndex == 0 || charClassIndex == 1);
-                for ( ; charClassIndex < _leadingCharClasses.Length; charClassIndex++)
+                for ( ; charClassIndex < lcc.Length; charClassIndex++)
                 {
                     Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
@@ -1702,7 +1718,7 @@ namespace System.Text.RegularExpressions
                     }
                     Call(s_spanGetItemMethod);
                     LdindU2();
-                    EmitMatchCharacterClass(_leadingCharClasses[charClassIndex].CharClass, _leadingCharClasses[charClassIndex].CaseInsensitive);
+                    EmitMatchCharacterClass(lcc[charClassIndex].CharClass, lcc[charClassIndex].CaseInsensitive);
                     BrfalseFar(charNotInClassLabel);
                 }
 
@@ -1731,9 +1747,9 @@ namespace System.Text.RegularExpressions
                     Ldloc(iLocal);
                     Ldloca(textSpanLocal);
                     Call(s_spanGetLengthMethod);
-                    if (_leadingCharClasses.Length > 1)
+                    if (lcc.Length > 1)
                     {
-                        Ldc(_leadingCharClasses.Length - 1);
+                        Ldc(lcc.Length - 1);
                         Sub();
                     }
                     BltFar(loopBody);

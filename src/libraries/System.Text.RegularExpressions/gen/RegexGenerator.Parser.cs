@@ -178,7 +178,7 @@ namespace System.Text.RegularExpressions.Generator
             RegexCode code;
             try
             {
-                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture));
+                code = RegexWriter.Write(RegexParser.Parse(pattern, regexOptions, culture), culture);
             }
             catch (Exception e)
             {

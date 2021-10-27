@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions
             // Call Init directly rather than delegating to a Regex ctor that takes
             // options to enable linking / tree shaking to remove the Regex compiler
             // and NonBacktracking implementation if it's not used.
-            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, culture);
+            Init(pattern, RegexOptions.None, s_defaultMatchTimeout, culture ?? CultureInfo.CurrentCulture);
         }
 
         internal Regex(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
@@ -88,7 +88,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Gets the culture to use based on the specified options.</summary>
-        private static CultureInfo GetTargetCulture(RegexOptions options) =>
+        internal static CultureInfo GetTargetCulture(RegexOptions options) =>
             (options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
 
         /// <summary>Initializes the instance.</summary>
@@ -98,7 +98,7 @@ namespace System.Text.RegularExpressions
         /// compiler, such that a tree shaker / linker can trim it away if it's not otherwise used.
         /// </remarks>
         [MemberNotNull(nameof(_code))]
-        private void Init(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo? culture)
+        private void Init(string pattern, RegexOptions options, TimeSpan matchTimeout, CultureInfo culture)
         {
             ValidatePattern(pattern);
             ValidateOptions(options);
@@ -107,7 +107,6 @@ namespace System.Text.RegularExpressions
             this.pattern = pattern;
             internalMatchTimeout = matchTimeout;
             roptions = options;
-            culture ??= GetTargetCulture(options);
 
 #if DEBUG
             if (IsDebug)
@@ -121,7 +120,7 @@ namespace System.Text.RegularExpressions
 
             // Generate the RegexCode from the node tree.  This is required for interpreting,
             // and is used as input into RegexOptions.Compiled and RegexOptions.NonBacktracking.
-            _code = RegexWriter.Write(tree);
+            _code = RegexWriter.Write(tree, culture);
 
             if ((options & RegexOptions.NonBacktracking) != 0)
             {

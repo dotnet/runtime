@@ -28,6 +28,7 @@
     <Compile Include="System\Text\RegularExpressions\RegexCharClass.MappingTable.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCode.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexCompilationInfo.cs" />
+    <Compile Include="System\Text\RegularExpressions\RegexFindOptimizations.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexGeneratorAttribute.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexInterpreter.cs" />
     <Compile Include="System\Text\RegularExpressions\RegexMatchTimeoutException.cs" />

@@ -127,32 +127,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Timeout in milliseconds. This is only used if <see cref="_checkTimeout"/> is true.</summary>
         private readonly int _timeout;
 
-        /// <summary>Classifier used to say whether a particular character can start a match for <see cref="_pattern"/>.</summary>
-        internal readonly BooleanClassifier _startSetClassifier;
+        /// <summary>Data and routines for skipping ahead to the next place a match could potentially start.</summary>
+        private readonly RegexFindOptimizations _findOpts;
 
-        /// <summary>Predicate over characters that make some progress</summary>
-        private readonly TSetType _startSet;
-
-        /// <summary>Maximum allowed size of <see cref="_startSetArray"/>.</summary>
-        private const int StartSetArrayMaxSize = 5;
-
-        /// <summary>String of at most <see cref="StartSetArrayMaxSize"/> many characters</summary>
-        private readonly char[] _startSetArray;
-
-        /// <summary>Number of elements in <see cref="_startSetClassifier"/></summary>
-        private readonly int _startSetSize;
-
-        /// <summary>If nonempty then <see cref="_pattern"/> has that fixed prefix</summary>
-        private readonly string _prefix;
-
-        /// <summary>Non-null when <see cref="_prefix"/> is nonempty</summary>
-        private readonly RegexBoyerMoore? _prefixBoyerMoore;
-
-        /// <summary>If true then the fixed prefix of <see cref="_pattern"/> is idependent of case</summary>
-        private readonly bool _isPrefixCaseInsensitive;
-
-        /// <summary>Cached skip states from the initial state of <see cref="_dotStarredPattern"/> for the 5 possible previous character kinds.</summary>
-        private readonly DfaMatchingState<TSetType>?[] _prefixSkipStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
         /// <summary>Cached skip states from the initial state of Ar for the 5 possible previous character kinds.</summary>
         private readonly DfaMatchingState<TSetType>?[] _reversePrefixSkipStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
 
@@ -163,13 +140,6 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly DfaMatchingState<TSetType>[] _reverseInitialStates = new DfaMatchingState<TSetType>[CharKind.CharKindCount];
 
         private readonly uint[] _asciiCharKinds = new uint[128];
-
-        internal readonly CultureInfo _culture;
-
-        private DfaMatchingState<TSetType> GetSkipState(uint prevCharKind) =>
-            Volatile.Read(ref _prefixSkipStates[prevCharKind]) ??
-            Interlocked.CompareExchange(ref _prefixSkipStates[prevCharKind], DeltaPlus<BrzozowskiTransition>(_prefix, _dotstarredInitialStates[prevCharKind]), null) ??
-            _prefixSkipStates[prevCharKind]!;
 
         private DfaMatchingState<TSetType> GetReverseSkipState(uint prevCharKind) =>
             Volatile.Read(ref _reversePrefixSkipStates[prevCharKind]) ??
@@ -186,14 +156,14 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Constructs matcher for given symbolic regex.</summary>
-        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
+        internal SymbolicRegexMatcher(SymbolicRegexNode<TSetType> sr, RegexCode code, CharSetSolver css, BDD[] minterms, TimeSpan matchTimeout, CultureInfo culture)
         {
             _pattern = sr;
             _builder = sr._builder;
+            _findOpts = code.FindOptimizations;
 
             _checkTimeout = Regex.InfiniteMatchTimeout != matchTimeout;
             _timeout = (int)(matchTimeout.TotalMilliseconds + 0.5); // Round up, so it will be at least 1ms
-            _culture = culture;
 
             Debug.Assert(_builder._solver is BV64Algebra or BVAlgebra or CharSetSolver, $"Unsupported algebra: {_builder._solver}");
             _partitions = _builder._solver switch
@@ -206,37 +176,7 @@ namespace System.Text.RegularExpressions.Symbolic
             _dotStarredPattern = _builder.MkConcat(_builder._anyStar, _pattern);
             _reversePattern = _pattern.Reverse();
             ConfigureRegexes();
-
-            _startSet = _pattern.GetStartSet();
-            if (!_builder._solver.IsSatisfiable(_startSet) || _pattern.CanBeNullable)
-            {
-                // If the startset is empty make it full instead by including all characters
-                // this is to ensure that startset is nonempty -- as an invariant assumed by operations using it
-                //
-                // Also, if A can be nullable then effectively disable use of startset by making it true
-                // because it may force search of next character in startset and fail to recognize an empty match
-                // because (by definition) an empty match has no start character.
-                //
-                // For example (this is also a unit test):
-                // for pattern "\B\W*?" or "\B\W*" or "\B\W?" and input "e.g:abc" there is an empty match in position 5
-                // but startset \W will force search beyond position 5 and fails to find that match
-                _startSet = _builder._solver.True;
-            }
-
-            _startSetSize = (int)_builder._solver.ComputeDomainSize(_startSet);
-
-            BDD startbdd = _builder._solver.ConvertToCharSet(css, _startSet);
-            _startSetClassifier = new BooleanClassifier(css, startbdd);
-
-            //store the start characters in the A_startset_array if there are not too many characters
-            _startSetArray = _startSetSize <= StartSetArrayMaxSize ?
-                new List<char>(css.GenerateAllCharacters(startbdd)).ToArray() :
-                Array.Empty<char>();
-
-            _prefix = _pattern.GetFixedPrefix(css, culture.Name, out _isPrefixCaseInsensitive);
             _reversePrefix = _reversePattern.GetFixedPrefix(css, culture.Name, out _);
-
-            _prefixBoyerMoore = InitializePrefixBoyerMoore();
 
             if (_pattern._info.ContainsSomeAnchor)
             {
@@ -261,26 +201,13 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private RegexBoyerMoore? InitializePrefixBoyerMoore()
-        {
-            if (_prefix != string.Empty && _prefix.Length <= RegexBoyerMoore.MaxLimit && _prefix.Length > 1)
-            {
-                // RegexBoyerMoore expects the prefix to be lower case when case is ignored.
-                // Use the culture of the matcher.
-                string prefix = _isPrefixCaseInsensitive ? _prefix.ToLower(_culture) : _prefix;
-                return new RegexBoyerMoore(prefix, _isPrefixCaseInsensitive, rightToLeft: false, _culture);
-            }
-
-            return null;
-        }
-
         private void ConfigureRegexes()
         {
             void Configure(uint i)
             {
                 _initialStates[i] = _builder.MkState(_pattern, i);
 
-                // Used to detect if initial state was reentered, then startset can be triggered
+                // Used to detect if initial state was reentered,
                 // but observe that the behavior from the state may ultimately depend on the previous
                 // input char e.g. possibly causing nullability of \b or \B or of a start-of-line anchor,
                 // in that sense there can be several "versions" (not more than StateCount) of the initial state.
@@ -717,65 +644,23 @@ namespace System.Text.RegularExpressions.Symbolic
                     // i_q0_A1 is the most recent position in the input when A1 is in the initial state
                     initialStateIndex = i;
 
-                    if (_prefixBoyerMoore != null)
+                    // Find the first position i that matches with some likely character.
+                    if (_findOpts.LeadingAnchor == 0 &&
+                        !_findOpts.TryFindNextStartingPosition(input, ref i, 0, 0, k))
                     {
-                        // Stay in the initial state if the prefix does not match.
-                        // Thus advance the current position to the first position where the prefix does match.
-                        i = _prefixBoyerMoore.Scan(input, i, 0, input.Length);
-
-                        if (i == -1) // Scan returns -1 when a matching position does not exist
-                        {
-                            watchdog = -1;
-                            return -2;
-                        }
-
-                        // Compute the end state for the A prefix.
-                        // Skip directly to the resulting state
-                        //  --- i.e. do the loop ---
-                        // for (int j = 0; j < prefix.Length; j++)
-                        //     q = Delta(prefix[j], q, out regex);
-                        //  ---
-                        q = GetSkipState(q.PrevCharKind);
-
-                        // skip the prefix
-                        i += _prefix.Length;
-
-                        // here i points at the next character (the character immediately following the prefix)
-                        if (q.IsNullable(GetCharKind(input, i)))
-                        {
-                            // Return the last position of the match
-                            watchdog = q.WatchDog;
-                            return i - 1;
-                        }
-
-                        if (i == k)
-                        {
-                            // no match was found
-                            return -2;
-                        }
+                        // no match was found
+                        return NoMatchExists;
                     }
-                    else
+
+                    initialStateIndex = i;
+
+                    // the start state must be updated
+                    // to reflect the kind of the previous character
+                    // when anchors are not used, q will remain the same state
+                    q = _dotstarredInitialStates[GetCharKind(input, i - 1)];
+                    if (q.IsNothing)
                     {
-                        // we are still in the initial state, when the prefix is empty
-                        // find the first position i that matches with some character in the start set
-                        i = IndexOfStartSet(input, i);
-
-                        if (i == -1)
-                        {
-                            // no match was found
-                            return NoMatchExists;
-                        }
-
-                        initialStateIndex = i;
-
-                        // the start state must be updated
-                        // to reflect the kind of the previous character
-                        // when anchors are not used, q will remain the same state
-                        q = _dotstarredInitialStates[GetCharKind(input, i - 1)];
-                        if (q.IsNothing)
-                        {
-                            return NoMatchExists;
-                        }
+                        return NoMatchExists;
                     }
                 }
 
@@ -860,32 +745,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 nextChar < asciiCharKinds.Length ? asciiCharKinds[nextChar] :
                 _builder._solver.And(GetMinterm(nextChar), _builder._wordLetterPredicateForAnchors).Equals(_builder._solver.False) ? 0 : //apply the wordletter predicate to compute the kind of the next character
                 CharKind.WordLetter;
-        }
-
-        /// <summary>
-        /// Find first occurrence of startset element in input starting from index i.
-        /// Startset here is assumed to consist of a few characters.
-        /// </summary>
-        /// <param name="input">input string to search in</param>
-        /// <param name="i">the start index in input to search from</param>
-        /// <returns></returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int IndexOfStartSet(string input, int i)
-        {
-            if (_startSetSize <= StartSetArrayMaxSize)
-            {
-                return input.IndexOfAny(_startSetArray, i);
-            }
-
-            for (int j = i; j < input.Length; j++)
-            {
-                if (_startSetClassifier.IsTrue(input[j]))
-                {
-                    return j;
-                }
-            }
-
-            return -1;
         }
 
 #if DEBUG

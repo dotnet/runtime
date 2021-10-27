@@ -38,10 +38,10 @@ namespace System.Text.RegularExpressions
         /// This is the only function that should be called from outside.
         /// It takes a RegexTree and creates a corresponding RegexCode.
         /// </summary>
-        public static RegexCode Write(RegexTree tree)
+        public static RegexCode Write(RegexTree tree, CultureInfo culture)
         {
             var writer = new RegexWriter(stackalloc int[EmittedSize], stackalloc int[IntStackSize]);
-            RegexCode code = writer.RegexCodeFromRegexTree(tree);
+            RegexCode code = writer.RegexCodeFromRegexTree(tree, culture);
             writer.Dispose();
 
 #if DEBUG
@@ -71,7 +71,7 @@ namespace System.Text.RegularExpressions
         /// It also computes various information about the tree, such as
         /// prefix data to help with optimizations.
         /// </summary>
-        public RegexCode RegexCodeFromRegexTree(RegexTree tree)
+        public RegexCode RegexCodeFromRegexTree(RegexTree tree, CultureInfo culture)
         {
             // Construct sparse capnum mapping if some numbers are unused.
             int capsize;
@@ -131,46 +131,6 @@ namespace System.Text.RegularExpressions
             Emit(RegexCode.Stop);
             int[] emitted = _emitted.AsSpan().ToArray();
 
-            bool rtl = (tree.Options & RegexOptions.RightToLeft) != 0;
-            bool compiled = (tree.Options & RegexOptions.Compiled) != 0;
-
-            // Compute prefixes to help optimize FindFirstChar.
-            RegexBoyerMoore? boyerMoorePrefix = null;
-            (string CharClass, bool CaseInsensitive)[]? leadingCharClasses = null;
-            (string leadingSubstring, bool leadingSubstringCI) = RegexPrefixAnalyzer.ComputeLeadingSubstring(tree);
-            if (leadingSubstring.Length > 1 && // if it's <= 1, perf is better using leadingCharClasses
-                leadingSubstring.Length <= RegexBoyerMoore.MaxLimit)
-            {
-                // Compute a Boyer-Moore prefix if we find a single string of sufficient length that always begins the expression.
-                CultureInfo culture = (tree.Options & RegexOptions.CultureInvariant) != 0 ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture;
-                boyerMoorePrefix = new RegexBoyerMoore(leadingSubstring, leadingSubstringCI, rtl, culture);
-            }
-
-            // If we didn't find a single leading substring, or if we found one but we won't be able to use it for a Boyer-Moore
-            // search, try to compute the characters set that might begin the string.
-            if (boyerMoorePrefix is null ||
-                (boyerMoorePrefix.NegativeUnicode != null && compiled)) // compilation won't use Boyer-Moore if it has a negative Unicode table
-            {
-                boyerMoorePrefix = null;
-
-                // First we employ a less aggressive but more valuable computation to see if we can find sets for each of the first N
-                // characters in the string.  If that's unsuccessful, we employ a more aggressive check to compute a set for just
-                // the first character in the string.
-
-                if ((tree.Options & RegexOptions.Compiled) != 0) // currently not utilized by the interpreter
-                {
-                    leadingCharClasses = RegexPrefixAnalyzer.ComputeMultipleCharClasses(tree, maxChars: 5); // limit of 5 is based on experimentation and can be tweaked as needed
-                }
-
-                if (leadingCharClasses is null)
-                {
-                    leadingCharClasses = RegexPrefixAnalyzer.ComputeFirstCharClass(tree);
-                }
-            }
-
-            // Compute any anchors starting the expression.
-            int leadingAnchor = RegexPrefixAnalyzer.FindLeadingAnchor(tree);
-
             // Convert the string table into an ordered string array.
             var strings = new string[_stringTable.Count];
             foreach (KeyValuePair<string, int> stringEntry in _stringTable)
@@ -179,7 +139,7 @@ namespace System.Text.RegularExpressions
             }
 
             // Return all that in a RegexCode object.
-            return new RegexCode(tree, emitted, strings, _trackCount, _caps, capsize, boyerMoorePrefix, leadingCharClasses, leadingAnchor, rtl);
+            return new RegexCode(tree, culture, emitted, strings, _trackCount, _caps, capsize);
         }
 
         /// <summary>

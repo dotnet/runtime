@@ -231,7 +231,7 @@ namespace System.Text.RegularExpressions.Generator
         {
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
-            (string CharClass, bool CaseInsensitive)[]? lcc = code.LeadingCharClasses;
+            (string CharClass, bool CaseInsensitive)[]? lcc = code.FindOptimizations.LeadingCharClasses;
             bool rtl = code.RightToLeft;
             bool hasTextInfo = false;
             bool textInfoEmitted = false;
@@ -268,32 +268,49 @@ namespace System.Text.RegularExpressions.Generator
             using (EmitBlock(writer, clause))
             {
                 EmitAnchors();
+                switch (code.FindOptimizations.FindMode)
+                {
+                    case FindNextStartingPositionMode.BoyerMoore:
+                        Debug.Assert(code.FindOptimizations.BoyerMoorePrefix is { NegativeUnicode: null });
+                        EmitBoyerMoore(code.FindOptimizations.BoyerMoorePrefix);
+                        break;
 
-                if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
-                {
-                    if (rbm.PatternSupportsIndexOf)
-                    {
-                        EmitIndexOf(rbm.Pattern);
-                    }
-                    else
-                    {
-                        EmitBoyerMoore(rbm);
-                    }
-                }
-                else if (lcc is not null)
-                {
-                    if (rtl)
-                    {
-                        EmitLeadingCharacter_RightToLeft();
-                    }
-                    else
-                    {
+                    case FindNextStartingPositionMode.IndexOf:
+                        EmitIndexOf(code.FindOptimizations.LeadingPrefix);
+                        break;
+
+                    case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseSensitive_Singleton:
+                    case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseSensitive_Set:
+                    case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseInsensitive_Singleton:
+                    case FindNextStartingPositionMode.LeadingCharClass_LeftToRight_CaseInsensitive_Set:
                         EmitLeadingCharacter_LeftToRight();
-                    }
-                }
-                else
-                {
-                    writer.WriteLine("return true;");
+                        break;
+
+                    case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseSensitive_Singleton:
+                    case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseSensitive_Set:
+                    case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseInsensitive_Singleton:
+                    case FindNextStartingPositionMode.LeadingCharClass_RightToLeft_CaseInsensitive_Set:
+                        EmitLeadingCharacter_RightToLeft();
+                        break;
+
+                    // Already emitted earlier
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Beginning:
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_End:
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_EndZ:
+                    case FindNextStartingPositionMode.LeadingAnchor_LeftToRight_Start:
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Beginning:
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_End:
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_EndZ:
+                    case FindNextStartingPositionMode.LeadingAnchor_RightToLeft_Start:
+                        goto case FindNextStartingPositionMode.NoSearch;
+
+                    default:
+                        Debug.Fail($"Unexpected mode: {code.FindOptimizations.FindMode}");
+                        goto case FindNextStartingPositionMode.NoSearch;
+
+                    case FindNextStartingPositionMode.NoSearch:
+                        writer.WriteLine("return true;");
+                        break;
                 }
             }
             writer.WriteLine();
@@ -306,12 +323,12 @@ namespace System.Text.RegularExpressions.Generator
             void EmitAnchors()
             {
                 // Generate anchor checks.
-                if ((code.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
+                if ((code.FindOptimizations.LeadingAnchor & (RegexPrefixAnalyzer.Beginning | RegexPrefixAnalyzer.Start | RegexPrefixAnalyzer.EndZ | RegexPrefixAnalyzer.End | RegexPrefixAnalyzer.Bol)) != 0)
                 {
                     // TODO: RegexInterpreter also factors in a Boyer-Moore prefix check in places Compiled just returns true.
                     // Determine if we should do so here and in Compiled as well, and potentially update RegexInterpreter.
                     // Interpreted and Compiled also differ in various places as to whether they update positions, as do LTR vs RTL. Determine why.
-                    switch (code.LeadingAnchor)
+                    switch (code.FindOptimizations.LeadingAnchor)
                     {
                         case RegexPrefixAnalyzer.Beginning:
                             writer.WriteLine("// Beginning \\A anchor");
@@ -752,7 +769,7 @@ namespace System.Text.RegularExpressions.Generator
         {
             RegexOptions options = (RegexOptions)rm.Options;
             RegexCode code = rm.Code;
-            (string CharClass, bool CaseInsensitive)[]? lcc = code.LeadingCharClasses;
+            (string CharClass, bool CaseInsensitive)[]? lcc = code.FindOptimizations.LeadingCharClasses;
             bool rtl = code.RightToLeft;
             bool hasTimeout = false;
 
@@ -3234,12 +3251,12 @@ namespace System.Text.RegularExpressions.Generator
             // Emit local to store current culture if needed
             if ((((RegexOptions)rm.Options) & RegexOptions.CultureInvariant) == 0)
             {
-                bool needsCulture = (((RegexOptions)rm.Options) & RegexOptions.IgnoreCase) != 0 || rm.Code.BoyerMoorePrefix?.CaseInsensitive == true;
-                if (!needsCulture && rm.Code.LeadingCharClasses is not null)
+                bool needsCulture = (((RegexOptions)rm.Options) & RegexOptions.IgnoreCase) != 0 || rm.Code.FindOptimizations.BoyerMoorePrefix?.CaseInsensitive == true;
+                if (!needsCulture && rm.Code.FindOptimizations.LeadingCharClasses is (string CharClass, bool CaseInsensitive)[] lcc)
                 {
-                    for (int i = 0; i < rm.Code.LeadingCharClasses.Length; i++)
+                    for (int i = 0; i < lcc.Length; i++)
                     {
-                        if (rm.Code.LeadingCharClasses[i].CaseInsensitive)
+                        if (lcc[i].CaseInsensitive)
                         {
                             needsCulture = true;
                             break;
