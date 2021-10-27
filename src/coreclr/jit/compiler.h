@@ -7981,6 +7981,9 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
+    bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
+
+    var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
