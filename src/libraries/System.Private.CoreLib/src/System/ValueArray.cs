@@ -38,11 +38,11 @@ namespace System
         public Span<T> Slice(int start);
     }
 
-    public struct ValueArray<T, R> // where R : System.Array
-        : IValueArray<T>, IEquatable<ValueArray<T, R>>
+    public struct ValueArray<T, Size> // where Size : System.Array
+        : IValueArray<T>, IEquatable<ValueArray<T, Size>>
     {
         /// <summary>The number of elements this ValueArray contains.</summary>
-        public int Length => RankOf<R>.Value;
+        public int Length => RankOf<Size>.Value;
 
         // For the array of Length N, runtime will add N-1 elements immediately after this one.
         private T Element0;
@@ -89,10 +89,10 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            return obj is ValueArray<T, R> other && Equals(other);
+            return obj is ValueArray<T, Size> other && Equals(other);
         }
 
-        public bool Equals(ValueArray<T, R> other)
+        public bool Equals(ValueArray<T, Size> other)
         {
             for (int i = 0; i < Length; i++)
             {
@@ -118,18 +118,18 @@ namespace System
     }
 
     // internal helper to compute and cache the Rank of an object array.
-    internal static class RankOf<R>
+    internal static class RankOf<T>
     {
         public static readonly int Value = GetRank();
 
         private static int GetRank()
         {
-            var type = typeof(R);
+            var type = typeof(T);
             if (!type.IsArray)
-                throw new ArgumentException("R must be an array");
+                throw new ArgumentException("T must be an array");
 
             if (type.GetElementType() != typeof(object))
-                throw new ArgumentException("R must be an object array");
+                throw new ArgumentException("T must be an object array");
 
             return type.GetArrayRank();
         }

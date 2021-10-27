@@ -7904,8 +7904,8 @@ namespace System
         public ref T this[int index] { get; }
         public Span<T> Slice(int start);
     }
-    public partial struct ValueArray<T, R> // where R : System.Array
-        : IValueArray<T>, System.IEquatable<ValueArray<T, R>>
+    public partial struct ValueArray<T, Size> // where Size : System.Array
+        : IValueArray<T>, System.IEquatable<ValueArray<T, Size>>
     {
         public int Length { get { throw null; } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -7914,7 +7914,7 @@ namespace System
         public ref T this[int index] { get { throw null; } }
         public Span<T> Slice(int start) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(ValueArray<T, R> other) { throw null; }
+        public bool Equals(ValueArray<T, Size> other) { throw null; }
         public override int GetHashCode() { throw null; }
     }
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
