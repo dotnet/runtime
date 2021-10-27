@@ -572,7 +572,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 #define TC_BackgroundWorkerTimeoutMs (100)
 #define TC_CallCountThreshold (2)
 #define TC_CallCountingDelayMs (1)
-#define TC_DelaySingleProcMultiplier (1)
+#define TC_DelaySingleProcMultiplier (2)
 #define TC_DeleteCallCountingStubsAfter (1)
 #else // !_DEBUG
 #define TC_BackgroundWorkerTimeoutMs (4000)
