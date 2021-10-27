@@ -294,7 +294,7 @@ namespace System.IO.Strategies
 
         public sealed override ValueTask WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : -1;
+            long writeOffset = CanSeek ? Interlocked.Add(ref _filePosition, source.Length) - source.Length : 0;
             return RandomAccess.WriteAtOffsetAsync(_fileHandle, source, writeOffset, cancellationToken, this);
         }
 
@@ -311,7 +311,7 @@ namespace System.IO.Strategies
         {
             if (!CanSeek)
             {
-                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: -1, cancellationToken);
+                return RandomAccess.ReadAtOffsetAsync(_fileHandle, destination, fileOffset: 0, cancellationToken);
             }
 
             if (LengthCachingSupported && _length >= 0 && Volatile.Read(ref _filePosition) >= _length)
