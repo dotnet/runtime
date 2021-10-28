@@ -796,7 +796,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void FailsToReadNullLibraryType()
         {
-            Assert.Throws<ArgumentException>(() => Read(
+            Assert.Throws<FormatException>(() => Read(
 @"{
     ""libraries"":{
         ""System.Banana/1.0.0"": {
@@ -812,7 +812,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void FailsToReadEmptyTargetName()
         {
-            Assert.Throws<ArgumentException>(() => Read(
+            Assert.Throws<FormatException>(() => Read(
 @"{
      ""targets"": {
         """": {}
@@ -823,7 +823,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void FailsToReadEmptyLibraryType()
         {
-            Assert.Throws<ArgumentException>(() => Read(
+            Assert.Throws<FormatException>(() => Read(
 @"{
     ""libraries"":{
         ""System.Banana/1.0.0"": {
