@@ -25,7 +25,8 @@ typedef enum {
 	PROP_FIELD_DEF_VALUES = 7, /* MonoFieldDefaultValue* */
 	PROP_DECLSEC_FLAGS = 8, /* guint32 */
 	PROP_WEAK_BITMAP = 9,
-	PROP_DIM_CONFLICTS = 10 /* GSList of MonoMethod* */
+	PROP_DIM_CONFLICTS = 10, /* GSList of MonoMethod* */
+	PROP_SPECIAL_JIT_FLAGS = 11, /* guint32 */
 }  InfrequentDataKind;
 
 /* Accessors based on class kind*/
@@ -402,6 +403,24 @@ mono_class_set_declsec_flags (MonoClass *klass, guint32 value)
 	prop->head.tag = PROP_DECLSEC_FLAGS;
 	prop->value = value;
 	mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
+}
+
+void
+mono_class_set_special_jit_flags (MonoClass *klass, guint32 value)
+{
+	Uint32Property *prop = (Uint32Property*)mono_class_alloc (klass, sizeof (Uint32Property));
+	prop->head.tag = PROP_SPECIAL_JIT_FLAGS;
+	prop->value = value;
+	mono_property_bag_add (m_class_get_infrequent_data (klass), prop);
+}
+
+guint32
+mono_class_get_special_jit_flags (MonoClass *klass)
+{
+	if (!m_class_has_special_jit_flags (klass))
+		return 0;
+	Uint32Property *prop = (Uint32Property*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_SPECIAL_JIT_FLAGS);
+	return prop ? prop->value : 0;
 }
 
 void

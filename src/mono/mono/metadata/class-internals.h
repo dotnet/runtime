@@ -578,6 +578,16 @@ typedef struct {
 	MonoMethod *wrapper_method;
 } MonoJitICallInfo;
 
+/* Flags on classes that require some different handling by the JIT.  See
+ * m_class_has_special_jit_flags() and mono_class_get_special_jit_flags()
+ */
+enum MonoSpecialJitClassFlags {
+	/* The MONO_CEE_NEWONJ opcode should avoid initializing the class at JIT time; delegate
+	 * class initialization and instance creation to an icall at runtime.
+	 */
+	MONO_SPECIAL_JIT_USE_ICALL_NEWOBJ = 0x01,
+};
+
 MONO_COMPONENT_API void
 mono_class_setup_supertypes (MonoClass *klass);
 
@@ -1414,6 +1424,12 @@ mono_class_get_declsec_flags (MonoClass *klass);
 
 void
 mono_class_set_declsec_flags (MonoClass *klass, guint32 value);
+
+guint32
+mono_class_get_special_jit_flags (MonoClass *klass);
+
+void
+mono_class_set_special_jit_flags (MonoClass *klass, guint32 value);
 
 void
 mono_class_set_is_com_object (MonoClass *klass);

@@ -405,6 +405,36 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
 	mono_error_set_type_load_class (error, klass, "%s", msg);
 }
 
+struct MonoSpecialJitHandlingClass {
+	const char *module_name;
+	const char *name_space;
+	const char *name;
+	guint32 flags;
+};
+
+/* Classes that require some special behavior in the JIT.
+ * The JIT uses m_class_has_special_jit_handling() and mono_class_get_special_jit_flags() to get the flags.
+ * FIXME: use the MVID or an assembly version range, too?
+ */
+static struct MonoSpecialJitHandlingClass special_jit_handling_classes[] = {
+	{ "xunit.console.dll", "Xunit.ConsoleClient", "ConsoleRunner", MONO_SPECIAL_JIT_USE_ICALL_NEWOBJ },
+};
+
+static guint32
+class_needs_special_jit_handling (MonoClass *klass)
+{
+	size_t n = sizeof (special_jit_handling_classes) / sizeof(special_jit_handling_classes[0]);
+	for (int i = 0; i < n; i++) {
+		struct MonoSpecialJitHandlingClass *d = &special_jit_handling_classes[i];
+		if (!strcmp (m_class_get_image (klass)->module_name, d->module_name) &&
+		    !strcmp (m_class_get_name (klass), d->name) &&
+		    !strcmp (m_class_get_name_space (klass), d->name_space)) {
+			return d->flags;
+		}
+	}
+	return 0;
+}
+
 /**
  * mono_class_create_from_typedef:
  * \param image: image where the token is valid
@@ -473,6 +503,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	mono_class_set_flags (klass, cols [MONO_TYPEDEF_FLAGS]);
 
 	mono_internal_hash_table_insert (&image->class_cache, GUINT_TO_POINTER (type_token), klass);
+
+	guint32 jit_handling_flags = 0;
+	if (G_UNLIKELY ((jit_handling_flags = class_needs_special_jit_handling (klass)))) {
+		klass->has_special_jit_flags = 1;
+		mono_class_set_special_jit_flags (klass, jit_handling_flags);
+	}
 
 	/*
 	 * Check whether we're a generic type definition.
