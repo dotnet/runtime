@@ -31,17 +31,9 @@ namespace System.IO.Tests
         {
             // Creates a Symlink to 'item' (may or may not exist) that is optionally
             // a relative path rather than an absolute path.
-            var itemPath = GetItemPath(item);
-            var linkPath = itemPath + ".link";
-
-            // If a symlink was a directory on unix and references a non-existent
-            // path, then it manifests as a file. If a symlink was a file that now
-            // has a target that is a directory, it manifests as a directory.
-            if (Directory.Exists(linkPath)) Directory.Delete(linkPath);
-            else if (File.Exists(linkPath)) File.Exists(linkPath);
-
+            string itemPath = GetItemPath(item);
             string target = isRelative ? Path.GetFileName(itemPath) : itemPath;
-            return CreateSymlink(linkPath, target);
+            return CreateSymlink(itemPath + ".link", target);
         }
 
         protected abstract string GetItemPath(T item);
@@ -63,14 +55,13 @@ namespace System.IO.Tests
             public DateTimeKind Kind => Item3;
         }
 
-        private void SettingUpdatesPropertiesCore(T item, int year)
+        private void SettingUpdatesPropertiesCore(T item)
         {
-            // Pass the year as a parameter so it changes between different tests (in case of the same file)
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
-                DateTime dt = new DateTime(year, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(2004, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
@@ -93,7 +84,7 @@ namespace System.IO.Tests
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
-            SettingUpdatesPropertiesCore(item, 2014);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
@@ -107,7 +98,7 @@ namespace System.IO.Tests
             // instead (eg. the setattrlist will do this without the flag set).
             // It is also the same case on unix, with the utimensat function.
             T item = CreateSymlinkToItem(GetExistingItem(), false);
-            SettingUpdatesPropertiesCore(item, 2004);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
@@ -124,7 +115,7 @@ namespace System.IO.Tests
             // Same as the above SettingUpdatesPropertiesOnSymlink test,
             // except that the target of the symlink doesn't exist.
             T item = CreateSymlinkToItem(GetMissingItem(), false);
-            SettingUpdatesPropertiesCore(item, 2005);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
@@ -134,7 +125,7 @@ namespace System.IO.Tests
             // Same as the SettingUpdatesPropertiesOnSymlink function,
             // except that the symlink target is relative rather than absolute.
             T item = CreateSymlinkToItem(GetExistingItem(), true);
-            SettingUpdatesPropertiesCore(item, 2006);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
@@ -151,7 +142,7 @@ namespace System.IO.Tests
             // Same as the SettingUpdatesPropertiesOnNonexistentSymlink function,
             // except that the symlink target is relative rather than absolute.
             T item = CreateSymlinkToItem(GetMissingItem(), true);
-            SettingUpdatesPropertiesCore(item, 2007);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]

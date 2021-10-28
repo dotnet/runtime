@@ -683,6 +683,11 @@ check_symbol_exists(
     sys/stat.h
     HAVE_UTIMENSAT)
 
+check_symbol_exists(
+    lutimes
+    sys/time.h
+    HAVE_LUTIMES)
+
 set (PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 set (CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 
