@@ -1093,16 +1093,11 @@ int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize)
 
 #if !HAVE_FCOPYFILE
 // Read all data from inFd and write it to outFd
-static int32_t CopyFile_ReadWrite(int inFd, int outFd, int64_t fileLength)
+static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 {
-    // Allocate a buffer.
-    size_t bufferLength = 80 * 1024 * sizeof(char);
-    if (fileLength > 0 && fileLength < (int64_t)bufferLength)
-    {
-        // Limit buffer to file length if it is smaller.
-        bufferLength = (size_t)fileLength;
-    }
-    char* buffer = (char*)malloc(bufferLength);
+    // Allocate a buffer
+    const int BufferLength = 80 * 1024 * sizeof(char);
+    char* buffer = (char*)malloc(BufferLength);
     if (buffer == NULL)
     {
         return -1;
@@ -1113,7 +1108,7 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd, int64_t fileLength)
     {
         // Read up to what will fit in our buffer.  We're done if we get back 0 bytes.
         ssize_t bytesRead;
-        while ((bytesRead = read(inFd, buffer, bufferLength)) < 0 && errno == EINTR);
+        while ((bytesRead = read(inFd, buffer, BufferLength)) < 0 && errno == EINTR);
         if (bytesRead == -1)
         {
             int tmp = errno;
@@ -1214,7 +1209,7 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
 #endif // HAVE_SENDFILE_4
 
     // Perform a manual copy.
-    if (!copied && CopyFile_ReadWrite(inFd, outFd, sourceLength) != 0)
+    if (!copied && CopyFile_ReadWrite(inFd, outFd) != 0)
     {
         return -1;
     }
