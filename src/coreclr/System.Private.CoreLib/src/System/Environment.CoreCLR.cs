@@ -18,7 +18,7 @@ namespace System
         }
 
         // Terminates this process with the given exit code.
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "SystemNative_Exit", CharSet = CharSet.Unicode)]
         [DoesNotReturn]
         private static extern void _Exit(int exitCode);
 
@@ -84,7 +84,7 @@ namespace System
                 GetCommandLineArgsNative();
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "SystemNative_GetProcessorCount", CharSet = CharSet.Unicode)]
         private static extern int GetProcessorCount();
 
         // Used by VM

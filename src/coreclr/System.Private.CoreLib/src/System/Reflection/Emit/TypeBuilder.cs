@@ -149,26 +149,26 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Private Static FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetParentType")]
         private static extern void SetParentType(QCallModule module, int tdTypeDef, int tkParent);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_AddInterfaceImpl")]
         private static extern void AddInterfaceImpl(QCallModule module, int tdTypeDef, int tkInterface);
         #endregion
 
         #region Internal Static FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineMethod", CharSet = CharSet.Unicode)]
         internal static extern int DefineMethod(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             MethodAttributes attributes);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineMethodSpec")]
         internal static extern int DefineMethodSpec(QCallModule module, int tkParent, byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineField", CharSet = CharSet.Unicode)]
         internal static extern int DefineField(QCallModule module, int tkParent, string name, byte[] signature, int sigLength,
             FieldAttributes attributes);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetMethodIL")]
         private static extern void SetMethodIL(QCallModule module, int tk, bool isInitLocals,
             byte[]? body, int bodyLength,
             byte[] LocalSig, int sigLength,
@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
             ExceptionHandler[]? exceptions, int numExceptions,
             int[]? tokenFixups, int numTokenFixups);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineCustomAttribute")]
         private static extern void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
             byte[]? attr, int attrLength);
 
@@ -195,40 +195,40 @@ namespace System.Reflection.Emit
                 localAttr, (localAttr != null) ? localAttr.Length : 0);
         }
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineProperty", CharSet = CharSet.Unicode)]
         internal static extern int DefineProperty(QCallModule module, int tkParent, string name, PropertyAttributes attributes,
             byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineEvent", CharSet = CharSet.Unicode)]
         internal static extern int DefineEvent(QCallModule module, int tkParent, string name, EventAttributes attributes, int tkEventType);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineMethodSemantics")]
         internal static extern void DefineMethodSemantics(QCallModule module, int tkAssociation,
             MethodSemanticsAttributes semantics, int tkMethod);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineMethodImpl")]
         internal static extern void DefineMethodImpl(QCallModule module, int tkType, int tkBody, int tkDecl);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetMethodImpl")]
         internal static extern void SetMethodImpl(QCallModule module, int tkMethod, MethodImplAttributes MethodImplAttributes);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetParamInfo", CharSet = CharSet.Unicode)]
         internal static extern int SetParamInfo(QCallModule module, int tkMethod, int iSequence,
             ParameterAttributes iParamAttributes, string? strParamName);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_GetTokenFromSig")]
         internal static extern int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetParentType")]
         internal static extern void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetClassLayout")]
         internal static extern void SetClassLayout(QCallModule module, int tk, PackingSize iPackingSize, int iTypeSize);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetConstantValue")]
         private static extern unsafe void SetConstantValue(QCallModule module, int tk, int corType, void* pValue);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetPInvokeData", CharSet = CharSet.Unicode)]
         private static extern void SetPInvokeData(QCallModule module, string DllName, string name, int token, int linkFlags);
 
         #endregion
@@ -655,15 +655,15 @@ namespace System.Reflection.Emit
         #endregion
 
         #region FCalls
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineType", CharSet = CharSet.Unicode)]
         private static extern int DefineType(QCallModule module,
             string fullname, int tkParent, TypeAttributes attributes, int tkEnclosingType, int[] interfaceTokens);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_DefineGenericParam", CharSet = CharSet.Unicode)]
         private static extern int DefineGenericParam(QCallModule module,
             string name, int tkParent, GenericParameterAttributes attributes, int position, int[] constraints);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_TermCreateClass")]
         private static extern void TermCreateClass(QCallModule module, int tk, ObjectHandleOnStack type);
         #endregion
 

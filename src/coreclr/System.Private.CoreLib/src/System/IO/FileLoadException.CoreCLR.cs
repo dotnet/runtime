@@ -34,7 +34,7 @@ namespace System.IO
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString);
 
-        [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
         private static extern void GetMessageForHR(int hresult, StringHandleOnStack retString);
     }
 }
