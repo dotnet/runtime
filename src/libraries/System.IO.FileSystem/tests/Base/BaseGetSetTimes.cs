@@ -61,7 +61,7 @@ namespace System.IO.Tests
             {
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
-                DateTime dt = new DateTime(2004, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
+                DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
                 DateTime result = function.Getter(item);
                 Assert.Equal(dt, result);
