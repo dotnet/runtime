@@ -1232,7 +1232,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    int result = typeof(T).IsValueType && SpanHelpers.CanVectorizeIndexOfForType<T>()
+                    int result = typeof(T).IsValueType
                         ? SpanHelpers.IndexOfValueType(
                             ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
                             Unsafe.As<T, int>(ref value),
@@ -1245,7 +1245,7 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    int result = typeof(T).IsValueType && SpanHelpers.CanVectorizeIndexOfForType<T>()
+                    int result = typeof(T).IsValueType
                         ? SpanHelpers.IndexOfValueType(
                             ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
                             Unsafe.As<T, long>(ref value),

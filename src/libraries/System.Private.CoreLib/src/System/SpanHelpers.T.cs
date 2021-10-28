@@ -313,7 +313,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (Vector.IsHardwareAccelerated && CanVectorizeIndexOfForType<T>() && (Vector<T>.Count * 2) <= length)
+            if (Vector.IsHardwareAccelerated && Vector<T>.IsTypeSupported && (Vector<T>.Count * 2) <= length)
             {
                 Vector<T> valueVector = new Vector<T>(value);
                 Vector<T> compareVector = default;
@@ -349,7 +349,7 @@ namespace System
                     if (compareVector[i].Equals(value))
                         return (int)(index + i);
             }
-            
+
             while (length >= 8)
             {
                 if (value.Equals(Unsafe.Add(ref searchSpace, index)))
@@ -1267,22 +1267,6 @@ namespace System
                     return result;
             }
             return firstLength.CompareTo(secondLength);
-        }
-
-        internal static bool CanVectorizeIndexOfForType<T>()
-        {
-            return (typeof(T) == typeof(byte)) ||
-                   (typeof(T) == typeof(double)) ||
-                   (typeof(T) == typeof(short)) ||
-                   (typeof(T) == typeof(int)) ||
-                   (typeof(T) == typeof(long)) ||
-                   (typeof(T) == typeof(nint)) ||
-                   (typeof(T) == typeof(nuint)) ||
-                   (typeof(T) == typeof(sbyte)) ||
-                   (typeof(T) == typeof(float)) ||
-                   (typeof(T) == typeof(ushort)) ||
-                   (typeof(T) == typeof(uint)) ||
-                   (typeof(T) == typeof(ulong));
         }
     }
 }
