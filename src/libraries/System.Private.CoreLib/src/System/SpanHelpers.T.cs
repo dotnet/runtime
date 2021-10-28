@@ -318,7 +318,7 @@ namespace System
                 Vector<T> valueVector = new Vector<T>(value);
                 Vector<T> compareVector = default;
                 Vector<T> matchVector = default;
-                if (length % Vector<T>.Count != 0)
+                if ((uint)length % (uint)Vector<T>.Count != 0)
                 {
                     // Number of elements is not a multiple of Vector<T>.Count, so do one
                     // check and shift only enough for the remaining set to be a multiple
@@ -349,6 +349,7 @@ namespace System
                     if (compareVector[i].Equals(value))
                         return (int)(index + i);
             }
+            
             while (length >= 8)
             {
                 if (value.Equals(Unsafe.Add(ref searchSpace, index)))
