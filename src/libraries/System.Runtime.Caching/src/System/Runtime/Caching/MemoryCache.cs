@@ -916,7 +916,7 @@ namespace System.Runtime.Caching
 
             if (_throwOnDisposed)
             {
-                string cacheName = this.GetType().FullName + $"({_name})";
+                string cacheName = $"{this.GetType().FullName}({_name})";
                 throw new ObjectDisposedException(cacheName);
             }
 
