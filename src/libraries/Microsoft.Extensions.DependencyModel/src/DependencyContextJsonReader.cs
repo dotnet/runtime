@@ -516,7 +516,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(path))
                 {
-                    throw new ArgumentException(null, nameof(path));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(path)));
                 }
 
                 reader.ReadStartObject();
@@ -556,7 +556,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(runtimePath))
                 {
-                    throw new ArgumentException(null, nameof(runtimePath));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(runtimePath)));
                 }
 
                 var runtimeTarget = new RuntimeTargetEntryStub
@@ -607,7 +607,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(path))
                 {
-                    throw new ArgumentException(null, nameof(path));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(path)));
                 }
 
                 string? locale = null;
@@ -728,7 +728,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(runtime))
                 {
-                    throw new ArgumentException(null, nameof(runtime));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(runtime)));
                 }
 
                 runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
