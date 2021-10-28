@@ -370,7 +370,7 @@ namespace System.Diagnostics
             if (!categoryExists)
             {
 #if DEBUG
-                string categories = "Categories: " + String.Join(GetCategories(), ';');
+                string categories = "Categories: " + string.Join(';', library.GetCategories());
                 throw new InvalidOperationException(SR.Format(SR.MissingCategory, category) + "\n" + categories);
 #else
                 throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
