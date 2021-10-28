@@ -554,7 +554,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                var runtimePath = reader.GetString();
+                string? runtimePath = reader.GetString();
 
                 if (string.IsNullOrEmpty(runtimePath))
                 {
@@ -652,7 +652,7 @@ namespace Microsoft.Extensions.DependencyModel
                     throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(libraryName)));
                 }
 
-                libraries.Add(libraryName, ReadOneLibrary(ref reader));
+                libraries.Add(Pool(libraryName), ReadOneLibrary(ref reader));
             }
 
             reader.CheckEndObject();
@@ -754,7 +754,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         private Library? CreateLibrary(TargetLibrary targetLibrary, bool runtime, Dictionary<string, LibraryStub>? libraryStubs)
         {
-            string? nameWithVersion = targetLibrary.Name;
+            string nameWithVersion = targetLibrary.Name;
 
             if (libraryStubs == null || string.IsNullOrEmpty(nameWithVersion) || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
             {
