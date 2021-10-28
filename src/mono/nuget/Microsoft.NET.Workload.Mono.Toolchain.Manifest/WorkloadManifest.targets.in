@@ -113,9 +113,10 @@
         android-x86;
         " />
 
-      <KnownRuntimePack Remove="Microsoft.NETCore.App" />
+      <_PackUpdates Include="Microsoft.NETCore.App" TargetFramework="${NetCoreAppCurrent}" RuntimeFrameworkName="Microsoft.NETCore.App" />
+      <KnownRuntimePack Remove="@(_PackUpdates)" MatchOnMetadata="TargetFramework;RuntimeFrameworkName"/>
       <KnownRuntimePack Include="Microsoft.NETCore.App"
-                        TargetFramework="net6.0"
+                        TargetFramework="${NetCoreAppCurrent}"
                         RuntimeFrameworkName="Microsoft.NETCore.App"
                         LatestRuntimeFrameworkVersion="$(_MonoWorkloadRuntimePackPackageVersion)"
                         RuntimePackNamePatterns="Microsoft.NETCore.App.Runtime.Mono.**RID**"
