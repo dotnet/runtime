@@ -1,5 +1,8 @@
 @echo off
-build.cmd -subset clr -a x64 -c release
+setlocal
+
+
+powershell -ExecutionPolicy ByPass -NoProfile -Command "& 'eng\build.ps1'" -subset clr -a x64 -c release
 
 if NOT %errorlevel% == 0 (
  echo "build failed"
