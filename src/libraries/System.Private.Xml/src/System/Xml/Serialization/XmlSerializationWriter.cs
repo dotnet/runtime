@@ -1466,14 +1466,13 @@ namespace System.Xml.Serialization
     {
         private static readonly Hashtable s_nameToAssemblyMap = new Hashtable();
         private static readonly Hashtable s_assemblyToNameMap = new Hashtable();
-        private static readonly ConditionalWeakTable<Type, object> s_tableIsTypeDynamic = new ConditionalWeakTable<Type, object>();
+        private static readonly ContextAwareTables<object> s_tableIsTypeDynamic = new ContextAwareTables<object>();
 
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         internal static bool IsTypeDynamic(Type type)
         {
-            s_tableIsTypeDynamic.TryGetValue(type, out object? oIsTypeDynamic);
-            if (oIsTypeDynamic == null)
+            object oIsTypeDynamic = s_tableIsTypeDynamic.GetOrCreateValue(type, () =>
             {
                 Assembly assembly = type.Assembly;
                 bool isTypeDynamic = assembly.IsDynamic /*|| string.IsNullOrEmpty(assembly.Location)*/;
@@ -1501,8 +1500,8 @@ namespace System.Xml.Serialization
                         }
                     }
                 }
-                s_tableIsTypeDynamic.AddOrUpdate(type, oIsTypeDynamic = isTypeDynamic);
-            }
+                return isTypeDynamic;
+            });
             return (bool)oIsTypeDynamic;
         }
 
