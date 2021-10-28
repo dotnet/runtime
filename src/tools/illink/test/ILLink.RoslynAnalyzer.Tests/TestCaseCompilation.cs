@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	internal class TestCaseCompilation
+	internal static class TestCaseCompilation
 	{
 		private static readonly ImmutableArray<DiagnosticAnalyzer> SupportedDiagnosticAnalyzers =
 			ImmutableArray.Create<DiagnosticAnalyzer> (
