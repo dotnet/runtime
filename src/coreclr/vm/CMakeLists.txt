@@ -36,12 +36,7 @@ if(FEATURE_JIT_PITCHING)
 endif(FEATURE_JIT_PITCHING)
 
 if(FEATURE_PERFTRACING)
-    set(SHARED_EVENTPIPE_DIR ${CLR_SRC_NATIVE_DIR}/eventpipe)
     set(CORECLR_EVENTPIPE_SHIM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/eventing/eventpipe)
-endif(FEATURE_PERFTRACING)
-
-if(FEATURE_PERFTRACING)
-    include_directories(${SHARED_EVENTPIPE_DIR})
     include_directories(${CORECLR_EVENTPIPE_SHIM_DIR})
 endif(FEATURE_PERFTRACING)
 
@@ -106,7 +101,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     nativeimage.cpp
     object.cpp
     onstackreplacement.cpp
-    pefile.cpp
+    peassembly.cpp
     peimage.cpp
     perfmap.cpp
     perfinfo.cpp
@@ -207,8 +202,8 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     object.h
     object.inl
     onstackreplacement.h
-    pefile.h
-    pefile.inl
+    peassembly.h
+    peassembly.inl
     peimage.h
     peimage.inl
     peimagelayout.h

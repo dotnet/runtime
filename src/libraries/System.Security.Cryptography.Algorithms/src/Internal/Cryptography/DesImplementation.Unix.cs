@@ -24,7 +24,7 @@ namespace Internal.Cryptography
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
@@ -42,7 +42,7 @@ namespace Internal.Cryptography
             IntPtr algorithm = GetAlgorithm(cipherMode, feedbackSize);
 
             Interop.Crypto.EnsureLegacyAlgorithmsRegistered();
-            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, effectiveKeyLength: 0, iv, encrypting);
+            return new OpenSslCipherLite(algorithm, cipherMode, blockSize, paddingSize, key, iv, encrypting);
         }
 
         private static IntPtr GetAlgorithm(CipherMode cipherMode, int feedbackSize)

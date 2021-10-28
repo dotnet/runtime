@@ -160,6 +160,7 @@ static void register_icalls (void);
 static void runtime_cleanup (MonoDomain *domain, gpointer user_data);
 static void mini_invalidate_transformed_interp_methods (MonoAssemblyLoadContext *alc, uint32_t generation);
 static void mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data);
+static gboolean mini_interp_sufficient_stack (gsize size);
 
 gboolean
 mono_running_on_valgrind (void)
@@ -3039,7 +3040,7 @@ create_runtime_invoke_info (MonoMethod *method, gpointer compiled_method, gboole
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+			if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
 				supported = FALSE;
 		}
 
@@ -3186,7 +3187,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (sig->hasthis)
 		args [pindex ++] = &obj;
 	if (sig->ret->type != MONO_TYPE_VOID) {
-		if (info->ret_box_class && !sig->ret->byref &&
+		if (info->ret_box_class && !m_type_is_byref (sig->ret) &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
 			// if the return type is a struct, allocate enough stack space to hold it
@@ -3219,7 +3220,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 			params [i] = nullable_buf;
 		}
 
-		if (!t->byref && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
+		if (!m_type_is_byref (t) && (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR)) {
 			param_refs [i] = params [i];
 			params [i] = &(param_refs [i]);
 		}
@@ -3234,7 +3235,7 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 	if (exc && *exc)
 		return NULL;
 
-	if (sig->ret->byref) {
+	if (m_type_is_byref (sig->ret)) {
 		if (*(gpointer*)retval == NULL) {
 			MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
 			MonoObject *ex = mono_object_new_checked (klass, error);
@@ -3246,14 +3247,14 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		if (info->ret_box_class) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return ret;
 			}
 		} else {
-			if (sig->ret->byref)
+			if (m_type_is_byref (sig->ret))
 				return **(MonoObject***)retval;
 			else
 				return *(MonoObject**)retval;
@@ -3417,7 +3418,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		guint8 *retval = NULL;
 
 		/* if the return type is a struct and it's too big, allocate more space for it */
-		if (info->ret_box_class && !sig->ret->byref &&
+		if (info->ret_box_class && !m_type_is_byref (sig->ret) &&
 		    (sig->ret->type == MONO_TYPE_VALUETYPE ||
 		     (sig->ret->type == MONO_TYPE_GENERICINST && !MONO_TYPE_IS_REFERENCE (sig->ret)))) {
 			MonoClass *ret_klass = mono_class_from_mono_type_internal (sig->ret);
@@ -3438,7 +3439,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		for (i = 0; i < sig->param_count; ++i) {
 			MonoType *t = sig->params [i];
 
-			if (t->byref) {
+			if (m_type_is_byref (t)) {
 				args [pindex ++] = &params [i];
 			} else if (MONO_TYPE_IS_REFERENCE (t) || t->type == MONO_TYPE_PTR) {
 				args [pindex ++] = &params [i];
@@ -3464,7 +3465,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 			return NULL;
 		}
 
-		if (sig->ret->byref) {
+		if (m_type_is_byref (sig->ret)) {
 			if (*(gpointer*)retval == NULL) {
 				MonoClass *klass = mono_class_get_nullbyrefreturn_ex_class ();
 				MonoObject *ex = mono_object_new_checked (klass, error);
@@ -3475,14 +3476,14 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		}
 
 		if (info->ret_box_class) {
-			if (sig->ret->byref) {
+			if (m_type_is_byref (sig->ret)) {
 				return mono_value_box_checked (info->ret_box_class, *(gpointer*)retval, error);
 			} else {
 				MonoObject *boxed_ret = mono_value_box_checked (info->ret_box_class, retval, error);
 				return boxed_ret;
 			}
 		} else {
-			if (sig->ret->byref)
+			if (m_type_is_byref (sig->ret))
 				return **(MonoObject***)retval;
 			else
 				return *(MonoObject**)retval;
@@ -3847,6 +3848,16 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 {
 	MonoDelegate *del = MONO_HANDLE_RAW (delegate);
 
+	if (!method && !addr) {
+		// Multicast delegate init
+		if (!mono_llvm_only) {
+			MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
+		} else {
+			mini_llvmonly_init_delegate (del, NULL);
+		}
+		return;
+	}
+
 	if (!method) {
 		MonoJitInfo *ji;
 		gpointer lookup_addr = MINI_FTNPTR_TO_ADDR (addr);
@@ -3873,15 +3884,17 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	MONO_HANDLE_SET (delegate, target, target);
 	MONO_HANDLE_SETVAL (delegate, invoke_impl, gpointer, mono_create_delegate_trampoline (mono_handle_class (delegate)));
 
+	MonoDelegateTrampInfo *info = NULL;
+
 	if (mono_use_interpreter) {
-		mini_get_interp_callbacks ()->init_delegate (del, error);
+		mini_get_interp_callbacks ()->init_delegate (del, &info, error);
 		return_if_nok (error);
 	}
 
 	if (mono_llvm_only) {
 		g_assert (del->method);
-		/* del->method_ptr might already be set to no_llvmonly_interp_method_pointer if the delegate was created from the interpreter */
-		del->method_ptr = mini_llvmonly_load_method_delegate (del->method, FALSE, FALSE, &del->extra_arg, error);
+		mini_llvmonly_init_delegate (del, info);
+		//del->method_ptr = mini_llvmonly_load_method_delegate (del->method, FALSE, FALSE, &del->extra_arg, error);
 	} else if (!del->method_ptr) {
 		del->method_ptr = create_delegate_method_ptr (del->method, error);
 		return_if_nok (error);
@@ -4445,6 +4458,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
+	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
 	callbacks.init_mem_manager = init_jit_mem_manager;
 	callbacks.free_mem_manager = free_jit_mem_manager;
 
@@ -4882,7 +4896,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mini_llvmonly_resolve_generic_virtual_iface_call, mono_icall_sig_ptr_ptr_int_ptr);
 	/* This needs a wrapper so it can have a preserveall cconv */
 	register_icall (mini_llvmonly_init_vtable_slot, mono_icall_sig_ptr_ptr_int, FALSE);
-	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object, TRUE);
+	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object_ptr, TRUE);
 	register_icall (mini_llvmonly_init_delegate_virtual, mono_icall_sig_void_object_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
@@ -5213,6 +5227,12 @@ static void
 mini_interp_jit_info_foreach(InterpJitInfoFunc func, gpointer user_data)
 {
 	mini_get_interp_callbacks ()->jit_info_foreach (func, user_data);
+}
+
+static gboolean
+mini_interp_sufficient_stack (gsize size)
+{
+	return mini_get_interp_callbacks ()->sufficient_stack (size);
 }
 
 /*

@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
-using Microsoft.Xunit.Performance;
 using System;
 using System.Runtime.CompilerServices;
-using Xunit;
-
-[assembly: OptimizeForBenchmarks]
 
 namespace Benchstone.BenchI
 {
@@ -19,8 +15,6 @@ public static class LogicArray
 #else
     public const int Iterations = 3000;
 #endif
-
-    const int ArraySize = 50;
 
     struct Workarea
     {
@@ -74,15 +68,6 @@ public static class LogicArray
         }
 
         return true;
-    }
-
-    [Benchmark]
-    public static void Test() {
-        foreach (var iteration in Benchmark.Iterations) {
-            using (iteration.StartMeasurement()) {
-                Bench();
-            }
-        }
     }
 
     static bool TestBase() {

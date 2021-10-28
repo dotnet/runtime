@@ -25,6 +25,21 @@
       <XUnitWrapperDll>$(TestBinDir)JIT\jit64\JIT.jit64.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\Arm\**">
+      <TestGroup>JIT.HardwareIntrinsics.Arm</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\General\**">
+      <TestGroup>JIT.HardwareIntrinsics.General</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\X86\**">
+      <TestGroup>JIT.HardwareIntrinsics.X86</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
     <TestGrouping Include="$(TestBinDir)JIT\Methodical\a*\**;
                            $(TestBinDir)JIT\Methodical\b*\**;
                            $(TestBinDir)JIT\Methodical\c*\**;
@@ -72,6 +87,16 @@
                            $(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M13*\**">
       <TestGroup>JIT.Regression.CLR-x86-JIT.V1-M12-M13</TestGroup>
       <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(TestBinDir)JIT\Regression\JitBlue\GitHub_*\**">
+      <TestGroup>JIT.Regression.JitBlue</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\Regression\JIT.Regression.XUnitWrapper.dll</XUnitWrapperDll>
+    </TestGrouping>
+
+    <TestGrouping Include="$(TestBinDir)JIT\HardwareIntrinsics\X86\S*\**">
+      <TestGroup>JIT.HardwareIntrinsics.S</TestGroup>
+      <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
     <TestGrouping Include="$(TestBinDir)Loader\classloader\generics\**">
@@ -143,13 +168,15 @@
 
     <XUnitWrapperGrouping Include="$(TestBinDir)JIT\BBT\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\CheckProjects\*.XUnitWrapper.dll;
-                                   $(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\opt\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\Performance\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\RyuJIT\*.XUnitWrapper.dll;
-                                   $(TestBinDir)JIT\SIMD\*.XUnitWrapper.dll;
                                    $(TestBinDir)JIT\superpmi\*.XUnitWrapper.dll">
-      <PayloadGroup>JIT</PayloadGroup>
+      <PayloadGroup>JIT.1</PayloadGroup>
+    </XUnitWrapperGrouping>
+    <XUnitWrapperGrouping Include="$(TestBinDir)JIT\Intrinsics\*.XUnitWrapper.dll;
+                                   $(TestBinDir)JIT\SIMD\*.XUnitWrapper.dll">
+      <PayloadGroup>JIT.2</PayloadGroup>
     </XUnitWrapperGrouping>
   </ItemGroup>
 </Project>

@@ -325,6 +325,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             throw new LogAsErrorException($"'{nameof(OutputType)}=Library' can not be used with '{nameof(UseStaticLinking)}=true'.");
         }
 
+        foreach (var asmItem in Assemblies)
+        {
+            string? fullPath = asmItem.GetMetadata("FullPath");
+            if (!File.Exists(fullPath))
+                throw new LogAsErrorException($"Could not find {fullPath} to AOT");
+        }
+
         return !Log.HasLoggedErrors;
     }
 
@@ -339,6 +346,12 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             Log.LogError(laee.Message);
             return false;
         }
+        finally
+        {
+            if (_cache != null && _cache.Save(CacheFilePath!))
+                _fileWrites.Add(CacheFilePath!);
+            FileWrites = _fileWrites.ToArray();
+        }
     }
 
     private bool ExecuteInternal()
@@ -347,6 +360,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             return false;
 
         _assembliesToCompile = EnsureAndGetAssembliesInTheSameDir(Assemblies);
+        _assembliesToCompile = FilterAssemblies(_assembliesToCompile);
 
         if (!string.IsNullOrEmpty(AotModulesTablePath) && !GenerateAotModulesTable(_assembliesToCompile, Profilers, AotModulesTablePath))
             return false;
@@ -372,42 +386,29 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         else
         {
-            int allowedParallelism = Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
+            int allowedParallelism = DisableParallelAot ? 1 : Math.Min(_assembliesToCompile.Count, Environment.ProcessorCount);
             if (BuildEngine is IBuildEngine9 be9)
                 allowedParallelism = be9.RequestCores(allowedParallelism);
 
-            if (DisableParallelAot || allowedParallelism == 1)
-            {
-                foreach (var args in argsList)
-                {
-                    if (!PrecompileLibrarySerial(args))
-                        return !Log.HasLoggedErrors;
-                }
-            }
-            else
-            {
-                ParallelLoopResult result = Parallel.ForEach(
-                                                        argsList,
-                                                        new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
-                                                        (args, state) => PrecompileLibraryParallel(args, state));
+            ParallelLoopResult result = Parallel.ForEach(
+                                            argsList,
+                                            new ParallelOptions { MaxDegreeOfParallelism = allowedParallelism },
+                                            (args, state) => PrecompileLibraryParallel(args, state));
 
-                if (!result.IsCompleted)
-                {
-                    return false;
-                }
+            Log.LogMessage(MessageImportance.High, $"result: {result.IsCompleted}");
+            if (result.IsCompleted)
+            {
+                int numUnchanged = _totalNumAssemblies - _numCompiled;
+                if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
+                    Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
             }
-
-            int numUnchanged = _totalNumAssemblies - _numCompiled;
-            if (numUnchanged > 0 && numUnchanged != _totalNumAssemblies)
-                Log.LogMessage(MessageImportance.High, $"[{numUnchanged}/{_totalNumAssemblies}] skipped unchanged assemblies.");
+            else if (!Log.HasLoggedErrors)
+            {
+                Log.LogError($"Precompiling failed due to unknown reasons. Check log for more info");
+            }
         }
 
         CompiledAssemblies = ConvertAssembliesDictToOrderedList(compiledAssemblies, _assembliesToCompile).ToArray();
-
-        if (_cache.Save(CacheFilePath!))
-            _fileWrites.Add(CacheFilePath!);
-        FileWrites = _fileWrites.ToArray();
-
         return !Log.HasLoggedErrors;
     }
 
@@ -428,31 +429,44 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                     (File.GetLastWriteTimeUtc(inFile) > File.GetLastWriteTimeUtc(outFile));
     }
 
-    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(ITaskItem[] originalAssemblies)
+    private IList<ITaskItem> FilterAssemblies(IEnumerable<ITaskItem> assemblies)
     {
         List<ITaskItem> filteredAssemblies = new();
-        string firstAsmDir = Path.GetDirectoryName(originalAssemblies[0].GetMetadata("FullPath")) ?? string.Empty;
-        bool allInSameDir = true;
-
-        foreach (var origAsm in originalAssemblies)
+        foreach (var asmItem in assemblies)
         {
-            if (allInSameDir && Path.GetDirectoryName(origAsm.GetMetadata("FullPath")) != firstAsmDir)
-                allInSameDir = false;
-
-            if (ShouldSkip(origAsm))
+            if (ShouldSkip(asmItem))
             {
                 if (parsedAotMode == MonoAotMode.LLVMOnly)
-                    throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {origAsm.ItemSpec}");
+                    throw new LogAsErrorException($"Building in AOTMode=LLVMonly is not compatible with excluding any assemblies for AOT. Excluded assembly: {asmItem.ItemSpec}");
 
-                Log.LogMessage(MessageImportance.Low, $"Skipping {origAsm.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
+                Log.LogMessage(MessageImportance.Low, $"Skipping {asmItem.ItemSpec} because it has %(AOT_InternalForceToInterpret)=true");
                 continue;
             }
 
-            filteredAssemblies.Add(origAsm);
+            string assemblyPath = asmItem.GetMetadata("FullPath");
+            using var assemblyFile = File.OpenRead(assemblyPath);
+            using PEReader reader = new(assemblyFile, PEStreamOptions.Default);
+            if (!reader.HasMetadata)
+            {
+                Log.LogWarning($"Skipping unmanaged {assemblyPath} for AOT");
+                continue;
+            }
+
+            filteredAssemblies.Add(asmItem);
         }
 
+        return filteredAssemblies;
+
+        static bool ShouldSkip(ITaskItem asmItem)
+            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
+    }
+
+    private IList<ITaskItem> EnsureAndGetAssembliesInTheSameDir(IList<ITaskItem> assemblies)
+    {
+        string firstAsmDir = Path.GetDirectoryName(assemblies.First().GetMetadata("FullPath")) ?? string.Empty;
+        bool allInSameDir = assemblies.All(asm => Path.GetDirectoryName(asm.GetMetadata("FullPath")) == firstAsmDir);
         if (allInSameDir)
-            return filteredAssemblies;
+            return assemblies;
 
         // Copy to aot-in
 
@@ -460,28 +474,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         Directory.CreateDirectory(aotInPath);
 
         List<ITaskItem> newAssemblies = new();
-        foreach (var origAsm in originalAssemblies)
+        foreach (var asmItem in assemblies)
         {
-            string asmPath = origAsm.GetMetadata("FullPath");
+            string asmPath = asmItem.GetMetadata("FullPath");
             string newPath = Path.Combine(aotInPath, Path.GetFileName(asmPath));
 
             // FIXME: delete files not in originalAssemblies though
             // FIXME: or .. just delete the whole dir?
             if (Utils.CopyIfDifferent(asmPath, newPath, useHash: true))
                 Log.LogMessage(MessageImportance.Low, $"Copying {asmPath} to {newPath}");
+            _fileWrites.Add(newPath);
 
-            if (!ShouldSkip(origAsm))
-            {
-                ITaskItem newAsm = new TaskItem(newPath);
-                origAsm.CopyMetadataTo(newAsm);
-                newAssemblies.Add(newAsm);
-            }
+            ITaskItem newAsm = new TaskItem(newPath);
+            asmItem.CopyMetadataTo(newAsm);
+            newAssemblies.Add(newAsm);
         }
 
         return newAssemblies;
-
-        static bool ShouldSkip(ITaskItem asmItem)
-            => bool.TryParse(asmItem.GetMetadata("AOT_InternalForceToInterpret"), out bool skip) && skip;
     }
 
     private PrecompileArguments GetPrecompileArgumentsFor(ITaskItem assemblyItem, string? monoPaths)
@@ -773,28 +782,6 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         return true;
     }
 
-    private bool PrecompileLibrarySerial(PrecompileArguments args)
-    {
-        try
-        {
-            if (PrecompileLibrary(args))
-                return true;
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError($"Precompile failed for {args.AOTAssembly}: {laee.Message}");
-        }
-        catch (Exception ex)
-        {
-            if (Log.HasLoggedErrors)
-                Log.LogMessage(MessageImportance.Low, $"Precompile failed for {args.AOTAssembly}: {ex}");
-            else
-                Log.LogError($"Precompile failed for {args.AOTAssembly}: {ex}");
-        }
-
-        return false;
-    }
-
     private void PrecompileLibraryParallel(PrecompileArguments args, ParallelLoopState state)
     {
         try
@@ -804,14 +791,14 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         }
         catch (LogAsErrorException laee)
         {
-            Log.LogError($"Precompile failed for {args.AOTAssembly}: {laee.Message}");
+            Log.LogError($"Precompiling failed for {args.AOTAssembly}: {laee.Message}");
         }
         catch (Exception ex)
         {
             if (Log.HasLoggedErrors)
                 Log.LogMessage(MessageImportance.Low, $"Precompile failed for {args.AOTAssembly}: {ex}");
             else
-                Log.LogError($"Precompile failed for {args.AOTAssembly}: {ex}");
+                Log.LogError($"Precompiling failed for {args.AOTAssembly}: {ex}");
         }
 
         state.Break();
@@ -940,15 +927,13 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         List<ITaskItem> outItems = new(originalAssemblies.Count);
         foreach (ITaskItem item in originalAssemblies)
         {
-            if (!dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
-                throw new LogAsErrorException($"Bug: Could not find item in the dict with key {item.ItemSpec}");
-
-            outItems.Add(dictItem);
+            if (dict.TryGetValue(item.GetMetadata("FullPath"), out ITaskItem? dictItem))
+                outItems.Add(dictItem);
         }
         return outItems;
     }
 
-    internal class PrecompileArguments
+    internal sealed class PrecompileArguments
     {
         public PrecompileArguments(string ResponseFilePath, IDictionary<string, string> EnvironmentVariables, string WorkingDir, ITaskItem AOTAssembly, IList<ProxyFile> ProxyFiles)
         {
@@ -967,7 +952,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     }
 }
 
-internal class FileCache
+internal sealed class FileCache
 {
     private CompilerCache? _newCache;
     private CompilerCache? _oldCache;
@@ -993,7 +978,7 @@ internal class FileCache
         }
 
         _oldCache ??= new();
-        _newCache = new();
+        _newCache = new(_oldCache.FileHashes);
     }
 
     public bool ShouldCopy(ProxyFile proxyFile, [NotNullWhen(true)] out string? cause)
@@ -1035,7 +1020,7 @@ internal class FileCache
     public ProxyFile NewFile(string targetFile) => new ProxyFile(targetFile, this);
 }
 
-internal class ProxyFile
+internal sealed class ProxyFile
 {
     public string TargetFile { get; }
     public string TempFile   { get; }
@@ -1108,8 +1093,12 @@ public enum MonoAotModulesTableLanguage
     ObjC
 }
 
-internal class CompilerCache
+internal sealed class CompilerCache
 {
+    public CompilerCache() => FileHashes = new();
+    public CompilerCache(IDictionary<string, string> oldHashes)
+        => FileHashes = new(oldHashes);
+
     [JsonPropertyName("file_hashes")]
-    public ConcurrentDictionary<string, string> FileHashes { get; set; } = new();
+    public ConcurrentDictionary<string, string> FileHashes { get; set; }
 }

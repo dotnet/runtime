@@ -78,10 +78,7 @@ namespace System.Net.NetworkInformation
 
         private void CheckDisposed()
         {
-            if (_disposeRequested)
-            {
-                throw new ObjectDisposedException(GetType().FullName);
-            }
+            ObjectDisposedException.ThrowIf(_disposeRequested, this);
         }
 
         private void CheckStart()

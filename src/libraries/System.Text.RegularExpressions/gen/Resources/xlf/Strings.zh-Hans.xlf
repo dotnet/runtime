@@ -159,7 +159,7 @@
       </trans-unit>
       <trans-unit id="MalformedNamedReference">
         <source>Malformed \\k&lt;...&gt; named back reference.</source>
-        <target state="new">Malformed \\k&lt;...&gt; named back reference.</target>
+        <target state="translated">名为“向后引用”的 \\k&lt;...&gt; 格式不正确。</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedUnicodePropertyEscape">
@@ -190,6 +190,11 @@
       <trans-unit id="NoResultOnFailed">
         <source>Result cannot be called on a failed Match.</source>
         <target state="translated">不能对失败的匹配调用结果。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
+        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
+        <target state="new">Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</target>
         <note />
       </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">

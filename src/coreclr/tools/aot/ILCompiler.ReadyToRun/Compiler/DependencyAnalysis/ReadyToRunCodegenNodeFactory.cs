@@ -219,7 +219,7 @@ namespace ILCompiler.DependencyAnalysis
 
             _importThunks = new NodeCache<ImportThunkKey, ImportThunk>(key =>
             {
-                return new ImportThunk(this, key.Helper, key.ContainingImportSection, key.UseVirtualCall);
+                return new ImportThunk(this, key.Helper, key.ContainingImportSection, key.UseVirtualCall, key.UseJumpableStub);
             });
 
             _importMethods = new NodeCache<TypeAndMethod, IMethodNode>(CreateMethodEntrypoint);
@@ -377,6 +377,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (isPrecodeImportRequired)
             {
+                Debug.Assert(!key.IsJumpableImportRequired);
                 return new PrecodeMethodImport(
                     this,
                     ReadyToRunFixupKind.MethodEntry,
@@ -391,13 +392,15 @@ namespace ILCompiler.DependencyAnalysis
                     ReadyToRunFixupKind.MethodEntry,
                     method,
                     methodWithGCInfo,
-                    isInstantiatingStub);
+                    isInstantiatingStub,
+                    isJump: key.IsJumpableImportRequired);
             }
         }
 
-        public IMethodNode MethodEntrypoint(MethodWithToken method, bool isInstantiatingStub, bool isPrecodeImportRequired)
+        public IMethodNode MethodEntrypoint(MethodWithToken method, bool isInstantiatingStub, bool isPrecodeImportRequired, bool isJumpableImportRequired)
         {
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isInstantiatingStub, isPrecodeImportRequired);
+            Debug.Assert(!isJumpableImportRequired || !isPrecodeImportRequired);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isInstantiatingStub, isPrecodeImportRequired, isJumpableImportRequired);
             return _importMethods.GetOrAdd(key);
         }
 
@@ -416,7 +419,7 @@ namespace ILCompiler.DependencyAnalysis
                 EcmaModule module = ((EcmaMethod)method.GetTypicalMethodDefinition()).Module;
                 ModuleToken moduleToken = Resolver.GetModuleTokenForMethod(method, throwIfNotFound: true);
 
-                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false);
+                IMethodNode methodNodeDebug = MethodEntrypoint(new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null), false, false, false);
                 MethodWithGCInfo methodCodeNodeDebug = methodNodeDebug as MethodWithGCInfo;
                 if (methodCodeNodeDebug == null && methodNodeDebug is DelayLoadMethodImport DelayLoadMethodImport)
                 {
@@ -470,7 +473,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodWithToken method,
             bool isInstantiatingStub)
         {
-            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isInstantiatingStub, false);
+            TypeAndMethod key = new TypeAndMethod(method.ConstrainedType, method, isInstantiatingStub, false, false);
             return _methodSignatures.GetOrAdd(new MethodFixupKey(fixupKind, key));
         }
 
@@ -558,19 +561,22 @@ namespace ILCompiler.DependencyAnalysis
             public readonly ReadyToRunHelper Helper;
             public readonly ImportSectionNode ContainingImportSection;
             public readonly bool UseVirtualCall;
+            public readonly bool UseJumpableStub;
 
-            public ImportThunkKey(ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall)
+            public ImportThunkKey(ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
             {
                 Helper = helper;
                 ContainingImportSection = containingImportSection;
                 UseVirtualCall = useVirtualCall;
+                UseJumpableStub = useJumpableStub;
             }
 
             public bool Equals(ImportThunkKey other)
             {
                 return Helper == other.Helper &&
                     ContainingImportSection == other.ContainingImportSection &&
-                    UseVirtualCall == other.UseVirtualCall;
+                    UseVirtualCall == other.UseVirtualCall &&
+                    UseJumpableStub == other.UseJumpableStub;
             }
 
             public override bool Equals(object obj)
@@ -582,15 +588,16 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return unchecked(31 * Helper.GetHashCode() +
                     31 * ContainingImportSection.GetHashCode() +
-                    31 * UseVirtualCall.GetHashCode());
+                    31 * UseVirtualCall.GetHashCode() +
+                    31 * UseJumpableStub.GetHashCode());
             }
         }
 
         private NodeCache<ImportThunkKey, ImportThunk> _importThunks;
 
-        public ImportThunk ImportThunk(ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall)
+        public ImportThunk ImportThunk(ReadyToRunHelper helper, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
         {
-            ImportThunkKey thunkKey = new ImportThunkKey(helper, containingImportSection, useVirtualCall);
+            ImportThunkKey thunkKey = new ImportThunkKey(helper, containingImportSection, useVirtualCall, useJumpableStub);
             return _importThunks.GetOrAdd(thunkKey);
         }
 
@@ -693,13 +700,13 @@ namespace ILCompiler.DependencyAnalysis
                 Import personalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ReadyToRunHelper.PersonalityRoutine));
                 PersonalityRoutine = new ImportThunk(this,
-                    ReadyToRunHelper.PersonalityRoutine, EagerImports, useVirtualCall: false);
+                    ReadyToRunHelper.PersonalityRoutine, EagerImports, useVirtualCall: false, useJumpableStub: false);
                 graph.AddRoot(PersonalityRoutine, "Personality routine is faster to root early rather than referencing it from each unwind info");
 
                 Import filterFuncletPersonalityRoutineImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                     ReadyToRunHelper.PersonalityRoutineFilterFunclet));
                 FilterFuncletPersonalityRoutine = new ImportThunk(this,
-                    ReadyToRunHelper.PersonalityRoutineFilterFunclet, EagerImports, useVirtualCall: false);
+                    ReadyToRunHelper.PersonalityRoutineFilterFunclet, EagerImports, useVirtualCall: false, useJumpableStub: false);
                 graph.AddRoot(FilterFuncletPersonalityRoutine, "Filter funclet personality routine is faster to root early rather than referencing it from each unwind info");
             }
 

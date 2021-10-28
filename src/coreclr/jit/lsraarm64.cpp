@@ -308,6 +308,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
         case GT_DIV:
         case GT_MULHI:
+        case GT_MUL_LONG:
         case GT_UDIV:
         {
             srcCount = BuildBinaryUses(tree->AsOp());
@@ -618,8 +619,8 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTreeBoundsChk* node = tree->AsBoundsChk();
             // Consumes arrLen & index - has no result
             assert(dstCount == 0);
-            srcCount = BuildOperandUses(node->gtIndex);
-            srcCount += BuildOperandUses(node->gtArrLen);
+            srcCount = BuildOperandUses(node->GetIndex());
+            srcCount += BuildOperandUses(node->GetArrayLength());
         }
         break;
 

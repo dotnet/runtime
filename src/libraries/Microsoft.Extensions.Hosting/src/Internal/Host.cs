@@ -79,15 +79,22 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
+            // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
+            Task backgroundTask = backgroundService.ExecuteTask;
+            if (backgroundTask == null)
+            {
+                return;
+            }
+
             try
             {
-                await backgroundService.ExecuteTask.ConfigureAwait(false);
+                await backgroundTask.ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 // When the host is being stopped, it cancels the background services.
                 // This isn't an error condition, so don't log it as an error.
-                if (_stopCalled && backgroundService.ExecuteTask.IsCanceled && ex is OperationCanceledException)
+                if (_stopCalled && backgroundTask.IsCanceled && ex is OperationCanceledException)
                 {
                     return;
                 }

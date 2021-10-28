@@ -463,7 +463,7 @@ namespace System.Reflection.Emit
             Span<object?> arguments = default;
             if (actualCount != 0)
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig);
+                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig.Arguments);
             }
 
             object? retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);

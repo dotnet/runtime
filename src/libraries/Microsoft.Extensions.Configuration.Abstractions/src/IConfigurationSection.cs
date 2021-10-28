@@ -21,6 +21,6 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets or sets the section value.
         /// </summary>
-        string Value { get; set; }
+        string? Value { get; set; }
     }
 }

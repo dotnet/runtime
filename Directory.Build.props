@@ -62,6 +62,8 @@
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
     <NetFrameworkToolCurrent>net472</NetFrameworkToolCurrent>
+    <!-- Don't build for NETFramework during source-build. -->
+    <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
   </PropertyGroup>
 
   <PropertyGroup>
@@ -86,10 +88,7 @@
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
     <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WorkloadBuildTasksDir>
     <MonoAOTCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoAOTCompiler', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoAOTCompilerDir>
-    <RuntimeConfigParserDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'RuntimeConfigParser', 'Debug', '$(NetCoreAppToolCurrent)'))</RuntimeConfigParserDir>
-    <JsonToItemsTaskFactoryDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'JsonToItemsTaskFactory', 'Debug', '$(NetCoreAppToolCurrent)'))</JsonToItemsTaskFactoryDir>
-    <ILStripTaskDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ILStrip', 'Debug', '$(NetCoreAppToolCurrent)'))</ILStripTaskDir>
-
+    <MonoTargetsTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MonoTargetsTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MonoTargetsTasksDir>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <InstallerTasksAssemblyPath Condition="'$(MSBuildRuntimeType)' != 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'installer.tasks', 'Debug', '$(NetFrameworkToolCurrent)', 'installer.tasks.dll'))</InstallerTasksAssemblyPath>
     <Crossgen2SdkOverridePropsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.props'))</Crossgen2SdkOverridePropsPath>
@@ -100,9 +99,7 @@
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <WorkloadBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WorkloadBuildTasksDir)', 'WorkloadBuildTasks.dll'))</WorkloadBuildTasksAssemblyPath>
     <MonoAOTCompilerTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoAOTCompilerDir)', 'MonoAOTCompiler.dll'))</MonoAOTCompilerTasksAssemblyPath>
-    <RuntimeConfigParserTasksAssemblyPath>$([MSBuild]::NormalizePath('$(RuntimeConfigParserDir)', 'RuntimeConfigParser.dll'))</RuntimeConfigParserTasksAssemblyPath>
-    <JsonToItemsTaskFactoryTasksAssemblyPath>$([MSBuild]::NormalizePath('$(JsonToItemsTaskFactoryDir)', 'JsonToItemsTaskFactory.dll'))</JsonToItemsTaskFactoryTasksAssemblyPath>
-    <ILStripTasksAssemblyPath>$([MSBuild]::NormalizePath('$(ILStripTaskDir)', 'ILStrip.dll'))</ILStripTasksAssemblyPath>
+    <MonoTargetsTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MonoTargetsTasksDir)', 'MonoTargetsTasks.dll'))</MonoTargetsTasksAssemblyPath>
     <ILAsmToolPath Condition="'$(DotNetBuildFromSource)' == 'true'">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)'))</ILAsmToolPath>
   </PropertyGroup>
 
@@ -216,6 +213,10 @@
     <MicrosoftNetCoreAppRuntimePackRidDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackDir)', 'runtimes', '$(PackageRID)'))</MicrosoftNetCoreAppRuntimePackRidDir>
     <MicrosoftNetCoreAppRuntimePackRidLibTfmDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'lib', '$(NetCoreAppCurrent)'))</MicrosoftNetCoreAppRuntimePackRidLibTfmDir>
     <MicrosoftNetCoreAppRuntimePackNativeDir>$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidDir)', 'native'))</MicrosoftNetCoreAppRuntimePackNativeDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(Configuration)', 'corehost'))</DotNetHostBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->
