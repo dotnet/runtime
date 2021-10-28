@@ -3820,33 +3820,29 @@ ValueNum ValueNumStore::VNApplySelectorsTypeCheck(ValueNum elem, var_types indTy
 }
 
 //------------------------------------------------------------------------
-// VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `srcVN`
+// VNApplySelectorsAssignTypeCoerce: Compute the value number corresponding to `value`
 //    being written using an indirection of 'dstIndType'.
 //
 // Arguments:
-//    srcVN - value number for the value being stored;
+//    value      - value number for the value being stored;
 //    dstIndType - type of the indirection storing the value to the memory;
-//    block - block where the assignment occurs
 //
 // Return Value:
 //    The value number corresponding to memory after the assignment.
 //
 // Notes: It may insert a cast to dstIndType or return a unique value number for an incompatible indType.
 //
-ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum srcVN, var_types dstIndType, BasicBlock* block)
+ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum value, var_types dstIndType)
 {
-    var_types srcType = TypeOfVN(srcVN);
-
-    ValueNum dstVN;
+    var_types srcType = TypeOfVN(value);
 
     // Check if the elemTyp is matching/compatible.
     if (dstIndType != srcType)
     {
-        bool isConstant = IsVNConstant(srcVN);
+        bool isConstant = IsVNConstant(value);
         if (isConstant && (srcType == genActualType(dstIndType)))
         {
             // (i.e. We recorded a constant of TYP_INT for a TYP_BYTE field)
-            dstVN = srcVN;
         }
         else
         {
@@ -3855,7 +3851,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum srcVN, var_typ
             if (varTypeIsStruct(dstIndType))
             {
                 // return a new unique value number
-                dstVN = VNMakeNormalUnique(srcVN);
+                value = VNMakeNormalUnique(value);
 
                 JITDUMP("    *** Mismatched types in VNApplySelectorsAssignTypeCoerce (indType is TYP_STRUCT)\n");
             }
@@ -3864,44 +3860,40 @@ ValueNum ValueNumStore::VNApplySelectorsAssignTypeCoerce(ValueNum srcVN, var_typ
                 // We are trying to write an 'elem' of type 'elemType' using 'indType' store
 
                 // insert a cast of elem to 'indType'
-                dstVN = VNForCast(srcVN, dstIndType, srcType);
+                value = VNForCast(value, dstIndType, srcType);
 
                 JITDUMP("    Cast to %s inserted in VNApplySelectorsAssignTypeCoerce (elemTyp is %s)\n",
                         varTypeName(dstIndType), varTypeName(srcType));
             }
         }
     }
-    else
-    {
-        dstVN = srcVN;
-    }
-    return dstVN;
+
+    return value;
 }
 
 //------------------------------------------------------------------------
 // VNApplySelectorsAssign: Compute the value number corresponding to "map" but with
-//    the element at "fieldSeq" updated to have type "elem"; this is the new memory
-//    value for an assignment of value "elem" into the memory at location "fieldSeq"
-//    that occurs in block "block" and has type "indType" (so long as the selectors
+//    the element at "fieldSeq" updated to be equal to "'value' written as 'indType'";
+//    this is the new memory value for an assignment of "value" into the memory at
+//    location "fieldSeq" that occurs in the current block (so long as the selectors
 //    into that memory occupy disjoint locations, which is true for GcHeap).
 //
 // Arguments:
-//    vnk - Identifies whether to recurse to Conservative or Liberal value numbers
-//          when recursing through phis
-//    map - Value number for the field map before the assignment
-//    elem - Value number for the value being stored (to the given field)
-//    indType - Type of the indirection storing the value to the field
-//    block - Block where the assignment occurs
+//    vnk        - identifies whether to recurse to Conservative or Liberal value numbers
+//                 when recursing through phis
+//    map        - value number for the field map before the assignment
+//    value      - value number for the value being stored (to the given field)
+//    dstIndType - type of the indirection storing the value
 //
 // Return Value:
-//    The value number corresponding to memory after the assignment.
-
+//    The value number corresponding to memory ("map") after the assignment.
+//
 ValueNum ValueNumStore::VNApplySelectorsAssign(
-    ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum elem, var_types indType, BasicBlock* block)
+    ValueNumKind vnk, ValueNum map, FieldSeqNode* fieldSeq, ValueNum value, var_types dstIndType)
 {
     if (fieldSeq == nullptr)
     {
-        return VNApplySelectorsAssignTypeCoerce(elem, indType, block);
+        return VNApplySelectorsAssignTypeCoerce(value, dstIndType);
     }
     else
     {
@@ -3911,7 +3903,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         // These will occur, at least, in struct static expressions, for method table offsets.
         if (fieldSeq->IsPseudoField())
         {
-            return VNApplySelectorsAssign(vnk, map, fieldSeq->m_next, elem, indType, block);
+            return VNApplySelectorsAssign(vnk, map, fieldSeq->m_next, value, dstIndType);
         }
 
         // Otherwise, fldHnd is a real field handle.
@@ -3921,7 +3913,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
         CorInfoType fieldCit  = m_pComp->info.compCompHnd->getFieldType(fldHnd);
         var_types   fieldType = JITtype2varType(fieldCit);
 
-        ValueNum elemAfter;
+        ValueNum valueAfter;
         if (fieldSeq->m_next)
         {
 #ifdef DEBUG
@@ -3934,7 +3926,7 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
             }
 #endif
             ValueNum fseqMap = VNForMapSelect(vnk, fieldType, map, fldHndVN);
-            elemAfter        = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->m_next, elem, indType, block);
+            valueAfter       = VNApplySelectorsAssign(vnk, fseqMap, fieldSeq->m_next, value, dstIndType);
         }
         else
         {
@@ -3951,10 +3943,10 @@ ValueNum ValueNumStore::VNApplySelectorsAssign(
                        varTypeName(fieldType));
             }
 #endif
-            elemAfter = VNApplySelectorsAssignTypeCoerce(elem, indType, block);
+            valueAfter = VNApplySelectorsAssignTypeCoerce(value, dstIndType);
         }
 
-        ValueNum newMap = VNForMapStore(fieldType, map, fldHndVN, elemAfter);
+        ValueNum newMap = VNForMapStore(fieldType, map, fldHndVN, valueAfter);
         return newMap;
     }
 }
@@ -4159,8 +4151,7 @@ ValueNum Compiler::fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
     {
         // Note that this does the right thing if "fldSeq" is null -- returns last "rhs" argument.
         // This is the value that should be stored at "arr[inx]".
-        newValAtInx =
-            vnStore->VNApplySelectorsAssign(VNK_Liberal, hAtArrTypeAtArrAtInx, fldSeq, rhsVN, indType, compCurBB);
+        newValAtInx = vnStore->VNApplySelectorsAssign(VNK_Liberal, hAtArrTypeAtArrAtInx, fldSeq, rhsVN, indType);
 
         var_types arrElemFldType = arrElemType; // Uses arrElemType unless we has a non-null fldSeq
         if (vnStore->IsVNFunc(newValAtInx))
@@ -7495,14 +7486,14 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
                         // and we won't have any other values in the map
                         ValueNumPair uniqueMap;
                         uniqueMap.SetBoth(vnStore->VNForExpr(compCurBB, lclVarTree->TypeGet()));
-                        rhsVNPair = vnStore->VNPairApplySelectorsAssign(uniqueMap, lhsFldSeq, rhsVNPair,
-                                                                        lclVarTree->TypeGet(), compCurBB);
+                        rhsVNPair =
+                            vnStore->VNPairApplySelectorsAssign(uniqueMap, lhsFldSeq, rhsVNPair, lclVarTree->TypeGet());
                     }
                     else
                     {
                         ValueNumPair oldLhsVNPair = lhsVarDsc->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
                         rhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lhsFldSeq, rhsVNPair,
-                                                                        lclVarTree->TypeGet(), compCurBB);
+                                                                        lclVarTree->TypeGet());
                     }
                 }
 
@@ -8143,7 +8134,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclFld->GetSsaNum())->m_vnPair;
                                 newLhsVNPair = vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, lclFld->GetFieldSeq(),
                                                                                    rhsVNPair, // Pre-value.
-                                                                                   lclFld->TypeGet(), compCurBB);
+                                                                                   lclFld->TypeGet());
                             }
                         }
                         lvaTable[lclFld->GetLclNum()].GetPerSsaData(lclDefSsaNum)->m_vnPair = newLhsVNPair;
@@ -8270,7 +8261,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                                                         ->m_vnPair;
                                         newLhsVNPair =
                                             vnStore->VNPairApplySelectorsAssign(oldLhsVNPair, fieldSeq, rhsVNPair,
-                                                                                lhs->TypeGet(), compCurBB);
+                                                                                lhs->TypeGet());
                                     }
 
                                     unsigned lclDefSsaNum = GetSsaNumForLocalVarDef(lclVarTree);
@@ -8452,7 +8443,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     {
                                         storeVal =
                                             vnStore->VNApplySelectorsAssign(VNK_Liberal, valAtAddr, fldSeq->m_next,
-                                                                            storeVal, indType, compCurBB);
+                                                                            storeVal, indType);
                                     }
 
                                     // From which we can construct the new ValueNumber for 'fldMap at normVal'
@@ -8468,11 +8459,11 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                     {
                                         storeVal =
                                             vnStore->VNApplySelectorsAssign(VNK_Liberal, fldMapVN, fldSeq->m_next,
-                                                                            storeVal, indType, compCurBB);
+                                                                            storeVal, indType);
                                     }
 
                                     newFldMapVN = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap],
-                                                                                  fldSeq, storeVal, indType, compCurBB);
+                                                                                  fldSeq, storeVal, indType);
                                 }
 
                                 // It is not strictly necessary to set the lhs value number,
@@ -8482,7 +8473,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 // Update the field map for firstField in GcHeap to this new value.
                                 ValueNum heapVN =
                                     vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], firstFieldOnly,
-                                                                    newFldMapVN, indType, compCurBB);
+                                                                    newFldMapVN, indType);
 
                                 recordGcHeapStore(tree, heapVN DEBUGARG("StoreField"));
                             }
@@ -8540,7 +8531,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
                     ValueNum storeVal = rhsVNPair.GetLiberal(); // The value number from the rhs of the assignment
                     storeVal = vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeqForStaticVar,
-                                                               storeVal, lhs->TypeGet(), compCurBB);
+                                                               storeVal, lhs->TypeGet());
 
                     // It is not strictly necessary to set the lhs value number,
                     // but the dumps read better with it set to the 'storeVal' that we just computed
