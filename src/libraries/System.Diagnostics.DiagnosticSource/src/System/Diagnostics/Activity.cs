@@ -1772,7 +1772,7 @@ namespace System.Diagnostics
         /// Sets the bytes in 'outBytes' to be random values. outBytes.Length must be either 8 or 16 bytes.
         /// </summary>
         /// <param name="outBytes"></param>
-        internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
+        internal static void SetToRandomBytes(Span<byte> outBytes)
         {
             Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
 #if NET6_0_OR_GREATER
@@ -1780,11 +1780,11 @@ namespace System.Diagnostics
 #else
             RandomNumberGenerator r = RandomNumberGenerator.Current;
 
-            Unsafe.WriteUnaligned(ref outBytes[0],  r.Next());
+            Unsafe.WriteUnaligned(ref outBytes[0], r.Next());
 
             if (outBytes.Length == 16)
             {
-                Unsafe.WriteUnaligned(ref outBytes[8],  r.Next());
+                Unsafe.WriteUnaligned(ref outBytes[8], r.Next());
             }
 #endif
         }
