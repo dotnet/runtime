@@ -99,11 +99,9 @@ namespace System.Numerics.Tests
         [RequiresPreviewFeatures]
         public static T Sqrt<T>(T value) where T : struct, INumber<T>
         {
-            unchecked
-            {
-                double dValue = Create<T,double>(value);
-                return (T)(dynamic)Math.Sqrt(dValue);
-            }
+            double dValue = Create<T, double>(value);
+            double dSqrt = Math.Sqrt(dValue);
+            return T.CreateTruncating<double>(dSqrt);
         }
 
         [RequiresPreviewFeatures]
