@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tracing
         //
         // These PInvokes are used by the configuration APIs to interact with EventPipe.
         //
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Enable")]
         private static unsafe extern ulong Enable(
             char* outputFile,
             EventPipeSerializationFormat format,
@@ -22,7 +22,7 @@ namespace System.Diagnostics.Tracing
             EventPipeProviderConfigurationNative* providers,
             uint numProviders);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "EventPipeInternal_Disable")]
         internal static extern void Disable(ulong sessionID);
 
         //

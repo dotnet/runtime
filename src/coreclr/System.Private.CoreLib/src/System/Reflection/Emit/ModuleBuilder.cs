@@ -190,7 +190,7 @@ namespace System.Reflection.Emit
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMModule_GetStringConstant", CharSet = CharSet.Unicode)]
         private static extern int GetStringConstant(QCallModule module, string str, int length);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMModule_SetFieldRVAContent", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMModule_SetFieldRVAContent")]
         internal static extern void SetFieldRVAContent(QCallModule module, int fdToken, byte[]? data, int length);
 
         #endregion

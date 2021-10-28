@@ -260,7 +260,7 @@ namespace System
             return instantiatedObject!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter")]
         private static extern void CreateInstanceForAnotherGenericParameter(
             QCallTypeHandle baseType,
             IntPtr* pTypeHandles,
@@ -297,7 +297,7 @@ namespace System
             ctorIsPublic = fCtorIsPublicTemp != Interop.BOOL.FALSE;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetActivationInfo", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetActivationInfo")]
         private static extern void GetActivationInfo(
             ObjectHandleOnStack pRuntimeType,
             delegate*<void*, object>* ppfnAllocator,
@@ -403,7 +403,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Type[]? GetInterfaces(RuntimeType type);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetConstraints")]
         private static extern void GetConstraints(QCallTypeHandle handle, ObjectHandleOnStack types);
 
         internal Type[] GetConstraints()
@@ -416,7 +416,7 @@ namespace System
             return types!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "QCall_GetGCHandleForTypeHandle", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "QCall_GetGCHandleForTypeHandle")]
         private static extern IntPtr GetGCHandle(QCallTypeHandle handle, GCHandleType type);
 
         internal IntPtr GetGCHandle(GCHandleType type)
@@ -425,7 +425,7 @@ namespace System
             return GetGCHandle(new QCallTypeHandle(ref nativeHandle), type);
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "QCall_FreeGCHandleForTypeHandle", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "QCall_FreeGCHandleForTypeHandle")]
         private static extern IntPtr FreeGCHandle(QCallTypeHandle typeHandle, IntPtr objHandle);
 
         internal IntPtr FreeGCHandle(IntPtr objHandle)
@@ -440,7 +440,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern int GetNumVirtualsAndStaticVirtuals(RuntimeType type);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_VerifyInterfaceIsImplemented", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_VerifyInterfaceIsImplemented")]
         private static extern void VerifyInterfaceIsImplemented(QCallTypeHandle handle, QCallTypeHandle interfaceHandle);
 
         internal void VerifyInterfaceIsImplemented(RuntimeTypeHandle interfaceHandle)
@@ -450,7 +450,7 @@ namespace System
             VerifyInterfaceIsImplemented(new QCallTypeHandle(ref nativeHandle), new QCallTypeHandle(ref nativeInterfaceHandle));
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInterfaceMethodImplementation", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInterfaceMethodImplementation")]
         private static extern RuntimeMethodHandleInternal GetInterfaceMethodImplementation(QCallTypeHandle handle, QCallTypeHandle interfaceHandle, RuntimeMethodHandleInternal interfaceMethodHandle);
 
         internal RuntimeMethodHandleInternal GetInterfaceMethodImplementation(RuntimeTypeHandle interfaceHandle, RuntimeMethodHandleInternal interfaceMethodHandle)
@@ -479,7 +479,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsByRefLike(RuntimeType type);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsVisible", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsVisible")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool _IsVisible(QCallTypeHandle typeHandle);
 
@@ -491,7 +491,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsValueType(RuntimeType type);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_ConstructName")]
         private static extern void ConstructName(QCallTypeHandle handle, TypeNameFormatFlags formatFlags, StringHandleOnStack retString);
 
         internal string ConstructName(TypeNameFormatFlags formatFlags)
@@ -567,7 +567,7 @@ namespace System
             return type!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInstantiation", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetInstantiation")]
         internal static extern void GetInstantiation(QCallTypeHandle type, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
 
         internal RuntimeType[] GetInstantiationInternal()
@@ -586,7 +586,7 @@ namespace System
             return types!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_Instantiate", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_Instantiate")]
         private static extern void Instantiate(QCallTypeHandle handle, IntPtr* pInst, int numGenericArgs, ObjectHandleOnStack type);
 
         internal RuntimeType Instantiate(RuntimeType inst)
@@ -614,7 +614,7 @@ namespace System
             }
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeArray", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeArray")]
         private static extern void MakeArray(QCallTypeHandle handle, int rank, ObjectHandleOnStack type);
 
         internal RuntimeType MakeArray(int rank)
@@ -625,7 +625,7 @@ namespace System
             return type!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeSZArray", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeSZArray")]
         private static extern void MakeSZArray(QCallTypeHandle handle, ObjectHandleOnStack type);
 
         internal RuntimeType MakeSZArray()
@@ -636,7 +636,7 @@ namespace System
             return type!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeByRef", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakeByRef")]
         private static extern void MakeByRef(QCallTypeHandle handle, ObjectHandleOnStack type);
 
         internal RuntimeType MakeByRef()
@@ -647,7 +647,7 @@ namespace System
             return type!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakePointer", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_MakePointer")]
         private static extern void MakePointer(QCallTypeHandle handle, ObjectHandleOnStack type);
 
         internal RuntimeType MakePointer()
@@ -658,13 +658,13 @@ namespace System
             return type!;
         }
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_IsCollectible")]
         internal static extern Interop.BOOL IsCollectible(QCallTypeHandle handle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool HasInstantiation(RuntimeType type);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition", CharSet = CharSet.Unicode)]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeTypeHandle_GetGenericTypeDefinition")]
         private static extern void GetGenericTypeDefinition(QCallTypeHandle type, ObjectHandleOnStack retType);
 
         internal static RuntimeType GetGenericTypeDefinition(RuntimeType type)
