@@ -557,7 +557,7 @@ namespace System.Net.Security
                 // SECURITY: selectedCert ref if not null is a safe object that does not depend on possible **user** inherited X509Certificate type.
                 //
                 byte[]? guessedThumbPrint = selectedCert?.GetCertHash();
-                SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy, false);
+                SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.IsServer, _sslAuthenticationOptions.EncryptionPolicy);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
