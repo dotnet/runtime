@@ -13,7 +13,9 @@ namespace System.IO.Tests
     {
         // OSX has the limitation of setting upto 2262-04-11T23:47:16 (long.Max) date.
         // 32bit Unix has time_t up to ~ 2038.
-        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (!PlatformDetection.Is32BitProcess && !PlatformDetection.IsOSXLike);
+        private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows ||
+                                                       (!PlatformDetection.Is32BitProcess &&
+                                                        !PlatformDetection.IsOSXLike);
 
         protected override string GetExistingItem()
         {
@@ -64,13 +66,13 @@ namespace System.IO.Tests
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
-            if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
+            if (IOInputs.SupportsGettingCreationTime &&
+                (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))
             {
                 yield return TimeFunction.Create(
                     File.SetCreationTime,
                     File.GetCreationTime,
                     DateTimeKind.Local);
-#if TargetsWindows
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
@@ -83,12 +85,10 @@ namespace System.IO.Tests
                         return File.GetCreationTime(fileHandle);
                     },
                     DateTimeKind.Local);
-#endif
                 yield return TimeFunction.Create(
                     File.SetCreationTimeUtc,
                     File.GetCreationTimeUtc,
                     DateTimeKind.Unspecified);
-#if TargetsWindows
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
@@ -101,12 +101,10 @@ namespace System.IO.Tests
                         return File.GetCreationTimeUtc(fileHandle);
                     },
                     DateTimeKind.Unspecified);
-#endif
                 yield return TimeFunction.Create(
                     File.SetCreationTimeUtc,
                     File.GetCreationTimeUtc,
                     DateTimeKind.Utc);
-#if TargetsWindows
                 yield return TimeFunction.Create(
                     (path, time) =>
                     {
@@ -120,12 +118,11 @@ namespace System.IO.Tests
                     },
                     DateTimeKind.Utc);
             }
-#endif
-                yield return TimeFunction.Create(
-                    File.SetLastAccessTime,
-                    File.GetLastAccessTime,
-                    DateTimeKind.Local);
-#if TargetsWindows
+
+            yield return TimeFunction.Create(
+                File.SetLastAccessTime,
+                File.GetLastAccessTime,
+                DateTimeKind.Local);
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -138,12 +135,10 @@ namespace System.IO.Tests
                     return File.GetLastAccessTime(fileHandle);
                 },
                 DateTimeKind.Local);
-#endif
-                yield return TimeFunction.Create(
-                    File.SetLastAccessTimeUtc,
-                    File.GetLastAccessTimeUtc,
-                    DateTimeKind.Unspecified);
-#if TargetsWindows
+            yield return TimeFunction.Create(
+                File.SetLastAccessTimeUtc,
+                File.GetLastAccessTimeUtc,
+                DateTimeKind.Unspecified);
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -156,12 +151,10 @@ namespace System.IO.Tests
                     return File.GetLastAccessTimeUtc(fileHandle);
                 },
                 DateTimeKind.Unspecified);
-#endif
-                yield return TimeFunction.Create(
-                    File.SetLastAccessTimeUtc,
-                    File.GetLastAccessTimeUtc,
-                    DateTimeKind.Utc);
-#if TargetsWindows
+            yield return TimeFunction.Create(
+                File.SetLastAccessTimeUtc,
+                File.GetLastAccessTimeUtc,
+                DateTimeKind.Utc);
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -174,12 +167,10 @@ namespace System.IO.Tests
                     return File.GetLastAccessTimeUtc(fileHandle);
                 },
                 DateTimeKind.Utc);
-#endif
-                yield return TimeFunction.Create(
-                    File.SetLastWriteTime,
-                    File.GetLastWriteTime,
-                    DateTimeKind.Local);
-#if TargetsWindows
+            yield return TimeFunction.Create(
+                File.SetLastWriteTime,
+                File.GetLastWriteTime,
+                DateTimeKind.Local);
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -192,12 +183,10 @@ namespace System.IO.Tests
                     return File.GetLastWriteTime(fileHandle);
                 },
                 DateTimeKind.Local);
-#endif
-                yield return TimeFunction.Create(
-                    File.SetLastWriteTimeUtc,
-                    File.GetLastWriteTimeUtc,
-                    DateTimeKind.Unspecified);
-#if TargetsWindows
+            yield return TimeFunction.Create(
+                File.SetLastWriteTimeUtc,
+                File.GetLastWriteTimeUtc,
+                DateTimeKind.Unspecified);
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -210,12 +199,10 @@ namespace System.IO.Tests
                     return File.GetLastWriteTimeUtc(fileHandle);
                 },
                 DateTimeKind.Unspecified);
-#endif
-                yield return TimeFunction.Create(
-                    File.SetLastWriteTimeUtc,
-                    File.GetLastWriteTimeUtc,
-                    DateTimeKind.Utc);
-#if TargetsWindows
+            yield return TimeFunction.Create(
+                File.SetLastWriteTimeUtc,
+                File.GetLastWriteTimeUtc,
+                DateTimeKind.Utc);
             yield return TimeFunction.Create(
                 (path, time) =>
                 {
@@ -228,8 +215,6 @@ namespace System.IO.Tests
                     return File.GetLastWriteTimeUtc(fileHandle);
                 },
                 DateTimeKind.Utc);
-#endif
-            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
