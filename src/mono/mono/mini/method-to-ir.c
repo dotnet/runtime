@@ -3240,6 +3240,27 @@ handle_unbox_gsharedvt (MonoCompile *cfg, MonoClass *klass, MonoInst *obj)
 }
 
 /*
+ * Returns NULL and sets the cfg exception on error
+ */
+static MonoInst*
+handle_alloc_using_icall (MonoCompile *cfg, MonoImage *image, guint32 ctor_token)
+{
+	/* Shouldn't need this for AOT - all the referenced assemblies should be loaded */
+	g_assert (!cfg->compile_aot);
+	/* N.B. This code path doesn't deal with generic instances, or gshared */
+
+	MonoInst *inst = NULL;
+	
+	MonoInst *iargs[2];
+	EMIT_NEW_IMAGECONST (cfg, iargs[0], image);
+	EMIT_NEW_ICONST (cfg, iargs[1], ctor_token);
+	
+	inst = mono_emit_jit_icall (cfg, mono_helper_newobj_from_token, iargs);
+
+	return inst;
+}
+
+/*
  * Returns NULL and set the cfg exception on error.
  */
 static MonoInst*
@@ -8761,6 +8782,7 @@ calli_end:
 			MonoInst this_ins;
 			MonoInst *alloc;
 			MonoInst *vtable_arg = NULL;
+			gboolean use_icall_for_alloc = FALSE;
 
 			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
 			CHECK_CFG_ERROR;
@@ -8770,8 +8792,12 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (!mono_class_init_internal (cmethod->klass))
-				TYPE_LOAD_ERROR (cmethod->klass);
+			use_icall_for_alloc = !cfg->compile_aot && m_class_has_special_jit_flags (cmethod->klass) &&
+				((mono_class_get_special_jit_flags (cmethod->klass) & MONO_SPECIAL_JIT_USE_ICALL_NEWOBJ) != 0);
+
+			if (G_LIKELY (!use_icall_for_alloc))
+				if (!mono_class_init_internal (cmethod->klass))
+					TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
@@ -8941,6 +8967,9 @@ calli_end:
 					 */
 				} else if (context_used) {
 					alloc = handle_alloc (cfg, cmethod->klass, FALSE, context_used);
+					*sp = alloc;
+				} else if (G_UNLIKELY (use_icall_for_alloc)) {
+					alloc = handle_alloc_using_icall (cfg, image, token);
 					*sp = alloc;
 				} else {
 					MonoVTable *vtable = NULL;

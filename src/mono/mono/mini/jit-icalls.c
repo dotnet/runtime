@@ -1151,6 +1151,23 @@ mono_helper_newobj_mscorlib (guint32 idx)
 	return obj;
 }
 
+MonoObject*
+mono_helper_newobj_from_token (MonoImage *image, guint32 ctor_token)
+{
+	ERROR_DECL (error);
+	MonoMethod *ctor = mono_get_method_checked (image, ctor_token, NULL, NULL/*context*/, error);
+	if (!is_ok (error)) {
+		mono_error_set_pending_exception (error);
+		return NULL;
+	}
+	MonoClass *klass = ctor->klass;
+	MonoObject *obj = mono_object_new_checked (klass, error);
+	if (!is_ok (error))
+		mono_error_set_pending_exception (error);
+	return obj;
+}
+	
+
 /*
  * On some architectures, gdb doesn't like encountering the cpu breakpoint instructions
  * in generated code. So instead we emit a call to this function and place a gdb

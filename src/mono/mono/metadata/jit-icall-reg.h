@@ -206,6 +206,7 @@ MONO_JIT_ICALL (mono_helper_compile_generic_method) \
 MONO_JIT_ICALL (mono_helper_ldstr) \
 MONO_JIT_ICALL (mono_helper_ldstr_mscorlib) \
 MONO_JIT_ICALL (mono_helper_newobj_mscorlib) \
+MONO_JIT_ICALL (mono_helper_newobj_from_token) \
 MONO_JIT_ICALL (mono_helper_stelem_ref_check) \
 MONO_JIT_ICALL (mono_init_vtable_slot) \
 MONO_JIT_ICALL (mono_interp_entry_from_trampoline) \

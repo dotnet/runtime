@@ -114,6 +114,8 @@ ICALL_EXPORT MonoString *mono_helper_ldstr_mscorlib (guint32 idx);
 
 ICALL_EXPORT MonoObject *mono_helper_newobj_mscorlib (guint32 idx);
 
+ICALL_EXPORT MonoObject *mono_helper_newobj_from_token (MonoImage *image, guint32 ctor_token);
+
 ICALL_EXPORT double mono_fsub (double a, double b);
 
 ICALL_EXPORT double mono_fadd (double a, double b);
