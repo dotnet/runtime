@@ -90,7 +90,7 @@
       <_MonoWorkloadRuntimePackPackageVersion>$(RuntimePackInWorkloadVersion)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>
 
-    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetFramework)' == 'net7.0'">
+    <ItemGroup Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetFramework)' == '${NetCoreAppCurrent}'">
       <MonoRuntimePackRids Include="
         linux-x64;
         win-x64;
