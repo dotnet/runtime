@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.DependencyModel
             reader.ReadStartObject();
 
             string runtime = string.Empty;
-            string? framework = string.Empty;
+            string framework = string.Empty;
             bool isPortable = true;
             string? runtimeTargetName = null;
             string? runtimeSignature = null;

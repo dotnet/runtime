@@ -7,6 +7,14 @@ namespace Microsoft.Extensions.DependencyModel
     {
         public ResourceAssembly(string path, string locale)
         {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException(null, nameof(path));
+            }
+            if (string.IsNullOrEmpty(locale))
+            {
+                throw new ArgumentException(null, nameof(locale));
+            }
             Locale = locale;
             Path = path;
         }

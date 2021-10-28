@@ -14,6 +14,14 @@ namespace Microsoft.Extensions.DependencyModel
         public RuntimeFallbacks(string runtime, params string?[] fallbacks) : this(runtime, (IEnumerable<string?>)fallbacks) { }
         public RuntimeFallbacks(string runtime, IEnumerable<string?> fallbacks)
         {
+            if (string.IsNullOrEmpty(runtime))
+            {
+                throw new ArgumentException(null, nameof(runtime));
+            }
+            if (fallbacks == null)
+            {
+                throw new ArgumentNullException(nameof(fallbacks));
+            }
             Runtime = runtime;
             Fallbacks = fallbacks.ToArray();
         }
