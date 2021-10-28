@@ -2276,7 +2276,33 @@ namespace Mono.Linker.Dataflow
 
 		static BindingFlags? GetBindingFlagsFromValue (ValueNode? parameter) => (BindingFlags?) parameter.AsConstInt ();
 
-		static bool BindingFlagsAreUnsupported (BindingFlags? bindingFlags) => bindingFlags == null || (bindingFlags & BindingFlags.IgnoreCase) == BindingFlags.IgnoreCase || (int) bindingFlags > 255;
+		static bool BindingFlagsAreUnsupported (BindingFlags? bindingFlags)
+		{
+			if (bindingFlags == null)
+				return true;
+
+			// Binding flags we understand
+			const BindingFlags UnderstoodBindingFlags =
+				BindingFlags.DeclaredOnly |
+				BindingFlags.Instance |
+				BindingFlags.Static |
+				BindingFlags.Public |
+				BindingFlags.NonPublic |
+				BindingFlags.FlattenHierarchy |
+				BindingFlags.ExactBinding;
+
+			// Binding flags that don't affect binding outside InvokeMember (that we don't analyze).
+			const BindingFlags IgnorableBindingFlags =
+				BindingFlags.InvokeMethod |
+				BindingFlags.CreateInstance |
+				BindingFlags.GetField |
+				BindingFlags.SetField |
+				BindingFlags.GetProperty |
+				BindingFlags.SetProperty;
+
+			BindingFlags flags = bindingFlags.Value;
+			return (flags & ~(UnderstoodBindingFlags | IgnorableBindingFlags)) != 0;
+		}
 
 		static bool HasBindingFlag (BindingFlags? bindingFlags, BindingFlags? search) => bindingFlags != null && (bindingFlags & search) == search;
 
