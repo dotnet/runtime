@@ -1,5 +1,4 @@
 <Project>
-<<<<<<< HEAD
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.*-*" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.*-*" />
@@ -7,9 +6,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.*-*" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="6.*-*" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.*-*" />
+    <!-- Only here so that the default Directory.Build.props will not be used. -->
   </ItemGroup>
 </Project>
-=======
-    <!-- Only here so that the default Directory.Build.props will not be used. -->
-</Project>
->>>>>>> 32ad5ff8276 (Maui File location and target runtime updates (#60784))
