@@ -28,11 +28,6 @@ public class ILRewriter
 
     private void RewriteFile(string ilSource)
     {
-        if (Path.GetFileName(ilSource).Equals("b193264.il", StringComparison.OrdinalIgnoreCase))
-        {
-            Console.WriteLine("Source: {0}", ilSource);
-        }
-
         List<string> lines = new List<string>(File.ReadAllLines(ilSource));
         bool rewritten = false;
 

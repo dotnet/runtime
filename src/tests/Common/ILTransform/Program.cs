@@ -14,7 +14,7 @@ public class ILTransform
                 throw new Exception("Usage: ILTransform <test source root, e.g. d:\\git\\runtime\\src\\tests>");
             }
             string testRoot = args[0];
-            string wrapperRoot = Path.Combine(testRoot, "wrappers");
+            string wrapperRoot = Path.Combine(testRoot, "generated", "wrappers");
             string logPath = Path.Combine(wrapperRoot, "wrapper.log");
             Directory.CreateDirectory(wrapperRoot);
             foreach (string file in Directory.GetFiles(wrapperRoot))

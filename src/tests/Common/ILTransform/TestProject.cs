@@ -33,6 +33,20 @@ public struct DebugOptimize : IComparable<DebugOptimize>
     public override int GetHashCode() => HashCode.Combine(Debug, Optimize);
 }
 
+public struct TestCount
+{
+    public int Total;
+    public int Pri0;
+
+    public int Pri1 => Total - Pri0;
+
+    public TestCount(int total, int pri0)
+    {
+        Total = total;
+        Pri0 = pri0;
+    }
+}
+
 public class TestProject
 {
     public readonly string AbsolutePath;
@@ -132,33 +146,9 @@ class TestProjectStore
 
     public void GenerateExternAliases()
     {
-        Dictionary<string, int> relativePathToProjectCountMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (TestProject project in _projects)
         {
-            string endPath = Path.GetFileNameWithoutExtension(project.RelativePath);
-            string relativePath = Path.GetDirectoryName(project.RelativePath)!;
-            while (relativePath.Length > 1)
-            {
-                relativePathToProjectCountMap.TryGetValue(endPath, out int projectCount);
-                relativePathToProjectCountMap[endPath] = projectCount + 1;
-                endPath = Path.Combine(Path.GetFileNameWithoutExtension(relativePath), endPath);
-                relativePath = Path.GetDirectoryName(relativePath)!;
-            }
-        }
-        foreach (TestProject project in _projects)
-        {
-            string endPath = Path.GetFileNameWithoutExtension(project.RelativePath);
-            string relativePath = Path.GetDirectoryName(project.RelativePath)!;
-            while (relativePath.Length > 1)
-            {
-                if (relativePathToProjectCountMap[endPath] == 1)
-                {
-                    project.TestProjectAlias = TestProject.SanitizeIdentifier(endPath);
-                    break;
-                }
-                endPath = Path.Combine(Path.GetFileNameWithoutExtension(relativePath), endPath);
-                relativePath = Path.GetDirectoryName(relativePath)!;
-            }
+            project.TestProjectAlias = Path.GetFileNameWithoutExtension(project.RelativePath);
         }
     }
 
@@ -166,10 +156,11 @@ class TestProjectStore
     {
         for (int level = 1; level <= 2; level++)
         {
-            string title = string.Format("Level {0} folder partitioning:", level);
+            string title = string.Format("COUNT |  PRI0 |  PRI1 | PARTITIONING: {0}", level);
             writer.WriteLine(title);
             writer.WriteLine(new string('-', title.Length));
-            Dictionary<string, int> folderCounts = new Dictionary<string, int>();
+            Dictionary<string, TestCount> folderCounts = new Dictionary<string, TestCount>();
+
             foreach (TestProject project in _projects)
             {
                 string[] folderSplit = project.RelativePath.Split(Path.DirectorySeparatorChar);
@@ -183,12 +174,17 @@ class TestProjectStore
                     folderNameBuilder.Append(folderSplit[component]);
                 }
                 string folderName = folderNameBuilder.ToString();
-                folderCounts.TryGetValue(folderName, out int count);
-                folderCounts[folderName] = count + 1;
+                folderCounts.TryGetValue(folderName, out TestCount count);
+                count.Total++;
+                if (project.Priority != "1")
+                {
+                    count.Pri0++;
+                }
+                folderCounts[folderName] = count;
             }
-            foreach (KeyValuePair<string, int> kvp in folderCounts.OrderBy(kvp => kvp.Key))
+            foreach (KeyValuePair<string, TestCount> kvp in folderCounts.OrderBy(kvp => kvp.Key))
             {
-                writer.WriteLine("{0,5} | {1}", kvp.Value, kvp.Key);
+                writer.WriteLine("{0,5} | {1,5} | {2,5} | {3}", kvp.Value.Total, kvp.Value.Pri0, kvp.Value.Pri1, kvp.Key);
             }
             writer.WriteLine();
         }
@@ -265,11 +261,11 @@ class TestProjectStore
         }
         foreach (DebugOptimize debugOpt in debugOptimizeMap.OrderBy(d => d))
         {
-            GenerateWrapper(outputDir, debugOpt);
+            GenerateWrapper(outputDir, debugOpt, maxProjectsPerWrapper: 100);
         }
     }
 
-    private void GenerateWrapper(string rootDir, DebugOptimize debugOptimize)
+    private void GenerateWrapper(string rootDir, DebugOptimize debugOptimize, int maxProjectsPerWrapper)
     {
         string dbgOptName = "Dbg" + debugOptimize.Debug + "_Opt" + debugOptimize.Optimize;
         string outputDir = Path.Combine(rootDir, dbgOptName);
@@ -281,85 +277,117 @@ class TestProjectStore
             File.Delete(preexistingFile);
         }
 
-        string wrapperSourceName = dbgOptName + ".cs";
-        string wrapperSourcePath = Path.Combine(outputDir, wrapperSourceName);
-
-        string wrapperProjectName = dbgOptName + ".csproj";
-        string wrapperProjectPath = Path.Combine(outputDir, wrapperProjectName);
-
-        using (StreamWriter writer = new StreamWriter(wrapperSourcePath))
+        TestProject[] projects = _projects.Where(p => p.DebugOptimize.Equals(debugOptimize)).ToArray();
+        for (int firstProject = 0; firstProject < projects.Length; firstProject += maxProjectsPerWrapper)
         {
-            foreach (TestProject project in _projects.Where(p => p.DebugOptimize.Equals(debugOptimize) && p.TestClassName != ""))
+            string nameBase = dbgOptName;
+            if (projects.Length > maxProjectsPerWrapper)
             {
-                writer.WriteLine("extern alias " + project.TestProjectAlias + ";");
-            }
-            writer.WriteLine();
-
-            writer.WriteLine("using System;");
-            writer.WriteLine();
-
-            writer.WriteLine("public static class " + dbgOptName);
-            writer.WriteLine("{");
-            writer.WriteLine("    public static int Main(string[] args)");
-            writer.WriteLine("    {");
-            writer.WriteLine("        int mainExitCode = 100;");
-
-            foreach (TestProject project in _projects.Where(p => p.DebugOptimize.Equals(debugOptimize)))
-            {
-                string testName = project.RelativePath.Replace('\\', '/');
-                if (project.TestClassName != "")
-                {
-                    writer.WriteLine("        try");
-                    writer.WriteLine("        {");
-                    writer.WriteLine("            int exitCode = " + project.TestProjectAlias + "::" + project.TestClassName + ".TestEntrypoint(args);");
-                    writer.WriteLine("            if (exitCode == 100)");
-                    writer.WriteLine("            {");
-                    writer.WriteLine("                Console.WriteLine(\"Test succeeded: '" + testName + "'\");");
-                    writer.WriteLine("            }");
-                    writer.WriteLine("            else");
-                    writer.WriteLine("            {");
-                    writer.WriteLine("                Console.Error.WriteLine(\"Wrong exit code: '" + testName + "' - {0}\", exitCode);");
-                    writer.WriteLine("                mainExitCode = exitCode;");
-                    writer.WriteLine("            }");
-                    writer.WriteLine("        }");
-                    writer.WriteLine("        catch (Exception ex)");
-                    writer.WriteLine("        {");
-                    writer.WriteLine("            Console.Error.WriteLine(\"Test crashed: '" + testName + "' - {0}\", ex.Message);");
-                    writer.WriteLine("            mainExitCode = -1;");
-                    writer.WriteLine("        }");
-                }
-                else
-                {
-                    writer.WriteLine("        Console.WriteLine(\"Skipping test: '" + testName + "' - no class name\");");
-                }
+                nameBase += $"_{firstProject}";
             }
 
-            writer.WriteLine("        return mainExitCode;");
-            writer.WriteLine("    }");
-            writer.WriteLine("}");
-        }
+            TestProject[] projectGroup = projects[firstProject .. Math.Min(projects.Length, firstProject + maxProjectsPerWrapper)];
 
-        using (StreamWriter writer = new StreamWriter(wrapperProjectPath))
-        {
-            writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
-            writer.WriteLine("    <PropertyGroup>");
-            writer.WriteLine("        <OutputType>Exe</OutputType>");
-            writer.WriteLine("        <CLRTestKind>BuildAndRun</CLRTestKind>");
-            writer.WriteLine("    </PropertyGroup>");
-            writer.WriteLine("    <ItemGroup>");
-            writer.WriteLine("        <Compile Include=\"" + wrapperSourceName + "\" />");
-            writer.WriteLine("    </ItemGroup>");
-            writer.WriteLine("    <ItemGroup>");
-            foreach (TestProject project in _projects)
+            string wrapperSourceName = nameBase + ".cs";
+            string wrapperSourcePath = Path.Combine(outputDir, wrapperSourceName);
+
+            string wrapperProjectName = nameBase + ".csproj";
+            string wrapperProjectPath = Path.Combine(outputDir, wrapperProjectName);
+
+            using (StreamWriter writer = new StreamWriter(wrapperSourcePath))
             {
-                if (project.DebugOptimize.Equals(debugOptimize))
+                foreach (TestProject project in projectGroup.Where(p => p.TestClassName != ""))
+                {
+                    writer.WriteLine("extern alias " + project.TestProjectAlias + ";");
+                }
+                writer.WriteLine();
+
+                writer.WriteLine("using System;");
+                writer.WriteLine();
+
+                writer.WriteLine("public static class " + dbgOptName);
+                writer.WriteLine("{");
+                writer.WriteLine("    private static int s_passed = 0;");
+                writer.WriteLine("    private static int s_noClass = 0;");
+                writer.WriteLine("    private static int s_exitCode = 0;");
+                writer.WriteLine("    private static int s_crashed = 0;");
+                writer.WriteLine("    private static int s_total = 0;");
+                writer.WriteLine();
+                writer.WriteLine("    public static int Main(string[] args)");
+                writer.WriteLine("    {");
+
+                foreach (TestProject project in projectGroup)
+                {
+                    string testName = project.RelativePath.Replace('\\', '/');
+                    if (project.TestClassName != "")
+                    {
+                        writer.WriteLine("        TryTest(\"" + testName + "\", " + project.TestProjectAlias + "::" + project.TestClassName + ".TestEntrypoint, args);");
+                    }
+                    else
+                    {
+                        writer.WriteLine("        Console.WriteLine(\"Skipping test: '" + testName + "' - no class name\");");
+                        writer.WriteLine("        s_total++;");
+                        writer.WriteLine("        s_noClass++;");
+                    }
+                }
+
+                writer.WriteLine("        Console.WriteLine(\"Total tests: {0}; {1} passed; {2} missing class name; {3} returned wrong exit code; {4} crashed\", s_total, s_passed, s_noClass, s_exitCode, s_crashed);");
+                writer.WriteLine("        return s_crashed != 0 ? 1 : s_exitCode != 0 ? 2 : 100;");
+                writer.WriteLine("    }");
+                writer.WriteLine();
+                writer.WriteLine("    private static void TryTest(string testName, Func<string[], int> testFn, string[] args)");
+                writer.WriteLine("    {");
+                writer.WriteLine("        try");
+                writer.WriteLine("        {");
+                writer.WriteLine("            s_total++;");
+                writer.WriteLine("            int exitCode = testFn(args);");
+                writer.WriteLine("            if (exitCode == 100)");
+                writer.WriteLine("            {");
+                writer.WriteLine("                Console.WriteLine(\"Test succeeded: '{0}'\", testName);");
+                writer.WriteLine("                s_passed++;");
+                writer.WriteLine("            }");
+                writer.WriteLine("            else");
+                writer.WriteLine("            {");
+                writer.WriteLine("                Console.Error.WriteLine(\"Wrong exit code: '{0}' - {1}\", testName, exitCode);");
+                writer.WriteLine("                s_exitCode++;");
+                writer.WriteLine("            }");
+                writer.WriteLine("        }");
+                writer.WriteLine("        catch (Exception ex)");
+                writer.WriteLine("        {");
+                writer.WriteLine("            Console.Error.WriteLine(\"Test crashed: '{0}' - {1}\", testName, ex.Message);");
+                writer.WriteLine("            s_crashed++;");
+                writer.WriteLine("        }");
+                writer.WriteLine("    }");
+                writer.WriteLine("}");
+            }
+
+            using (StreamWriter writer = new StreamWriter(wrapperProjectPath))
+            {
+                writer.WriteLine("<Project Sdk=\"Microsoft.NET.Sdk\">");
+                writer.WriteLine("    <PropertyGroup>");
+                writer.WriteLine("        <OutputType>Exe</OutputType>");
+                writer.WriteLine("        <CLRTestKind>BuildAndRun</CLRTestKind>");
+                writer.WriteLine("    </PropertyGroup>");
+                writer.WriteLine("    <ItemGroup>");
+                writer.WriteLine("        <Compile Include=\"" + wrapperSourceName + "\" />");
+                writer.WriteLine("    </ItemGroup>");
+                writer.WriteLine("    <ItemGroup>");
+                HashSet<string> transitiveDependencies = new HashSet<string>();
+                foreach (TestProject project in projectGroup)
                 {
                     string relativePath = Path.GetRelativePath(outputDir, project.AbsolutePath);
-                    writer.WriteLine("        <ProjectReference Include=\"" + relativePath + "\" Aliases=\"" + project.TestProjectAlias + "\"/>");
+                    writer.WriteLine("        <ProjectReference Include=\"" + relativePath + "\" Aliases=\"" + project.TestProjectAlias + "\" />");
+                    transitiveDependencies.UnionWith(project.ProjectReferences);
                 }
+                foreach (string transitiveDependency in transitiveDependencies)
+                {
+                    string relativePath = Path.GetRelativePath(outputDir, transitiveDependency);
+                    writer.WriteLine("        <ProjectReference Include=\"" + relativePath + "\" />");
+                }
+
+                writer.WriteLine("    </ItemGroup>");
+                writer.WriteLine("</Project>");
             }
-            writer.WriteLine("    </ItemGroup>");
-            writer.WriteLine("</Project>");
         }
     }
 
@@ -545,7 +573,12 @@ class TestProjectStore
                                 component != "explicit" &&
                                 component != "abstract")
                             {
-                                testClassName = component;
+                                int identEnd = 0;
+                                while (identEnd < component.Length && TestProject.IsIdentifier(component[identEnd]))
+                                {
+                                    identEnd++;
+                                }
+                                testClassName = component.Substring(0, identEnd);
                                 testClassSourceFile = path;
                                 testClassLine = lineIndex;
                                 while (--lineIndex >= 0)
