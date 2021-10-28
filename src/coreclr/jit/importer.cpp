@@ -4562,6 +4562,17 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 impPopStack().val; // Pop the dim and array object; we already have a pointer to them.
                                 impPopStack().val;
 
+                                // Make sure there are no global effects in the array (such as it being a function
+                                // call), so we can mark the generated indirection with GTF_IND_INVARIANT. In the
+                                // GetUpperBound case we need the cloned object, since we refer to the array
+                                // object twice. In the other cases, we don't need to clone.
+                                GenTree* gtArrClone = nullptr;
+                                if (((gtArr->gtFlags & GTF_GLOB_EFFECT) != 0) || (ni == NI_System_Array_GetUpperBound))
+                                {
+                                    gtArr = impCloneExpr(gtArr, &gtArrClone, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                                                         nullptr DEBUGARG("MD intrinsics array"));
+                                }
+
                                 switch (ni)
                                 {
                                     case NI_System_Array_GetLength:
@@ -4586,6 +4597,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                     }
                                     case NI_System_Array_GetUpperBound:
                                     {
+                                        assert(gtArrClone != nullptr);
+
                                         // Generate:
                                         //    *(array + offset-to-length-array + sizeof(int) * dim) +
                                         //    *(array + offset-to-bounds-array + sizeof(int) * dim) - 1
@@ -4594,9 +4607,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                         GenTree* gtAddr       = gtNewOperNode(GT_ADD, TYP_BYREF, gtArr, gtOffs);
                                         GenTree* gtLowerBound = gtNewIndir(TYP_INT, gtAddr);
                                         gtLowerBound->gtFlags |= GTF_IND_INVARIANT;
-
-                                        // Don't re-use the array node; create a clone.
-                                        GenTree* gtArrClone = gtClone(gtArr);
 
                                         offs              = eeGetMDArrayLengthOffset(rank, dim);
                                         gtOffs            = gtNewIconNode(offs, TYP_I_IMPL);
