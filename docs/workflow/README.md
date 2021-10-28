@@ -46,6 +46,8 @@ To build just one part you use the root build script (build.cmd/sh), and you add
 
 For instructions on how to edit code and debug your changes, see [Editing and Debugging](editing-and-debugging.md).
 
+For instructions on using GitHub Codespaces, see [Codespaces](Codespaces.md).
+
 ## Configurations
 
 You may need to build the tree in a combination of configurations. This section explains why.
