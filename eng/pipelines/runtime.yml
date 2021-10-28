@@ -489,10 +489,8 @@ jobs:
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
+      # NOTE: Per PR test execution is not recommended for mobile runtime tests
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
       extraStepsParameters:
@@ -527,10 +525,8 @@ jobs:
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
+      # NOTE: Per PR test execution is not recommended for mobile runtime tests
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
       extraStepsParameters:
