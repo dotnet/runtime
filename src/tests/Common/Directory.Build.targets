@@ -162,6 +162,10 @@
           Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\*"
           TargetDir="wasm-test-runner/"/>
 
+        <RuntimeDependencyCopyLocal
+          Include="$(MonoProjectRoot)\wasm\data\aot-tests\Directory.Build.*"
+          TargetDir="wasm-test-runner/" />
+
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
