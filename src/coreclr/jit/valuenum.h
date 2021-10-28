@@ -591,7 +591,7 @@ public:
         ValueNumKind vnk, var_types typ, ValueNum op1VN, ValueNum op2VN, int* pBudget, bool* pUsedRecursiveVN);
 
     // A specialized version of VNForFunc that is used for VNF_MapStore and provides some logging when verbose is set
-    ValueNum VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN);
+    ValueNum VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value);
 
     // These functions parallel the ones above, except that they take liberal/conservative VN pairs
     // as arguments, and return such a pair (the pair of the function applied to the liberal args, and

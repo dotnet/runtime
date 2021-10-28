@@ -2180,25 +2180,25 @@ ValueNum ValueNumStore::VNForFunc(
 //
 //
 // Arguments:
-//    typ  -    Value type
-//    arg0VN  - Map value number
-//    arg1VN  - Index value number
-//    arg2VN  - New value for map[index]
+//    type  - Type for the new map
+//    map   - Map value number
+//    index - Index value number
+//    value - New value for map[index]
 //
 // Return Value:
-//    Value number for the result of the evaluation.
-
-ValueNum ValueNumStore::VNForMapStore(var_types typ, ValueNum arg0VN, ValueNum arg1VN, ValueNum arg2VN)
+//    Value number for "map" with "map[index]" set to "value".
+//
+ValueNum ValueNumStore::VNForMapStore(var_types type, ValueNum map, ValueNum index, ValueNum value)
 {
     BasicBlock* const            bb      = m_pComp->compCurBB;
     BasicBlock::loopNumber const loopNum = bb->bbNatLoopNum;
-    ValueNum const               result  = VNForFunc(typ, VNF_MapStore, arg0VN, arg1VN, arg2VN, loopNum);
+    ValueNum const               result  = VNForFunc(type, VNF_MapStore, map, index, value, loopNum);
 
 #ifdef DEBUG
     if (m_pComp->verbose)
     {
-        printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s in " FMT_BB " returns ", arg0VN, arg1VN,
-               arg2VN, varTypeName(typ), bb->bbNum);
+        printf("    VNForMapStore(" FMT_VN ", " FMT_VN ", " FMT_VN "):%s in " FMT_BB " returns ", map, index, value,
+               varTypeName(type), bb->bbNum);
         m_pComp->vnPrint(result, 1);
         printf("\n");
     }
