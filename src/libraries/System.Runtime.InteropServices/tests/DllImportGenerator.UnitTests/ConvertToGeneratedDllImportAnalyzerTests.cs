@@ -37,9 +37,17 @@ namespace DllImportGenerator.UnitTests
             new object[] { typeof(ConsoleKey) }, // enum
         };
 
+        public static IEnumerable<object[]> UnsupportedTypes() => new[]
+        {
+            new object[] { typeof(System.Runtime.InteropServices.CriticalHandle) },
+            new object[] { typeof(System.Runtime.InteropServices.HandleRef) },
+            new object[] { typeof(System.Text.StringBuilder) },
+        };
+
         [ConditionalTheory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public async Task TypeRequiresMarshalling_ReportsDiagnostic(Type type)
         {
             string source = DllImportWithType(type.FullName!);
@@ -132,6 +140,14 @@ partial class Test
                 VerifyCS.Diagnostic(ConvertToGeneratedDllImport)
                     .WithLocation(1)
                     .WithArguments("Method2"));
+        }
+
+        [ConditionalTheory]
+        [MemberData(nameof(UnsupportedTypes))]
+        public async Task UnsupportedType_NoDiagnostic(Type type)
+        {
+            string source = DllImportWithType(type.FullName!);
+            await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
         [ConditionalFact]

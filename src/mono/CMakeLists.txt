@@ -754,20 +754,19 @@ endif()
 ######################################
 # EXTRACT VERSION
 ######################################
+include("${CMAKE_CURRENT_SOURCE_DIR}/../../eng/native/configurepaths.cmake")
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/_version.h")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/_version.h" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
+  if(NOT EXISTS "${VERSION_HEADER_PATH}")
+    file(WRITE "${VERSION_HEADER_PATH}" "#undef VER_PRODUCTVERSION_STR\n#define VER_PRODUCTVERSION_STR \"42.42.42.42424\"\n")
   endif()
 else()
-  if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/version.c")
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/version.c" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
+  if(NOT EXISTS "${VERSION_FILE_PATH}")
+    file(WRITE "${VERSION_FILE_PATH}" "static char sccsid[] __attribute__((used)) = \"@(#)Version 42.42.42.42424 @Commit: AAA\";\n")
   endif()
 endif()
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows" AND NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/NativeVersion.rc" "\n")
-endif()
-if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h"
+if (NOT EXISTS "${RUNTIME_VERSION_HEADER_PATH}")
+  file(WRITE "${RUNTIME_VERSION_HEADER_PATH}"
 "#define RuntimeFileMajorVersion 42\n"
 "#define RuntimeFileMinorVersion 42\n"
 "#define RuntimeFileBuildVersion 42\n"
@@ -779,16 +778,16 @@ if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h")
 endif()
 
 if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/_version.h" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
+  file(STRINGS "${VERSION_HEADER_PATH}" product_version_string_line REGEX "VER_PRODUCTVERSION_STR ")
   string(REGEX REPLACE ".*VER_PRODUCTVERSION_STR *(.*)" "\\1" product_version_string ${product_version_string_line})
 else()
-  file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/version.c" product_version_string_line REGEX "sccsid")
+  file(STRINGS "${VERSION_FILE_PATH}" product_version_string_line REGEX "sccsid")
   string(REGEX REPLACE ".*Version *(.*)\";" "\"\\1\"" product_version_string ${product_version_string_line})
 endif()
 
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_minor_line REGEX "RuntimeProductMinorVersion ")
-file(STRINGS "${CMAKE_CURRENT_BINARY_DIR}/runtime_version.h" runtime_version_patch_line REGEX "RuntimeProductPatchVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_major_line REGEX "RuntimeProductMajorVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_minor_line REGEX "RuntimeProductMinorVersion ")
+file(STRINGS "${RUNTIME_VERSION_HEADER_PATH}" runtime_version_patch_line REGEX "RuntimeProductPatchVersion ")
 string(REGEX REPLACE ".*RuntimeProductMajorVersion *([0-9]+)" "\\1" runtime_version_major ${runtime_version_major_line})
 string(REGEX REPLACE ".*RuntimeProductMinorVersion *([0-9]+)" "\\1" runtime_version_minor ${runtime_version_minor_line})
 string(REGEX REPLACE ".*RuntimeProductPatchVersion *([0-9]+)" "\\1" runtime_version_patch ${runtime_version_patch_line})

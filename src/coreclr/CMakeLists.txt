@@ -29,7 +29,6 @@ set(CLR_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(VM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vm)
 set(GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/inc)
 set(GENERATED_EVENTING_DIR ${CMAKE_CURRENT_BINARY_DIR}/Eventing)
-set(VERSION_FILE_PATH "${CMAKE_BINARY_DIR}/version.c")
 set(PAL_REDEFINES_FILE ${CMAKE_CURRENT_SOURCE_DIR}/dlls/mscordac/palredefines.S)
 
 # Avoid logging when skipping up-to-date copies
@@ -135,7 +134,7 @@ endif()
 #-------------------------------------
 # Include the basic prebuilt headers - required for getting fileversion resource details.
 include_directories("pal/prebuilt/inc")
-include_directories("${CLR_REPO_ROOT_DIR}/artifacts/obj/coreclr")
+include_directories(${CLR_ARTIFACTS_OBJ_DIR})
 
 add_subdirectory(tools/aot/jitinterface)
 

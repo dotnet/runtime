@@ -105,7 +105,7 @@ dump_protocol_helper_generate_core_dump (
 	if (!stream)
 		return false;
 
-	bool result = false;
+	ds_ipc_result_t ipc_result = DS_IPC_E_FAIL;
 	DiagnosticsGenerateCoreDumpCommandPayload *payload;
 	payload = (DiagnosticsGenerateCoreDumpCommandPayload *)ds_ipc_message_try_parse_payload (message, generate_core_dump_command_try_parse_payload);
 
@@ -114,24 +114,21 @@ dump_protocol_helper_generate_core_dump (
 		ep_raise_error ();
 	}
 
-	ds_ipc_result_t ipc_result;
 	ipc_result = ds_rt_generate_core_dump (payload);
-	if (result != DS_IPC_S_OK) {
-		ds_ipc_message_send_error (stream, result);
+	if (ipc_result != DS_IPC_S_OK) {
+		ds_ipc_message_send_error (stream, ipc_result);
 		ep_raise_error ();
 	} else {
-		ds_ipc_message_send_success (stream, result);
+		ds_ipc_message_send_success (stream, ipc_result);
 	}
-
-	result = true;
 
 ep_on_exit:
 	ds_generate_core_dump_command_payload_free (payload);
 	ds_ipc_stream_free (stream);
-	return result;
+	return ipc_result == DS_IPC_S_OK;
 
 ep_on_error:
-	EP_ASSERT (!result);
+	EP_ASSERT (ipc_result != DS_IPC_S_OK);
 	ep_exit_error_handler ();
 }
 

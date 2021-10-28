@@ -269,9 +269,16 @@ namespace System.Text.RegularExpressions.Generator
             {
                 EmitAnchors();
 
-                if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null })
+                if (code.BoyerMoorePrefix is RegexBoyerMoore { NegativeUnicode: null } rbm)
                 {
-                    EmitBoyerMoore();
+                    if (rbm.PatternSupportsIndexOf)
+                    {
+                        EmitIndexOf(rbm.Pattern);
+                    }
+                    else
+                    {
+                        EmitBoyerMoore(rbm);
+                    }
                 }
                 else if (lcc is not null)
                 {
@@ -408,13 +415,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
             }
 
-            void EmitBoyerMoore()
+            void EmitBoyerMoore(RegexBoyerMoore rbm)
             {
-                RegexBoyerMoore? rbm = code.BoyerMoorePrefix;
-                Debug.Assert(rbm is RegexBoyerMoore { NegativeUnicode: null });
-
-                writer.WriteLine("// Boyer-Moore prefix matching");
-
                 EmitTextInfoIfRequired(writer, ref textInfoEmitted, ref hasTextInfo, rm);
 
                 int beforefirst;
@@ -533,6 +535,16 @@ namespace System.Text.RegularExpressions.Generator
                         "base.runtextpos = test + 1;");
                     writer.WriteLine("return true;");
                 }
+            }
+
+            void EmitIndexOf(string prefix)
+            {
+                writer.WriteLine($"int i = global::System.MemoryExtensions.IndexOf(global::System.MemoryExtensions.AsSpan(runtext, runtextpos, runtextend - runtextpos), {Literal(prefix)});");
+                writer.WriteLine("if (i >= 0)");
+                writer.WriteLine("{");
+                writer.WriteLine("    base.runtextpos = runtextpos + i;");
+                writer.WriteLine("    return true;");
+                writer.WriteLine("}");
             }
 
             void EmitLeadingCharacter_RightToLeft()
