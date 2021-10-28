@@ -4925,6 +4925,12 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, var_types ta
                                                        &offset); // displacement
 
 #ifdef TARGET_ARMARCH
+    // Multiplier should be a "natural-scale" power of two number which is equal to target's width.
+    //
+    //   *(ulong*)(data + index * 8); - can be optimized
+    //   *(ulong*)(data + index * 7); - can not be optimized
+    //     *(int*)(data + index * 2); - can not be optimized
+    //
     if ((scale > 0) && (genTypeSize(targetType) != scale))
     {
         return false;

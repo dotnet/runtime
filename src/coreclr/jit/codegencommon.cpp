@@ -1567,7 +1567,9 @@ AGAIN:
     switch (op2->gtOper)
     {
 #if !defined(TARGET_ARMARCH)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
+        // arm doesn't support both scale and offset at the same. Offset is handled
+        // at the emitter as a peephole optimization.
         case GT_ADD:
 
             if (op2->gtOverflow())
@@ -1586,7 +1588,7 @@ AGAIN:
 
             break;
 
-#else  // !TARGET_ARMARCH
+#endif // TARGET_ARMARCH
         case GT_MUL:
 
             if (op2->gtOverflow())
@@ -1622,7 +1624,6 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-#endif // TARGET_ARMARCH
 
         case GT_NOP:
 
