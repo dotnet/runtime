@@ -92,20 +92,36 @@ namespace System.IO.Compression.Tests
             baseline = baseline.Clone();
             using (ZipArchive archive = new ZipArchive(baseline, mode))
             {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
+                if (mode == ZipArchiveMode.Create)
+                {
+                    AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
-                using (Stream s = e.Open()) { }
+                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                    e.LastWriteTime = lastWrite;
+                    using (Stream s = e.Open()) { }
+                }
+                else
+                {
+                    ZipArchiveEntry e = archive.GetEntry("data2.txt");
+                    e.Delete();
+                }
             }
 
             test = test.Clone();
             using (ZipArchive archive = new ZipArchive(test, mode))
             {
-                AddEntry(archive, "data1.txt", data1, lastWrite);
+                if (mode == ZipArchiveMode.Create)
+                {
+                    AddEntry(archive, "data1.txt", data1, lastWrite);
 
-                ZipArchiveEntry e = archive.CreateEntry("empty.txt");
-                e.LastWriteTime = lastWrite;
+                    ZipArchiveEntry e = archive.CreateEntry("empty.txt");
+                    e.LastWriteTime = lastWrite;
+                }
+                else
+                {
+                    ZipArchiveEntry e = archive.GetEntry("data2.txt");
+                    e.Delete();
+                }
             }
             //compare
             Assert.True(ArraysEqual(baseline.ToArray(), test.ToArray()), "Arrays didn't match after update");

@@ -427,6 +427,10 @@ namespace System.IO.Compression
             {
                 _entriesDictionary.Add(entryName, entry);
             }
+            else
+            {
+                throw new InvalidOperationException(SR.EntryNameAlreadyExists);
+            }
         }
 
         [Conditional("DEBUG")]
