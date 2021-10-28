@@ -2711,7 +2711,7 @@ alloc_list gc_heap::poh_alloc_list [NUM_POH_ALIST-1];
 #ifdef DOUBLY_LINKED_FL
 // size we removed with no undo; only for recording purpose
 size_t gc_heap::gen2_removed_no_undo = 0;
-size_t gc_heap::saved_pinned_plug_index = 0;
+size_t gc_heap::saved_pinned_plug_index = INVALID_SAVED_PINNED_PLUG_INDEX;
 #endif //DOUBLY_LINKED_FL
 
 #ifdef FEATURE_EVENT_TRACE
@@ -14138,7 +14138,20 @@ void gc_heap::adjust_limit (uint8_t* start, size_t limit_size, generation* gen)
                         uint8_t* old_loc = generation_last_free_list_allocated (gen);
 
                         // check if old_loc happens to be in a saved plug_and_gap with a pinned plug after it
-                        uint8_t* saved_plug_and_gap = pinned_plug (pinned_plug_of (saved_pinned_plug_index)) - sizeof(plug_and_gap);
+                        uint8_t* saved_plug_and_gap = nullptr;
+                        if (saved_pinned_plug_index != INVALID_SAVED_PINNED_PLUG_INDEX)
+                        {
+                            saved_plug_and_gap = pinned_plug (pinned_plug_of (saved_pinned_plug_index)) - sizeof(plug_and_gap);
+
+                            dprintf (3333, ("[h%d] sppi: %Id mtos: %Id old_loc: %Ix pp: %Ix(%Id) offs: %Id",
+                                heap_number,
+                                saved_pinned_plug_index,
+                                mark_stack_tos,
+                                old_loc,
+                                pinned_plug (pinned_plug_of (saved_pinned_plug_index)),
+                                pinned_len (pinned_plug_of (saved_pinned_plug_index)),
+                                old_loc - saved_plug_and_gap));
+                        }
                         size_t offset = old_loc - saved_plug_and_gap;
                         if (offset < sizeof(gap_reloc_pair))
                         {
@@ -27783,7 +27796,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
 #ifdef DOUBLY_LINKED_FL
     gen2_removed_no_undo = 0;
-    saved_pinned_plug_index = 0;
+    saved_pinned_plug_index = INVALID_SAVED_PINNED_PLUG_INDEX;
 #endif //DOUBLY_LINKED_FL
 
     while (1)
