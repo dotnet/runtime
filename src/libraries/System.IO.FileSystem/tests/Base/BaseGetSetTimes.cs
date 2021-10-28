@@ -87,6 +87,50 @@ namespace System.IO.Tests
             SettingUpdatesPropertiesCore(item);
         }
 
+        private void SettingUpdatesPropertiesOnSymlinkCore(bool isRelative, bool targetExists)
+        {
+            if (!targetExists && IsDirectory && !OperatingSystem.IsWindows())
+            {
+                // On Unix, symlinks that are created as 'directories' need their
+                // directory target to exist for it to count as a directory symlink.
+                return;
+            }
+
+            T target = targetExists ? GetExistingItem() : GetMissingItem();
+
+            // When the target exists, we want to verify that its times don't change.
+            // If the target doesn't exist, we just run the symlink tests, otherwise
+            // we run it in an Assert.All so it is easy to tell if it failed by not
+            // setting it on the symlink, or if it failed by setting it on the target.
+            // The symlink test is [0] of the Assert.All, and the target check is [1].
+
+            void RunSymlinkTestPart()
+            {
+                T item = CreateSymlinkToItem(target, isRelative);
+                SettingUpdatesPropertiesCore(item);
+            }
+
+            if (!targetExists)
+            {
+                RunSymlinkTestPart();
+            }
+            else
+            {
+                // We only use UTC times since checking the others is unnecessary.
+                IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+                DateTime[] initialTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
+
+                Assert.All(new Action[] { RunSymlinkTestPart, () =>
+                {
+                    // Ensure that we have the latest times
+                    if (target is FileSystemInfo fsi) fsi.Refresh();
+
+                    DateTime[] updatedTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
+                    Assert.Equal(initialTimes, updatedTimes);
+                } }, (action) => action());
+            }
+        }
+
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
         public void SettingUpdatesPropertiesOnSymlink()
@@ -97,25 +141,16 @@ namespace System.IO.Tests
             // to follow the symlink to completion and set the time on that entry
             // instead (eg. the setattrlist will do this without the flag set).
             // It is also the same case on unix, with the utimensat function.
-            T item = CreateSymlinkToItem(GetExistingItem(), false);
-            SettingUpdatesPropertiesCore(item);
+            SettingUpdatesPropertiesOnSymlinkCore(false, true);
         }
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesOnNonexistentSymlink()
+        public void SettingUpdatesPropertiesOnSymlinkWithNonExistentTarget()
         {
-            if (IsDirectory && !OperatingSystem.IsWindows())
-            {
-                // On Unix, symlinks that are created as 'directories' need their
-                // directory target to exist for it to count as a directory symlink.
-                return;
-            }
-
             // Same as the above SettingUpdatesPropertiesOnSymlink test,
             // except that the target of the symlink doesn't exist.
-            T item = CreateSymlinkToItem(GetMissingItem(), false);
-            SettingUpdatesPropertiesCore(item);
+            SettingUpdatesPropertiesOnSymlinkCore(false, false);
         }
 
         [Fact]
@@ -124,25 +159,16 @@ namespace System.IO.Tests
         {
             // Same as the SettingUpdatesPropertiesOnSymlink function,
             // except that the symlink target is relative rather than absolute.
-            T item = CreateSymlinkToItem(GetExistingItem(), true);
-            SettingUpdatesPropertiesCore(item);
+            SettingUpdatesPropertiesOnSymlinkCore(true, true);
         }
 
         [Fact]
         [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesOnRelativeNonexistentSymlink()
+        public void SettingUpdatesPropertiesOnRelativeSymlinkWithNonExistingTarget()
         {
-            if (IsDirectory && !OperatingSystem.IsWindows())
-            {
-                // On Unix, symlinks that are created as 'directories' need their
-                // directory target to exist for it to count as a directory symlink.
-                return;
-            }
-
-            // Same as the SettingUpdatesPropertiesOnNonexistentSymlink function,
+            // Same as the SettingUpdatesPropertiesOnSymlinkWithNonExistentTarget function,
             // except that the symlink target is relative rather than absolute.
-            T item = CreateSymlinkToItem(GetMissingItem(), true);
-            SettingUpdatesPropertiesCore(item);
+            SettingUpdatesPropertiesOnSymlinkCore(true, false);
         }
 
         [Fact]
