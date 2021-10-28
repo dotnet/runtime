@@ -99,7 +99,7 @@ namespace Internal.Cryptography.Pal
                     {
                         Debug.Assert(cbDecoded >= sizeof(CERT_BASIC_CONSTRAINTS_INFO));
                         CERT_BASIC_CONSTRAINTS_INFO* pBasicConstraints = (CERT_BASIC_CONSTRAINTS_INFO*)pvDecoded;
-                        return ((pBasicConstraints->SubjectType.ToByteArray()[0] & CERT_BASIC_CONSTRAINTS_INFO.CERT_CA_SUBJECT_FLAG) != 0,
+                        return ((Marshal.ReadByte(pBasicConstraints->SubjectType.pbData) & CERT_BASIC_CONSTRAINTS_INFO.CERT_CA_SUBJECT_FLAG) != 0,
                                 pBasicConstraints->fPathLenConstraint != 0,
                                 pBasicConstraints->dwPathLenConstraint);
                     });
