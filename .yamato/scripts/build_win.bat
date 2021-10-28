@@ -8,4 +8,4 @@ if NOT %errorlevel% == 0 (
 echo "build ran successfully"
 
 md incomingbuilds\win64
-xcopy /s /e /h /y builds\windows.x64.Release incomingbuilds\win64
+xcopy /s /e /h /y artifacts\bin\coreclr\windows.x64.Release incomingbuilds\win64
