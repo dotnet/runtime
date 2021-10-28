@@ -358,7 +358,14 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
-                targets.Add(ReadTarget(ref reader, reader.GetString()));
+                string? targetName = reader.GetString();
+
+                if (string.IsNullOrEmpty(targetName))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(targetName)));
+                }
+
+                targets.Add(ReadTarget(ref reader, targetName));
             }
 
             reader.CheckEndObject();
@@ -366,13 +373,8 @@ namespace Microsoft.Extensions.DependencyModel
             return targets;
         }
 
-        private Target ReadTarget(ref Utf8JsonReader reader, string? targetName)
+        private Target ReadTarget(ref Utf8JsonReader reader, string targetName)
         {
-            if (string.IsNullOrEmpty(targetName))
-            {
-                throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(targetName)));
-            }
-
             reader.ReadStartObject();
 
             var libraries = new List<TargetLibrary>();
