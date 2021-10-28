@@ -63,7 +63,7 @@ public class TestProject
     public readonly int MainMethodLine;
 
     public string? TestProjectAlias;
-    // public string? DeduplicatedClassName;
+    public string? DeduplicatedClassName;
 
     public TestProject(
         string absolutePath,
@@ -101,7 +101,6 @@ public class TestProject
     public static string SanitizeIdentifier(string source)
     {
         StringBuilder output = new StringBuilder();
-        output.Append("_");
         for (int i = 0; i < source.Length; i++)
         {
             char c = source[i];
@@ -119,6 +118,19 @@ public class TestProject
             }
         }
         return output.ToString();
+    }
+
+    public static string ReplaceIdentifier(string line, string originalIdent, string targetIdent)
+    {
+        int index = line.IndexOf(originalIdent);
+        int endIndex = index + originalIdent.Length;
+        if (index >= 0
+            && (index == 0 || !IsIdentifier(line[index - 1]))
+            && (endIndex >= line.Length || !IsIdentifier(line[endIndex])))
+        {
+            return line.Substring(0, index) + targetIdent + line.Substring(endIndex);
+        }
+        return line;
     }
 }
 
@@ -626,16 +638,13 @@ class TestProjectStore
                 counts[project.DebugOptimize] = count + 1;
             }
 
-            /*
             if (counts.Values.Any(c => c > 1))
             {
                 foreach (TestProject project in projectList)
                 {
-                    project.DeduplicatedClassName = project.TestClassName! + "_"
-                        + TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(project.TestClassSourceFile));
+                    project.DeduplicatedClassName = TestProject.SanitizeIdentifier(Path.GetFileNameWithoutExtension(project.TestClassSourceFile));
                 }
             }
-            */
         }
     }
 }

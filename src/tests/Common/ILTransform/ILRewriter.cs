@@ -39,6 +39,7 @@ public class ILRewriter
             int mainPos = line.IndexOf(MainTag);
             if (mainPos >= 0)
             {
+                /*
                 bool mainNoArgs = line[mainPos + MainTag.Length] == ')';
                 string replacement = " TestEntrypoint(";
                 if (mainNoArgs)
@@ -47,6 +48,7 @@ public class ILRewriter
                 }
                 lines[lineIndex] = line.Substring(0, mainPos) + replacement + line.Substring(mainPos + MainTag.Length);
                 rewritten = true;
+                */
 
                 for (int privateIndex = lineIndex; privateIndex >= lineIndex - 1 && privateIndex >= 0; privateIndex--)
                 {
@@ -62,15 +64,6 @@ public class ILRewriter
                     int publicPos = line.IndexOf("public ");
                     if (publicPos >= 0)
                     {
-                        break;
-                    }
-                }
-                for (int entrypointIndex = lineIndex; entrypointIndex < lines.Count; entrypointIndex++)
-                {
-                    if (lines[entrypointIndex].IndexOf(".entrypoint") >= 0)
-                    {
-                        lines.RemoveRange(entrypointIndex, 1);
-                        rewritten = true;
                         break;
                     }
                 }
@@ -156,16 +149,14 @@ public class ILRewriter
             }
         }
 
-        /*
         if (_testProject.DeduplicatedClassName != null)
         {
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
-                lines[lineIndex] = lines[lineIndex].Replace(_testProject.TestClassName, _testProject.DeduplicatedClassName);
+                lines[lineIndex] = TestProject.ReplaceIdentifier(lines[lineIndex], _testProject.TestClassName, _testProject.DeduplicatedClassName);
             }
             rewritten = true;
         }
-        */
 
         if (rewritten)
         {
