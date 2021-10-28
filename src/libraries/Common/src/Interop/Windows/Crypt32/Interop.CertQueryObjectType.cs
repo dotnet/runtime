@@ -3,13 +3,15 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Crypt32
     {
-        [DllImport(Interop.Libraries.Crypt32, CharSet = CharSet.Unicode, SetLastError = true)]
-        internal static extern IntPtr CertEnumCertificatesInStore(SafeCertStoreHandle hCertStore, IntPtr pPrevCertContext);
+        internal enum CertQueryObjectType : int
+        {
+            CERT_QUERY_OBJECT_FILE = 0x00000001,
+            CERT_QUERY_OBJECT_BLOB = 0x00000002,
+        }
     }
 }
