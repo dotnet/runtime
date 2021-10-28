@@ -627,7 +627,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static readonly ConditionalWeakTable<Type, Hashtable> s_setMemberValueDelegateCache = new ConditionalWeakTable<Type, Hashtable>();
+        private static readonly ContextAwareTables<Hashtable> s_setMemberValueDelegateCache = new ContextAwareTables<Hashtable>();
 
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
@@ -635,7 +635,7 @@ namespace System.Xml.Serialization
             Debug.Assert(o != null, "Object o should not be null");
             Debug.Assert(!string.IsNullOrEmpty(memberName), "memberName must have a value");
             Type type = o.GetType();
-            var delegateCacheForType = s_setMemberValueDelegateCache.GetValue(type, _ => new Hashtable());
+            var delegateCacheForType = s_setMemberValueDelegateCache.GetOrCreateValue(type, () => new Hashtable());
             var result = delegateCacheForType[memberName];
             if (result == null)
             {

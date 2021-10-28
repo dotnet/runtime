@@ -162,9 +162,7 @@ namespace System.Xml.Serialization
         internal const string TrimSerializationWarning = "Members from serialized types may be trimmed if not referenced directly";
         private const string TrimDeserializationWarning = "Members from deserialized types may be trimmed if not referenced directly";
 
-        private static readonly Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new Dictionary<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
-        private static readonly ConditionalWeakTable<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerWeakTable = new ConditionalWeakTable<Type, Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
-
+        private static readonly ContextAwareTables<Dictionary<XmlSerializerMappingKey, XmlSerializer>> s_xmlSerializerTable = new ContextAwareTables<Dictionary<XmlSerializerMappingKey, XmlSerializer>>();
         protected XmlSerializer()
         {
         }
@@ -704,29 +702,7 @@ namespace System.Xml.Serialization
             Dictionary<XmlSerializerMappingKey, XmlSerializer>? typedMappingTable = null;
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(type.Assembly);
 
-            // Look up in the fast table if not collectible
-            if (alc == null || !alc.IsCollectible)
-            {
-                lock (s_xmlSerializerTable)
-                {
-                    if (!s_xmlSerializerTable.TryGetValue(type, out typedMappingTable))
-                    {
-                        typedMappingTable = new Dictionary<XmlSerializerMappingKey, XmlSerializer>();
-                        s_xmlSerializerTable[type] = typedMappingTable;
-                    }
-                }
-            }
-            else    // Otherwise, look up in the collectible-friendly table
-            {
-                lock (s_xmlSerializerWeakTable)
-                {
-                    if (!s_xmlSerializerWeakTable.TryGetValue(type, out typedMappingTable))
-                    {
-                        typedMappingTable = new Dictionary<XmlSerializerMappingKey, XmlSerializer>();
-                        s_xmlSerializerWeakTable.Add(type, typedMappingTable);
-                    }
-                }
-            }
+            typedMappingTable = s_xmlSerializerTable.GetOrCreateValue(type, () => new Dictionary<XmlSerializerMappingKey, XmlSerializer>());
 
             lock (typedMappingTable)
             {
