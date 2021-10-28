@@ -127,7 +127,7 @@ CrashReportWriter::WriteCrashReport()
                     break;
 
                 default:
-                    exceptionType = "0x40000000";
+                    exceptionType = "0x00000000";
                     break;
                 }
             }
