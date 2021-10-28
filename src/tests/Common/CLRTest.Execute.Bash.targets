@@ -509,6 +509,7 @@ set -e
         <![CDATA[
 %23%21/usr/bin/env bash
 set -x
+set -e
       ]]></CLRTestExecutionScriptHeader>
 
       <!-- NOTE! semicolons must be escaped with %3B boooo -->

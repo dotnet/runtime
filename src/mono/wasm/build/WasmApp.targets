@@ -317,20 +317,6 @@
       SkipMissingAssemblies="$(WasmSkipMissingAssemblies)">
       <Output TaskParameter="ReferencedAssemblies" ItemName="_TmpWasmAssemblies" />
     </WasmLoadAssembliesAndReferences>
-  </Target>
-  
-  <Target Name="_CheckEmccIsExpectedVersion">
-    <Error Condition="'$(_IsEMSDKMissing)' == 'true'"
-           Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
-
-    <Message Text="$!!!naricc_debug!!!: emcc-version.txt: $([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))" Importance="High"/>
-    <ReadLinesFromFile File="$([MSBuild]::NormalizePath($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'src', 'emcc-version.txt'))">
-        <Output TaskParameter="Lines" PropertyName="RuntimeEmccVersion" />
-    </ReadLinesFromFile>
-
-    <Exec Command="emcc --version" WorkingDirectory="$(_WasmIntermediateOutputPath)" EnvironmentVariables="@(EmscriptenEnvVars)" ConsoleToMsBuild="true" StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" ItemName="_VersionLines" />
-    </Exec>
 
     <ItemGroup>
       <_WasmAssembliesInternal Remove="@(_WasmAssembliesInternal)" />

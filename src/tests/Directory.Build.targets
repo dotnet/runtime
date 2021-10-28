@@ -358,7 +358,7 @@
         <RunTimeDependencyCopyLocal
           Include="@(RuntimeFiles)"
           TargetDir="runtimepack/native/"/>
-        
+
         <RunTimeDependencyCopyLocal
           Include="$(MicrosoftNetCoreAppRuntimePackRidDir)"
           TargetDir="runtimepack/"/>
@@ -390,7 +390,7 @@
           TargetDir="MonoTargetsTasks/"/>
 
         <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\*"
           TargetDir="wasm-test-runner/"/>
 
         <RunTimeDependencyCopyLocal
@@ -399,7 +399,7 @@
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
-          TargetDir="build/"/>
+          TargetDir="wasm/"/>
 
         <RunTimeDependencyCopyLocal
            Include="$(EMSDK_PATH)\**"
@@ -432,7 +432,7 @@
         <TrimmerRootAssembly Include="mscorlib" />
       </ItemGroup>
 
-      <PropertyGroup>      
+      <PropertyGroup>
         <TrimmerSingleWarn>false</TrimmerSingleWarn>
         <PublishTrimmed>true</PublishTrimmed>
       </PropertyGroup>
@@ -442,7 +442,7 @@
               Projects="$(MSBuildProjectFullPath)"
               BuildInParallel="true"
               ContinueOnError="ErrorAndContinue" />
-  </Target> 
+  </Target>
 
   <Import Project="$(RepoRoot)eng/liveBuilds.targets" />
   <Import Project="$(MSBuildProjectFullPath).targets" Condition="Exists('$(MSBuildProjectFullPath).targets')"/>

@@ -122,27 +122,17 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetArchitecture)' == 'wasm'">
-       
+
         <RunTimeDependencyCopyLocal
           Include="$(EmSdkDir)\**"
           TargetDir="build/emsdk/"/>
 
-        
         <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\JsonToItemsTaskFactory\Debug\$(NetCoreAppToolCurrent)\publish\**"
-          TargetDir="build/WasmAppBuilder"/>
+          Include="$(ArtifactsBinDir)\MonoTargetsTasks\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="build/MonoTargetsTasks/"/>
 
-
-        <RunTimeDependencyCopyLocal
-          Include="$(MonoAOTCompilerDir)/**"
-          TargetDir="build/MonoAOTCompiler/"
-        />
-
-        
-        <RunTimeDependencyCopyLocal
-          Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.*"
-          TargetDir="build/microsoft.netcore.app.runtime.browser-wasm/"/>
-
+        <_RuntimePackFiles Include="$(MicrosoftNetCoreAppRuntimePackDir)\**\*" TargetDir="build/microsoft.netcore.app.runtime.browser-wasm/%(RecursiveDir)/" />
+        <RunTimeDependencyCopyLocal Include="@(_RuntimePackFiles)" TargetDir="%(_RuntimePackFiles.TargetDir)" />
 
         <RuntimeDependencyCopyLocal
            Include="$(MonoAotCrossDir)/**"
@@ -154,37 +144,36 @@
           TargetDir="runtimepack/native/"
           Condition="'%(LibrariesRuntimeFiles.NativeSubDirectory)' == ''" />
 
-        
+
         <RunTimeDependencyCopyLocal
           Include="$(ArtifactsDir)\TargetingPack\**"
           TargetDir="TargetingPack/"/>
-        
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\publish\**"
-          TargetDir="/build/WasmAppBuilder/"/>
 
-        
+        <RunTimeDependencyCopyLocal
+          Include="$(ArtifactsBinDir)\WasmAppBuilder\Debug\$(NetCoreAppToolCurrent)\**"
+          TargetDir="build/WasmAppBuilder/"/>
+
+
 	      <RunTimeDependencyCopyLocal
 	        Include="$(ArtifactsBinDir)\MonoAOTCompiler\Debug\$(NetCoreAppToolCurrent)\**"
-	        TargetDir="/build/MonoAOTCompiler/" />
-        
+	        TargetDir="build/MonoAOTCompiler/" />
+
         <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\WasmTestRunner.proj"
+          Include="$(RepoRoot)\src\tests\Common\wasm-test-runner\*"
           TargetDir="wasm-test-runner/"/>
 
-        
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\runtime-test.js"
           TargetDir="runtime-test/"/>
 
         <RunTimeDependencyCopyLocal
           Include="$(MonoProjectRoot)\wasm\build\*"
-          TargetDir="build/"/>
+          TargetDir="build/wasm/"/>
 
     </ItemGroup>
 
 
-     <Message Text="!!!naricc_debug!!!: MonoAotCrossCompiler: $(MonoAotCrossCompiler) MonoAotCompilerDir: $(MonoAOTCompilerDir) EmSdkDir: $(EmSdkDir) CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture): RuntimeDependencyCopyLocal: @(RunTimeDependencyCopyLocal) " Importance="high" />
+     <Message Text="!!!naricc_debug!!!: MonoAotCrossCompiler: $(MonoAotCrossCompiler) MonoAotCompilerDir: $(MonoAOTCompilerDir) EmSdkDir: $(EmSdkDir) CopyDependencyToCoreRoot: MicrosoftNetCoreAppRuntimePackDir: $(MicrosoftNetCoreAppRuntimePackDir): TagetArchitecture: $(TargetArchitecture)" Importance="high" />
 
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />

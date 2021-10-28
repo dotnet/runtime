@@ -240,7 +240,7 @@
 
     <PInvokeTableGenerator
       Modules="@(_WasmPInvokeModules)"
-      Assemblies="@(_WasmAssembliesInternal)"
+      Assemblies="@(_WasmAssembliesInternal);$(MicrosoftNetCoreAppRuntimePackRidDir)native/System.Private.CoreLib.dll"
       OutputPath="$(_WasmPInvokeTablePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </PInvokeTableGenerator>
@@ -257,7 +257,7 @@
 
     <IcallTableGenerator
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
-      Assemblies="@(_WasmAssembliesInternal)"
+      Assemblies="@(_WasmAssembliesInternal);$(MicrosoftNetCoreAppRuntimePackRidDir)native/System.Private.CoreLib.dll"
       OutputPath="$(_WasmICallTablePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </IcallTableGenerator>

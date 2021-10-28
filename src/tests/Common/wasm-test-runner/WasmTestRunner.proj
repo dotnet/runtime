@@ -1,10 +1,9 @@
 <!-- This project requires an explicit SDK version number because it is used on Helix,
       and global.json is not available. -->
-<Project Sdk="Microsoft.Build.NoTargets" DefaultTargets="WasmBuildApp">
+<Project  DefaultTargets="WasmBuildApp">
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <MicrosoftNetCoreAppRuntimePackDir>$(CORE_ROOT)\runtimepack-non-existant</MicrosoftNetCoreAppRuntimePackDir>
-    <MicrosoftNetCoreAppRuntimePackRidDir>$(CORE_ROOT)\build\runtimepack</MicrosoftNetCoreAppRuntimePackRidDir>
     <!-- TODO: Target frameowkr should not be hard coded, but I need to propagate NetCoreAppToolCurrent? -->
     <TargetFramework>net6.0</TargetFramework>
     <BuildDir>$(MSBuildThisFileDirectory)\obj\$(Configuration)\wasm</BuildDir>
@@ -13,28 +12,25 @@
     <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
     <IsWasmProject>true</IsWasmProject>
     <WasmGenerateAppBundle>true</WasmGenerateAppBundle>
-    <WasmAppBuilderTasksAssemblyPath>$(CORE_ROOT)\WasmAppBuilder\WasmAppBuilder.dll</WasmAppBuilderTasksAssemblyPath>
-    <MonoAOTCompilerTasksAssemblyPath>$(CORE_ROOT)\MonoAOTCompiler\MonoAOTCompiler.dll</MonoAOTCompilerTasksAssemblyPath>
-    <MonoTargetsTasksAssemblyPath>$(CORE_ROOT)\MonoTargetsTasks\MonoTargetsTasks.dll</MonoTargetsTasksAssemblyPath>
-    <JsonToItemsTaskFactoryTasksAssemblyPath>$(CORE_ROOT)\JsonToItemsTaskFactory\JsonToItemsTaskFactory.dll</JsonToItemsTaskFactoryTasksAssemblyPath>
-    <RuntimeConfigParserTasksAssemblyPath>$(CORE_ROOT)\RuntimeConfigParser\RuntimeConfigParser.dll</RuntimeConfigParserTasksAssemblyPath>
-    <EMSDK_PATH>$(CORE_ROOT)\build\emsdk</EMSDK_PATH>
-    <MonoAOTCompilerDir>$(CORE_ROOT)\monoaotcompiler</MonoAOTCompilerDir>
-    <PublishTrimmed>true</PublishTrimmed>
-    <WasmBuildSupportDir>$(CORE_ROOT)/build/</WasmBuildSupportDir>
-    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
-  </PropertyGroup>
+    <AssemblyName>simple</AssemblyName>
 
-  <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.props" />
-  <Import Project="$(CORE_ROOT)/build/WasmApp.LocalBuild.targets" />
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' != ''">$(HELIX_WORKITEM_ROOT)\wasm_build\</TestRootDir>
+    <TestRootDir Condition="'$(HELIX_WORKITEM_ROOT)' == ''">$(MSBuildThisFileDirectory)..\wasm_build\</TestRootDir>
+
+    <IntermediateOutputPath>$(TestRootDir)\obj\</IntermediateOutputPath>
+    <PublishTrimmed>true</PublishTrimmed>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <OriginalPublishDir>$(TestBinDir)\publish\</OriginalPublishDir>
+    <RunAOTCompilationAfterBuild>true</RunAOTCompilationAfterBuild>
+  </PropertyGroup>
 
   <PropertyGroup>
-    <WasmBuildAppDependsOn>BuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
+    <WasmBuildAppDependsOn>PrepareForWasmBuildApp;$(WasmBuildAppDependsOn)</WasmBuildAppDependsOn>
   </PropertyGroup>
 
-  <Target Name="BuildApp" DependsOnTargets="Publish">
+  <Target Name="PrepareForWasmBuildApp">
     <PropertyGroup>
-      <WasmMainAssemblyFileName>$(TestAssemblyFileName)</WasmMainAssemblyFileName>
+      <WasmMainAssemblyFileName>$(OriginalPublishDir)WasmTestRunner.dll</WasmMainAssemblyFileName>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>$(CORE_ROOT)\runtime-test\runtime-test.js</WasmMainJSPath>
       <WasmResolveAssembliesBeforeBuild>false</WasmResolveAssembliesBeforeBuild>
@@ -45,9 +41,9 @@
 
     <Message Text="!!!naricc_debug!!!: WasmTestRunner: TestBinDir: $(TestBinDir): Corelib: $(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" Importance="high" />
 
-    <ItemGroup>      
+    <ItemGroup>
       <WasmAssembliesToBundle Include="$(TestBinDir)\publish\*.dll" />
-      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" />
+      <!-- <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackDir)native/System.Private.CoreLib.dll" /> -->
     </ItemGroup>
 
     <Message Importance="High" Text="AppDir: $(AppDir)" />
@@ -55,5 +51,5 @@
     <Message Importance="High" Text="ArtifactsBinDir: $(ArtifactsBinDir)" />
   </Target>
 
-  <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
 </Project>
