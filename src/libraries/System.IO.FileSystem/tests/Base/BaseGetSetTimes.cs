@@ -104,23 +104,28 @@ namespace System.IO.Tests
             // setting it on the symlink, or if it failed by setting it on the target.
             // The symlink test is [0] of the Assert.All, and the target check is [1].
 
-            void RunSymlinkTestPart()
+            if (!targetExists)
             {
                 T item = CreateSymlinkToItem(target, isRelative);
                 SettingUpdatesPropertiesCore(item);
             }
-
-            if (!targetExists)
-            {
-                RunSymlinkTestPart();
-            }
             else
             {
+                // Create the symlink first, since it may change the access time of the target
+                // to check if it's a file or folder, and whether it exists.
+                T item = CreateSymlinkToItem(target, isRelative);
+
+                // Ensure that we have the latest times
+                if (target is FileSystemInfo fsi) fsi.Refresh();
+
                 // We only use UTC times since checking the others is unnecessary.
                 IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
                 DateTime[] initialTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
 
-                Assert.All(new Action[] { RunSymlinkTestPart, () =>
+                Assert.All(new Action[] { () =>
+                {
+                    SettingUpdatesPropertiesCore(item);
+                }, () =>
                 {
                     // Ensure that we have the latest times
                     if (target is FileSystemInfo fsi) fsi.Refresh();
