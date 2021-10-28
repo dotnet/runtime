@@ -138,7 +138,7 @@
   <data name="DuplicateItem" xml:space="preserve">
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
-  <data name="Argument_RequiredFieldNotSpecified" xml:space="preserve">
+  <data name="RequiredFieldNotSpecified" xml:space="preserve">
     <value>The required field '{0}' was not specified.</value>
   </data>
 </root>

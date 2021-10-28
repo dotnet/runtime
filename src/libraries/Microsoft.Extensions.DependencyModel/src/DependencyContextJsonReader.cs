@@ -242,13 +242,8 @@ namespace Microsoft.Extensions.DependencyModel
             return target;
         }
 
-        private static bool IsRuntimeTarget(string? name)
+        private static bool IsRuntimeTarget(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                return false;
-            }
-
             return name.Contains(DependencyContextStrings.VersionSeparator);
         }
 
@@ -375,7 +370,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             if (string.IsNullOrEmpty(targetName))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(targetName)));
+                throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(targetName)));
             }
 
             reader.ReadStartObject();
@@ -388,7 +383,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(targetLibraryName))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(targetLibraryName)));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(targetLibraryName)));
                 }
 
                 libraries.Add(ReadTargetLibrary(ref reader, targetLibraryName));
@@ -465,6 +460,15 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.TryReadStringProperty(out string? name, out string? version))
             {
+                if (string.IsNullOrEmpty(name))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(name)));
+                }
+                if (string.IsNullOrEmpty(version))
+                {
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(version)));
+                }
+
                 dependencies.Add(new Dependency(Pool(name), Pool(version)));
             }
 
@@ -482,12 +486,12 @@ namespace Microsoft.Extensions.DependencyModel
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
                 string? libraryName = reader.GetString();
-                reader.Skip();
 
                 if (string.IsNullOrEmpty(libraryName))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(libraryName)));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(libraryName)));
                 }
+                reader.Skip();
 
                 runtimes.Add(libraryName);
             }
@@ -509,6 +513,11 @@ namespace Microsoft.Extensions.DependencyModel
                 string? fileVersion = null;
 
                 string? path = reader.GetString();
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    throw new ArgumentException(null, nameof(path));
+                }
 
                 reader.ReadStartObject();
 
@@ -543,9 +552,16 @@ namespace Microsoft.Extensions.DependencyModel
 
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
+                var runtimePath = reader.GetString();
+
+                if (string.IsNullOrEmpty(runtimePath))
+                {
+                    throw new ArgumentException(null, nameof(runtimePath));
+                }
+
                 var runtimeTarget = new RuntimeTargetEntryStub
                 {
-                    Path = reader.GetString()
+                    Path = runtimePath
                 };
 
                 reader.ReadStartObject();
@@ -588,6 +604,12 @@ namespace Microsoft.Extensions.DependencyModel
             while (reader.Read() && reader.IsTokenTypeProperty())
             {
                 string? path = reader.GetString();
+
+                if (string.IsNullOrEmpty(path))
+                {
+                    throw new ArgumentException(null, nameof(path));
+                }
+
                 string? locale = null;
 
                 reader.ReadStartObject();
@@ -625,7 +647,7 @@ namespace Microsoft.Extensions.DependencyModel
 
                 if (string.IsNullOrEmpty(libraryName))
                 {
-                    throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(libraryName)));
+                    throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(libraryName)));
                 }
 
                 libraries.Add(libraryName, ReadOneLibrary(ref reader));
@@ -679,7 +701,7 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (string.IsNullOrEmpty(type))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_RequiredFieldNotSpecified, nameof(type)));
+                throw new FormatException(SR.Format(SR.RequiredFieldNotSpecified, nameof(type)));
             }
 
             return new LibraryStub()
@@ -703,6 +725,11 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 string? runtime = reader.GetString();
                 string?[] fallbacks = reader.ReadStringArray();
+
+                if (string.IsNullOrEmpty(runtime))
+                {
+                    throw new ArgumentException(null, nameof(runtime));
+                }
 
                 runtimeFallbacks.Add(new RuntimeFallbacks(runtime, fallbacks));
             }
@@ -870,7 +897,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             public string? Type;
 
-            public string? Path;
+            public string Path;
 
             public string? Rid;
 
