@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
         /// Function for processing the value e.g. hiding secrets
         /// Parameters:
         ///   ConfigurationDebugViewContext: Context of the current configuration item
-        ///   returns: Value is used to assign as the Value of the configuration section
+        ///   returns: A string value is used to assign as the Value of the configuration section
         /// </param>
         /// <returns> The debug view. </returns>
         public static string GetDebugView(this IConfigurationRoot root, Func<ConfigurationDebugViewContext, string>? processValue)
