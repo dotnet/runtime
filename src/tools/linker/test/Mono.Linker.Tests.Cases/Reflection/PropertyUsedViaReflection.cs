@@ -17,6 +17,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestGetterOnly ();
 			TestBindingFlags ();
 			TestUnknownBindingFlags (BindingFlags.Public);
+			TestUnknownBindingFlagsAndName (BindingFlags.Public, "IrrelevantName");
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -86,6 +87,17 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Since the binding flags are not known linker should mark all properties on the type
 			var property = typeof (UnknownBindingFlags).GetProperty ("SomeProperty", bindingFlags);
+			property.GetValue (null, new object[] { });
+		}
+
+		[Kept]
+		[RecognizedReflectionAccessPattern (
+			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string), typeof (BindingFlags) },
+			typeof (UnknownBindingFlagsAndName), nameof (UnknownBindingFlagsAndName.SomeProperty), (Type[]) null)]
+		static void TestUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
+		{
+			// Since the binding flags and name are not known linker should mark all properties on the type
+			var property = typeof (UnknownBindingFlagsAndName).GetProperty (name, bindingFlags);
 			property.GetValue (null, new object[] { });
 		}
 
@@ -303,6 +315,18 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		class UnknownBindingFlags
+		{
+			[Kept]
+			internal static int SomeProperty {
+				[Kept]
+				private get { return _field; }
+				[Kept]
+				set { _field = value; }
+			}
+		}
+
+		[Kept]
+		class UnknownBindingFlagsAndName
 		{
 			[Kept]
 			internal static int SomeProperty {
