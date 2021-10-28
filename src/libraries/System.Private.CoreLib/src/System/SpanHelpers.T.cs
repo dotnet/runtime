@@ -226,7 +226,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            if (typeof(T).IsValueType)
+            if (typeof(T).IsValueType && RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 // bool and char will already have been checked before, just do checks for types
                 // that are equal to sizeof(int) or sizeof(long)
