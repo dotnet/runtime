@@ -1148,6 +1148,8 @@ static int32_t CopyFile_ReadWrite(int inFd, int outFd)
 
 int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t sourceLength)
 {
+    (void)sourceLength; // unused on some platforms.
+
     int inFd = ToFileDescriptor(sourceFd);
     int outFd = ToFileDescriptor(destinationFd);
 
