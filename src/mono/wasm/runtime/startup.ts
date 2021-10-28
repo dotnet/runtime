@@ -11,6 +11,7 @@ import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from ".
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { conv_string } from "./strings";
+import { find_corlib_class } from "./class-loader";
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
@@ -347,12 +348,14 @@ export function bindings_lazy_init(): void {
     (<any>Float32Array.prototype)[wasm_type_symbol] = 17;
     (<any>Float64Array.prototype)[wasm_type_symbol] = 18;
 
-    runtimeHelpers._box_buffer = Module._malloc(16);
-    runtimeHelpers._unbox_buffer = Module._malloc(16);
-    runtimeHelpers._class_int32 = cwraps.mono_wasm_find_corlib_class("System", "Int32");
-    runtimeHelpers._class_uint32 = cwraps.mono_wasm_find_corlib_class("System", "UInt32");
-    runtimeHelpers._class_double = cwraps.mono_wasm_find_corlib_class("System", "Double");
-    runtimeHelpers._class_boolean = cwraps.mono_wasm_find_corlib_class("System", "Boolean");
+    runtimeHelpers._box_buffer_size = 65536;
+    runtimeHelpers._unbox_buffer_size = 65536;
+    runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
+    runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
+    runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
+    runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
+    runtimeHelpers._class_double = find_corlib_class("System", "Double");
+    runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
     runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
     const bindingAssembly = INTERNAL.BINDING_ASM;
@@ -417,9 +420,9 @@ function _load_assets_and_runtime(args: MonoConfig) {
         if (ctx.pending_count === 0) {
             try {
                 _finalize_startup(args, ctx);
-            } catch (exc: any) {
+            } catch (exc : any) {
                 console.error("Unhandled exception in _finalize_startup", exc);
-                console.log(exc.stack);
+                console.error(exc.stack);
                 throw exc;
             }
         }

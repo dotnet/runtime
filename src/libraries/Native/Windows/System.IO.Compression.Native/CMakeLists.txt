@@ -85,7 +85,7 @@ if (GEN_SHARED_LIB)
         ${NATIVECOMPRESSION_SOURCES}
         System.IO.Compression.Native.def
         # This will add versioning to the library
-        ${CMAKE_REPO_ROOT}/artifacts/obj/NativeVersion.rc
+        ${VERSION_FILE_RC_PATH}
     )
 endif()
 

@@ -70,7 +70,7 @@ namespace Microsoft.Interop
 
         public void Initialize(IncrementalGeneratorInitializationContext context)
         {
-            var methodsToGenerate = context.SyntaxProvider
+            var attributedMethods = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     static (node, ct) => ShouldVisitNode(node),
                     static (context, ct) =>
@@ -83,6 +83,15 @@ namespace Microsoft.Interop
                     static modelData => modelData.Symbol.IsStatic && modelData.Symbol.GetAttributes().Any(
                         static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
                 );
+
+            var methodsToGenerate = attributedMethods.Where(static data => !data.Symbol.ReturnsByRef && !data.Symbol.ReturnsByRefReadonly);
+
+            var refReturnMethods = attributedMethods.Where(static data => data.Symbol.ReturnsByRef || data.Symbol.ReturnsByRefReadonly);
+
+            context.RegisterSourceOutput(refReturnMethods, static (context, refReturnMethod) =>
+            {
+                context.ReportDiagnostic(Diagnostic.Create(GeneratorDiagnostics.ReturnConfigurationNotSupported, refReturnMethod.Syntax.GetLocation(), "ref return", refReturnMethod.Symbol.ToDisplayString()));
+            });
 
             IncrementalValueProvider<(Compilation compilation, bool isSupported, Version targetFrameworkVersion)> compilationAndTargetFramework = context.CompilationProvider
                 .Select(static (compilation, ct) =>
