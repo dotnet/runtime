@@ -567,6 +567,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 ///
 /// Tiered Compilation
 ///
+#ifdef FEATURE_TIERED_COMPILATION
 #ifdef _DEBUG
 // Use lower values to exercise more paths sooner
 #define TC_BackgroundWorkerTimeoutMs (100)
@@ -581,7 +582,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 #define TC_DelaySingleProcMultiplier (10)
 #define TC_DeleteCallCountingStubsAfter (4096)
 #endif // _DEBUG
-#ifdef FEATURE_TIERED_COMPILATION
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_QuickJit, W("TC_QuickJit"), 1, "For methods that would be jitted, enable using quick JIT when appropriate.")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops"), 0, "When quick JIT is enabled, quick JIT may also be used for methods that contain loops.")
