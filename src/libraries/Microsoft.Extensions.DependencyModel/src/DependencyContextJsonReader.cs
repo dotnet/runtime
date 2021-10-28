@@ -756,7 +756,7 @@ namespace Microsoft.Extensions.DependencyModel
         {
             string nameWithVersion = targetLibrary.Name;
 
-            if (libraryStubs == null || string.IsNullOrEmpty(nameWithVersion) || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
+            if (libraryStubs == null || !libraryStubs.TryGetValue(nameWithVersion, out LibraryStub stub))
             {
                 throw new InvalidOperationException(SR.Format(SR.LibraryInformationNotFound, nameWithVersion));
             }
