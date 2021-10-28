@@ -95,6 +95,9 @@ CrashReportWriter::WriteCrashReport()
             {
                 switch (m_crashInfo.Signal())
                 {
+                case 0:
+                    break;
+
                 case SIGILL:
                     exceptionType = "0x50000000";
                     break;
@@ -120,8 +123,11 @@ CrashReportWriter::WriteCrashReport()
                     break;
 
                 case SIGABRT:
-                default:
                     exceptionType = "0x30000000";
+                    break;
+
+                default:
+                    exceptionType = "0x40000000";
                     break;
                 }
             }
