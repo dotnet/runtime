@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Internal.Runtime.CompilerServices;
 
@@ -224,6 +225,22 @@ namespace System
         public static unsafe bool Contains<T>(ref T searchSpace, T value, int length) where T : IEquatable<T>
         {
             Debug.Assert(length >= 0);
+
+            if (typeof(T).IsValueType)
+            {
+                // bool and char will already have been checked before, just do checks for types
+                // that are equal to sizeof(int) or sizeof(long)
+                if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    int result = IndexOfValueType(ref Unsafe.As<T, int>(ref searchSpace), Unsafe.As<T, int>(ref value), length);
+                    return result != -1;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    int result = IndexOfValueType(ref Unsafe.As<T, long>(ref searchSpace), Unsafe.As<T, long>(ref value), length);
+                    return result != -1;
+                }
+            }
 
             nint index = 0; // Use nint for arithmetic to avoid unnecessary 64->32->64 truncations
 
