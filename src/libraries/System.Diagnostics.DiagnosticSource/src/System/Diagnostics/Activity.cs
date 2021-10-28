@@ -5,7 +5,6 @@ using System.Buffers.Binary;
 using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -1776,6 +1775,9 @@ namespace System.Diagnostics
         internal static unsafe void SetToRandomBytes(Span<byte> outBytes)
         {
             Debug.Assert(outBytes.Length == 16 || outBytes.Length == 8);
+#if NET6_0_OR_GREATER
+            Random.Shared.NextBytes(outBytes);
+#else
             RandomNumberGenerator r = RandomNumberGenerator.Current;
 
             Unsafe.WriteUnaligned(ref outBytes[0],  r.Next());
@@ -1784,6 +1786,7 @@ namespace System.Diagnostics
             {
                 Unsafe.WriteUnaligned(ref outBytes[8],  r.Next());
             }
+#endif
         }
 
         /// <summary>
