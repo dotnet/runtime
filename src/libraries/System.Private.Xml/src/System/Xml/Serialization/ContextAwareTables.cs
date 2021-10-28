@@ -5,10 +5,11 @@ namespace System.Xml.Serialization
 {
     using System;
     using System.Collections;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.Loader;
 
-    internal class ContextAwareTables<T> where T : class?
+    internal class ContextAwareTables<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T> where T : class?
     {
         private Hashtable _defaultTable;
         private ConditionalWeakTable<Type, T> _collectibleTable;
