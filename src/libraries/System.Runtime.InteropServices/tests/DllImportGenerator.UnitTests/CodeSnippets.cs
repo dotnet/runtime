@@ -1419,5 +1419,16 @@ partial class Test
     );
 }
 ";
+
+        public static string RefReturn(string typeName) => $@"
+using System.Runtime.InteropServices;
+partial struct Basic
+{{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial ref {typeName} RefReturn();
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial ref readonly {typeName} RefReadonlyReturn();
+}}";
+
     }
 }
