@@ -142,6 +142,22 @@ namespace NS
 ";
 
         /// <summary>
+        /// Containing type with and without unsafe
+        /// </summary>
+        public static readonly string UnsafeContext = @"
+using System.Runtime.InteropServices;
+partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial void Method1();
+}
+unsafe partial class Test
+{
+    [GeneratedDllImport(""DoesNotExist"")]
+    public static partial int* Method2();
+}
+";
+        /// <summary>
         /// Declaration with user defined EntryPoint.
         /// </summary>
         public static readonly string UserDefinedEntryPoint = @"
