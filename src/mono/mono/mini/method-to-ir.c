@@ -2587,8 +2587,7 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	EMIT_NEW_AOTCONST (cfg, slot_ins, MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 
 	// Can't add basic blocks during decompose/interp entry mode etc.
-	// Can't add basic blocks to the gsharedvt init block either
-	if (cfg->after_method_to_ir || entry->info_type == MONO_RGCTX_INFO_METHOD_GSHAREDVT_INFO || cfg->interp_entry_only) {
+	if (cfg->after_method_to_ir || cfg->interp_entry_only) {
 		MonoInst *args [2] = { rgctx, slot_ins };
 		if (entry->in_mrgctx)
 			call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
@@ -6401,19 +6400,22 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		mono_emit_method_call (cfg, wrapper, args, NULL);
 	}
 
-	/* FIRST CODE BLOCK */
-	NEW_BBLOCK (cfg, tblock);
-	tblock->cil_code = ip;
-	cfg->cbb = tblock;
-	cfg->ip = ip;
-
-	ADD_BBLOCK (cfg, tblock);
-
 	if (cfg->method == method) {
 		breakpoint_id = mono_debugger_method_has_breakpoint (method);
 		if (breakpoint_id) {
 			MONO_INST_NEW (cfg, ins, OP_BREAK);
 			MONO_ADD_INS (cfg->cbb, ins);
+		}
+	}
+
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		if (!cfg->method->wrapper_type && header->num_clauses) {
+			for (int i = 0; i < header->num_clauses; ++i) {
+				MonoExceptionClause *clause = &header->clauses [i];
+				/* Finally clauses are checked after the remove_finally pass */
+				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
+					cfg->interp_entry_only = TRUE;
+			}
 		}
 	}
 
@@ -6423,9 +6425,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->bb_init = init_localsbb;
 	init_localsbb->real_offset = cfg->real_offset;
 	start_bblock->next_bb = init_localsbb;
-	init_localsbb->next_bb = cfg->cbb;
 	link_bblock (cfg, start_bblock, init_localsbb);
-	link_bblock (cfg, init_localsbb, cfg->cbb);
 	init_localsbb2 = init_localsbb;
 	cfg->cbb = init_localsbb;
 
@@ -6468,7 +6468,27 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (init_locals)
 			ins->flags |= MONO_INST_INIT;
 		*/
+		if (cfg->llvm_only) {
+			init_localsbb = cfg->cbb;
+			init_localsbb2 = cfg->cbb;
+		}
 	}
+
+	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
+		if (cfg->interp_entry_only)
+			emit_llvmonly_interp_entry (cfg, header);
+	}
+
+	/* FIRST CODE BLOCK */
+	NEW_BBLOCK (cfg, tblock);
+	tblock->cil_code = ip;
+	cfg->cbb = tblock;
+	cfg->ip = ip;
+
+	init_localsbb->next_bb = cfg->cbb;
+	link_bblock (cfg, init_localsbb, cfg->cbb);
+
+	ADD_BBLOCK (cfg, tblock);
 
 	CHECK_CFG_EXCEPTION;
 
@@ -6519,19 +6539,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			MONO_ADD_INS (cfg->cbb, arg_ins);
 			MONO_EMIT_NEW_CHECK_THIS (cfg, arg_ins->dreg);
 		}
-	}
-
-	if (cfg->llvm_only && cfg->interp && cfg->method == method) {
-		if (!cfg->method->wrapper_type && header->num_clauses) {
-			for (int i = 0; i < header->num_clauses; ++i) {
-				MonoExceptionClause *clause = &header->clauses [i];
-				/* Finally clauses are checked after the remove_finally pass */
-				if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
-					cfg->interp_entry_only = TRUE;
-			}
-		}
-		if (cfg->interp_entry_only)
-			emit_llvmonly_interp_entry (cfg, header);
 	}
 
 	skip_dead_blocks = !dont_verify;

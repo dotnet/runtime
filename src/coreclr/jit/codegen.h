@@ -209,15 +209,7 @@ protected:
 
     static const char* genInsName(instruction ins);
     const char* genInsDisplayName(emitter::instrDesc* id);
-#endif // DEBUG
 
-    //-------------------------------------------------------------------------
-
-    // JIT-time constants for use in multi-dimensional array code generation.
-    unsigned genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension);
-    unsigned genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension);
-
-#ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
 #endif // DEBUG
 

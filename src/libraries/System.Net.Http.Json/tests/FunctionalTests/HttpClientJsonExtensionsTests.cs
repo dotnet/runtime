@@ -117,7 +117,7 @@ namespace System.Net.Http.Json.Functional.Tests
                 },
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
-                    ValidateRequest(request);
+                    ValidateRequest(request, "POST");
                     Person per = JsonSerializer.Deserialize<Person>(request.Body, JsonOptions.DefaultSerializerOptions);
                     per.Validate();
                 });
@@ -161,8 +161,58 @@ namespace System.Net.Http.Json.Functional.Tests
                 },
                 async server => {
                     HttpRequestData request = await server.HandleRequestAsync();
-                    ValidateRequest(request);
+                    ValidateRequest(request, "PUT");
 
+                    byte[] json = request.Body;
+
+                    Person obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions);
+                    obj.Validate();
+
+                    // Assert numbers are not written as strings - JsonException would be thrown here if written as strings.
+                    obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions_StrictNumberHandling);
+                    obj.Validate();
+                });
+        }
+
+        [Fact]
+        public async Task TestPatchAsJsonAsync()
+        {
+            await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
+                async (handler, uri) =>
+                {
+                    using (HttpClient client = new HttpClient(handler))
+                    {
+                        Person person = Person.Create();
+                        Type typePerson = typeof(Person);
+
+                        using HttpResponseMessage response = await client.PatchAsJsonAsync(uri.ToString(), person);
+                        Assert.True(response.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response2 = await client.PatchAsJsonAsync(uri, person);
+                        Assert.True(response2.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response3 = await client.PatchAsJsonAsync(uri.ToString(), person, CancellationToken.None);
+                        Assert.True(response3.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response4 = await client.PatchAsJsonAsync(uri, person, CancellationToken.None);
+                        Assert.True(response4.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response5 = await client.PatchAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person);
+                        Assert.True(response5.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response6 = await client.PatchAsJsonAsync(uri, person, JsonContext.Default.Person);
+                        Assert.True(response6.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response7 = await client.PatchAsJsonAsync(uri.ToString(), person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response7.StatusCode == HttpStatusCode.OK);
+
+                        using HttpResponseMessage response8 = await client.PatchAsJsonAsync(uri, person, JsonContext.Default.Person, CancellationToken.None);
+                        Assert.True(response8.StatusCode == HttpStatusCode.OK);
+                    }
+                },
+                async server => {
+                    HttpRequestData request = await server.HandleRequestAsync();
+                    ValidateRequest(request, "PATCH");
                     byte[] json = request.Body;
 
                     Person obj = JsonSerializer.Deserialize<Person>(json, JsonOptions.DefaultSerializerOptions);
@@ -225,10 +275,11 @@ namespace System.Net.Http.Json.Functional.Tests
             AssertExtensions.Throws<ArgumentNullException>(jsonTypeInfoParamName, () => client.PutAsJsonAsync(uri, null, JsonContext.Default.Person));
         }
 
-        private void ValidateRequest(HttpRequestData requestData)
+        private void ValidateRequest(HttpRequestData requestData, string expectedMethod)
         {
             HttpHeaderData contentType = requestData.Headers.Where(x => x.Name == "Content-Type").First();
             Assert.Equal("application/json; charset=utf-8", contentType.Value);
+            Assert.Equal(expectedMethod, requestData.Method);
         }
 
         [Fact]

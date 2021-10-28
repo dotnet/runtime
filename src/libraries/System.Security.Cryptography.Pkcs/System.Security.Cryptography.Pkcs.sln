@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServ
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{DA204355-86E3-431D-B08E-483A49BEB3DB}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.DllImportGenerator", "..\System.Runtime.InteropServices\gen\DllImportGenerator\DllImportGenerator.csproj", "{6B40D2AA-3405-4AC5-A4B2-CAD11D0B4301}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{E44D1E0E-5F76-41B8-AF5F-6112BCC6A39B}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Cng", "..\System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj", "{906CF937-8BCE-4ABF-B35C-23D51D59232E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Cryptography.Pkcs", "ref\System.Security.Cryptography.Pkcs.csproj", "{1AFD2D0A-B962-449B-AC3B-12ED1F439E91}"
@@ -49,6 +53,14 @@ Global
 		{DA204355-86E3-431D-B08E-483A49BEB3DB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA204355-86E3-431D-B08E-483A49BEB3DB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA204355-86E3-431D-B08E-483A49BEB3DB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B40D2AA-3405-4AC5-A4B2-CAD11D0B4301}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B40D2AA-3405-4AC5-A4B2-CAD11D0B4301}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B40D2AA-3405-4AC5-A4B2-CAD11D0B4301}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B40D2AA-3405-4AC5-A4B2-CAD11D0B4301}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E44D1E0E-5F76-41B8-AF5F-6112BCC6A39B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E44D1E0E-5F76-41B8-AF5F-6112BCC6A39B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E44D1E0E-5F76-41B8-AF5F-6112BCC6A39B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E44D1E0E-5F76-41B8-AF5F-6112BCC6A39B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{906CF937-8BCE-4ABF-B35C-23D51D59232E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{906CF937-8BCE-4ABF-B35C-23D51D59232E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{906CF937-8BCE-4ABF-B35C-23D51D59232E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -77,6 +89,8 @@ Global
 		{1AFD2D0A-B962-449B-AC3B-12ED1F439E91} = {FD768C8B-9BF1-4F02-A2C4-335B22615763}
 		{A8D95486-BBE9-4AD2-9D7C-D5B7CF6B90FD} = {D5B768A4-9BA9-4E78-B735-60052C68035C}
 		{DA204355-86E3-431D-B08E-483A49BEB3DB} = {D5B768A4-9BA9-4E78-B735-60052C68035C}
+		{6B40D2AA-3405-4AC5-A4B2-CAD11D0B4301} = {D5B768A4-9BA9-4E78-B735-60052C68035C}
+		{E44D1E0E-5F76-41B8-AF5F-6112BCC6A39B} = {D5B768A4-9BA9-4E78-B735-60052C68035C}
 		{906CF937-8BCE-4ABF-B35C-23D51D59232E} = {D5B768A4-9BA9-4E78-B735-60052C68035C}
 		{DDD75646-C8BD-4B16-8E59-E6A3668FD9A2} = {D5B768A4-9BA9-4E78-B735-60052C68035C}
 	EndGlobalSection

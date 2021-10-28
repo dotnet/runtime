@@ -14,26 +14,6 @@ initTargetDistroRid()
     initDistroRidGlobal "$__TargetOS" "$__BuildArch" "$__PortableBuild" "$passedRootfsDir"
 }
 
-isMSBuildOnNETCoreSupported()
-{
-    __IsMSBuildOnNETCoreSupported="$__msbuildonunsupportedplatform"
-
-    if [[ "$__IsMSBuildOnNETCoreSupported" == 1 ]]; then
-        return
-    fi
-
-    if [[ "$__SkipManaged" == 1 ]]; then
-        __IsMSBuildOnNETCoreSupported=0
-        return
-    fi
-
-    if [[ ( "$__HostOS" == "Linux" )  && ( "$__HostArch" == "x64" || "$__HostArch" == "arm" || "$__HostArch" == "armel" || "$__HostArch" == "arm64" || "$__HostArch" == "s390x" ) ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    elif [[ ( "$__HostOS" == "OSX" || "$__HostOS" == "FreeBSD" ) && "$__HostArch" == "x64" ]]; then
-        __IsMSBuildOnNETCoreSupported=1
-    fi
-}
-
 setup_dirs()
 {
     echo Setting up directories for build
@@ -68,6 +48,8 @@ check_prereqs()
 
 build_native()
 {
+    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+
     targetOS="$1"
     platformArch="$2"
     cmakeDir="$3"
@@ -127,50 +109,7 @@ build_native()
         buildTool="make"
     fi
 
-    runtimeVersionHeaderFile="$intermediatesDir/../runtime_version.h"
     if [[ "$__SkipConfigure" == 0 ]]; then
-        # if msbuild is not supported, then set __SkipGenerateVersion to 1
-        if [[ "$__IsMSBuildOnNETCoreSupported" == 0 ]]; then __SkipGenerateVersion=1; fi
-        # Drop version.c file
-        __versionSourceFile="$intermediatesDir/version.c"
-
-        if [[ ! -z "${__LogsDir}" ]]; then
-            __binlogArg="-bl:\"$__LogsDir/GenNativeVersion_$__TargetOS.$__BuildArch.$__BuildType.binlog\""
-        fi
-
-        if [[ "$__SkipGenerateVersion" == 0 ]]; then
-            "$__RepoRootDir/eng/common/msbuild.sh" /clp:nosummary "$__ArcadeScriptArgs" "$__RepoRootDir"/eng/empty.csproj \
-                                                   /p:NativeVersionFile="$__versionSourceFile" \
-                                                   /p:RuntimeVersionFile="$runtimeVersionHeaderFile" \
-                                                   /t:GenerateRuntimeVersionFile /restore \
-                                                   $__CommonMSBuildArgs $__binlogArg $__UnprocessedBuildArgs
-            local exit_code="$?"
-            if [[ "$exit_code" != 0 ]]; then
-                echo "${__ErrMsgPrefix}Failed to generate native version file."
-                exit "$exit_code"
-            fi
-        else
-            # Generate the dummy version.c and runtime_version.h, but only if they didn't exist to make sure we don't trigger unnecessary rebuild
-            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
-            if [[ -e "$__versionSourceFile" ]]; then
-                read existingVersionSourceLine < "$__versionSourceFile"
-            fi
-            if [[ "$__versionSourceLine" != "$existingVersionSourceLine" ]]; then
-                cat << EOF > $runtimeVersionHeaderFile
-#define RuntimeAssemblyMajorVersion 0
-#define RuntimeAssemblyMinorVersion 0
-#define RuntimeFileMajorVersion 0
-#define RuntimeFileMinorVersion 0
-#define RuntimeFileBuildVersion 0
-#define RuntimeFileRevisionVersion 0
-#define RuntimeProductMajorVersion 0
-#define RuntimeProductMinorVersion 0
-#define RuntimeProductPatchVersion 0
-#define RuntimeProductVersion
-EOF
-                echo "$__versionSourceLine" > "$__versionSourceFile"
-            fi
-        fi
 
         if [[ "$__StaticAnalyzer" == 1 ]]; then
             scan_build=scan-build
@@ -269,12 +208,10 @@ usage()
     echo "        will use ROOTFS_DIR environment variable if set."
     echo "-gcc: optional argument to build using gcc in PATH."
     echo "-gccx.y: optional argument to build using gcc version x.y."
-    echo "-msbuildonunsupportedplatform: build managed binaries even if distro is not officially supported."
     echo "-ninja: target ninja instead of GNU make"
     echo "-numproc: set the number of build processes."
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
-    echo "-skipgenerateversion: disable version generation even if MSBuild is supported."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
@@ -294,8 +231,6 @@ __HostArch=$arch
 __TargetOS=$os
 __HostOS=$os
 __BuildOS=$os
-
-__msbuildonunsupportedplatform=0
 
 # Get the number of processors available to the scheduler
 # Other techniques such as `nproc` only get the number of
@@ -415,10 +350,6 @@ while :; do
             __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
             ;;
 
-        msbuildonunsupportedplatform|-msbuildonunsupportedplatform)
-            __msbuildonunsupportedplatform=1
-            ;;
-
         ninja|-ninja)
             __UseNinja=1
             ;;
@@ -443,10 +374,6 @@ while :; do
 
         skipconfigure|-skipconfigure)
             __SkipConfigure=1
-            ;;
-
-        skipgenerateversion|-skipgenerateversion)
-            __SkipGenerateVersion=1
             ;;
 
         verbose|-verbose)
@@ -533,6 +460,3 @@ fi
 
 # init the target distro name
 initTargetDistroRid
-
-# Init if MSBuild for .NET Core is supported for this platform
-isMSBuildOnNETCoreSupported

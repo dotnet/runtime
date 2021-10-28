@@ -2898,7 +2898,7 @@ lookup_or_register_info (MonoMemoryManager *mem_manager, MonoClass *klass, MonoM
 static inline int
 class_rgctx_array_size (int n)
 {
-	return 16 << n;
+	return 32 << n;
 }
 
 static inline int
@@ -2956,7 +2956,7 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 	MonoRuntimeGenericContext *orig_rgctx;
 	int rgctx_index;
 	gboolean do_free;
-	MonoJitMemoryManager *jit_mm = jit_mm_for_class (class_vtable->klass);
+	MonoJitMemoryManager *jit_mm;
 
 	/*
 	 * Need a fastpath since this is called without trampolines in llvmonly mode.
@@ -3006,6 +3006,8 @@ fill_runtime_generic_context (MonoVTable *class_vtable, MonoRuntimeGenericContex
 		}
 	}
 	rgctx = orig_rgctx;
+
+	jit_mm = jit_mm_for_class (class_vtable->klass);
 
 	class_context = mono_class_is_ginst (klass) ? &mono_class_get_generic_class (klass)->context : NULL;
 	MonoGenericContext context = { class_context ? class_context->class_inst : NULL, method_inst };
