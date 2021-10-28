@@ -1164,9 +1164,9 @@ int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd, int64_t
     // Certain files (e.g. procfs) may return a size of 0 even though reading them will
     // produce data. We use plain read/write for those.
 #ifdef FICLONE
+    // Try copying data using a copy-on-write clone. This shares storage between the files.
     if (sourceLength != 0)
     {
-        // Try copying data using a copy-on-write clone. This shares storage between the files.
         while ((ret = ioctl(outFd, FICLONE, inFd)) < 0 && errno == EINTR);
         copied = ret == 0;
     }
