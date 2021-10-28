@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/icu</Uri>
       <Sha>5146c6e78ad134305a4b3e857379bdd134db7ac0</Sha>
     </Dependency>
-    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21526.1">
+    <Dependency Name="System.Net.MsQuic.Transport" Version="6.0.0-preview.7.21527.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
-      <Sha>e84278e45cd502355605070bb89606cfcdcd1cb6</Sha>
+      <Sha>7328f528564fede6d6a5e763bd4da3117ca59567</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.Workload.Emscripten.Manifest-7.0.100" Version="7.0.0-alpha.1.21527.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
