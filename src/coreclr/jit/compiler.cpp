@@ -1947,10 +1947,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // FEATURE_SIMD
 
     compUsesThrowHelper = false;
-
-#if FEATURE_LOOP_ALIGN
-    alignBBLists = nullptr;
-#endif
 }
 
 /*****************************************************************************
@@ -5158,6 +5154,14 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks();
 #endif
 
+#if FEATURE_LOOP_ALIGN
+    if (needsLoopAlignment)
+    {
+        // Place loop alignment instructions
+        DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::bbPlaceLoopAlignInstructions);
+    }
+#endif
+
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
@@ -5213,6 +5217,61 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     }
 #endif // FUNC_INFO_LOGGING
 }
+
+#if FEATURE_LOOP_ALIGN
+
+//------------------------------------------------------------------------
+// bbPlaceLoopAlignInstructions: Iterate over all the blocks and determine
+//      the best position to place the 'align' instruction. After 'jmp' are
+//      preferred over block before loop and in case there are multiple blocks
+//      having 'jmp', the one that has lower weight is preferred.
+//      If the block having 'jmp' is hot than the block before loop, the align
+//      will still be placed after 'jmp' because the processor should be smart
+//      enough to not fetch extra instruction beyond jmp.
+//
+void Compiler::bbPlaceLoopAlignInstructions()
+{
+    assert(needsLoopAlignment);
+
+    // Add align only if there were any loops that needed alignment
+    weight_t    minBlockSoFar = INFINITE;
+    BasicBlock* bbHavingAlign = nullptr;
+    for (BasicBlock* const block : Blocks())
+    {
+        // If there is a unconditional jump
+        if (opts.compJitHideAlignBehindJmp && (block->bbJumpKind == BBJ_ALWAYS))
+        {
+            if (block->bbWeight < minBlockSoFar)
+            {
+                minBlockSoFar = block->bbWeight;
+                bbHavingAlign = block;
+                JITDUMP(FMT_BB ", bbWeight= %f ends with unconditional 'jmp' \n", block->bbNum, block->bbWeight);
+            }
+        }
+
+        if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
+        {
+            // If jmp was not found, then block before the loop start is where align instruction will be added.
+            if (bbHavingAlign == nullptr)
+            {
+                bbHavingAlign = block;
+                JITDUMP("Marking " FMT_BB " before the loop with BBF_HAS_ALIGN for loop at " FMT_BB "\n", block->bbNum,
+                        block->bbNext->bbNum);
+            }
+            else
+            {
+                JITDUMP("Marking " FMT_BB " that ends with uncondition jump with BBF_HAS_ALIGN for loop at " FMT_BB
+                        "\n",
+                        bbHavingAlign->bbNum, block->bbNext->bbNum);
+            }
+
+            bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
+            minBlockSoFar = INFINITE;
+            bbHavingAlign = nullptr;
+        }
+    }
+}
+#endif
 
 //------------------------------------------------------------------------
 // generatePatchpointInfo: allocate and fill in patchpoint info data,

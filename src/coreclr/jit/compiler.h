@@ -3666,6 +3666,7 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
+    void bbPlaceLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -6871,8 +6872,9 @@ protected:
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
-    LoopDsc*      optLoopTable; // loop descriptor table
-    unsigned char optLoopCount; // number of tracked loops
+    LoopDsc*      optLoopTable;       // loop descriptor table
+    unsigned char optLoopCount;       // number of tracked loops
+    bool          needsLoopAlignment; // true if at least one loop was identified as alignment candidate.
 
 #ifdef DEBUG
     unsigned char loopAlignCandidates; // number of loops identified for alignment
@@ -8335,7 +8337,7 @@ public:
 
 #if FEATURE_LOOP_ALIGN
 public:
-    alignBlocksList* alignBBLists;
+// alignBlocksList* alignBBLists;
 
 #endif // FEATURE_LOOP_ALIGN
 

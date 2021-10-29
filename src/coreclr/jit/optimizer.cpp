@@ -20,8 +20,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 void Compiler::optInit()
 {
-    optLoopsMarked = false;
-    fgHasLoops     = false;
+    optLoopsMarked     = false;
+    fgHasLoops         = false;
+    needsLoopAlignment = false;
 
     /* Initialize the # of tracked loops to 0 */
     optLoopCount = 0;

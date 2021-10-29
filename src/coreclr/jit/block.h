@@ -552,7 +552,7 @@ enum BasicBlockFlags : unsigned __int64
     BBF_PATCHPOINT           = MAKE_BBFLAG(36), // Block is a patchpoint
     BBF_HAS_CLASS_PROFILE    = MAKE_BBFLAG(37), // BB contains a call needing a class profile
     BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
-    BBF_LOOP_ALIGN_ADDED   = MAKE_BBFLAG(39), // Alignment instruction is added for this block.
+    BBF_HAS_ALIGN          = MAKE_BBFLAG(39), // BB ends with 'align' instruction
 
     // The following are sets of flags.
 
@@ -655,20 +655,14 @@ struct BasicBlock : private LIR::Range
         return ((bbFlags & BBF_LOOP_HEAD) != 0);
     }
 
-    bool isLoopAlignAdded() const
-    {
-        return ((bbFlags & BBF_LOOP_ALIGN_ADDED) != 0);
-    }
-
-    void setLoopAlignAdded()
-    {
-        assert(isLoopAlign());
-        bbFlags |= BBF_LOOP_ALIGN_ADDED;
-    }
-
     bool isLoopAlign() const
     {
         return ((bbFlags & BBF_LOOP_ALIGN) != 0);
+    }
+
+    bool hasAlign() const
+    {
+        return ((bbFlags & BBF_HAS_ALIGN) != 0);
     }
 
 #ifdef DEBUG
@@ -1881,29 +1875,6 @@ inline PredBlockList::iterator& PredBlockList::iterator::operator++()
     m_pred = next;
     return *this;
 }
-
-#if FEATURE_LOOP_ALIGN
-// block list that needs alignment
-//
-struct alignBlocksList
-{
-public:
-    alignBlocksList* next;
-
-private:
-    BasicBlock* m_block;
-
-public:
-    BasicBlock* getBlock() const
-    {
-        return m_block;
-    }
-
-    alignBlocksList(BasicBlock* block) : next(nullptr), m_block(block)
-    {
-    }
-};
-#endif // FEATURE_LOOP_ALIGN
 
 // This enum represents a pre/post-visit action state to emulate a depth-first
 // spanning tree traversal of a tree or graph.

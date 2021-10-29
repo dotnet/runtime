@@ -4526,10 +4526,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers, bool c
     const bool oldLvaGenericsContextInUse = lvaGenericsContextInUse;
     lvaGenericsContextInUse               = false;
 
-#if FEATURE_LOOP_ALIGN
-    alignBlocksList* alignBB = nullptr;
-#endif
-
     JITDUMP("\n*** lvaComputeRefCounts -- explicit counts ***\n");
 
     // Second, account for all explicit local variable references
@@ -4537,30 +4533,6 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers, bool c
     {
         if (block->IsLIR())
         {
-#if FEATURE_LOOP_ALIGN
-            if (calculateAlign)
-            {
-                // Track the blocks that needs alignment
-                // except if it is first block, because currently adding padding
-                // in prolog is not supported
-                if (opts.compJitHideAlignBehindJmp && block->isLoopAlign() && (block != fgFirstBB))
-                {
-                    alignBlocksList* curr = new (this, CMK_FlowList) alignBlocksList(block);
-
-                    if (alignBBLists == nullptr)
-                    {
-                        alignBBLists = curr;
-                    }
-                    else
-                    {
-                        alignBB->next = curr;
-                    }
-
-                    alignBB = curr;
-                }
-            }
-#endif
-
             assert(isRecompute);
 
             const weight_t weight = block->getBBWeight(this);

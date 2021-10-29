@@ -172,10 +172,6 @@ void CodeGen::genCodeForBBlist()
 
     BasicBlock* block;
 
-#if FEATURE_LOOP_ALIGN
-    alignBlocksList* blockToAlign = compiler->alignBBLists;
-#endif
-
     for (block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
     {
 
@@ -749,17 +745,6 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_ALWAYS:
                 inst_JMP(EJ_jmp, block->bbJumpDest);
-
-#if FEATURE_LOOP_ALIGN
-                // Add 'align' instruction if the alignment for 'blockToAlign' was not
-                // already added.
-                if ((blockToAlign != nullptr) && !blockToAlign->getBlock()->isLoopAlignAdded())
-                {
-                    assert(ShouldAlignLoops());
-
-                    GetEmitter()->emitLoopAlignment(blockToAlign->getBlock());
-                }
-#endif
                 FALLTHROUGH;
 
             case BBJ_COND:
@@ -798,47 +783,28 @@ void CodeGen::genCodeForBBlist()
         }
 
 #if FEATURE_LOOP_ALIGN
+        if (block->hasAlign())
+        {
+            // If this block has 'align' instruction in the end (identified by BBF_HAS_ALIGN),
+            // then need to add align instruction in the current "block".
+            //
+            // For non-adaptive alignment, add alignment instruction of size depending on the
+            // compJitAlignLoopBoundary.
+            // For adaptive alignment, alignment instruction will always be of 15 bytes for xarch
+            // and 16 bytes for arm64.
+            assert(ShouldAlignLoops());
 
-        // If next block is the first block of a loop (identified by BBF_LOOP_ALIGN),
-        // then need to add align instruction in current "block", provided there was
-        // no "align" instruction added after one of the previous "jmp" instructions.
-        //
-        // If the "align" instruction was added previously (isLoopAlignAdded() == true),
-        // update its idaTargetIG to point to the current IG. The current IG is the one
-        // that is just before the IG having loop start. Setting idaTargetIG, establish the
-        // connection of "align" instruction to the loop it actually wants to align.
-        //
-        // For non-adaptive alignment, add alignment instruction of size depending on the
-        // compJitAlignLoopBoundary.
-        // For adaptive alignment, alignment instruction will always be of 15 bytes.
+            GetEmitter()->emitLoopAlignment();
+        }
 
         if ((block->bbNext != nullptr) && (block->bbNext->isLoopAlign()))
         {
             if (compiler->opts.compJitHideAlignBehindJmp)
             {
-                // blockToAlign should not be null because that's the one
-                // that we are trying to align.
-                assert(blockToAlign != nullptr);
-                assert(block->bbNext == blockToAlign->getBlock());
-
-                // If there was no unconditional jmp until now, just handle it before the loop
-                if (!blockToAlign->getBlock()->isLoopAlignAdded())
-                {
-                    assert(ShouldAlignLoops());
-
-                    GetEmitter()->emitLoopAlignment(blockToAlign->getBlock());
-                }
-
+                // The current IG is the one that is just before the IG having loop start.
+                // Establish a connection of recent align instruction emitted to the loop
+                // it actually is aligning using 'idaTargetIG'.
                 GetEmitter()->emitConnectAlignInstrWithCurIG();
-
-                // Move to the next block to be aligned
-                blockToAlign = blockToAlign->next;
-            }
-            else
-            {
-                assert(ShouldAlignLoops());
-
-                GetEmitter()->emitLoopAlignment(nullptr);
             }
         }
 #endif

@@ -1404,7 +1404,7 @@ void* emitter::emitAllocAnyInstr(size_t sz, emitAttr opsz)
     // the prolog/epilog placeholder groups ARE generated in order, and are
     // re-used. But generating additional groups would not work.
     if (emitComp->compStressCompile(Compiler::STRESS_EMITTER, 1) && emitCurIGinsCnt && !emitIGisInProlog(emitCurIG) &&
-        !emitIGisInEpilog(emitCurIG) && !emitCurIG->isLoopAlign()
+        !emitIGisInEpilog(emitCurIG) && !emitCurIG->endsWithAlignInstr()
 #if defined(FEATURE_EH_FUNCLETS)
         && !emitIGisInFuncletProlog(emitCurIG) && !emitIGisInFuncletEpilog(emitCurIG)
 #endif // FEATURE_EH_FUNCLETS
@@ -4834,7 +4834,7 @@ void emitter::emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign)
     {
         // If align fits in current IG, then mark that it contains alignment
         // instruction in the end.
-        emitCurIG->igFlags |= IGF_LOOP_ALIGN;
+        emitCurIG->igFlags |= IGF_HAS_ALIGN;
     }
 
     /* Insert a pseudo-instruction to ensure that we align
@@ -4845,12 +4845,12 @@ void emitter::emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign)
     {
         // Mark this IG has alignment in the end, so during emitter we can check the instruction count
         // heuristics of all IGs that follows this IG that participate in a loop.
-        emitCurIG->igFlags |= IGF_LOOP_ALIGN;
+        emitCurIG->igFlags |= IGF_HAS_ALIGN;
     }
     else
     {
         // Otherwise, make sure it was already marked such.
-        assert(emitCurIG->isLoopAlign());
+        assert(emitCurIG->endsWithAlignInstr());
     }
 
 #if defined(TARGET_XARCH)
@@ -4957,7 +4957,7 @@ void emitter::emitConnectAlignInstrWithCurIG()
 //                    mark it as IGF_HAS_ALIGN to indicate that a next or a future
 //                    IG is a loop that needs alignment.
 //
-void emitter::emitLoopAlignment(BasicBlock* blockToAlign)
+void emitter::emitLoopAlignment()
 {
     unsigned short paddingBytes;
 
@@ -4991,16 +4991,6 @@ void emitter::emitLoopAlignment(BasicBlock* blockToAlign)
 
     assert(emitLastIns->idIns() == INS_align);
 
-
-    if (emitComp->opts.compJitHideAlignBehindJmp)
-    {
-        // Mark that the alignment for this block is handled. Useful when hiding align behind the jmp.
-        blockToAlign->setLoopAlignAdded();
-    }
-    else
-    {
-        assert(blockToAlign == nullptr);
-    }
     JITDUMP("Adding 'align' instruction of %d bytes in %s.\n", paddingBytes, emitLabelString(emitCurIG));
 
 #ifdef DEBUG
@@ -5295,7 +5285,7 @@ void emitter::emitLoopAlignAdjustments()
         insGroup* containingIG = alignInstr->idaIG;
 
         JITDUMP("  Adjusting 'align' instruction in IG%02u that is targeted for IG%02u \n", containingIG->igNum,
-                alignIG->igNext->igNum);
+                alignIG->igNum);
 
         // Since we only adjust the padding up to the next align instruction which is behind the jump, we make sure
         // that we take into account all the alignBytes we removed until that point. Hence " - alignBytesRemoved"
