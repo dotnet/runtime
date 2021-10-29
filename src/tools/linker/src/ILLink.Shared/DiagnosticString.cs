@@ -12,15 +12,15 @@ namespace ILLink.Shared
 		public DiagnosticString (DiagnosticId diagnosticId)
 		{
 			var resourceManager = SharedStrings.ResourceManager;
-			_titleFormat = resourceManager.GetString ($"{diagnosticId}Title");
-			_messageFormat = resourceManager.GetString ($"{diagnosticId}Message");
+			_titleFormat = resourceManager.GetString ($"{diagnosticId}Title") ?? string.Empty;
+			_messageFormat = resourceManager.GetString ($"{diagnosticId}Message") ?? string.Empty;
 		}
 
 		public DiagnosticString (string diagnosticResourceStringName)
 		{
 			var resourceManager = SharedStrings.ResourceManager;
-			_titleFormat = resourceManager.GetString ($"{diagnosticResourceStringName}Title");
-			_messageFormat = resourceManager.GetString ($"{diagnosticResourceStringName}Message");
+			_titleFormat = resourceManager.GetString ($"{diagnosticResourceStringName}Title") ?? string.Empty;
+			_messageFormat = resourceManager.GetString ($"{diagnosticResourceStringName}Message") ?? string.Empty;
 		}
 
 		public string GetMessage (params string[] args) =>

@@ -8,24 +8,24 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
-	public class RequiresUnreferencedCodeCapabilityReflectionAnalysisEnabled
+	public class RequiresCapabilityReflectionAnalysisEnabled
 	{
 		[LogContains ("-- DynamicallyAccessedMembersEnabled --")]
 		[LogContains ("-- ReflectionPattern --")]
 		[LogContains ("-- DynamicallyAccessedMembersOnGenericsEnabled --")]
 		public static void Main ()
 		{
-			TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersEnabled ();
-			TestRequiresUnreferencedCodeAttributeWithReflectionPattern ();
-			TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersOnGenericsEnabled ();
-			TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers.Test ();
+			TestRequiresAttributeWithDynamicallyAccessedMembersEnabled ();
+			TestRequiresAttributeWithReflectionPattern ();
+			TestRequiresAttributeWithDynamicallyAccessedMembersOnGenericsEnabled ();
+			TestRequiresAndDynamicallyAccessedMembers.Test ();
 		}
 
 		[Kept]
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode ("-- DynamicallyAccessedMembersEnabled --")]
 		[RecognizedReflectionAccessPattern]
-		static void TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersEnabled ()
+		static void TestRequiresAttributeWithDynamicallyAccessedMembersEnabled ()
 		{
 			typeof (TypeWithPublicFieldsAccessed).RequiresPublicFields ();
 		}
@@ -43,7 +43,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode ("-- ReflectionPattern --")]
 		[RecognizedReflectionAccessPattern]
-		static void TestRequiresUnreferencedCodeAttributeWithReflectionPattern ()
+		static void TestRequiresAttributeWithReflectionPattern ()
 		{
 			typeof (TypeWithMethodAccessed).GetMethod ("PublicMethod");
 		}
@@ -61,7 +61,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
 		[RequiresUnreferencedCode ("-- DynamicallyAccessedMembersOnGenericsEnabled --")]
 		[RecognizedReflectionAccessPattern]
-		static void TestRequiresUnreferencedCodeAttributeWithDynamicallyAccessedMembersOnGenericsEnabled ()
+		static void TestRequiresAttributeWithDynamicallyAccessedMembersOnGenericsEnabled ()
 		{
 			TypeRequiresPublicFields<TypeWithPublicFieldsForGenericType>.Method ();
 			MethodRequiresPublicFields<TypeWithPublicFieldsForGenericMethod> ();
@@ -105,22 +105,22 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		[Kept]
 		[ExpectedNoWarnings]
-		class TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers
+		class TestRequiresAndDynamicallyAccessedMembers
 		{
 			[Kept]
 			[KeptAttributeAttribute (typeof (RequiresUnreferencedCodeAttribute))]
-			[RequiresUnreferencedCode ("--- RequiresUnreferencedCodeAndPublicMethods ---")]
+			[RequiresUnreferencedCode ("--- RequiresAndPublicMethods ---")]
 			[RecognizedReflectionAccessPattern]
-			static void RequiresUnreferencedCodeAndPublicMethods (
+			static void RequiresAndPublicMethods (
 				[KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute))]
 				[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
 				Type type)
 			{
-				// This should not produce a warning since the method is annotated with RequiresUnreferencedCode
+				// This should not produce a warning since the method is annotated with Requires
 				type.RequiresPublicFields ();
 
 				// This will still "work" in that it will apply the PublicFields requirement onto the specified type
-				typeof (TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers).RequiresPublicFields ();
+				typeof (TestRequiresAndDynamicallyAccessedMembers).RequiresPublicFields ();
 			}
 
 			[Kept]
@@ -137,10 +137,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static int PrivateStaticField;
 
 			[Kept]
-			[ExpectedWarning ("IL2026", "--- RequiresUnreferencedCodeAndPublicMethods ---")]
+			[ExpectedWarning ("IL2026", "--- RequiresAndPublicMethods ---")]
 			public static void Test ()
 			{
-				RequiresUnreferencedCodeAndPublicMethods (typeof (TestRequiresUnreferencedCodeAndDynamicallyAccessedMembers));
+				RequiresAndPublicMethods (typeof (TestRequiresAndDynamicallyAccessedMembers));
 			}
 		}
 	}

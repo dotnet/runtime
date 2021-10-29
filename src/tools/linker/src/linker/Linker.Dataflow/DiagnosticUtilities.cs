@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System;
 using Mono.Cecil;
 
 namespace Mono.Linker.Dataflow
@@ -22,7 +22,7 @@ namespace Mono.Linker.Dataflow
 			if (declaredParameterIndex >= 0 && declaredParameterIndex < method.Parameters.Count)
 				return method.Parameters[declaredParameterIndex];
 
-			return null;
+			throw new InvalidOperationException ();
 		}
 
 		internal static string GetParameterNameForErrorMessage (ParameterDefinition parameterDefinition) =>
@@ -34,6 +34,6 @@ namespace Mono.Linker.Dataflow
 				genericParameter.DeclaringType.GetDisplayName ();
 
 		internal static string GetMethodSignatureDisplayName (IMethodSignature methodSignature) =>
-			(methodSignature is MethodReference method) ? method.GetDisplayName () : methodSignature.ToString ();
+			(methodSignature is MethodReference method) ? method.GetDisplayName () : (methodSignature.ToString () ?? string.Empty);
 	}
 }

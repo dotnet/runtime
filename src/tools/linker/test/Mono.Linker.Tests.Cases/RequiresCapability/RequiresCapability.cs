@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -18,10 +17,10 @@ using Mono.Linker.Tests.Cases.RequiresCapability.Dependencies;
 namespace Mono.Linker.Tests.Cases.RequiresCapability
 {
 	[SetupLinkerAction ("copy", "lib")]
-	[SetupCompileBefore ("lib.dll", new[] { "Dependencies/RequiresUnreferencedCodeInCopyAssembly.cs" })]
+	[SetupCompileBefore ("lib.dll", new[] { "Dependencies/RequiresInCopyAssembly.cs" })]
 	[KeptAllTypesAndMembersInAssembly ("lib.dll")]
-	[SetupLinkAttributesFile ("RequiresUnreferencedCodeCapability.attributes.xml")]
-	[SetupLinkerDescriptorFile ("RequiresUnreferencedCodeCapability.descriptor.xml")]
+	[SetupLinkAttributesFile ("RequiresCapability.attributes.xml")]
+	[SetupLinkerDescriptorFile ("RequiresCapability.descriptor.xml")]
 	[SkipKeptItemsValidation]
 	// Annotated members on a copied assembly should not produce any warnings
 	// unless directly called or referenced through reflection.
@@ -34,13 +33,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[LogDoesNotContain ("--IUnusedInterface.UnusedMethod--")]
 	[LogDoesNotContain ("--UnusedImplementationClass.UnusedMethod--")]
 	// [LogDoesNotContain ("UnusedVirtualMethod2")] // https://github.com/dotnet/linker/issues/2106
-	// [LogContains ("--RequiresUnreferencedCodeOnlyViaDescriptor--")]  // https://github.com/dotnet/linker/issues/2103
+	// [LogContains ("--RequiresOnlyViaDescriptor--")]  // https://github.com/dotnet/linker/issues/2103
 	[ExpectedNoWarnings]
-	public class RequiresUnreferencedCodeCapability
+	public class RequiresCapability
 	{
 		[ExpectedWarning ("IL2026", "--IDerivedInterface.MethodInDerivedInterface--", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequiresUnreferencedCode.RequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--DynamicallyAccessedTypeWithRequires.MethodWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--", ProducedBy = ProducedBy.Trimmer)]
 		[ExpectedWarning ("IL2026", "--IBaseInterface.MethodInBaseInterface--", ProducedBy = ProducedBy.Trimmer)]
 		public static void Main ()
 		{
@@ -51,28 +50,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			SuppressMethodBodyReferences.Test ();
 			SuppressGenericParameters<TestType, TestType>.Test ();
 			TestDuplicateRequiresAttribute ();
-			TestRequiresUnreferencedCodeOnlyThroughReflection ();
+			TestRequiresOnlyThroughReflection ();
 			AccessedThroughReflectionOnGenericType<TestType>.Test ();
-			TestBaseTypeVirtualMethodRequiresUnreferencedCode ();
-			TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode ();
-			TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCodeOnBase ();
-			TestTypeWhichOverridesVirtualPropertyRequiresUnreferencedCode ();
-			TestStaticCctorRequiresUnreferencedCode ();
+			TestBaseTypeVirtualMethodRequires ();
+			TestTypeWhichOverridesMethodVirtualMethodRequires ();
+			TestTypeWhichOverridesMethodVirtualMethodRequiresOnBase ();
+			TestTypeWhichOverridesVirtualPropertyRequires ();
+			TestStaticCctorRequires ();
 			TestStaticCtorMarkingIsTriggeredByFieldAccess ();
 			TestStaticCtorMarkingIsTriggeredByFieldAccessOnExplicitLayout ();
 			TestStaticCtorTriggeredByMethodCall ();
 			TestTypeIsBeforeFieldInit ();
-			TestDynamicallyAccessedMembersWithRequiresUnreferencedCode (typeof (DynamicallyAccessedTypeWithRequiresUnreferencedCode));
-			TestDynamicallyAccessedMembersWithRequiresUnreferencedCode (typeof (TypeWhichOverridesMethod));
-			TestInterfaceMethodWithRequiresUnreferencedCode ();
+			TestDynamicallyAccessedMembersWithRequires (typeof (DynamicallyAccessedTypeWithRequires));
+			TestDynamicallyAccessedMembersWithRequires (typeof (TypeWhichOverridesMethod));
+			TestInterfaceMethodWithRequires ();
 			TestCovariantReturnCallOnDerived ();
 			TestRequiresInMethodFromCopiedAssembly ();
 			TestRequiresThroughReflectionInMethodFromCopiedAssembly ();
-			TestRequiresInDynamicallyAccessedMethodFromCopiedAssembly (typeof (RequiresUnreferencedCodeInCopyAssembly.IDerivedInterface));
+			TestRequiresInDynamicallyAccessedMethodFromCopiedAssembly (typeof (RequiresInCopyAssembly.IDerivedInterface));
 			TestRequiresInDynamicDependency ();
 			TestThatTrailingPeriodIsAddedToMessage ();
 			TestThatTrailingPeriodIsNotDuplicatedInWarningMessage ();
-			WarnIfRequiresUnreferencedCodeOnStaticConstructor.Test ();
+			WarnIfRequiresOnStaticConstructor.Test ();
 			RequiresOnAttribute.Test ();
 			RequiresOnGenerics.Test ();
 			CovariantReturnViaLdftn.Test ();
@@ -144,8 +143,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static Type _unknownType;
 			static Type GetUnknownType () => null;
 
-			[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeMethod--")]
-			static void RequiresUnreferencedCodeMethod ()
+			[RequiresUnreferencedCode ("Message for --MethodWithRequires--")]
+			static void MethodWithRequires ()
 			{
 			}
 
@@ -153,10 +152,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			static Type _requiresPublicConstructors;
 
 			[RequiresUnreferencedCode ("")]
-			static void TestRUCMethod ()
+			static void TestMethodWithRequires ()
 			{
 				// Normally this would warn, but with the attribute on this method it should be auto-suppressed
-				RequiresUnreferencedCodeMethod ();
+				MethodWithRequires ();
 			}
 
 			[RequiresUnreferencedCode ("")]
@@ -180,7 +179,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[UnconditionalSuppressMessage ("Trimming", "IL2026")]
 			public static void Test ()
 			{
-				TestRUCMethod ();
+				TestMethodWithRequires ();
 				TestParameter ();
 				TestReturnValue ();
 				TestField ();
@@ -261,93 +260,93 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeOnlyThroughReflection--")]
-		static void RequiresUnreferencedCodeOnlyThroughReflection ()
+		[RequiresUnreferencedCode ("Message for --RequiresOnlyThroughReflection--")]
+		static void RequiresOnlyThroughReflection ()
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
-		static void TestRequiresUnreferencedCodeOnlyThroughReflection ()
+		[ExpectedWarning ("IL2026", "--RequiresOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
+		static void TestRequiresOnlyThroughReflection ()
 		{
-			typeof (RequiresUnreferencedCodeCapability)
-				.GetMethod (nameof (RequiresUnreferencedCodeOnlyThroughReflection), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+			typeof (RequiresCapability)
+				.GetMethod (nameof (RequiresOnlyThroughReflection), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
 				.Invoke (null, new object[0]);
 		}
 
 		class AccessedThroughReflectionOnGenericType<T>
 		{
-			[RequiresUnreferencedCode ("Message for --GenericType.RequiresUnreferencedCodeOnlyThroughReflection--")]
-			public static void RequiresUnreferencedCodeOnlyThroughReflection ()
+			[RequiresUnreferencedCode ("Message for --GenericType.RequiresOnlyThroughReflection--")]
+			public static void RequiresOnlyThroughReflection ()
 			{
 			}
 
-			[ExpectedWarning ("IL2026", "--GenericType.RequiresUnreferencedCodeOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "--GenericType.RequiresOnlyThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
 			public static void Test ()
 			{
 				typeof (AccessedThroughReflectionOnGenericType<T>)
-					.GetMethod (nameof (RequiresUnreferencedCodeOnlyThroughReflection))
+					.GetMethod (nameof (RequiresOnlyThroughReflection))
 					.Invoke (null, new object[0]);
 			}
 		}
 
 		class BaseType
 		{
-			[RequiresUnreferencedCode ("Message for --BaseType.VirtualMethodRequiresUnreferencedCode--")]
-			public virtual void VirtualMethodRequiresUnreferencedCode ()
+			[RequiresUnreferencedCode ("Message for --BaseType.VirtualMethodRequires--")]
+			public virtual void VirtualMethodRequires ()
 			{
 			}
 		}
 
 		class TypeWhichOverridesMethod : BaseType
 		{
-			[RequiresUnreferencedCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequiresUnreferencedCode--")]
-			public override void VirtualMethodRequiresUnreferencedCode ()
+			[RequiresUnreferencedCode ("Message for --TypeWhichOverridesMethod.VirtualMethodRequires--")]
+			public override void VirtualMethodRequires ()
 			{
 			}
 		}
 
-		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
-		static void TestBaseTypeVirtualMethodRequiresUnreferencedCode ()
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--")]
+		static void TestBaseTypeVirtualMethodRequires ()
 		{
 			var tmp = new BaseType ();
-			tmp.VirtualMethodRequiresUnreferencedCode ();
+			tmp.VirtualMethodRequires ();
 		}
 
-		[LogDoesNotContain ("TypeWhichOverridesMethod.VirtualMethodRequiresUnreferencedCode")]
-		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
-		static void TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCode ()
+		[LogDoesNotContain ("TypeWhichOverridesMethod.VirtualMethodRequires")]
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--")]
+		static void TestTypeWhichOverridesMethodVirtualMethodRequires ()
 		{
 			var tmp = new TypeWhichOverridesMethod ();
-			tmp.VirtualMethodRequiresUnreferencedCode ();
+			tmp.VirtualMethodRequires ();
 		}
 
-		[LogDoesNotContain ("TypeWhichOverridesMethod.VirtualMethodRequiresUnreferencedCode")]
-		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequiresUnreferencedCode--")]
-		static void TestTypeWhichOverridesMethodVirtualMethodRequiresUnreferencedCodeOnBase ()
+		[LogDoesNotContain ("TypeWhichOverridesMethod.VirtualMethodRequires")]
+		[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--")]
+		static void TestTypeWhichOverridesMethodVirtualMethodRequiresOnBase ()
 		{
 			BaseType tmp = new TypeWhichOverridesMethod ();
-			tmp.VirtualMethodRequiresUnreferencedCode ();
+			tmp.VirtualMethodRequires ();
 		}
 
 		class PropertyBaseType
 		{
-			public virtual int VirtualPropertyRequiresUnreferencedCode { [RequiresUnreferencedCode ("Message for --PropertyBaseType.VirtualPropertyRequiresUnreferencedCode--")] get; }
+			public virtual int VirtualPropertyRequires { [RequiresUnreferencedCode ("Message for --PropertyBaseType.VirtualPropertyRequires--")] get; }
 		}
 
 		class TypeWhichOverridesProperty : PropertyBaseType
 		{
-			public override int VirtualPropertyRequiresUnreferencedCode {
-				[RequiresUnreferencedCode ("Message for --TypeWhichOverridesProperty.VirtualPropertyRequiresUnreferencedCode--")]
+			public override int VirtualPropertyRequires {
+				[RequiresUnreferencedCode ("Message for --TypeWhichOverridesProperty.VirtualPropertyRequires--")]
 				get { return 1; }
 			}
 		}
 
-		[LogDoesNotContain ("TypeWhichOverridesProperty.VirtualPropertyRequiresUnreferencedCode")]
-		[ExpectedWarning ("IL2026", "--PropertyBaseType.VirtualPropertyRequiresUnreferencedCode--")]
-		static void TestTypeWhichOverridesVirtualPropertyRequiresUnreferencedCode ()
+		[LogDoesNotContain ("TypeWhichOverridesProperty.VirtualPropertyRequires")]
+		[ExpectedWarning ("IL2026", "--PropertyBaseType.VirtualPropertyRequires--")]
+		static void TestTypeWhichOverridesVirtualPropertyRequires ()
 		{
 			var tmp = new TypeWhichOverridesProperty ();
-			_ = tmp.VirtualPropertyRequiresUnreferencedCode;
+			_ = tmp.VirtualPropertyRequires;
 		}
 
 		class StaticCtor
@@ -359,7 +358,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		static void TestStaticCctorRequiresUnreferencedCode ()
+		static void TestStaticCctorRequires ()
 		{
 			_ = new StaticCtor ();
 		}
@@ -397,16 +396,19 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class TypeIsBeforeFieldInit
 		{
+			[ExpectedWarning ("IL2026", "Message from --TypeIsBeforeFieldInit.AnnotatedMethod--", ProducedBy = ProducedBy.Analyzer)]
 			public static int field = AnnotatedMethod ();
 
 			[RequiresUnreferencedCode ("Message from --TypeIsBeforeFieldInit.AnnotatedMethod--")]
 			public static int AnnotatedMethod () => 42;
 		}
 
-		[LogContains ("IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TypeIsBeforeFieldInit..cctor():" +
-			" Using member 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresUnreferencedCodeCapability.TypeIsBeforeFieldInit.AnnotatedMethod()'" +
+		// Linker sees the call to AnnotatedMethod in the static .ctor, but analyzer doesn't see the static .ctor at all
+		// since it's fully compiler generated, instead it sees the call on the field initialization itself.
+		[LogContains ("IL2026: Mono.Linker.Tests.Cases.RequiresCapability.RequiresCapability.TypeIsBeforeFieldInit..cctor():" +
+			" Using member 'Mono.Linker.Tests.Cases.RequiresCapability.RequiresCapability.TypeIsBeforeFieldInit.AnnotatedMethod()'" +
 			" which has 'RequiresUnreferencedCodeAttribute' can break functionality when trimming application code." +
-			" Message from --TypeIsBeforeFieldInit.AnnotatedMethod--.")]
+			" Message from --TypeIsBeforeFieldInit.AnnotatedMethod--.", ProducedBy = ProducedBy.Trimmer)]
 		static void TestTypeIsBeforeFieldInit ()
 		{
 			var x = TypeIsBeforeFieldInit.field + 42;
@@ -432,78 +434,78 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			new StaticCtorTriggeredByMethodCall ().TriggerStaticCtorMarking ();
 		}
 
-		public class DynamicallyAccessedTypeWithRequiresUnreferencedCode
+		public class DynamicallyAccessedTypeWithRequires
 		{
-			[RequiresUnreferencedCode ("Message for --DynamicallyAccessedTypeWithRequiresUnreferencedCode.RequiresUnreferencedCode--")]
-			public void RequiresUnreferencedCode ()
+			[RequiresUnreferencedCode ("Message for --DynamicallyAccessedTypeWithRequires.MethodWithRequires--")]
+			public void MethodWithRequires ()
 			{
 			}
 		}
 
-		static void TestDynamicallyAccessedMembersWithRequiresUnreferencedCode (
+		static void TestDynamicallyAccessedMembersWithRequires (
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
 		{
 		}
 
-		[LogDoesNotContain ("ImplementationClass.RequiresUnreferencedCodeMethod")]
-		[ExpectedWarning ("IL2026", "--IRequiresUnreferencedCode.RequiresUnreferencedCodeMethod--")]
-		static void TestInterfaceMethodWithRequiresUnreferencedCode ()
+		[LogDoesNotContain ("ImplementationClass.MethodWithRequires")]
+		[ExpectedWarning ("IL2026", "--IRequires.MethodWithRequires--")]
+		static void TestInterfaceMethodWithRequires ()
 		{
-			IRequiresUnreferencedCode inst = new ImplementationClass ();
-			inst.RequiresUnreferencedCodeMethod ();
+			IRequires inst = new ImplementationClass ();
+			inst.MethodWithRequires ();
 		}
 
 		class BaseReturnType { }
 		class DerivedReturnType : BaseReturnType { }
 
-		interface IRequiresUnreferencedCode
+		interface IRequires
 		{
-			[RequiresUnreferencedCode ("Message for --IRequiresUnreferencedCode.RequiresUnreferencedCodeMethod--")]
-			public void RequiresUnreferencedCodeMethod ();
+			[RequiresUnreferencedCode ("Message for --IRequires.MethodWithRequires--")]
+			public void MethodWithRequires ();
 		}
 
-		class ImplementationClass : IRequiresUnreferencedCode
+		class ImplementationClass : IRequires
 		{
-			[RequiresUnreferencedCode ("Message for --ImplementationClass.RequiresUnreferencedCodeMethod--")]
-			public void RequiresUnreferencedCodeMethod ()
+			[RequiresUnreferencedCode ("Message for --ImplementationClass.RequiresMethod--")]
+			public void MethodWithRequires ()
 			{
 			}
 		}
 
 		abstract class CovariantReturnBase
 		{
-			[RequiresUnreferencedCode ("Message for --CovariantReturnBase.GetRequiresUnreferencedCode--")]
-			public abstract BaseReturnType GetRequiresUnreferencedCode ();
+			[RequiresUnreferencedCode ("Message for --CovariantReturnBase.GetRequires--")]
+			public abstract BaseReturnType GetRequires ();
 		}
 
 		class CovariantReturnDerived : CovariantReturnBase
 		{
-			[RequiresUnreferencedCode ("Message for --CovariantReturnDerived.GetRequiresUnreferencedCode--")]
-			public override DerivedReturnType GetRequiresUnreferencedCode ()
+			[RequiresUnreferencedCode ("Message for --CovariantReturnDerived.GetRequires--")]
+			public override DerivedReturnType GetRequires ()
 			{
 				return null;
 			}
 		}
 
-		[LogDoesNotContain ("--CovariantReturnBase.GetRequiresUnreferencedCode--")]
-		[ExpectedWarning ("IL2026", "--CovariantReturnDerived.GetRequiresUnreferencedCode--")]
+		[LogDoesNotContain ("--CovariantReturnBase.GetRequires--")]
+		[ExpectedWarning ("IL2026", "--CovariantReturnDerived.GetRequires--")]
 		static void TestCovariantReturnCallOnDerived ()
 		{
 			var tmp = new CovariantReturnDerived ();
-			tmp.GetRequiresUnreferencedCode ();
+			tmp.GetRequires ();
 		}
 
 		[ExpectedWarning ("IL2026", "--Method--")]
 		static void TestRequiresInMethodFromCopiedAssembly ()
 		{
-			var tmp = new RequiresUnreferencedCodeInCopyAssembly ();
+			var tmp = new RequiresInCopyAssembly ();
 			tmp.Method ();
 		}
 
 		[ExpectedWarning ("IL2026", "--MethodCalledThroughReflection--", ProducedBy = ProducedBy.Trimmer)]
 		static void TestRequiresThroughReflectionInMethodFromCopiedAssembly ()
 		{
-			typeof (RequiresUnreferencedCodeInCopyAssembly)
+			typeof (RequiresInCopyAssembly)
 				.GetMethod ("MethodCalledThroughReflection", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
 				.Invoke (null, new object[0]);
 		}
@@ -513,16 +515,16 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 		}
 
-		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeInDynamicDependency--")]
-		static void RequiresUnreferencedCodeInDynamicDependency ()
+		[RequiresUnreferencedCode ("Message for --RequiresInDynamicDependency--")]
+		static void RequiresInDynamicDependency ()
 		{
 		}
 
-		[ExpectedWarning ("IL2026", "--RequiresUnreferencedCodeInDynamicDependency--")]
-		[DynamicDependency ("RequiresUnreferencedCodeInDynamicDependency")]
+		[ExpectedWarning ("IL2026", "--RequiresInDynamicDependency--")]
+		[DynamicDependency ("RequiresInDynamicDependency")]
 		static void TestRequiresInDynamicDependency ()
 		{
-			RequiresUnreferencedCodeInDynamicDependency ();
+			RequiresInDynamicDependency ();
 		}
 
 		[RequiresUnreferencedCode ("Linker adds a trailing period to this message")]
@@ -547,54 +549,54 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			WarningMessageEndsWithPeriod ();
 		}
 
-		class WarnIfRequiresUnreferencedCodeOnStaticConstructor
+		class WarnIfRequiresOnStaticConstructor
 		{
-			class ClassWithRequiresUnreferencedCodeOnStaticConstructor
+			class ClassWithRequiresOnStaticConstructor
 			{
 				[ExpectedWarning ("IL2116", ProducedBy = ProducedBy.Trimmer)]
 				[RequiresUnreferencedCode ("This attribute shouldn't be allowed")]
-				static ClassWithRequiresUnreferencedCodeOnStaticConstructor () { }
+				static ClassWithRequiresOnStaticConstructor () { }
 			}
 
 			public static void Test ()
 			{
-				typeof (ClassWithRequiresUnreferencedCodeOnStaticConstructor).RequiresNonPublicConstructors ();
+				typeof (ClassWithRequiresOnStaticConstructor).RequiresNonPublicConstructors ();
 			}
 		}
 
 		[ExpectedNoWarnings]
 		class RequiresOnAttribute
 		{
-			class AttributeWhichRequiresUnreferencedCodeAttribute : Attribute
+			class AttributeWhichRequiresAttribute : Attribute
 			{
-				[RequiresUnreferencedCode ("Message for --AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-				public AttributeWhichRequiresUnreferencedCodeAttribute ()
+				[RequiresUnreferencedCode ("Message for --AttributeWhichRequiresAttribute.ctor--")]
+				public AttributeWhichRequiresAttribute ()
 				{
 				}
 			}
 
-			class AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute : Attribute
+			class AttributeWhichRequiresOnPropertyAttribute : Attribute
 			{
-				public AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute ()
+				public AttributeWhichRequiresOnPropertyAttribute ()
 				{
 				}
 
 				public bool PropertyWhichRequires {
 					get => false;
 
-					[RequiresUnreferencedCode ("--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
+					[RequiresUnreferencedCode ("--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
 					set { }
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			class GenericTypeWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T>
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+			class GenericTypeWithAttributedParameter<[AttributeWhichRequires] T>
 			{
 				public static void TestMethod () { }
 			}
 
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			static void GenericMethodWithAttributedParameter<[AttributeWhichRequiresUnreferencedCode] T> () { }
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+			static void GenericMethodWithAttributedParameter<[AttributeWhichRequires] T> () { }
 
 			static void TestRequiresOnAttributeOnGenericParameter ()
 			{
@@ -602,34 +604,34 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				GenericMethodWithAttributedParameter<int> ();
 			}
 
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
-			[AttributeWhichRequiresUnreferencedCode]
-			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
+			[AttributeWhichRequires]
+			[AttributeWhichRequiresOnProperty (PropertyWhichRequires = true)]
 			class TypeWithAttributeWhichRequires
 			{
 			}
 
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
-			[AttributeWhichRequiresUnreferencedCode]
-			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
+			[AttributeWhichRequires]
+			[AttributeWhichRequiresOnProperty (PropertyWhichRequires = true)]
 			static void MethodWithAttributeWhichRequires () { }
 
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
-			[AttributeWhichRequiresUnreferencedCode]
-			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
+			[AttributeWhichRequires]
+			[AttributeWhichRequiresOnProperty (PropertyWhichRequires = true)]
 			static int _fieldWithAttributeWhichRequires;
 
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeAttribute.ctor--")]
-			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresUnreferencedCodeOnPropertyAttribute.PropertyWhichRequires--")]
-			[AttributeWhichRequiresUnreferencedCode]
-			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresAttribute.ctor--")]
+			[ExpectedWarning ("IL2026", "--AttributeWhichRequiresOnPropertyAttribute.PropertyWhichRequires--")]
+			[AttributeWhichRequires]
+			[AttributeWhichRequiresOnProperty (PropertyWhichRequires = true)]
 			static bool PropertyWithAttributeWhichRequires { get; set; }
 
-			[AttributeWhichRequiresUnreferencedCode]
-			[AttributeWhichRequiresUnreferencedCodeOnProperty (PropertyWhichRequires = true)]
+			[AttributeWhichRequires]
+			[AttributeWhichRequiresOnProperty (PropertyWhichRequires = true)]
 			[RequiresUnreferencedCode ("--MethodWhichRequiresWithAttributeWhichRequires--")]
 			static void MethodWhichRequiresWithAttributeWhichRequires () { }
 
@@ -650,8 +652,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 		}
 
-		[RequiresUnreferencedCode ("Message for --RequiresUnreferencedCodeOnlyViaDescriptor--")]
-		static void RequiresUnreferencedCodeOnlyViaDescriptor ()
+		[RequiresUnreferencedCode ("Message for --RequiresOnlyViaDescriptor--")]
+		static void RequiresOnlyViaDescriptor ()
 		{
 		}
 
@@ -679,24 +681,24 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			abstract class Base
 			{
-				[RequiresUnreferencedCode ("Message for --CovariantReturnViaLdftn.Base.GetRequiresUnreferencedCode--")]
-				public abstract BaseReturnType GetRequiresUnreferencedCode ();
+				[RequiresUnreferencedCode ("Message for --CovariantReturnViaLdftn.Base.GetRequires--")]
+				public abstract BaseReturnType GetRequires ();
 			}
 
 			class Derived : Base
 			{
-				[RequiresUnreferencedCode ("Message for --CovariantReturnViaLdftn.Derived.GetRequiresUnreferencedCode--")]
-				public override DerivedReturnType GetRequiresUnreferencedCode ()
+				[RequiresUnreferencedCode ("Message for --CovariantReturnViaLdftn.Derived.GetRequires--")]
+				public override DerivedReturnType GetRequires ()
 				{
 					return null;
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "--CovariantReturnViaLdftn.Derived.GetRequiresUnreferencedCode--")]
+			[ExpectedWarning ("IL2026", "--CovariantReturnViaLdftn.Derived.GetRequires--")]
 			public static void Test ()
 			{
 				var tmp = new Derived ();
-				var _ = new Func<DerivedReturnType> (tmp.GetRequiresUnreferencedCode);
+				var _ = new Func<DerivedReturnType> (tmp.GetRequires);
 			}
 		}
 
@@ -742,24 +744,26 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class OnEventMethod
 		{
-			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
+			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--", ProducedBy = ProducedBy.Trimmer)]
 			static event EventHandler EventToTestRemove {
 				add { }
 				[RequiresUnreferencedCode ("Message for --EventToTestRemove.remove--")]
 				remove { }
 			}
 
-			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--")]
+			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--", ProducedBy = ProducedBy.Trimmer)]
 			static event EventHandler EventToTestAdd {
 				[RequiresUnreferencedCode ("Message for --EventToTestAdd.add--")]
 				add { }
 				remove { }
 			}
 
+			[ExpectedWarning ("IL2026", "--EventToTestRemove.remove--")]
+			[ExpectedWarning ("IL2026", "--EventToTestAdd.add--")]
 			public static void Test ()
 			{
-				EventToTestRemove += (sender, e) => { };
-				EventToTestAdd -= (sender, e) => { };
+				EventToTestRemove -= (sender, e) => { };
+				EventToTestAdd += (sender, e) => { };
 			}
 		}
 
@@ -819,44 +823,44 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 		class RequiresOnClass
 		{
-			[RequiresUnreferencedCode ("Message for --ClassWithRequiresUnreferencedCode--")]
-			class ClassWithRequiresUnreferencedCode
+			[RequiresUnreferencedCode ("Message for --ClassWithRequires--")]
+			class ClassWithRequires
 			{
 				public static object Instance;
 
-				public ClassWithRequiresUnreferencedCode () { }
+				public ClassWithRequires () { }
 
 				public static void StaticMethod () { }
 
 				public void NonStaticMethod () { }
 
-				// RequiresOnMethod.MethodWithRUC generates a warning that gets suppressed because the declaring type has RUC
-				public static void CallRUCMethod () => RequiresOnMethod.MethodWithRUC ();
+				// RequiresOnMethod.MethodWithRequires generates a warning that gets suppressed because the declaring type has RUC
+				public static void CallMethodWithRequires () => RequiresOnMethod.MethodWithRequires ();
 
 				public class NestedClass
 				{
 					public static void NestedStaticMethod () { }
 
-					// This warning doesn't get suppressed since the declaring type NestedClass is not annotated with RequiresUnreferencedCode
-					[ExpectedWarning ("IL2026", "RequiresOnClass.RequiresOnMethod.MethodWithRUC()", "MethodWithRUC")]
-					public static void CallRUCMethod () => RequiresOnMethod.MethodWithRUC ();
+					// This warning doesn't get suppressed since the declaring type NestedClass is not annotated with Requires
+					[ExpectedWarning ("IL2026", "RequiresOnClass.RequiresOnMethod.MethodWithRequires()", "MethodWithRequires")]
+					public static void CallMethodWithRequires () => RequiresOnMethod.MethodWithRequires ();
 				}
 
 				// RequiresUnfereferencedCode on the type will suppress IL2072
-				static ClassWithRequiresUnreferencedCode ()
+				static ClassWithRequires ()
 				{
 					Instance = Activator.CreateInstance (Type.GetType ("SomeText"));
 				}
 
 				public static void TestSuppressions (Type[] types)
 				{
-					// StaticMethod is a static method on a RUC annotated type, so it should warn. But RequiresUnreferencedCode in the
-					// class suppresses other RequiresUnreferencedCode messages
+					// StaticMethod is a static method on a Requires annotated type, so it should warn. But Requires in the
+					// class suppresses other Requires messages
 					StaticMethod ();
 
 					var nested = new NestedClass ();
 
-					// RequiresUnreferencedCode in the class suppresses DynamicallyAccessedMembers messages
+					// Requires in the class suppresses DynamicallyAccessedMembers messages
 					types[1].GetMethods ();
 
 					void LocalFunction (int a) { }
@@ -866,12 +870,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class RequiresOnMethod
 			{
-				[RequiresUnreferencedCode ("MethodWithRUC")]
-				public static void MethodWithRUC () { }
+				[RequiresUnreferencedCode ("MethodWithRequires")]
+				public static void MethodWithRequires () { }
 			}
 
-			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequiresUnreferencedCode", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
-			private class DerivedWithoutRequires : ClassWithRequiresUnreferencedCode
+			[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithoutRequires", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			private class DerivedWithoutRequires : ClassWithRequires
 			{
 				public static void StaticMethodInInheritedClass () { }
 
@@ -882,27 +886,27 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 				public static void ShouldntWarn (object objectToCast)
 				{
-					_ = typeof (ClassWithRequiresUnreferencedCode);
-					var type = (ClassWithRequiresUnreferencedCode) objectToCast;
+					_ = typeof (ClassWithRequires);
+					var type = (ClassWithRequires) objectToCast;
 				}
 			}
 
-			// In order to generate IL2109 the nested class would also need to be annotated with RequiresUnreferencedCode
+			// In order to generate IL2109 the nested class would also need to be annotated with Requires
 			// otherwise we threat the nested class as safe
-			private class DerivedWithoutRequires2 : ClassWithRequiresUnreferencedCode.NestedClass
+			private class DerivedWithoutRequires2 : ClassWithRequires.NestedClass
 			{
 				public static void StaticMethod () { }
 			}
 
 			[UnconditionalSuppressMessage ("trim", "IL2109")]
-			class TestUnconditionalSuppressMessage : ClassWithRequiresUnreferencedCode
+			class TestUnconditionalSuppressMessage : ClassWithRequires
 			{
 				public static void StaticMethodInTestSuppressionClass () { }
 			}
 
-			class ClassWithoutRequiresUnreferencedCode
+			class ClassWithoutRequires
 			{
-				public ClassWithoutRequiresUnreferencedCode () { }
+				public ClassWithoutRequires () { }
 
 				public static void StaticMethod () { }
 
@@ -922,8 +926,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--", ProducedBy = ProducedBy.Trimmer)]
-			static void TestStaticCctorRequiresUnreferencedCode ()
+			[ExpectedWarning ("IL2026", "RequiresOnClass.StaticCtor.StaticCtor()", "Message for --StaticCtor--")]
+			static void TestStaticCctorRequires ()
 			{
 				_ = new StaticCtor ();
 			}
@@ -939,28 +943,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--")]
 			static void TestStaticCtorMarkingIsTriggeredByFieldAccessWrite ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 1;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByFieldAccess.field", "Message for --StaticCtorTriggeredByFieldAccess--")]
 			static void TestStaticCtorMarkingTriggeredOnSecondAccessWrite ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 2;
 			}
 
-			[RequiresUnreferencedCode ("--TestStaticRUCFieldAccessSuppressedByRUCOnMethod_Inner--")]
-			static void TestStaticRUCFieldAccessSuppressedByRUCOnMethod_Inner ()
+			[RequiresUnreferencedCode ("--TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod_Inner--")]
+			static void TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod_Inner ()
 			{
 				StaticCtorTriggeredByFieldAccess.field = 3;
 			}
 
 			[UnconditionalSuppressMessage ("test", "IL2026")]
-			static void TestStaticRUCFieldAccessSuppressedByRUCOnMethod ()
+			static void TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod ()
 			{
-				TestStaticRUCFieldAccessSuppressedByRUCOnMethod_Inner ();
+				TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod_Inner ();
 			}
 
 			[RequiresUnreferencedCode ("Message for --StaticCCtorTriggeredByFieldAccessRead--")]
@@ -969,7 +973,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public static int field = 42;
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "StaticCCtorTriggeredByFieldAccessRead.field", "Message for --StaticCCtorTriggeredByFieldAccessRead--")]
 			static void TestStaticCtorMarkingIsTriggeredByFieldAccessRead ()
 			{
 				var _ = StaticCCtorTriggeredByFieldAccessRead.field;
@@ -987,7 +991,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "StaticCtorTriggeredByCtorCalls.StaticCtorTriggeredByCtorCalls()")]
 			static void TestStaticCtorTriggeredByCtorCall ()
 			{
 				new StaticCtorTriggeredByCtorCalls ();
@@ -999,7 +1003,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				public int field = 42;
 			}
 
-			[ExpectedWarning ("IL2026", "ClassWithInstanceField.ClassWithInstanceField()", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "ClassWithInstanceField.ClassWithInstanceField()")]
 			static void TestInstanceFieldCallDontWarn ()
 			{
 				ClassWithInstanceField instance = new ClassWithInstanceField ();
@@ -1025,7 +1029,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[RequiresUnreferencedCode ("Message for --DerivedWithRequires--")]
-			private class DerivedWithRequires : ClassWithoutRequiresUnreferencedCode
+			private class DerivedWithRequires : ClassWithoutRequires
 			{
 				public static void StaticMethodInInheritedClass () { }
 
@@ -1036,14 +1040,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[RequiresUnreferencedCode ("Message for --DerivedWithRequires2--")]
-			private class DerivedWithRequires2 : ClassWithRequiresUnreferencedCode
+			private class DerivedWithRequires2 : ClassWithRequires
 			{
 				public static void StaticMethodInInheritedClass () { }
 
 				// A nested class is not considered a static method nor constructor therefore RequiresUnreferencedCode doesnt apply
 				// and this warning is not suppressed
-				[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithRequires2/DerivedNestedClass", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
-				public class DerivedNestedClass : ClassWithRequiresUnreferencedCode
+				[ExpectedWarning ("IL2109", "RequiresOnClass/DerivedWithRequires2/DerivedNestedClass", "--ClassWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+				public class DerivedNestedClass : ClassWithRequires
 				{
 					public static void NestedStaticMethod () { }
 				}
@@ -1099,41 +1103,41 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				}
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
 			static void TestRequiresInClassAccessedByStaticMethod ()
 			{
-				ClassWithRequiresUnreferencedCode.StaticMethod ();
+				ClassWithRequires.StaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires", "--ClassWithRequires--")]
 			static void TestRequiresInClassAccessedByCctor ()
 			{
-				var classObject = new ClassWithRequiresUnreferencedCode ();
+				var classObject = new ClassWithRequires ();
 			}
 
 			static void TestRequiresInParentClassAccesedByStaticMethod ()
 			{
-				ClassWithRequiresUnreferencedCode.NestedClass.NestedStaticMethod ();
+				ClassWithRequires.NestedClass.NestedStaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
-			// Although we suppress the warning from RequiresOnMethod.MethodWithRUC () we still get a warning because we call CallRUCMethod() which is an static method on a type with RUC
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.CallRUCMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "ClassWithRequiresUnreferencedCode.Instance", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
+			// Although we suppress the warning from RequiresOnMethod.MethodWithRequires () we still get a warning because we call CallRequiresMethod() which is an static method on a type with RUC
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.CallMethodWithRequires()", "--ClassWithRequires--")]
+			[ExpectedWarning ("IL2026", "ClassWithRequires.Instance", "--ClassWithRequires--")]
 			static void TestRequiresOnBaseButNotOnDerived ()
 			{
 				DerivedWithoutRequires.StaticMethodInInheritedClass ();
 				DerivedWithoutRequires.StaticMethod ();
-				DerivedWithoutRequires.CallRUCMethod ();
+				DerivedWithoutRequires.CallMethodWithRequires ();
 				DerivedWithoutRequires.DerivedNestedClass.NestedStaticMethod ();
 				DerivedWithoutRequires.NestedClass.NestedStaticMethod ();
-				DerivedWithoutRequires.NestedClass.CallRUCMethod ();
+				DerivedWithoutRequires.NestedClass.CallMethodWithRequires ();
 				DerivedWithoutRequires.ShouldntWarn (null);
 				DerivedWithoutRequires.Instance.ToString ();
 				DerivedWithoutRequires2.StaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires.StaticMethodInInheritedClass()", "--DerivedWithRequires--")]
 			static void TestRequiresOnDerivedButNotOnBase ()
 			{
 				DerivedWithRequires.StaticMethodInInheritedClass ();
@@ -1142,8 +1146,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				DerivedWithRequires.NestedClass.NestedStaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.StaticMethod()", "--ClassWithRequiresUnreferencedCode--", ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.DerivedWithRequires2.StaticMethodInInheritedClass()", "--DerivedWithRequires2--")]
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.StaticMethod()", "--ClassWithRequires--")]
 			static void TestRequiresOnBaseAndDerived ()
 			{
 				DerivedWithRequires2.StaticMethodInInheritedClass ();
@@ -1152,57 +1156,58 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				DerivedWithRequires2.NestedClass.NestedStaticMethod ();
 			}
 
-			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequiresUnreferencedCode.TestSuppressions(Type[])", ProducedBy = ProducedBy.Trimmer)]
+			// TODO: Parameter signature differs between linker and analyzer
+			[ExpectedWarning ("IL2026", "RequiresOnClass.ClassWithRequires.TestSuppressions(", "Type[])")]
 			static void TestSuppressionsOnClass ()
 			{
-				ClassWithRequiresUnreferencedCode.TestSuppressions (new[] { typeof (ClassWithRequiresUnreferencedCode) });
+				ClassWithRequires.TestSuppressions (new[] { typeof (ClassWithRequires) });
 				TestUnconditionalSuppressMessage.StaticMethodInTestSuppressionClass ();
 			}
 
-			[RequiresUnreferencedCode ("--StaticMethodOnRUCTypeSuppressedByRUCOnMethod--")]
-			static void StaticMethodOnRUCTypeSuppressedByRUCOnMethod ()
+			[RequiresUnreferencedCode ("--StaticMethodOnRequiresTypeSuppressedByRequiresOnMethod--")]
+			static void StaticMethodOnRequiresTypeSuppressedByRequiresOnMethod ()
 			{
 				DerivedWithRequires.StaticMethodInInheritedClass ();
 			}
 
 			[UnconditionalSuppressMessage ("test", "IL2026")]
-			static void TestStaticMethodOnRUCTypeSuppressedByRUCOnMethod ()
+			static void TestStaticMethodOnRequiresTypeSuppressedByRequiresOnMethod ()
 			{
-				StaticMethodOnRUCTypeSuppressedByRUCOnMethod ();
+				StaticMethodOnRequiresTypeSuppressedByRequiresOnMethod ();
 			}
 
 			static void TestStaticConstructorCalls ()
 			{
-				TestStaticCctorRequiresUnreferencedCode ();
+				TestStaticCctorRequires ();
 				TestStaticCtorMarkingIsTriggeredByFieldAccessWrite ();
 				TestStaticCtorMarkingTriggeredOnSecondAccessWrite ();
-				TestStaticRUCFieldAccessSuppressedByRUCOnMethod ();
+				TestStaticRequiresFieldAccessSuppressedByRequiresOnMethod ();
 				TestStaticCtorMarkingIsTriggeredByFieldAccessRead ();
 				TestStaticCtorTriggeredByMethodCall ();
 				TestStaticCtorTriggeredByCtorCall ();
 				TestInstanceFieldCallDontWarn ();
 			}
 
-			[RequiresUnreferencedCode ("--MemberTypesWithRUC--")]
-			class MemberTypesWithRUC
+			[RequiresUnreferencedCode ("--MemberTypesWithRequires--")]
+			class MemberTypesWithRequires
 			{
 				public static int field;
 				public static int Property { get; set; }
 
 				// These should not be reported https://github.com/mono/linker/issues/2218
-				[ExpectedWarning ("IL2026", "add_Event", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "remove_Event", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.add", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove", ProducedBy = ProducedBy.Trimmer)]
 				public static event EventHandler Event;
 			}
 
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.field", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.Property.set", ProducedBy = ProducedBy.Trimmer)]
-			[ExpectedWarning ("IL2026", "MemberTypesWithRUC.remove_Event", ProducedBy = ProducedBy.Trimmer)]
-			static void TestOtherMemberTypesWithRUC ()
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.field")]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Property.set")]
+			[ExpectedWarning ("IL2026", "MemberTypesWithRequires.Event.remove")]
+			static void TestOtherMemberTypesWithRequires ()
 			{
-				MemberTypesWithRUC.field = 1;
-				MemberTypesWithRUC.Property = 1;
-				MemberTypesWithRUC.Event -= null;
+				MemberTypesWithRequires.field = 1;
+				MemberTypesWithRequires.Property = 1;
+				MemberTypesWithRequires.Event -= null;
 			}
 
 			class ReflectionAccessOnMethod
@@ -1239,10 +1244,10 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				[ExpectedWarning ("IL2026", "ImplementationWithRequiresOnType.Method()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
-					// RUC on the method itself
+					// Requires on the method itself
 					typeof (BaseWithoutRequiresOnType).GetMethod (nameof (BaseWithoutRequiresOnType.Method));
 
-					// RUC on the method itself
+					// Requires on the method itself
 					typeof (InterfaceWithoutRequires).GetMethod (nameof (InterfaceWithoutRequires.Method));
 
 					// Warns because ImplementationWithRequiresOnType.Method is a static public method on a RUC type
@@ -1261,61 +1266,61 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class ReflectionAccessOnCtor
 			{
-				[RequiresUnreferencedCode ("--BaseWithRUC--")]
-				class BaseWithRUC
+				[RequiresUnreferencedCode ("--BaseWithRequires--")]
+				class BaseWithRequires
 				{
-					public BaseWithRUC () { }
+					public BaseWithRequires () { }
 				}
 
-				[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor/DerivedWithoutRUC", "ReflectionAccessOnCtor.BaseWithRUC", ProducedBy = ProducedBy.Trimmer)]
-				class DerivedWithoutRUC : BaseWithRUC
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnCtor/DerivedWithoutRequires", "ReflectionAccessOnCtor.BaseWithRequires", ProducedBy = ProducedBy.Trimmer)]
+				class DerivedWithoutRequires : BaseWithRequires
 				{
-					[ExpectedWarning ("IL2026", "--BaseWithRUC--", ProducedBy = ProducedBy.Trimmer)] // The body has direct call to the base.ctor()
-					public DerivedWithoutRUC () { }
+					[ExpectedWarning ("IL2026", "--BaseWithRequires--", ProducedBy = ProducedBy.Trimmer)] // The body has direct call to the base.ctor()
+					public DerivedWithoutRequires () { }
 				}
 
-				[RequiresUnreferencedCode ("--DerivedWithRUCOnBaseWithRUC--")]
-				class DerivedWithRUCOnBaseWithRUC : BaseWithRUC
+				[RequiresUnreferencedCode ("--DerivedWithRequiresOnBaseWithRequires--")]
+				class DerivedWithRequiresOnBaseWithRequires : BaseWithRequires
 				{
-					// No warning - suppressed by the RUC on this type
-					private DerivedWithRUCOnBaseWithRUC () { }
+					// No warning - suppressed by the Requires on this type
+					private DerivedWithRequiresOnBaseWithRequires () { }
 				}
 
-				class BaseWithoutRUC { }
+				class BaseWithoutRequires { }
 
-				[RequiresUnreferencedCode ("--DerivedWithRUCOnBaseWithout--")]
-				class DerivedWithRUCOnBaseWithoutRuc : BaseWithoutRUC
+				[RequiresUnreferencedCode ("--DerivedWithRequiresOnBaseWithout--")]
+				class DerivedWithRequiresOnBaseWithoutRequires : BaseWithoutRequires
 				{
-					public DerivedWithRUCOnBaseWithoutRuc () { }
+					public DerivedWithRequiresOnBaseWithoutRequires () { }
 				}
 
-				[ExpectedWarning ("IL2026", "BaseWithRUC.BaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithRUC.DerivedWithRUCOnBaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithoutRuc.DerivedWithRUCOnBaseWithoutRuc()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
-					// Warns because the type has RUC
-					typeof (BaseWithRUC).RequiresPublicConstructors ();
+					// Warns because the type has Requires
+					typeof (BaseWithRequires).RequiresPublicConstructors ();
 
-					// Doesn't warn since there's no RUC on this type
-					typeof (DerivedWithoutRUC).RequiresPublicParameterlessConstructor ();
+					// Doesn't warn since there's no Requires on this type
+					typeof (DerivedWithoutRequires).RequiresPublicParameterlessConstructor ();
 
-					// Warns - RUC on the type
-					typeof (DerivedWithRUCOnBaseWithRUC).RequiresNonPublicConstructors ();
+					// Warns - Requires on the type
+					typeof (DerivedWithRequiresOnBaseWithRequires).RequiresNonPublicConstructors ();
 
-					// Warns - RUC On the type
-					typeof (DerivedWithRUCOnBaseWithoutRuc).RequiresPublicConstructors ();
+					// Warns - Requires On the type
+					typeof (DerivedWithRequiresOnBaseWithoutRequires).RequiresPublicConstructors ();
 				}
 
-				[ExpectedWarning ("IL2026", "BaseWithRUC.BaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithRUC.DerivedWithRUCOnBaseWithRUC()", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUCOnBaseWithoutRuc.DerivedWithRUCOnBaseWithoutRuc()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "BaseWithRequires.BaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithRequires.DerivedWithRequiresOnBaseWithRequires()", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequiresOnBaseWithoutRequires.DerivedWithRequiresOnBaseWithoutRequires()", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
-					typeof (BaseWithRUC).GetConstructor (Type.EmptyTypes);
-					typeof (DerivedWithoutRUC).GetConstructor (Type.EmptyTypes);
-					typeof (DerivedWithRUCOnBaseWithRUC).GetConstructor (BindingFlags.NonPublic, Type.EmptyTypes);
-					typeof (DerivedWithRUCOnBaseWithoutRuc).GetConstructor (Type.EmptyTypes);
+					typeof (BaseWithRequires).GetConstructor (Type.EmptyTypes);
+					typeof (DerivedWithoutRequires).GetConstructor (Type.EmptyTypes);
+					typeof (DerivedWithRequiresOnBaseWithRequires).GetConstructor (BindingFlags.NonPublic, Type.EmptyTypes);
+					typeof (DerivedWithRequiresOnBaseWithoutRequires).GetConstructor (Type.EmptyTypes);
 				}
 
 				public static void Test ()
@@ -1327,63 +1332,65 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class ReflectionAccessOnField
 			{
-				[RequiresUnreferencedCode ("--WithRUC--")]
-				class WithRUC
+				[RequiresUnreferencedCode ("--WithRequires--")]
+				class WithRequires
 				{
 					public int InstanceField;
 					public static int StaticField;
 					private static int PrivateStaticField;
 				}
 
-				[RequiresUnreferencedCode ("--WithRUCOnlyInstanceFields--")]
-				class WithRUCOnlyInstanceFields
+				[RequiresUnreferencedCode ("--WithRequiresOnlyInstanceFields--")]
+				class WithRequiresOnlyInstanceFields
 				{
-					public int InstnaceField;
+					public int InstanceField;
 				}
 
-				[ExpectedWarning ("IL2109", "ReflectionAccessOnField/DerivedWithoutRUC", "ReflectionAccessOnField.WithRUC", ProducedBy = ProducedBy.Trimmer)]
-				class DerivedWithoutRUC : WithRUC
-				{
-					public static int DerivedStaticField;
-				}
-
-				[RequiresUnreferencedCode ("--DerivedWithRUC--")]
-				class DerivedWithRUC : WithRUC
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnField/DerivedWithoutRequires", "ReflectionAccessOnField.WithRequires", ProducedBy = ProducedBy.Trimmer)]
+				class DerivedWithoutRequires : WithRequires
 				{
 					public static int DerivedStaticField;
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticField", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[RequiresUnreferencedCode ("--DerivedWithRequires--")]
+				class DerivedWithRequires : WithRequires
+				{
+					public static int DerivedStaticField;
+				}
+
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
-					typeof (WithRUC).RequiresPublicFields ();
-					typeof (WithRUC).RequiresNonPublicFields ();
-					typeof (WithRUCOnlyInstanceFields).RequiresPublicFields ();
-					typeof (DerivedWithoutRUC).RequiresPublicFields ();
-					typeof (DerivedWithRUC).RequiresPublicFields ();
+					typeof (WithRequires).RequiresPublicFields ();
+					typeof (WithRequires).RequiresNonPublicFields ();
+					typeof (WithRequiresOnlyInstanceFields).RequiresPublicFields ();
+					typeof (DerivedWithoutRequires).RequiresPublicFields ();
+					typeof (DerivedWithRequires).RequiresPublicFields ();
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticField", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+				// Analyzer does not recognize the binding flags
+				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField")]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Analyzer)]
 				static void TestDirectReflectionAccess ()
 				{
-					typeof (WithRUC).GetField (nameof (WithRUC.StaticField));
-					typeof (WithRUC).GetField (nameof (WithRUC.InstanceField)); // Doesn't warn
-					typeof (WithRUC).GetField ("PrivateStaticField", BindingFlags.NonPublic);
-					typeof (WithRUCOnlyInstanceFields).GetField (nameof (WithRUCOnlyInstanceFields.InstnaceField)); // Doesn't warn
-					typeof (DerivedWithoutRUC).GetField (nameof (DerivedWithRUC.DerivedStaticField)); // Doesn't warn
-					typeof (DerivedWithRUC).GetField (nameof (DerivedWithRUC.DerivedStaticField));
+					typeof (WithRequires).GetField (nameof (WithRequires.StaticField));
+					typeof (WithRequires).GetField (nameof (WithRequires.InstanceField)); // Doesn't warn
+					typeof (WithRequires).GetField ("PrivateStaticField", BindingFlags.NonPublic);
+					typeof (WithRequiresOnlyInstanceFields).GetField (nameof (WithRequiresOnlyInstanceFields.InstanceField)); // Doesn't warn
+					typeof (DerivedWithoutRequires).GetField (nameof (DerivedWithRequires.DerivedStaticField)); // Doesn't warn
+					typeof (DerivedWithRequires).GetField (nameof (DerivedWithRequires.DerivedStaticField));
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticField", ProducedBy = ProducedBy.Trimmer)]
-				[DynamicDependency (nameof (WithRUC.StaticField), typeof (WithRUC))]
-				[DynamicDependency (nameof (WithRUC.InstanceField), typeof (WithRUC))] // Doesn't warn
-				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRUC))] // Doesn't warn
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
-				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithRUC))]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticField")]
+				[DynamicDependency (nameof (WithRequires.StaticField), typeof (WithRequires))]
+				[DynamicDependency (nameof (WithRequires.InstanceField), typeof (WithRequires))] // Doesn't warn
+				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithoutRequires))] // Doesn't warn
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticField", ProducedBy = ProducedBy.Trimmer)]
+				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicFields, typeof (DerivedWithRequires))]
 				static void TestDynamicDependencyAccess ()
 				{
 				}
@@ -1425,20 +1432,20 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				// Most of the tests in this run into https://github.com/dotnet/linker/issues/2218
 				// So for now keeping just a very simple test
 
-				[RequiresUnreferencedCode ("--WithRUC--")]
-				class WithRUC
+				[RequiresUnreferencedCode ("--WithRequires--")]
+				class WithRequires
 				{
 					// These should be reported only in TestDirectReflectionAccess
 					// https://github.com/mono/linker/issues/2218
-					[ExpectedWarning ("IL2026", "add_StaticEvent", ProducedBy = ProducedBy.Trimmer)]
-					[ExpectedWarning ("IL2026", "remove_StaticEvent", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
+					[ExpectedWarning ("IL2026", "StaticEvent.remove", ProducedBy = ProducedBy.Trimmer)]
 					public static event EventHandler StaticEvent;
 				}
 
-				[ExpectedWarning ("IL2026", "add_StaticEvent", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "StaticEvent.add", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
-					typeof (WithRUC).GetEvent (nameof (WithRUC.StaticEvent));
+					typeof (WithRequires).GetEvent (nameof (WithRequires.StaticEvent));
 				}
 
 				public static void Test ()
@@ -1449,71 +1456,71 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 
 			class ReflectionAccessOnProperties
 			{
-				[RequiresUnreferencedCode ("--WithRUC--")]
-				class WithRUC
+				[RequiresUnreferencedCode ("--WithRequires--")]
+				class WithRequires
 				{
 					public int InstanceProperty { get; set; }
 					public static int StaticProperty { get; set; }
 					private static int PrivateStaticProperty { get; set; }
 				}
 
-				[RequiresUnreferencedCode ("--WithRUCOnlyInstanceProperties--")]
-				class WithRUCOnlyInstanceProperties
+				[RequiresUnreferencedCode ("--WithRequiresOnlyInstanceProperties--")]
+				class WithRequiresOnlyInstanceProperties
 				{
 					public int InstnaceProperty { get; set; }
 				}
 
-				[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties/DerivedWithoutRUC", "ReflectionAccessOnProperties.WithRUC", ProducedBy = ProducedBy.Trimmer)]
-				class DerivedWithoutRUC : WithRUC
+				[ExpectedWarning ("IL2109", "ReflectionAccessOnProperties/DerivedWithoutRequires", "ReflectionAccessOnProperties.WithRequires", ProducedBy = ProducedBy.Trimmer)]
+				class DerivedWithoutRequires : WithRequires
 				{
 					public static int DerivedStaticProperty { get; set; }
 				}
 
-				[RequiresUnreferencedCode ("--DerivedWithRUC--")]
-				class DerivedWithRUC : WithRUC
+				[RequiresUnreferencedCode ("--DerivedWithRequires--")]
+				class DerivedWithRequires : WithRequires
 				{
 					public static int DerivedStaticProperty { get; set; }
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDAMAccess ()
 				{
-					typeof (WithRUC).RequiresPublicProperties ();
-					typeof (WithRUC).RequiresNonPublicProperties ();
-					typeof (WithRUCOnlyInstanceProperties).RequiresPublicProperties ();
-					typeof (DerivedWithoutRUC).RequiresPublicProperties ();
-					typeof (DerivedWithRUC).RequiresPublicProperties ();
+					typeof (WithRequires).RequiresPublicProperties ();
+					typeof (WithRequires).RequiresNonPublicProperties ();
+					typeof (WithRequiresOnlyInstanceProperties).RequiresPublicProperties ();
+					typeof (DerivedWithoutRequires).RequiresPublicProperties ();
+					typeof (DerivedWithRequires).RequiresPublicProperties ();
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.PrivateStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
 				static void TestDirectReflectionAccess ()
 				{
-					typeof (WithRUC).GetProperty (nameof (WithRUC.StaticProperty));
-					typeof (WithRUC).GetProperty (nameof (WithRUC.InstanceProperty)); // Doesn't warn
-					typeof (WithRUC).GetProperty ("PrivateStaticProperty", BindingFlags.NonPublic);
-					typeof (WithRUCOnlyInstanceProperties).GetProperty (nameof (WithRUCOnlyInstanceProperties.InstnaceProperty)); // Doesn't warn
-					typeof (DerivedWithoutRUC).GetProperty (nameof (DerivedWithRUC.DerivedStaticProperty)); // Doesn't warn
-					typeof (DerivedWithRUC).GetProperty (nameof (DerivedWithRUC.DerivedStaticProperty));
+					typeof (WithRequires).GetProperty (nameof (WithRequires.StaticProperty));
+					typeof (WithRequires).GetProperty (nameof (WithRequires.InstanceProperty)); // Doesn't warn
+					typeof (WithRequires).GetProperty ("PrivateStaticProperty", BindingFlags.NonPublic);
+					typeof (WithRequiresOnlyInstanceProperties).GetProperty (nameof (WithRequiresOnlyInstanceProperties.InstnaceProperty)); // Doesn't warn
+					typeof (DerivedWithoutRequires).GetProperty (nameof (DerivedWithRequires.DerivedStaticProperty)); // Doesn't warn
+					typeof (DerivedWithRequires).GetProperty (nameof (DerivedWithRequires.DerivedStaticProperty));
 				}
 
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "WithRUC.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-				[DynamicDependency (nameof (WithRUC.StaticProperty), typeof (WithRUC))]
-				[DynamicDependency (nameof (WithRUC.InstanceProperty), typeof (WithRUC))] // Doesn't warn
-				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithoutRUC))] // Doesn't warn
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
-				[ExpectedWarning ("IL2026", "DerivedWithRUC.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
-				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithRUC))]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "WithRequires.StaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[DynamicDependency (nameof (WithRequires.StaticProperty), typeof (WithRequires))]
+				[DynamicDependency (nameof (WithRequires.InstanceProperty), typeof (WithRequires))] // Doesn't warn
+				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithoutRequires))] // Doesn't warn
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.get", ProducedBy = ProducedBy.Trimmer)]
+				[ExpectedWarning ("IL2026", "DerivedWithRequires.DerivedStaticProperty.set", ProducedBy = ProducedBy.Trimmer)]
+				[DynamicDependency (DynamicallyAccessedMemberTypes.PublicProperties, typeof (DerivedWithRequires))]
 				static void TestDynamicDependencyAccess ()
 				{
 				}
@@ -1560,21 +1567,21 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[RequiresUnreferencedCode ("The attribute is dangerous")]
-			public class AttributeWithRUC : Attribute
+			public class AttributeWithRequires : Attribute
 			{
 				public static int field;
 
 				// `field` cannot be used as named attribute argument because is static, and if accessed via
 				// a property the property will be the one generating the warning, but then the warning will 
-				// be suppresed by the RequiresUnreferencedCode on the declaring type
+				// be suppresed by the Requires on the declaring type
 				public int PropertyOnAttribute {
 					get { return field; }
 					set { field = value; }
 				}
 			}
 
-			[AttributeWithRUC (PropertyOnAttribute = 42)]
-			[ExpectedWarning ("IL2026", "AttributeWithRUC.AttributeWithRUC()", ProducedBy = ProducedBy.Trimmer)]
+			[AttributeWithRequires (PropertyOnAttribute = 42)]
+			[ExpectedWarning ("IL2026", "AttributeWithRequires.AttributeWithRequires()", ProducedBy = ProducedBy.Trimmer)]
 			static void KeepFieldOnAttribute () { }
 
 			public static void Test ()
@@ -1586,9 +1593,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestRequiresOnDerivedButNotOnBase ();
 				TestRequiresOnBaseAndDerived ();
 				TestSuppressionsOnClass ();
-				TestStaticMethodOnRUCTypeSuppressedByRUCOnMethod ();
+				TestStaticMethodOnRequiresTypeSuppressedByRequiresOnMethod ();
 				TestStaticConstructorCalls ();
-				TestOtherMemberTypesWithRUC ();
+				TestOtherMemberTypesWithRequires ();
 				ReflectionAccessOnMethod.Test ();
 				ReflectionAccessOnCtor.Test ();
 				ReflectionAccessOnField.Test ();

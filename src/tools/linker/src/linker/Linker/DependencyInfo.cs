@@ -145,13 +145,13 @@ namespace Mono.Linker
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
 	{
 		public DependencyKind Kind { get; }
-		public object Source { get; }
-		public DependencyInfo (DependencyKind kind, object source) => (Kind, Source) = (kind, source);
+		public object? Source { get; }
+		public DependencyInfo (DependencyKind kind, object? source) => (Kind, Source) = (kind, source);
 		public static readonly DependencyInfo Unspecified = new DependencyInfo (DependencyKind.Unspecified, null);
 		public static readonly DependencyInfo AlreadyMarked = new DependencyInfo (DependencyKind.AlreadyMarked, null);
 		public static readonly DependencyInfo DisablePrivateReflectionRequirement = new DependencyInfo (DependencyKind.DisablePrivateReflectionRequirement, null);
 		public bool Equals (DependencyInfo other) => (Kind, Source) == (other.Kind, other.Source);
-		public override bool Equals (Object obj) => obj is DependencyInfo info && this.Equals (info);
+		public override bool Equals (Object? obj) => obj is DependencyInfo info && this.Equals (info);
 		public override int GetHashCode () => (Kind, Source).GetHashCode ();
 		public static bool operator == (DependencyInfo lhs, DependencyInfo rhs) => lhs.Equals (rhs);
 		public static bool operator != (DependencyInfo lhs, DependencyInfo rhs) => !lhs.Equals (rhs);

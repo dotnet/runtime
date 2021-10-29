@@ -3,8 +3,8 @@
 //
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
@@ -15,13 +15,15 @@ namespace Mono.Linker.Steps
 	public class AddBypassNGenStep : BaseStep
 	{
 
-		AssemblyDefinition coreLibAssembly;
-		CustomAttribute bypassNGenAttribute;
+		AssemblyDefinition? coreLibAssembly;
+		CustomAttribute? bypassNGenAttribute;
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
 			if (Annotations.GetAction (assembly) == AssemblyAction.AddBypassNGen) {
 				coreLibAssembly = Context.Resolve (assembly.MainModule.TypeSystem.CoreLibrary);
+				if (coreLibAssembly == null)
+					return;
 				bypassNGenAttribute = null;
 				if (assembly == coreLibAssembly) {
 					EnsureBypassNGenAttribute (assembly.MainModule);
@@ -60,13 +62,14 @@ namespace Mono.Linker.Steps
 
 		private void EnsureBypassNGenAttribute (ModuleDefinition targetModule)
 		{
+			Debug.Assert (coreLibAssembly != null);
 			if (bypassNGenAttribute != null) {
 				return;
 			}
 			ModuleDefinition corelibMainModule = coreLibAssembly.MainModule;
 			TypeReference bypassNGenAttributeRef = new TypeReference ("System.Runtime", "BypassNGenAttribute", corelibMainModule, targetModule.TypeSystem.CoreLibrary);
 			TypeDefinition bypassNGenAttributeDef = corelibMainModule.MetadataResolver.Resolve (bypassNGenAttributeRef);
-			MethodDefinition bypassNGenAttributeDefaultConstructor = null;
+			MethodDefinition? bypassNGenAttributeDefaultConstructor = null;
 
 			if (bypassNGenAttributeDef == null) {
 				// System.Runtime.BypassNGenAttribute is not found in corelib. Add it.

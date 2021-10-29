@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -26,7 +27,7 @@ namespace Mono.Linker
 			if (type == null)
 				return sb;
 
-			Stack<TypeReference> genericArguments = null;
+			Stack<TypeReference>? genericArguments = null;
 			while (true) {
 				switch (type) {
 				case ArrayType arrayType:
@@ -61,9 +62,10 @@ namespace Mono.Linker
 					break;
 				}
 
-				type = type.DeclaringType;
-				if (type == null)
+				if (type.DeclaringType is not TypeReference declaringType)
 					break;
+
+				type = declaringType;
 
 				sb.Insert (0, '.');
 			}
@@ -109,11 +111,8 @@ namespace Mono.Linker
 			}
 		}
 
-		public static TypeReference GetInflatedDeclaringType (this TypeReference type, ITryResolveMetadata resolver)
+		public static TypeReference? GetInflatedDeclaringType (this TypeReference type, ITryResolveMetadata resolver)
 		{
-			if (type == null)
-				return null;
-
 			if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
 				return null;
 
@@ -140,9 +139,11 @@ namespace Mono.Linker
 				return declaringType;
 			}
 
-			var resolved = resolver.TryResolve (type);
-			System.Diagnostics.Debug.Assert (resolved == type);
-			return resolved?.DeclaringType;
+			if (type is TypeDefinition typeDefinition)
+				return typeDefinition.DeclaringType;
+
+			Debug.Assert (false);
+			return null;
 		}
 
 		public static IEnumerable<(TypeReference InflatedInterface, InterfaceImplementation OriginalImpl)> GetInflatedInterfaces (this TypeReference typeRef, ITryResolveMetadata resolver)
@@ -153,15 +154,18 @@ namespace Mono.Linker
 				yield break;
 
 			if (typeRef is GenericInstanceType genericInstance) {
-				foreach (var interfaceImpl in typeDef.Interfaces)
-					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType, resolver), interfaceImpl);
+				foreach (var interfaceImpl in typeDef.Interfaces) {
+					// InflateGenericType only returns null when inflating generic parameters (and the generic instance type doesn't resolve).
+					// Here we are not inflating a generic parameter but an interface type reference.
+					yield return (InflateGenericType (genericInstance, interfaceImpl.InterfaceType, resolver), interfaceImpl)!;
+				}
 			} else {
 				foreach (var interfaceImpl in typeDef.Interfaces)
 					yield return (interfaceImpl.InterfaceType, interfaceImpl);
 			}
 		}
 
-		public static TypeReference InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
+		public static TypeReference? InflateGenericType (GenericInstanceType genericInstanceProvider, TypeReference typeToInflate, ITryResolveMetadata resolver)
 		{
 			if (typeToInflate is ArrayType arrayType) {
 				var inflatedElementType = InflateGenericType (genericInstanceProvider, arrayType.ElementType, resolver);
@@ -262,7 +266,7 @@ namespace Mono.Linker
 
 		public static IEnumerable<MethodReference> GetMethods (this TypeReference type, ITryResolveMetadata resolver)
 		{
-			TypeDefinition typeDef = resolver.TryResolve (type);
+			TypeDefinition? typeDef = resolver.TryResolve (type);
 			if (typeDef?.HasMethods != true)
 				yield break;
 
@@ -341,7 +345,7 @@ namespace Mono.Linker
 
 		public static bool IsSubclassOf (this TypeReference type, string ns, string name, ITryResolveMetadata resolver)
 		{
-			TypeDefinition baseType = resolver.TryResolve (type);
+			TypeDefinition? baseType = resolver.TryResolve (type);
 			while (baseType != null) {
 				if (baseType.IsTypeOf (ns, name))
 					return true;

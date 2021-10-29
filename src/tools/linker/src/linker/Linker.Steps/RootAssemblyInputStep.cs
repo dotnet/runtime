@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using Mono.Cecil;
@@ -20,7 +19,7 @@ namespace Mono.Linker.Steps
 
 		protected override void Process ()
 		{
-			AssemblyDefinition assembly = LoadAssemblyFile ();
+			AssemblyDefinition? assembly = LoadAssemblyFile ();
 			if (assembly == null)
 				return;
 
@@ -96,13 +95,13 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		AssemblyDefinition LoadAssemblyFile ()
+		AssemblyDefinition? LoadAssemblyFile ()
 		{
-			AssemblyDefinition assembly;
+			AssemblyDefinition? assembly;
 
 			if (File.Exists (fileName)) {
 				assembly = Context.Resolver.GetAssembly (fileName);
-				AssemblyDefinition loaded = Context.GetLoadedAssembly (assembly.Name.Name);
+				AssemblyDefinition? loaded = Context.GetLoadedAssembly (assembly.Name.Name);
 
 				// The same assembly could be already loaded if there are multiple inputs pointing to same file
 				if (loaded != null)

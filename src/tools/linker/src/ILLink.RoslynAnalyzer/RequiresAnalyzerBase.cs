@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Immutable;
@@ -96,6 +95,11 @@ namespace ILLink.RoslynAnalyzer
 				}, OperationKind.ObjectCreation);
 
 				context.RegisterOperationAction (operationContext => {
+					var fieldReference = (IFieldReferenceOperation) operationContext.Operation;
+					CheckCalledMember (operationContext, fieldReference.Field, incompatibleMembers);
+				}, OperationKind.FieldReference);
+
+				context.RegisterOperationAction (operationContext => {
 					var propAccess = (IPropertyReferenceOperation) operationContext.Operation;
 					var prop = propAccess.Property;
 					var usageInfo = propAccess.GetValueUsageInfo (prop);
@@ -112,13 +116,19 @@ namespace ILLink.RoslynAnalyzer
 				context.RegisterOperationAction (operationContext => {
 					var eventRef = (IEventReferenceOperation) operationContext.Operation;
 					var eventSymbol = (IEventSymbol) eventRef.Member;
-					CheckCalledMember (operationContext, eventSymbol, incompatibleMembers);
+					var assignmentOperation = eventRef.Parent as IEventAssignmentOperation;
 
-					if (eventSymbol.AddMethod is IMethodSymbol eventAddMethod)
+					if (assignmentOperation != null && assignmentOperation.Adds && eventSymbol.AddMethod is IMethodSymbol eventAddMethod)
 						CheckCalledMember (operationContext, eventAddMethod, incompatibleMembers);
 
-					if (eventSymbol.RemoveMethod is IMethodSymbol eventRemoveMethod)
+					if (assignmentOperation != null && !assignmentOperation.Adds && eventSymbol.RemoveMethod is IMethodSymbol eventRemoveMethod)
 						CheckCalledMember (operationContext, eventRemoveMethod, incompatibleMembers);
+
+					if (eventSymbol.RaiseMethod is IMethodSymbol eventRaiseMethod)
+						CheckCalledMember (operationContext, eventRaiseMethod, incompatibleMembers);
+
+					if (AnalyzerDiagnosticTargets.HasFlag (DiagnosticTargets.Event))
+						CheckCalledMember (operationContext, eventSymbol, incompatibleMembers);
 				}, OperationKind.EventReference);
 
 				context.RegisterOperationAction (operationContext => {
@@ -164,34 +174,20 @@ namespace ILLink.RoslynAnalyzer
 					ISymbol containingSymbol = FindContainingSymbol (operationContext, AnalyzerDiagnosticTargets);
 
 					// Do not emit any diagnostic if caller is annotated with the attribute too.
-					if (containingSymbol.HasAttribute (RequiresAttributeName))
-						return;
-
-					// Check also for RequiresAttribute in the associated symbol
-					if (containingSymbol is IMethodSymbol methodSymbol && methodSymbol.AssociatedSymbol is not null && methodSymbol.AssociatedSymbol!.HasAttribute (RequiresAttributeName))
+					if (IsMemberInRequiresScope (containingSymbol))
 						return;
 
 					if (ReportSpecialIncompatibleMembersDiagnostic (operationContext, incompatibleMembers, member))
-						return;
-
-					if (!member.HasAttribute (RequiresAttributeName))
 						return;
 
 					// Warn on the most derived base method taking into account covariant returns
 					while (member is IMethodSymbol method && method.OverriddenMethod != null && SymbolEqualityComparer.Default.Equals (method.ReturnType, method.OverriddenMethod.ReturnType))
 						member = method.OverriddenMethod;
 
-					if (TryGetRequiresAttribute (member, out var requiresAttribute)) {
-						if (member is IMethodSymbol eventAccessorMethod && eventAccessorMethod.AssociatedSymbol is IEventSymbol eventSymbol) {
-							// If the annotated member is an event accessor, we warn on the event to match the linker behavior.
-							member = eventAccessorMethod.ContainingSymbol;
-							operationContext.ReportDiagnostic (Diagnostic.Create (RequiresDiagnosticRule,
-								eventSymbol.Locations[0], member.Name, GetMessageFromAttribute (requiresAttribute), GetUrlFromAttribute (requiresAttribute)));
-							return;
-						}
+					if (!TargetHasRequiresAttribute (member, out var requiresAttribute))
+						return;
 
-						ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
-					}
+					ReportRequiresDiagnostic (operationContext, member, requiresAttribute);
 				}
 
 				void CheckMatchingAttributesInOverrides (
@@ -229,7 +225,8 @@ namespace ILLink.RoslynAnalyzer
 			Property = 0x0002,
 			Field = 0x0004,
 			Event = 0x0008,
-			All = MethodOrConstructor | Property | Field | Event
+			Class = 0x0010,
+			All = MethodOrConstructor | Property | Field | Event | Class
 		}
 
 		/// <summary>
@@ -293,6 +290,46 @@ namespace ILLink.RoslynAnalyzer
 		}
 
 		private bool HasMismatchingAttributes (ISymbol member1, ISymbol member2) => member1.HasAttribute (RequiresAttributeName) ^ member2.HasAttribute (RequiresAttributeName);
+
+		// TODO: Consider sharing with linker IsMethodInRequiresUnreferencedCodeScope method
+		/// <summary>
+		/// True if the source of a call is considered to be annotated with the Requires... attribute
+		/// </summary>
+		protected bool IsMemberInRequiresScope (ISymbol containingSymbol)
+		{
+			if (containingSymbol.HasAttribute (RequiresAttributeName) ||
+				containingSymbol.ContainingType.HasAttribute (RequiresAttributeName)) {
+				return true;
+			}
+
+			// Check also for RequiresAttribute in the associated symbol
+			if (containingSymbol is IMethodSymbol { AssociatedSymbol: { } associated } && associated.HasAttribute (RequiresAttributeName))
+				return true;
+
+			return false;
+		}
+
+		// TODO: Consider sharing with linker DoesMethodRequireUnreferencedCode method
+		/// <summary>
+		/// True if the target of a call is considered to be annotated with the Requires... attribute
+		/// </summary>
+		protected bool TargetHasRequiresAttribute (ISymbol member, [NotNullWhen (returnValue: true)] out AttributeData? requiresAttribute)
+		{
+			requiresAttribute = null;
+			if (member.IsStaticConstructor ()) {
+				return false;
+			}
+
+			if (TryGetRequiresAttribute (member, out requiresAttribute)) {
+				return true;
+			}
+
+			// Also check the containing type
+			if (member.IsStatic || member.IsConstructor ()) {
+				return TryGetRequiresAttribute (member.ContainingType, out requiresAttribute);
+			}
+			return false;
+		}
 
 		protected abstract string GetMessageFromAttribute (AttributeData requiresAttribute);
 

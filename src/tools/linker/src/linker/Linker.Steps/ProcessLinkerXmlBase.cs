@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -13,8 +12,6 @@ using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
 using Mono.Cecil;
-
-#nullable enable
 
 namespace Mono.Linker.Steps
 {
@@ -141,7 +138,7 @@ namespace Mono.Linker.Steps
 						ProcessAssembly (assembly, assemblyNav, warnOnUnresolvedTypes: false);
 				} else {
 					Debug.Assert (!processAllAssemblies);
-					AssemblyDefinition assembly = assemblyToProcess ?? _context.TryResolve (name!);
+					AssemblyDefinition? assembly = assemblyToProcess ?? _context.TryResolve (name!);
 
 					if (assembly == null) {
 						LogWarning ($"Could not resolve assembly '{name!.Name}'.", 2007, assemblyNav);

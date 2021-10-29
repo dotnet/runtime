@@ -54,21 +54,21 @@ namespace Mono.Linker
 				MapType (type);
 		}
 
-		public IEnumerable<OverrideInformation> GetOverrides (MethodDefinition method)
+		public IEnumerable<OverrideInformation>? GetOverrides (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
-			override_methods.TryGetValue (method, out List<OverrideInformation> overrides);
+			override_methods.TryGetValue (method, out List<OverrideInformation>? overrides);
 			return overrides;
 		}
 
-		public List<MethodDefinition> GetBaseMethods (MethodDefinition method)
+		public List<MethodDefinition>? GetBaseMethods (MethodDefinition method)
 		{
 			EnsureProcessed (method.Module.Assembly);
-			base_methods.TryGetValue (method, out List<MethodDefinition> bases);
+			base_methods.TryGetValue (method, out List<MethodDefinition>? bases);
 			return bases;
 		}
 
-		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)> GetDefaultInterfaceImplementations (MethodDefinition method)
+		public IEnumerable<(TypeDefinition InstanceType, InterfaceImplementation ProvidingInterface)>? GetDefaultInterfaceImplementations (MethodDefinition method)
 		{
 			default_interface_implementations.TryGetValue (method, out var ret);
 			return ret;
@@ -76,7 +76,7 @@ namespace Mono.Linker
 
 		public void AddBaseMethod (MethodDefinition method, MethodDefinition @base)
 		{
-			if (!base_methods.TryGetValue (method, out List<MethodDefinition> methods)) {
+			if (!base_methods.TryGetValue (method, out List<MethodDefinition>? methods)) {
 				methods = new List<MethodDefinition> ();
 				base_methods[method] = methods;
 			}
@@ -84,9 +84,9 @@ namespace Mono.Linker
 			methods.Add (@base);
 		}
 
-		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
+		public void AddOverride (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation? matchingInterfaceImplementation = null)
 		{
-			if (!override_methods.TryGetValue (@base, out List<OverrideInformation> methods)) {
+			if (!override_methods.TryGetValue (@base, out List<OverrideInformation>? methods)) {
 				methods = new List<OverrideInformation> ();
 				override_methods.Add (@base, methods);
 			}
@@ -125,7 +125,7 @@ namespace Mono.Linker
 			// to find the method implementation and record it.
 			foreach (var interfaceImpl in type.GetInflatedInterfaces (context)) {
 				foreach (MethodReference interfaceMethod in interfaceImpl.InflatedInterface.GetMethods (context)) {
-					MethodDefinition resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
+					MethodDefinition? resolvedInterfaceMethod = context.TryResolve (interfaceMethod);
 					if (resolvedInterfaceMethod == null)
 						continue;
 
@@ -139,7 +139,7 @@ namespace Mono.Linker
 						continue;
 
 					// Try to find an implementation with a name/sig match on the current type
-					MethodDefinition exactMatchOnType = TryMatchMethod (type, interfaceMethod);
+					MethodDefinition? exactMatchOnType = TryMatchMethod (type, interfaceMethod);
 					if (exactMatchOnType != null) {
 						AnnotateMethods (resolvedInterfaceMethod, exactMatchOnType);
 						continue;
@@ -181,7 +181,7 @@ namespace Mono.Linker
 
 		void MapVirtualMethod (MethodDefinition method)
 		{
-			MethodDefinition @base = GetBaseMethodInTypeHierarchy (method);
+			MethodDefinition? @base = GetBaseMethodInTypeHierarchy (method);
 			if (@base == null)
 				return;
 
@@ -191,7 +191,7 @@ namespace Mono.Linker
 		void MapOverrides (MethodDefinition method)
 		{
 			foreach (MethodReference override_ref in method.Overrides) {
-				MethodDefinition @override = context.TryResolve (override_ref);
+				MethodDefinition? @override = context.TryResolve (override_ref);
 				if (@override == null)
 					continue;
 
@@ -199,22 +199,22 @@ namespace Mono.Linker
 			}
 		}
 
-		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation matchingInterfaceImplementation = null)
+		void AnnotateMethods (MethodDefinition @base, MethodDefinition @override, InterfaceImplementation? matchingInterfaceImplementation = null)
 		{
 			AddBaseMethod (@override, @base);
 			AddOverride (@base, @override, matchingInterfaceImplementation);
 		}
 
-		MethodDefinition GetBaseMethodInTypeHierarchy (MethodDefinition method)
+		MethodDefinition? GetBaseMethodInTypeHierarchy (MethodDefinition method)
 		{
 			return GetBaseMethodInTypeHierarchy (method.DeclaringType, method);
 		}
 
-		MethodDefinition GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodReference method)
+		MethodDefinition? GetBaseMethodInTypeHierarchy (TypeDefinition type, MethodReference method)
 		{
-			TypeReference @base = GetInflatedBaseType (type);
+			TypeReference? @base = GetInflatedBaseType (type);
 			while (@base != null) {
-				MethodDefinition base_method = TryMatchMethod (@base, method);
+				MethodDefinition? base_method = TryMatchMethod (@base, method);
 				if (base_method != null)
 					return base_method;
 
@@ -224,7 +224,7 @@ namespace Mono.Linker
 			return null;
 		}
 
-		TypeReference GetInflatedBaseType (TypeReference type)
+		TypeReference? GetInflatedBaseType (TypeReference type)
 		{
 			if (type == null)
 				return null;
@@ -300,7 +300,7 @@ namespace Mono.Linker
 			}
 		}
 
-		MethodDefinition TryMatchMethod (TypeReference type, MethodReference method)
+		MethodDefinition? TryMatchMethod (TypeReference type, MethodReference method)
 		{
 			foreach (var candidate in type.GetMethods (context)) {
 				var md = context.TryResolve (candidate);
@@ -327,7 +327,9 @@ namespace Mono.Linker
 
 			// we need to track what the generic parameter represent - as we cannot allow it to
 			// differ between the return type or any parameter
-			if (!TypeMatch (candidate.GetReturnType (context), method.GetReturnType (context)))
+			if (candidate.GetReturnType (context) is not TypeReference candidateReturnType ||
+				method.GetReturnType (context) is not TypeReference methodReturnType ||
+				!TypeMatch (candidateReturnType, methodReturnType))
 				return false;
 
 			if (!candidate.HasParameters)
@@ -342,7 +344,9 @@ namespace Mono.Linker
 				return false;
 
 			for (int i = 0; i < cp.Count; i++) {
-				if (!TypeMatch (candidate.GetParameterType (i, context), method.GetParameterType (i, context)))
+				if (candidate.GetParameterType (i, context) is not TypeReference candidateParameterType ||
+					method.GetParameterType (i, context) is not TypeReference methodParameterType ||
+					!TypeMatch (candidateParameterType, methodParameterType))
 					return false;
 			}
 

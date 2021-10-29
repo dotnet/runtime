@@ -5,8 +5,6 @@ using System.Linq;
 using System.Xml.XPath;
 using Mono.Cecil;
 
-#nullable enable
-
 namespace Mono.Linker.Steps
 {
 	public class BodySubstitutionParser : ProcessLinkerXmlBase
@@ -137,7 +135,7 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				EmbeddedResource resource = assembly.FindEmbeddedResource (name);
+				EmbeddedResource? resource = assembly.FindEmbeddedResource (name);
 				if (resource == null) {
 					LogWarning ($"Could not find embedded resource '{name}' to remove in assembly '{assembly.Name.Name}'.", 2040, resourceNav);
 					continue;

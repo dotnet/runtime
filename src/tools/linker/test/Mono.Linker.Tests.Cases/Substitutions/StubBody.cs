@@ -42,7 +42,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 				"ldarg.0",
-				"call",
+				"call System.Void System.Object::.ctor()",
 				"ret",
 			})]
 		public StubBody ()
@@ -83,7 +83,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 				"ldloca.s",
-				"initobj",
+				"initobj System.Decimal",
 				"ldloc.0",
 				"ret"
 			})]
@@ -127,7 +127,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 				"ldloca.s",
-				"initobj",
+				"initobj T",
 				"ldloc.0",
 				"ret"
 			})]

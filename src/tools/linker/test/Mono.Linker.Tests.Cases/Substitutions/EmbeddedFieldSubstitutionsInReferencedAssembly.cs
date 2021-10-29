@@ -15,7 +15,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 		"ldc.i4.0",
 		"pop",
 		"ldc.i4.1",
-		"stsfld",
+		"stsfld System.Boolean Mono.Linker.Tests.Cases.Substitutions.Dependencies.ReferencedField::BoolValue",
 		"ret"
 	})]
 	public class EmbeddedFieldSubstitutionsInReferencedAssembly

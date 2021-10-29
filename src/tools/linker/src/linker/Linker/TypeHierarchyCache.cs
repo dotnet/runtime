@@ -31,7 +31,7 @@ namespace Mono.Linker
 				flags |= HierarchyFlags.IsSystemReflectionIReflect;
 			}
 
-			TypeDefinition baseType = resolvedType;
+			TypeDefinition? baseType = resolvedType;
 			while (baseType != null) {
 				if (baseType.Name == "Type" && baseType.Namespace == "System") {
 					flags |= HierarchyFlags.IsSystemType;
