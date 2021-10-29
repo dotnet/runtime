@@ -195,12 +195,12 @@ ds_rt_generate_core_dump (DiagnosticsDumpCommandId commandId, DiagnosticsGenerat
 	ds_ipc_result_t result = DS_IPC_E_FAIL;
 	EX_TRY
 	{
-		uint32_t flags = ds_generate_core_dump_command_payload_get_diagnostics (payload);
-        if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
-        {
-            // For the old commmand, this payload field is a bool of whether to enable logging
-            flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
-        }
+		uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+ 		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+ 		{
+ 			// For the old commmand, this payload field is a bool of whether to enable logging
+ 			flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+		}
 		if (GenerateDump (reinterpret_cast<LPCWSTR>(ds_generate_core_dump_command_payload_get_dump_name (payload)),
 			static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload)),
 			flags))

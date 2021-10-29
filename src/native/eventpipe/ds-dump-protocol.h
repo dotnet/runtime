@@ -44,7 +44,7 @@ struct _DiagnosticsGenerateCoreDumpCommandPayload {
 
 DS_DEFINE_GETTER(DiagnosticsGenerateCoreDumpCommandPayload *, generate_core_dump_command_payload, const ep_char16_t *, dump_name)
 DS_DEFINE_GETTER(DiagnosticsGenerateCoreDumpCommandPayload *, generate_core_dump_command_payload, uint32_t, dump_type)
-DS_DEFINE_GETTER(DiagnosticsGenerateCoreDumpCommandPayload *, generate_core_dump_command_payload, uint32_t, diagnostics)
+DS_DEFINE_GETTER(DiagnosticsGenerateCoreDumpCommandPayload *, generate_core_dump_command_payload, uint32_t, flags)
 
 DiagnosticsGenerateCoreDumpCommandPayload *
 ds_generate_core_dump_command_payload_alloc (void);
