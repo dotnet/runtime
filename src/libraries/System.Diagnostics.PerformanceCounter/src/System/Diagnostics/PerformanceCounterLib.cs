@@ -371,7 +371,7 @@ namespace System.Diagnostics
             {
 #if DEBUG
                 string categories = "Categories: " + string.Join(';', library.GetCategories());
-                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category) + "\n" + categories);
+                throw new InvalidOperationException(SR.Format(SR.MissingCategory, category) + "\r\n" + categories);
 #else
                 throw new InvalidOperationException(SR.Format(SR.MissingCategory, category));
 #endif
