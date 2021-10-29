@@ -25,7 +25,7 @@ elif [ -z "$XHARNESS_COMMAND" ]; then
 	XHARNESS_COMMAND="test"
 fi
 
-function BuildAOT()
+function _buildAOTFunc()
 {
 	local projectFile=$1
 	local binLog=$2
