@@ -18,6 +18,7 @@ syntax: glob
 
 # Build results
 artifacts/
+out/
 .idea/
 [Dd]ebug/
 [Dd]ebugPublic/
