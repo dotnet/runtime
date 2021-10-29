@@ -1403,7 +1403,7 @@ protected:
             idaIG->igFlags &= ~IGF_HAS_ALIGN;
         }
     };
-    void emitCheckAlignFitInCurIG(unsigned short nAlignInstr);
+    void emitCheckAlignFitInCurIG(unsigned nAlignInstr);
 #endif // FEATURE_LOOP_ALIGN
 
 #if !defined(TARGET_ARM64) // This shouldn't be needed for ARM32, either, but I don't want to touch the ARM32 JIT.
@@ -1811,8 +1811,8 @@ private:
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));
 
-    void emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign);
-    void emitLongLoopAlign(unsigned short alignmentBoundary);
+    void emitLoopAlign(unsigned paddingBytes, bool isFirstAlign);
+    void emitLongLoopAlign(unsigned alignmentBoundary);
     instrDescAlign* emitAlignInNextIG(instrDescAlign* alignInstr);
     void emitConnectAlignInstrWithCurIG();
 

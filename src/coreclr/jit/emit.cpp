@@ -4807,9 +4807,9 @@ AGAIN:
 //  Arguments:
 //       nAlignInstr - Number of align instructions about to be added.
 //
-void emitter::emitCheckAlignFitInCurIG(unsigned short nAlignInstr)
+void emitter::emitCheckAlignFitInCurIG(unsigned nAlignInstr)
 {
-    unsigned short instrDescSize = nAlignInstr * sizeof(instrDescAlign);
+    unsigned instrDescSize = nAlignInstr * sizeof(instrDescAlign);
 
     // Ensure that all align instructions fall in same IG.
     if (emitCurIGfreeNext + instrDescSize >= emitCurIGfreeEndp)
@@ -4824,7 +4824,7 @@ void emitter::emitCheckAlignFitInCurIG(unsigned short nAlignInstr)
 //  So insert an alignment instruction of "paddingBytes" to ensure that
 //  the code is properly aligned.
 //
-void emitter::emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign)
+void emitter::emitLoopAlign(unsigned paddingBytes, bool isFirstAlign)
 {
     // Determine if 'align' instruction about to be generated will
     // fall in current IG or next.
@@ -4895,18 +4895,18 @@ void emitter::emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign)
 //  Arguments:
 //      alignmentBoundary - The boundary at which loop needs to be aligned.
 //
-void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
+void emitter::emitLongLoopAlign(unsigned alignmentBoundary)
 {
 #if defined(TARGET_XARCH)
-    unsigned short nPaddingBytes    = alignmentBoundary - 1;
-    unsigned short nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
-    unsigned short insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
-    unsigned short lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
-    unsigned short paddingBytes     = MAX_ENCODED_SIZE;
+    unsigned nPaddingBytes    = alignmentBoundary - 1;
+    unsigned nAlignInstr      = (nPaddingBytes + (MAX_ENCODED_SIZE - 1)) / MAX_ENCODED_SIZE;
+    unsigned insAlignCount    = nPaddingBytes / MAX_ENCODED_SIZE;
+    unsigned lastInsAlignSize = nPaddingBytes % MAX_ENCODED_SIZE;
+    unsigned paddingBytes     = MAX_ENCODED_SIZE;
 #elif defined(TARGET_ARM64)
-    unsigned short nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
-    unsigned short insAlignCount = nAlignInstr;
-    unsigned short paddingBytes  = INSTR_ENCODED_SIZE;
+    unsigned nAlignInstr   = alignmentBoundary / INSTR_ENCODED_SIZE;
+    unsigned insAlignCount = nAlignInstr;
+    unsigned paddingBytes  = INSTR_ENCODED_SIZE;
 #endif
 
     emitCheckAlignFitInCurIG(nAlignInstr);
@@ -4962,7 +4962,7 @@ void emitter::emitConnectAlignInstrWithCurIG()
 //
 void emitter::emitLoopAlignment()
 {
-    unsigned short paddingBytes;
+    unsigned paddingBytes;
 
 #if defined(TARGET_XARCH)
     // For xarch, each align instruction can be maximum of MAX_ENCODED_SIZE bytes and if
