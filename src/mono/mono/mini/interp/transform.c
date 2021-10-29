@@ -2440,7 +2440,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		if (!strcmp (tm, "InternalGetHashCode")) {
 			*op = MINT_INTRINS_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetType")) {
-			if (constrained_class && m_class_is_valuetype (constrained_class)) {
+			if (constrained_class && m_class_is_valuetype (constrained_class) && !mono_class_is_nullable (constrained_class)) {
 				// If constrained_class is valuetype we already know its type.
 				// Resolve GetType to a constant so we can fold type comparisons
 				ERROR_DECL(error);
@@ -2457,8 +2457,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				return TRUE;
 			} else {
 				if (constrained_class) {
-					// deref the managed pointer to get the object
-					interp_add_ins (td, MINT_LDIND_I);
+					if (mono_class_is_nullable (constrained_class)) {
+						// We can't determine the behavior here statically because we don't know if the
+						// nullable vt has a value or not. If it has a value, the result type is
+						// m_class_get_cast_class (constrained_class), otherwise GetType should throw NRE.
+						interp_add_ins (td, MINT_BOX_NULLABLE_PTR);
+						td->last_ins->data [0] = get_data_item_index (td, constrained_class);
+					} else {
+						// deref the managed pointer to get the object
+						interp_add_ins (td, MINT_LDIND_I);
+					}
 					td->sp--;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					push_simple_type (td, STACK_TYPE_O);
