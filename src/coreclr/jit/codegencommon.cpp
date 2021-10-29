@@ -1299,10 +1299,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *      *rv1Ptr     ...     base operand
  *      *rv2Ptr     ...     optional operand
  *      *revPtr     ...     true if rv2 is before rv1 in the evaluation order
- *  #if SCALED_ADDR_MODES
  *      *mulPtr     ...     optional multiplier (2/4/8) for rv2
  *                          Note that for [reg1 + reg2] and [reg1 + reg2 + icon], *mulPtr == 0.
- *  #endif
  *      *cnsPtr     ...     integer constant [optional]
  *
  *  IMPORTANT NOTE: This routine doesn't generate any code, it merely
@@ -1310,15 +1308,8 @@ unsigned CodeGenInterface::InferStructOpSizeAlign(GenTree* op, unsigned* alignme
  *                  form an address mode later on.
  */
 
-bool CodeGen::genCreateAddrMode(GenTree*  addr,
-                                bool      fold,
-                                bool*     revPtr,
-                                GenTree** rv1Ptr,
-                                GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
-                                unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                ssize_t* cnsPtr)
+bool CodeGen::genCreateAddrMode(
+    GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr)
 {
     /*
         The following indirections are valid address modes on x86/x64:
@@ -1368,10 +1359,8 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
     GenTree* op1;
     GenTree* op2;
 
-    ssize_t cns;
-#if SCALED_ADDR_MODES
+    ssize_t  cns;
     unsigned mul;
-#endif // SCALED_ADDR_MODES
 
     GenTree* tmp;
 
@@ -1395,9 +1384,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 
             op1     ...     base address
             op2     ...     optional scaled index
-#if SCALED_ADDR_MODES
             mul     ...     optional multiplier (2/4/8) for op2
-#endif
             cns     ...     optional displacement
 
         Here we try to find such a set of operands and arrange for these
@@ -1405,9 +1392,7 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
      */
 
     cns = 0;
-#if SCALED_ADDR_MODES
     mul = 0;
-#endif // SCALED_ADDR_MODES
 
 AGAIN:
     /* We come back to 'AGAIN' if we have an add of a constant, and we are folding that
@@ -1416,9 +1401,7 @@ AGAIN:
     */
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if SCALED_ADDR_MODES
     assert(mul == 0);
-#endif // SCALED_ADDR_MODES
 
     /* Special case: keep constants as 'op2' */
 
@@ -1461,7 +1444,7 @@ AGAIN:
 
                     goto AGAIN;
 
-#if SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#if !defined(TARGET_ARMARCH)
                 // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
                 case GT_MUL:
                     if (op1->gtOverflow())
@@ -1484,7 +1467,7 @@ AGAIN:
                         goto FOUND_AM;
                     }
                     break;
-#endif // SCALED_ADDR_MODES && !defined(TARGET_ARMARCH)
+#endif // !defined(TARGET_ARMARCH)
 
                 default:
                     break;
@@ -1525,8 +1508,6 @@ AGAIN:
 
             break;
 
-#if SCALED_ADDR_MODES
-
         case GT_MUL:
 
             if (op1->gtOverflow())
@@ -1566,8 +1547,6 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
 #endif // !TARGET_ARMARCH
 
         case GT_NOP:
@@ -1588,7 +1567,9 @@ AGAIN:
     switch (op2->gtOper)
     {
 #if !defined(TARGET_ARMARCH)
-        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we don't try to create a scaled index.
+        // TODO-ARM64-CQ, TODO-ARM-CQ: For now we only handle MUL and LSH because
+        // arm doesn't support both scale and offset at the same. Offset is handled
+        // at the emitter as a peephole optimization.
         case GT_ADD:
 
             if (op2->gtOverflow())
@@ -1607,8 +1588,7 @@ AGAIN:
 
             break;
 
-#if SCALED_ADDR_MODES
-
+#endif // TARGET_ARMARCH
         case GT_MUL:
 
             if (op2->gtOverflow())
@@ -1644,9 +1624,6 @@ AGAIN:
                 goto FOUND_AM;
             }
             break;
-
-#endif // SCALED_ADDR_MODES
-#endif // !TARGET_ARMARCH
 
         case GT_NOP:
 
@@ -1720,13 +1697,11 @@ FOUND_AM:
                 /* Get hold of the index value */
                 ssize_t ixv = index->AsIntConCommon()->IconValue();
 
-#if SCALED_ADDR_MODES
                 /* Scale the index if necessary */
                 if (tmpMul)
                 {
                     ixv *= tmpMul;
                 }
-#endif
 
                 if (FitsIn<INT32>(cns + ixv))
                 {
@@ -1734,10 +1709,8 @@ FOUND_AM:
 
                     cns += ixv;
 
-#if SCALED_ADDR_MODES
                     /* There is no scaled operand any more */
                     mul = 0;
-#endif
                     rv2 = nullptr;
                 }
             }
@@ -1759,9 +1732,7 @@ FOUND_AM:
     *revPtr = rev;
     *rv1Ptr = rv1;
     *rv2Ptr = rv2;
-#if SCALED_ADDR_MODES
     *mulPtr = mul;
-#endif
     *cnsPtr = cns;
 
     return true;
