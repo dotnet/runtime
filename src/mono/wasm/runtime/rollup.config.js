@@ -11,9 +11,11 @@ const isDebug = process.env.Configuration !== "Release";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const terserConfig = {
     compress: {
-        ecma: 2016,
         unused: false,
+        drop_debugger: false,
+        defaults: false
     },
+    ecma: 5,
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
 
