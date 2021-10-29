@@ -615,8 +615,25 @@ namespace DebuggerTests
            });
 
         [Fact]
+        public async Task EvaluateExpressionsWithNestedElementAccess() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("f.idx0", TNumber(0)),
+                   ("f.numList[f.numList[f.idx0]]", TNumber(2)),
+                   ("f.textList[f.numList[f.idx0]]", TString("2")),
+                   ("f.numArray[f.numArray[f.idx0]]", TNumber(2)),
+                   ("f.textArray[f.numArray[f.idx0]]", TString("2")));
+                
+           });
+
+        [Fact]
         public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "EvaluateLocals", 9, "EvaluateLocals",
+            "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
