@@ -15,6 +15,9 @@ const terserConfig = {
         drop_debugger: false,
         defaults: false
     },
+    mangle: {
+        keep_fnames: true,
+    },
     ecma: 5,
 };
 const plugins = isDebug ? [writeOnChangePlugin()] : [terser(terserConfig), writeOnChangePlugin()];
