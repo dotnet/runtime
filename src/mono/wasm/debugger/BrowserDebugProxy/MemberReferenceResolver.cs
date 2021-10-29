@@ -207,7 +207,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return rootObject;
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, CancellationToken token)
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, JObject indexObject, CancellationToken token)
         {
             try
             {
@@ -217,44 +217,51 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (rootObject != null)
                 {
-                    var argument = elementAccess.ArgumentList.ToString();
-                    bool isCorrectIndex = argument.StartsWith('[') && argument.EndsWith(']') && argument.Length > 2;
-                    if (isCorrectIndex)
+                    string elementIdxStr;
+                    int elementIdx = 0;
+                    // e.g. x[0] or x[y]
+                    if (indexObject == null)
                     {
-                        string elementIdxStr = argument.Substring(1, argument.Length - 2);
-                        JObject indexObject = await Resolve(elementIdxStr, token);
-                        int elementIdx;
-                        if (indexObject == null)
+                        var argument = elementAccess.ArgumentList.ToString();
+                        bool isCorrectIndex = argument.StartsWith('[') && argument.EndsWith(']') && argument.Length > 2;
+                        if (isCorrectIndex)
                         {
-                            int.TryParse(elementIdxStr, out elementIdx);
-                        }
-                        else
-                        {
-                            elementIdxStr = indexObject["value"].ToString();
-                            int.TryParse(elementIdxStr, out elementIdx);
-                        }
-                        if (elementIdx >= 0)
-                        {
-                            DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
-                            switch (objectId.Scheme)
+                            elementIdxStr = argument.Substring(1, argument.Length - 2);
+                            indexObject = await Resolve(elementIdxStr, token);
+                            if (indexObject != null)
                             {
-                                case "array":
-                                    rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
-                                    return (JObject)rootObject["value"][elementIdx]["value"];
-                                case "object":
-                                    var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
-                                    int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
-                                    var commandParamsObj = new MemoryStream();
-                                    var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
-                                    commandParamsObjWriter.WriteObj(objectId, sdbHelper);
-                                    var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
-                                    rootObject = await GetValueFromObject(toArrayRetMethod, token);
-                                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
-                                    rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
-                                    return (JObject)rootObject["value"][elementIdx]["value"];
-                                default:
-                                    throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
+                                elementIdxStr = indexObject["value"].ToString();
                             }
+                            int.TryParse(elementIdxStr, out elementIdx);
+                        }
+                    }
+                    // e.g. x[a[0]], x[a[b[1]]] etc.
+                    else
+                    {
+                        elementIdxStr = indexObject["value"].ToString();
+                        int.TryParse(elementIdxStr, out elementIdx);
+                    }
+                    if (elementIdx >= 0)
+                    {
+                        DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId);
+                        switch (objectId.Scheme)
+                        {
+                            case "array":
+                                rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(objectId.Value), token);
+                                return (JObject)rootObject["value"][elementIdx]["value"];
+                            case "object":
+                                var typeIds = await sdbHelper.GetTypeIdFromObject(sessionId, int.Parse(objectId.Value), true, token);
+                                int methodId = await sdbHelper.GetMethodIdByName(sessionId, typeIds[0], "ToArray", token);
+                                var commandParamsObj = new MemoryStream();
+                                var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                                commandParamsObjWriter.WriteObj(objectId, sdbHelper);
+                                var toArrayRetMethod = await sdbHelper.InvokeMethod(sessionId, commandParamsObj.ToArray(), methodId, elementAccess.Expression.ToString(), token);
+                                rootObject = await GetValueFromObject(toArrayRetMethod, token);
+                                DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
+                                rootObject["value"] = await sdbHelper.GetArrayValues(sessionId, int.Parse(arrayObjectId.Value), token);
+                                return (JObject)rootObject["value"][elementIdx]["value"];
+                            default:
+                                throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of type '{objectId.Scheme}'");
                         }
                     }
                 }
