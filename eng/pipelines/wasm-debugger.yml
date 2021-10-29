@@ -1,3 +1,7 @@
+pr:
+    - main
+    - release/*
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
