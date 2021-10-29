@@ -63,7 +63,7 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
 }
 
 
-void InitJITHelpers1();
+void DISABLE_ASAN InitJITHelpers1();
 void InitJITHelpers2();
 
 PCODE UnsafeJitFunction(PrepareCodeConfig* config,

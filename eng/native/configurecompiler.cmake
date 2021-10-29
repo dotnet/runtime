@@ -105,8 +105,6 @@ if (MSVC)
   add_linker_flag(/NODEFAULTLIB:libucrt.lib RELEASE)
   add_linker_flag(/DEFAULTLIB:ucrt.lib RELEASE)
 
-  # Configure ASAN for MSVC
-
   # /RTC1 is added by default by CMake, so remove it.
   string(REPLACE "/RTC1" "" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
   string(REPLACE "/RTC1" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")

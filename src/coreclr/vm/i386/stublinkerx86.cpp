@@ -77,7 +77,10 @@ extern "C" VOID __cdecl DebugCheckStubUnwindInfo();
 #endif // TARGET_AMD64
 
 #ifdef FEATURE_COMINTEROP
-Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
+using ThreadPointer = Thread*;
+// MSVC doesn't allow a declspec to follow a pointer and be followed by a calling convention,
+// so we use a type alias to work around this limitation.
+ThreadPointer DISABLE_ASAN __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame);
 #endif
 
 
@@ -4904,7 +4907,7 @@ VOID StubLinkerCPU::EmitDebugBreak()
                                  // global optimizations.
 #pragma warning (disable : 4731)
 #endif  // _MSC_VER
-Thread* __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
+ThreadPointer __stdcall CreateThreadBlockReturnHr(ComMethodFrame *pFrame)
 {
 
     WRAPPER_NO_CONTRACT;
