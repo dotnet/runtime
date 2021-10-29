@@ -7140,18 +7140,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
-    // Heuristic: regular calls to noreturn methods can sometimes be
-    // merged, so if we have multiple such calls, we defer tail calling.
-    //
-    // TODO: re-examine this; now that we're merging before morph we
-    // don't need to worry about interfering with merges.
-    //
-    if (call->IsNoReturn() && (optNoReturnCallCount > 1))
-    {
-        failTailCall("Defer tail calling throw helper; anticipating merge");
-        return nullptr;
-    }
-
 #ifdef DEBUG
     if (opts.compGcChecks && (info.compRetType == TYP_REF))
     {
