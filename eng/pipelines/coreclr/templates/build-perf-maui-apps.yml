@@ -120,15 +120,15 @@ steps:
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiiOS.binlog -f net6.0-ios -c Release
-      ls -lR ./bin/Release/net6.0-ios
-    displayName: Build MAUI Android
+      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiTestingiOS.app
+    displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
       ls -lR ./bin/Release/net6.0-maccatalyst
-    displayName: Build MAUI Android
+    displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - task: PublishBuildArtifacts@1
@@ -155,6 +155,16 @@ steps:
         includeRootFolder: true
         displayName: Maui Android App
         artifactName: MauiAndroidApp
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiTestingiOS.app
+        includeRootFolder: true
+        displayName: Maui iOS App
+        artifactName: MauiiOSApp
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz

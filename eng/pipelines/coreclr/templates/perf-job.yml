@@ -184,6 +184,13 @@ jobs:
           artifactFileName: 'iOSSampleAppLLVM.tar.gz'
           artifactName: 'iOSSampleAppLLVM'
           displayName: 'iOS Sample App LLVM'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiTestingiOS.tar.gz'
+          artifactName: 'MauiTestingiOS'
+          displayName: 'Maui iOS App'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)
