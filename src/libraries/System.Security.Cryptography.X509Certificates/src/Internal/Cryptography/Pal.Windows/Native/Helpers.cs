@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal.Native
 {
@@ -86,11 +85,11 @@ namespace Internal.Cryptography.Pal.Native
                 int cb = 0;
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    CertEncodingType.All,
+                    Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     null,
                     ref cb))
                 {
@@ -100,11 +99,11 @@ namespace Internal.Cryptography.Pal.Native
                 byte* decoded = stackalloc byte[cb];
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    CertEncodingType.All,
+                    Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     decoded,
                     ref cb))
                 {
@@ -125,11 +124,11 @@ namespace Internal.Cryptography.Pal.Native
                 int cb = 0;
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    CertEncodingType.All,
+                    Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     null,
                     ref cb))
                 {
@@ -139,11 +138,11 @@ namespace Internal.Cryptography.Pal.Native
                 byte* decoded = stackalloc byte[cb];
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    CertEncodingType.All,
+                    Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     decoded,
                     ref cb))
                 {
@@ -164,11 +163,11 @@ namespace Internal.Cryptography.Pal.Native
                 int cb = 0;
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    CertEncodingType.All,
+                    Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     null,
                     ref cb))
                 {
@@ -178,11 +177,11 @@ namespace Internal.Cryptography.Pal.Native
                 byte* decoded = stackalloc byte[cb];
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    CertEncodingType.All,
+                    Interop.Crypt32.CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
-                    CryptDecodeObjectFlags.None,
+                    Interop.Crypt32.CryptDecodeObjectFlags.None,
                     decoded,
                     ref cb))
                 {

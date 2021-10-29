@@ -3,14 +3,12 @@
 
 using System;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
 using Internal.Cryptography.Pal.Native;
-using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -254,9 +252,9 @@ namespace Internal.Cryptography.Pal
             {
                 int cbData = IntPtr.Size;
 
-                if (CertGetCertificateContextProperty(
+                if (Interop.Crypt32.CertGetCertificateContextProperty(
                     certificateContext,
-                    CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                    Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
                     out privateKeyPtr,
                     ref cbData))
                 {
@@ -329,7 +327,7 @@ namespace Internal.Cryptography.Pal
         private CspParameters? GetPrivateKeyCsp()
         {
             int cbData = 0;
-            if (!CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbData))
+            if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cbData))
             {
                 int dwErrorCode = Marshal.GetLastWin32Error();
                 if (dwErrorCode == ErrorCode.CRYPT_E_NOT_FOUND)
@@ -342,16 +340,16 @@ namespace Internal.Cryptography.Pal
                 byte[] privateKey = new byte[cbData];
                 fixed (byte* pPrivateKey = privateKey)
                 {
-                    if (!CertGetCertificateContextProperty(_certContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, privateKey, ref cbData))
+                    if (!Interop.Crypt32.CertGetCertificateContextProperty(_certContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, privateKey, ref cbData))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
-                    CRYPT_KEY_PROV_INFO* pKeyProvInfo = (CRYPT_KEY_PROV_INFO*)pPrivateKey;
+                    Interop.Crypt32.CRYPT_KEY_PROV_INFO* pKeyProvInfo = (Interop.Crypt32.CRYPT_KEY_PROV_INFO*)pPrivateKey;
 
                     CspParameters cspParameters = new CspParameters();
                     cspParameters.ProviderName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszProvName));
                     cspParameters.KeyContainerName = Marshal.PtrToStringUni((IntPtr)(pKeyProvInfo->pwszContainerName));
                     cspParameters.ProviderType = pKeyProvInfo->dwProvType;
                     cspParameters.KeyNumber = pKeyProvInfo->dwKeySpec;
-                    cspParameters.Flags = (CspProviderFlags)((pKeyProvInfo->dwFlags & CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) == CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET ? CspProviderFlags.UseMachineKeyStore : 0);
+                    cspParameters.Flags = (CspProviderFlags)((pKeyProvInfo->dwFlags & Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) == Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET ? CspProviderFlags.UseMachineKeyStore : 0);
                     return cspParameters;
                 }
             }
@@ -375,20 +373,20 @@ namespace Internal.Cryptography.Pal
             // check to see if we can figure out what key number it needs to re-open.
             int keySpec = GuessKeySpec(provider, keyName, machineKey, cngKey.AlgorithmGroup);
 
-            CRYPT_KEY_PROV_INFO keyProvInfo = default;
+            Interop.Crypt32.CRYPT_KEY_PROV_INFO keyProvInfo = default;
 
             fixed (char* keyNamePtr = cngKey.KeyName)
             fixed (char* provNamePtr = cngKey.Provider!.Provider)
             {
                 keyProvInfo.pwszContainerName = keyNamePtr;
                 keyProvInfo.pwszProvName = provNamePtr;
-                keyProvInfo.dwFlags = machineKey ? CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
+                keyProvInfo.dwFlags = machineKey ? Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
                 keyProvInfo.dwKeySpec = keySpec;
 
-                if (!CertSetCertificateContextProperty(
+                if (!Interop.Crypt32.CertSetCertificateContextProperty(
                     pal._certContext,
-                    CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
-                    CertSetPropertyFlags.None,
+                    Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
+                    Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
                     pal.Dispose();
@@ -562,21 +560,21 @@ namespace Internal.Cryptography.Pal
 
             // Make a new pal from bytes.
             CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
-            CRYPT_KEY_PROV_INFO keyProvInfo = default;
+            Interop.Crypt32.CRYPT_KEY_PROV_INFO keyProvInfo = default;
 
             fixed (char* keyName = keyContainerInfo.KeyContainerName)
             fixed (char* provName = keyContainerInfo.ProviderName)
             {
                 keyProvInfo.pwszContainerName = keyName;
                 keyProvInfo.pwszProvName = provName;
-                keyProvInfo.dwFlags = keyContainerInfo.MachineKeyStore ? CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
+                keyProvInfo.dwFlags = keyContainerInfo.MachineKeyStore ? Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET : 0;
                 keyProvInfo.dwProvType = keyContainerInfo.ProviderType;
                 keyProvInfo.dwKeySpec = (int)keyContainerInfo.KeyNumber;
 
-                if (!CertSetCertificateContextProperty(
+                if (!Interop.Crypt32.CertSetCertificateContextProperty(
                     pal._certContext,
-                    CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
-                    CertSetPropertyFlags.None,
+                    Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID,
+                    Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
                     pal.Dispose();
@@ -596,10 +594,10 @@ namespace Internal.Cryptography.Pal
             // Make a new pal from bytes.
             CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
 
-            if (!CertSetCertificateContextProperty(
+            if (!Interop.Crypt32.CertSetCertificateContextProperty(
                 pal._certContext,
-                CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
-                CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
+                Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
                 handle))
             {
                 pal.Dispose();

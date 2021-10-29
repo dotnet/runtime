@@ -5,7 +5,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using static Interop.Crypt32;
 
 namespace Microsoft.Win32.SafeHandles
 {
@@ -16,7 +15,7 @@ namespace Microsoft.Win32.SafeHandles
     {
         protected sealed override bool ReleaseHandle()
         {
-            using (SafeCertContextHandle certContext = CertDuplicateCertificateContext(handle))
+            using (SafeCertContextHandle certContext = Interop.Crypt32.CertDuplicateCertificateContext(handle))
             {
                 DeleteKeyContainer(certContext);
             }
@@ -30,19 +29,19 @@ namespace Microsoft.Win32.SafeHandles
                 return;
 
             int cb = 0;
-            bool containsPrivateKey = CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cb);
+            bool containsPrivateKey = Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, null, ref cb);
             if (!containsPrivateKey)
                 return;
 
             byte[] provInfoAsBytes = new byte[cb];
-            if (!CertGetCertificateContextProperty(pCertContext, CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, provInfoAsBytes, ref cb))
+            if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_PROV_INFO_PROP_ID, provInfoAsBytes, ref cb))
                 return;
 
             unsafe
             {
                 fixed (byte* pProvInfoAsBytes = provInfoAsBytes)
                 {
-                    CRYPT_KEY_PROV_INFO* pProvInfo = (CRYPT_KEY_PROV_INFO*)pProvInfoAsBytes;
+                    Interop.Crypt32.CRYPT_KEY_PROV_INFO* pProvInfo = (Interop.Crypt32.CRYPT_KEY_PROV_INFO*)pProvInfoAsBytes;
 
                     if (pProvInfo->dwProvType == 0)
                     {
@@ -67,7 +66,7 @@ namespace Microsoft.Win32.SafeHandles
                     }
                     else
                     {
-                        CryptAcquireContextFlags flags = (pProvInfo->dwFlags & CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
+                        Interop.Crypt32.CryptAcquireContextFlags flags = (pProvInfo->dwFlags & Interop.Crypt32.CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | Interop.Crypt32.CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
                         IntPtr hProv;
                         _ = Interop.cryptoapi.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);
 

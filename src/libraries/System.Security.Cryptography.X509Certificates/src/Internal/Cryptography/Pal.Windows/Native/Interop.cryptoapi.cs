@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using static Interop.Crypt32;
 
 internal static partial class Interop
 {
@@ -11,6 +10,6 @@ internal static partial class Interop
     {
         [GeneratedDllImport(Libraries.Advapi32, EntryPoint = "CryptAcquireContextW", CharSet = CharSet.Unicode, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        public static unsafe partial bool CryptAcquireContext(out IntPtr psafeProvHandle, char* pszContainer, char* pszProvider, int dwProvType, CryptAcquireContextFlags dwFlags);
+        public static unsafe partial bool CryptAcquireContext(out IntPtr psafeProvHandle, char* pszContainer, char* pszProvider, int dwProvType, Crypt32.CryptAcquireContextFlags dwFlags);
     }
 }
