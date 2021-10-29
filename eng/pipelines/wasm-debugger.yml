@@ -1,0 +1,21 @@
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: WasmDebuggerTests
+      buildArgs: -s mono+libs -c $(_BuildConfig)
+      timeoutInMinutes: 180
+
+    steps:
+      - script: ./dotnet.sh test src/mono/wasm/debugger/DebuggerTestSuite
+                /p:RuntimeConfiguration=Release
+                /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/debugger-tests.binlog
+        displayName: Run wasm debugger tests
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
