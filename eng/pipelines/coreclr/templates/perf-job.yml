@@ -65,6 +65,7 @@ jobs:
       - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
     - ${{ if eq(parameters.runtimeType, 'iOSMono')}}:
       - ${{ 'build_iOS_arm64_release_iOSMono' }}
+      - ${{ 'Build_iOS_arm64_release_MACiOSAndroidMaui' }}
 
     ${{ if and(eq(parameters.osGroup, 'windows'), not(in(parameters.runtimeType, 'AndroidMono', 'iOSMono'))) }}:
       ${{ if eq(parameters.runtimeType, 'mono') }}:
