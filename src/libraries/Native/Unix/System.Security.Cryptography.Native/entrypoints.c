@@ -336,5 +336,5 @@ EXTERN_C const void* CryptoResolveDllImport(const char* name);
 
 EXTERN_C const void* CryptoResolveDllImport(const char* name)
 {
-    return ResolveDllImport(s_cryptoNative, lengthof(s_cryptoNative), name);
+    return minipal_resolve_dllimport(s_cryptoNative, lengthof(s_cryptoNative), name);
 }

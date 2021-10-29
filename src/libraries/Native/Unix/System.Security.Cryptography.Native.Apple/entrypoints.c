@@ -131,5 +131,5 @@ EXTERN_C const void* CryptoAppleResolveDllImport(const char* name);
 
 EXTERN_C const void* CryptoAppleResolveDllImport(const char* name)
 {
-    return ResolveDllImport(s_cryptoAppleNative, lengthof(s_cryptoAppleNative), name);
+    return minipal_resolve_dllimport(s_cryptoAppleNative, lengthof(s_cryptoAppleNative), name);
 }

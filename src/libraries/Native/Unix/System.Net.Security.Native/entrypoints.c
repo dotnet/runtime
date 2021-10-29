@@ -33,5 +33,5 @@ EXTERN_C const void* SecurityResolveDllImport(const char* name);
 
 EXTERN_C const void* SecurityResolveDllImport(const char* name)
 {
-    return ResolveDllImport(s_securityNative, lengthof(s_securityNative), name);
+    return minipal_resolve_dllimport(s_securityNative, lengthof(s_securityNative), name);
 }
