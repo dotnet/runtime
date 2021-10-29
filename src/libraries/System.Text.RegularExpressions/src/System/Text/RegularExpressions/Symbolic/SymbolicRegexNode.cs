@@ -254,13 +254,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
             }
 
-            if (is_nullable)
-            {
-                _nullabilityForContext[context] = TrueByte;
-            }
-            else
-            {
-                _nullabilityForContext[context] = FalseByte;
+            Volatile.Write(ref _nullabilityForContext[context], is_nullable ? TrueByte : FalseByte);
             }
 
             return is_nullable;
