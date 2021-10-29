@@ -3829,7 +3829,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
         if (copyBlkClass != NO_CLASS_HANDLE)
         {
-            fgMakeOutgoingStructArgCopy(call, args, argIndex, copyBlkClass);
+            fgMakeOutgoingStructArgCopy(call, args, copyBlkClass);
         }
 
         if (argx->gtOper == GT_MKREFANY)
@@ -4764,16 +4764,11 @@ GenTreeFieldList* Compiler::fgMorphLclArgToFieldlist(GenTreeLclVarCommon* lcl)
 // Arguments:
 //    call - call being processed
 //    args - args for the call
-///   argIndex - arg being processed
 //    copyBlkClass - class handle for the struct
 //
-// Return value:
-//    tree that computes address of the outgoing arg
+// The arg is updated if necessary with the copy.
 //
-void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
-                                           GenTreeCall::Use*    args,
-                                           unsigned             argIndex,
-                                           CORINFO_CLASS_HANDLE copyBlkClass)
+void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* args, CORINFO_CLASS_HANDLE copyBlkClass)
 {
     GenTree* argx = args->GetNode();
     noway_assert(argx->gtOper != GT_MKREFANY);
@@ -4808,10 +4803,11 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
             // * (may not copy) if there is exactly one use of the local in the method,
             //   and the call is not in loop, this is a last use.
             //
-            const bool isTailCallLastUse = call->IsTailCall();
-            const bool isCallLastUse     = (totalAppearances == 1) && !fgMightHaveLoop();
-            const bool isNoReturnLastUse = (totalAppearances == 1) && call->IsNoReturn();
-            if (isTailCallLastUse || isCallLastUse || isNoReturnLastUse)
+            // fgMightHaveLoop() is expensive; check it last, only if necessary.
+            //
+            if (call->IsTailCall() ||                              //
+                ((totalAppearances == 1) && call->IsNoReturn()) || //
+                ((totalAppearances == 1) && !fgMightHaveLoop()))
             {
                 args->SetNode(lcl);
                 assert(argEntry->GetNode() == lcl);
@@ -4915,8 +4911,6 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
 
     args->SetNode(arg);
     call->fgArgInfo->EvalToTmp(argEntry, tmp, arg);
-
-    return;
 }
 
 #ifdef TARGET_ARM
@@ -15383,16 +15377,16 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
 
                         optLoopTable[loopNum].lpFlags |= LPFLG_REMOVED;
 #if FEATURE_LOOP_ALIGN
-                        optLoopTable[loopNum].lpFirst->bbFlags &= ~BBF_LOOP_ALIGN;
+                        optLoopTable[loopNum].lpTop->bbFlags &= ~BBF_LOOP_ALIGN;
                         JITDUMP("Removing LOOP_ALIGN flag from bogus loop in " FMT_BB "\n",
-                                optLoopTable[loopNum].lpFirst->bbNum);
+                                optLoopTable[loopNum].lpTop->bbNum);
 #endif
 
 #ifdef DEBUG
                         if (verbose)
                         {
                             printf("Removing loop " FMT_LP " (from " FMT_BB " to " FMT_BB ")\n\n", loopNum,
-                                   optLoopTable[loopNum].lpFirst->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
+                                   optLoopTable[loopNum].lpTop->bbNum, optLoopTable[loopNum].lpBottom->bbNum);
                         }
 #endif
                     }

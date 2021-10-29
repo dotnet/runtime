@@ -6324,10 +6324,7 @@ private:
     GenTreeCall* fgMorphArgs(GenTreeCall* call);
     GenTreeArgList* fgMorphArgList(GenTreeArgList* args, MorphAddrContext* mac);
 
-    void fgMakeOutgoingStructArgCopy(GenTreeCall*         call,
-                                     GenTreeCall::Use*    args,
-                                     unsigned             argIndex,
-                                     CORINFO_CLASS_HANDLE copyBlkClass);
+    void fgMakeOutgoingStructArgCopy(GenTreeCall* call, GenTreeCall::Use* args, CORINFO_CLASS_HANDLE copyBlkClass);
 
     GenTree* fgMorphLocalVar(GenTree* tree, bool forceRemorph);
 
@@ -6714,18 +6711,16 @@ public:
     // bbNext order) sequence of basic blocks.  (At times, we may require the blocks in a loop to be "properly numbered"
     // in bbNext order; we use comparisons on the bbNum to decide order.)
     // The blocks that define the body are
-    //   first <= top <= entry <= bottom   .
+    //   top <= entry <= bottom
     // The "head" of the loop is a block outside the loop that has "entry" as a successor. We only support loops with a
     // single 'head' block. The meanings of these blocks are given in the definitions below. Also see the picture at
     // Compiler::optFindNaturalLoops().
     struct LoopDsc
     {
-        BasicBlock* lpHead;  // HEAD of the loop (not part of the looping of the loop) -- has ENTRY as a successor.
-        BasicBlock* lpFirst; // FIRST block (in bbNext order) reachable within this loop.  (May be part of a nested
-                             // loop, but not the outer loop.)
-        BasicBlock* lpTop;   // loop TOP (the back edge from lpBottom reaches here) (in most cases FIRST and TOP are the
-                             // same)
-        BasicBlock* lpEntry; // the ENTRY in the loop (in most cases TOP or BOTTOM)
+        BasicBlock* lpHead;   // HEAD of the loop (not part of the looping of the loop) -- has ENTRY as a successor.
+        BasicBlock* lpTop;    // loop TOP (the back edge from lpBottom reaches here). Lexically first block (in bbNext
+                              // order) reachable in this loop.
+        BasicBlock* lpEntry;  // the ENTRY in the loop (in most cases TOP or BOTTOM)
         BasicBlock* lpBottom; // loop BOTTOM (from here we have a back edge to the TOP)
         BasicBlock* lpExit;   // if a single exit loop this is the EXIT (in most cases BOTTOM)
 
@@ -6826,51 +6821,50 @@ public:
         // Returns "true" iff "*this" contains the blk.
         bool lpContains(BasicBlock* blk) const
         {
-            return lpFirst->bbNum <= blk->bbNum && blk->bbNum <= lpBottom->bbNum;
+            return lpTop->bbNum <= blk->bbNum && blk->bbNum <= lpBottom->bbNum;
         }
         // Returns "true" iff "*this" (properly) contains the range [first, bottom] (allowing firsts
         // to be equal, but requiring bottoms to be different.)
         bool lpContains(BasicBlock* first, BasicBlock* bottom) const
         {
-            return lpFirst->bbNum <= first->bbNum && bottom->bbNum < lpBottom->bbNum;
+            return lpTop->bbNum <= first->bbNum && bottom->bbNum < lpBottom->bbNum;
         }
 
         // Returns "true" iff "*this" (properly) contains "lp2" (allowing firsts to be equal, but requiring
         // bottoms to be different.)
         bool lpContains(const LoopDsc& lp2) const
         {
-            return lpContains(lp2.lpFirst, lp2.lpBottom);
+            return lpContains(lp2.lpTop, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is (properly) contained by the range [first, bottom]
         // (allowing firsts to be equal, but requiring bottoms to be different.)
         bool lpContainedBy(BasicBlock* first, BasicBlock* bottom) const
         {
-            return first->bbNum <= lpFirst->bbNum && lpBottom->bbNum < bottom->bbNum;
+            return first->bbNum <= lpTop->bbNum && lpBottom->bbNum < bottom->bbNum;
         }
 
         // Returns "true" iff "*this" is (properly) contained by "lp2"
         // (allowing firsts to be equal, but requiring bottoms to be different.)
         bool lpContainedBy(const LoopDsc& lp2) const
         {
-            return lpContains(lp2.lpFirst, lp2.lpBottom);
+            return lpContains(lp2.lpTop, lp2.lpBottom);
         }
 
         // Returns "true" iff "*this" is disjoint from the range [top, bottom].
         bool lpDisjoint(BasicBlock* first, BasicBlock* bottom) const
         {
-            return bottom->bbNum < lpFirst->bbNum || lpBottom->bbNum < first->bbNum;
+            return bottom->bbNum < lpTop->bbNum || lpBottom->bbNum < first->bbNum;
         }
         // Returns "true" iff "*this" is disjoint from "lp2".
         bool lpDisjoint(const LoopDsc& lp2) const
         {
-            return lpDisjoint(lp2.lpFirst, lp2.lpBottom);
+            return lpDisjoint(lp2.lpTop, lp2.lpBottom);
         }
         // Returns "true" iff the loop is well-formed (see code for defn).
         bool lpWellFormed() const
         {
-            return lpFirst->bbNum <= lpTop->bbNum && lpTop->bbNum <= lpEntry->bbNum &&
-                   lpEntry->bbNum <= lpBottom->bbNum &&
+            return lpTop->bbNum <= lpEntry->bbNum && lpEntry->bbNum <= lpBottom->bbNum &&
                    (lpHead->bbNum < lpTop->bbNum || lpHead->bbNum > lpBottom->bbNum);
         }
 
@@ -6878,17 +6872,17 @@ public:
         // blocks in a loop, e.g.:
         //    for (BasicBlock* const block : loop->LoopBlocks()) ...
         // Currently, the loop blocks are expected to be in linear, lexical, `bbNext` order
-        // from `lpFirst` through `lpBottom`, inclusive. All blocks in this range are considered
+        // from `lpTop` through `lpBottom`, inclusive. All blocks in this range are considered
         // to be part of the loop.
         //
         BasicBlockRangeList LoopBlocks() const
         {
-            return BasicBlockRangeList(lpFirst, lpBottom);
+            return BasicBlockRangeList(lpTop, lpBottom);
         }
     };
 
 protected:
-    bool fgMightHaveLoop(); // returns true if there are any backedges
+    bool fgMightHaveLoop(); // returns true if there are any back edges
     bool fgHasLoops;        // True if this method has any loops, set in fgComputeReachability
 
 public:
@@ -6901,7 +6895,6 @@ public:
 #endif                                 // DEBUG
 
     bool optRecordLoop(BasicBlock*   head,
-                       BasicBlock*   first,
                        BasicBlock*   top,
                        BasicBlock*   entry,
                        BasicBlock*   bottom,
@@ -6917,7 +6910,6 @@ protected:
 #ifdef DEBUG
     void optPrintLoopInfo(unsigned      loopNum,
                           BasicBlock*   lpHead,
-                          BasicBlock*   lpFirst,
                           BasicBlock*   lpTop,
                           BasicBlock*   lpEntry,
                           BasicBlock*   lpBottom,
@@ -6930,9 +6922,12 @@ protected:
     void optCheckPreds();
 #endif
 
+    // Determine if there are any potential loops, and set BBF_LOOP_HEAD on potential loop heads.
+    void optMarkLoopHeads();
+
     void optSetBlockWeights();
 
-    void optMarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk, bool excludeEndBlk);
+    void optScaleLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
 
     void optUnmarkLoopBlocks(BasicBlock* begBlk, BasicBlock* endBlk);
 
@@ -8290,7 +8285,7 @@ public:
 
     static fgWalkPreFn CountSharedStaticHelper;
     static bool IsSharedStaticHelper(GenTree* tree);
-    static bool IsGcSafePoint(GenTree* tree);
+    static bool IsGcSafePoint(GenTreeCall* call);
 
     static CORINFO_FIELD_HANDLE eeFindJitDataOffs(unsigned jitDataOffs);
     // returns true/false if 'field' is a Jit Data offset

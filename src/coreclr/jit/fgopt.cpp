@@ -364,17 +364,11 @@ void Compiler::fgComputeEnterBlocksSet()
 // Assumptions:
 //    The reachability sets must be computed and valid.
 //
-// Notes:
-//    Sets `fgHasLoops` if there are any loops in the function.
-//    Sets `BBF_LOOP_HEAD` flag on a block if that block is the target of a backward branch and the block can
-//    reach the source of the branch.
-//
 bool Compiler::fgRemoveUnreachableBlocks()
 {
     assert(!fgCheapPredsValid);
     assert(fgReachabilitySetsValid);
 
-    bool hasLoops             = false;
     bool hasUnreachableBlocks = false;
     bool changed              = false;
 
@@ -384,7 +378,7 @@ bool Compiler::fgRemoveUnreachableBlocks()
         /* Internal throw blocks are also reachable */
         if (fgIsThrowHlpBlk(block))
         {
-            goto SKIP_BLOCK;
+            continue;
         }
         else if (block == genReturnBB)
         {
@@ -392,20 +386,20 @@ bool Compiler::fgRemoveUnreachableBlocks()
             // For example, <BUGNUM> in VSW 364383, </BUGNUM>
             // the profiler hookup needs to have the "void GT_RETURN" statement
             // to properly set the info.compProfilerCallback flag.
-            goto SKIP_BLOCK;
+            continue;
         }
         else
         {
             // If any of the entry blocks can reach this block, then we skip it.
             if (!BlockSetOps::IsEmptyIntersection(this, fgEnterBlks, block->bbReach))
             {
-                goto SKIP_BLOCK;
+                continue;
             }
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
             if (!BlockSetOps::IsEmptyIntersection(this, fgAlwaysBlks, block->bbReach))
             {
-                goto SKIP_BLOCK;
+                continue;
             }
 #endif // defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
         }
@@ -451,53 +445,21 @@ bool Compiler::fgRemoveUnreachableBlocks()
             hasUnreachableBlocks = true;
             changed              = true;
         }
-        continue;
-
-    SKIP_BLOCK:;
-
-        if (block->bbJumpKind == BBJ_RETURN)
-        {
-            continue;
-        }
-
-        // Set BBF_LOOP_HEAD if we have backwards branches to this block.
-
-        unsigned blockNum = block->bbNum;
-        for (BasicBlock* const predBlock : block->PredBlocks())
-        {
-            if (blockNum <= predBlock->bbNum)
-            {
-                if (predBlock->bbJumpKind == BBJ_CALLFINALLY)
-                {
-                    continue;
-                }
-
-                /* If block can reach predBlock then we have a loop head */
-                if (BlockSetOps::IsMember(this, predBlock->bbReach, blockNum))
-                {
-                    hasLoops = true;
-
-                    /* Set the BBF_LOOP_HEAD flag */
-                    block->bbFlags |= BBF_LOOP_HEAD;
-                    break;
-                }
-            }
-        }
     }
-
-    fgHasLoops = hasLoops;
 
     if (hasUnreachableBlocks)
     {
         // Now remove the unreachable blocks
         for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
         {
-            //  If we mark the block with BBF_REMOVED then
-            //  we need to call fgRemovedBlock() on it
+            // If we marked a block with BBF_REMOVED then we need to call fgRemoveBlock() on it
 
             if (block->bbFlags & BBF_REMOVED)
             {
                 fgRemoveBlock(block, true);
+
+                // TODO: couldn't we have fgRemoveBlock() return the block after the (last)one removed
+                // so we don't need the code below?
 
                 // When we have a BBJ_CALLFINALLY, BBJ_ALWAYS pair; fgRemoveBlock will remove
                 // both blocks, so we must advance 1 extra place in the block list
@@ -520,9 +482,6 @@ bool Compiler::fgRemoveUnreachableBlocks()
 //
 // Also, compute the list of return blocks `fgReturnBlocks` and set of enter blocks `fgEnterBlks`.
 // Delete unreachable blocks.
-//
-// Via the call to `fgRemoveUnreachableBlocks`, determine if the flow graph has loops and set 'fgHasLoops'
-// accordingly. Set the BBF_LOOP_HEAD flag on the block target of backwards branches.
 //
 // Assumptions:
 //    Assumes the predecessor lists are computed and correct.
@@ -591,8 +550,6 @@ void Compiler::fgComputeReachability()
 
         //
         // Use reachability information to delete unreachable blocks.
-        // Also, determine if the flow graph has loops and set 'fgHasLoops' accordingly.
-        // Set the BBF_LOOP_HEAD flag on the block target of backwards branches.
         //
 
         changed = fgRemoveUnreachableBlocks();
@@ -2237,13 +2194,6 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
         if (optLoopTable[loopNum].lpEntry == bNext)
         {
             optLoopTable[loopNum].lpEntry = block;
-        }
-
-        /* Check the loop's first block */
-
-        if (optLoopTable[loopNum].lpFirst == bNext)
-        {
-            optLoopTable[loopNum].lpFirst = block;
         }
 
         /* Check the loop top */

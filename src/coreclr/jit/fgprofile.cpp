@@ -3717,7 +3717,7 @@ bool Compiler::fgProfileWeightsEqual(weight_t weight1, weight_t weight2)
 }
 
 //------------------------------------------------------------------------
-// fgProfileWeightsConsistentEqual: check if two profile weights are within
+// fgProfileWeightsConsistent: check if two profile weights are within
 //   some small percentage of one another.
 //
 // Arguments:
