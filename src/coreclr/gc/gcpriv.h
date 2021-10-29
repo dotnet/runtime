@@ -4528,7 +4528,7 @@ protected:
     PER_HEAP
     size_t gen2_removed_no_undo;
 
-#define INVALID_SAVED_PINNED_PLUG_INDEX (~0)
+#define INVALID_SAVED_PINNED_PLUG_INDEX ((size_t)~0)
 
     PER_HEAP
     size_t saved_pinned_plug_index;
