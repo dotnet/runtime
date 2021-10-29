@@ -22,21 +22,27 @@ namespace System.Xml.Serialization
 
         internal T GetOrCreateValue(Type t, Func<T> f)
         {
-            T? ret;
+            // The fast and most common default case
+            T? ret = (T?)_defaultTable[t];
+            if (ret != null)
+                return ret;
+
+            // Common case for collectible contexts
+            if (_collectibleTable.TryGetValue(t, out ret))
+                return ret;
+
+            // Not found. Do the slower work of creating the value in the correct collection.
             AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
 
             // Null and non-collectible load contexts use the default table
             if (alc == null || !alc.IsCollectible)
             {
-                if ((ret = (T?)_defaultTable[t]) == null)
+                lock (_defaultTable)
                 {
-                    lock (_defaultTable)
+                    if ((ret = (T?)_defaultTable[t]) == null)
                     {
-                        if ((ret = (T?)_defaultTable[t]) == null)
-                        {
-                            ret = f();
-                            _defaultTable[t] = ret;
-                        }
+                        ret = f();
+                        _defaultTable[t] = ret;
                     }
                 }
             }
@@ -44,15 +50,12 @@ namespace System.Xml.Serialization
             // Collectible load contexts should use the ConditionalWeakTable so they can be unloaded
             else
             {
-                if (!_collectibleTable.TryGetValue(t, out ret))
+                lock (_collectibleTable)
                 {
-                    lock (_collectibleTable)
+                    if (!_collectibleTable.TryGetValue(t, out ret))
                     {
-                        if (!_collectibleTable.TryGetValue(t, out ret))
-                        {
-                            ret = f();
-                            _collectibleTable.AddOrUpdate(t, ret);
-                        }
+                        ret = f();
+                        _collectibleTable.AddOrUpdate(t, ret);
                     }
                 }
             }
