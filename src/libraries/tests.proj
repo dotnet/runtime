@@ -286,7 +286,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' == 'true'">
-    <ProjectReference Include="$(RepoRoot)\src\libraries\System.Runtime\tests\System.Runtime.Tests.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(RunSmokeTestsOnly)' != 'true'">

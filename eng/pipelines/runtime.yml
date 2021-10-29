@@ -1041,10 +1041,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: minijit
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1065,10 +1062,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: monointerpreter
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
 # Only when Mono is changed
@@ -1090,10 +1084,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmaot
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
@@ -1116,10 +1107,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmfullaot
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 
 #
 # Libraries Release Test Execution against a release mono runtime.
