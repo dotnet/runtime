@@ -87,14 +87,22 @@ namespace System.IO.Tests
             SettingUpdatesPropertiesCore(item);
         }
 
-        private void SettingUpdatesPropertiesOnSymlinkCore(bool isRelative, bool targetExists)
+        [Theory]
+        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void SettingUpdatesPropertiesOnSymlink(bool targetIsRelative, bool targetExists)
         {
-            if (!targetExists && IsDirectory && !OperatingSystem.IsWindows())
-            {
-                // On Unix, symlinks that are created as 'directories' need their
-                // directory target to exist for it to count as a directory symlink.
-                return;
-            }
+            // This test is in this class since it needs all of the time functions.
+            // This test makes sure that the times are set on the symlink itself.
+            // It is needed as on OSX for example, the default for most APIs is
+            // to follow the symlink to completion and set the time on that entry
+            // instead (eg. the setattrlist will do this without the flag set).
+            // It is also the same case on unix, with the utimensat function.
+            // It is a theory since there are variants which have a relative target
+            // or absolute target, and whether the target exists or not.
 
             T target = targetExists ? GetExistingItem() : GetMissingItem();
 
@@ -104,7 +112,7 @@ namespace System.IO.Tests
             // setting it on the symlink, or if it failed by setting it on the target.
             // The symlink test is [0] of the Assert.All, and the target check is [1].
 
-            T item = CreateSymlinkToItem(target, isRelative);
+            T item = CreateSymlinkToItem(target, targetIsRelative);
             if (!targetExists) SettingUpdatesPropertiesCore(item);
             else
             {
@@ -127,46 +135,6 @@ namespace System.IO.Tests
                     Assert.Equal(initialTimes, updatedTimes);
                 } }, (action) => action());
             }
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
-        public void SettingUpdatesPropertiesOnSymlink()
-        {
-            // This test is in this class since it needs all of the time functions.
-            // This test makes sure that the times are set on the symlink itself.
-            // It is needed as on OSX for example, the default for most APIs is
-            // to follow the symlink to completion and set the time on that entry
-            // instead (eg. the setattrlist will do this without the flag set).
-            // It is also the same case on unix, with the utimensat function.
-            SettingUpdatesPropertiesOnSymlinkCore(false, true);
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesOnSymlinkWithNonExistentTarget()
-        {
-            // Same as the above SettingUpdatesPropertiesOnSymlink test,
-            // except that the target of the symlink doesn't exist.
-            SettingUpdatesPropertiesOnSymlinkCore(false, false);
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesOnRelativeSymlink()
-        {
-            // Same as the SettingUpdatesPropertiesOnSymlink function,
-            // except that the symlink target is relative rather than absolute.
-            SettingUpdatesPropertiesOnSymlinkCore(true, true);
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)]
-        public void SettingUpdatesPropertiesOnRelativeSymlinkWithNonExistingTarget()
-        {
-            // Same as the SettingUpdatesPropertiesOnSymlinkWithNonExistentTarget function,
-            // except that the symlink target is relative rather than absolute.
-            SettingUpdatesPropertiesOnSymlinkCore(true, false);
         }
 
         [Fact]
