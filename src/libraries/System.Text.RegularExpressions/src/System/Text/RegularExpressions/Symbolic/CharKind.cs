@@ -32,6 +32,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Creates the context of the previous and the next character kinds.</summary>
         internal static uint Context(uint prevKind, uint nextKind) => (nextKind << 3) | prevKind;
 
+        /// <summary>Number of bits used to represet a character context</summary>
+        internal const int ContextBitWidth = 6;
+
         internal static string DescribePrev(uint i) => i switch
         {
             StartStop => @"\A",

@@ -520,8 +520,9 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Contains("conditional", e.Message);
             }
         }
+        #endregion
 
-
+        #region Random input generation tests
         public static IEnumerable<object[]> GenerateRandomMembers_TestData()
         {
             string[] patterns = new string[] { @"pa[5\$s]{2}w[o0]rd$", @"\w\d+", @"\d{10}" };
@@ -536,7 +537,7 @@ namespace System.Text.RegularExpressions.Tests
                     {
                         foreach (string input in inputs)
                         {
-                            yield return new object[] {engine, pattern, input, !negative };
+                            yield return new object[] { engine, pattern, input, !negative };
                         }
                     }
                 }
