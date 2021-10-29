@@ -54,7 +54,6 @@ jobs:
         - _extraHelixArguments: ''
         - _crossBuildPropertyArg: ''
         - _testRunNamePrefixSuffix: ''
-        - _runSmokeTestsOnlyArg: ''
 
         - librariesBuildArtifactName: ${{ format('libraries_bin_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
 
@@ -87,9 +86,6 @@ jobs:
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - _msbuildCommonParameters: /p:OfficialBuildId=$(Build.BuildNumber)
-
-        - ${{ if ne(parameters.variables['isFullMatrix'], true) }}:
-          - _runSmokeTestsOnlyArg: /p:RunSmokeTestsOnly=true
 
         - _runtimeArtifactName: ''
         - _runtimeDownloadPath: ''

@@ -305,6 +305,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         - wasmtestonbrowser
@@ -317,43 +318,44 @@ jobs:
 #
 # Build the whole product using Mono and run libraries tests, for Wasm.Build.Tests
 #
-# - template: /eng/pipelines/common/platform-matrix.yml
-#   parameters:
-#     jobTemplate: /eng/pipelines/common/global-build-job.yml
-#     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-#     buildConfig: Release
-#     runtimeFlavor: mono
-#     # BuildWasmApps should only happen on the rolling build. No need to duplicate the build on PR's
-#     - ${{ if eq(variables['isFullMatrix'], true) }}:
-#       - Browser_wasm
-#     variables:
-#       # map dependencies variables to local variables
-#       - name: monoContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
-#       - name: installerContainsChange
-#         value: $[ dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
-#     jobParameters:
-#       testGroup: innerloop
-#       nameSuffix: AllSubsets_Mono_WasmBuildTests
-#       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false
-#       timeoutInMinutes: 180
-#       condition: >-
-#         or(
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-#           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-#           eq(variables['isFullMatrix'], true))
-#       # extra steps, run tests
-#       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-#       extraStepsParameters:
-#         creator: dotnet-bot
-#         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-#         scenarios:
-#         - buildwasmapps
-#         condition: >-
-#           or(
-#           eq(variables['monoContainsChange'], true),
-#           eq(variables['installerContainsChange'], true),
-#           eq(variables['isFullMatrix'], true))
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    # BuildWasmApps should only happen on the rolling build. No need to duplicate the build on PR's
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Browser_wasm
+    variables:
+      # map dependencies variables to local variables
+      - name: monoContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
+      - name: installerContainsChange
+        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
+    jobParameters:
+      testGroup: innerloop
+      nameSuffix: AllSubsets_Mono_WasmBuildTests
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isFullMatrix'], true))
+      # extra steps, run tests
+      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsParameters:
+        creator: dotnet-bot
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        scenarios:
+        - buildwasmapps
+        condition: >-
+          or(
+          eq(variables['monoContainsChange'], true),
+          eq(variables['installerContainsChange'], true),
+          eq(variables['isFullMatrix'], true))
 
 #
 # Build for Browser/wasm, with EnableAggressiveTrimming=true
@@ -388,7 +390,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         condition: >-
@@ -430,7 +432,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         condition: >-
