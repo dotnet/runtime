@@ -7,10 +7,10 @@
 #ifndef HOST_WINDOWS
 #define WEAK_SYMBOL __attribute__((weak))
 #define HOST_SYMBOL __attribute__((weak))
-#define HOST_SYMBOL_CALLCONV 
+#define HOST_SYMBOL_CALLCONV
 #else
 #include <windows.h>
-#define WEAK_SYMBOL 
+#define WEAK_SYMBOL
 #define HOST_SYMBOL __declspec(dllexport)
 #define HOST_SYMBOL_CALLCONV __cdecl
 #endif
@@ -20,9 +20,17 @@
 extern "C" const char *__asan_default_options() {
   return "symbolize=1 use_sigaltstack=0 detect_leaks=0";
 }
+
+// We're trying to match C++-mangled names here, so we need to match the exact type that ASAN's uptr type is under the hood to successfully link.
+#if defined(HOST_WINDOWS) && defined(HOST_X86)
+using asan_uptr = unsigned long;
+#else
+using asan_uptr = uintptr_t;
+#endif
+
 namespace __asan
 {
-    extern uintptr_t kHighMemEnd, kMidMemBeg, kMidMemEnd;
+    extern asan_uptr kHighMemEnd, kMidMemBeg, kMidMemEnd;
 }
 
 extern "C" HOST_SYMBOL void HOST_SYMBOL_CALLCONV get_asan_shadow_range(uintptr_t* pHighMemEnd, uintptr_t* pMidMemBeg, uintptr_t* pMidMemEnd)
