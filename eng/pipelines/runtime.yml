@@ -292,7 +292,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -305,6 +305,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         - wasmtestonbrowser
@@ -324,7 +325,9 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Browser_wasm
+    # BuildWasmApps should only happen on the rolling build. No need to duplicate the build on PR's
+    - ${{ if eq(variables['isFullMatrix'], true) }}:
+      - Browser_wasm
     variables:
       # map dependencies variables to local variables
       - name: monoContainsChange
@@ -374,7 +377,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_EAT
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=false
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -387,7 +390,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         condition: >-
@@ -416,7 +419,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_AOT
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=true
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -429,7 +432,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildWasmAppsOnHelix=true $(_runSmokeTestsOnlyArg)
         scenarios:
         - normal
         condition: >-
@@ -488,10 +491,8 @@ jobs:
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
+      # NOTE: Per PR test execution is not recommended for mobile runtime tests
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/wasm-runtime-and-send-to-helix.yml
       extraStepsParameters:
@@ -526,10 +527,8 @@ jobs:
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
+      # NOTE: Per PR test execution is not recommended for mobile runtime tests
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
       extraStepsParameters:
@@ -1042,10 +1041,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: minijit
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1066,10 +1062,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: monointerpreter
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
 # Only when Mono is changed
@@ -1091,10 +1084,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmaot
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
@@ -1117,10 +1107,7 @@ jobs:
       liveRuntimeBuildConfig: release
       runtimeVariant: llvmfullaot
       condition: >-
-        or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-          eq(variables['isFullMatrix'], true))
+        eq(variables['isFullMatrix'], true)
 
 #
 # Libraries Release Test Execution against a release mono runtime.
