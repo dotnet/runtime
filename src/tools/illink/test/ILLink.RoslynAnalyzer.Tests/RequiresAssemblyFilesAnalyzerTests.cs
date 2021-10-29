@@ -1147,7 +1147,7 @@ class AnotherImplementation : IRAF
 	}
 }
 ";
-			var compilation = (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (references)).EmitToImageReference ();
+			var compilation = (await TestCaseCompilation.GetCompilation (references)).EmitToImageReference ();
 
 			await VerifyRequiresAssemblyFilesAnalyzer (src, additionalReferences: new[] { compilation },
 				// (4,14): warning IL3003: Interface member 'IRAF.Method()' with 'RequiresAssemblyFilesAttribute' has an implementation member 'Implementation.Method()' without 'RequiresAssemblyFilesAttribute'. Attributes must match across all interface implementations or overrides.
@@ -1219,7 +1219,7 @@ class AnotherImplementation : IRAF
 	}
 }
 ";
-			var compilation = (await CSharpAnalyzerVerifier<RequiresAssemblyFilesAnalyzer>.GetCompilation (references)).EmitToImageReference ();
+			var compilation = (await TestCaseCompilation.GetCompilation (references)).EmitToImageReference ();
 
 			await VerifyRequiresAssemblyFilesAnalyzer (src, additionalReferences: new[] { compilation },
 				// (7,14): warning IL3003: Member 'Implementation.Method()' with 'RequiresAssemblyFilesAttribute' implements interface member 'IRAF.Method()' without 'RequiresAssemblyFilesAttribute'. Attributes must match across all interface implementations or overrides.

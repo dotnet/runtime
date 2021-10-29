@@ -57,7 +57,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::get_PropFalse()",
 			"brfalse.s il_7",
 			"ldc.i4.1",
 			"ret"
@@ -152,11 +152,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::PropagateStaticIsEnabled()",
 			"brfalse.s il_7",
 			"ldarg.0",
-			"call",
-			"ret"
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.InstanceMethodSubstitutions::StaticPropagation_Reached2()",
+			"ret",
 		})]
 		void TestStaticPropagation ()
 		{

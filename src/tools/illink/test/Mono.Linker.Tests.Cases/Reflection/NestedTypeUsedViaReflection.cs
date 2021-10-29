@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Reflection;
@@ -17,7 +16,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestPrivateByName ();
 			TestByBindingFlags ();
 			TestByUnknownBindingFlags (BindingFlags.Public);
-			TestByUnknownBindingFlagsAndName (BindingFlags.Public, "DoesntMatter");
 			TestNonExistingName ();
 			TestNullType ();
 			TestIgnoreCaseBindingFlags ();
@@ -83,16 +81,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetNestedType), new Type[] { typeof (string), typeof (BindingFlags) },
-			typeof (UnknownBindingFlagsAndName.PublicNestedType), null, (Type[]) null)]
-		static void TestByUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
-		{
-			// Since the binding flags and name are not known linker should mark all nested types on the type
-			_ = typeof (UnknownBindingFlagsAndName).GetNestedType (name, bindingFlags);
-		}
-
-		[Kept]
 		static void TestNonExistingName ()
 		{
 			_ = typeof (NestedTypeUsedViaReflection).GetNestedType ("NonExisting");
@@ -128,16 +116,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 
 		[Kept]
 		private class UnknownBindingFlags
-		{
-			[Kept]
-			public static class PublicNestedType { }
-
-			[Kept]
-			private static class PrivateNestedType { }
-		}
-
-		[Kept]
-		private class UnknownBindingFlagsAndName
 		{
 			[Kept]
 			public static class PublicNestedType { }

@@ -1,6 +1,5 @@
 // Licensed to the.NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -34,7 +33,10 @@ namespace Mono.Linker
 			if (provider is not IMemberDefinition memberDefinition)
 				return;
 
-			var assemblyName = UnconditionalSuppressMessageAttributeState.GetModuleFromProvider (memberDefinition).Assembly.Name;
+			if (UnconditionalSuppressMessageAttributeState.GetModuleFromProvider (provider) is not ModuleDefinition module)
+				return;
+
+			var assemblyName = module.Assembly.Name;
 			if (!_warnings.TryGetValue (assemblyName, out var warnings)) {
 				warnings = new HashSet<(int, IMemberDefinition)> ();
 				_warnings.Add (assemblyName, warnings);

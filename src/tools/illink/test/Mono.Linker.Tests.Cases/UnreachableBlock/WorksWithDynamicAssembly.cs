@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		"Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks",
 		"TestProperty()",
 		new string[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.Dependencies.AssemblyWithUnreachableBlocks::get_PropBool()",
 			"brfalse.s il_7",
 			"ret"
 		})]

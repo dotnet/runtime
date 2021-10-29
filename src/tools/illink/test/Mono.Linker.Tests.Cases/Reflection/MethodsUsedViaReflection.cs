@@ -22,7 +22,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestDataFlowWithAnnotation (typeof (MyType));
 			TestIfElse (1);
 			TestIgnoreCaseBindingFlags ();
-			TestIgnorableBindingFlags ();
 			TestUnsupportedBindingFlags ();
 		}
 
@@ -101,15 +100,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		static void TestIgnorableBindingFlags ()
-		{
-			var methods = typeof (InvokeMethodClass).GetMethods (BindingFlags.Public | BindingFlags.InvokeMethod);
-		}
-
-		[Kept]
 		static void TestUnsupportedBindingFlags ()
 		{
-			var methods = typeof (SuppressChangeTypeClass).GetMethods (BindingFlags.Public | BindingFlags.SuppressChangeType);
+			var methods = typeof (InvokeMethodClass).GetMethods (BindingFlags.InvokeMethod);
 		}
 
 		[Kept]
@@ -294,23 +287,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				return 54;
 			}
 
-			private bool Unmarked ()
-			{
-				return true;
-			}
-		}
-
-		[Kept]
-		private class SuppressChangeTypeClass
-		{
 			[Kept]
-			public int OnlyCalledViaReflection ()
-			{
-				return 54;
-			}
-
-			[Kept]
-			private bool MarkedDueToSuppressChangeType ()
+			private bool MarkedDueToInvokeMethod ()
 			{
 				return true;
 			}

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -11,7 +12,7 @@ namespace Mono.Linker
 		public static bool IsWorthConvertingToThrow (MethodBody body)
 		{
 			// Some bodies are cheaper size wise to leave alone than to convert to a throw
-			Instruction previousMeaningful = null;
+			Instruction? previousMeaningful = null;
 			int meaningfulCount = 0;
 			foreach (var ins in body.Instructions) {
 				// Handle ignoring noops because because (1) it's a valid case to ignore
@@ -60,7 +61,7 @@ namespace Mono.Linker
 			this.context = context;
 		}
 
-		public IEnumerable<(InterfaceImplementation, TypeDefinition)> GetReferencedInterfaces (MethodBody body)
+		public IEnumerable<(InterfaceImplementation, TypeDefinition)>? GetReferencedInterfaces (MethodBody body)
 		{
 			var possibleStackTypes = AllPossibleStackTypes (body.Method);
 			if (possibleStackTypes.Count == 0)
@@ -80,7 +81,7 @@ namespace Mono.Linker
 				if (!type.IsClass)
 					continue;
 
-				TypeDefinition currentType = type;
+				TypeDefinition? currentType = type;
 				while (currentType?.BaseType != null) // Checking BaseType != null to skip System.Object
 				{
 					AddMatchingInterfaces (interfaceImplementations, currentType, interfaceTypes);
@@ -113,7 +114,8 @@ namespace Mono.Linker
 
 			foreach (Instruction instruction in body.Instructions) {
 				if (instruction.Operand is FieldReference fieldReference) {
-					AddIfResolved (types, context.TryResolve (fieldReference)?.FieldType);
+					if (context.TryResolve (fieldReference)?.FieldType is TypeReference fieldType)
+						AddIfResolved (types, fieldType);
 				} else if (instruction.Operand is MethodReference methodReference) {
 					if (methodReference is GenericInstanceMethod genericInstanceMethod)
 						AddFromGenericInstance (types, genericInstanceMethod);
@@ -145,12 +147,12 @@ namespace Mono.Linker
 				return;
 
 			foreach (var interfaceType in interfaceTypes) {
-				if (HasInterface (type, interfaceType, out InterfaceImplementation implementation))
+				if (HasInterface (type, interfaceType, out InterfaceImplementation? implementation))
 					results.Add ((implementation, type));
 			}
 		}
 
-		bool HasInterface (TypeDefinition type, TypeDefinition interfaceType, out InterfaceImplementation implementation)
+		bool HasInterface (TypeDefinition type, TypeDefinition interfaceType, [NotNullWhen (true)] out InterfaceImplementation? implementation)
 		{
 			implementation = null;
 			if (!type.HasInterfaces)

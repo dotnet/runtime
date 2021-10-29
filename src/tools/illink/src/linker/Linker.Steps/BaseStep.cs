@@ -27,6 +27,7 @@
 //
 
 using System;
+using System.Diagnostics;
 using Mono.Cecil;
 
 namespace Mono.Linker.Steps
@@ -35,21 +36,24 @@ namespace Mono.Linker.Steps
 	public abstract class BaseStep : IStep
 	{
 
-		private LinkContext _context;
+		private LinkContext? _context;
 
 		public LinkContext Context {
-			get { return _context; }
+			get {
+				Debug.Assert (_context != null);
+				return _context;
+			}
 		}
 
 		public AnnotationStore Annotations {
-			get { return _context.Annotations; }
+			get { return Context.Annotations; }
 		}
 
 		public Tracer Tracer {
-			get { return _context.Tracer; }
+			get { return Context.Tracer; }
 		}
 
-		public MarkingHelpers MarkingHelpers => _context.MarkingHelpers;
+		public MarkingHelpers MarkingHelpers => Context.MarkingHelpers;
 
 		public void Process (LinkContext context)
 		{

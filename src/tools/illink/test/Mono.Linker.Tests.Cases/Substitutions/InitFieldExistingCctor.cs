@@ -12,7 +12,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 				"ldc.i4.s 0xa",
 				"pop",
 				"ldc.i4 0x5",
-				"stsfld",
+				"stsfld System.Int32 Mono.Linker.Tests.Cases.Substitutions.InitFieldExistingCctor::IntValue",
 				"ret"
 			})]
 		static InitFieldExistingCctor ()

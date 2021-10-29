@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -8,6 +7,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -20,6 +20,8 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
 	public abstract class TestCaseUtils
 	{
+		private static readonly string MonoLinkerTestsCases = "Mono.Linker.Tests.Cases";
+
 		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
 			new ReferenceAssemblies (
 				"net6.0",
@@ -38,66 +40,72 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		public static IEnumerable<object[]> GetTestData (string testSuiteName)
+			=> s_testCases[testSuiteName].Keys.Select (testName => new object[] { testName });
+
+		public static void RunTest (string suiteName, string testName, (string, string)[] MSBuildProperties, Func<TestCase, bool>? shouldRun = null)
 		{
-			foreach (var testFile in s_testFiles[testSuiteName]) {
-				var testName = Path.GetFileNameWithoutExtension (testFile);
-				var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
-
-				foreach (var node in root.DescendantNodes ()) {
-					if (node is MemberDeclarationSyntax m) {
-						var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
-						if (attrs.Count > 0) {
-							yield return new object[] { testName, m, attrs };
-						}
-					}
-				}
-
-				static bool IsWellKnown (AttributeSyntax attr)
-				{
-					switch (attr.Name.ToString ()) {
-					// Currently, the analyzer's test infra only understands these attributes when placed on methods.
-					case "ExpectedWarning":
-					case "LogContains":
-					case "LogDoesNotContain":
-					case "UnrecognizedReflectionAccessPattern":
-						return true;
-					}
-
-					return false;
-				}
-			}
+			var testCase = s_testCases[suiteName][testName];
+			if (shouldRun == null || shouldRun (testCase))
+				testCase.Run (MSBuildProperties);
 		}
 
-		public static void RunTest<TAnalyzer> (MemberDeclarationSyntax m, List<AttributeSyntax> attrs, params (string, string)[] MSBuildProperties)
-			where TAnalyzer : DiagnosticAnalyzer, new()
+		private static readonly Dictionary<string, Dictionary<string, TestCase>> s_testCases = InitializeTestCases ();
+
+		private static Dictionary<string, Dictionary<string, TestCase>> InitializeTestCases ()
 		{
-			var testSyntaxTree = m.SyntaxTree.GetRoot ().SyntaxTree;
-			var testDependenciesSource = GetTestDependencies (testSyntaxTree)
-				.Select (testDependency => CSharpSyntaxTree.ParseText (File.ReadAllText (testDependency)));
-
-			var test = new TestChecker (m, CSharpAnalyzerVerifier<TAnalyzer>
-				.CreateCompilation (testSyntaxTree, MSBuildProperties, additionalSources: testDependenciesSource).Result);
-
-			test.ValidateAttributes (attrs);
-		}
-
-		public static readonly ImmutableDictionary<string, List<string>> s_testFiles = GetTestFilesByDirName ();
-
-		public static ImmutableDictionary<string, List<string>> GetTestFilesByDirName ()
-		{
-			var builder = ImmutableDictionary.CreateBuilder<string, List<string>> ();
-
+			var testCases = new Dictionary<string, Dictionary<string, TestCase>> ();
 			foreach (var file in GetTestFiles ()) {
-				var dirName = Path.GetFileName (Path.GetDirectoryName (file))!;
-				if (builder.TryGetValue (dirName, out var sources)) {
-					sources.Add (file);
-				} else {
-					sources = new List<string> () { file };
-					builder[dirName] = sources;
+				// Some tests are in nested directories. Walk up until we get the test suite directory.
+				string directory = Path.GetDirectoryName (file)!;
+				string parentDirectory;
+				while (Path.GetFileName (parentDirectory = Path.GetDirectoryName (directory)!) != MonoLinkerTestsCases)
+					directory = parentDirectory;
+				string suiteName = Path.GetFileName (directory);
+
+				if (!testCases.TryGetValue (suiteName, out var suiteTestCases)) {
+					suiteTestCases = new ();
+					testCases.Add (suiteName, suiteTestCases);
+				}
+
+				foreach (var testCase in BuildTestCasesForFile (file)) {
+					var canditateTestName = GetMemberSyntaxFullName (testCase.MemberSyntax);
+					string testName = canditateTestName;
+					int index = 0;
+					while (!suiteTestCases.TryAdd (testName, testCase)) {
+						testName = canditateTestName + "#" + (++index).ToString ();
+					}
+
+					testCase.Name = testName;
+				}
+			}
+			return testCases;
+		}
+
+		private static IEnumerable<TestCase> BuildTestCasesForFile (string testFile)
+		{
+			var root = CSharpSyntaxTree.ParseText (File.ReadAllText (testFile)).GetRoot ();
+			foreach (var node in root.DescendantNodes ()) {
+				if (node is MemberDeclarationSyntax m) {
+					var attrs = m.AttributeLists.SelectMany (al => al.Attributes.Where (IsWellKnown)).ToList ();
+					if (attrs.Count > 0) {
+						yield return new TestCase (m, attrs);
+					}
 				}
 			}
 
-			return builder.ToImmutable ();
+			static bool IsWellKnown (AttributeSyntax attr)
+			{
+				switch (attr.Name.ToString ()) {
+				// Currently, the analyzer's test infra only understands these attributes when placed on methods.
+				case "ExpectedWarning":
+				case "LogContains":
+				case "LogDoesNotContain":
+				case "UnrecognizedReflectionAccessPattern":
+					return true;
+				}
+
+				return false;
+			}
 		}
 
 		public static void GetDirectoryPaths (out string rootSourceDirectory, out string testAssemblyPath)
@@ -209,20 +217,29 @@ namespace ILLink.RoslynAnalyzer.Tests
 			string ThisFile ([CallerFilePath] string path = "") => path;
 		}
 
-		public static IEnumerable<string> GetTestDependencies (SyntaxTree testSyntaxTree)
+		public static string GetMemberSyntaxFullName (MemberDeclarationSyntax member)
 		{
-			GetDirectoryPaths (out var rootSourceDir, out _);
-			foreach (var attribute in testSyntaxTree.GetRoot ().DescendantNodes ().OfType<AttributeSyntax> ()) {
-				if (attribute.Name.ToString () != "SetupCompileBefore")
-					continue;
-
-				var testNamespace = testSyntaxTree.GetRoot ().DescendantNodes ().OfType<NamespaceDeclarationSyntax> ().Single ().Name.ToString ();
-				var testSuiteName = testNamespace.Substring (testNamespace.LastIndexOf ('.') + 1);
-				var args = GetAttributeArguments (attribute);
-				string outputName = GetStringFromExpression (args["#0"]);
-				foreach (var sourceFile in ((ImplicitArrayCreationExpressionSyntax) args["#1"]).DescendantNodes ().OfType<LiteralExpressionSyntax> ())
-					yield return Path.Combine (rootSourceDir, testSuiteName, GetStringFromExpression (sourceFile));
+			StringBuilder fullName = new ();
+			var parent = member.Parent;
+			while (parent is ClassDeclarationSyntax parentClass) {
+				fullName.Insert (0, ".");
+				fullName.Insert (0, parentClass.Identifier.ToString ());
+				parent = parentClass.Parent;
 			}
+
+			fullName.Append (GetMemberSyntaxName (member));
+			return fullName.ToString ();
 		}
+
+		public static string GetMemberSyntaxName (MemberDeclarationSyntax member) =>
+			member switch {
+				MethodDeclarationSyntax method => method.Identifier.ToString (),
+				PropertyDeclarationSyntax property => property.Identifier.ToString (),
+				FieldDeclarationSyntax field => field.Declaration.Variables.Single ().Identifier.ToString (),
+				EventDeclarationSyntax @event => @event.Identifier.ToString (),
+				ClassDeclarationSyntax @class => @class.Identifier.ToString (),
+				ConstructorDeclarationSyntax ctor => ctor.Modifiers.Any (t => t.Text == "static") ? ".cctor" : ".ctor",
+				_ => "UnknownMember"
+			};
 	}
 }

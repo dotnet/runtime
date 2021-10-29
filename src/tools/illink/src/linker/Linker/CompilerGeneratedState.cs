@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Mono.Cecil;
@@ -42,7 +41,7 @@ namespace Mono.Linker
 					case "AsyncIteratorStateMachineAttribute":
 					case "AsyncStateMachineAttribute":
 					case "IteratorStateMachineAttribute":
-						TypeDefinition stateMachineType = GetFirstConstructorArgumentAsType (attribute);
+						TypeDefinition? stateMachineType = GetFirstConstructorArgumentAsType (attribute);
 						if (stateMachineType != null) {
 							if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd (stateMachineType, method)) {
 								var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
@@ -60,7 +59,7 @@ namespace Mono.Linker
 			}
 		}
 
-		static TypeDefinition GetFirstConstructorArgumentAsType (CustomAttribute attribute)
+		static TypeDefinition? GetFirstConstructorArgumentAsType (CustomAttribute attribute)
 		{
 			if (!attribute.HasConstructorArguments)
 				return null;
@@ -68,13 +67,13 @@ namespace Mono.Linker
 			return attribute.ConstructorArguments[0].Value as TypeDefinition;
 		}
 
-		public MethodDefinition GetUserDefinedMethodForCompilerGeneratedMember (IMemberDefinition sourceMember)
+		public MethodDefinition? GetUserDefinedMethodForCompilerGeneratedMember (IMemberDefinition sourceMember)
 		{
 			if (sourceMember == null)
 				return null;
 
 			TypeDefinition compilerGeneratedType = (sourceMember as TypeDefinition) ?? sourceMember.DeclaringType;
-			if (_compilerGeneratedTypeToUserCodeMethod.TryGetValue (compilerGeneratedType, out MethodDefinition userDefinedMethod))
+			if (_compilerGeneratedTypeToUserCodeMethod.TryGetValue (compilerGeneratedType, out MethodDefinition? userDefinedMethod))
 				return userDefinedMethod;
 
 			// Only handle async or iterator state machine

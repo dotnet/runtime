@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -120,5 +119,36 @@ namespace ILLink.RoslynAnalyzer
 
 			return sb.ToString ();
 		}
+
+		public static bool IsInterface (this ISymbol symbol)
+		{
+			if (symbol is not INamedTypeSymbol namedTypeSymbol)
+				return false;
+
+			var typeSymbol = namedTypeSymbol as ITypeSymbol;
+			return typeSymbol.TypeKind == TypeKind.Interface;
+		}
+
+		public static bool IsSubclassOf (this ISymbol symbol, string ns, string type)
+		{
+			if (symbol is not ITypeSymbol typeSymbol)
+				return false;
+
+			while (typeSymbol != null) {
+				if (typeSymbol.ContainingNamespace.Name == ns &&
+					typeSymbol.ContainingType.Name == type)
+					return true;
+
+				typeSymbol = typeSymbol.ContainingType;
+			}
+
+			return false;
+		}
+
+		public static bool IsConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
+			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.Constructor;
+
+		public static bool IsStaticConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
+			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.StaticConstructor;
 	}
 }
