@@ -842,6 +842,9 @@ public:
     // Returns true iff the VN represents a handle constant.
     bool IsVNHandle(ValueNum vn);
 
+    // Returns true iff the VN represents a relop
+    bool IsVNRelop(ValueNum vn);
+
     // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
     //
     // If vn is not a relop, return NoVN.

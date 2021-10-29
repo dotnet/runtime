@@ -47,6 +47,12 @@ jobs:
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
+      
+      - name: _runSmokeTestsOnlyArg
+        ${{ if ne(parameters.variables['isFullMatrix'], true) }}:
+          value: /p:RunSmokeTestsOnly=true
+        ${{ if eq(parameters.variables['isFullMatrix'], true) }}:
+          value: ''
 
       - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
         - name: archiveExtension

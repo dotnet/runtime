@@ -3,9 +3,9 @@
 
 import { mono_wasm_new_root, WasmRoot } from "./roots";
 import {
-    GCHandle, Int32Ptr, JSHandle, JSHandleDisposed, MonoArray,
-    MonoArrayNull, MonoObject, MonoObjectNull, MonoString, MonoClass,
-    MonoClassNull, MonoType, MonoTypeNull
+    GCHandle, Int32Ptr, JSHandleDisposed, MonoArray,
+    MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
+    MonoType, MonoTypeNull
 } from "./types";
 import { Module, runtimeHelpers } from "./modules";
 import { conv_string } from "./strings";
@@ -82,7 +82,8 @@ function _unbox_cs_owned_root_as_js_object(root: WasmRoot<any>) {
     return js_obj;
 }
 
-function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr) : any {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<any>, type: MarshalType, typePtr: MonoType, unbox_buffer: VoidPtr): any {
     //See MARSHAL_TYPE_ defines in driver.c
     switch (type) {
         case MarshalType.INT64:
@@ -121,25 +122,25 @@ function _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root: WasmRoot<a
         case MarshalType.VOID:
             return undefined;
         default:
-            throw new Error(`no idea on how to unbox object of MarshalType ${type} at offset ${root.value} (root address is ${root.get_address()})`);            
+            throw new Error(`no idea on how to unbox object of MarshalType ${type} at offset ${root.value} (root address is ${root.get_address()})`);
     }
 }
 
-export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr) : any {
+export function _unbox_mono_obj_root_with_known_nonprimitive_type(root: WasmRoot<any>, type: MarshalType, unbox_buffer: VoidPtr): any {
     if (type >= MarshalError.FIRST)
         throw new Error(`Got marshaling error ${type} when attempting to unbox object at address ${root.value} (root located at ${root.get_address()})`);
-    
+
     let typePtr = MonoTypeNull;
     if ((type === MarshalType.VT) || (type == MarshalType.OBJECT)) {
         typePtr = <MonoType><any>Module.HEAPU32[<any>unbox_buffer >>> 2];
         if (<number><any>typePtr < 1024)
             throw new Error(`Got invalid MonoType ${typePtr} for object at address ${root.value} (root located at ${root.get_address()})`);
     }
-    
+
     return _unbox_mono_obj_root_with_known_nonprimitive_type_impl(root, type, typePtr, unbox_buffer);
 }
 
-export function _unbox_mono_obj_root(root: WasmRoot<any>) : any {
+export function _unbox_mono_obj_root(root: WasmRoot<any>): any {
     if (root.value === 0)
         return undefined;
 
@@ -350,7 +351,7 @@ function _unbox_task_root_as_promise(root: WasmRoot<MonoObject>) {
     return result;
 }
 
-export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>) {
+export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): any {
 
     if (root.value === MonoObjectNull)
         return null;
