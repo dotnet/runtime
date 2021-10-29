@@ -13,9 +13,12 @@ namespace System.Text.RegularExpressions.Symbolic
     internal sealed class SymbolicRegexNode<S> where S : notnull
     {
         internal const string EmptyCharClass = "[]";
+        /// <summary>Some byte other than 0 to represent true</summary>
         internal const byte TrueByte = 1;
+        /// <summary>Some byte other than 0 to represent false</summary>
         internal const byte FalseByte = 2;
-        internal const byte UndefByte = 0;
+        /// <summary>The undefined value is the default value 0</summary>
+        internal const byte UndefinedByte = 0;
 
         internal readonly SymbolicRegexBuilder<S> _builder;
         internal readonly SymbolicRegexKind _kind;
@@ -26,7 +29,11 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly SymbolicRegexNode<S>? _right;
         internal readonly SymbolicRegexSet<S>? _alts;
 
-        private byte[]? _nullabilityForContext;
+        /// <summary>
+        /// Caches nullability of this node for any given context (0 &lt;= context &lt; ContextLimit)
+        /// when _info.StartsWithSomeAnchor and _info.CanBeNullable are true. Otherwise the cache is null.
+        /// </summary>
+        private byte[]? _nullabilityCache;
 
         private S _startSet;
 
@@ -53,7 +60,7 @@ namespace System.Text.RegularExpressions.Symbolic
             _info = info;
             _hashcode = ComputeHashCode();
             _startSet = ComputeStartSet();
-            _nullabilityForContext = info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[1 << CharKind.ContextBitWidth] : null;
+            _nullabilityCache = info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[CharKind.ContextLimit] : null;
         }
 
         private bool _isInternalizedUnion;
@@ -166,23 +173,27 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="context">kind info for previous and next characters</param>
         internal bool IsNullableFor(uint context)
         {
-            if (!_info.StartsWithSomeAnchor)
-                return IsNullable;
-
-            if (!_info.CanBeNullable)
-                return false;
+            if (_nullabilityCache is null)
+            {
+                // if _nullabilityCache is null then IsNullable==CanBeNullable
+                // Observe that if IsNullable==true then CanBeNullable==true.
+                // but when the node does not start with an anchor
+                // and IsNullable==false then CanBeNullable==false.
+                return _info.IsNullable;
+            }
 
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
                 return StackHelper.CallOnEmptyStack(IsNullableFor, context);
             }
 
-            Debug.Assert(_nullabilityForContext is not null && context < (1 << CharKind.ContextBitWidth));
+            Debug.Assert(context < CharKind.ContextLimit);
 
             // If nullablity has been computed for the given context then return it
-            if (_nullabilityForContext[context] != UndefByte)
+            byte b = Volatile.Read(ref _nullabilityCache[context]);
+            if (b != UndefinedByte)
             {
-                return _nullabilityForContext[context] == TrueByte;
+                return b == TrueByte;
             }
 
             // Otherwise compute the nullability recursively for the given context
@@ -246,7 +257,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     is_nullable = (CharKind.Next(context) & CharKind.StartStop) != 0;
                     break;
 
-                default: //SymbolicRegexKind.EndAnchorZRev:
+                default: // SymbolicRegexKind.EndAnchorZRev:
                          // EndAnchorZRev (rev(\Z)) anchor is nullable when the prev character is either the first Newline or Start
                          // note: CharKind.NewLineS == CharKind.Newline|CharKind.StartStop
                     Debug.Assert(_kind == SymbolicRegexKind.EndAnchorZRev);
@@ -254,8 +265,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
             }
 
-            Volatile.Write(ref _nullabilityForContext[context], is_nullable ? TrueByte : FalseByte);
-            }
+            Volatile.Write(ref _nullabilityCache[context], is_nullable ? TrueByte : FalseByte);
 
             return is_nullable;
         }

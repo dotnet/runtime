@@ -29,11 +29,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>Gets the next character kind from a context</summary>
         internal static uint Next(uint context) => context >> 3;
 
-        /// <summary>Creates the context of the previous and the next character kinds.</summary>
+        /// <summary>Encodes the pair (prevKind, nextKind) using 6 bits</summary>
         internal static uint Context(uint prevKind, uint nextKind) => (nextKind << 3) | prevKind;
 
-        /// <summary>Number of bits used to represet a character context</summary>
-        internal const int ContextBitWidth = 6;
+        /// <summary>Exclusive maximum context (limit) is 64 because a context uses bit-shifting where each kind needs 3 bits.</summary>
+        internal const int ContextLimit = 64;
 
         internal static string DescribePrev(uint i) => i switch
         {
