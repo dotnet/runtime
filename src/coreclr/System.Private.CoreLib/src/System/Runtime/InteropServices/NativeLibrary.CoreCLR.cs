@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_FreeLib")]
         internal static extern void FreeLib(IntPtr handle);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol")]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "NativeLibrary_GetSymbol", CharSet = CharSet.Unicode)]
         internal static extern IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError);
     }
 }
