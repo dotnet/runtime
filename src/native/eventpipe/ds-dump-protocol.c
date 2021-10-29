@@ -51,7 +51,7 @@ generate_core_dump_command_try_parse_payload (
 
 	if (!ds_ipc_message_try_parse_string_utf16_t (&buffer_cursor, &buffer_cursor_len, &instance->dump_name ) ||
 		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->dump_type) ||
-		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->diagnostics))
+		!ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &instance->flags))
 		ep_raise_error ();
 
 ep_on_exit:

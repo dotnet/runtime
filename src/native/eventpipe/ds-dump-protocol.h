@@ -27,13 +27,13 @@ struct _DiagnosticsGenerateCoreDumpCommandPayload_Internal {
 	// The protocol buffer is defined as:
 	//   string - dumpName (UTF16)
 	//   int - dumpType
-	//   int - diagnostics
+	//   uint32 - flags
 	// returns
 	//   ulong - status
 
 	const ep_char16_t *dump_name;
 	uint32_t dump_type;
-	uint32_t diagnostics;
+	uint32_t flags;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_DUMP_PROTOCOL_GETTER_SETTER)
