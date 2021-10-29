@@ -41,6 +41,15 @@ namespace System.Security.Cryptography
         public virtual bool TryExportPkcs8PrivateKey(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    public abstract partial class AsymmetricKeyExchangeFormatter
+    {
+        protected AsymmetricKeyExchangeFormatter() { }
+        public abstract string? Parameters { get; }
+        public abstract byte[] CreateKeyExchange(byte[] data);
+        public abstract byte[] CreateKeyExchange(byte[] data, System.Type? symAlgType);
+        public abstract void SetKey(System.Security.Cryptography.AsymmetricAlgorithm key);
+    }
     public enum CipherMode
     {
         CBC = 1,

@@ -288,7 +288,7 @@ System.Configuration.ConfigurationManager</PackageDescription>
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

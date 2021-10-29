@@ -30,7 +30,7 @@
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Csp" />
-    <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Security.Cryptography" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
