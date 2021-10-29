@@ -7132,6 +7132,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
         return nullptr;
     }
 
+    if (call->IsNoReturn() && !call->IsTailPrefixedCall())
+    {
+        // Such tail calls always throw an exception and we won't be able to see current
+        // Caller() in the stacktrace.
+        failTailCall("Never returns");
+        return nullptr;
+    }
+
     // Heuristic: regular calls to noreturn methods can sometimes be
     // merged, so if we have multiple such calls, we defer tail calling.
     //
