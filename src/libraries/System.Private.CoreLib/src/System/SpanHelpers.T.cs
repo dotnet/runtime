@@ -306,7 +306,7 @@ namespace System
                 {
                     // Number of elements is not a multiple of Vector<T>.Count, so do one
                     // check and shift only enough for the remaining set to be a multiple
-                    // of Vecotr<T>.Count.
+                    // of Vector<T>.Count.
                     compareVector = Unsafe.As<T, Vector<T>>(ref Unsafe.Add(ref searchSpace, index));
                     matchVector = Vector.Equals(valueVector, compareVector);
                     if (matchVector != Vector<T>.Zero)
