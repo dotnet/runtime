@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
-
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
+using static Interop.Crypt32;
 
 internal static partial class Interop
 {

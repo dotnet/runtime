@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -56,11 +57,11 @@ namespace Internal.Cryptography.Pal
                         try
                         {
                             int cbEncoded = 0;
-                            if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, null, ref cbEncoded))
+                            if (!CertSerializeCertificateStoreElement(pCertContext, 0, null, ref cbEncoded))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             byte[] pbEncoded = new byte[cbEncoded];
-                            if (!Interop.crypt32.CertSerializeCertificateStoreElement(pCertContext, 0, pbEncoded, ref cbEncoded))
+                            if (!CertSerializeCertificateStoreElement(pCertContext, 0, pbEncoded, ref cbEncoded))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             return pbEncoded;
@@ -75,16 +76,16 @@ namespace Internal.Cryptography.Pal
                     {
                         unsafe
                         {
-                            Interop.Crypt32.DATA_BLOB dataBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
+                            DATA_BLOB dataBlob = new DATA_BLOB(IntPtr.Zero, 0);
 
-                            if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+                            if (!PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
                                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                             byte[] pbEncoded = new byte[dataBlob.cbData];
                             fixed (byte* ppbEncoded = pbEncoded)
                             {
                                 dataBlob.pbData = new IntPtr(ppbEncoded);
-                                if (!Interop.crypt32.PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
+                                if (!PFXExportCertStore(_certStore, ref dataBlob, password, PFXExportFlags.EXPORT_PRIVATE_KEYS | PFXExportFlags.REPORT_NOT_ABLE_TO_EXPORT_PRIVATE_KEY))
                                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                             }
 
@@ -107,15 +108,15 @@ namespace Internal.Cryptography.Pal
         {
             unsafe
             {
-                Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
-                if (!Interop.crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
+                DATA_BLOB blob = new DATA_BLOB(IntPtr.Zero, 0);
+                if (!Interop.crypt32.CertSaveStore(_certStore, CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 byte[] exportedData = new byte[blob.cbData];
                 fixed (byte* pExportedData = exportedData)
                 {
                     blob.pbData = new IntPtr(pExportedData);
-                    if (!Interop.crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
+                    if (!Interop.crypt32.CertSaveStore(_certStore, CertEncodingType.All, dwSaveAs, CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                 }
 

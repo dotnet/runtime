@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Diagnostics;
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -35,19 +36,19 @@ namespace Internal.Cryptography.Pal
                 {
                     fixed (char* pFileName = fileName)
                     {
-                        Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)(fromFile ? 0 : rawData!.Length));
+                        DATA_BLOB blob = new DATA_BLOB(new IntPtr(pRawData), (uint)(fromFile ? 0 : rawData!.Length));
                         bool persistKeySet = (0 != (keyStorageFlags & X509KeyStorageFlags.PersistKeySet));
                         PfxCertStoreFlags certStoreFlags = MapKeyStorageFlags(keyStorageFlags);
 
                         void* pvObject = fromFile ? (void*)pFileName : (void*)&blob;
 
-                        Interop.Crypt32.ContentType contentType;
+                        ContentType contentType;
                         SafeCertStoreHandle certStore;
-                        if (!Interop.Crypt32.CryptQueryObject(
-                            fromFile ? Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_FILE : Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
+                        if (!CryptQueryObject(
+                            fromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB,
                             pvObject,
                             StoreExpectedContentFlags,
-                            Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
+                            ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL,
                             0,
                             IntPtr.Zero,
                             out contentType,
@@ -60,7 +61,7 @@ namespace Internal.Cryptography.Pal
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
                         }
 
-                        if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
+                        if (contentType == ContentType.CERT_QUERY_CONTENT_PFX)
                         {
                             certStore.Dispose();
 
@@ -70,8 +71,8 @@ namespace Internal.Cryptography.Pal
                             }
                             fixed (byte* pRawData2 = rawData)
                             {
-                                Interop.Crypt32.DATA_BLOB blob2 = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData2), (uint)rawData!.Length);
-                                certStore = Interop.crypt32.PFXImportCertStore(ref blob2, password, certStoreFlags);
+                                DATA_BLOB blob2 = new DATA_BLOB(new IntPtr(pRawData2), (uint)rawData!.Length);
+                                certStore = PFXImportCertStore(ref blob2, password, certStoreFlags);
                                 if (certStore == null || certStore.IsInvalid)
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                             }
@@ -86,8 +87,8 @@ namespace Internal.Cryptography.Pal
                                 SafeCertContextHandle? pCertContext = null;
                                 while (Interop.crypt32.CertEnumCertificatesInStore(certStore, ref pCertContext))
                                 {
-                                    Interop.Crypt32.DATA_BLOB nullBlob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
-                                    if (!Interop.crypt32.CertSetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
+                                    DATA_BLOB nullBlob = new DATA_BLOB(IntPtr.Zero, 0);
+                                    if (!CertSetCertificateContextProperty(pCertContext, CertContextPropId.CERT_CLR_DELETE_KEY_PROP_ID, CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG, &nullBlob))
                                         throw Marshal.GetLastWin32Error().ToCryptographicException();
                                 }
                             }
@@ -105,13 +106,13 @@ namespace Internal.Cryptography.Pal
 
             SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
-                Interop.Crypt32.CertEncodingType.All,
+                CertEncodingType.All,
                 IntPtr.Zero,
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG | CertStoreFlags.CERT_STORE_DEFER_CLOSE_UNTIL_LAST_FREE_FLAG,
                 null);
             if (certStore.IsInvalid)
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
-            if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certificatePal.CertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
+            if (!CertAddCertificateLinkToStore(certStore, certificatePal.CertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
             return new StorePal(certStore);
         }
@@ -127,7 +128,7 @@ namespace Internal.Cryptography.Pal
 
             SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(
                 CertStoreProvider.CERT_STORE_PROV_MEMORY,
-                Interop.Crypt32.CertEncodingType.All,
+                CertEncodingType.All,
                 IntPtr.Zero,
                 CertStoreFlags.CERT_STORE_ENUM_ARCHIVED_FLAG | CertStoreFlags.CERT_STORE_CREATE_NEW_FLAG,
                 null);
@@ -142,7 +143,7 @@ namespace Internal.Cryptography.Pal
             for (int i = 0; i < certificates.Count; i++)
             {
                 SafeCertContextHandle certContext = ((CertificatePal)certificates[i].Pal!).CertContext;
-                if (!Interop.crypt32.CertAddCertificateLinkToStore(certStore, certContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
+                if (!CertAddCertificateLinkToStore(certStore, certContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }
 
@@ -153,7 +154,7 @@ namespace Internal.Cryptography.Pal
         {
             CertStoreFlags certStoreFlags = MapX509StoreFlags(storeLocation, openFlags);
 
-            SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(CertStoreProvider.CERT_STORE_PROV_SYSTEM_W, Interop.Crypt32.CertEncodingType.All, IntPtr.Zero, certStoreFlags, storeName);
+            SafeCertStoreHandle certStore = Interop.crypt32.CertOpenStore(CertStoreProvider.CERT_STORE_PROV_SYSTEM_W, CertEncodingType.All, IntPtr.Zero, certStoreFlags, storeName);
             if (certStore.IsInvalid)
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
@@ -216,13 +217,13 @@ namespace Internal.Cryptography.Pal
             return dwFlags;
         }
 
-        private const Interop.Crypt32.ExpectedContentTypeFlags StoreExpectedContentFlags =
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE;
+        private const ExpectedContentTypeFlags StoreExpectedContentFlags =
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_UNSIGNED |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE;
     }
 }

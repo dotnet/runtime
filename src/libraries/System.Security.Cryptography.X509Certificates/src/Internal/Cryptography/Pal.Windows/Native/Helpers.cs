@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal.Native
 {
@@ -85,7 +86,7 @@ namespace Internal.Cryptography.Pal.Native
                 int cb = 0;
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
+                    CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
@@ -99,7 +100,7 @@ namespace Internal.Cryptography.Pal.Native
                 byte* decoded = stackalloc byte[cb];
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
+                    CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
@@ -124,7 +125,7 @@ namespace Internal.Cryptography.Pal.Native
                 int cb = 0;
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
+                    CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
@@ -138,7 +139,7 @@ namespace Internal.Cryptography.Pal.Native
                 byte* decoded = stackalloc byte[cb];
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
+                    CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
@@ -163,7 +164,7 @@ namespace Internal.Cryptography.Pal.Native
                 int cb = 0;
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
+                    CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,
@@ -177,7 +178,7 @@ namespace Internal.Cryptography.Pal.Native
                 byte* decoded = stackalloc byte[cb];
 
                 if (!Interop.crypt32.CryptDecodeObjectPointer(
-                    Interop.Crypt32.CertEncodingType.All,
+                    CertEncodingType.All,
                     lpszStructType,
                     encoded,
                     encoded.Length,

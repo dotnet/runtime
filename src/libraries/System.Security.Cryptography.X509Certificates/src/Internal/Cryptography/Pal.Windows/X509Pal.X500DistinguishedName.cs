@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Text;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.InteropServices;
-
-using Internal.Cryptography;
-using Internal.Cryptography.Pal.Native;
-
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using Internal.Cryptography.Pal.Native;
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -28,18 +23,18 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pbEncoded = encodedDistinguishedName)
                 {
-                    Interop.Crypt32.DATA_BLOB nameBlob;
+                    DATA_BLOB nameBlob;
                     nameBlob.cbData = (uint)encodedDistinguishedName.Length;
                     nameBlob.pbData = new IntPtr(pbEncoded);
 
-                    int cchDecoded = Interop.Crypt32.CertNameToStr((int)Interop.Crypt32.CertEncodingType.All, &nameBlob, dwStrType, null, 0);
+                    int cchDecoded = CertNameToStr((int)CertEncodingType.All, &nameBlob, dwStrType, null, 0);
                     if (cchDecoded == 0)
                         throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
 
                     Span<char> buffer = cchDecoded <= 256 ? stackalloc char[cchDecoded] : new char[cchDecoded];
                     fixed (char* ptr = buffer)
                     {
-                        if (Interop.Crypt32.CertNameToStr((int)Interop.Crypt32.CertEncodingType.All, &nameBlob, dwStrType, ptr, cchDecoded) == 0)
+                        if (CertNameToStr((int)CertEncodingType.All, &nameBlob, dwStrType, ptr, cchDecoded) == 0)
                             throw ErrorCode.CERT_E_INVALID_NAME.ToCryptographicException();
                     }
 
@@ -55,11 +50,11 @@ namespace Internal.Cryptography.Pal
             CertNameStrTypeAndFlags dwStrType = CertNameStrTypeAndFlags.CERT_X500_NAME_STR | MapNameToStrFlag(flag);
 
             int cbEncoded = 0;
-            if (!Interop.crypt32.CertStrToName(Interop.Crypt32.CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, null, ref cbEncoded, IntPtr.Zero))
+            if (!CertStrToName(CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, null, ref cbEncoded, IntPtr.Zero))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             byte[] encodedName = new byte[cbEncoded];
-            if (!Interop.crypt32.CertStrToName(Interop.Crypt32.CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, encodedName, ref cbEncoded, IntPtr.Zero))
+            if (!CertStrToName(CertEncodingType.All, distinguishedName, dwStrType, IntPtr.Zero, encodedName, ref cbEncoded, IntPtr.Zero))
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             return encodedName;
@@ -70,11 +65,11 @@ namespace Internal.Cryptography.Pal
             if (encodedDistinguishedName == null || encodedDistinguishedName.Length == 0)
                 return string.Empty;
 
-            int stringType = multiLine ? Interop.Crypt32.CRYPT_FORMAT_STR_MULTI_LINE : Interop.Crypt32.CRYPT_FORMAT_STR_NONE;
+            int stringType = multiLine ? CRYPT_FORMAT_STR_MULTI_LINE : CRYPT_FORMAT_STR_NONE;
 
             int cbFormat = 0;
-            if (!Interop.Crypt32.CryptFormatObject(
-                (int)Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING,
+            if (!CryptFormatObject(
+                (int)CertEncodingType.X509_ASN_ENCODING,
                 (int)FormatObjectType.None,
                 stringType,
                 IntPtr.Zero,
@@ -91,8 +86,8 @@ namespace Internal.Cryptography.Pal
             Span<char> buffer = spanLength <= 256 ? stackalloc char[spanLength] : new char[spanLength];
             fixed (char* ptr = buffer)
             {
-                if (!Interop.Crypt32.CryptFormatObject(
-                    (int)Interop.Crypt32.CertEncodingType.X509_ASN_ENCODING,
+                if (!CryptFormatObject(
+                    (int)CertEncodingType.X509_ASN_ENCODING,
                     (int)FormatObjectType.None,
                     stringType,
                     IntPtr.Zero,

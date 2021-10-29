@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
 using Internal.Cryptography.Pal.Native;
+using static Interop.Crypt32;
 
 namespace Internal.Cryptography.Pal
 {
@@ -35,9 +36,9 @@ namespace Internal.Cryptography.Pal
             PfxCertStoreFlags pfxCertStoreFlags = MapKeyStorageFlags(keyStorageFlags);
             bool deleteKeyContainer = false;
 
-            Interop.Crypt32.CertEncodingType msgAndCertEncodingType;
-            Interop.Crypt32.ContentType contentType;
-            Interop.Crypt32.FormatType formatType;
+            CertEncodingType msgAndCertEncodingType;
+            ContentType contentType;
+            FormatType formatType;
             SafeCertStoreHandle? hCertStore = null;
             SafeCryptMsgHandle? hCryptMsg = null;
             SafeCertContextHandle? pCertContext = null;
@@ -50,12 +51,12 @@ namespace Internal.Cryptography.Pal
                     {
                         fixed (char* pFileName = fileName)
                         {
-                            Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pRawData), (uint)(loadFromFile ? 0 : rawData.Length));
+                            DATA_BLOB certBlob = new DATA_BLOB(new IntPtr(pRawData), (uint)(loadFromFile ? 0 : rawData.Length));
 
-                            Interop.Crypt32.CertQueryObjectType objectType = loadFromFile ? Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_FILE : Interop.Crypt32.CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
+                            CertQueryObjectType objectType = loadFromFile ? CertQueryObjectType.CERT_QUERY_OBJECT_FILE : CertQueryObjectType.CERT_QUERY_OBJECT_BLOB;
                             void* pvObject = loadFromFile ? (void*)pFileName : (void*)&certBlob;
 
-                            bool success = Interop.Crypt32.CryptQueryObject(
+                            bool success = CryptQueryObject(
                                 objectType,
                                 pvObject,
                                 X509ExpectedContentTypeFlags,
@@ -76,11 +77,11 @@ namespace Internal.Cryptography.Pal
                         }
                     }
 
-                    if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED || contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED)
+                    if (contentType == ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED || contentType == ContentType.CERT_QUERY_CONTENT_PKCS7_SIGNED_EMBED)
                     {
                         pCertContext = GetSignerInPKCS7Store(hCertStore, hCryptMsg);
                     }
-                    else if (contentType == Interop.Crypt32.ContentType.CERT_QUERY_CONTENT_PFX)
+                    else if (contentType == ContentType.CERT_QUERY_CONTENT_PFX)
                     {
                         if (loadFromFile)
                             rawData = File.ReadAllBytes(fileName!);
@@ -115,24 +116,24 @@ namespace Internal.Cryptography.Pal
             // make sure that there is at least one signer of the certificate store
             int dwSigners;
             int cbSigners = sizeof(int);
-            if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_COUNT_PARAM, 0, out dwSigners, ref cbSigners))
+            if (!CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_SIGNER_COUNT_PARAM, 0, out dwSigners, ref cbSigners))
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
             if (dwSigners == 0)
                 throw ErrorCode.CRYPT_E_SIGNER_NOT_FOUND.ToCryptographicException();
 
             // get the first signer from the store, and use that as the loaded certificate
             int cbData = 0;
-            if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, null, ref cbData))
+            if (!CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_SIGNER_INFO_PARAM, 0, default(byte*), ref cbData))
                 throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
             fixed (byte* pCmsgSignerBytes = new byte[cbData])
             {
-                if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, pCmsgSignerBytes, ref cbData))
+                if (!CryptMsgGetParam(hCryptMsg, CryptMsgParamType.CMSG_SIGNER_INFO_PARAM, 0, pCmsgSignerBytes, ref cbData))
                     throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
                 CMSG_SIGNER_INFO_Partial* pCmsgSignerInfo = (CMSG_SIGNER_INFO_Partial*)pCmsgSignerBytes;
 
-                Interop.Crypt32.CERT_INFO certInfo = default(Interop.Crypt32.CERT_INFO);
+                CERT_INFO certInfo = default(CERT_INFO);
                 certInfo.Issuer.cbData = pCmsgSignerInfo->Issuer.cbData;
                 certInfo.Issuer.pbData = pCmsgSignerInfo->Issuer.pbData;
                 certInfo.SerialNumber.cbData = pCmsgSignerInfo->SerialNumber.cbData;
@@ -155,8 +156,8 @@ namespace Internal.Cryptography.Pal
             {
                 fixed (byte* pbRawData = rawData)
                 {
-                    Interop.Crypt32.DATA_BLOB certBlob = new Interop.Crypt32.DATA_BLOB(new IntPtr(pbRawData), (uint)rawData.Length);
-                    hStore = Interop.crypt32.PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
+                    DATA_BLOB certBlob = new DATA_BLOB(new IntPtr(pbRawData), (uint)rawData.Length);
+                    hStore = PFXImportCertStore(ref certBlob, password, pfxCertStoreFlags);
                     if (hStore.IsInvalid)
                     {
                         throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
@@ -247,13 +248,13 @@ namespace Internal.Cryptography.Pal
             return pfxCertStoreFlags;
         }
 
-        private const Interop.Crypt32.ExpectedContentTypeFlags X509ExpectedContentTypeFlags =
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
-            Interop.Crypt32.ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX;
+        private const ExpectedContentTypeFlags X509ExpectedContentTypeFlags =
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_CERT |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_SERIALIZED_CERT |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PKCS7_SIGNED_EMBED |
+            ExpectedContentTypeFlags.CERT_QUERY_CONTENT_FLAG_PFX;
 
-        private const Interop.Crypt32.ExpectedFormatTypeFlags X509ExpectedFormatTypeFlags = Interop.Crypt32.ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL;
+        private const ExpectedFormatTypeFlags X509ExpectedFormatTypeFlags = ExpectedFormatTypeFlags.CERT_QUERY_FORMAT_FLAG_ALL;
     }
 }

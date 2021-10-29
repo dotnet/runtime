@@ -357,7 +357,7 @@ namespace Internal.Cryptography.Pal
                         continue;
                 }
 
-                if (!Interop.crypt32.CertAddCertificateLinkToStore(findResults, pCertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
+                if (!CertAddCertificateLinkToStore(findResults, pCertContext, CertStoreAddDisposition.CERT_STORE_ADD_ALWAYS, IntPtr.Zero))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
             }
 
