@@ -184,7 +184,7 @@ namespace System.Net.Security
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
-                if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
+                if (certificateContext?.Trust?._sendTrustInHandshake == true)
                 {
                     flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 }
@@ -218,7 +218,7 @@ namespace System.Net.Security
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
                 flags = Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
-                if (certificateContext != null && certificateContext.Trust != null && certificateContext.Trust._sendTrustInHandshake)
+                if (certificateContext?.Trust?._sendTrustInHandshake == true)
                 {
                     flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 }
