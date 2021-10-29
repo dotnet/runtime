@@ -107,33 +107,30 @@ namespace System.IO.Tests
             T target = targetExists ? GetExistingItem() : GetMissingItem();
 
             // When the target exists, we want to verify that its times don't change.
-            // If the target doesn't exist, we just run the symlink tests, otherwise
-            // we run it in an Assert.All so it is easy to tell if it failed by not
-            // setting it on the symlink, or if it failed by setting it on the target.
-            // The symlink test is [0] of the Assert.All, and the target check is [1].
 
             T item = CreateSymlinkToItem(target, targetIsRelative);
             if (!targetExists) SettingUpdatesPropertiesCore(item);
             else
             {
                 // Ensure that we have the latest times (access time could be changed by creating the symlink)
-                if (target is FileSystemInfo fsi) fsi.Refresh();
+                FileSystemInfo fsi = target as FileSystemInfo;
+                fsi?.Refresh();
 
                 // We only use UTC times since checking the others is unnecessary.
                 IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
+
+                // Get the target's initial times
                 DateTime[] initialTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
 
-                Assert.All(new Action[] { () =>
-                {
-                    SettingUpdatesPropertiesCore(item);
-                }, () =>
-                {
-                    // Ensure that we have the latest times
-                    if (target is FileSystemInfo fsi) fsi.Refresh();
+                // Run the test on the symlink
+                SettingUpdatesPropertiesCore(item);
 
-                    DateTime[] updatedTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
-                    Assert.Equal(initialTimes, updatedTimes);
-                } }, (action) => action());
+                // Ensure that we have the latest times
+                fsi?.Refresh();
+
+                // Ensure the target's times haven't changed.
+                DateTime[] updatedTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
+                Assert.Equal(initialTimes, updatedTimes);
             }
         }
 
