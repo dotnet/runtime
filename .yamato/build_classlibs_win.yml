@@ -6,7 +6,7 @@ agent:
   flavor: b1.xlarge
 
 commands:
-  - .yamato/scripts/build_classlibs.bat
+  - perl .yamato/scripts/build_classlibs.pl
 
 triggers:
   pull_requests:
