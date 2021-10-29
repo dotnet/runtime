@@ -770,18 +770,27 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     }
 
     NewArrayHolder<WCHAR> wszProfilerList(NULL);
-#ifdef TARGET_64BIT
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, &wszProfilerList);
-#else // TARGET_64BIT
-    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, &wszProfilerList);
-#endif // TARGET_64BIT
+
+#if defined(TARGET_ARM64)
+    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM64, &wszProfilerList);
+#elif defined(TARGET_ARM)
+    CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_ARM32, &wszProfilerList);
+#endif
     if (wszProfilerList == NULL)
     {
-        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, &wszProfilerList);
+#ifdef TARGET_64BIT
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_64, &wszProfilerList);
+#else
+        CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS_32, &wszProfilerList);
+#endif
         if (wszProfilerList == NULL)
         {
-            // No profiler list specified, bail
-            return S_OK;
+            CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_NOTIFICATION_PROFILERS, &wszProfilerList);
+            if (wszProfilerList == NULL)
+            {
+                // No profiler list specified, bail
+                return S_OK;
+            }
         }
     }
 
