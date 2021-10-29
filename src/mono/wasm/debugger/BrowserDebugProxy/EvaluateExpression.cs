@@ -47,7 +47,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
                         && !(node.Parent is MemberAccessExpressionSyntax)
                         && !(node.Parent is InvocationExpressionSyntax)
-                        && !(node.Parent is ElementAccessExpressionSyntax))
+                        && !(node.Parent is ElementAccessExpressionSyntax)
+                        && !(node.Parent is ArgumentSyntax))
                     {
                         memberAccesses.Add(maes);
                     }
@@ -324,14 +325,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static async Task<IList<JObject>> ResolveElementAccess(IEnumerable<ElementAccessExpressionSyntax> elementAccesses, MemberReferenceResolver resolver, CancellationToken token)
         {
             var values = new List<JObject>();
-            foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses)
+            JObject index = null;
+            foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                JObject value = await resolver.Resolve(elementAccess, token);
-                if (value == null)
+                index = await resolver.Resolve(elementAccess, index, token);
+                if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
-
-                values.Add(value);
             }
+            values.Add(index);
             return values;
         }
 
