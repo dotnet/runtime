@@ -122,7 +122,7 @@ namespace System.Net.Security
         // ATTN: The returned handle can be invalid, the callers of InitializeSecurityContext and AcceptSecurityContext
         // must be prepared to execute a back-out code if the call fails.
         //
-        internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy, bool sendTrustList)
+        internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy, bool sendTrustList = false)
         {
             if (s_cachedCreds.IsEmpty)
             {
@@ -155,7 +155,7 @@ namespace System.Net.Security
         //
         // ATTN: The thumbPrint must be from inspected and possibly cloned user Cert object or we get a security hole in SslCredKey ctor.
         //
-        internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy, bool sendTrustList)
+        internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy, bool sendTrustList = false)
         {
             Debug.Assert(creds != null, "creds == null");
 
