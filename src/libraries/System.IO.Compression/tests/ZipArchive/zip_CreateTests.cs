@@ -189,7 +189,8 @@ namespace System.IO.Compression.Tests
             using (var archive = new ZipArchive(wrappedStream, ZipArchiveMode.Create))
             {
                 CreateEntry(archive, "A", "xxx");
-                Assert.Throws<InvalidOperationException>(() => CreateEntry(archive, "A", "yyy"));
+                AssertExtensions.ThrowsContains<InvalidOperationException>(() => CreateEntry(archive, "A", "yyy"),
+                    "The entry name 'A' already exists in the archive.");
             }
         }
 

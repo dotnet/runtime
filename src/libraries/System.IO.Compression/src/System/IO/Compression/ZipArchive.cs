@@ -390,7 +390,7 @@ namespace System.IO.Compression
 
             if (_entriesDictionary.ContainsKey(entryName))
             {
-                throw new InvalidOperationException(SR.EntryNameAlreadyExists);
+                throw new InvalidOperationException(string.Format(SR.EntryNameAlreadyExists, entryName));
             }
 
             ThrowIfDisposed();
