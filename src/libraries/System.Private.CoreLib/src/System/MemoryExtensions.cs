@@ -279,6 +279,18 @@ namespace System
                         ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, char>(ref value),
                         span.Length);
+
+                if (Unsafe.SizeOf<T>() == sizeof(int))
+                    return -1 != SpanHelpers.IndexOfValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+
+                if (Unsafe.SizeOf<T>() == sizeof(long))
+                    return -1 != SpanHelpers.IndexOfValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
+                        span.Length);
             }
 
             return SpanHelpers.Contains(ref MemoryMarshal.GetReference(span), value, span.Length);
@@ -306,6 +318,18 @@ namespace System
                         ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, char>(ref value),
                         span.Length);
+
+                if (Unsafe.SizeOf<T>() == sizeof(int))
+                    return -1 != SpanHelpers.IndexOfValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+
+                if (Unsafe.SizeOf<T>() == sizeof(long))
+                    return -1 != SpanHelpers.IndexOfValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
+                        span.Length);
             }
 
             return SpanHelpers.Contains(ref MemoryMarshal.GetReference(span), value, span.Length);
@@ -331,6 +355,18 @@ namespace System
                     return SpanHelpers.IndexOf(
                         ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                         Unsafe.As<T, char>(ref value),
+                        span.Length);
+
+                if (Unsafe.SizeOf<T>() == sizeof(int))
+                    return SpanHelpers.IndexOfValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref value),
+                        span.Length);
+
+                if (Unsafe.SizeOf<T>() == sizeof(long))
+                    return SpanHelpers.IndexOfValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref value),
                         span.Length);
             }
 
