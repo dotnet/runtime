@@ -2454,6 +2454,12 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_INTRINS_GET_HASHCODE;
 		} else if (!strcmp (tm, "GetType")) {
 			if (constrained_class && m_class_is_valuetype (constrained_class)) {
+				if (mono_class_is_nullable (constrained_class)) {
+					// We can't determine the behavior here statically because we don't know if the
+					// nullable vt has a value or not. If it has a value, the result type is
+					// m_class_get_cast_class (constrained_class), otherwise GetType should throw NRE.
+					return FALSE;
+				}
 				// If constrained_class is valuetype we already know its type.
 				// Resolve GetType to a constant so we can fold type comparisons
 				ERROR_DECL(error);
