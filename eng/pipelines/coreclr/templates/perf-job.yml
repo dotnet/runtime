@@ -168,7 +168,7 @@ jobs:
           displayName: 'Maui Android App'
       
     
-    # Download iOSMono tests and MauiiOS
+    # Download iOSMono tests and MauiiOS/MacCatalyst
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -186,11 +186,18 @@ jobs:
           displayName: 'iOS Sample App LLVM'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
-          unpackFolder: $(Build.SourcesDirectory)
+          unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefault
           cleanUnpackFolder: false
-          artifactFileName: 'MauiTestingiOS.tar.gz'
-          artifactName: 'MauiTestingiOS'
+          artifactFileName: 'MauiiOSDefault.tar.gz'
+          artifactName: 'MauiiOSDefault'
           displayName: 'Maui iOS App'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/MauiMacCatalystDefault
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiMacCatalystDefault.tar.gz'
+          artifactName: 'MauiMacCatalystDefault'
+          displayName: 'Maui MacCatalyst App'
 
     # Create Core_Root
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(buildConfig) $(archType) generatelayoutonly $(librariesOverrideArg)

@@ -120,14 +120,14 @@ steps:
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiiOS.binlog -f net6.0-ios -c Release
-      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiTestingiOS.app
+      mv ./bin/Release/net6.0-ios/iossimulator-x64/MauiTesting.app ./MauiiOSDefault.app
     displayName: Build MAUI iOS
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
   - script: |
       chmod -R a+r .
       ../dotnet.sh publish -bl:MauiMacCatalyst.binlog -f net6.0-maccatalyst -c Release
-      ls -lR ./bin/Release/net6.0-maccatalyst
+      mv ./bin/Release/net6.0-maccatalyst/maccatalyst-x64/MauiTesting.app ./MauiMacCatalystDefault.app
     displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
@@ -161,10 +161,20 @@ steps:
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
     parameters:
-        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiTestingiOS.app
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiiOSDefault.app
         includeRootFolder: true
         displayName: Maui iOS App
-        artifactName: MauiiOSApp
+        artifactName: MauiiOSDefault
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiTesting/MauiMacCatalystDefault.app
+        includeRootFolder: true
+        displayName: Maui MacCatalyst App
+        artifactName: MauiMacCatalystDefault
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
