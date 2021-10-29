@@ -24,9 +24,9 @@ namespace
 }
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
-    _In_ BeginEndCallback beginEndCallback,
-    _In_ IsReferencedCallback isReferencedCallback,
-    _In_ EnteredFinalizationCallback trackedObjectEnteredFinalization)
+    _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
+    _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
+    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization)
 {
     QCALL_CONTRACT;
     _ASSERTE(beginEndCallback != NULL
@@ -154,7 +154,7 @@ namespace
 }
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
-    _In_ MessageSendFunction msgSendFunction,
+    _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr)
 {
     QCALL_CONTRACT;
