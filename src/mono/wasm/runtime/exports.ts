@@ -130,6 +130,10 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
     if (!module.no_global_exports) {
         (<any>globalThis).Module = module;
         const warnWrap = (name: string, value: any) => {
+            if (typeof ((<any>globalThis)[name]) !== "undefined") {
+                // it already exists in the global namespace
+                return;
+            }
             let warnOnce = true;
             Object.defineProperty(globalThis, name, {
                 get: () => {
