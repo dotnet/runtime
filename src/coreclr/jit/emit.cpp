@@ -4892,6 +4892,9 @@ void emitter::emitLoopAlign(unsigned short paddingBytes, bool isFirstAlign)
 //  This emits more than one `INS_align` instruction depending on the
 //  alignmentBoundary parameter.
 //
+//  Arguments:
+//      alignmentBoundary - The boundary at which loop needs to be aligned.
+//
 void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 {
 #if defined(TARGET_XARCH)
@@ -4926,7 +4929,7 @@ void emitter::emitLongLoopAlign(unsigned short alignmentBoundary)
 
 //-----------------------------------------------------------------------------
 // emitConnectAlignInstrWithCurIG:  If "align" instruction is not just before the loop start,
-//                                  setting targetIG lets us know the exact IG that the "align"
+//                                  setting idaTargetIG lets us know the exact IG that the "align"
 //                                  instruction is trying to align. This is used during loop size
 //                                  calculation.
 //

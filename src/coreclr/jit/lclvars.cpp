@@ -4407,8 +4407,6 @@ void Compiler::lvaMarkLocalVars()
 //                   groundwork for assertion prop, check type consistency, etc.
 //                   See lvaMarkLclRefs for details on what else goes on.
 //    setSlotNumbers -- true if local slot numbers should be assigned.
-//    calculateAlign -- Populate the list of alignBlocksList chaining all the
-//                      loop head blocks that needs alignment.
 //
 // Notes:
 //    Some implicit references are given actual counts or weight bumps here
@@ -4421,7 +4419,7 @@ void Compiler::lvaMarkLocalVars()
 //    When optimizing we also recompute lvaGenericsContextInUse based
 //    on specially flagged LCL_VAR appearances.
 //
-void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers, bool calculateAlign)
+void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 {
     JITDUMP("\n*** lvaComputeRefCounts ***\n");
     unsigned   lclNum = 0;

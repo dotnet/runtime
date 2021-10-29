@@ -3974,7 +3974,7 @@ public:
     void lvaSortByRefCount();
 
     void lvaMarkLocalVars(); // Local variable ref-counting
-    void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers, bool calculateAlign = false);
+    void lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers);
     void lvaMarkLocalVars(BasicBlock* block, bool isRecompute);
 
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar

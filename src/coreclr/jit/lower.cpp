@@ -6124,7 +6124,7 @@ PhaseStatus Lowering::DoPhase()
     // Recompute local var ref counts again after liveness to reflect
     // impact of any dead code removal. Note this may leave us with
     // tracked vars that have zero refs.
-    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers, true);
+    comp->lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }

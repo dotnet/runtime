@@ -275,13 +275,11 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
-#define IGF_REMOVED_ALIGN 0x0400  // this group had alignment instruction(s) at the end, but was removed;
-                                  // Useful in scenario where an IG is part of a loop also contains align instruction
+#define IGF_REMOVED_ALIGN 0x0400  // this group had alignment instruction(s) at the end, but they were marked unused.
+                                  // Useful in a scenario where an IG that is part of a loop also contains align instruction
                                   // for a different loop and later, we decide to not align that different loop.
-#define IGF_HAS_ALIGN 0x0800      // this group contains an alignment instruction(s) in the end;
-                                  // the next IG may or may not be the head of a loop that is needing alignment
-                                  // This IG might end up with 'jmp' and hence 'align' instruction might be added
-                                  // in this IG, after the 'jmp' instruction.
+#define IGF_HAS_ALIGN 0x0800      // this group contains an alignment instruction(s) at the end to align either the next
+                                  // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -354,12 +352,12 @@ struct insGroup
         return *(unsigned*)ptr;
     }
 
-    bool isAlignInstrRemoved()
+    bool isAlignInstrRemoved() const
     {
         return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
-    bool endsWithAlignInstr()
+    bool endsWithAlignInstr() const
     {
         return (igFlags & IGF_HAS_ALIGN) != 0;
     }
@@ -1396,8 +1394,8 @@ protected:
         instrDescAlign* idaNext;     // next align in the group/method
         insGroup*       idaIG;       // containing group
         insGroup*       idaTargetIG; // The IG before the loop IG.
-                                     // If no 'jmp' instructions were found until targetIG,
-                                     // the 'align' will be placed in this IG.
+                                     // If no 'jmp' instructions were found until idaTargetIG,
+                                     // then idaTargetIG == idaIG.
 
         void removeAlignFlags()
         {
@@ -1802,7 +1800,7 @@ private:
     instrDescAlign* emitAlignLast;        // last align instruction in method
 
     // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
-    // non-adpative alignment on xarch, this points to the first align instruction of the series of align instructions.
+    // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
     instrDescAlign* emitRecentFirstAlign;
 
     unsigned getLoopSize(insGroup* igLoopHeader,

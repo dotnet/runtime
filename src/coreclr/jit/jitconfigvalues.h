@@ -70,8 +70,7 @@ CONFIG_INTEGER(JitAlignLoopAdaptive,
 CONFIG_INTEGER(JitHideAlignBehindJmp,
                W("JitHideAlignBehindJmp"),
                1) // If set, try to hide align instruction (if any) behind an unconditional jump instruction (if any)
-                  // that
-                  // is present before the loop start.
+                  // that is present before the loop start.
 
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
