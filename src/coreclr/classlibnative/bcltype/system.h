@@ -59,10 +59,10 @@ private:
     static void GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExceptionForWatsonBucketing, UINT_PTR retAddress, UINT exitCode, STRINGREF errorSource);
 };
 
-extern "C" void QCALLTYPE SystemNative_Exit(INT32 exitcode);
+extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
 
 // Returns the number of logical processors that can be used by managed code
-extern "C" INT32 QCALLTYPE SystemNative_GetProcessorCount();
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 extern "C" void QCALLTYPE SystemNative_X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);

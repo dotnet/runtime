@@ -52,7 +52,7 @@ FCIMPLEND;
 
 
 
-extern "C" VOID QCALLTYPE SystemNative_Exit(INT32 exitcode)
+extern "C" VOID QCALLTYPE Environment_Exit(INT32 exitcode)
 {
     QCALL_CONTRACT;
 
@@ -157,7 +157,7 @@ FCIMPL1(ReflectMethodObject*, SystemNative::GetMethodFromStackTrace, ArrayBase* 
 }
 FCIMPLEND
 
-extern "C" INT32 QCALLTYPE SystemNative_GetProcessorCount()
+extern "C" INT32 QCALLTYPE Environment_GetProcessorCount()
 {
     QCALL_CONTRACT;
 
@@ -415,7 +415,7 @@ FCIMPLEND
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 
-extern "C" void QCALLTYPE SystemNative_X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
+extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId)
 {
     QCALL_CONTRACT;
 

@@ -81,8 +81,8 @@ static const Entry s_QCall[] =
     DllImportEntry(Enum_GetValuesAndNames)
     DllImportEntry(DebugDebugger_Launch)
     DllImportEntry(DebugDebugger_Log)
-    DllImportEntry(SystemNative_Exit)
-    DllImportEntry(SystemNative_GetProcessorCount)
+    DllImportEntry(Environment_Exit)
+    DllImportEntry(Environment_GetProcessorCount)
     DllImportEntry(ExceptionNative_GetMessageFromNativeResources)
     DllImportEntry(RuntimeTypeHandle_CreateInstanceForAnotherGenericParameter)
     DllImportEntry(QCall_GetGCHandleForTypeHandle)
@@ -311,7 +311,7 @@ static const Entry s_QCall[] =
     DllImportEntry(SetEvent)
 #endif
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-    DllImportEntry(SystemNative_X86BaseCpuId)
+    DllImportEntry(X86BaseCpuId)
 #endif
 #if defined(FEATURE_COMINTEROP)
     DllImportEntry(InterfaceMarshaler__ClearNative)
