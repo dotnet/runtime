@@ -49,14 +49,6 @@ namespace ILLink.RoslynAnalyzer
 		{
 			var sb = new StringBuilder ();
 			switch (symbol) {
-			case IFieldSymbol fieldSymbol:
-				sb.Append (fieldSymbol.Type);
-				sb.Append (" ");
-				sb.Append (fieldSymbol.ContainingSymbol.ToDisplayString ());
-				sb.Append ("::");
-				sb.Append (fieldSymbol.MetadataName);
-				break;
-
 			case IParameterSymbol parameterSymbol:
 				sb.Append (parameterSymbol.Name);
 				break;
@@ -93,5 +85,11 @@ namespace ILLink.RoslynAnalyzer
 
 			return false;
 		}
+
+		public static bool IsConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
+			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.Constructor;
+
+		public static bool IsStaticConstructor ([NotNullWhen (returnValue: true)] this ISymbol? symbol)
+			=> (symbol as IMethodSymbol)?.MethodKind == MethodKind.StaticConstructor;
 	}
 }
