@@ -1,7 +1,12 @@
 trigger: none
+
 pr:
+  branches:
+    include:
     - main
     - release/*
+
+jobs:
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -16,7 +21,6 @@ pr:
       nameSuffix: WasmDebuggerTests
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
-
     steps:
       - script: ./dotnet.sh test src/mono/wasm/debugger/DebuggerTestSuite
                 /p:RuntimeConfiguration=Release
