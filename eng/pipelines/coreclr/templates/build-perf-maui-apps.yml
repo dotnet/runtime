@@ -26,8 +26,9 @@ steps:
       path: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
       patterns: |
         IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.android-!(*.symbols).nupkg
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-*.nupkg
-        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-*.nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
+        IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
         
       # Other artifacts to include once they are being built
       # IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg

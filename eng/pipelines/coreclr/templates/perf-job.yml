@@ -150,7 +150,7 @@ jobs:
       - script: "mkdir -p $(librariesDownloadDir)/bin/aot/sgen;mkdir -p $(librariesDownloadDir)/bin/aot/pack;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/obj/mono/Linux.${{ parameters.archType }}.Release/mono/* $(librariesDownloadDir)/bin/aot/sgen;cp -r $(librariesDownloadDir)/LinuxMonoAOT/artifacts/bin/microsoft.netcore.app.runtime.linux-${{ parameters.archType }}/Release/* $(librariesDownloadDir)/bin/aot/pack"
         displayName: "Create aot directory (Linux)"
 
-    # Download AndroidMono
+    # Download AndroidMono and MauiAndroid
     - ${{ if eq(parameters.runtimeType, 'AndroidMono')}}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
@@ -168,7 +168,7 @@ jobs:
           displayName: 'Maui Android App'
       
     
-    # Download iOSMono tests
+    # Download iOSMono tests and MauiiOS
     - ${{ if eq(parameters.runtimeType, 'iOSMono') }}:
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
