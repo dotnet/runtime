@@ -1570,7 +1570,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 
 #ifdef TARGET_ARM64
     // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
-    if (varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
+    if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
         (node->gtGetOp1()->OperIs(GT_MUL) || node->gtGetOp2()->OperIs(GT_MUL)))
     {
         GenTree* mul = node->gtGetOp1()->OperIs(GT_MUL) ? node->gtGetOp1() : node->gtGetOp2();
