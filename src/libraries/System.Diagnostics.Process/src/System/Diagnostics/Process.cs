@@ -1230,6 +1230,17 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
+            if (startInfo.HasArgumentList)
+            {
+                int argumentCount = startInfo.ArgumentList.Count;
+                for (int i = 0; i < argumentCount; i++)
+                {
+                    if (startInfo.ArgumentList[i] is null)
+                    {
+                        throw new ArgumentNullException("item", SR.ArgumentListMayNotContainNull);
+                    }
+                }
+            }
 
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();

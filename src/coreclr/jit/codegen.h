@@ -31,15 +31,8 @@ public:
 
     // TODO-Cleanup: Abstract out the part of this that finds the addressing mode, and
     // move it to Lower
-    virtual bool genCreateAddrMode(GenTree*  addr,
-                                   bool      fold,
-                                   bool*     revPtr,
-                                   GenTree** rv1Ptr,
-                                   GenTree** rv2Ptr,
-#if SCALED_ADDR_MODES
-                                   unsigned* mulPtr,
-#endif // SCALED_ADDR_MODES
-                                   ssize_t* cnsPtr);
+    virtual bool genCreateAddrMode(
+        GenTree* addr, bool fold, bool* revPtr, GenTree** rv1Ptr, GenTree** rv2Ptr, unsigned* mulPtr, ssize_t* cnsPtr);
 
 private:
 #if defined(TARGET_XARCH)
@@ -209,15 +202,7 @@ protected:
 
     static const char* genInsName(instruction ins);
     const char* genInsDisplayName(emitter::instrDesc* id);
-#endif // DEBUG
 
-    //-------------------------------------------------------------------------
-
-    // JIT-time constants for use in multi-dimensional array code generation.
-    unsigned genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension);
-    unsigned genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension);
-
-#ifdef DEBUG
     static const char* genSizeStr(emitAttr size);
 #endif // DEBUG
 

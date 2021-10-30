@@ -212,7 +212,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -249,7 +249,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       condition: >-
         or(
@@ -257,8 +257,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-
-      # don't run tests on PRs until we can get significantly more devices
+      # Device tests are rolling build only
       ${{ if eq(variables['isFullMatrix'], true) }}:
         # extra steps, run tests
         extraStepsTemplate: /eng/pipelines/libraries/helix.yml
@@ -320,7 +319,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_x64
+      - Android_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -343,11 +342,13 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+      # NOTE: Per PR test execution is not recommended for runtime tests 
+      ${{ if eq(variables['isFullMatrix'], true) }}:
+        # extra steps, run tests
+        extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
+        extraStepsParameters:
+          creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
 # Build the whole product using Mono and run runtime tests with the JIT.
@@ -359,7 +360,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - iOSSimulator_x64
+      - iOSSimulator_x64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -398,7 +399,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms:
-    - Android_arm64
+      - Android_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -457,20 +458,21 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isFullMatrix'], true))
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=windows
-        scenarios:
-        - normal
-        - wasmtestonbrowser
-        condition: >-
-          or(
-          eq(variables['librariesContainsChange'], true),
-          eq(variables['monoContainsChange'], true),
-          eq(variables['isFullMatrix'], true))
+      ${{ if eq(variables['isFullMatrix'], true) }}:
+        # extra steps, run tests
+        extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+        extraStepsParameters:
+          creator: dotnet-bot
+          testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+          extraHelixArguments: /p:BrowserHost=windows
+          scenarios:
+          - normal
+          - wasmtestonbrowser
+          condition: >-
+            or(
+            eq(variables['librariesContainsChange'], true),
+            eq(variables['monoContainsChange'], true),
+            eq(variables['isFullMatrix'], true))
 
 #
 # CoreCLR Build for running Apple Silicon libraries-innerloop

@@ -12507,7 +12507,6 @@ DONE_MORPHING_CHILDREN:
                     op2->AsIntConCommon()->SetIconValue(genLog2(abs_mult));
                     changeToShift = true;
                 }
-#if LEA_AVAILABLE
                 else if ((lowestBit > 1) && jitIsScaleIndexMul(lowestBit) && optAvoidIntMult())
                 {
                     int     shift  = genLog2(lowestBit);
@@ -12537,7 +12536,6 @@ DONE_MORPHING_CHILDREN:
                         changeToShift = true;
                     }
                 }
-#endif // LEA_AVAILABLE
                 if (changeToShift)
                 {
                     // vnStore is null before the ValueNumber phase has run

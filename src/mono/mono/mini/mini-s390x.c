@@ -3467,8 +3467,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_ldgr (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			s390_ledbr (code, s390_f0, ins->sreg1);
-			s390_lgdr (code, ins->dreg, s390_f0);
+			if (!cfg->r4fp) {
+				s390_ledbr (code, s390_f0, ins->sreg1);
+				s390_lgdr (code, ins->dreg, s390_f0);
+			} else {
+				s390_lgdr (code, ins->dreg, ins->sreg1);
+			}
 			s390_srag (code, ins->dreg, ins->dreg, 0, 32);
 			break;
 		case OP_MOVE_I4_TO_F: 

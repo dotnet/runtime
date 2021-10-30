@@ -22,6 +22,7 @@ jobs:
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
+    nonPRBuild: ${{ and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}
     dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community')) }}
 
     variables:
@@ -47,6 +48,12 @@ jobs:
 
       - name: _BuildConfig
         value: $(buildConfigUpper)
+
+      - name: _runSmokeTestsOnlyArg
+        ${{ if ne(variables['nonPRBuild'], true) }}:
+          value: /p:RunSmokeTestsOnly=true
+        ${{ if eq(variables['nonPRBuild'], true) }}:
+          value: ''
 
       - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
         - name: archiveExtension

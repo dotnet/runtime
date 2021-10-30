@@ -4346,6 +4346,11 @@ protected:
     void impImportLeave(BasicBlock* block);
     void impResetLeaveBlock(BasicBlock* block, unsigned jmpAddr);
     GenTree* impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom);
+
+#ifdef DEBUG
+    const char* impGetIntrinsicName(CorInfoIntrinsics intrinsicID);
+#endif // DEBUG
+
     GenTree* impIntrinsic(GenTree*                newobjThis,
                           CORINFO_CLASS_HANDLE    clsHnd,
                           CORINFO_METHOD_HANDLE   method,
@@ -7976,6 +7981,9 @@ public:
 
     bool eeIsValueClass(CORINFO_CLASS_HANDLE clsHnd);
     bool eeIsJitIntrinsic(CORINFO_METHOD_HANDLE ftn);
+    bool eeIsFieldStatic(CORINFO_FIELD_HANDLE fldHnd);
+
+    var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd);
 
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
 
@@ -8047,9 +8055,16 @@ public:
     CORINFO_EE_INFO* eeGetEEInfo();
 
     // Gets the offset of a SDArray's first element
-    unsigned eeGetArrayDataOffset(var_types type);
-    // Gets the offset of a MDArray's first element
-    unsigned eeGetMDArrayDataOffset(var_types type, unsigned rank);
+    static unsigned eeGetArrayDataOffset();
+
+    // Get the offset of a MDArray's first element
+    static unsigned eeGetMDArrayDataOffset(unsigned rank);
+
+    // Get the offset of a MDArray's dimension length for a given dimension.
+    static unsigned eeGetMDArrayLengthOffset(unsigned rank, unsigned dimension);
+
+    // Get the offset of a MDArray's lower bound for a given dimension.
+    static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
     GenTree* eeGetPInvokeCookie(CORINFO_SIG_INFO* szMetaSig);
 

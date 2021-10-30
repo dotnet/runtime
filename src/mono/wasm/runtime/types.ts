@@ -44,7 +44,10 @@ export interface MonoString extends MonoObject {
 export interface MonoClass extends MonoObject {
     __brand: "MonoClass"
 }
-export interface MonoMethod extends ManagedPointer {
+export interface MonoType extends ManagedPointer{
+    __brand: "MonoType"
+}
+export interface MonoMethod extends ManagedPointer{
     __brand: "MonoMethod"
 }
 export interface MonoArray extends MonoObject {
@@ -58,6 +61,7 @@ export const MonoObjectNull: MonoObject = <MonoObject><any>0;
 export const MonoArrayNull: MonoArray = <MonoArray><any>0;
 export const MonoAssemblyNull: MonoAssembly = <MonoAssembly><any>0;
 export const MonoClassNull: MonoClass = <MonoClass><any>0;
+export const MonoTypeNull: MonoType = <MonoType><any>0;
 export const MonoStringNull: MonoString = <MonoString><any>0;
 export const JSHandleDisposed: JSHandle = <JSHandle><any>-1;
 export const JSHandleNull: JSHandle = <JSHandle><any>0;
@@ -136,6 +140,9 @@ export type RuntimeHelpers = {
     runtime_classname: string;
     wasm_runtime_class: MonoClass;
     bind_runtime_method: typeof bind_runtime_method;
+
+    _box_buffer_size: number;
+    _unbox_buffer_size: number;
 
     _box_buffer: VoidPtr;
     _unbox_buffer: VoidPtr;

@@ -26,7 +26,7 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_wasm_invoke_js_blazor, mono_wasm_invoke_js_marshalled, mono_wasm_invoke_js_unmarshalled, mono_wasm_set_main_args
+    mono_wasm_set_main_args
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
 import { mono_wasm_load_icu_data, mono_wasm_get_icudt_name } from "./icu";
@@ -39,7 +39,10 @@ import {
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
+    mono_wasm_compile_function,
     mono_wasm_get_by_index, mono_wasm_get_global_object, mono_wasm_get_object_property,
+    mono_wasm_invoke_js,
+    mono_wasm_invoke_js_blazor,
     mono_wasm_invoke_js_with_args, mono_wasm_set_by_index, mono_wasm_set_object_property,
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
     _handle_exception_for_call, _teardown_after_call
@@ -64,6 +67,10 @@ export const MONO: MONO = <any>{
     mono_wasm_new_root_buffer,
     mono_wasm_new_root,
     mono_wasm_release_roots,
+
+    // for Blazor's future!
+    mono_wasm_add_assembly: cwraps.mono_wasm_add_assembly,
+    mono_wasm_load_runtime: cwraps.mono_wasm_load_runtime,
 
     config: runtimeHelpers.config,
     loaded_files: runtimeHelpers.loaded_files,
@@ -121,11 +128,32 @@ function export_to_emscripten(dotnet: any, mono: any, binding: any, internal: an
 
     // here we expose objects used in tests to global namespace
     if (!module.no_global_exports) {
-        (<any>globalThis).DOTNET = dotnet;
-        (<any>globalThis).MONO = mono;
-        (<any>globalThis).BINDING = binding;
-        (<any>globalThis).INTERNAL = internal;
         (<any>globalThis).Module = module;
+        const warnWrap = (name: string, value: any) => {
+            if (typeof ((<any>globalThis)[name]) !== "undefined") {
+                // it already exists in the global namespace
+                return;
+            }
+            let warnOnce = true;
+            Object.defineProperty(globalThis, name, {
+                get: () => {
+                    if (warnOnce) {
+                        const stack = (new Error()).stack;
+                        const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
+                        console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
+                        warnOnce = false;
+                    }
+                    return value;
+                }
+            });
+        };
+        warnWrap("MONO", mono);
+        warnWrap("BINDING", binding);
+
+        // Blazor back compat
+        warnWrap("cwrap", Module.cwrap);
+        warnWrap("addRunDependency", Module.addRunDependency);
+        warnWrap("removeRunDependency", Module.removeRunDependency);
     }
 }
 
@@ -143,9 +171,8 @@ const linker_exports = {
     schedule_background_exec,
 
     // also keep in sync with driver.c
+    mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_marshalled,
-    mono_wasm_invoke_js_unmarshalled,
 
     // also keep in sync with corebindings.c
     mono_wasm_invoke_js_with_args,
@@ -168,6 +195,7 @@ const linker_exports = {
     mono_wasm_web_socket_receive,
     mono_wasm_web_socket_close,
     mono_wasm_web_socket_abort,
+    mono_wasm_compile_function,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,
@@ -231,6 +259,10 @@ export interface MONO {
     mono_wasm_new_root_buffer: typeof mono_wasm_new_root_buffer;
     mono_wasm_new_root: typeof mono_wasm_new_root;
     mono_wasm_release_roots: typeof mono_wasm_release_roots;
+
+    // for Blazor's future!
+    mono_wasm_add_assembly: typeof cwraps.mono_wasm_add_assembly,
+    mono_wasm_load_runtime: typeof cwraps.mono_wasm_load_runtime,
 
     loaded_files: string[];
     config: MonoConfig | MonoConfigError,
