@@ -1612,6 +1612,13 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeReg(tree->gtGetOp1());
         }
+        else if (tree->OperIs(GT_MUL))
+        {
+            GenTree* a = tree->gtGetOp1();
+            GenTree* b = tree->gtGetOp2();
+            genConsumeReg((a->OperIs(GT_NEG) && a->isContained()) ? a->gtGetOp1() : a);
+            genConsumeReg((b->OperIs(GT_NEG) && b->isContained()) ? b->gtGetOp1() : b);
+        }
         else
         {
 #ifdef FEATURE_SIMD

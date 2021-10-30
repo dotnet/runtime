@@ -1567,6 +1567,35 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
     // Check and make op2 contained (if it is a containable immediate)
     CheckImmedAndMakeContained(node, node->gtOp2);
+
+    // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
+    if (varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
+        (node->gtGetOp1()->OperIs(GT_MUL) || node->gtGetOp2()->OperIs(GT_MUL)))
+    {
+        GenTree* mul = node->gtGetOp1()->OperIs(GT_MUL) ? node->gtGetOp1() : node->gtGetOp2();
+        GenTree* a   = mul->gtGetOp1();
+        GenTree* b   = mul->gtGetOp2();
+        GenTree* c   = node->gtGetOp1() == mul ? node->gtGetOp2() : node->gtGetOp1();
+
+        if (!mul->isContained() && !mul->IsRegOptional() && !node->gtOverflow() && !mul->gtOverflow() &&
+            !a->isContained() && !b->isContained() && !c->isContained() && !a->IsRegOptional() && !b->IsRegOptional() &&
+            !c->IsRegOptional())
+        {
+            if (a->OperIs(GT_NEG) && !a->gtGetOp1()->isContained() && !a->gtGetOp1()->IsRegOptional())
+            {
+                // "-a * b + c" to MSUB
+                MakeSrcContained(mul, a);
+            }
+            if (b->OperIs(GT_NEG) && !b->gtGetOp1()->isContained() && !b->gtGetOp1()->IsRegOptional())
+            {
+                // "a * -b + c" to MSUB
+                MakeSrcContained(mul, b);
+            }
+            // If both 'a' and 'b' are GT_NEG - MADD will be emitted.
+
+            MakeSrcContained(node, mul);
+        }
+    }
 }
 
 //------------------------------------------------------------------------
