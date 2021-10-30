@@ -24,8 +24,6 @@ namespace System.IO.Tests
 
         protected override string CreateSymlink(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget).FullName;
 
-        protected override bool IsDirectory => false;
-
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()

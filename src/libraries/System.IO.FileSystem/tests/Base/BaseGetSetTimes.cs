@@ -25,7 +25,6 @@ namespace System.IO.Tests
         protected abstract T GetMissingItem();
 
         protected abstract T CreateSymlink(string path, string pathToTarget);
-        protected abstract bool IsDirectory { get; }
 
         protected T CreateSymlinkToItem(T item, bool isRelative)
         {
@@ -108,28 +107,28 @@ namespace System.IO.Tests
 
             // When the target exists, we want to verify that its times don't change.
 
-            T item = CreateSymlinkToItem(target, targetIsRelative);
-            if (!targetExists) SettingUpdatesPropertiesCore(item);
+            T link = CreateSymlinkToItem(target, targetIsRelative);
+            if (!targetExists)
+            {
+                SettingUpdatesPropertiesCore(link);
+            }
             else
             {
                 // Ensure that we have the latest times (access time could be changed by creating the symlink)
                 FileSystemInfo fsi = target as FileSystemInfo;
                 fsi?.Refresh();
 
-                // We only use UTC times since checking the others is unnecessary.
-                IEnumerable<TimeFunction> timeFunctionsUtc = TimeFunctions(requiresRoundtripping: true).Where((f) => f.Kind == DateTimeKind.Utc);
-
                 // Get the target's initial times
-                DateTime[] initialTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
+                IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
+                DateTime[] initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
 
-                // Run the test on the symlink
-                SettingUpdatesPropertiesCore(item);
+                SettingUpdatesPropertiesCore(link);
 
                 // Ensure that we have the latest times
                 fsi?.Refresh();
 
                 // Ensure the target's times haven't changed.
-                DateTime[] updatedTimes = timeFunctionsUtc.Select((funcs) => funcs.Getter(target)).ToArray();
+                DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
                 Assert.Equal(initialTimes, updatedTimes);
             }
         }

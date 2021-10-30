@@ -19,8 +19,6 @@ namespace System.IO.Tests
 
         protected override FileInfo CreateSymlink(string path, string pathToTarget) => (FileInfo)File.CreateSymbolicLink(path, pathToTarget);
 
-        protected override bool IsDirectory => false;
-
         private static bool HasNonZeroNanoseconds(DateTime dt) => dt.Ticks % 10 != 0;
 
         public FileInfo GetNonZeroMilliseconds()

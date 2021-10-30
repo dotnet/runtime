@@ -11,8 +11,6 @@ namespace System.IO.Tests
 
         protected override string CreateSymlink(string path, string pathToTarget) => Directory.CreateSymbolicLink(path, pathToTarget).FullName;
 
-        protected override bool IsDirectory => true;
-
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
             if (IOInputs.SupportsGettingCreationTime && (!requiresRoundtripping || IOInputs.SupportsSettingCreationTime))

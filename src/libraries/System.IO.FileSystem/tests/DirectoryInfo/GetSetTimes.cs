@@ -13,8 +13,6 @@ namespace System.IO.Tests
 
         protected override DirectoryInfo CreateSymlink(string path, string pathToTarget) => (DirectoryInfo)Directory.CreateSymbolicLink(path, pathToTarget);
 
-        protected override bool IsDirectory => true;
-
         protected override string GetItemPath(DirectoryInfo item) => item.FullName;
 
         protected override void InvokeCreate(DirectoryInfo item) => item.Create();
