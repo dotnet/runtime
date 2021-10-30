@@ -1,0 +1,7 @@
+parameters:
+  commands: ''
+  stepName: 'script'
+
+steps:
+  - script: $(commands)
+    displayName: $(stepName)

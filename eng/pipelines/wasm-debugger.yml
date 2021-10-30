@@ -20,8 +20,7 @@ jobs:
       nameSuffix: WasmDebuggerTests
       buildArgs: -s mono -c $(_BuildConfig)
       timeoutInMinutes: 180
-  steps:
-  - script: $(Build.SourcesDirectory)/dotnet.sh test $(Build.SourcesDirectory)/src/mono/wasm/debugger/DebuggerTestSuite /p:RuntimeConfiguration=Release /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/debugger-tests.binlog
-    displayName: Run wasm debugger tests
-    env:
-      SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
+    extraStepsTemplate: /eng/pipelines/common/templates/scriptStep.yml
+    extraStepsParameters:
+        commands: $(Build.SourcesDirectory)/dotnet.sh test $(Build.SourcesDirectory)/src/mono/wasm/debugger/DebuggerTestSuite /p:RuntimeConfiguration=Release /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/debugger-tests.binlog
+        stepName: Run wasm debugger tests
