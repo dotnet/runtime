@@ -507,8 +507,9 @@ void Lowering::LowerCast(GenTree* tree)
     assert(!varTypeIsSmall(srcType));
 
     // Transform '(ulong)smallInt' or '(uint)smallInt' to 'smallInt & 0xFF..'
-    if (tree->gtGetOp1()->OperIs(GT_CAST) && !tree->gtOverflow() && tree->IsUnsigned() && !tree->isContained() &&
-        !varTypeIsSmallInt(dstType) && varTypeIsIntOrI(varTypeToSigned(dstType)))
+    if (comp->opts.OptimizationEnabled() && tree->gtGetOp1()->OperIs(GT_CAST) && !tree->gtOverflow() &&
+        tree->IsUnsigned() && !tree->isContained() && !varTypeIsSmallInt(dstType) &&
+        varTypeIsIntOrI(varTypeToSigned(dstType)))
     {
         GenTreeCast* cast2    = tree->gtGetOp1()->AsCast();
         var_types    dst2Type = cast2->CastToType();
@@ -516,6 +517,9 @@ void Lowering::LowerCast(GenTree* tree)
 
         if (varTypeIsSmallInt(dst2Type) && !cast2->gtOverflow() && !cast2->isContained() && varTypeIsIntegral(op))
         {
+            JITDUMP("Transform zero-extended from small int via double CAST to AND 0xFF(0xFFFF). Before:\n\n")
+            DISPTREE(tree)
+
             assert(genTypeSize(tree->CastToType()) > genTypeSize(dst2Type));
             tree->ChangeOper(GT_AND, GenTree::PRESERVE_VN);
             BlockRange().Remove(cast2);
@@ -540,6 +544,10 @@ void Lowering::LowerCast(GenTree* tree)
             tree->AsOp()->gtOp2 = castMask;
 
             LowerNode(tree);
+
+            JITDUMP("\n\nAfter:\n\n")
+            DISPTREE(tree)
+            JITDUMP("\n")
             return;
         }
     }
