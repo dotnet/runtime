@@ -4156,12 +4156,15 @@ TADDR ClrDataAccess::DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr)
     return managedObjectWrapperPtr;
 }
 
-HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+HRESULT ClrDataAccess::DACTryGetComWrappersHandleFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTHANDLE* objHandle)
 {
-    if (ccwPtr == 0 || objRef == NULL)
-        return E_INVALIDARG;
+    HRESULT hr = E_FAIL;
 
-    SOSDacEnter();
+    if (ccwPtr == 0 || objHandle == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
 
     if (!DACIsComWrappersCCW(ccwPtr))
     {
@@ -4188,9 +4191,31 @@ HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr,
         goto ErrExit;
     }
 
-    *objRef = ObjectFromHandle(handle);
+    *objHandle = handle;
 
-    SOSDacLeave();
+    return S_OK;
+
+ErrExit: return hr;
+}
+
+HRESULT ClrDataAccess::DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef)
+{
+    HRESULT hr = E_FAIL;
+
+    if (ccwPtr == 0 || objRef == NULL)
+    {
+        hr = E_INVALIDARG;
+        goto ErrExit;
+    }
+
+    OBJECTHANDLE handle;
+    if (DACTryGetComWrappersHandleFromCCW(ccwPtr, &handle) != S_OK)
+    {
+        hr = E_FAIL;
+        goto ErrExit;
+    }
+
+    *objRef = ObjectFromHandle(handle);
 
     return S_OK;
 
