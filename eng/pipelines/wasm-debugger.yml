@@ -18,7 +18,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: WasmDebuggerTests
-      buildArgs: -s mono -c $(_BuildConfig)
+      buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
       extraStepsTemplate: /eng/pipelines/common/templates/scriptStep.yml
       extraStepsParameters:
