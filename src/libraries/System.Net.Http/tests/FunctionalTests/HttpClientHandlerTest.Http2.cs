@@ -3350,7 +3350,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
                 Assert.Equal(continuationCount, receivedContinuations);
-                await connection.SendResponseAsync(HttpStatusCode.OK);
+                await connection.SendResponseAsync(HttpStatusCode.OK, requestId: streamId);
             });
         }
 
