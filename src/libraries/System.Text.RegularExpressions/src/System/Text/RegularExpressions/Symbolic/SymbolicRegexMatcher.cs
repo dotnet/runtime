@@ -359,9 +359,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 Debug.Assert(builder._delta is not null);
 
                 int offset = (currentState.Id << builder._mintermsCount) | mintermId;
-                return
-                    builder._delta[offset] ??
-                    matcher.CreateNewTransition(currentState, minterm, offset);
+                DfaMatchingState<TSetType>? p = Volatile.Read(ref builder._delta[offset]);
+                return p ?? matcher.CreateNewTransition(currentState, minterm, offset);
             }
         }
 
@@ -391,7 +390,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     DfaMatchingState<TSetType> nextStates = builder.MkState(oneState, currentStates.PrevCharKind);
 
                     int offset = (nextStates.Id << builder._mintermsCount) | mintermId;
-                    DfaMatchingState<TSetType> p = builder._delta[offset] ?? matcher.CreateNewTransition(nextStates, minterm, offset);
+                    DfaMatchingState<TSetType>? p_ = Volatile.Read(ref builder._delta[offset]);
+                    DfaMatchingState<TSetType> p = p_ ?? matcher.CreateNewTransition(nextStates, minterm, offset);
 
                     // Observe that if p.Node is an Or it will be flattened.
                     union = builder.MkOr2(union, p.Node);
