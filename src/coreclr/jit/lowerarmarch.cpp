@@ -496,7 +496,6 @@ void Lowering::LowerCast(GenTree* tree)
     GenTree*  op1     = tree->AsOp()->gtOp1;
     var_types dstType = tree->CastToType();
     var_types srcType = genActualType(op1->TypeGet());
-    var_types tmpType = TYP_UNDEF;
 
     if (varTypeIsFloating(srcType))
     {
@@ -507,14 +506,42 @@ void Lowering::LowerCast(GenTree* tree)
 
     assert(!varTypeIsSmall(srcType));
 
-    if (tmpType != TYP_UNDEF)
+    // Transform '(ulong)smallInt' or '(uint)smallInt' to 'smallInt & 0xFF..'
+    if (tree->gtGetOp1()->OperIs(GT_CAST) && !tree->gtOverflow() && tree->IsUnsigned() && !tree->isContained() &&
+        !varTypeIsSmallInt(dstType) && varTypeIsIntOrI(varTypeToSigned(dstType)))
     {
-        GenTree* tmp = comp->gtNewCastNode(tmpType, op1, tree->IsUnsigned(), tmpType);
-        tmp->gtFlags |= (tree->gtFlags & (GTF_OVERFLOW | GTF_EXCEPT));
+        GenTreeCast* cast2    = tree->gtGetOp1()->AsCast();
+        var_types    dst2Type = cast2->CastToType();
+        GenTree*     op       = cast2->gtGetOp1();
 
-        tree->gtFlags &= ~GTF_UNSIGNED;
-        tree->AsOp()->gtOp1 = tmp;
-        BlockRange().InsertAfter(op1, tmp);
+        if (varTypeIsSmallInt(dst2Type) && !cast2->gtOverflow() && !cast2->isContained() && varTypeIsIntegral(op))
+        {
+            assert(genTypeSize(tree->CastToType()) > genTypeSize(dst2Type));
+            tree->ChangeOper(GT_AND, GenTree::PRESERVE_VN);
+            BlockRange().Remove(cast2);
+            GenTreeIntCon* castMask = nullptr;
+
+            if (genTypeSize(dst2Type) == 1)
+            {
+                castMask = comp->gtNewIconNode(0xFF, tree->TypeGet());
+            }
+            else if (genTypeSize(dst2Type) == 2)
+            {
+                castMask = comp->gtNewIconNode(0xFFFF, tree->TypeGet());
+            }
+            else
+            {
+                unreached();
+            }
+
+            BlockRange().InsertAfter(op, castMask);
+
+            tree->AsOp()->gtOp1 = op;
+            tree->AsOp()->gtOp2 = castMask;
+
+            LowerNode(tree);
+            return;
+        }
     }
 
     // Now determine if we have operands that should be contained.
