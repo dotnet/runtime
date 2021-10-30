@@ -48,7 +48,9 @@ check_prereqs()
 
 build_native()
 {
-    eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    if [[ ! -e "$__RepoRootDir/artifacts/obj/_version.c" ]]; then
+        eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
+    fi
 
     targetOS="$1"
     platformArch="$2"
@@ -257,7 +259,7 @@ while :; do
         break
     fi
 
-    lowerI="$(echo "$1" | tr "[:upper:]" "[:lower:]")"
+    lowerI="$(echo "${1/--/-}" | tr "[:upper:]" "[:lower:]")"
     case "$lowerI" in
         -\?|-h|--help)
             usage
