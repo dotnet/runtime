@@ -3,5 +3,5 @@ parameters:
   stepName: 'script'
 
 steps:
-  - script: $(commands)
-    displayName: $(stepName)
+  - script: ${{ parameters.commands }}
+    displayName: ${{ parameters.stepName }}

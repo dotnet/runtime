@@ -22,5 +22,5 @@ jobs:
       timeoutInMinutes: 180
       extraStepsTemplate: /eng/pipelines/common/templates/scriptStep.yml
       extraStepsParameters:
-          commands: echo $(Build.SourcesDirectory)/dotnet.sh test $(Build.SourcesDirectory)/src/mono/wasm/debugger/DebuggerTestSuite /p:RuntimeConfiguration=Release /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/debugger-tests.binlog
+          commands: $(Build.SourcesDirectory)/dotnet.sh test $(Build.SourcesDirectory)/src/mono/wasm/debugger/DebuggerTestSuite /p:RuntimeConfiguration=Release /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/debugger-tests.binlog
           stepName: Run wasm debugger tests
