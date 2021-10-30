@@ -1568,6 +1568,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     // Check and make op2 contained (if it is a containable immediate)
     CheckImmedAndMakeContained(node, node->gtOp2);
 
+#ifdef TARGET_ARM64
     // Find "a * b + c" or "c + a * b" in order to emit MADD/MSUB
     if (varTypeIsIntegral(node) && !node->isContained() && node->OperIs(GT_ADD) &&
         (node->gtGetOp1()->OperIs(GT_MUL) || node->gtGetOp2()->OperIs(GT_MUL)))
@@ -1596,6 +1597,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             MakeSrcContained(node, mul);
         }
     }
+#endif
 }
 
 //------------------------------------------------------------------------
