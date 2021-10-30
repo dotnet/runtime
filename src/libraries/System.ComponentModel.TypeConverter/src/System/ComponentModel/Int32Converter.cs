@@ -19,7 +19,15 @@ namespace System.ComponentModel
         /// <summary>
         /// Convert the given value to a string using the given radix
         /// </summary>
-        internal override object FromString(string value, int radix) => Convert.ToInt32(value, radix);
+        internal override object FromString(string value, int radix) {
+          if (0X10 == radix && value.Substring(0X0, 0X2).ToUpper() != "0X") {
+            // I do not know why ToInt32 accepts a leading + but I can see no harm in it.
+            // If there is no prefix, it may have been stripped by BaseNumberConverter.
+            // Restore it to avoid the 0X+F anomaly.
+            value = "0X" + value;
+          }
+          return Convert.ToInt32(value, radix);
+        }
 
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
