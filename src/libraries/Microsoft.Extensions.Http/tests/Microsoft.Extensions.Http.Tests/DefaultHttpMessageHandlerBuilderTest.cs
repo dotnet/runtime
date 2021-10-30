@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Http
             Assert.IsType<HttpClientHandler>(builder.PrimaryHandler);
         }
 
-
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Build_NoAdditionalHandlers_ReturnsPrimaryHandler()
         {
@@ -48,6 +48,7 @@ namespace Microsoft.Extensions.Http
             Assert.Same(builder.PrimaryHandler, handler);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Build_SomeAdditionalHandlers_PutsTogetherDelegatingHandlers()
         {
@@ -108,6 +109,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal("The 'additionalHandlers' must not contain a null entry.", exception.Message);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50873", TestPlatforms.Android)]
         public void Build_AdditionalHandlerHasNonNullInnerHandler_ThrowsException()

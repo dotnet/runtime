@@ -92,7 +92,7 @@
 
       <_BuildiOSAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
         <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildiOSApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>
-        <AdditionalProperties Condition="'$(NeedsToBuildiOSAppsOnHelix)' != ''">%(_BuildiOSAppsProjectsToBuild.AdditionalProperties);NeedsToBuildiOSAppsOnHelix=$(NeedsToBuildiOSAppsOnHelix)</AdditionalProperties>
+        <AdditionalProperties Condition="'$(NeedsToBuildAppsOnHelix)' != ''">%(_BuildiOSAppsProjectsToBuild.AdditionalProperties);NeedsToBuildAppsOnHelix=$(NeedsToBuildAppsOnHelix)</AdditionalProperties>
       </_BuildiOSAppsProjectsToBuild>
     </ItemGroup>
 

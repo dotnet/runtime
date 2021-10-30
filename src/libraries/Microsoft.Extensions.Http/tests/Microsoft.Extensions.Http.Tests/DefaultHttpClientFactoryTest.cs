@@ -82,6 +82,7 @@ namespace Microsoft.Extensions.Http
             Assert.NotSame(client1, client2);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Factory_DisposeClient_DoesNotDisposeHandler()
         {
@@ -107,6 +108,7 @@ namespace Microsoft.Extensions.Http
             // Assert (does not throw)
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Factory_DisposeHandler_DoesNotDisposeInnerHandler()
         {
@@ -170,6 +172,7 @@ namespace Microsoft.Extensions.Http
             Assert.Equal(1, count);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Factory_CreateClient_FiltersCanDecorateBuilder()
         {

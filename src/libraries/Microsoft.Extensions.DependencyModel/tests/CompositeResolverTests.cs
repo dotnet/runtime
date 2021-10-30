@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
 {
     public class CompositeResolverTests
     {
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ReturnsFirstSuccesfullResolve()
         {
@@ -44,6 +45,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                 Times.Never());
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void PassesLibraryToAllResolvers()
         {
@@ -64,6 +66,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             failTwo.Verify(r => r.TryResolveAssemblyPaths(library, null), Times.Once());
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void PopulatedAssemblies()
         {

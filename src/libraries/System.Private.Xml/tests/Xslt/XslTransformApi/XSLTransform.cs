@@ -60,7 +60,7 @@ namespace System.Xml.Tests
 
         // Variables from init string
         private string _strPath;           // Path of the data files
-        
+
         private string _httpPath;          // HTTP Path of the data files
 
         // Other global variables

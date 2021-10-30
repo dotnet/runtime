@@ -42,6 +42,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.Equal(1, count2);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_IsTrue_IfAnyTokenHasChanged()
         {
@@ -59,6 +60,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(compositeChangeToken.HasChanged);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void HasChanged_IsFalse_IfNoTokenHasChanged()
         {
@@ -73,6 +75,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(compositeChangeToken.HasChanged);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ActiveChangeCallbacks_IsTrue_IfAnyTokenHasActiveChangeCallbacks()
         {
@@ -89,6 +92,7 @@ namespace Microsoft.Extensions.Primitives
             Assert.True(compositeChangeToken.ActiveChangeCallbacks);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void ActiveChangeCallbacks_IsFalse_IfNoTokenHasActiveChangeCallbacks()
         {

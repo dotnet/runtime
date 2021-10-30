@@ -185,7 +185,7 @@ jobs:
       extraStepsParameters:
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:NeedsToBuildiOSAppsOnHelix=true
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
         condition: >-
           or(
           eq(variables['librariesContainsChange'], true),

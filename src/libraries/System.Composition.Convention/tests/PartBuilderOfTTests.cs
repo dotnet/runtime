@@ -484,6 +484,7 @@ namespace System.Composition.Convention.Tests
             Assert.Equal(1, test.OnImportsSatisfiedInvoked);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void NotifyImportsSatisfiedAttributeAlreadyApplied_ShouldSucceed()
         {

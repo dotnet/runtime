@@ -52,6 +52,7 @@ namespace Microsoft.Extensions.Logging.Test
             factory.Dispose();
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Dispose_ProvidersAreDisposed()
         {
@@ -81,7 +82,7 @@ namespace Microsoft.Extensions.Logging.Test
             return disposableProvider.Object;
         }
 
-
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Dispose_ThrowException_SwallowsException()
         {
@@ -493,6 +494,7 @@ namespace Microsoft.Extensions.Logging.Test
                 });
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void CreateDisposeDisposesInnerServiceProvider()
         {

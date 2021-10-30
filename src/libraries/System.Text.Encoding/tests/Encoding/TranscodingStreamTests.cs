@@ -39,6 +39,7 @@ namespace System.Text.Tests
             }
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AsyncMethods_ReturnCanceledTaskIfCancellationTokenTripped()
         {
@@ -198,6 +199,7 @@ namespace System.Text.Tests
             innerStream.Read(Span<byte>.Empty); // shouldn't throw
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void Flush_FlushesInnerStreamButNotDecodedState()
         {
@@ -765,6 +767,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => transcodingStream.Write(new byte[5], 6, 0));
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithFullData()
         {
@@ -824,6 +827,7 @@ namespace System.Text.Tests
             Assert.Equal(0, sink.Position);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public async Task WriteAsync_WithPartialData()
         {
@@ -879,6 +883,7 @@ namespace System.Text.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => (object)transcodingStream.WriteAsync(new byte[5], 6, 0));
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void WriteApm()
         {

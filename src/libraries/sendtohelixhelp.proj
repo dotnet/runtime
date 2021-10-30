@@ -57,9 +57,9 @@
     <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)\testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
 
     <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
-    <NeedsToBuildiOSAppsOnHelix Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(NeedsToBuildiOSAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildiOSAppsOnHelix>
+    <NeedsToBuildAppsOnHelix Condition="('$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator') and '$(NeedsToBuildAppsOnHelix)' == '' and '$(Scenario)' == 'BuildiOSApps'">true</NeedsToBuildAppsOnHelix>
     
-    <NeedsiOSSDK Condition="'$(NeedsToBuildiOSAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsiOSSDK>
+    <NeedsiOSSDK Condition="'$(NeedsToBuildAppsOnHelix)' == 'true' and '$(NeedsWorkload)' != 'true'">true</NeedsiOSSDK>
 
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
 

@@ -171,6 +171,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.True(provider5.IsDisposed);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DisposesChangeTokenRegistrationsOnDispose()
         {
@@ -189,6 +190,7 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Empty(changeToken.Callbacks);
         }
 
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void DisposesChangeTokenRegistrationsOnRemoval()
         {
