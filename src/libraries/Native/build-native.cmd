@@ -3,7 +3,7 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
-set __sourceDir=%~dp0\Windows
+set __sourceRootDir=%~dp0
 set __repoRoot=%~dp0..\..\..
 set __engNativeDir=%__repoRoot%\eng\native
 set __artifactsDir=%__repoRoot%\artifacts
@@ -57,7 +57,9 @@ set __ExtraCmakeParams="-DCMAKE_REPO_ROOT=%__cmakeRepoRoot%"
 set __ExtraCmakeParams=%__ExtraCmakeParams% "-DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE%"
 
 if /i "%__BuildArch%" == "wasm" (
-    set __sourceDir=%~dp0\Unix
+    set __sourceDir=%__sourceRootDir%\Unix
+) else (
+    set __sourceDir=%__sourceRootDir%\Windows
 )
 
 if [%__outConfig%] == [] set __outConfig=%__TargetOS%-%__BuildArch%-%CMAKE_BUILD_TYPE%

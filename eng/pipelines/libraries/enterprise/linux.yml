@@ -19,7 +19,8 @@ pr:
       - src/libraries/System.Net.Security/*
 
 pool:
-  vmImage: 'ubuntu-16.04'
+  name: NetCore1ESPool-Public
+  demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
 variables:
   - template: ../variables.yml
@@ -50,7 +51,7 @@ steps:
   displayName: Test linuxclient connection to web server
 
 - bash: |
-    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci'
+    docker exec linuxclient bash -c '/repo/build.sh -subset clr+libs -runtimeconfiguration release -ci /p:NativeOptimizationDataSupported=false'
   displayName: Build product sources
 
 - bash: |

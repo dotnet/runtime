@@ -1,7 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { CharPtr, CharPtrPtr, Int32Ptr, MonoArray, MonoAssembly, MonoClass, MonoMethod, MonoObject, MonoString, VoidPtr } from "./types";
+import {
+    CharPtr, CharPtrPtr, Int32Ptr,
+    MonoArray, MonoAssembly, MonoClass,
+    MonoMethod, MonoObject, MonoString,
+    MonoType, VoidPtr
+} from "./types";
 import { Module } from "./modules";
 
 const fn_signatures: [ident: string, returnType: string | null, argTypes?: string[], opts?: any][] = [
@@ -25,9 +30,12 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_exit", null, ["number"]],
 
     // BINDING
+    ["mono_wasm_get_corlib", "number", []],
     ["mono_wasm_assembly_load", "number", ["string"]],
     ["mono_wasm_find_corlib_class", "number", ["string", "string"]],
     ["mono_wasm_assembly_find_class", "number", ["number", "string", "string"]],
+    ["mono_wasm_find_corlib_type", "number", ["string", "string"]],
+    ["mono_wasm_assembly_find_type", "number", ["number", "string", "string"]],
     ["mono_wasm_assembly_find_method", "number", ["number", "string", "number"]],
     ["mono_wasm_invoke_method", "number", ["number", "number", "number", "number"]],
     ["mono_wasm_string_get_utf8", "number", ["number"]],
@@ -38,13 +46,18 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_obj_array_new", "number", ["number"]],
     ["mono_wasm_obj_array_set", "void", ["number", "number", "number"]],
     ["mono_wasm_register_bundled_satellite_assemblies", "void", []],
-    ["mono_wasm_try_unbox_primitive_and_get_type", "number", ["number", "number"]],
+    ["mono_wasm_try_unbox_primitive_and_get_type", "number", ["number", "number", "number"]],
     ["mono_wasm_box_primitive", "number", ["number", "number", "number"]],
     ["mono_wasm_intern_string", "number", ["number"]],
     ["mono_wasm_assembly_get_entry_point", "number", ["number"]],
     ["mono_wasm_get_delegate_invoke", "number", ["number"]],
     ["mono_wasm_string_array_new", "number", ["number"]],
     ["mono_wasm_typed_array_new", "number", ["number", "number", "number", "number"]],
+    ["mono_wasm_class_get_type", "number", ["number"]],
+    ["mono_wasm_type_get_class", "number", ["number"]],
+    ["mono_wasm_get_type_name", "string", ["number"]],
+    ["mono_wasm_get_type_aqn", "string", ["number"]],
+    ["mono_wasm_unbox_rooted", "number", ["number"]],
 
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
@@ -77,9 +90,12 @@ export interface t_Cwraps {
     mono_wasm_load_runtime(unused: string, debug_level: number): void;
 
     // BINDING
-    mono_wasm_assembly_load(name: string): MonoAssembly
-    mono_wasm_find_corlib_class(namespace: string, name: string): MonoClass
+    mono_wasm_get_corlib(): MonoAssembly;
+    mono_wasm_assembly_load(name: string): MonoAssembly;
+    mono_wasm_find_corlib_class(namespace: string, name: string): MonoClass;
     mono_wasm_assembly_find_class(assembly: MonoAssembly, namespace: string, name: string): MonoClass;
+    mono_wasm_find_corlib_type(namespace: string, name: string): MonoType;
+    mono_wasm_assembly_find_type(assembly: MonoAssembly, namespace: string, name: string): MonoType;
     mono_wasm_assembly_find_method(klass: MonoClass, name: string, args: number): MonoMethod;
     mono_wasm_invoke_method(method: MonoMethod, this_arg: MonoObject, params: VoidPtr, out_exc: MonoObject): MonoObject;
     mono_wasm_string_get_utf8(str: MonoString): CharPtr;
@@ -90,16 +106,21 @@ export interface t_Cwraps {
     mono_wasm_obj_array_new(size: number): MonoArray;
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
     mono_wasm_register_bundled_satellite_assemblies(): void;
-    mono_wasm_try_unbox_primitive_and_get_type(obj: MonoObject, result: VoidPtr): number;
+    mono_wasm_try_unbox_primitive_and_get_type(obj: MonoObject, buffer: VoidPtr, buffer_size: number): number;
     mono_wasm_box_primitive(klass: MonoClass, value: VoidPtr, value_size: number): MonoObject;
-    mono_wasm_intern_string(str: MonoString): MonoString
-    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod
-    mono_wasm_get_delegate_invoke(delegate: MonoObject): MonoMethod
+    mono_wasm_intern_string(str: MonoString): MonoString;
+    mono_wasm_assembly_get_entry_point(assembly: MonoAssembly): MonoMethod;
+    mono_wasm_get_delegate_invoke(delegate: MonoObject): MonoMethod;
     mono_wasm_string_array_new(size: number): MonoArray;
     mono_wasm_typed_array_new(arr: VoidPtr, length: number, size: number, type: number): MonoArray;
+    mono_wasm_class_get_type(klass: MonoClass): MonoType;
+    mono_wasm_type_get_class(ty: MonoType): MonoClass;
+    mono_wasm_get_type_name(ty: MonoType): string;
+    mono_wasm_get_type_aqn(ty: MonoType): string;
+    mono_wasm_unbox_rooted(obj: MonoObject): VoidPtr;
 
     //DOTNET
-    mono_wasm_string_from_js(str: string): MonoString
+    mono_wasm_string_from_js(str: string): MonoString;
 
     //INTERNAL
     mono_wasm_exit(exit_code: number): number;
