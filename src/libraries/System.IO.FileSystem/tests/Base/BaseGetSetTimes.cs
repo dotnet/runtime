@@ -114,18 +114,14 @@ namespace System.IO.Tests
             }
             else
             {
-                // Ensure that we have the latest times (access time could be changed by creating the symlink)
-                FileSystemInfo fsi = target as FileSystemInfo;
-                fsi?.Refresh();
-
                 // Get the target's initial times
                 IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
                 DateTime[] initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
 
                 SettingUpdatesPropertiesCore(link);
 
-                // Ensure that we have the latest times
-                fsi?.Refresh();
+                // Ensure that we have the latest times.
+                if (target is FileSystemInfo fsi) fsi.Refresh();
 
                 // Ensure the target's times haven't changed.
                 DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
