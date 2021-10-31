@@ -5763,30 +5763,29 @@ void Lowering::LowerShift(GenTreeOp* shift)
         GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
 
         if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
-            // CastOp can be a small int in case of CAST(IND(X))
-            !varTypeIsSmall(cast->CastOp()))
+            // CastOp should not be a small int, e.g. CAST(IND(ByteTarget))
+            cast->CastOp()->TypeIs(TYP_LONG, TYP_INT))
         {
             // Cast can be either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT"
             UINT32 treeSize = genTypeSize(cast);
-            UINT32 toSize   = genTypeSize(cast->CastToType());
             UINT32 fromSize = genTypeSize(cast->CastFromType());
+            UINT32 toSize   = genTypeSize(cast->CastToType());
 
-            assert(varTypeIsIntegral(cast->CastToType())); // Just to make sure there are no surprises here
             assert(!cast->CastOp()->isContained());
 
             if (treeSize >= fromSize) // It has to be an upcast
             {
                 if (toSize < fromSize)
                 {
-                    // Special case: "TYP_INT <- %SMALL_INT% <- TYP_INT"
+                    // Special case: "TYP_INT <- %SMALL_(U)INT% <- TYP_INT"
                     assert(varTypeIsSmall(cast->CastToType()) && (fromSize == 4));
                     toSize = 4;
                 }
                 assert(toSize >= 4);
 
                 // LSH(TYP_LONG <- TYP_INT, CNS) => 1..31
-                // LSH(TYP_INT <- TYP_SHORT <- TYP_INT, CNS) => 1..15
-                // LSH(TYP_INT <- TYP_BYTE <- TYP_INT, CNS) => 1..7
+                // LSH(TYP_INT <- TYP_(U)SHORT <- TYP_INT, CNS) => 1..15
+                // LSH(TYP_INT <- TYP_(U)BYTE <- TYP_INT, CNS) => 1..7
                 if ((UINT32)cns->IconValue() < (toSize * 4))
                 {
                     // cns is small and should already be contained at this point

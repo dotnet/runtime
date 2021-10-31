@@ -1634,13 +1634,11 @@ void CodeGen::genCodeForShift(GenTree* tree)
         // Check if we can recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) pattern
         if (tree->gtGetOp1()->OperIs(GT_CAST) && tree->gtGetOp1()->isContained())
         {
-            assert(shiftBy->IsCnsIntOrI());
             GenTreeCast* cast  = tree->gtGetOp1()->AsCast();
             int          width = 0;
             if (varTypeIsSmall(cast->CastToType()))
             {
-                // TYP_INT <- %SMALL_INT% <- TYP_INT
-                // TYP_INT <- %SMALL_UINT% <- TYP_INT
+                // TYP_INT <- %SMALL_(U)INT% <- TYP_INT
                 width = (int)genTypeSize(cast->CastToType()) * 8;
                 assert((width == 16) || (width == 8));
                 assert((cast->CastFromType() == TYP_INT) && cast->TypeIs(TYP_INT));
