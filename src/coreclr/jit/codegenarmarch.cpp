@@ -1614,8 +1614,9 @@ void CodeGen::genCodeForShift(GenTree* tree)
     genTreeOps  oper       = tree->OperGet();
     instruction ins        = genGetInsForOper(oper, targetType);
     emitAttr    size       = emitActualTypeSize(tree);
+    regNumber   dstReg     = tree->GetRegNum();
 
-    assert(tree->GetRegNum() != REG_NA);
+    assert(dstReg != REG_NA);
 
     genConsumeOperands(tree->AsOp());
 
@@ -1623,7 +1624,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
     GenTree* shiftBy = tree->gtGetOp2();
     if (!shiftBy->IsCnsIntOrI())
     {
-        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftBy->GetRegNum());
+        GetEmitter()->emitIns_R_R_R(ins, size, dstReg, operand->GetRegNum(), shiftBy->GetRegNum());
     }
     else
     {
@@ -1634,30 +1635,25 @@ void CodeGen::genCodeForShift(GenTree* tree)
         // Check if we can recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) pattern
         if (tree->gtGetOp1()->OperIs(GT_CAST) && tree->gtGetOp1()->isContained())
         {
-            GenTreeCast* cast  = tree->gtGetOp1()->AsCast();
-            int          width = 0;
-            if (varTypeIsSmall(cast->CastToType()))
-            {
-                // TYP_INT <- %SMALL_(U)INT% <- TYP_INT
-                width = (int)genTypeSize(cast->CastToType()) * 8;
-                assert((width == 16) || (width == 8));
-                assert((cast->CastFromType() == TYP_INT) && cast->TypeIs(TYP_INT));
-            }
-            else
-            {
-                // TYP_LONG <- TYP_INT
-                // TYP_LONG <- TYP_UINT <- TYP_INT
-                // TYP_LONG <- TYP_ULONG <- TYP_INT
-                width = 32; //(int)genTypeSize(cast->CastFromType()) * 8;
-                assert((cast->CastFromType() == TYP_INT) && cast->TypeIs(TYP_LONG));
-            }
-            GetEmitter()->emitIns_R_R_I_I(cast->IsUnsigned() ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(),
-                                          cast->CastOp()->GetRegNum(), (int)shiftByImm, width);
+            GenTreeCast* cast   = tree->gtGetOp1()->AsCast();
+            GenTree*     castOp = cast->CastOp();
+
+            unsigned srcBits = varTypeIsSmall(cast->CastToType()) ? genTypeSize(cast->CastToType()) * BITS_PER_BYTE
+                                                                  : genTypeSize(castOp) * BITS_PER_BYTE;
+            unsigned dstBits = genTypeSize(cast) * BITS_PER_BYTE;
+
+            assert(srcBits < dstBits);
+            assert((shiftByImm > 0) && (shiftByImm < srcBits));
+            assert(shiftBy->isContained());
+
+            const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
+            GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, dstReg, castOp->GetRegNum(),
+                                          (int)shiftByImm, (int)srcBits);
         }
         else
 #endif
         {
-            GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
+            GetEmitter()->emitIns_R_R_I(ins, size, dstReg, operand->GetRegNum(), shiftByImm);
         }
     }
 
