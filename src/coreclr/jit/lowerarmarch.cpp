@@ -506,30 +506,34 @@ void Lowering::LowerCast(GenTree* tree)
 
     assert(!varTypeIsSmall(srcType));
 
-    // Transform '(ulong)smallInt' or '(uint)smallInt' to 'smallInt & 0xFF..'
-    if (comp->opts.OptimizationEnabled() && tree->gtGetOp1()->OperIs(GT_CAST) && !tree->gtOverflow() &&
-        tree->IsUnsigned() && !tree->isContained() && !varTypeIsSmallInt(dstType) &&
-        varTypeIsIntOrI(varTypeToSigned(dstType)))
+    // Transform:
+    //
+    //    *  CAST      long <- ulong <- uint                   *  AND      long
+    //    \--*  CAST      int <- small-uint <- int     =>      +--*  X        int
+    //       \--*  X         int                               \--*  CNS_INT  long  0xFF/0xFFFF
+    //
+    if (comp->opts.OptimizationEnabled() && op1->OperIs(GT_CAST) && !tree->isContained() && tree->TypeIs(TYP_LONG) &&
+        (dstType == TYP_ULONG))
     {
-        GenTreeCast* cast2    = tree->gtGetOp1()->AsCast();
-        var_types    dst2Type = cast2->CastToType();
-        GenTree*     op       = cast2->gtGetOp1();
+        GenTreeCast* innerCast    = op1->AsCast();
+        var_types    innerDstType = innerCast->CastToType();
+        GenTree*     castOp       = innerCast->CastOp();
+        UINT32       maskSize     = 0;
 
-        if (varTypeIsSmallInt(dst2Type) && !cast2->gtOverflow() && !cast2->isContained() && varTypeIsIntegral(op))
+        if (varTypeIsSmall(innerDstType) && varTypeIsUnsigned(innerDstType) && !castOp->isContained() &&
+            !innerCast->isContained() && castOp->TypeIs(TYP_INT))
         {
-            JITDUMP("Transform zero-extended from small int via double CAST to AND 0xFF(0xFFFF). Before:\n\n")
+            JITDUMP("Transform zero-extended from small int via double CAST to AND 0xFF(0xFFFF).\nBefore:\n\n")
             DISPTREE(tree)
 
-            assert(genTypeSize(tree->CastToType()) > genTypeSize(dst2Type));
-            tree->ChangeOper(GT_AND);
-            BlockRange().Remove(cast2);
-            GenTreeIntCon* castMask = nullptr;
+            BlockRange().Remove(innerCast);
 
-            if (genTypeSize(dst2Type) == 1)
+            GenTreeIntCon* castMask = nullptr;
+            if (genTypeSize(innerDstType) == 1)
             {
                 castMask = comp->gtNewIconNode(0xFF, tree->TypeGet());
             }
-            else if (genTypeSize(dst2Type) == 2)
+            else if (genTypeSize(innerDstType) == 2)
             {
                 castMask = comp->gtNewIconNode(0xFFFF, tree->TypeGet());
             }
@@ -538,9 +542,10 @@ void Lowering::LowerCast(GenTree* tree)
                 unreached();
             }
 
-            BlockRange().InsertAfter(op, castMask);
+            BlockRange().InsertAfter(castOp, castMask);
 
-            tree->AsOp()->gtOp1 = op;
+            tree->ChangeOper(GT_AND);
+            tree->AsOp()->gtOp1 = castOp;
             tree->AsOp()->gtOp2 = castMask;
 
             LowerNode(tree);
