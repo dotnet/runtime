@@ -5777,8 +5777,6 @@ void Lowering::LowerShift(GenTreeOp* shift)
             // It has to be an upcast and CNS must be in [1..srcBits) range
             if ((srcBits < dstBits) && ((UINT32)cns->IconValue() < srcBits))
             {
-                // cns is small and should already be contained at this point
-                assert(cns->isContained());
                 JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS), marking CAST node as contained.");
                 MakeSrcContained(shift, cast);
             }

@@ -1644,7 +1644,6 @@ void CodeGen::genCodeForShift(GenTree* tree)
 
             assert(srcBits < dstBits);
             assert((shiftByImm > 0) && (shiftByImm < srcBits));
-            assert(shiftBy->isContained());
 
             const bool isUnsigned = cast->IsUnsigned() || varTypeIsUnsigned(cast->CastToType());
             GetEmitter()->emitIns_R_R_I_I(isUnsigned ? INS_ubfiz : INS_sbfiz, size, dstReg, castOp->GetRegNum(),
