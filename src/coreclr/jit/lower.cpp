@@ -5763,7 +5763,8 @@ void Lowering::LowerShift(GenTreeOp* shift)
         GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
 
         if (!cast->isContained() && !cast->IsRegOptional() && varTypeIsLong(shift) && !cast->CastOp()->isContained() &&
-            (varTypeToSigned(cast->CastFromType()) == TYP_INT) && (cns->IconValue() > 0) && (cns->IconValue() < 32))
+            (varTypeToSigned(cast->CastFromType()) == TYP_INT) && (cns->IconValue() > 0) && (cns->IconValue() < 32) &&
+            !cast->gtOverflow() && varTypeIsIntegral(cast->CastOp()))
         {
             // 1-31 constant should already be contained at this point
             assert(cns->isContained());

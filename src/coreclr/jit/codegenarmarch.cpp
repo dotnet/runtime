@@ -1636,7 +1636,8 @@ void CodeGen::genCodeForShift(GenTree* tree)
         {
             GenTreeCast* cast = tree->gtGetOp1()->AsCast();
             assert((shiftByImm > 0) && (shiftByImm < 32));
-            assert(varTypeToSigned(cast->CastFromType()) == TYP_INT);
+            assert(varTypeIsLong(tree) && (varTypeToSigned(cast->CastFromType()) == TYP_INT));
+            assert(!cast->gtOverflow());
             GetEmitter()->emitIns_R_R_I_I(cast->IsUnsigned() ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(),
                                           cast->CastOp()->GetRegNum(), (int)shiftByImm, 32);
         }
