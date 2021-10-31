@@ -5753,6 +5753,25 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2->ClearContained();
     }
     ContainCheckShiftRotate(shift);
+
+// Check if we can fold e.g. '(ulong/long)x << 2' where x is int/uint to ubfiz/sbfiz
+#ifdef TARGET_ARM64
+    if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
+        shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained() && varTypeIsIntegral(shift))
+    {
+        GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
+        GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
+
+        if (!cast->isContained() && !cast->IsRegOptional() && varTypeIsLong(shift) && !cast->CastOp()->isContained() &&
+            (varTypeToSigned(cast->CastFromType()) == TYP_INT) && (cns->IconValue() > 0) && (cns->IconValue() < 32))
+        {
+            // 1-31 constant should already be contained at this point
+            assert(cns->isContained());
+            JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS), marking CAST node as contained.");
+            MakeSrcContained(shift, cast);
+        }
+    }
+#endif
 }
 
 void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
