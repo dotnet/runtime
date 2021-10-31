@@ -136,6 +136,7 @@ private:
     GenTreeCC* LowerNodeCC(GenTree* node, GenCondition condition);
     void LowerJmpMethod(GenTree* jmp);
     void LowerRet(GenTreeUnOp* ret);
+    GenTree* LowerBitcast(GenTreeUnOp* node);
     void LowerStoreLocCommon(GenTreeLclVarCommon* lclVar);
     void LowerRetStruct(GenTreeUnOp* ret);
     void LowerRetSingleRegStructLclVar(GenTreeUnOp* ret);

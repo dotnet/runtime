@@ -54,6 +54,7 @@ protected:
         OneAsgBlock,
         StructBlock,
         SkipCallSrc,
+        BitcastCallSrc,
         SkipMultiRegIntrinsicSrc,
         Nop
     };
@@ -806,15 +807,33 @@ void MorphCopyBlockHelper::TrySpecialCases()
                     m_asg->gtOp1 = lclVar;
                 }
             }
+
             if (m_dst->OperIs(GT_LCL_VAR))
             {
                 LclVarDsc* varDsc = m_comp->lvaGetDesc(m_dst->AsLclVar());
                 if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(m_comp))
                 {
+                    assert(m_comp->fgGlobalMorph);
+
+                    JITDUMP("Morphing a single reg call return into BITCAST assigned to the promoted field\n");
+                    m_transformationDecision = BlockTransformation::BitcastCallSrc;
+
+                    unsigned   fieldNum  = varDsc->lvFieldLclStart;
+                    LclVarDsc* fieldDsc  = m_comp->lvaGetDesc(fieldNum);
+                    var_types  fieldType = fieldDsc->TypeGet();
+                    assert(!varTypeIsStruct(fieldType));
+
                     m_dst->gtFlags |= GTF_DONT_CSE;
-                    JITDUMP("Not morphing a single reg call return\n");
-                    m_transformationDecision = BlockTransformation::SkipCallSrc;
-                    m_result                 = m_asg;
+                    m_dst->ChangeType(fieldType);
+                    m_dst->AsLclVar()->SetLclNum(fieldNum);
+
+                    assert(fieldDsc->lvNormalizeOnLoad() || !varTypeIsSmall(fieldDsc));
+                    GenTree* bitcast = m_comp->gtNewOperNode(GT_BITCAST, genActualType(fieldType), m_src);
+                    m_src            = bitcast;
+                    m_asg->gtOp2     = bitcast;
+
+                    m_asg->ChangeType(fieldType);
+                    m_result = m_asg;
                 }
             }
         }
