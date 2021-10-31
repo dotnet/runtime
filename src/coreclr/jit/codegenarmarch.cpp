@@ -1630,6 +1630,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
         unsigned immWidth   = emitter::getBitWidth(size); // For ARM64, immWidth will be set to 32 or 64
         unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
 
+#ifdef TARGET_ARM64
         // Check if it's a sbfiz/ubfiz idiom (e.g. '(ulong)x << 2')
         if (tree->gtGetOp1()->OperIs(GT_CAST) && tree->gtGetOp1()->isContained())
         {
@@ -1640,6 +1641,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
                                           cast->CastOp()->GetRegNum(), (int)shiftByImm, 32);
         }
         else
+#endif
         {
             GetEmitter()->emitIns_R_R_I(ins, size, tree->GetRegNum(), operand->GetRegNum(), shiftByImm);
         }
