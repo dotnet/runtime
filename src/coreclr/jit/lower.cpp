@@ -5754,22 +5754,47 @@ void Lowering::LowerShift(GenTreeOp* shift)
     }
     ContainCheckShiftRotate(shift);
 
-// Check if we can fold e.g. '(ulong/long)x << 2' where x is int/uint to ubfiz/sbfiz
 #ifdef TARGET_ARM64
+    // Check if we can recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) pattern
     if (comp->opts.OptimizationEnabled() && shift->OperIs(GT_LSH) && shift->gtGetOp1()->OperIs(GT_CAST) &&
         shift->gtGetOp2()->IsCnsIntOrI() && !shift->isContained() && varTypeIsIntegral(shift))
     {
         GenTreeIntCon* cns  = shift->gtGetOp2()->AsIntCon();
         GenTreeCast*   cast = shift->gtGetOp1()->AsCast();
 
-        if (!cast->isContained() && !cast->IsRegOptional() && varTypeIsLong(shift) && !cast->CastOp()->isContained() &&
-            (varTypeToSigned(cast->CastFromType()) == TYP_INT) && (cns->IconValue() > 0) && (cns->IconValue() < 32) &&
-            !cast->gtOverflow() && varTypeIsIntegral(cast->CastOp()))
+        if (!cast->isContained() && !cast->IsRegOptional() && !cast->gtOverflow() &&
+            // CastOp can be a small int in case of CAST(IND(X))
+            !varTypeIsSmall(cast->CastOp()))
         {
-            // 1-31 constant should already be contained at this point
-            assert(cns->isContained());
-            JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS), marking CAST node as contained.");
-            MakeSrcContained(shift, cast);
+            // Cast can be either "TYP_LONG <- TYP_INT" or "TYP_INT <- %SMALL_INT% <- TYP_INT"
+            UINT32 treeSize = genTypeSize(cast);
+            UINT32 toSize   = genTypeSize(cast->CastToType());
+            UINT32 fromSize = genTypeSize(cast->CastFromType());
+
+            assert(varTypeIsIntegral(cast->CastToType())); // Just to make sure there are no surprises here
+            assert(!cast->CastOp()->isContained());
+
+            if (treeSize >= fromSize) // It has to be an upcast
+            {
+                if (toSize < fromSize)
+                {
+                    // Special case: "TYP_INT <- %SMALL_INT% <- TYP_INT"
+                    assert(varTypeIsSmall(cast->CastToType()) && (fromSize == 4));
+                    toSize = 4;
+                }
+                assert(toSize >= 4);
+
+                // LSH(TYP_LONG <- TYP_INT, CNS) => 1..31
+                // LSH(TYP_INT <- TYP_SHORT <- TYP_INT, CNS) => 1..15
+                // LSH(TYP_INT <- TYP_BYTE <- TYP_INT, CNS) => 1..7
+                if ((UINT32)cns->IconValue() < (toSize * 4))
+                {
+                    // cns is small and should already be contained at this point
+                    assert(cns->isContained());
+                    JITDUMP("Recognized ubfix/sbfix pattern in LSH(CAST, CNS), marking CAST node as contained.");
+                    MakeSrcContained(shift, cast);
+                }
+            }
         }
     }
 #endif

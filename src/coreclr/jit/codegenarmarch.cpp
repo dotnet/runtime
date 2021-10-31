@@ -1631,15 +1631,30 @@ void CodeGen::genCodeForShift(GenTree* tree)
         unsigned shiftByImm = (unsigned)shiftBy->AsIntCon()->gtIconVal & (immWidth - 1);
 
 #ifdef TARGET_ARM64
-        // Check if it's a sbfiz/ubfiz idiom (e.g. '(ulong)x << 2')
+        // Check if we can recognize ubfiz/sbfiz idiom in LSH(CAST(X), CNS) pattern
         if (tree->gtGetOp1()->OperIs(GT_CAST) && tree->gtGetOp1()->isContained())
         {
-            GenTreeCast* cast = tree->gtGetOp1()->AsCast();
-            assert((shiftByImm > 0) && (shiftByImm < 32));
-            assert(varTypeIsLong(tree) && (varTypeToSigned(cast->CastFromType()) == TYP_INT));
-            assert(!cast->gtOverflow());
+            assert(shiftBy->IsCnsIntOrI());
+            GenTreeCast* cast  = tree->gtGetOp1()->AsCast();
+            int          width = 0;
+            if (varTypeIsSmall(cast->CastToType()))
+            {
+                // TYP_INT <- %SMALL_INT% <- TYP_INT
+                // TYP_INT <- %SMALL_UINT% <- TYP_INT
+                width = (int)genTypeSize(cast->CastToType()) * 8;
+                assert((width == 16) || (width == 8));
+                assert((cast->CastFromType() == TYP_INT) && cast->TypeIs(TYP_INT));
+            }
+            else
+            {
+                // TYP_LONG <- TYP_INT
+                // TYP_LONG <- TYP_UINT <- TYP_INT
+                // TYP_LONG <- TYP_ULONG <- TYP_INT
+                width = 32; //(int)genTypeSize(cast->CastFromType()) * 8;
+                assert((cast->CastFromType() == TYP_INT) && cast->TypeIs(TYP_LONG));
+            }
             GetEmitter()->emitIns_R_R_I_I(cast->IsUnsigned() ? INS_ubfiz : INS_sbfiz, size, tree->GetRegNum(),
-                                          cast->CastOp()->GetRegNum(), (int)shiftByImm, 32);
+                                          cast->CastOp()->GetRegNum(), (int)shiftByImm, width);
         }
         else
 #endif
