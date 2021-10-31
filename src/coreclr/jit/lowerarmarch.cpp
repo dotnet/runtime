@@ -521,7 +521,7 @@ void Lowering::LowerCast(GenTree* tree)
             DISPTREE(tree)
 
             assert(genTypeSize(tree->CastToType()) > genTypeSize(dst2Type));
-            tree->ChangeOper(GT_AND, GenTree::PRESERVE_VN);
+            tree->ChangeOper(GT_AND);
             BlockRange().Remove(cast2);
             GenTreeIntCon* castMask = nullptr;
 
