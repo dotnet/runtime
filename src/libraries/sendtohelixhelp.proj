@@ -392,7 +392,7 @@
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(Scenario)' != 'BuildWasmApps'">
+    <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunSmokeTestsOnly)' != 'true' and '$(Scenario)' != 'BuildWasmApps'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" />
     </ItemGroup>

@@ -215,6 +215,14 @@ namespace Microsoft.Interop
             }
         }
 
+        /// <summary>
+        /// Generate the method body of the p/invoke stub.
+        /// </summary>
+        /// <param name="dllImportName">Name of the target DllImport function to invoke</param>
+        /// <returns>Method body of the p/invoke stub</returns>
+        /// <remarks>
+        /// The generated code assumes it will be in an unsafe context.
+        /// </remarks>
         public BlockSyntax GeneratePInvokeBody(string dllImportName)
         {
             bool invokeReturnsVoid = _retMarshaller.TypeInfo.ManagedType == SpecialTypeInfo.Void;
@@ -330,8 +338,7 @@ namespace Microsoft.Interop
             if (!_stubReturnsVoid)
                 allStatements.Add(ReturnStatement(IdentifierName(ReturnIdentifier)));
 
-            // Wrap all statements in an unsafe block
-            return Block(UnsafeStatement(Block(allStatements)));
+            return Block(allStatements);
 
             void GenerateStatementsForStage(Stage stage, List<StatementSyntax> statementsToUpdate)
             {

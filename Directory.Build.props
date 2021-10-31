@@ -122,7 +122,7 @@
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' == 'core'">$([System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(MSBuildRuntimeType)' != 'core'">win-$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLowerInvariant)</_parseDistroRid>
-    <_distroRidIndex>$(_parseDistroRid.LastIndexOfAny("-"))</_distroRidIndex>
+    <_distroRidIndex>$(_parseDistroRid.LastIndexOf('-'))</_distroRidIndex>
 
     <_runtimeOS>$(RuntimeOS)</_runtimeOS>
     <_runtimeOS Condition="'$(_runtimeOS)' == ''">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</_runtimeOS>

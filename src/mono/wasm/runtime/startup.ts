@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { INTERNAL, Module, runtimeHelpers } from "./modules";
-import { AssetEntry, CharPtr, CharPtrNull, Int32Ptr, MonoConfig, MonoString, MonoStringNull, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
+import { AssetEntry, CharPtr, CharPtrNull, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -10,82 +10,7 @@ import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
-import { conv_string } from "./strings";
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_blazor(exceptionMessage: Int32Ptr, callInfo: any, arg0: any, arg1: any, arg2: any): void | number {
-    try {
-        const blazorExports = (<any>globalThis).Blazor;
-        if (!blazorExports) {
-            throw new Error("The blazor.webassembly.js library is not loaded.");
-        }
-
-        return blazorExports._internal.invokeJSFromDotNet(callInfo, arg0, arg1, arg2);
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
-    }
-}
-
-// This is for back-compat only and will eventually be removed
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_marshalled(exceptionMessage: Int32Ptr, asyncHandleLongPtr: number, functionName: MonoString, argsJson: MonoString, treatResultAsVoid: boolean): MonoString {
-    try {
-        // Passing a .NET long into JS via Emscripten is tricky. The method here is to pass
-        // as pointer to the long, then combine two reads from the HEAPU32 array.
-        // Even though JS numbers can't represent the full range of a .NET long, it's OK
-        // because we'll never exceed Number.MAX_SAFE_INTEGER (2^53 - 1) in this case.
-        //var u32Index = $1 >> 2;
-        const u32Index = asyncHandleLongPtr >> 2;
-        const asyncHandleJsNumber = Module.HEAPU32[u32Index + 1] * 4294967296 + Module.HEAPU32[u32Index];
-
-        // var funcNameJsString = UTF8ToString (functionName);
-        // var argsJsonJsString = argsJson && UTF8ToString (argsJson);
-        const funcNameJsString = conv_string(functionName);
-        const argsJsonJsString = argsJson && conv_string(argsJson);
-
-        const dotNetExports = (<any>globalThis).DotNet;
-        if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
-        }
-
-        if (asyncHandleJsNumber) {
-            dotNetExports.jsCallDispatcher.beginInvokeJSFromDotNet(asyncHandleJsNumber, funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return MonoStringNull;
-        } else {
-            const resultJson = dotNetExports.jsCallDispatcher.invokeJSFromDotNet(funcNameJsString, argsJsonJsString, treatResultAsVoid);
-            return resultJson === null ? MonoStringNull : cwraps.mono_wasm_string_from_js(resultJson);
-        }
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return MonoStringNull;
-    }
-}
-
-// This is for back-compat only and will eventually be removed
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function mono_wasm_invoke_js_unmarshalled(exceptionMessage: Int32Ptr, funcName: MonoString, arg0: any, arg1: any, arg2: any): void | number {
-    try {
-        // Get the function you're trying to invoke
-        const funcNameJsString = conv_string(funcName);
-        const dotNetExports = (<any>globalThis).DotNet;
-        if (!dotNetExports) {
-            throw new Error("The Microsoft.JSInterop.js library is not loaded.");
-        }
-        const funcInstance = dotNetExports.jsCallDispatcher.findJSFunction(funcNameJsString);
-
-        return funcInstance.call(null, arg0, arg1, arg2);
-    } catch (ex: any) {
-        const exceptionJsString = ex.message + "\n" + ex.stack;
-        const exceptionSystemString = cwraps.mono_wasm_string_from_js(exceptionJsString);
-        Module.setValue(exceptionMessage, <any>exceptionSystemString, "i32"); // *exceptionMessage = exceptionSystemString;
-        return 0;
-    }
-}
+import { find_corlib_class } from "./class-loader";
 
 // Set environment variable NAME to VALUE
 // Should be called before mono_load_runtime_and_bcl () in most cases
@@ -242,34 +167,37 @@ function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Prom
     if (typeof (args.fetch_file_cb) === "function")
         return args.fetch_file_cb;
 
-    if (ENVIRONMENT_IS_NODE) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const fs = require("fs");
-        return function (asset) {
-            console.debug("MONO_WASM: Loading... " + asset);
-            const binary = fs.readFileSync(asset);
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const resolve_func2 = function (resolve: Function, reject: Function) {
-                resolve(new Uint8Array(binary));
-            };
-
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const resolve_func1 = function (resolve: Function, reject: Function) {
-                const response = {
-                    ok: true,
-                    url: asset,
-                    arrayBuffer: function () {
-                        return new Promise(resolve_func2);
-                    }
-                };
-                resolve(response);
-            };
-
-            return new Promise(resolve_func1);
-        };
-    } else if (typeof (fetch) === "function") {
+    if (typeof (fetch) === "function") {
         return function (asset) {
             return fetch(asset, { credentials: "same-origin" });
+        };
+    } else if (ENVIRONMENT_IS_NODE || typeof (read) === "function") {
+        return async function (asset) {
+            let data: any = null;
+            let err: any = null;
+            try {
+                if (ENVIRONMENT_IS_NODE) {
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const fs = require("fs");
+                    data = await fs.promises.readFile(asset);
+                }
+                else {
+                    data = read(asset, "binary");
+                }
+            }
+            catch (exc) {
+                data = null;
+                err = exc;
+            }
+            const res: any = {
+                ok: !!data,
+                url: asset,
+                arrayBuffer: async function () {
+                    if (err) throw err;
+                    return new Uint8Array(data);
+                }
+            };
+            return <Response>res;
         };
     } else {
         throw new Error("No fetch_file_cb was provided and this environment does not expose 'fetch'.");
@@ -347,12 +275,14 @@ export function bindings_lazy_init(): void {
     (<any>Float32Array.prototype)[wasm_type_symbol] = 17;
     (<any>Float64Array.prototype)[wasm_type_symbol] = 18;
 
-    runtimeHelpers._box_buffer = Module._malloc(16);
-    runtimeHelpers._unbox_buffer = Module._malloc(16);
-    runtimeHelpers._class_int32 = cwraps.mono_wasm_find_corlib_class("System", "Int32");
-    runtimeHelpers._class_uint32 = cwraps.mono_wasm_find_corlib_class("System", "UInt32");
-    runtimeHelpers._class_double = cwraps.mono_wasm_find_corlib_class("System", "Double");
-    runtimeHelpers._class_boolean = cwraps.mono_wasm_find_corlib_class("System", "Boolean");
+    runtimeHelpers._box_buffer_size = 65536;
+    runtimeHelpers._unbox_buffer_size = 65536;
+    runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
+    runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
+    runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
+    runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
+    runtimeHelpers._class_double = find_corlib_class("System", "Double");
+    runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
     runtimeHelpers.bind_runtime_method = bind_runtime_method;
 
     const bindingAssembly = INTERNAL.BINDING_ASM;
@@ -419,7 +349,7 @@ function _load_assets_and_runtime(args: MonoConfig) {
                 _finalize_startup(args, ctx);
             } catch (exc: any) {
                 console.error("Unhandled exception in _finalize_startup", exc);
-                console.log(exc.stack);
+                console.error(exc.stack);
                 throw exc;
             }
         }
@@ -590,15 +520,19 @@ export async function mono_wasm_load_config(configFilePath: string): Promise<voi
             const configRaw = await fetch(configFilePath);
             config = await configRaw.json();
         } else if (ENVIRONMENT_IS_NODE) {
-            config = require(configFilePath);
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const fs = require("fs");
+            const json = await fs.promises.readFile(configFilePath);
+            config = JSON.parse(json);
         } else { // shell or worker
-            config = JSON.parse(read(configFilePath)); // read is a v8 debugger command
+            const json = read(configFilePath);// read is a v8 debugger command
+            config = JSON.parse(json);
         }
         runtimeHelpers.config = config;
-    } catch (e) {
+    } catch (exc) {
         const errMessage = "failed to load config file " + configFilePath;
-        console.error(errMessage);
-        runtimeHelpers.config = { message: errMessage, error: e };
+        console.error(errMessage, exc);
+        runtimeHelpers.config = { message: errMessage, error: exc };
     } finally {
         Module.removeRunDependency(configFilePath);
     }
