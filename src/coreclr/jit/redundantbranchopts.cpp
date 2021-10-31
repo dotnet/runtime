@@ -902,14 +902,21 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
         // We can, if none of its lcls are killed.
         //
         definedLocals[definedLocalsCount++] = prevTreeLcl;
+        bool interferes                     = false;
 
         for (unsigned int i = 0; i < definedLocalsCount; i++)
         {
             if (gtHasRef(prevTreeRHS, definedLocals[i], /*def only*/ false))
             {
                 JITDUMP(" -- prev tree ref to V%02u interferes\n", definedLocals[i]);
+                interferes = true;
                 break;
             }
+        }
+
+        if (interferes)
+        {
+            break;
         }
 
         // Heuristic: only forward sub a relop
