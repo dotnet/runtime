@@ -514,7 +514,7 @@
 #cmakedefine GLIBC_BEFORE_2_3_4_SCHED_SETAFFINITY 1
 
 /* GLIBC has CPU_COUNT macro in sched.h */
-#cmakedefine GLIBC_HAS_CPU_COUNT 1
+#cmakedefine HAVE_GNU_CPU_COUNT
 
 /* Have large file support */
 #cmakedefine HAVE_LARGE_FILE_SUPPORT 1
