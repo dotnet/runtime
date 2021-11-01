@@ -115,9 +115,6 @@ runtimeconfig_json_read_props (const char *ptr, const char **endp, int nprops, g
 
 static MonoLoadFunc load_function = NULL;
 
-/* Lazy class loading functions */
-static GENERATE_GET_CLASS_WITH_CACHE (app_context, "System", "AppContext");
-
 MonoClass*
 mono_class_get_appdomain_class (void)
 {
@@ -676,29 +673,8 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, const M
 	return result;
 }
 
-static char *
-get_app_context_base_directory (MonoError *error)
-{
-	MONO_STATIC_POINTER_INIT (MonoMethod, get_basedir)
-
-		ERROR_DECL (local_error);
-		MonoClass *app_context = mono_class_get_app_context_class ();
-		g_assert (app_context);
-		get_basedir = mono_class_get_method_from_name_checked (app_context, "get_BaseDirectory", -1, 0, local_error);
-		mono_error_assert_ok (local_error);
-
-	MONO_STATIC_POINTER_INIT_END (MonoMethod, get_basedir)
-
-	HANDLE_FUNCTION_ENTER ();
-
-	MonoStringHandle result = MONO_HANDLE_CAST (MonoString, mono_runtime_try_invoke_handle (get_basedir, NULL_HANDLE, NULL, error));
-	char *base_dir = mono_string_handle_to_utf8 (result, error);
-
-	HANDLE_FUNCTION_RETURN_VAL (base_dir);
-}
-
 /*
- * Try loading the assembly from ApplicationBase and PrivateBinPath 
+ * Try loading the assembly from PrivateBinPath 
  * and then from assemblies_path if any.
  * LOCKING: This is called from the assembly loading code, which means the caller
  * might hold the loader lock. Thus, this function must not acquire the domain lock.
@@ -724,19 +700,6 @@ mono_domain_assembly_preload (MonoAssemblyLoadContext *alc,
 	mono_assembly_request_prepare_open (&req, alc);
 	req.request.predicate = predicate;
 	req.request.predicate_ud = predicate_ud;
-
-	if (!mono_runtime_get_no_exec ()) {
-		char *search_path [2];
-		search_path [1] = NULL;
-
-		char *base_dir = get_app_context_base_directory (error);
-		search_path [0] = base_dir;
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "ApplicationBase is %s", base_dir);
-
-		result = real_load (search_path, aname->culture, aname->name, &req);
-
-		g_free (base_dir);
-	}
 
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
 		result = real_load (assemblies_path, aname->culture, aname->name, &req);
