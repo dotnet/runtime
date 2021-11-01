@@ -23,9 +23,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[ExpectedInstructionSequence (new[] {
 			"nop",
 			"ldarg.0",
-			"isinst",
+			"isinst System.Type",
 			"brtrue.s il_19",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::get_IsDynamicCodeSupported()",
 			"pop",
 			"ldarg.0",
 			"pop",
@@ -38,9 +38,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"stloc.0",
 			"ldloc.0",
 			"brfalse.s il_24",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::Reached_1()",
 			"nop",
-			"ret"
+			"ret",
 			})]
 #endif
 		static void Test_1 (object type)
@@ -55,7 +55,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 #else
 		[ExpectedInstructionSequence (new[] {
 			"nop",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ComplexConditions::get_IsDynamicCodeSupported()",
 			"stloc.1",
 			"ldloc.1",
 			"pop",
@@ -72,10 +72,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"stloc.2",
 			"ldloc.2",
 			"brfalse.s il_20",
-			"newobj",
+			"newobj System.Void System.ArgumentException::.ctor()",
 			"throw",
-			"newobj",
-			"throw"
+			"newobj System.Void System.ApplicationException::.ctor()",
+			"throw",
 			})]
 #endif
 		static void Test_2 (int a)

@@ -43,8 +43,8 @@ namespace Mono.Linker
 		readonly List<MemoryMappedViewStream> _viewStreams = new ();
 		readonly ReaderParameters _defaultReaderParameters;
 
-		HashSet<string> _unresolvedAssemblies;
-		HashSet<string> _reportedUnresolvedAssemblies;
+		HashSet<string>? _unresolvedAssemblies;
+		HashSet<string>? _reportedUnresolvedAssemblies;
 
 		public AssemblyResolver (LinkContext context)
 		{
@@ -58,13 +58,13 @@ namespace Mono.Linker
 
 		public string GetAssemblyLocation (AssemblyDefinition assembly)
 		{
-			if (_assemblyToPath.TryGetValue (assembly, out string path))
+			if (_assemblyToPath.TryGetValue (assembly, out string? path))
 				return path;
 
 			throw new InternalErrorException ($"Assembly '{assembly}' was not loaded using linker resolver");
 		}
 
-		AssemblyDefinition ResolveFromReferences (AssemblyNameReference name)
+		AssemblyDefinition? ResolveFromReferences (AssemblyNameReference name)
 		{
 			foreach (var reference in _references) {
 				foreach (var extension in Extensions) {
@@ -82,9 +82,9 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public AssemblyDefinition Resolve (AssemblyNameReference name, bool probing)
+		public AssemblyDefinition? Resolve (AssemblyNameReference name, bool probing)
 		{
-			if (AssemblyCache.TryGetValue (name.Name, out AssemblyDefinition asm))
+			if (AssemblyCache.TryGetValue (name.Name, out AssemblyDefinition? asm))
 				return asm;
 
 			if (_unresolvedAssemblies?.Contains (name.Name) == true) {
@@ -135,7 +135,7 @@ namespace Mono.Linker
 
 		public AssemblyDefinition GetAssembly (string file)
 		{
-			MemoryMappedViewStream viewStream = null;
+			MemoryMappedViewStream? viewStream = null;
 			try {
 				// Create stream because CreateFromFile(string, ...) uses FileShare.None which is too strict
 				using var fileStream = new FileStream (file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, false);
@@ -159,7 +159,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public AssemblyDefinition Resolve (AssemblyNameReference name)
+		public AssemblyDefinition? Resolve (AssemblyNameReference name)
 		{
 			return Resolve (name, probing: false);
 		}
@@ -172,7 +172,7 @@ namespace Mono.Linker
 
 		static readonly string[] Extensions = new[] { ".dll", ".exe" };
 
-		AssemblyDefinition SearchDirectory (AssemblyNameReference name)
+		AssemblyDefinition? SearchDirectory (AssemblyNameReference name)
 		{
 			foreach (var directory in _directories) {
 				foreach (var extension in Extensions) {

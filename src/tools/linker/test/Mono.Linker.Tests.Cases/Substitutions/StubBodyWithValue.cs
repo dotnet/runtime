@@ -25,7 +25,7 @@ namespace Mono.Linker.Tests.Cases.Substitutions
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-				"ldstr",
+				"ldstr 'abcd'",
 				"ret",
 			})]
 		static string TestMethod_1 ()

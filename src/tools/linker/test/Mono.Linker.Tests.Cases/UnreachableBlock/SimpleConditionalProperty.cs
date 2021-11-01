@@ -27,10 +27,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
 			"ldc.i4.3",
 			"beq.s il_8",
-			"ret"
+			"ret",
 			})]
 		static void TestProperty_int_1 ()
 		{
@@ -41,7 +41,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"ldc.i4.3",
-			"call",
+			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
 			"beq.s il_8",
 			"ret"
 			})]
@@ -56,7 +56,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
 			"ldc.i4.5",
 			"ble.s il_8",
 			"ldc.i4.0",
@@ -73,10 +73,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_Prop()",
 			"pop",
 			"ldloca.s",
-			"initobj",
+			"initobj System.Nullable`1<System.Int64>",
 			"ldloc.0",
 			"ret"
 			})]
@@ -90,7 +90,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
 			"brfalse.s il_7",
 			"ret"
 			})]
@@ -105,7 +105,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
 			"brfalse.s il_7",
 			"ret"
 			})]
@@ -118,8 +118,8 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropBool()",
 			"beq.s il_c",
 			"ret"
 			})]
@@ -133,9 +133,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"br.s il_2",
-			"call",
+			"call Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty/TestEnum Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropEnum()",
 			"pop",
-			"ret"
+			"ret",
 			})]
 		static void TestProperty_enum_1 ()
 		{
@@ -146,7 +146,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.String Mono.Linker.Tests.Cases.UnreachableBlock.SimpleConditionalProperty::get_PropNull()",
 			"brfalse.s il_7",
 			"ret"
 			})]

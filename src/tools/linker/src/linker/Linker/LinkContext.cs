@@ -26,8 +26,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#nullable enable
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -267,27 +265,27 @@ namespace Mono.Linker
 
 			string asmname = fullName.Substring (pos + 1);
 			fullName = fullName.Substring (0, pos);
-			AssemblyDefinition assembly = Resolve (AssemblyNameReference.Parse (asmname));
-			return assembly.MainModule.GetType (fullName);
+			AssemblyDefinition? assembly = Resolve (AssemblyNameReference.Parse (asmname));
+			return assembly?.MainModule.GetType (fullName);
 		}
 
-		public AssemblyDefinition TryResolve (string name)
+		public AssemblyDefinition? TryResolve (string name)
 		{
 			return TryResolve (new AssemblyNameReference (name, new Version ()));
 		}
 
-		public AssemblyDefinition TryResolve (AssemblyNameReference name)
+		public AssemblyDefinition? TryResolve (AssemblyNameReference name)
 		{
 			return _resolver.Resolve (name, probing: true);
 		}
 
-		public AssemblyDefinition Resolve (IMetadataScope scope)
+		public AssemblyDefinition? Resolve (IMetadataScope scope)
 		{
 			AssemblyNameReference reference = GetReference (scope);
 			return _resolver.Resolve (reference);
 		}
 
-		public AssemblyDefinition Resolve (AssemblyNameReference name)
+		public AssemblyDefinition? Resolve (AssemblyNameReference name)
 		{
 			return _resolver.Resolve (name);
 		}
@@ -340,7 +338,7 @@ namespace Mono.Linker
 				return references;
 
 			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences) {
-				AssemblyDefinition definition = Resolve (reference);
+				AssemblyDefinition? definition = Resolve (reference);
 				if (definition != null)
 					references.Add (definition);
 			}
@@ -526,8 +524,8 @@ namespace Mono.Linker
 
 			if (WarningSuppressionWriter != null &&
 				message.IsWarningMessage (out int? code) &&
-				message.Origin?.Provider != null)
-				WarningSuppressionWriter.AddWarning (code.Value, message.Origin?.Provider);
+				message.Origin?.Provider is Mono.Cecil.ICustomAttributeProvider provider)
+				WarningSuppressionWriter.AddWarning (code.Value, provider);
 
 			if (message.Category == MessageCategory.Error || message.Category == MessageCategory.WarningAsError)
 				ErrorsCount++;
@@ -665,7 +663,7 @@ namespace Mono.Linker
 			if (_targetRuntime != null)
 				return _targetRuntime.Value;
 
-			TypeDefinition objectType = BCL.FindPredefinedType ("System", "Object", this);
+			TypeDefinition? objectType = BCL.FindPredefinedType ("System", "Object", this);
 			_targetRuntime = objectType?.Module.Assembly.Name.Version.Major ?? -1;
 
 			return _targetRuntime.Value;
@@ -805,7 +803,9 @@ namespace Mono.Linker
 		public TypeDefinition? TryResolve (AssemblyDefinition assembly, string typeNameString)
 		{
 			// It could be cached if it shows up on fast path
-			return TryResolve (_typeNameResolver.ResolveTypeName (assembly, typeNameString));
+			return _typeNameResolver.TryResolveTypeName (assembly, typeNameString, out TypeReference? typeReference)
+				? TryResolve (typeReference)
+				: null;
 		}
 
 		readonly HashSet<MemberReference> unresolved_reported = new ();

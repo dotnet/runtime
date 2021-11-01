@@ -17,7 +17,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestGetterOnly ();
 			TestBindingFlags ();
 			TestUnknownBindingFlags (BindingFlags.Public);
-			TestUnknownBindingFlagsAndName (BindingFlags.Public, "IrrelevantName");
 			TestNullName ();
 			TestEmptyName ();
 			TestNonExistingName ();
@@ -28,7 +27,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestPropertyInBaseType ();
 			TestIgnoreCaseBindingFlags ();
 			TestFailIgnoreCaseBindingFlags ();
-			TestIgnorableBindingFlags ();
 			TestUnsupportedBindingFlags ();
 		}
 
@@ -88,17 +86,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			// Since the binding flags are not known linker should mark all properties on the type
 			var property = typeof (UnknownBindingFlags).GetProperty ("SomeProperty", bindingFlags);
-			property.GetValue (null, new object[] { });
-		}
-
-		[Kept]
-		[RecognizedReflectionAccessPattern (
-			typeof (Type), nameof (Type.GetProperty), new Type[] { typeof (string), typeof (BindingFlags) },
-			typeof (UnknownBindingFlagsAndName), nameof (UnknownBindingFlagsAndName.SomeProperty), (Type[]) null)]
-		static void TestUnknownBindingFlagsAndName (BindingFlags bindingFlags, string name)
-		{
-			// Since the binding flags and name are not known linker should mark all properties on the type
-			var property = typeof (UnknownBindingFlagsAndName).GetProperty (name, bindingFlags);
 			property.GetValue (null, new object[] { });
 		}
 
@@ -207,15 +194,9 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		static void TestIgnorableBindingFlags ()
-		{
-			var property = typeof (ExactBindingBindingFlagsClass).GetProperty ("SetterOnly", BindingFlags.Public | BindingFlags.ExactBinding);
-		}
-
-		[Kept]
 		static void TestUnsupportedBindingFlags ()
 		{
-			var property = typeof (ChangeTypeBindingFlagsClass).GetProperty ("SetterOnly", BindingFlags.Public | BindingFlags.SuppressChangeType);
+			var property = typeof (ExactBindingBindingFlagsClass).GetProperty ("SetterOnly", BindingFlags.ExactBinding);
 		}
 
 		[Kept]
@@ -333,18 +314,6 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		}
 
 		[Kept]
-		class UnknownBindingFlagsAndName
-		{
-			[Kept]
-			internal static int SomeProperty {
-				[Kept]
-				private get { return _field; }
-				[Kept]
-				set { _field = value; }
-			}
-		}
-
-		[Kept]
 		class IgnoreCaseBindingFlagsClass
 		{
 			[Kept]
@@ -377,22 +346,8 @@ namespace Mono.Linker.Tests.Cases.Reflection
 				set { _field = value; }
 			}
 
-			public static int Unmarked {
-				get { return _field; }
-			}
-		}
-
-		[Kept]
-		class ChangeTypeBindingFlagsClass
-		{
 			[Kept]
-			public static int SetterOnly {
-				[Kept]
-				set { _field = value; }
-			}
-
-			[Kept]
-			public static int Marked {
+			public static int MarkedDueToExactBinding {
 				[Kept]
 				get { return _field; }
 			}

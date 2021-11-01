@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 			"ldnull",
 			"ldnull",
 			"cgt.un",
-			"call",
+			"call System.Void System.Console::WriteLine(System.Boolean)",
 			"ret"
 		})]
 		static void TestTypeCheckRemoved_1 (object o)
@@ -42,12 +42,12 @@ namespace Mono.Linker.Tests.Cases.Advanced
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			"ldarg.0",
-			"box",
+			"box T",
 			"pop",
 			"ldnull",
 			"ldnull",
 			"cgt.un",
-			"call",
+			"call System.Void System.Console::WriteLine(System.Boolean)",
 			"ret"
 		})]
 		static void TestTypeCheckRemoved_2<T> (T o)
@@ -81,7 +81,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 			"ldnull",
 			"brfalse.s il_6",
 			"ret",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.Advanced.TypeCheckRemoval/T6::Call()",
 			"ret"
 		})]
 		static void TestTypeCheckRemoved_4 (object o1)
@@ -115,7 +115,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 			"pop",
 			"ldnull",
 			"br.s il_f",
-			"ldfld",
+			"ldfld System.Object Mono.Linker.Tests.Cases.Advanced.TypeCheckRemoval/T8::Instance",
 			"pop",
 			"ldnull",
 			"brfalse.s il_15",
@@ -261,7 +261,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 				"pop",
 				"ldc.i4.0",
 				"br.s il_1a",
-				"ldfld",
+				"ldfld System.Int32 Mono.Linker.Tests.Cases.Advanced.TypeCheckRemoval/TypeCheckRemovalInExceptionFilter/TypeToCheckException::Value",
 				"ldc.i4.0",
 				"ceq",
 				"ldc.i4.0",
@@ -285,7 +285,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 			[Kept]
 			[ExpectedInstructionSequence (new string[] {
 				".try",
-				"newobj",
+				"newobj System.Void System.Object::.ctor()",
 				"pop",
 				"leave.s il_3a",
 				".endtry",
@@ -297,7 +297,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 				"pop",
 				"ldc.i4.0",
 				"br.s il_1c",
-				"ldfld",
+				"ldfld System.Int32 Mono.Linker.Tests.Cases.Advanced.TypeCheckRemoval/TypeCheckRemovalInExceptionFilter/TypeToCheckException::Value",
 				"ldc.i4.0",
 				"ceq",
 				"ldc.i4.0",
@@ -315,7 +315,7 @@ namespace Mono.Linker.Tests.Cases.Advanced
 				"pop",
 				"ldc.i4.0",
 				"br.s il_35",
-				"ldfld",
+				"ldfld System.Int32 Mono.Linker.Tests.Cases.Advanced.TypeCheckRemoval/TypeCheckRemovalInExceptionFilter/TypeToCheckException::Value",
 				"ldc.i4.1",
 				"ceq",
 				"ldc.i4.0",

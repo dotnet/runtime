@@ -17,14 +17,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::get_Prop()",
 			"brfalse.s il_7",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Reached_1()",
 			"leave.s il_1c",
 			".endtry",
 			".filter",
 			"pop",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Log()",
 			"ldc.i4.0",
 			"cgt.un",
 			"endfilter",
@@ -51,12 +51,12 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call",
+			"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Reached_2()",
 			"leave.s il_18",
 			".endtry",
 			".filter",
 			"pop",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.TryFilterBlocks::Log()",
 			"brfalse.s il_f",
 			"ldc.i4.0",
 			"ldc.i4.0",

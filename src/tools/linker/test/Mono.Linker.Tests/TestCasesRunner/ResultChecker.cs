@@ -679,7 +679,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				bool foundReflectionAccessPatternAttributesToVerify = false;
 				foreach (var attr in attrProvider.CustomAttributes) {
 					if (!IsProducedByLinker (attr))
-						break;
+						continue;
 
 					switch (attr.AttributeType.Name) {
 

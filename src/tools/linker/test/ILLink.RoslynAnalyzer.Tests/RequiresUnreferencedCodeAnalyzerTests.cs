@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -796,7 +795,7 @@ class AnotherImplementation : IRAF
 	}
 }
 ";
-			var compilation = (await CSharpAnalyzerVerifier<RequiresUnreferencedCodeAnalyzer>.GetCompilation (references)).EmitToImageReference ();
+			var compilation = (await TestCaseCompilation.GetCompilation (references)).EmitToImageReference ();
 
 			await VerifyRequiresUnreferencedCodeAnalyzer (src, additionalReferences: new[] { compilation },
 				// (4,14): warning IL2046: Interface member 'IRAF.Method()' with 'RequiresUnreferencedCodeAttribute' has an implementation member 'Implementation.Method()' without 'RequiresUnreferencedCodeAttribute'. Attributes must match across all interface implementations or overrides.
@@ -848,7 +847,7 @@ class AnotherImplementation : IRAF
 	}
 }
 ";
-			var compilation = (await CSharpAnalyzerVerifier<RequiresUnreferencedCodeAnalyzer>.GetCompilation (references)).EmitToImageReference ();
+			var compilation = (await TestCaseCompilation.GetCompilation (references)).EmitToImageReference ();
 
 			await VerifyRequiresUnreferencedCodeAnalyzer (src, additionalReferences: new[] { compilation },
 				// (7,14): warning IL2046: Member 'Implementation.Method()' with 'RequiresUnreferencedCodeAttribute' implements interface member 'IRAF.Method()' without 'RequiresUnreferencedCodeAttribute'. Attributes must match across all interface implementations or overrides.

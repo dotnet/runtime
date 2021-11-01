@@ -19,7 +19,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call",
+				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInConstantProperty::get_Prop()",
 				"ldc.i4.3",
 				"beq.s il_8",
 				"ret"
@@ -51,9 +51,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call",
+				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInRemovedBranch::get_Prop()",
 				"pop",
-				"call",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInRemovedBranch::Reached()",
 				"ret",
 			})]
 			public static void Test ()
@@ -80,14 +80,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		{
 			[Kept]
 			[ExpectedInstructionSequence (new[] {
-				"call",
+				"call System.Int32 Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInKeptBranchBeforeRemovedBranch::get_Prop()",
 				"pop",
 				".try",
-				"call",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInKeptBranchBeforeRemovedBranch::Reached()",
 				"leave.s il_13",
 				".endtry",
 				".catch",
-				"call",
+				"call System.Void Mono.Linker.Tests.Cases.UnreachableBlock.TryFinallyBlocks/TryFinallyInKeptBranchBeforeRemovedBranch::Reached_2()",
 				"endfinally",
 				".endcatch",
 				"ret",
