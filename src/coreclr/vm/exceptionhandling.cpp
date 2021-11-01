@@ -4381,6 +4381,9 @@ VOID UnwindManagedExceptionPass2(PAL_SEHException& ex, CONTEXT* unwindStartConte
     EECodeInfo codeInfo;
     UINT_PTR establisherFrame = NULL;
     PVOID handlerData;
+    
+    // Let ASAN that we aren't going to return so it can do some cleanup
+    __asan_handle_no_return();
 
     // Indicate that we are performing second pass.
     ex.GetExceptionRecord()->ExceptionFlags = EXCEPTION_UNWINDING;
@@ -4543,6 +4546,9 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 #ifdef FEATURE_HIJACK
     GetThread()->UnhijackThread();
 #endif
+
+    // Let ASAN that we aren't going to return so it can do some cleanup
+    __asan_handle_no_return();
 
     controlPc = GetIP(frameContext);
     unwindStartContext = *frameContext;
@@ -4753,6 +4759,8 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
 
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException)
 {
+    // Let ASAN that we aren't going to return so it can do some cleanup
+    __asan_handle_no_return();
     do
     {
         try

@@ -2671,6 +2671,9 @@ HRESULT GetHRFromThrowable(OBJECTREF throwable)
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL rethrow, BOOL fForStackOverflow)
 {
+    // Let ASAN that we aren't going to return so it can do some cleanup
+    __asan_handle_no_return();
+
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;

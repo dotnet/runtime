@@ -197,6 +197,12 @@ typedef LPSTR   LPUTF8;
 #    define DISABLE_ASAN
 #endif
 
+#if defined(HAS_ADDRESS_SANITIZER)
+extern "C" void __asan_handle_no_return();
+#else
+#define __asan_handle_no_return()
+#endif
+
 //=--------------------------------------------------------------------------=
 // Prefast helpers.
 //
