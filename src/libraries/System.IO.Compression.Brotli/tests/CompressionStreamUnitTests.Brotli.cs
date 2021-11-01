@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
@@ -28,6 +29,14 @@ namespace System.IO.Compression
         [Fact]
         [OuterLoop("Test takes ~6 seconds to run")]
         public override void FlushAsync_DuringWriteAsync() { base.FlushAsync_DuringWriteAsync(); }
+
+        [Theory]
+        [InlineData((CompressionLevel)(-1))]
+        [InlineData((CompressionLevel)4)]
+        public void Ctor_ArgumentValidation_InvalidCompressionLevel(CompressionLevel compressionLevel)
+        {
+            Assert.Throws<ArgumentException>(() => new BrotliStream(new MemoryStream(), compressionLevel));
+        }
 
         [Fact]
         public void InvalidQuality()
