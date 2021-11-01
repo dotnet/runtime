@@ -582,10 +582,10 @@ typedef struct {
  * m_class_has_special_jit_flags() and mono_class_get_special_jit_flags()
  */
 enum MonoSpecialJitClassFlags {
-	/* The MONO_CEE_NEWONJ opcode should avoid initializing the class at JIT time; delegate
-	 * class initialization and instance creation to an icall at runtime.
+	/* The MONO_CEE_NEWOBJ and MONO_CEE_CALL opcodes should avoid initializing the class at JIT time; delegate
+	 * class initialization until the first instance is created, by using an icall for instance construction.
 	 */
-	MONO_SPECIAL_JIT_USE_ICALL_NEWOBJ = 0x01,
+	MONO_SPECIAL_JIT_DEFER_CLASS_INIT_TO_CTOR = 0x01,
 };
 
 MONO_COMPONENT_API void

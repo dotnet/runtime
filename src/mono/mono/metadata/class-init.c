@@ -417,7 +417,7 @@ struct MonoSpecialJitHandlingClass {
  * FIXME: use the MVID or an assembly version range, too?
  */
 static struct MonoSpecialJitHandlingClass special_jit_handling_classes[] = {
-	{ "xunit.console.dll", "Xunit.ConsoleClient", "ConsoleRunner", MONO_SPECIAL_JIT_USE_ICALL_NEWOBJ },
+	{ "xunit.console.dll", "Xunit.ConsoleClient", "ConsoleRunner", MONO_SPECIAL_JIT_DEFER_CLASS_INIT_TO_CTOR },
 };
 
 static guint32
