@@ -2841,7 +2841,6 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
 
 void Compiler::fgDebugCheckFlags(GenTree* tree)
 {
-    const genTreeOps oper      = tree->OperGet();
     const unsigned   kind      = tree->OperKind();
     GenTreeFlags     treeFlags = tree->gtFlags & GTF_ALL_EFFECT;
     GenTreeFlags     chkFlags  = GTF_EMPTY;
@@ -2860,7 +2859,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
     if (kind & GTK_LEAF)
     {
-        switch (oper)
+        switch (tree->OperGet())
         {
             case GT_CLS_VAR:
                 chkFlags |= GTF_GLOB_REF;
@@ -2917,7 +2916,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             assert(tree->gtType == TYP_VOID || tree->gtOper == GT_COMMA);
         }
 
-        switch (oper)
+        switch (tree->OperGet())
         {
             case GT_QMARK:
                 if (op1->OperIsCompare())
@@ -2970,6 +2969,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                     unsigned handleKind = (op1->gtFlags & GTF_ICON_HDL_MASK);
                     if (handleKind != 0)
                     {
+                        const GenTreeFlags indAddFlags = (GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+                        treeFlags |= (tree->gtFlags & indAddFlags);
+
                         // Is the GTF_IND_INVARIANT flag set or unset?
                         //
                         bool invariantFlag = (tree->gtFlags & GTF_IND_INVARIANT) != 0;
@@ -2982,12 +2984,13 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         // Is the GTF_IND_NONFAULTING flag set or unset?
                         //
                         bool nonFaultingFlag = (tree->gtFlags & GTF_IND_NONFAULTING) != 0;
+                        assert(nonFaultingFlag); // We currently expect all handle kinds to be nonFaulting
+
                         if (nonFaultingFlag)
                         {
                             // Record the state of the GTF_IND_NONFAULTING flags into 'chkFlags'
                             chkFlags |= GTF_IND_NONFAULTING;
                         }
-                        assert(nonFaultingFlag); // Currently this should always be set for all handle kinds
 
                         // Some of these aren't handles to invariant data...
                         //
@@ -3014,10 +3017,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                             //
                             chkFlags |= GTF_IND_INVARIANT;
                         }
-
-                        // We currently expect all handle kinds to be nonFaulting
-                        //
-                        chkFlags |= GTF_IND_NONFAULTING;
 
                         // Matrix for GTF_IND_INVARIANT (treeFlags and chkFlags)
                         //
@@ -3076,7 +3075,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
             /* For a GT_ASG(GT_IND(x), y) we are interested in the side effects of x */
             GenTree* op1p;
-            if ((oper == GT_ASG) && (op1->gtOper == GT_IND))
+            if (tree->OperIs(GT_ASG) && op1->OperIs(GT_IND))
             {
                 op1p = op1->AsOp()->gtOp1;
             }
@@ -3102,12 +3101,14 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             chkFlags |= GTF_ASG;
         }
 
-        if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
-                                (op1->gtOper == GT_IND && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
+        if (tree->OperIs(GT_ADDR) && (op1->OperIs(GT_LCL_VAR, GT_CLS_VAR) ||
+                                (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->gtOper == GT_CLS_VAR_ADDR)))
         {
-            /* &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does.
-               Similarly for clsVar */
-            chkFlags |= GTF_GLOB_REF;
+            // TODO-Cleanup: This is a hack, because `GTF_GLOB_REF` description says:
+            // `sub-expression uses global variable(s)`, so if a child has it set its parent
+            // must have it set as well. However, we clear it from the parent in cases 
+            // ADDR(LCL_VAR or CLS_VAR).
+            chkFlags &= ~GTF_GLOB_REF;
         }
     }
 

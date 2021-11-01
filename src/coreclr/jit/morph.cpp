@@ -11703,9 +11703,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         /* Propagate the new flags */
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
-        // &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does
-        // Similarly for clsVar
-        if (oper == GT_ADDR && (op1->gtOper == GT_LCL_VAR || op1->gtOper == GT_CLS_VAR))
+        // TODO-Cleanup: This is a hack, because `GTF_GLOB_REF` description says:
+        // `sub-expression uses global variable(s)`, so if a child has it set its parent
+        // must have it set as well. However, we clear it from the parent in cases 
+        // ADDR(LCL_VAR or CLS_VAR).
+        if (oper == GT_ADDR && (op1->OperIs(GT_LCL_VAR, GT_CLS_VAR) ||
+            (op1->OperIs(GT_IND) && op1->AsOp()->gtOp1->OperIs(GT_CLS_VAR_ADDR))))
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }

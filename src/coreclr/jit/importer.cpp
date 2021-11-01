@@ -8169,7 +8169,8 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
     if (pFieldInfo->fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP)
     {
-        op1 = gtNewOperNode(GT_IND, TYP_REF, op1);
+        op1 = gtNewIndir(TYP_REF, op1);
+        op1->gtFlags |= GTF_GLOB_REF;
 
         FieldSeqNode* fldSeq = GetFieldSeqStore()->CreateSingleton(FieldSeqStore::FirstElemPseudoField);
 
@@ -14238,35 +14239,33 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                               (varTypeIsFloating(op2->gtType) && varTypeIsFloating(lclTyp)));
                 }
 #endif
-
-                op1 = gtNewOperNode(GT_IND, lclTyp, op1);
-
-                // stind could point anywhere, example a boxed class static int
-                op1->gtFlags |= GTF_IND_TGTANYWHERE;
-
-                if (prefixFlags & PREFIX_VOLATILE)
                 {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_DONT_CSE;      // Can't CSE a volatile
-                    op1->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
-                    op1->gtFlags |= GTF_IND_VOLATILE;
+                    GenTreeIndir* ind = gtNewIndir(lclTyp, op1);
+
+                    // stind could point anywhere, example a boxed class static int
+                    ind->gtFlags |= GTF_IND_TGTANYWHERE;
+                    ind->gtFlags |= GTF_GLOB_REF;
+
+                    if (prefixFlags & PREFIX_VOLATILE)
+                    {
+                        ind->gtFlags |= GTF_DONT_CSE;      // Can't CSE a volatile
+                        ind->gtFlags |= GTF_ORDER_SIDEEFF; // Prevent this from being reordered
+                        ind->gtFlags |= GTF_IND_VOLATILE;
+                    }
+
+                    if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
+                    {
+                        ind->gtFlags |= GTF_IND_UNALIGNED;
+                    }
+
+                    op1 = gtNewAssignNode(ind, op2);
+
+                    // Spill side-effects AND global-data-accesses
+                    if (verCurrentState.esStackDepth > 0)
+                    {
+                        impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STIND"));
+                    }
                 }
-
-                if ((prefixFlags & PREFIX_UNALIGNED) && !varTypeIsByte(lclTyp))
-                {
-                    assert(op1->OperGet() == GT_IND);
-                    op1->gtFlags |= GTF_IND_UNALIGNED;
-                }
-
-                op1 = gtNewAssignNode(op1, op2);
-                op1->gtFlags |= GTF_EXCEPT | GTF_GLOB_REF;
-
-                // Spill side-effects AND global-data-accesses
-                if (verCurrentState.esStackDepth > 0)
-                {
-                    impSpillSideEffects(true, (unsigned)CHECK_SPILL_ALL DEBUGARG("spill side effects before STIND"));
-                }
-
                 goto APPEND;
 
             case CEE_LDIND_I1:
