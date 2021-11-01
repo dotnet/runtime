@@ -615,7 +615,7 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithNestedElementAccess() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateExpressionsWithElementAccessNested() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
