@@ -632,6 +632,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			}
 
 			[ExpectedWarning ("IL2026")]
+			// TODO: Analyzer should suppress warnings when caller is anotated with RUC
+			// https://github.com/dotnet/linker/issues/2349
+			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Analyzer)]
 			static void TestSuppressionLocalFunction ()
 			{
 				LocalFunction (); // This will produce a warning since the location function has Requires on it
@@ -747,8 +750,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				Action _ = () => MethodWithRequires ();
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
-			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2067", CompilerGeneratedCode = true)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestCallWithReflectionAnalysisWarning ()
 			{
@@ -797,16 +799,17 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				};
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
+			// TODO: Fix the discrepancy between linker and analyzer
+			// https://github.com/dotnet/linker/issues/2350
 			[ExpectedWarning ("IL2077", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2067", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static async void TestMethodParameterWithRequirements (Type unknownType = null)
 			{
 				Action _ = () => unknownType.RequiresNonPublicMethods ();
 			}
 
-			// The warning is currently not detected by roslyn analyzer since it doesn't analyze DAM yet
-			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true, ProducedBy = ProducedBy.Trimmer)]
+			[ExpectedWarning ("IL2091", CompilerGeneratedCode = true)]
 			[RequiresUnreferencedCode ("Suppress in body")]
 			static void TestGenericMethodParameterRequirement<TUnknown> ()
 			{
