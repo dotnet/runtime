@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { INTERNAL, Module, runtimeHelpers } from "./modules";
+import { INTERNAL, Module, MONO, runtimeHelpers } from "./modules";
 import { AssetEntry, CharPtr, CharPtrNull, MonoConfig, TypedArray, VoidPtr, wasm_type_symbol } from "./types";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -205,7 +205,7 @@ function _get_fetch_file_cb_from_args(args: MonoConfig): (asset: string) => Prom
 }
 
 function _finalize_startup(args: MonoConfig, ctx: MonoInitContext) {
-    ctx.loaded_files.forEach(value => runtimeHelpers.loaded_files.push(value.url));
+    ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
     if (ctx.tracing) {
         console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
         console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
