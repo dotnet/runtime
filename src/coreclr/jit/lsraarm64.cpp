@@ -275,16 +275,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_RSH:
         case GT_RSZ:
         case GT_ROR:
-            if (tree->gtGetOp1()->isContained())
-            {
-                assert(tree->OperIs(GT_LSH) && tree->gtGetOp1()->OperIs(GT_CAST) && tree->gtGetOp2()->IsCnsIntOrI());
-                BuildUse(tree->gtGetOp1()->gtGetOp1());
-                srcCount = 1;
-            }
-            else
-            {
-                srcCount = BuildBinaryUses(tree->AsOp());
-            }
+            srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
             break;

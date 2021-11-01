@@ -3071,6 +3071,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
         return 1;
     }
 #endif // FEATURE_HW_INTRINSICS
+    if (node->OperIs(GT_CAST))
+    {
+        return BuildOperandUses(node->gtGetOp1(), candidates);
+    }
 
     return 0;
 }
