@@ -106,56 +106,40 @@ var Module = {
     no_global_exports: true,
     mainScriptUrlOrBlob: "dotnet.js",
     config: null,
+    configSrc: "./mono-config.json",
     print: console.log,
     printErr: console.error,
-    /** Called before the runtime is loaded and before it is run
-     * @type {() => Promise<void>}
-     */
-    preInit: async function () {
-        await MONO.mono_wasm_load_config("./mono-config.json"); // sets Module.config implicitly
-    },
-
-    /** Called after an exception occurs during execution
-     * @type {(x: string|number=) => void}
-     * @param {string|number} x error message
-     */
-    onAbort: function (x) {
-        console.log("ABORT: " + x);
-        const err = new Error();
-        console.log("Stacktrace: \n");
-        console.error(err.stack);
-        fail_exec(1);
-    },
-
-    /** Called after the runtime is loaded but before it is run mostly prepares runtime and config for the tests
-     * @type {() => void}
-     */
-    onRuntimeInitialized: function () {
+    onConfigLoaded: function () {
         if (!Module.config) {
             console.error("Could not find ./mono-config.json. Cancelling run");
             fail_exec(1);
         }
         // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
         for (let variable in processedArguments.setenv) {
-            MONO.mono_wasm_setenv(variable, processedArguments.setenv[variable]);
+            Module.config.environment_variables[variable] = processedArguments.setenv[variable];
         }
 
         if (!processedArguments.enable_gc) {
             INTERNAL.mono_wasm_enable_on_demand_gc(0);
         }
+    },
+    onDotNetReady: function () {
+        let wds = Module.FS.stat(processedArguments.working_dir);
+        if (wds === undefined || !Module.FS.isDir(wds.mode)) {
+            fail_exec(1, `Could not find working directory ${processedArguments.working_dir}`);
+            return;
+        }
 
-        Module.config.loaded_cb = function () {
-            let wds = Module.FS.stat(processedArguments.working_dir);
-            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-                fail_exec(1, `Could not find working directory ${processedArguments.working_dir}`);
-                return;
-            }
+        Module.FS.chdir(processedArguments.working_dir);
 
-            Module.FS.chdir(processedArguments.working_dir);
-            App.init();
-        };
-
-        MONO.mono_load_runtime_and_bcl_args(Module.config);
+        App.init();
+    },
+    onAbort: function (x) {
+        console.log("ABORT: " + x);
+        const err = new Error();
+        console.log("Stacktrace: \n");
+        console.error(err.stack);
+        fail_exec(1);
     },
 };
 
