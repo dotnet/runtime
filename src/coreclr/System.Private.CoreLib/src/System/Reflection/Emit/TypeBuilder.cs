@@ -219,7 +219,7 @@ namespace System.Reflection.Emit
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_GetTokenFromSig")]
         internal static extern int GetTokenFromSig(QCallModule module, byte[] signature, int sigLength);
 
-        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetParentType")]
+        [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetFieldLayoutOffset")]
         internal static extern void SetFieldLayoutOffset(QCallModule module, int fdToken, int iOffset);
 
         [DllImport(RuntimeHelpers.QCall, EntryPoint = "COMDynamicWrite_SetClassLayout")]
