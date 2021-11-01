@@ -3124,10 +3124,9 @@ PROCBuildCreateDumpCommandLine(
     std::vector<const char*>& argv,
     char** pprogram,
     char** ppidarg,
-    char* dumpName,
-    char* dumpType,
-    BOOL diag,
-    BOOL crashReport)
+    const char* dumpName,
+    const char* dumpType,
+    ULONG32 flags)
 {
     if (g_szCoreCLRPath == nullptr)
     {
@@ -3190,12 +3189,17 @@ PROCBuildCreateDumpCommandLine(
         }
     }
 
-    if (diag)
+    if (flags & GenerateDumpFlagsLoggingEnabled)
     {
         argv.push_back("--diag");
     }
 
-    if (crashReport)
+    if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
+    {
+        argv.push_back("--verbose");
+    }
+
+    if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
         argv.push_back("--crashreport");
     }
@@ -3286,10 +3290,18 @@ PROCAbortInitialize()
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
         char* crashReportStr = getenv("COMPlus_EnableCrashReport");
         BOOL crashReport = crashReportStr != nullptr && strcmp(crashReportStr, "1") == 0;
-
+        ULONG32 flags = GenerateDumpFlagsNone;
+        if (diag)
+        {
+            flags |= GenerateDumpFlagsLoggingEnabled;
+        }
+        if (crashReport)
+        {
+            flags |= GenerateDumpFlagsCrashReportEnabled;
+        }
         char* program = nullptr;
         char* pidarg = nullptr;
-        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag, crashReport))
+        if (!PROCBuildCreateDumpCommandLine(g_argvCreateDump, &program, &pidarg, dumpName, dumpType, flags))
         {
             return FALSE;
         }
@@ -3311,8 +3323,8 @@ Parameters:
         WithHeap = 2,
         Triage = 3,
         Full = 4
-    diag
-        true - log createdump diagnostics to console
+    flags
+        See enum
 
 Return:
     TRUE success
@@ -3322,7 +3334,7 @@ BOOL
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
-    BOOL diag)
+    ULONG32 flags)
 {
     std::vector<const char*> argvCreateDump;
     char dumpTypeStr[16];
@@ -3341,7 +3353,7 @@ PAL_GenerateCoreDump(
     }
     char* program = nullptr;
     char* pidarg = nullptr;
-    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, (char*)dumpName, dumpTypeStr, diag, false);
+    BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, dumpTypeStr, flags);
     if (result)
     {
         result = PROCCreateCrashDump(argvCreateDump);
