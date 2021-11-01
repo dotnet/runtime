@@ -50,7 +50,7 @@ jobs:
         value: $(buildConfigUpper)
 
       - name: _runSmokeTestsOnlyArg
-        value: '/p:RunSmokeTestsOnly=$(isFullMatrix)'
+        value: '/p:RunSmokeTestsOnly=$(!isFullMatrix)'
       - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
         - name: archiveExtension
           value: '.zip'
