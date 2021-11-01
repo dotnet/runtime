@@ -11,7 +11,6 @@ using Newtonsoft.Json.Linq;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
