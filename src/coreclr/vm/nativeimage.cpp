@@ -141,14 +141,17 @@ NativeImage *NativeImage::Open(
     LPWSTR searchPathsConfig;
     IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_NativeImageSearchPaths, &searchPathsConfig));
 
-    NewHolder<PEImageLayout> peLoadedImage;
+    PEImageLayoutHolder peLoadedImage;
 
     BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(fullPath, /*pathIsBundleRelative */ true);
     if (bundleFileLocation.IsValid())
     {
-        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_Default, bundleFileLocation);
-        peLoadedImage = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
-        peLoadedImage.SuppressRelease();
+        // No need to use cache for this PE image. It is transient.
+        // We only need it to obtain the native image, which AppDomain will keep.
+        PEImageHolder pImage = PEImage::OpenImage(fullPath, MDInternalImport_NoCache, bundleFileLocation);
+        PEImageLayout* mapped = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_MAPPED);
+        mapped->AddRef();
+        peLoadedImage = mapped;
     }
 
     if (peLoadedImage.IsNull())
