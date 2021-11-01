@@ -48,12 +48,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		[UnrecognizedReflectionAccessPattern (typeof (MethodReturnParameterDataFlow), nameof (ReturnPublicParameterlessConstructor),
 			new Type[] { typeof (Type), typeof (Type), typeof (Type) }, returnType: typeof (Type), messageCode: "IL2068")]
-		// TODO: https://github.com/dotnet/linker/issues/2308
-		// This warning should not be produced.
-		[ExpectedWarning ("IL2083",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
-			"'this'",
-			ProducedBy = ProducedBy.Analyzer)]
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
 		Type ReturnPublicParameterlessConstructor (
 			[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
@@ -156,23 +150,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			nameof (DataFlowTypeExtensions) + "." + nameof (DataFlowTypeExtensions.RequiresNonPublicConstructors) + "(Type)",
 			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
 			ProducedBy = ProducedBy.Trimmer)]
-		// TODO: https://github.com/dotnet/linker/issues/2308
-		// These warnings should not be produced.
-		[ExpectedWarning ("IL2082",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
-			"'this'",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (PropagateReturnPublicParameterlessConstructor),
-			ProducedBy = ProducedBy.Analyzer)]
-		[ExpectedWarning ("IL2082",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
-			"'this'",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (PropagateReturnPublicParameterlessConstructor),
-			ProducedBy = ProducedBy.Analyzer)]
-		[ExpectedWarning ("IL2082",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (ReturnPublicParameterlessConstructor) + "(Type, Type, Type)",
-			"'this'",
-			nameof (MethodReturnParameterDataFlow) + "." + nameof (PropagateReturnPublicParameterlessConstructor),
-			ProducedBy = ProducedBy.Analyzer)]
 		void PropagateReturnPublicParameterlessConstructor ()
 		{
 			Type t = ReturnPublicParameterlessConstructor (typeof (TestType), typeof (TestType), typeof (TestType));

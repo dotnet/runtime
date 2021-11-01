@@ -33,7 +33,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -41,7 +41,7 @@ class C
 {
 	public static void Main()
 	{
-		M(typeof(T));
+		M(typeof(Foo));
 	}
 
 	private static void NeedsPublicMethodsOnParameter(
@@ -74,7 +74,7 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -82,7 +82,7 @@ class C
 {
     public static void Main()
     {
-        M(typeof(T));
+        M(typeof(Foo));
     }
 
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -111,7 +111,7 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -119,7 +119,7 @@ class C
 {
     public static void Main()
     {
-        M(typeof(T));
+        M(typeof(Foo));
     }
 
     private static void M(Type type)
@@ -128,7 +128,7 @@ class C
     }
 
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-    private static Type f = typeof(T);
+    private static Type f = typeof(Foo);
 }";
 
 			// (18,9): warning IL2069: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements.
@@ -149,7 +149,7 @@ class C
 			var TargetMethodWithAnnotations = @"
 using System;
 
-public class T
+public class Foo
 {
 }
 
@@ -157,12 +157,12 @@ class C
 {
     public static void Main()
     {
-        M(typeof(T));
+        M(typeof(Foo));
     }
 
     private static void M(Type type)
     {
-        type.GetMethod(""Foo"");
+        type.GetMethod(""Bar"");
 	}
 }";
 
@@ -225,7 +225,7 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -239,12 +239,12 @@ class C
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
     private static Type M()
     {
-        return GetT();
+        return GetFoo();
     }
 
-    private static Type GetT()
+    private static Type GetFoo()
     {
-        return typeof(T);
+        return typeof(Foo);
     }
 }";
 
@@ -253,8 +253,8 @@ class C
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType)
-				.WithSpan (19, 9, 19, 23)
-				.WithArguments ("C.M()", "C.GetT()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+				.WithSpan (19, 9, 19, 25)
+				.WithArguments ("C.M()", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
 		[Fact]
@@ -264,7 +264,7 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -277,7 +277,7 @@ class C
 
     private static Type M()
     {
-        return typeof(T);
+        return typeof(Foo);
     }
 
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
@@ -301,7 +301,7 @@ class C
 			var TargetMethodWithAnnotations = @"
 using System;
 
-public class T
+public class Foo
 {
 }
 
@@ -309,13 +309,13 @@ class C
 {
     public static void Main()
     {
-        GetT().GetMethod(""Foo"");
+        GetFoo().GetMethod(""Bar"");
 
 	}
 
-	private static Type GetT ()
+	private static Type GetFoo ()
 	{
-		return typeof (T);
+		return typeof (Foo);
 	}
 }";
 
@@ -324,8 +324,8 @@ class C
 			// The source value must declare at least the same requirements as those declared on the target location it is assigned to.
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations,
 				VerifyCS.Diagnostic (DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
-				.WithSpan (12, 9, 12, 32)
-				.WithArguments ("System.Type.GetMethod(String)", "C.GetT()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
+				.WithSpan (12, 9, 12, 34)
+				.WithArguments ("System.Type.GetMethod(String)", "C.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 		#endregion
 
@@ -337,13 +337,13 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
 class C
 {
-    private static Type f = typeof(T);
+    private static Type f = typeof(Foo);
 
     public static void Main()
     {
@@ -375,13 +375,13 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
 class C
 {
-    private static Type f = typeof(T);
+    private static Type f = typeof(Foo);
 
     public static void Main()
     {
@@ -412,16 +412,16 @@ class C
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
 class C
 {
-    private static Type f1 = typeof(T);
+    private static Type f1 = typeof(Foo);
 
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-    private static Type f2 = typeof(T);
+    private static Type f2 = typeof(Foo);
 
     public static void Main()
     {
@@ -445,17 +445,17 @@ class C
 			var TargetMethodWithAnnotations = @"
 using System;
 
-public class T
+public class Foo
 {
 }
 
 class C
 {
-    private static Type f = typeof(T);
+    private static Type f = typeof(Foo);
 
     public static void Main()
     {
-        f.GetMethod(""Foo"");
+        f.GetMethod(""Bar"");
 	}
 }";
 
@@ -1019,14 +1019,39 @@ class C
 				.WithArguments ("T", "C.M1<T>()", "S", "C.M2<S>()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2308")]
+		[Fact]
+		public Task SourceTypeofFlowsIntoTargetParameterAnnotations ()
+		{
+			var TargetParameterWithAnnotations = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class Foo
+{
+}
+
+class C
+{
+    public static void Main()
+    {
+        M(typeof(Foo));
+    }
+
+    private static void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+    {
+    }
+}";
+			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations);
+		}
+
+		[Fact]
 		public Task SourceTypeofFlowsIntoTargetMethodReturnTypeAnnotation ()
 		{
 			var TargetMethodReturnTypeWithAnnotations = @"
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -1040,21 +1065,21 @@ class C
     [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
     private static Type M()
     {
-        return typeof(C);
+        return typeof(Foo);
     }
 }";
 
 			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations);
 		}
 
-		[Fact (Skip = "https://github.com/dotnet/linker/issues/2308")]
-		public Task SourceTypeofFlowsIntoTargetParameterAnnotations ()
+		[Fact]
+		public Task SourceParameterFlowsInfoTargetMethodReturnTypeAnnotations ()
 		{
-			var TargetParameterWithAnnotations = @"
+			var TargetMethodReturnTypeWithAnnotations = @"
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-public class T
+public class Foo
 {
 }
 
@@ -1062,14 +1087,76 @@ class C
 {
     public static void Main()
     {
-        M(typeof(C));
+        M(typeof(Foo));
+    }
+
+    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    private static Type M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+    {
+        return type;
+    }
+}";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodReturnTypeWithAnnotations);
+		}
+
+		[Fact]
+		public Task SourceParameterFlowsIntoTargetFieldAnnotations ()
+		{
+			var TargetFieldWithAnnotations = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class Foo
+{
+}
+
+class C
+{
+    public static void Main()
+    {
+        M(typeof(Foo));
     }
 
     private static void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
     {
+        f = type;
     }
+
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+    private static Type f  = typeof(Foo);
 }";
-			return VerifyDynamicallyAccessedMembersAnalyzer (TargetParameterWithAnnotations);
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (TargetFieldWithAnnotations);
 		}
+
+		[Fact]
+		public Task SourceParameterFlowsIntoTargetMethodAnnotations ()
+		{
+			var TargetMethodWithAnnotations = @"
+using System;
+using System.Diagnostics.CodeAnalysis;
+
+public class Foo
+{
+}
+
+class C
+{
+    public static void Main()
+    {
+        M(typeof(Foo));
+    }
+
+    private static void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type)
+    {
+        type.GetMethod(""Bar"");
+	}
+}";
+
+			return VerifyDynamicallyAccessedMembersAnalyzer (TargetMethodWithAnnotations);
+		}
+
+
 	}
 }
