@@ -50,15 +50,7 @@ jobs:
         value: $(buildConfigUpper)
 
       - name: _runSmokeTestsOnlyArg
-        ${{ if eq(variables['isFullMatrix'], false) }}:
-          value: /p:RunSmokeTestsOnly=true
-        ${{ if eq(variables['isFullMatrix'], False) }}:
-          value: /p:RunSmokeTestsOnly=TRUE
-        ${{ if eq(variables['isFullMatrix'], true) }}:
-          value: /p:RunSmokeTestsOnly=false
-        ${{ if eq(variables['isFullMatrix'], True) }}:
-          value: /p:RunSmokeTestsOnly=FALSE
-
+        value: '/p:RunSmokeTestsOnly=$(isFullMatrix)'
       - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
         - name: archiveExtension
           value: '.zip'
