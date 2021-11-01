@@ -7342,9 +7342,13 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (!m_class_is_inited (cmethod->klass))
-				if (!mono_class_init_internal (cmethod->klass))
-					TYPE_LOAD_ERROR (cmethod->klass);
+			{
+				gboolean special = !cfg->compile_aot && m_class_has_special_jit_flags (cmethod->klass) &&
+					((mono_class_get_special_jit_flags (cmethod->klass) & MONO_SPECIAL_JIT_USE_ICALL_NEWOBJ) != 0);
 
+				if (!special && !mono_class_init_internal (cmethod->klass))
+					TYPE_LOAD_ERROR (cmethod->klass);
+			}
 			fsig = mono_method_signature_internal (cmethod);
 			if (!fsig)
 				LOAD_ERROR;
