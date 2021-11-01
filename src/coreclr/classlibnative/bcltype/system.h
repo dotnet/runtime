@@ -65,7 +65,7 @@ extern "C" void QCALLTYPE Environment_Exit(INT32 exitcode);
 extern "C" INT32 QCALLTYPE Environment_GetProcessorCount();
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-extern "C" void QCALLTYPE SystemNative_X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);
+extern "C" void QCALLTYPE X86BaseCpuId(int cpuInfo[4], int functionId, int subFunctionId);
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
 extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString);
