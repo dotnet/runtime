@@ -28,7 +28,7 @@ namespace DllImportGenerator.UnitTests
         [InlineData(TargetFramework.Framework)]
         [InlineData(TargetFramework.Core)]
         [InlineData(TargetFramework.Standard)]
-        public async Task TargetFrameworkNotSupported_ReportsDiagnostic(TargetFramework targetFramework)
+        public async Task TargetFrameworkNotSupported_NoDiagnostic(TargetFramework targetFramework)
         {
             string source = @"
 using System.Runtime.InteropServices;
@@ -50,12 +50,7 @@ partial class Test
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.DllImportGenerator());
-            DiagnosticResult[] expectedDiags = new DiagnosticResult[]
-            {
-                new DiagnosticResult(GeneratorDiagnostics.TargetFrameworkNotSupported)
-                    .WithArguments("5.0")
-            };
-            VerifyDiagnostics(expectedDiags, GetSortedDiagnostics(generatorDiags));
+            Assert.Empty(generatorDiags);
 
             var newCompDiags = newComp.GetDiagnostics();
             Assert.Empty(newCompDiags);

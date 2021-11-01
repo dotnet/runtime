@@ -64,7 +64,8 @@ partial class C
 
         public static IEnumerable<object[]> GetDownlevelTargetFrameworks()
         {
-            yield return new object[] { ReferenceAssemblies.Net.Net50, true };
+            yield return new object[] { ReferenceAssemblies.Net.Net60, true };
+            yield return new object[] { ReferenceAssemblies.Net.Net50, false };
             yield return new object[] { ReferenceAssemblies.NetCore.NetCoreApp31, false };
             yield return new object[] { ReferenceAssemblies.NetStandard.NetStandard20, false };
             yield return new object[] { ReferenceAssemblies.NetFramework.Net48.Default, false };
