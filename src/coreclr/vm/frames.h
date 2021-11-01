@@ -1878,6 +1878,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         return offsetof(UnmanagedToManagedFrame, m_calleeSavedRegisters);
     }
+
+    CalleeSavedRegisters*  GetCalleeSavedRegisters()
+    {
+        return &m_calleeSavedRegisters;
+    }
 #endif
 
     int GetFrameType()
@@ -2803,6 +2808,13 @@ public:
         WRAPPER_NO_CONTRACT;
         return GetOffsetOfDatum();
     }
+
+    virtual BOOL NeedsUpdateRegDisplay()
+    {
+        return TRUE;
+    }
+
+    virtual void UpdateRegDisplay(const PREGDISPLAY pRD);
 
 protected:
 

@@ -200,6 +200,33 @@ void EHContext::UpdateFrame(PREGDISPLAY regs)
 }
 #endif // FEATURE_EH_FUNCLETS
 
+
+void UMThkCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
+{
+    CONTRACT_VOID
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        HOST_NOCALLS;
+        SUPPORTS_DAC;
+    }
+    CONTRACT_END;
+
+    CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
+
+    pRD->PCTAddr = GetReturnAddressPtr();
+#define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &regs->regname;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+
+    pRD->ControlPC = *PTR_PCODE(pRD->PCTAddr);
+    UINT cbStackPop = GetUMEntryThunk()->GetMethod()->CbStackPop();
+    pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR) + cbStackPop);
+
+    RETURN;
+}
+
 void TransitionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 {
     CONTRACT_VOID
