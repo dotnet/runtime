@@ -2,7 +2,7 @@ name: Create Codespaces Prebuild
 on:
   schedule:
     # Run at 06:00 am UTC every day
-    - cron:  '0 6 * * *'
+    #- cron:  '0 6 * * *'
   workflow_dispatch:
 jobs:
   createPrebuild:
