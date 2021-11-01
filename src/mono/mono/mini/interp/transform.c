@@ -3305,8 +3305,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	if (target_method)
-		mono_class_init_internal (target_method->klass);
+	gboolean defer_init_to_ctor = FALSE;
+	if (target_method) {
+		defer_init_to_ctor = m_class_has_special_jit_flags (target_method->klass) &&
+				((mono_class_get_special_jit_flags (target_method->klass) & MONO_SPECIAL_JIT_DEFER_CLASS_INIT_TO_CTOR) != 0);
+		if (G_LIKELY (!defer_init_to_ctor))
+			mono_class_init_internal (target_method->klass);
+	}
 
 	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT) && !m_method_is_static (target_method)) {
 		if (!mono_class_is_interface (method->klass))
@@ -3383,7 +3388,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	g_assert (csignature->call_convention != MONO_CALL_FASTCALL);
-	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && interp_method_check_inlining (td, target_method, csignature)) {
+	if ((mono_interp_opt & INTERP_OPT_INLINE) && op == -1 && !is_virtual && target_method && !defer_init_to_ctor && interp_method_check_inlining (td, target_method, csignature)) {
 		MonoMethodHeader *mheader = interp_method_get_header (target_method, error);
 		return_val_if_nok (error, FALSE);
 
@@ -5707,7 +5712,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			csignature = mono_method_signature_internal (m);
 			klass = m->klass;
 
-			if (!mono_class_init_internal (klass)) {
+			gboolean defer_init_to_ctor = m_class_has_special_jit_flags (klass) &&
+				((mono_class_get_special_jit_flags (klass) & MONO_SPECIAL_JIT_DEFER_CLASS_INIT_TO_CTOR) != 0);
+
+			if (!defer_init_to_ctor && !mono_class_init_internal (klass)) {
 				mono_error_set_for_class_failure (error, klass);
 				goto_if_nok (error, exit);
 			}
@@ -5803,7 +5811,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				StackInfo *sp_params = (StackInfo*) mono_mempool_alloc (td->mempool, sizeof (StackInfo) * csignature->param_count);
 				memcpy (sp_params, td->sp, sizeof (StackInfo) * csignature->param_count);
 
-				if (interp_inline_newobj (td, m, csignature, ret_mt, sp_params, is_protected))
+				if (!defer_init_to_ctor && interp_inline_newobj (td, m, csignature, ret_mt, sp_params, is_protected))
 					break;
 
 				// Push the return value and `this` argument to the ctor
@@ -5827,7 +5835,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				memcpy (td->sp, sp_params, sizeof (StackInfo) * csignature->param_count);
 				td->sp += csignature->param_count;
 
-				if (!mono_class_has_finalizer (klass) &&
+				if (!defer_init_to_ctor && !mono_class_has_finalizer (klass) &&
 					!m_class_has_weak_fields (klass)) {
 					InterpInst *newobj_fast;
 
