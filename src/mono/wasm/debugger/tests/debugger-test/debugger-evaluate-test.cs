@@ -422,6 +422,10 @@ namespace DebuggerTests
             public List<string> textList;
             public int[] numArray;
             public string[] textArray;
+            public int[][] numArrayOfArrays;
+            public List<List<int>> numListOfLists;
+            public string[][] textArrayOfArrays;
+            public List<List<string>> textListOfLists;
             public int idx0;
             public int idx1;
 
@@ -431,6 +435,10 @@ namespace DebuggerTests
                 textList = new List<string> { "1", "2" };
                 numArray = new int[] { 1, 2 };
                 textArray = new string[] { "1", "2" };
+                numArrayOfArrays = new int[][] { numArray, numArray };
+                numListOfLists = new List<List<int>> { numList, numList };
+                textArrayOfArrays = new string[][] { textArray, textArray };
+                textListOfLists = new List<List<string>> { textList, textList };
                 idx0 = 0;
                 idx1 = 1;
             }        

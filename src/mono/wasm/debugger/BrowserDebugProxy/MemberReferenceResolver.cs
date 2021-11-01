@@ -213,7 +213,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject rootObject = null;
                 string elementAccessStrExpression = elementAccess.Expression.ToString();
                 rootObject = await Resolve(elementAccessStrExpression, token);
-
+                if (rootObject == null)
+                {
+                    rootObject = indexObject;
+                    indexObject = null;
+                }
                 if (rootObject != null)
                 {
                     string elementIdxStr;

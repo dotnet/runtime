@@ -632,6 +632,32 @@ namespace DebuggerTests
            });
 
         [Fact]
+        public async Task EvaluateExpressionsWithElementAccessMultidimentional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("j", TNumber(1)),
+                   ("f.idx1", TNumber(1)),
+                   ("f.numArrayOfArrays[1][1]", TNumber(2)),
+                   ("f.numArrayOfArrays[j][j]", TNumber(2)),
+                   ("f.numArrayOfArrays[f.idx1][f.idx1]", TNumber(2)),
+                   ("f.numListOfLists[1][1]", TNumber(2)),
+                   ("f.numListOfLists[j][j]", TNumber(2)),
+                   ("f.numListOfLists[f.idx1][f.idx1]", TNumber(2)),
+                   ("f.textArrayOfArrays[1][1]", TString("2")),
+                   ("f.textArrayOfArrays[j][j]", TString("2")),
+                   ("f.textArrayOfArrays[f.idx1][f.idx1]", TString("2")),
+                   ("f.textListOfLists[1][1]", TString("2")),
+                   ("f.textListOfLists[j][j]", TString("2")),
+                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
+                
+           });
+
+        [Fact]
         public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass/TestEvaluate", "run", 9, "run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
