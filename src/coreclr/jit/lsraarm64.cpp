@@ -265,27 +265,6 @@ int LinearScan::BuildNode(GenTree* tree)
                 // everything is made explicit by adding casts.
                 assert(tree->gtGetOp1()->TypeGet() == tree->gtGetOp2()->TypeGet());
             }
-            else if (tree->OperIs(GT_ADD) && (tree->gtGetOp1()->OperIs(GT_MUL) || tree->gtGetOp2()->OperIs(GT_MUL)))
-            {
-                GenTree* mul = tree->gtGetOp1()->OperIs(GT_MUL) ? tree->gtGetOp1() : tree->gtGetOp2();
-                if (mul->isContained())
-                {
-                    assert(!tree->gtOverflow() && !mul->gtOverflow());
-
-                    GenTree* a = mul->gtGetOp1();
-                    GenTree* b = mul->gtGetOp2();
-                    GenTree* c = tree->gtGetOp1() == mul ? tree->gtGetOp2() : tree->gtGetOp1();
-
-                    BuildUse((a->OperIs(GT_NEG) && a->isContained()) ? a->gtGetOp1() : a);
-                    BuildUse((b->OperIs(GT_NEG) && b->isContained()) ? b->gtGetOp1() : b);
-                    BuildUse(c);
-
-                    BuildDef(tree);
-                    srcCount = 3;
-                    assert(dstCount == 1);
-                    break;
-                }
-            }
             FALLTHROUGH;
 
         case GT_AND:
