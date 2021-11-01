@@ -3733,7 +3733,7 @@ GenTree* Compiler::impCreateSpanIntrinsic(CORINFO_SIG_INFO* sig)
 
     // Turn count and pointer value into constants.
     GenTree* spanElemCount = gtNewIconNode(count, TYP_INT);
-    GenTree* spanPointerField = gtNewIconNode((ssize_t)data, TYP_I_IMPL);
+    GenTree* spanPointerField = gtNewIconHandleNode((size_t)data, GTF_ICON_CONST_PTR);
 
     // Construct ReadOnlySpan<T> to return.
     unsigned spanTTemp = lvaGrabTemp(true DEBUGARG("ReadOnlySpan<T> for CreateSpan<T>"));
