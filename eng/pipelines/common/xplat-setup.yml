@@ -50,10 +50,16 @@ jobs:
         value: $(buildConfigUpper)
 
       - name: _runSmokeTestsOnlyArg
-        ${{ if ne(variables['nonPRBuild'], true) }}:
+        ${{ if eq(variables['isFullMatrix'], false) }}:
           value: /p:RunSmokeTestsOnly=true
-        ${{ if eq(variables['nonPRBuild'], true) }}:
-          value: ''
+      - name: _capConditionChecker
+        ${{ if eq(variables['isFullMatrix'], False) }}:
+          value: /p:RunSmokeTestsOnly=TRUE
+      - name: _neconditionChecker
+        ${{ if ne(variables['isFullMatrix'], false) }}:
+          value: 'ne false!'
+        ${{ if ne(variables['isFullMatrix'], False) }}:
+          value: 'ne FALSE'
 
       - ${{ if or(eq(parameters.osGroup, 'windows'), eq(parameters.hostedOs, 'windows')) }}:
         - name: archiveExtension
