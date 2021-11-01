@@ -10918,7 +10918,7 @@ GenTree* Compiler::fgMorphCastedBitwiseOp(GenTreeOp* tree)
 
         tree->gtOp1  = op1->AsCast()->CastOp();
         tree->gtOp2  = op2->AsCast()->CastOp();
-        tree->gtType = fromType;
+        tree->gtType = genActualType(fromType);
 
         op1->gtType                 = genActualType(toType);
         op1->AsCast()->gtOp1        = tree;
