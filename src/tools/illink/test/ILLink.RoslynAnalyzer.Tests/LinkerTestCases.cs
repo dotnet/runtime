@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Xunit;
 
@@ -15,34 +18,41 @@ namespace ILLink.RoslynAnalyzer.Tests
 	{
 		[Theory]
 		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (RequiresCapability))]
-		public void RequiresCapability (string testName, MemberDeclarationSyntax m, List<AttributeSyntax> attrs)
+		public void RequiresCapability (string m)
 		{
-			if (m is MethodDeclarationSyntax method &&
-				method.Identifier.ValueText == "TestTypeIsBeforeFieldInit") {
-				// There is a discrepancy between the way linker and the analyzer represent the location of the error,
-				// linker will point to the method caller and the analyzer will point to a line of code.
-				// The TestTypeIsBeforeFieldInit scenario is supported by the analyzer, just the diagnostic message is different
-				// We verify the analyzer generating the right diagnostic in RequiresUnreferencedCodeAnalyzerTests.cs
-				return;
-			}
+			RunTest (nameof (RequiresCapability), m, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+		}
 
-			RunTest<RequiresUnreferencedCodeAnalyzer> (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+		[Theory]
+		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (Interop))]
+		public void Interop (string m)
+		{
+			RunTest (nameof (Interop), m, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
 		}
 
 		[Theory]
 		[MemberData (nameof (TestCaseUtils.GetTestData), parameters: nameof (DataFlow))]
-		public void DataFlow (string testName, MemberDeclarationSyntax m, List<AttributeSyntax> attrs)
+		public void DataFlow (string m)
 		{
-			switch (testName) {
-			case "MemberTypesRelationships":
-			case "MethodParametersDataFlow":
-			case "MethodReturnParameterDataFlow":
-				break;
-			default:
-				return;
-			}
+			var shouldRun = (TestCase testCase) => {
+				var testSyntaxRoot = testCase.MemberSyntax.SyntaxTree.GetRoot ();
+				var testCaseClass = testSyntaxRoot.DescendantNodes ().OfType<ClassDeclarationSyntax> ().First ();
+				// Double-check that this is the right class. It should have a Main() method.
+				var testCaseMain = testCaseClass.DescendantNodes ().OfType<MethodDeclarationSyntax> ().First ();
+				if (testCaseMain.Identifier.ValueText != "Main")
+					throw new NotImplementedException ();
 
-			RunTest<DynamicallyAccessedMembersAnalyzer> (m, attrs, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer));
+				switch (testCaseClass.Identifier.ValueText) {
+				case "MemberTypesRelationships":
+				case "MethodParametersDataFlow":
+				case "MethodReturnParameterDataFlow":
+					return true;
+				default:
+					return false;
+				}
+			};
+
+			RunTest (nameof (DataFlow), m, UseMSBuildProperties (MSBuildPropertyOptionNames.EnableTrimAnalyzer), shouldRun);
 		}
 	}
 }

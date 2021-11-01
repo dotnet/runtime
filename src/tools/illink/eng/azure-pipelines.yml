@@ -55,8 +55,8 @@ stages:
           ${{ if eq(variables.officialBuild, 'false') }}:
             name: Hosted VS2017
           ${{ if eq(variables.officialBuild, 'true') }}:
-            name: NetCoreInternal-Pool
-            queue: BuildPool.Windows.10.Amd64.VS2017
+            name: NetCore1ESPool-Internal
+            demands: ImageOverride -equals Build.Windows.10.Amd64.VS2017
         variables:
           - ${{ if eq(variables.officialBuild, 'false') }}:
             - _SignType: test
@@ -105,7 +105,7 @@ stages:
         - job: Linux
           condition: eq(variables.officialBuild, 'false')
           pool:
-            name: Hosted Ubuntu 1604
+            vmImage: ubuntu-20.04
           steps:
           - checkout: self
             submodules: true
@@ -137,7 +137,7 @@ stages:
   - ${{ if eq(variables.officialBuild, 'false') }}:
     - job: Lint
       pool:
-          name: Hosted Ubuntu 1604
+        vmImage: ubuntu-20.04
       steps:
       - checkout: self
         submodules: true

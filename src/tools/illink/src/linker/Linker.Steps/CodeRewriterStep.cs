@@ -8,7 +8,13 @@ namespace Mono.Linker.Steps
 {
 	public class CodeRewriterStep : BaseStep
 	{
-		AssemblyDefinition assembly;
+		AssemblyDefinition? assembly;
+		AssemblyDefinition Assembly {
+			get {
+				Debug.Assert (assembly != null);
+				return assembly;
+			}
+		}
 
 		protected override void ProcessAssembly (AssemblyDefinition assembly)
 		{
@@ -47,7 +53,7 @@ namespace Mono.Linker.Steps
 
 				var method = new MethodDefinition (".cctor",
 					MethodAttributes.Static | MethodAttributes.Private | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName | MethodAttributes.HideBySig,
-					assembly.MainModule.TypeSystem.Void);
+					Assembly.MainModule.TypeSystem.Void);
 
 				type.Methods.Add (method);
 
@@ -76,7 +82,7 @@ namespace Mono.Linker.Steps
 				if (!Annotations.HasSubstitutedInit (field))
 					continue;
 
-				Context.Annotations.TryGetFieldUserValue (field, out object value);
+				Context.Annotations.TryGetFieldUserValue (field, out object? value);
 
 				var valueInstr = CreateConstantResultInstruction (Context, field.FieldType, value);
 				if (valueInstr == null)
@@ -123,11 +129,11 @@ namespace Mono.Linker.Steps
 		{
 			var body = new MethodBody (method);
 			var il = body.GetLinkerILProcessor ();
-			MethodReference ctor;
+			MethodReference? ctor;
 
 			// Makes the body verifiable
 			if (method.IsConstructor && !method.DeclaringType.IsValueType) {
-				ctor = assembly.MainModule.ImportReference (Context.MarkedKnownMembers.ObjectCtor);
+				ctor = Assembly.MainModule.ImportReference (Context.MarkedKnownMembers.ObjectCtor);
 
 				il.Emit (OpCodes.Ldarg_0);
 				il.Emit (OpCodes.Call, ctor);
@@ -135,7 +141,7 @@ namespace Mono.Linker.Steps
 
 			// import the method into the current assembly
 			ctor = Context.MarkedKnownMembers.NotSupportedExceptionCtorString;
-			ctor = assembly.MainModule.ImportReference (ctor);
+			ctor = Assembly.MainModule.ImportReference (ctor);
 
 			il.Emit (OpCodes.Ldstr, "Linked away");
 			il.Emit (OpCodes.Newobj, ctor);
@@ -161,7 +167,7 @@ namespace Mono.Linker.Steps
 				if (base_ctor == null)
 					throw new NotSupportedException ($"Cannot replace constructor for '{method.DeclaringType}' when no base default constructor exists");
 
-				base_ctor = assembly.MainModule.ImportReference (base_ctor);
+				base_ctor = Assembly.MainModule.ImportReference (base_ctor);
 
 				il.Emit (OpCodes.Ldarg_0);
 				il.Emit (OpCodes.Call, base_ctor);
@@ -208,14 +214,15 @@ namespace Mono.Linker.Steps
 			throw new NotImplementedException (method.FullName);
 		}
 
-		public static Instruction CreateConstantResultInstruction (LinkContext context, MethodDefinition method)
+		public static Instruction? CreateConstantResultInstruction (LinkContext context, MethodDefinition method)
 		{
-			context.Annotations.TryGetMethodStubValue (method, out object value);
+			context.Annotations.TryGetMethodStubValue (method, out object? value);
 			return CreateConstantResultInstruction (context, method.ReturnType, value);
 		}
 
-		public static Instruction CreateConstantResultInstruction (LinkContext context, TypeReference rtype, object value = null)
+		public static Instruction? CreateConstantResultInstruction (LinkContext context, TypeReference inputRtype, object? value = null)
 		{
+			TypeReference? rtype = inputRtype;
 			switch (rtype.MetadataType) {
 			case MetadataType.ValueType:
 				var definition = context.TryResolve (rtype);

@@ -102,7 +102,7 @@ dotnet_diagnostic.IDE0065.severity = warning
 
 # IDE0073: File header
 dotnet_diagnostic.IDE0073.severity = suggestion
-file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.\nSee the LICENSE file in the project root for more information.
+file_header_template = Licensed to the .NET Foundation under one or more agreements.\nThe .NET Foundation licenses this file to you under the MIT license.
 
 # IDE0074: Use compound assignment
 dotnet_diagnostic.IDE0074.severity = warning

@@ -75,7 +75,7 @@ namespace Mono.Linker.Tests.Cases.FeatureSettings
 		[ExpectedInstructionSequence (new[] {
 			"nop",
 			"ldc.i4.1",
-			"stsfld",
+			"stsfld System.Boolean Mono.Linker.Tests.Cases.FeatureSettings.FeatureSubstitutionsNested::FieldConditionField",
 			"ret"
 		})]
 		static FeatureSubstitutionsNested ()

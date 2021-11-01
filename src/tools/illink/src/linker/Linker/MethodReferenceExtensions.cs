@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using Mono.Cecil;
@@ -18,6 +17,20 @@ namespace Mono.Linker
 			if (methodDefinition != null && (methodDefinition.IsSetter || methodDefinition.IsGetter)) {
 				// Append property name
 				string name = methodDefinition.IsSetter ? string.Concat (methodDefinition.Name.AsSpan (4), ".set") : string.Concat (methodDefinition.Name.AsSpan (4), ".get");
+				sb.Append (name);
+				// Insert declaring type name and namespace
+				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
+				return sb.ToString ();
+			}
+
+			if (methodDefinition != null && methodDefinition.IsEventMethod ()) {
+				// Append event name
+				string name = methodDefinition.SemanticsAttributes switch {
+					MethodSemanticsAttributes.AddOn => string.Concat (methodDefinition.Name.AsSpan (4), ".add"),
+					MethodSemanticsAttributes.RemoveOn => string.Concat (methodDefinition.Name.AsSpan (7), ".remove"),
+					MethodSemanticsAttributes.Fire => string.Concat (methodDefinition.Name.AsSpan (6), ".raise"),
+					_ => throw new NotSupportedException (),
+				};
 				sb.Append (name);
 				// Insert declaring type name and namespace
 				sb.Insert (0, '.').Insert (0, method.DeclaringType.GetDisplayName ());
@@ -53,7 +66,7 @@ namespace Mono.Linker
 			return sb.ToString ();
 		}
 
-		public static TypeReference GetReturnType (this MethodReference method, LinkContext context)
+		public static TypeReference? GetReturnType (this MethodReference method, LinkContext context)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
 				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.ReturnType, context);
@@ -61,7 +74,7 @@ namespace Mono.Linker
 			return method.ReturnType;
 		}
 
-		public static TypeReference GetParameterType (this MethodReference method, int parameterIndex, LinkContext context)
+		public static TypeReference? GetParameterType (this MethodReference method, int parameterIndex, LinkContext context)
 		{
 			if (method.DeclaringType is GenericInstanceType genericInstance)
 				return TypeReferenceExtensions.InflateGenericType (genericInstance, method.Parameters[parameterIndex].ParameterType, context);

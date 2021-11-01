@@ -33,11 +33,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.1",
-			"ret"
+			"ret",
 			})]
 		static int Test1 ()
 		{
@@ -51,9 +51,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.0",
 			"ret"
 			})]
@@ -69,10 +69,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"ldsfld",
-			"call",
+			"ldsfld System.DateTime System.DateTime::MinValue",
+			"call System.Void System.Console::WriteLine()",
 			"ret"
 			})]
 		static DateTime Test3 ()
@@ -88,10 +88,10 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"ldsfld",
-			"call",
+			"ldsfld System.DateTime System.DateTime::MinValue",
+			"call System.Void System.Console::WriteLine()",
 			"ret"
 			})]
 		static DateTime Test3b ()
@@ -109,11 +109,11 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"ldsfld",
+			"ldsfld System.DateTime System.DateTime::MinValue",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.3",
 			"ret"
 			})]
@@ -134,14 +134,14 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"leave.s il_16",
 			".endtry",
 			".catch",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"leave.s il_15",
 			".endcatch",
 			"ret",
@@ -167,9 +167,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.1",
 			"conv.i8",
 			"stloc.0",
@@ -204,9 +204,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			"ldc.i4.0",
 			"stloc.0",
 			".try",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"ldc.i4.1",
 			"stloc.1",
 			"leave.s il_1c",
@@ -214,7 +214,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 			".catch",
 			"pop",
 			"ldloc.0",
-			"call",
+			"call System.Void System.Console::WriteLine(System.Int32)",
 			"leave.s il_1a",
 			".endcatch",
 			"ldc.i4.3",
@@ -243,9 +243,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedLocalsSequence (new string[0])]
 		[ExpectedInstructionSequence (new[] {
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"ret"
 		})]
 		static void Test8 ()
@@ -263,9 +263,9 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept]
 		[ExpectedInstructionSequence (new[] {
 			".try",
-			"call",
+			"call System.Boolean Mono.Linker.Tests.Cases.UnreachableBlock.ReplacedReturns::AlwaysTrue()",
 			"pop",
-			"call",
+			"call System.Void System.Console::WriteLine()",
 			"leave.s il_10",
 			".endtry",
 			".catch",

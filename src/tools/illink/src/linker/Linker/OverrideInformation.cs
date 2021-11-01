@@ -8,7 +8,7 @@ namespace Mono.Linker
 	{
 		readonly ITryResolveMetadata resolver;
 
-		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, ITryResolveMetadata resolver, InterfaceImplementation matchingInterfaceImplementation = null)
+		public OverrideInformation (MethodDefinition @base, MethodDefinition @override, ITryResolveMetadata resolver, InterfaceImplementation? matchingInterfaceImplementation = null)
 		{
 			Base = @base;
 			Override = @override;
@@ -18,7 +18,7 @@ namespace Mono.Linker
 
 		public MethodDefinition Base { get; }
 		public MethodDefinition Override { get; }
-		public InterfaceImplementation MatchingInterfaceImplementation { get; }
+		public InterfaceImplementation? MatchingInterfaceImplementation { get; }
 
 		public bool IsOverrideOfInterfaceMember {
 			get {
@@ -29,7 +29,7 @@ namespace Mono.Linker
 			}
 		}
 
-		public TypeDefinition InterfaceType {
+		public TypeDefinition? InterfaceType {
 			get {
 				if (!IsOverrideOfInterfaceMember)
 					return null;

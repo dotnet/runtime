@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -56,7 +55,7 @@ namespace Mono.Linker
 
 		SerializerKind ActiveSerializers { get; set; }
 
-		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> _trackedRoots;
+		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>>? _trackedRoots;
 		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> TrackedRoots {
 			get {
 				if (_trackedRoots == null)
@@ -66,7 +65,7 @@ namespace Mono.Linker
 			}
 		}
 
-		HashSet<TypeDefinition> _recursiveTypes;
+		HashSet<TypeDefinition>? _recursiveTypes;
 		HashSet<TypeDefinition> RecursiveTypes {
 			get {
 				if (_recursiveTypes == null)
@@ -186,7 +185,7 @@ namespace Mono.Linker
 			// This doesn't handle other TypeSpecs. We are only matching what xamarin-android used to do.
 			// Arrays will still work because Resolve returns the array element type.
 
-			TypeDefinition type = _context.TryResolve (typeRef);
+			TypeDefinition? type = _context.TryResolve (typeRef);
 			if (type == null)
 				return;
 
