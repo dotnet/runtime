@@ -443,6 +443,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_ArmBase_Yield:
+            {
+                ins = INS_yield;
+                break;
+            }
+
             default:
                 ins = HWIntrinsicInfo::lookupIns(intrin.id, intrin.baseType);
                 break;
@@ -734,6 +740,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 }
                 break;
+
+            case NI_ArmBase_Yield:
+            {
+                GetEmitter()->emitIns(ins);
+                break;
+            }
 
             // mvni doesn't support the range of element types, so hard code the 'opts' value.
             case NI_Vector64_get_Zero:

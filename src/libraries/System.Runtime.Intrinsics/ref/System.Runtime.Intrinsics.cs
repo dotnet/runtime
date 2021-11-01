@@ -2840,6 +2840,7 @@ namespace System.Runtime.Intrinsics.Arm
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int ReverseElementBits(int value) { throw null; }
         public static uint ReverseElementBits(uint value) { throw null; }
+        public static void Yield() { throw null; }
         public abstract partial class Arm64
         {
             internal Arm64() { }
@@ -3653,7 +3654,6 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
-
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("AvxVnni is in preview.")]
     public abstract class AvxVnni : System.Runtime.Intrinsics.X86.Avx2
@@ -3674,7 +3674,6 @@ namespace System.Runtime.Intrinsics.X86
             public static new bool IsSupported { get { throw null; } }
         }
     }
-
     [System.CLSCompliantAttribute(false)]
     public abstract partial class Bmi1 : System.Runtime.Intrinsics.X86.X86Base
     {
@@ -4497,6 +4496,7 @@ namespace System.Runtime.Intrinsics.X86
         internal X86Base() { }
         public static bool IsSupported { get { throw null; } }
         public static (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId) { throw null; }
+        public static void Pause() { throw null; }
         public abstract partial class X64
         {
             internal X64() { }

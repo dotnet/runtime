@@ -1563,6 +1563,9 @@ INST1(uxth,        "uxth",         0,      IF_DR_2H,  0x53003C00)
 INST1(nop,         "nop",          0,      IF_SN_0A,  0xD503201F)
                                    //  nop                          SN_0A  1101010100000011 0010000000011111   D503 201F
 
+INST1(yield,       "yield",        0,      IF_SN_0A,  0xD503203F)
+                                   //  yield                        SN_0A  1101010100000011 0010000000111111   D503 203F
+
 INST1(bkpt,        "bkpt",         0,      IF_SN_0A,  0xD43E0000)
                                    //  brpt                         SN_0A  1101010000111110 0000000000000000   D43E 0000   0xF000
 

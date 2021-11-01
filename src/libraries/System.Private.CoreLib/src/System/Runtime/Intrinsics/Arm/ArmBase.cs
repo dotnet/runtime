@@ -87,5 +87,11 @@ namespace System.Runtime.Intrinsics.Arm
         ///   A64: RBIT Wd, Wn
         /// </summary>
         public static uint ReverseElementBits(uint value) => ReverseElementBits(value);
+
+        /// <summary>
+        ///   A32: YIELD
+        ///   A64: YIELD
+        /// </summary>
+        public static void Yield() => Yield();
     }
 }
