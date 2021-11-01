@@ -47,8 +47,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
                         && !(node.Parent is MemberAccessExpressionSyntax)
                         && !(node.Parent is InvocationExpressionSyntax)
-                        && !(node.Parent is ElementAccessExpressionSyntax)
-                        && !(node.Parent is ArgumentSyntax))
+                        && !(node.Parent is ElementAccessExpressionSyntax))
                     {
                         memberAccesses.Add(maes);
                     }
@@ -322,13 +321,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        private static async Task<IList<JObject>> ResolveElementAccess(IEnumerable<ElementAccessExpressionSyntax> elementAccesses, MemberReferenceResolver resolver, CancellationToken token)
+        private static async Task<IList<JObject>> ResolveElementAccess(IEnumerable<ElementAccessExpressionSyntax> elementAccesses, Dictionary<string, JObject> memberAccessValues, MemberReferenceResolver resolver, CancellationToken token)
         {
             var values = new List<JObject>();
             JObject index = null;
             foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                index = await resolver.Resolve(elementAccess, index, token);
+                index = await resolver.Resolve(elementAccess, memberAccessValues, index, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
             }
@@ -405,7 +404,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 findVarNMethodCall.VisitInternal(expressionTree);
 
-                IList<JObject> elementAccessValues = await ResolveElementAccess(findVarNMethodCall.elementAccess, resolver, token);
+                IList<JObject> elementAccessValues = await ResolveElementAccess(findVarNMethodCall.elementAccess, findVarNMethodCall.memberAccessValues, resolver, token);
 
                 syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }

@@ -207,7 +207,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return rootObject;
         }
 
-        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, JObject indexObject, CancellationToken token)
+        public async Task<JObject> Resolve(ElementAccessExpressionSyntax elementAccess, Dictionary<string, JObject> memberAccessValues, JObject indexObject, CancellationToken token)
         {
             try
             {
@@ -219,20 +219,40 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     string elementIdxStr;
                     int elementIdx = 0;
-                    // e.g. x[0] or x[y]
+                    // x[1] or x[a] or x[a.b]
                     if (indexObject == null)
                     {
-                        var argument = elementAccess.ArgumentList.ToString();
-                        bool isCorrectIndex = argument.StartsWith('[') && argument.EndsWith(']') && argument.Length > 2;
-                        if (isCorrectIndex)
+                        if (elementAccess.ArgumentList != null)
                         {
-                            elementIdxStr = argument.Substring(1, argument.Length - 2);
-                            indexObject = await Resolve(elementIdxStr, token);
-                            if (indexObject != null)
+                            var commandParamsObj = new MemoryStream();
+                            var commandParamsObjWriter = new MonoBinaryWriter(commandParamsObj);
+                            foreach (var arg in elementAccess.ArgumentList.Arguments)
                             {
-                                elementIdxStr = indexObject["value"].ToString();
+                                // e.g. x[1]
+                                if (arg.Expression is LiteralExpressionSyntax)
+                                {
+                                    var argParm = arg.Expression as LiteralExpressionSyntax;
+                                    elementIdxStr = argParm.ToString();
+                                    int.TryParse(elementIdxStr, out elementIdx);
+                                }
+
+                                // e.g. x[a] or x[a.b]
+                                if (arg.Expression is IdentifierNameSyntax)
+                                {
+                                    var argParm = arg.Expression as IdentifierNameSyntax;
+
+                                    // x[a.b]
+                                    memberAccessValues.TryGetValue(argParm.Identifier.Text, out indexObject);
+
+                                    // x[a]
+                                    if (indexObject == null)
+                                    {
+                                        indexObject = await Resolve(argParm.Identifier.Text, token);
+                                    }
+                                    elementIdxStr = indexObject["value"].ToString();
+                                    int.TryParse(elementIdxStr, out elementIdx);
+                                }
                             }
-                            int.TryParse(elementIdxStr, out elementIdx);
                         }
                     }
                     // e.g. x[a[0]], x[a[b[1]]] etc.
