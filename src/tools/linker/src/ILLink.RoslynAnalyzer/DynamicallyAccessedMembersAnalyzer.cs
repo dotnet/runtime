@@ -213,7 +213,8 @@ namespace ILLink.RoslynAnalyzer
 				IMemberReferenceOperation memberReference => memberReference.Member,
 				IParameterReferenceOperation parameterReference => parameterReference.Parameter,
 				IReturnOperation returnOp => TryGetSymbolFromOperation (returnOp.ReturnedValue, context),
-				ITypeOfOperation typeOf => typeOf.TypeOperand,
+				// We only need to find the symbol for generic types here
+				ITypeOfOperation typeOf => typeOf.TypeOperand is ITypeParameterSymbol ? typeOf.TypeOperand : null,
 				_ => null
 			};
 	}
