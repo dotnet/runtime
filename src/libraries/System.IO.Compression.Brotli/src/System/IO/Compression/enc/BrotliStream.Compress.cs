@@ -21,8 +21,10 @@ namespace System.IO.Compression
         /// <param name="stream">The stream to compress.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
-        public BrotliStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen) =>
+        public BrotliStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
+        {
             _encoder.SetQuality(BrotliUtils.GetQualityFromCompressionLevel(compressionLevel));
+        }
 
         /// <summary>Writes compressed bytes to the underlying stream from the specified byte array.</summary>
         /// <param name="buffer">The buffer containing the data to compress.</param>
