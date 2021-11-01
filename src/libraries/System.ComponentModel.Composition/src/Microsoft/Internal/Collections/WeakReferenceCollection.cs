@@ -3,12 +3,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition.Hosting;
 
 namespace Microsoft.Internal.Collections
 {
     internal sealed class WeakReferenceCollection<T> where T : class
     {
         private readonly List<WeakReference> _items = new List<WeakReference>();
+        private readonly CompositionLock _lock;
+
+        internal WeakReferenceCollection(CompositionLock @lock)
+        {
+            _lock = @lock;
+        }
 
         public void Add(T item)
         {
@@ -18,7 +25,10 @@ namespace Microsoft.Internal.Collections
                 CleanupDeadReferences();
             }
 
-            _items.Add(new WeakReference(item));
+            using (_lock.LockComposition())
+            {
+                _items.Add(new WeakReference(item));
+            }
         }
 
         public void Remove(T item)
@@ -27,7 +37,10 @@ namespace Microsoft.Internal.Collections
 
             if (index != -1)
             {
-                _items.RemoveAt(index);
+                using (_lock.LockComposition())
+                {
+                    _items.RemoveAt(index);
+                }
             }
         }
 
@@ -38,7 +51,10 @@ namespace Microsoft.Internal.Collections
 
         public void Clear()
         {
-            _items.Clear();
+            using (_lock.LockComposition())
+            {
+                _items.Clear();
+            }
         }
 
         // Should be executed under at least a read lock.
@@ -58,18 +74,24 @@ namespace Microsoft.Internal.Collections
         // Should be executed under a write lock
         private void CleanupDeadReferences()
         {
-            _items.RemoveAll(w => !w.IsAlive);
+            using (_lock.LockComposition())
+            {
+                _items.RemoveAll(w => !w.IsAlive);
+            }
         }
 
         public List<T> AliveItemsToList()
         {
             List<T> aliveItems = new List<T>();
 
-            foreach (var weakItem in _items)
+            using (_lock.LockComposition())
             {
-                if (weakItem.Target is T item)
+                foreach (var weakItem in _items)
                 {
-                    aliveItems.Add(item);
+                    if (weakItem.Target is T item)
+                    {
+                        aliveItems.Add(item);
+                    }
                 }
             }
 

@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition.Hosting
         private ExportProvider? _sourceProvider;
         private readonly Stack<PartManager> _recursionStateStack = new Stack<PartManager>();
         private ConditionalWeakTable<ComposablePart, PartManager> _partManagers = new ConditionalWeakTable<ComposablePart, PartManager>();
-        private RecompositionManager _recompositionManager = new RecompositionManager();
+        private RecompositionManager _recompositionManager;
         private readonly CompositionLock _lock;
         private readonly CompositionOptions _compositionOptions;
 
@@ -52,6 +52,7 @@ namespace System.ComponentModel.Composition.Hosting
             _sourceProvider = sourceProvider;
             _sourceProvider.ExportsChanging += OnExportsChanging;
             _lock = new CompositionLock(compositionOptions.HasFlag(CompositionOptions.IsThreadSafe));
+            _recompositionManager = new RecompositionManager(_lock);
         }
 
         /// <summary>

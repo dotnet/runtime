@@ -17,9 +17,17 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         private sealed class RecompositionManager
         {
-            private readonly WeakReferenceCollection<PartManager> _partsToIndex = new WeakReferenceCollection<PartManager>();
-            private readonly WeakReferenceCollection<PartManager> _partsToUnindex = new WeakReferenceCollection<PartManager>();
+            private readonly WeakReferenceCollection<PartManager> _partsToIndex;
+            private readonly WeakReferenceCollection<PartManager> _partsToUnindex;
             private readonly Dictionary<string, WeakReferenceCollection<PartManager>> _partManagerIndex = new Dictionary<string, WeakReferenceCollection<PartManager>>();
+            private readonly CompositionLock _lock;
+
+            internal RecompositionManager(CompositionLock @lock)
+            {
+                _lock = @lock;
+                _partsToIndex = new WeakReferenceCollection<PartManager>(_lock);
+                _partsToUnindex = new WeakReferenceCollection<PartManager>(_lock);
+            }
 
             public void AddPartToIndex(PartManager partManager)
             {
@@ -83,7 +91,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (!_partManagerIndex.TryGetValue(contractName, out WeakReferenceCollection<PartManager>? indexEntries))
                     {
-                        indexEntries = new WeakReferenceCollection<PartManager>();
+                        indexEntries = new WeakReferenceCollection<PartManager>(_lock);
                         _partManagerIndex.Add(contractName, indexEntries);
                     }
 
